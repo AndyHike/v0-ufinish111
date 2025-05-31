@@ -5,7 +5,7 @@ import Link from "next/link"
 import { useParams } from "next/navigation"
 import { Smartphone, Mail, Phone, MapPin } from "lucide-react"
 
-export function Footer() {
+export default function Footer() {
   const t = useTranslations("Footer")
   const params = useParams()
   const locale = params.locale as string
