@@ -8,7 +8,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 
 export default async function RegisterPage() {
-  const t = await getTranslations({ locale, namespace: "Auth" })
+  const t = await getTranslations("Auth")
   const registrationEnabled = await isRegistrationEnabled()
 
   if (!registrationEnabled) {
