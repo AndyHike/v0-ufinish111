@@ -3,14 +3,10 @@ import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import { createClient } from "@/lib/supabase"
 
-// Hardcode the locales and defaultLocale to avoid importing from i18n.js
-const locales = ["uk", "cs", "en"]
-const defaultLocale = "uk"
-
 // Create the next-intl middleware
 const intlMiddleware = createMiddleware({
-  locales,
-  defaultLocale,
+  locales: ["uk", "cs", "en"],
+  defaultLocale: "uk",
   localePrefix: "always",
 })
 
@@ -26,7 +22,7 @@ export default async function middleware(request: NextRequest) {
   // Special handling for root path
   if (pathname === "/") {
     // Redirect to the default locale
-    return NextResponse.redirect(new URL(`/${defaultLocale}`, request.url))
+    return NextResponse.redirect(new URL(`/uk`, request.url))
   }
 
   // Handle internationalization
@@ -38,7 +34,7 @@ export default async function middleware(request: NextRequest) {
 
     if (!sessionId) {
       // Get locale from URL
-      const locale = pathname.split("/")[1] || defaultLocale
+      const locale = pathname.split("/")[1] || "uk"
 
       // Redirect to login page
       const redirectUrl = new URL(`/${locale}/auth/login`, request.url)
@@ -63,7 +59,7 @@ export default async function middleware(request: NextRequest) {
 
       if (error || !session || new Date(session.expires_at) < new Date()) {
         // Session is invalid or expired, redirect to login
-        const locale = pathname.split("/")[1] || defaultLocale
+        const locale = pathname.split("/")[1] || "uk"
         const redirectUrl = new URL(`/${locale}/auth/login`, request.url)
         redirectUrl.searchParams.set("redirect", pathname)
 

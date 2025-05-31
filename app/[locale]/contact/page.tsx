@@ -142,7 +142,7 @@ export default function ContactPage() {
               <div className="w-full h-[300px] rounded-lg overflow-hidden">
                 <iframe
                   title={t("mapTitle")}
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2559.8234567890123!2d14.3456789!3d50.0876543!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x470b94ea69e1a1a1%3A0x7c93c7eb4ba09925!2sB%C4%9Blohorsk%C3%A1%20209%2F13%2C%20169%2000%20Praha%206-B%C5%99evnov!5e0!3m2!1scs!2scz!4v1650000000000!5m2!1scs!2scz"
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d20472.97391809471!2d14.4194684!3d50.0755381!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x470b94ea69e1a1e1%3A0x7c93c7aaef9e8b!2zUHJhaGEgMiwgxIxlc2tv!5e0!3m2!1scs!2scz!4v1650000000000!5m2!1scs!2scz"
                   width="100%"
                   height="100%"
                   style={{ border: 0 }}
