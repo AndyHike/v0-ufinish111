@@ -34,8 +34,8 @@ export function UserNav({ user }: UserNavProps) {
 
   if (!user) {
     return (
-      <Button variant="ghost" size="sm" disabled title="Тимчасово недоступно">
-        {t("login")}
+      <Button variant="ghost" size="sm" asChild>
+        <Link href={`/${locale}/login`}>{t("login")}</Link>
       </Button>
     )
   }
