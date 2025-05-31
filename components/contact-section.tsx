@@ -196,7 +196,7 @@ export function ContactSection() {
             <TabsContent value="map" className="mt-4">
               <div className="overflow-hidden rounded-xl shadow-sm border border-gray-100 h-[300px] bg-white">
                 <iframe
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2561.9633461671973!2d14.372505115716176!3d50.082696079427584!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x470b94f23a4bbf95%3A0x30dc5fd3034209ae!2sB%C4%9Blohorsk%C3%A1%20209%2F13%2C%20169%2000%20Praha%206-B%C5%99evnov!5e0!3m2!1sen!2scz!4v1717171717171!5m2!1sen!2scz"
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2561.9473756468813!2d14.3718826!3d50.0828941!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x470b94f21a6bc55f%3A0x4d61fc29d0c4b1ea!2sB%C4%9Blohorsk%C3%A1%20209%2F133%2C%20169%2000%20Praha%206-B%C5%99evnov!5e0!3m2!1sen!2scz!4v1717177177171!5m2!1sen!2scz"
                   width="100%"
                   height="100%"
                   style={{ border: 0 }}
@@ -360,7 +360,7 @@ export function ContactSection() {
 
             <div className="overflow-hidden rounded-xl shadow-sm border border-gray-100 h-[180px] md:h-[220px] bg-white">
               <iframe
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2561.9633461671973!2d14.372505115716176!3d50.082696079427584!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x470b94f23a4bbf95%3A0x30dc5fd3034209ae!2sB%C4%9Blohorsk%C3%A1%20209%2F13%2C%20169%2000%20Praha%206-B%C5%99evnov!5e0!3m2!1sen!2scz!4v1717171717171!5m2!1sen!2scz"
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2561.9473756468813!2d14.3718826!3d50.0828941!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x470b94f21a6bc55f%3A0x4d61fc29d0c4b1ea!2sB%C4%9Blohorsk%C3%A1%20209%2F133%2C%20169%2000%20Praha%206-B%C5%99evnov!5e0!3m2!1sen!2scz!4v1717177177171!5m2!1sen!2scz"
                 width="100%"
                 height="100%"
                 style={{ border: 0 }}
