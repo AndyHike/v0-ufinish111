@@ -107,7 +107,6 @@ export function Header({ user }) {
             ))}
           </nav>
           <div className="flex items-center gap-2">
-            {/* Мовний перемикач тепер видимий на мобільних */}
             <LanguageSwitcher className="flex" />
             <Button variant="ghost" size="icon" onClick={() => setIsSearchOpen(true)} aria-label={t("search")}>
               <Search className="h-5 w-5" />
@@ -118,7 +117,6 @@ export function Header({ user }) {
         <SearchDialog open={isSearchOpen} onOpenChange={setIsSearchOpen} />
       </header>
 
-      {/* Мобільна нижня навігація */}
       <MobileNav navigation={navigation} isActive={isActive} />
     </>
   )

@@ -1,9 +1,8 @@
 "use client"
 
+import { useTranslations } from "next-intl"
 import Link from "next/link"
 import { useParams } from "next/navigation"
-import { useTranslations } from "next-intl"
-import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,55 +11,37 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { logout } from "@/lib/auth/actions"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
+import { LogOut, Settings, UserIcon } from "lucide-react"
 
-interface UserNavProps {
-  user?: {
-    id: string
-    email: string
-    role: string
-    name?: string
-    first_name?: string | null
-    last_name?: string | null
-    avatar_url?: string
-  } | null
-}
-
-export function UserNav({ user }: UserNavProps) {
+export function UserNav({ user }) {
   const t = useTranslations("UserNav")
   const params = useParams()
-  const locale = params.locale as string
+  const locale = params.locale
 
   if (!user) {
     return (
-      <Button variant="ghost" size="sm" asChild>
-        <Link href={`/${locale}/login`}>{t("login")}</Link>
-      </Button>
+      <Link href={`/${locale}/auth/signin`}>
+        <Button variant="outline" size="sm">
+          {t("login")}
+        </Button>
+      </Link>
     )
   }
 
-  // Get display name from first_name and last_name, or fallback to name or email
-  const displayName = user.name || [user.first_name, user.last_name].filter(Boolean).join(" ") || user.email
-
-  // Get initials from first_name and last_name if available
-  const initials =
-    user.first_name && user.last_name
-      ? `${user.first_name[0]}${user.last_name[0]}`.toUpperCase()
-      : user.name
-        ? user.name
-            .split(" ")
-            .map((n) => n[0])
-            .join("")
-            .toUpperCase()
-        : user.email[0].toUpperCase()
+  const initials = user.name
+    ? user.name
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+    : user.email?.substring(0, 2).toUpperCase()
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-8 w-8">
-            <AvatarImage src={user.avatar_url || ""} alt={displayName} />
             <AvatarFallback>{initials}</AvatarFallback>
           </Avatar>
         </Button>
@@ -68,32 +49,35 @@ export function UserNav({ user }: UserNavProps) {
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{displayName}</p>
+            <p className="text-sm font-medium leading-none">{user.name || t("account")}</p>
             <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link href={`/${locale}/profile`}>{t("profile")}</Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link href={`/${locale}/profile/orders`}>{t("orders")}</Link>
-        </DropdownMenuItem>
-        {user.role === "admin" && (
-          <DropdownMenuItem asChild>
-            <Link href={`/${locale}/admin`}>{t("adminDashboard")}</Link>
+        <Link href={`/${locale}/profile`}>
+          <DropdownMenuItem>
+            <UserIcon className="mr-2 h-4 w-4" />
+            <span>{t("profile")}</span>
           </DropdownMenuItem>
+        </Link>
+        {user.role === "admin" && (
+          <Link href={`/${locale}/admin`}>
+            <DropdownMenuItem>
+              <Settings className="mr-2 h-4 w-4" />
+              <span>{t("adminPanel")}</span>
+            </DropdownMenuItem>
+          </Link>
         )}
         <DropdownMenuSeparator />
-        <DropdownMenuItem
-          className="cursor-pointer"
-          onClick={async () => {
-            await logout()
-            window.location.href = `/${locale}`
-          }}
-        >
-          {t("logout")}
-        </DropdownMenuItem>
+        <form action="/api/auth/signout" method="post">
+          <input type="hidden" name="callbackUrl" value="/" />
+          <DropdownMenuItem asChild>
+            <button className="w-full flex cursor-pointer items-center">
+              <LogOut className="mr-2 h-4 w-4" />
+              <span>{t("logout")}</span>
+            </button>
+          </DropdownMenuItem>
+        </form>
       </DropdownMenuContent>
     </DropdownMenu>
   )
