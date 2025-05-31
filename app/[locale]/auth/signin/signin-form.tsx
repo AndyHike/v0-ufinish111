@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label"
 import Link from "next/link"
 import { sendVerificationCode, verifyLoginCode } from "@/lib/auth/actions"
 import { Loader2 } from "lucide-react"
-import { Card } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 
 export default function SignInForm() {
   const t = useTranslations("Auth")
@@ -77,114 +77,116 @@ export default function SignInForm() {
   }
 
   return (
-    <div className="grid gap-6">
-      {step === "email" ? (
-        <form onSubmit={handleEmailSubmit} className="space-y-4">
-          <div className="grid gap-2">
-            <Label htmlFor="email" className="text-sm font-medium">
-              {t("email")}
-            </Label>
-            <Input
-              id="email"
-              name="email"
-              placeholder={t("emailPlaceholder")}
-              type="email"
-              autoCapitalize="none"
-              autoComplete="email"
-              autoCorrect="off"
-              disabled={isLoading}
-              className="border border-input rounded-md px-3 py-2"
-              required
-            />
-          </div>
-          {error && (
-            <div className="text-sm font-medium text-destructive bg-destructive/10 p-2 rounded-md">{error}</div>
-          )}
-          <Button disabled={isLoading} type="submit" className="w-full font-medium">
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {t("processing")}
-              </>
-            ) : (
-              t("continue")
-            )}
-          </Button>
-        </form>
-      ) : (
-        <Card className="border border-border p-4">
-          <form onSubmit={handleVerificationSubmit} className="space-y-4">
-            <div className="grid gap-2">
-              <Label htmlFor="verification-code" className="text-sm font-medium">
-                {t("verificationCode")}
-              </Label>
-              <Input
-                id="verification-code"
-                name="verification-code"
-                placeholder={t("verificationCodePlaceholder") || "Enter 6-digit code"}
-                type="text"
-                value={verificationCode}
-                onChange={(e) => setVerificationCode(e.target.value)}
-                autoCapitalize="none"
-                autoComplete="one-time-code"
-                autoCorrect="off"
-                disabled={isLoading}
-                className="border border-input rounded-md px-3 py-2 text-center text-lg tracking-widest"
-                required
-              />
-              <p className="text-sm text-muted-foreground">
-                {t("verificationCodeSent")} <span className="font-medium">{email}</span>
-              </p>
+    <Card className="border shadow-sm">
+      <CardContent className="pt-6">
+        <div className="grid gap-6">
+          {step === "email" ? (
+            <form onSubmit={handleEmailSubmit} className="space-y-4">
+              <div className="grid gap-2">
+                <Label htmlFor="email" className="text-sm font-medium">
+                  {t("email")}
+                </Label>
+                <Input
+                  id="email"
+                  name="email"
+                  placeholder={t("emailPlaceholder")}
+                  type="email"
+                  autoCapitalize="none"
+                  autoComplete="email"
+                  autoCorrect="off"
+                  disabled={isLoading}
+                  className="border border-input rounded-md px-3 py-2"
+                  required
+                />
+              </div>
+              {error && (
+                <div className="text-sm font-medium text-destructive bg-destructive/10 p-2 rounded-md">{error}</div>
+              )}
+              <Button disabled={isLoading} type="submit" className="w-full font-medium">
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {t("processing")}
+                  </>
+                ) : (
+                  t("continue")
+                )}
+              </Button>
+            </form>
+          ) : (
+            <form onSubmit={handleVerificationSubmit} className="space-y-4">
+              <div className="grid gap-2">
+                <Label htmlFor="verification-code" className="text-sm font-medium">
+                  {t("verificationCode")}
+                </Label>
+                <Input
+                  id="verification-code"
+                  name="verification-code"
+                  placeholder={t("verificationCodePlaceholder") || "Enter 6-digit code"}
+                  type="text"
+                  value={verificationCode}
+                  onChange={(e) => setVerificationCode(e.target.value)}
+                  autoCapitalize="none"
+                  autoComplete="one-time-code"
+                  autoCorrect="off"
+                  disabled={isLoading}
+                  className="border border-input rounded-md px-3 py-2 text-center text-lg tracking-widest"
+                  required
+                />
+                <p className="text-sm text-muted-foreground">
+                  {t("verificationCodeSent")} <span className="font-medium">{email}</span>
+                </p>
+                <Button
+                  type="button"
+                  variant="link"
+                  className="px-0 text-sm font-normal"
+                  onClick={async () => {
+                    setIsLoading(true)
+                    try {
+                      await sendVerificationCode(email, true)
+                      setIsLoading(false)
+                    } catch (error) {
+                      setError(t("unexpectedError"))
+                      setIsLoading(false)
+                    }
+                  }}
+                  disabled={isLoading}
+                >
+                  {t("resendCode")}
+                </Button>
+              </div>
+              {error && (
+                <div className="text-sm font-medium text-destructive bg-destructive/10 p-2 rounded-md">{error}</div>
+              )}
+              <Button disabled={isLoading} type="submit" className="w-full font-medium">
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {t("processing")}
+                  </>
+                ) : (
+                  t("signIn")
+                )}
+              </Button>
               <Button
                 type="button"
-                variant="link"
-                className="px-0 text-sm font-normal"
-                onClick={async () => {
-                  setIsLoading(true)
-                  try {
-                    await sendVerificationCode(email, true)
-                    setIsLoading(false)
-                  } catch (error) {
-                    setError(t("unexpectedError"))
-                    setIsLoading(false)
-                  }
-                }}
+                variant="outline"
+                onClick={() => setStep("email")}
                 disabled={isLoading}
+                className="w-full font-medium"
               >
-                {t("resendCode")}
+                {t("backToEmail")}
               </Button>
-            </div>
-            {error && (
-              <div className="text-sm font-medium text-destructive bg-destructive/10 p-2 rounded-md">{error}</div>
-            )}
-            <Button disabled={isLoading} type="submit" className="w-full font-medium">
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {t("processing")}
-                </>
-              ) : (
-                t("signIn")
-              )}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setStep("email")}
-              disabled={isLoading}
-              className="w-full font-medium"
-            >
-              {t("backToEmail")}
-            </Button>
-          </form>
-        </Card>
-      )}
-      <div className="text-center text-sm">
-        <span className="text-muted-foreground">{t("noAccount")}</span>{" "}
-        <Link href={`/${locale}/auth/register`} className="text-primary hover:underline font-medium">
-          {t("register")}
-        </Link>
-      </div>
-    </div>
+            </form>
+          )}
+          <div className="text-center text-sm">
+            <span className="text-muted-foreground">{t("noAccount")}</span>{" "}
+            <Link href={`/${locale}/auth/register`} className="text-primary hover:underline font-medium">
+              {t("register")}
+            </Link>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   )
 }
