@@ -83,7 +83,7 @@ export function ContactSection() {
                 <MapPin className="h-4 w-4 text-primary" />
               </div>
               <div>
-                <p className="text-sm font-medium">Praha 2</p>
+                <p className="text-sm font-medium">Bělohorská 209/13, Praha 6-Břevnov</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -196,7 +196,7 @@ export function ContactSection() {
             <TabsContent value="map" className="mt-4">
               <div className="overflow-hidden rounded-xl shadow-sm border border-gray-100 h-[300px] bg-white">
                 <iframe
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d20479.84323795257!2d14.41993243476561!3d50.07762499999999!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x470b94ea69e1a1a1%3A0x7c93c7eb4ba09925!2sPraha%202!5e0!3m2!1scs!2scz!4v1652345678901!5m2!1scs!2scz"
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2559.8234567890123!2d14.3456789!3d50.0876543!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x470b94ea69e1a1a1%3A0x7c93c7eb4ba09925!2sB%C4%9Blohorsk%C3%A1%20209%2F13%2C%20169%2000%20Praha%206-B%C5%99evnov!5e0!3m2!1scs!2scz!4v1652345678901!5m2!1scs!2scz"
                   width="100%"
                   height="100%"
                   style={{ border: 0 }}
@@ -341,7 +341,7 @@ export function ContactSection() {
                   </div>
                   <div>
                     <h3 className="font-medium text-gray-900 text-sm md:text-base">{t("address")}</h3>
-                    <p className="text-gray-600 text-sm md:text-base">Praha 2</p>
+                    <p className="text-gray-600 text-sm md:text-base">Bělohorská 209/13, Praha 6-Břevnov</p>
                   </div>
                 </div>
 
@@ -360,7 +360,7 @@ export function ContactSection() {
 
             <div className="overflow-hidden rounded-xl shadow-sm border border-gray-100 h-[180px] md:h-[220px] bg-white">
               <iframe
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d20479.84323795257!2d14.41993243476561!3d50.07762499999999!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x470b94ea69e1a1a1%3A0x7c93c7eb4ba09925!2sPraha%202!5e0!3m2!1scs!2scz!4v1652345678901!5m2!1scs!2scz"
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2559.8234567890123!2d14.3456789!3d50.0876543!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x470b94ea69e1a1a1%3A0x7c93c7eb4ba09925!2sB%C4%9Blohorsk%C3%A1%20209%2F13%2C%20169%2000%20Praha%206-B%C5%99evnov!5e0!3m2!1scs!2scz!4v1652345678901!5m2!1scs!2scz"
                 width="100%"
                 height="100%"
                 style={{ border: 0 }}
