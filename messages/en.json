@@ -277,7 +277,11 @@
     "verificationCode": "Verification Code",
     "registrationDisabled": "Registration Disabled",
     "registrationDisabledDescription": "New user registration is currently disabled",
-    "registrationTemporarilyDisabled": "Registration is temporarily disabled. Please try again later or contact support for assistance."
+    "registrationTemporarilyDisabled": "Registration is temporarily disabled. Please try again later or contact support for assistance.",
+    "registrationDisabled": "Registration Disabled",
+    "registrationDisabledDescription": "We have temporarily disabled new user registrations.",
+    "registrationTemporarilyDisabled": "Registration is temporarily unavailable",
+    "backToLogin": "Back to Homepage"
   },
   "Admin": {
     "adminPanel": "Admin Panel",

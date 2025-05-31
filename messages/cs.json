@@ -347,7 +347,11 @@
     "verificationCode": "Ověřovací kód",
     "registrationDisabled": "Registrace je zakázána",
     "registrationDisabledDescription": "Registrace nových uživatelů je momentálně zakázána",
-    "registrationTemporarilyDisabled": "Registrace je dočasně zakázána. Zkuste to prosím později nebo kontaktujte podporu."
+    "registrationTemporarilyDisabled": "Registrace je dočasně zakázána. Zkuste to prosím později nebo kontaktujte podporu.",
+    "registrationDisabled": "Registrace je vypnutá",
+    "registrationDisabledDescription": "Registrace nových uživatelů byla dočasně vypnuta.",
+    "registrationTemporarilyDisabled": "Registrace je dočasně nedostupná",
+    "backToLogin": "Zpět na hlavní stránku"
   },
   "Admin": {
     "adminPanel": "Administrátorský panel",

@@ -375,7 +375,11 @@
     "verificationCode": "Код підтвердження",
     "registrationDisabled": "Реєстрацію вимкнено",
     "registrationDisabledDescription": "Реєстрація нових користувачів наразі вимкнена",
-    "registrationTemporarilyDisabled": "Реєстрацію тимчасово вимкнено. Будь ласка, спробуйте пізніше або зверніться до служби підтримки."
+    "registrationTemporarilyDisabled": "Реєстрацію тимчасово вимкнено. Будь ласка, спробуйте пізніше або зверніться до служби підтримки.",
+    "registrationDisabled": "Реєстрацію вимкнено",
+    "registrationDisabledDescription": "Ми тимчасово вимкнули реєстрацію нових користувачів.",
+    "registrationTemporarilyDisabled": "Реєстрація тимчасово недоступна",
+    "backToLogin": "Повернутися на головну"
   },
   "Admin": {
     "adminPanel": "Панель адміністратора",
