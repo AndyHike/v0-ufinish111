@@ -8,7 +8,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 
 export default async function RegisterPage() {
-  const t = await getTranslations("Auth")
+  const t = await getTranslations({ locale, namespace: "Auth" })
   const registrationEnabled = await isRegistrationEnabled()
 
   if (!registrationEnabled) {
@@ -27,7 +27,7 @@ export default async function RegisterPage() {
               </div>
               <div className="flex justify-center">
                 <Button asChild>
-                  <Link href="/auth/login">{t("backToLogin")}</Link>
+                  <Link href="/">{t("backToLogin")}</Link>
                 </Button>
               </div>
             </CardContent>
