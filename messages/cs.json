@@ -329,7 +329,22 @@
     "resendCode": "Znovu odeslat kód",
     "registrationSuccessful": "Registrace úspěšná!",
     "accountCreatedSuccessfully": "Váš účet byl úspěšně vytvořen. Nyní jste přihlášeni.",
-    "goToHomePage": "Přejít na domovskou stránku"
+    "goToHomePage": "Přejít na domovskou stránku",
+    "firstName": "Jméno",
+    "lastName": "Příjmení",
+    "firstNamePlaceholder": "Zadejte své jméno",
+    "lastNamePlaceholder": "Zadejte své příjmení",
+    "address": "Adresa",
+    "addressPlaceholder": "Zadejte svou adresu",
+    "userAlreadyExists": "Uživatel s tímto e-mailem nebo telefonem již existuje",
+    "continueRegistration": "Pokračovat v registraci",
+    "enterVerificationCode": "Zadejte ověřovací kód",
+    "verifyCode": "Ověřit kód",
+    "signInDescription": "Přihlaste se ke svému účtu pro přístup k profilu a objednávkám.",
+    "verificationCodePlaceholder": "Zadejte 6místný kód",
+    "backToEmail": "Zpět na e-mail",
+    "continue": "Pokračovat",
+    "verificationCode": "Ověřovací kód"
   },
   "Admin": {
     "adminPanel": "Administrátorský panel",

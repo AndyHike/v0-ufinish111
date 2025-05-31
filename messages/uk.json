@@ -367,7 +367,12 @@
     "noEmailForVerification": "Не знайдено електронної пошти для перевірки",
     "registrationSuccessful": "Реєстрація успішна!",
     "accountCreatedSuccessfully": "Ваш обліковий запис успішно створено. Ви вже увійшли в систему.",
-    "goToHomePage": "Перейти на головну сторінку"
+    "goToHomePage": "Перейти на головну сторінку",
+    "signInDescription": "Увійдіть до свого облікового запису для доступу до профілю та замовлень.",
+    "verificationCodePlaceholder": "Введіть 6-значний код",
+    "backToEmail": "Назад до електронної пошти",
+    "continue": "Продовжити",
+    "verificationCode": "Код підтвердження"
   },
   "Admin": {
     "adminPanel": "Панель адміністратора",

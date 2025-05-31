@@ -11,8 +11,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import Link from "next/link"
 import { sendVerificationCode, verifyLoginCode } from "@/lib/auth/actions"
-import { Loader2 } from "lucide-react"
-import { Card, CardContent } from "@/components/ui/card"
+import { Loader2, Shield, CheckCircle, ArrowLeft } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 export default function SignInForm() {
   const t = useTranslations("Auth")
@@ -77,13 +77,26 @@ export default function SignInForm() {
   }
 
   return (
-    <Card className="border shadow-sm">
-      <CardContent className="pt-6">
-        <div className="grid gap-6">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-4">
+      <Card className="w-full max-w-md shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+        <CardHeader className="space-y-4 pb-8">
+          <div className="flex flex-col items-center space-y-4">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg">
+              <Shield className="h-8 w-8 text-white" />
+            </div>
+            <div className="text-center space-y-2">
+              <CardTitle className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+                {t("signInToAccount")}
+              </CardTitle>
+              <p className="text-sm text-gray-600 max-w-sm">{t("signInDescription")}</p>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-6">
           {step === "email" ? (
-            <form onSubmit={handleEmailSubmit} className="space-y-4">
-              <div className="grid gap-2">
-                <Label htmlFor="email" className="text-sm font-medium">
+            <form onSubmit={handleEmailSubmit} className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-sm font-medium text-gray-700">
                   {t("email")}
                 </Label>
                 <Input
@@ -95,98 +108,126 @@ export default function SignInForm() {
                   autoComplete="email"
                   autoCorrect="off"
                   disabled={isLoading}
-                  className="border border-input rounded-md px-3 py-2"
+                  className="h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg"
                   required
                 />
               </div>
               {error && (
-                <div className="text-sm font-medium text-destructive bg-destructive/10 p-2 rounded-md">{error}</div>
+                <div className="text-sm font-medium text-red-600 bg-red-50 p-3 rounded-lg border border-red-200">
+                  {error}
+                </div>
               )}
-              <Button disabled={isLoading} type="submit" className="w-full font-medium">
+              <Button
+                disabled={isLoading}
+                type="submit"
+                className="w-full h-12 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
+              >
                 {isLoading ? (
-                  <>
+                  <div className="flex items-center space-x-2">
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {t("processing")}
-                  </>
+                    <span>{t("processing")}</span>
+                  </div>
                 ) : (
                   t("continue")
                 )}
               </Button>
             </form>
           ) : (
-            <form onSubmit={handleVerificationSubmit} className="space-y-4">
-              <div className="grid gap-2">
-                <Label htmlFor="verification-code" className="text-sm font-medium">
-                  {t("verificationCode")}
-                </Label>
-                <Input
-                  id="verification-code"
-                  name="verification-code"
-                  placeholder={t("verificationCodePlaceholder") || "Enter 6-digit code"}
-                  type="text"
-                  value={verificationCode}
-                  onChange={(e) => setVerificationCode(e.target.value)}
-                  autoCapitalize="none"
-                  autoComplete="one-time-code"
-                  autoCorrect="off"
-                  disabled={isLoading}
-                  className="border border-input rounded-md px-3 py-2 text-center text-lg tracking-widest"
-                  required
-                />
-                <p className="text-sm text-muted-foreground">
-                  {t("verificationCodeSent")} <span className="font-medium">{email}</span>
-                </p>
-                <Button
-                  type="button"
-                  variant="link"
-                  className="px-0 text-sm font-normal"
-                  onClick={async () => {
-                    setIsLoading(true)
-                    try {
-                      await sendVerificationCode(email, true)
-                      setIsLoading(false)
-                    } catch (error) {
-                      setError(t("unexpectedError"))
-                      setIsLoading(false)
-                    }
-                  }}
-                  disabled={isLoading}
-                >
-                  {t("resendCode")}
-                </Button>
-              </div>
-              {error && (
-                <div className="text-sm font-medium text-destructive bg-destructive/10 p-2 rounded-md">{error}</div>
-              )}
-              <Button disabled={isLoading} type="submit" className="w-full font-medium">
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {t("processing")}
-                  </>
-                ) : (
-                  t("signIn")
-                )}
-              </Button>
+            <div className="space-y-6">
               <Button
-                type="button"
-                variant="outline"
+                variant="ghost"
+                size="sm"
+                className="mb-4 -ml-2 flex items-center text-gray-600 hover:text-gray-800"
                 onClick={() => setStep("email")}
                 disabled={isLoading}
-                className="w-full font-medium"
               >
+                <ArrowLeft className="mr-2 h-4 w-4" />
                 {t("backToEmail")}
               </Button>
-            </form>
+
+              <div className="text-center space-y-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 mx-auto">
+                  <CheckCircle className="h-6 w-6 text-green-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">{t("verificationCodeSent")}</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    <span className="font-medium">{email}</span>
+                  </p>
+                </div>
+              </div>
+
+              <form onSubmit={handleVerificationSubmit} className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="verification-code" className="text-sm font-medium text-gray-700">
+                    {t("verificationCode")}
+                  </Label>
+                  <Input
+                    id="verification-code"
+                    name="verification-code"
+                    placeholder={t("verificationCodePlaceholder") || "Enter 6-digit code"}
+                    type="text"
+                    value={verificationCode}
+                    onChange={(e) => setVerificationCode(e.target.value)}
+                    autoCapitalize="none"
+                    autoComplete="one-time-code"
+                    autoCorrect="off"
+                    disabled={isLoading}
+                    className="h-12 text-center text-lg tracking-widest border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg"
+                    required
+                  />
+                  <Button
+                    type="button"
+                    variant="link"
+                    className="px-0 text-sm font-normal text-blue-600 hover:text-blue-700"
+                    onClick={async () => {
+                      setIsLoading(true)
+                      try {
+                        await sendVerificationCode(email, true)
+                        setIsLoading(false)
+                      } catch (error) {
+                        setError(t("unexpectedError"))
+                        setIsLoading(false)
+                      }
+                    }}
+                    disabled={isLoading}
+                  >
+                    {t("resendCode")}
+                  </Button>
+                </div>
+                {error && (
+                  <div className="text-sm font-medium text-red-600 bg-red-50 p-3 rounded-lg border border-red-200">
+                    {error}
+                  </div>
+                )}
+                <Button
+                  disabled={isLoading}
+                  type="submit"
+                  className="w-full h-12 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
+                >
+                  {isLoading ? (
+                    <div className="flex items-center space-x-2">
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <span>{t("processing")}</span>
+                    </div>
+                  ) : (
+                    t("signIn")
+                  )}
+                </Button>
+              </form>
+            </div>
           )}
-          <div className="text-center text-sm">
-            <span className="text-muted-foreground">{t("noAccount")}</span>{" "}
-            <Link href={`/${locale}/auth/register`} className="text-primary hover:underline font-medium">
+          <div className="text-center text-sm space-y-2">
+            <p className="text-gray-600">{t("noAccount")}</p>
+            <Link
+              href={`/${locale}/auth/register`}
+              className="inline-flex items-center text-blue-600 hover:text-blue-700 font-medium hover:underline transition-colors"
+            >
               {t("register")}
             </Link>
           </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   )
 }
