@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl"
 import Link from "next/link"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,10 +14,12 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { LogOut, Settings, UserIcon } from "lucide-react"
+import { logout } from "@/lib/auth/actions"
 
 export function UserNav({ user }) {
   const t = useTranslations("UserNav")
   const params = useParams()
+  const router = useRouter()
   const locale = params.locale
 
   if (!user) {
@@ -36,6 +38,12 @@ export function UserNav({ user }) {
         .map((n) => n[0])
         .join("")
     : user.email?.substring(0, 2).toUpperCase()
+
+  const handleLogout = async () => {
+    await logout()
+    router.push(`/${locale}`)
+    router.refresh()
+  }
 
   return (
     <DropdownMenu>
@@ -69,15 +77,10 @@ export function UserNav({ user }) {
           </Link>
         )}
         <DropdownMenuSeparator />
-        <form action="/api/auth/signout" method="post">
-          <input type="hidden" name="callbackUrl" value="/" />
-          <DropdownMenuItem asChild>
-            <button className="w-full flex cursor-pointer items-center">
-              <LogOut className="mr-2 h-4 w-4" />
-              <span>{t("logout")}</span>
-            </button>
-          </DropdownMenuItem>
-        </form>
+        <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
+          <LogOut className="mr-2 h-4 w-4" />
+          <span>{t("logout")}</span>
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   )
