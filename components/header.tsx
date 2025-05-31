@@ -12,7 +12,7 @@ import { UserNav } from "@/components/user-nav"
 import { useState } from "react"
 import { MobileNav } from "@/components/mobile-nav"
 
-export default function Header({ user }) {
+export function Header({ user }) {
   const t = useTranslations("Header")
   const pathname = usePathname()
   const params = useParams()
