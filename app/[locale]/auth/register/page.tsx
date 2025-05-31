@@ -7,8 +7,8 @@ import { AlertCircle } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 
-export default async function RegisterPage() {
-  const t = await getTranslations("Auth")
+export default async function RegisterPage({ params: { locale } }: { params: { locale: string } }) {
+  const t = await getTranslations({ locale, namespace: "Auth" })
   const registrationEnabled = await isRegistrationEnabled()
 
   if (!registrationEnabled) {
@@ -27,7 +27,7 @@ export default async function RegisterPage() {
               </div>
               <div className="flex justify-center">
                 <Button asChild>
-                  <Link href="/">{t("backToLogin")}</Link>
+                  <Link href={`/${locale}`}>{t("backToLogin")}</Link>
                 </Button>
               </div>
             </CardContent>
