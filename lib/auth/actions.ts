@@ -7,6 +7,10 @@ import { sendPasswordResetEmail as sendPasswordResetEmailLib } from "@/lib/email
 import { createVerificationToken } from "@/lib/auth/token"
 import { sendVerificationEmail as sendVerificationEmailLib } from "@/lib/email/send-email"
 import { hashPassword } from "@/lib/auth/utils"
+import { generateVerificationCode, saveVerificationCode, verifyCode } from "./verification-code"
+import { sendVerificationCode as sendEmailVerificationCode } from "@/lib/email/send-email"
+import { getLocale } from "@/lib/get-locale"
+import { verifyPassword } from "@/lib/auth/utils" // Import verifyPassword
 
 export async function logout() {
   cookies().delete("session_id")
@@ -156,6 +160,116 @@ export async function resetPassword(token: string, password: string) {
     return { success: true }
   } catch (error) {
     console.error("Error in resetPassword:", error)
+    return { success: false, message: "An unexpected error occurred" }
+  }
+}
+
+// Send verification code for login or registration
+export async function sendVerificationCode(email: string, isLogin = false) {
+  if (!email) {
+    return { success: false, message: "Email is required" }
+  }
+
+  try {
+    const supabase = createClient()
+    const locale = getLocale()
+
+    // For login, check if the user exists
+    if (isLogin) {
+      const { data: user, error: userError } = await supabase
+        .from("users")
+        .select("id")
+        .eq("email", email.toLowerCase())
+        .maybeSingle()
+
+      if (userError) {
+        console.error("Error checking user:", userError)
+        return { success: false, message: "An error occurred" }
+      }
+
+      if (!user) {
+        return { success: false, message: "User not found" }
+      }
+    }
+
+    // Generate and save verification code
+    const code = generateVerificationCode()
+    const type = isLogin ? "login" : "registration"
+    const saved = await saveVerificationCode(email.toLowerCase(), code, type)
+
+    if (!saved) {
+      return { success: false, message: "Failed to save verification code" }
+    }
+
+    // Send verification code via email
+    const sent = await sendEmailVerificationCode(email, code, locale, isLogin)
+
+    if (!sent) {
+      return { success: false, message: "Failed to send verification code" }
+    }
+
+    return { success: true }
+  } catch (error) {
+    console.error("Error sending verification code:", error)
+    return { success: false, message: "An unexpected error occurred" }
+  }
+}
+
+// Verify login code and create session
+export async function verifyLoginCode(email: string, code: string) {
+  if (!email || !code) {
+    return { success: false, message: "Email and verification code are required" }
+  }
+
+  try {
+    // Verify the code
+    const verification = await verifyCode(email.toLowerCase(), code, "login")
+
+    if (!verification.valid) {
+      return { success: false, message: verification.message || "Invalid verification code" }
+    }
+
+    const supabase = createClient()
+
+    // Get user by email
+    const { data: userData, error: userError } = await supabase
+      .from("users")
+      .select("id, role")
+      .eq("email", email.toLowerCase())
+      .maybeSingle()
+
+    if (userError || !userData) {
+      return { success: false, message: "User not found" }
+    }
+
+    // Generate session
+    const { data: session, error: sessionError } = await supabase
+      .from("sessions")
+      .insert([
+        {
+          user_id: userData.id,
+          expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
+        },
+      ])
+      .select("id")
+      .single()
+
+    if (sessionError) {
+      console.error("Error creating session:", sessionError)
+      return { success: false, message: "Failed to create session" }
+    }
+
+    // Set session cookie
+    cookies().set("session_id", session.id, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 30 * 24 * 60 * 60, // 30 days
+      path: "/",
+    })
+
+    return { success: true, role: userData.role }
+  } catch (error) {
+    console.error("Error verifying login code:", error)
     return { success: false, message: "An unexpected error occurred" }
   }
 }
