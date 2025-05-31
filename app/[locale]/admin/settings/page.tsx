@@ -1,10 +1,8 @@
 import { getTranslations } from "next-intl/server"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import type { Metadata } from "next"
+import { RegistrationToggle } from "@/components/admin/registration-toggle"
 
 export async function generateMetadata({
   params: { locale },
@@ -28,6 +26,7 @@ export default async function SettingsPage() {
       <Tabs defaultValue="general">
         <TabsList>
           <TabsTrigger value="general">General</TabsTrigger>
+          <TabsTrigger value="security">Security</TabsTrigger>
           <TabsTrigger value="appearance">Appearance</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
           <TabsTrigger value="advanced">Advanced</TabsTrigger>
@@ -40,19 +39,19 @@ export default async function SettingsPage() {
               <CardDescription>Configure general application settings</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid gap-2">
-                <Label htmlFor="site-name">Site Name</Label>
-                <Input id="site-name" defaultValue="DeviceHelp" />
-              </div>
+              <p>General settings will be available soon.</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-              <div className="grid gap-2">
-                <Label htmlFor="site-url">Site URL</Label>
-                <Input id="site-url" defaultValue="https://devicehelp.cz" />
-              </div>
-
-              <div className="flex justify-end">
-                <Button>Save Changes</Button>
-              </div>
+        <TabsContent value="security" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Security Settings</CardTitle>
+              <CardDescription>Configure security and access settings</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <RegistrationToggle />
             </CardContent>
           </Card>
         </TabsContent>

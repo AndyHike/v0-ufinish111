@@ -344,7 +344,10 @@
     "verificationCodePlaceholder": "Zadejte 6místný kód",
     "backToEmail": "Zpět na e-mail",
     "continue": "Pokračovat",
-    "verificationCode": "Ověřovací kód"
+    "verificationCode": "Ověřovací kód",
+    "registrationDisabled": "Registrace je zakázána",
+    "registrationDisabledDescription": "Registrace nových uživatelů je momentálně zakázána",
+    "registrationTemporarilyDisabled": "Registrace je dočasně zakázána. Zkuste to prosím později nebo kontaktujte podporu."
   },
   "Admin": {
     "adminPanel": "Administrátorský panel",

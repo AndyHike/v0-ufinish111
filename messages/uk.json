@@ -372,7 +372,10 @@
     "verificationCodePlaceholder": "Введіть 6-значний код",
     "backToEmail": "Назад до електронної пошти",
     "continue": "Продовжити",
-    "verificationCode": "Код підтвердження"
+    "verificationCode": "Код підтвердження",
+    "registrationDisabled": "Реєстрацію вимкнено",
+    "registrationDisabledDescription": "Реєстрація нових користувачів наразі вимкнена",
+    "registrationTemporarilyDisabled": "Реєстрацію тимчасово вимкнено. Будь ласка, спробуйте пізніше або зверніться до служби підтримки."
   },
   "Admin": {
     "adminPanel": "Панель адміністратора",
@@ -753,7 +756,7 @@
   },
   "Profile": {
     "userProfile": "Профіль користувача",
-    "manageProfileAndOrders": "Керуйте своїм профілем та замовленнями",
+    "manageProfileAndOrders": "Керуйте своїм профілем та замовлень",
     "profile": "Профіль",
     "repairHistory": {
       "title": "Історія ремонтів",

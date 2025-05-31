@@ -274,7 +274,10 @@
     "verificationCodePlaceholder": "Enter 6-digit code",
     "backToEmail": "Back to Email",
     "continue": "Continue",
-    "verificationCode": "Verification Code"
+    "verificationCode": "Verification Code",
+    "registrationDisabled": "Registration Disabled",
+    "registrationDisabledDescription": "New user registration is currently disabled",
+    "registrationTemporarilyDisabled": "Registration is temporarily disabled. Please try again later or contact support for assistance."
   },
   "Admin": {
     "adminPanel": "Admin Panel",
