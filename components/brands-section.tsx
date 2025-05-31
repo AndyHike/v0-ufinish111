@@ -98,78 +98,106 @@ export function BrandsSection() {
             ))}
           </div>
         ) : brands.length > 0 ? (
-          <div className="relative max-w-4xl mx-auto">
-            {/* Custom navigation arrows positioned outside the content */}
-            {brands.length > 3 && (
-              <button
-                onClick={() => document.getElementById("brands-scroll")?.scrollBy(-200, 0)}
-                className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 bg-white rounded-full p-2 shadow-md z-10 hidden md:flex"
-                aria-label="Previous brands"
-              >
-                <ChevronLeft className="h-5 w-5" />
-              </button>
-            )}
-
-            <div id="brands-scroll" className="scrollbar-hide">
-              <div
-                className={`flex gap-4 md:gap-6 pb-4 scrollbar-hide ${shouldCenterBrands ? "justify-center" : ""} ${
-                  brands.length > 3 ? "overflow-x-auto snap-x md:snap-none" : ""
-                }`}
-                style={{
-                  scrollBehavior: "smooth",
-                  // Mobile-specific: ensure proper padding for edge visibility
-                  paddingLeft: brands.length > 3 ? "1rem" : "0",
-                  paddingRight: brands.length > 3 ? "1rem" : "0",
-                }}
-              >
-                {brands.map((brand) => (
-                  <div
-                    key={brand.id}
-                    className={`flex-none snap-start ${
-                      brands.length > 3
-                        ? "w-[160px] md:w-[200px]" // Smaller width on mobile for better fit
-                        : "w-[200px]"
-                    }`}
-                  >
-                    <Link href={`/brands/${brand.id}`}>
-                      <Card className="border-none shadow-sm hover:shadow-md transition-shadow duration-300 h-28 md:h-32">
-                        <CardContent className="p-4 md:p-6 flex flex-col items-center justify-center h-full">
-                          {brand.logo_url ? (
-                            <div className="relative h-12 md:h-16 w-full">
-                              <Image
-                                src={brand.logo_url || "/placeholder.svg"}
-                                alt={brand.name}
-                                width={120}
-                                height={80}
-                                className="object-contain mx-auto"
-                                style={{ maxHeight: "100%", width: "auto" }}
-                              />
-                            </div>
-                          ) : (
-                            <div className="text-base md:text-lg font-medium">{brand.name}</div>
-                          )}
-                          <span className="mt-2 text-xs md:text-sm text-center line-clamp-2">{brand.name}</span>
-                        </CardContent>
-                      </Card>
-                    </Link>
-                  </div>
-                ))}
-
-                {/* Mobile: Add extra spacing at the end to ensure last item is fully visible */}
-                {brands.length > 3 && <div className="flex-none w-4 md:hidden" aria-hidden="true" />}
+          <>
+            {/* Mobile Layout */}
+            <div className="md:hidden">
+              <div className="overflow-x-auto scrollbar-hide">
+                <div
+                  className="flex gap-4 pb-4"
+                  style={{
+                    paddingLeft: "1rem",
+                    paddingRight: "1rem",
+                    minWidth: "fit-content",
+                  }}
+                >
+                  {brands.map((brand) => (
+                    <div key={brand.id} className="flex-none w-[140px]">
+                      <Link href={`/brands/${brand.id}`}>
+                        <Card className="border-none shadow-sm hover:shadow-md transition-shadow duration-300 h-28">
+                          <CardContent className="p-3 flex flex-col items-center justify-center h-full">
+                            {brand.logo_url ? (
+                              <div className="relative h-12 w-full">
+                                <Image
+                                  src={brand.logo_url || "/placeholder.svg"}
+                                  alt={brand.name}
+                                  width={100}
+                                  height={60}
+                                  className="object-contain mx-auto"
+                                  style={{ maxHeight: "100%", width: "auto" }}
+                                />
+                              </div>
+                            ) : (
+                              <div className="text-sm font-medium text-center">{brand.name}</div>
+                            )}
+                            <span className="mt-1 text-xs text-center line-clamp-2 leading-tight">{brand.name}</span>
+                          </CardContent>
+                        </Card>
+                      </Link>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
 
-            {brands.length > 3 && (
-              <button
-                onClick={() => document.getElementById("brands-scroll")?.scrollBy(200, 0)}
-                className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 bg-white rounded-full p-2 shadow-md z-10 hidden md:flex"
-                aria-label="Next brands"
-              >
-                <ChevronRight className="h-5 w-5" />
-              </button>
-            )}
-          </div>
+            {/* Desktop Layout */}
+            <div className="hidden md:block relative max-w-4xl mx-auto">
+              {/* Custom navigation arrows positioned outside the content */}
+              {brands.length > 3 && (
+                <button
+                  onClick={() => document.getElementById("brands-scroll")?.scrollBy(-200, 0)}
+                  className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 bg-white rounded-full p-2 shadow-md z-10"
+                  aria-label="Previous brands"
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
+              )}
+
+              <div id="brands-scroll" className="scrollbar-hide">
+                <div
+                  className={`flex overflow-x-auto gap-6 pb-4 snap-x scrollbar-hide ${
+                    shouldCenterBrands ? "justify-center" : ""
+                  }`}
+                  style={{ scrollBehavior: "smooth" }}
+                >
+                  {brands.map((brand) => (
+                    <div key={brand.id} className="flex-none w-[200px] snap-start">
+                      <Link href={`/brands/${brand.id}`}>
+                        <Card className="border-none shadow-sm hover:shadow-md transition-shadow duration-300 h-32">
+                          <CardContent className="p-6 flex flex-col items-center justify-center h-full">
+                            {brand.logo_url ? (
+                              <div className="relative h-16 w-full">
+                                <Image
+                                  src={brand.logo_url || "/placeholder.svg"}
+                                  alt={brand.name}
+                                  width={120}
+                                  height={80}
+                                  className="object-contain mx-auto"
+                                  style={{ maxHeight: "100%", width: "auto" }}
+                                />
+                              </div>
+                            ) : (
+                              <div className="text-lg font-medium">{brand.name}</div>
+                            )}
+                            <span className="mt-2 text-sm text-center">{brand.name}</span>
+                          </CardContent>
+                        </Card>
+                      </Link>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {brands.length > 3 && (
+                <button
+                  onClick={() => document.getElementById("brands-scroll")?.scrollBy(200, 0)}
+                  className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 bg-white rounded-full p-2 shadow-md z-10"
+                  aria-label="Next brands"
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </button>
+              )}
+            </div>
+          </>
         ) : (
           <p className="text-center text-gray-500">{t("noBrands")}</p>
         )}
