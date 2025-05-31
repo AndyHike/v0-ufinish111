@@ -5,7 +5,7 @@ import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
 import { Card } from "@/components/ui/card"
-import { AlertCircle, CheckCircle } from "lucide-react"
+import { AlertCircle, CheckCircle, Loader2 } from "lucide-react"
 
 export function RegistrationToggle() {
   const [isEnabled, setIsEnabled] = useState<boolean>(true)
@@ -17,9 +17,18 @@ export function RegistrationToggle() {
   useEffect(() => {
     const fetchSetting = async () => {
       try {
-        const response = await fetch("/api/admin/settings")
+        const response = await fetch("/api/admin/settings", {
+          method: "GET",
+          credentials: "include", // Include cookies for authentication
+        })
+
+        if (response.status === 401) {
+          setError("You don't have permission to access this setting")
+          return
+        }
+
         if (!response.ok) {
-          throw new Error("Failed to fetch settings")
+          throw new Error(`HTTP error! status: ${response.status}`)
         }
 
         const data = await response.json()
@@ -49,14 +58,25 @@ export function RegistrationToggle() {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include", // Include cookies for authentication
         body: JSON.stringify({
           key: "registration_enabled",
           value: checked.toString(),
         }),
       })
 
+      if (response.status === 401) {
+        setError("You don't have permission to modify this setting")
+        toast({
+          title: "Unauthorized",
+          description: "You don't have permission to modify this setting",
+          variant: "destructive",
+        })
+        return
+      }
+
       if (!response.ok) {
-        throw new Error("Failed to update setting")
+        throw new Error(`HTTP error! status: ${response.status}`)
       }
 
       setIsEnabled(checked)
@@ -79,6 +99,20 @@ export function RegistrationToggle() {
     }
   }
 
+  if (isLoading && !error) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between space-x-2">
+          <div>
+            <Label className="text-base font-medium">User Registration</Label>
+            <p className="text-sm text-muted-foreground">Enable or disable new user registration on the site</p>
+          </div>
+          <Loader2 className="h-4 w-4 animate-spin" />
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between space-x-2">
@@ -92,7 +126,7 @@ export function RegistrationToggle() {
           id="registration-toggle"
           checked={isEnabled}
           onCheckedChange={handleToggleChange}
-          disabled={isLoading}
+          disabled={isLoading || !!error}
           aria-label="Toggle user registration"
         />
       </div>
@@ -104,19 +138,21 @@ export function RegistrationToggle() {
         </Card>
       )}
 
-      <Card className={`p-3 text-sm flex items-center gap-2 ${isEnabled ? "bg-green-50" : "bg-amber-50"}`}>
-        {isEnabled ? (
-          <>
-            <CheckCircle className="h-4 w-4 text-green-600" />
-            <span className="text-green-700">User registration is currently enabled</span>
-          </>
-        ) : (
-          <>
-            <AlertCircle className="h-4 w-4 text-amber-600" />
-            <span className="text-amber-700">User registration is currently disabled</span>
-          </>
-        )}
-      </Card>
+      {!error && (
+        <Card className={`p-3 text-sm flex items-center gap-2 ${isEnabled ? "bg-green-50" : "bg-amber-50"}`}>
+          {isEnabled ? (
+            <>
+              <CheckCircle className="h-4 w-4 text-green-600" />
+              <span className="text-green-700">User registration is currently enabled</span>
+            </>
+          ) : (
+            <>
+              <AlertCircle className="h-4 w-4 text-amber-600" />
+              <span className="text-amber-700">User registration is currently disabled</span>
+            </>
+          )}
+        </Card>
+      )}
     </div>
   )
 }

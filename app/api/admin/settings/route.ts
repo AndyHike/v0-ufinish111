@@ -1,15 +1,14 @@
 import { createClient } from "@/lib/supabase"
 import { type NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/app/api/auth/[...nextauth]/route"
+import { getCurrentUser } from "@/lib/auth/session"
 
 // GET endpoint to retrieve all app settings
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const user = await getCurrentUser()
 
     // Check if user is authenticated and is an admin
-    if (!session || session.user.role !== "admin") {
+    if (!user || user.role !== "admin") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
@@ -31,10 +30,10 @@ export async function GET(request: NextRequest) {
 // POST endpoint to update a specific app setting
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const user = await getCurrentUser()
 
     // Check if user is authenticated and is an admin
-    if (!session || session.user.role !== "admin") {
+    if (!user || user.role !== "admin") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
