@@ -11,6 +11,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import Link from "next/link"
 import { sendVerificationCode, verifyLoginCode } from "@/lib/auth/actions"
+import { Loader2 } from "lucide-react"
+import { Card } from "@/components/ui/card"
 
 export default function SignInForm() {
   const t = useTranslations("Auth")
@@ -77,33 +79,45 @@ export default function SignInForm() {
   return (
     <div className="grid gap-6">
       {step === "email" ? (
-        <form onSubmit={handleEmailSubmit}>
-          <div className="grid gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="email">{t("email")}</Label>
-              <Input
-                id="email"
-                name="email"
-                placeholder={t("emailPlaceholder")}
-                type="email"
-                autoCapitalize="none"
-                autoComplete="email"
-                autoCorrect="off"
-                disabled={isLoading}
-                required
-              />
-            </div>
-            {error && <p className="text-sm text-red-500">{error}</p>}
-            <Button disabled={isLoading} type="submit" className="w-full">
-              {isLoading ? t("processing") : t("continue")}
-            </Button>
+        <form onSubmit={handleEmailSubmit} className="space-y-4">
+          <div className="grid gap-2">
+            <Label htmlFor="email" className="text-sm font-medium">
+              {t("email")}
+            </Label>
+            <Input
+              id="email"
+              name="email"
+              placeholder={t("emailPlaceholder")}
+              type="email"
+              autoCapitalize="none"
+              autoComplete="email"
+              autoCorrect="off"
+              disabled={isLoading}
+              className="border border-input rounded-md px-3 py-2"
+              required
+            />
           </div>
+          {error && (
+            <div className="text-sm font-medium text-destructive bg-destructive/10 p-2 rounded-md">{error}</div>
+          )}
+          <Button disabled={isLoading} type="submit" className="w-full font-medium">
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {t("processing")}
+              </>
+            ) : (
+              t("continue")
+            )}
+          </Button>
         </form>
       ) : (
-        <form onSubmit={handleVerificationSubmit}>
-          <div className="grid gap-4">
+        <Card className="border border-border p-4">
+          <form onSubmit={handleVerificationSubmit} className="space-y-4">
             <div className="grid gap-2">
-              <Label htmlFor="verification-code">{t("verificationCode")}</Label>
+              <Label htmlFor="verification-code" className="text-sm font-medium">
+                {t("verificationCode")}
+              </Label>
               <Input
                 id="verification-code"
                 name="verification-code"
@@ -115,10 +129,11 @@ export default function SignInForm() {
                 autoComplete="one-time-code"
                 autoCorrect="off"
                 disabled={isLoading}
+                className="border border-input rounded-md px-3 py-2 text-center text-lg tracking-widest"
                 required
               />
               <p className="text-sm text-muted-foreground">
-                {t("verificationCodeSent")} {email}
+                {t("verificationCodeSent")} <span className="font-medium">{email}</span>
               </p>
               <Button
                 type="button"
@@ -139,25 +154,34 @@ export default function SignInForm() {
                 {t("resendCode")}
               </Button>
             </div>
-            {error && <p className="text-sm text-red-500">{error}</p>}
-            <Button disabled={isLoading} type="submit" className="w-full">
-              {isLoading ? t("processing") : t("signIn")}
+            {error && (
+              <div className="text-sm font-medium text-destructive bg-destructive/10 p-2 rounded-md">{error}</div>
+            )}
+            <Button disabled={isLoading} type="submit" className="w-full font-medium">
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {t("processing")}
+                </>
+              ) : (
+                t("signIn")
+              )}
             </Button>
             <Button
               type="button"
               variant="outline"
               onClick={() => setStep("email")}
               disabled={isLoading}
-              className="w-full"
+              className="w-full font-medium"
             >
               {t("backToEmail")}
             </Button>
-          </div>
-        </form>
+          </form>
+        </Card>
       )}
       <div className="text-center text-sm">
         <span className="text-muted-foreground">{t("noAccount")}</span>{" "}
-        <Link href={`/${locale}/auth/register`} className="text-primary hover:underline">
+        <Link href={`/${locale}/auth/register`} className="text-primary hover:underline font-medium">
           {t("register")}
         </Link>
       </div>
