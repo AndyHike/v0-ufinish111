@@ -5,7 +5,7 @@ import { usePathname, useParams } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { Menu, Smartphone, Search, Phone, Mail, MapPin, Home, Info, MessageSquare } from "lucide-react"
+import { Menu, Smartphone, Search, Phone, Mail, MapPin, Home, MessageSquare } from "lucide-react"
 import { LanguageSwitcher } from "@/components/language-switcher"
 import { SearchDialog } from "@/components/search-dialog"
 import { UserNav } from "@/components/user-nav"
@@ -22,7 +22,6 @@ export function Header({ user }) {
   const navigation = [
     { name: t("home"), href: `/${locale}`, icon: <Home className="h-5 w-5" /> },
     { name: t("chooseModel"), href: `/${locale}/brands`, icon: <Smartphone className="h-5 w-5" /> },
-    { name: t("about"), href: `/${locale}/about`, icon: <Info className="h-5 w-5" /> },
     { name: t("contact"), href: `/${locale}/contact`, icon: <MessageSquare className="h-5 w-5" /> },
   ]
 
