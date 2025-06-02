@@ -23,7 +23,7 @@ export default function AboutPage() {
         <div className="flex items-center justify-center">
           <div className="relative h-[300px] w-full overflow-hidden rounded-lg">
             <img
-              src="/tech-fix-storefront.png"
+              src="/about-us-pic.jpg"
               alt={t("ourShop")}
               width={600}
               height={300}
