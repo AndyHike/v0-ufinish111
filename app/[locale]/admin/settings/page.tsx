@@ -3,6 +3,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import type { Metadata } from "next"
 import { RegistrationToggle } from "@/components/admin/registration-toggle"
+import { LanguageSelector } from "@/components/admin/language-selector"
+import { LogoUpload } from "@/components/admin/logo-upload"
+import { FaviconUpload } from "@/components/admin/favicon-upload"
 
 export async function generateMetadata({
   params: { locale },
@@ -35,11 +38,17 @@ export default async function SettingsPage() {
         <TabsContent value="general" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>General Settings</CardTitle>
-              <CardDescription>Configure general application settings</CardDescription>
+              <CardTitle>Site Configuration</CardTitle>
+              <CardDescription>Configure basic site settings and appearance</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <p>General settings will be available soon.</p>
+            <CardContent className="space-y-6">
+              <LanguageSelector />
+              <div className="border-t pt-6">
+                <LogoUpload />
+              </div>
+              <div className="border-t pt-6">
+                <FaviconUpload />
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
