@@ -13,25 +13,13 @@ import { useState } from "react"
 import { MobileNav } from "@/components/mobile-nav"
 import { useSiteSettings } from "@/hooks/use-site-settings"
 
-interface HeaderProps {
-  user: any
-  initialSettings?: {
-    defaultLanguage: string
-    siteLogo: string
-    siteFavicon: string
-  }
-}
-
-export function Header({ user, initialSettings }: HeaderProps) {
+export function Header({ user }) {
   const t = useTranslations("Header")
   const pathname = usePathname()
   const params = useParams()
   const locale = params.locale as string
   const [isSearchOpen, setIsSearchOpen] = useState(false)
-
-  // Використовуємо initialSettings як початкові дані
   const { settings, loading } = useSiteSettings()
-  const currentSettings = initialSettings || settings
 
   const navigation = [
     { name: t("home"), href: `/${locale}`, icon: <Home className="h-5 w-5" /> },
@@ -49,33 +37,39 @@ export function Header({ user, initialSettings }: HeaderProps) {
 
   // Функція для відображення логотипу
   const renderLogo = () => {
-    if (currentSettings.siteLogo) {
+    if (loading || !settings.siteLogo) {
       return (
         <div className="flex items-center gap-2">
-          <img
-            src={currentSettings.siteLogo || "/placeholder.svg"}
-            alt="DeviceHelp"
-            className="h-8 w-8 object-contain"
-            onError={(e) => {
-              const target = e.target as HTMLImageElement
-              target.style.display = "none"
-              const parent = target.parentElement
-              if (parent) {
-                const fallback = document.createElement("div")
-                fallback.innerHTML = `<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>`
-                parent.insertBefore(fallback, target)
-              }
-            }}
-          />
-          <span className="hidden font-semibold md:inline-block">DeviceHelp</span>
+          <Smartphone className="h-5 w-5" />
+          <span className="font-semibold">DeviceHelp</span>
         </div>
       )
     }
 
     return (
       <div className="flex items-center gap-2">
-        <Smartphone className="h-5 w-5" />
-        <span className="font-semibold">DeviceHelp</span>
+        <img
+          src={settings.siteLogo || "/placeholder.svg"}
+          alt="DeviceHelp"
+          className="h-8 w-8 object-contain"
+          onError={(e) => {
+            // При помилці ховаємо зображення і показуємо fallback
+            const target = e.target as HTMLImageElement
+            target.style.display = "none"
+            const parent = target.parentElement
+            if (parent) {
+              parent.innerHTML = `
+                <div class="flex items-center gap-2">
+                  <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                  </svg>
+                  <span class="font-semibold">DeviceHelp</span>
+                </div>
+              `
+            }
+          }}
+        />
+        <span className="hidden font-semibold md:inline-block">DeviceHelp</span>
       </div>
     )
   }
@@ -95,9 +89,9 @@ export function Header({ user, initialSettings }: HeaderProps) {
               <SheetContent side="left" className="w-[280px] sm:w-[320px]">
                 <div className="flex h-full flex-col">
                   <div className="flex items-center gap-2 border-b py-4">
-                    {currentSettings.siteLogo ? (
+                    {!loading && settings.siteLogo ? (
                       <img
-                        src={currentSettings.siteLogo || "/placeholder.svg"}
+                        src={settings.siteLogo || "/placeholder.svg"}
                         alt="DeviceHelp"
                         className="h-8 w-8 object-contain"
                         onError={(e) => {

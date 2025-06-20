@@ -1,12 +1,10 @@
 import type React from "react"
 import { NextIntlClientProvider } from "next-intl"
-import { getMessages } from "next-intl/server"
+import { notFound } from "next/navigation"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
-import { InfoBanner } from "@/components/info-banner"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
-import { getSiteSettingsServer } from "@/lib/site-settings-server"
+import { getCurrentUser } from "@/lib/auth/session"
+import { getMessages } from "@/lib/get-messages"
 
 export default async function LocaleLayout({
   children,
@@ -15,15 +13,20 @@ export default async function LocaleLayout({
   children: React.ReactNode
   params: { locale: string }
 }) {
-  const messages = await getMessages()
-  const session = await getServerSession(authOptions)
-  const initialSettings = await getSiteSettingsServer()
+  let messages
+  try {
+    messages = await getMessages(locale)
+  } catch (error) {
+    console.error(`Failed to load messages for locale ${locale}:`, error)
+    notFound()
+  }
+
+  const user = await getCurrentUser()
 
   return (
-    <NextIntlClientProvider messages={messages}>
-      <div className="min-h-screen flex flex-col">
-        <InfoBanner />
-        <Header user={session?.user} initialSettings={initialSettings} />
+    <NextIntlClientProvider locale={locale} messages={messages}>
+      <div className="flex min-h-screen flex-col">
+        <Header user={user} />
         <main className="flex-1">{children}</main>
         <Footer />
       </div>
