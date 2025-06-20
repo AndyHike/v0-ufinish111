@@ -11,6 +11,7 @@ import { SearchDialog } from "@/components/search-dialog"
 import { UserNav } from "@/components/user-nav"
 import { useState } from "react"
 import { MobileNav } from "@/components/mobile-nav"
+import { useSiteSettings } from "@/hooks/use-site-settings"
 
 export function Header({ user }) {
   const t = useTranslations("Header")
@@ -18,6 +19,7 @@ export function Header({ user }) {
   const params = useParams()
   const locale = params.locale as string
   const [isSearchOpen, setIsSearchOpen] = useState(false)
+  const { settings } = useSiteSettings()
 
   const navigation = [
     { name: t("home"), href: `/${locale}`, icon: <Home className="h-5 w-5" /> },
@@ -48,7 +50,15 @@ export function Header({ user }) {
               <SheetContent side="left" className="w-[280px] sm:w-[320px]">
                 <div className="flex h-full flex-col">
                   <div className="flex items-center gap-2 border-b py-4">
-                    <Smartphone className="h-5 w-5" />
+                    {settings.siteLogo.endsWith(".svg") ? (
+                      <img src={settings.siteLogo || "/placeholder.svg"} alt="DeviceHelp" className="h-5 w-5" />
+                    ) : (
+                      <img
+                        src={settings.siteLogo || "/placeholder.svg"}
+                        alt="DeviceHelp"
+                        className="h-8 w-8 object-contain"
+                      />
+                    )}
                     <span className="font-semibold">DeviceHelp</span>
                   </div>
                   <nav className="flex-1 overflow-auto py-4">
@@ -88,7 +98,15 @@ export function Header({ user }) {
               </SheetContent>
             </Sheet>
             <Link href={`/${locale}`} className="flex items-center gap-2">
-              <Smartphone className="h-5 w-5" />
+              {settings.siteLogo.endsWith(".svg") ? (
+                <img src={settings.siteLogo || "/placeholder.svg"} alt="DeviceHelp" className="h-5 w-5" />
+              ) : (
+                <img
+                  src={settings.siteLogo || "/placeholder.svg"}
+                  alt="DeviceHelp"
+                  className="h-8 w-8 object-contain"
+                />
+              )}
               <span className="hidden font-semibold md:inline-block">DeviceHelp</span>
             </Link>
           </div>

@@ -10,19 +10,35 @@ const intlMiddleware = createMiddleware({
   localePrefix: "always",
 })
 
+async function getDefaultLanguage(): Promise<string> {
+  try {
+    const supabase = createClient()
+    const { data, error } = await supabase.from("app_settings").select("value").eq("key", "default_language").single()
+
+    if (error || !data) {
+      return "uk" // fallback
+    }
+
+    return data.value || "uk"
+  } catch (error) {
+    console.error("Error fetching default language:", error)
+    return "uk" // fallback
+  }
+}
+
 export default async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
 
   // Add exceptions for API routes and webhooks
-  // This will prevent redirects for webhook requests
   if (pathname.startsWith("/api/") || pathname.includes("/webhooks/") || pathname.startsWith("/app/api/")) {
     return NextResponse.next()
   }
 
   // Special handling for root path
   if (pathname === "/") {
-    // Redirect to the default locale
-    return NextResponse.redirect(new URL(`/uk`, request.url))
+    // Get default language from database
+    const defaultLanguage = await getDefaultLanguage()
+    return NextResponse.redirect(new URL(`/${defaultLanguage}`, request.url))
   }
 
   // Handle internationalization
@@ -43,12 +59,7 @@ export default async function middleware(request: NextRequest) {
     }
 
     // Verify that the session exists in the database and is valid
-    // This is important to catch cases where a user was deleted but still has a cookie
     try {
-      // We can't use server actions in middleware, so we need to check the session directly
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY!
-
       const supabase = createClient()
 
       const { data: session, error } = await supabase
@@ -70,7 +81,6 @@ export default async function middleware(request: NextRequest) {
       }
     } catch (error) {
       console.error("Error verifying session in middleware:", error)
-      // On error, we'll let the request through and let the page handle authentication
     }
   }
 
@@ -78,11 +88,5 @@ export default async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // Update matcher to exclude API routes and webhooks
-  matcher: [
-    // Include all paths that don't start with api, _next, webhooks, or have a file extension
-    "/((?!api|_next|webhooks|.*\\..*).*)",
-    // Include root path
-    "/",
-  ],
+  matcher: ["/((?!api|_next|webhooks|.*\\..*).*)", "/"],
 }
