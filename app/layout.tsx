@@ -10,8 +10,13 @@ const inter = Inter({ subsets: ["latin", "cyrillic"] })
 
 export const metadata: Metadata = {
   title: "DeviceHelp",
-  description: "Професійний ремонт мобільних телефонів",
-    generator: 'v0.dev'
+  description: "Profesionální oprava mobilních telefonů",
+  generator: "v0.dev",
+  icons: {
+    icon: "/logo.PNG",
+    shortcut: "/logo.PNG",
+    apple: "/logo.PNG",
+  },
 }
 
 export default function RootLayout({
@@ -20,7 +25,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
+    <html lang="cs">
       <body className={inter.className}>
         <NextAuthProvider>
           <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
