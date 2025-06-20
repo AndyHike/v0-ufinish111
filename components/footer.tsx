@@ -10,7 +10,7 @@ export function Footer() {
   const t = useTranslations("Footer")
   const params = useParams()
   const locale = params.locale as string
-  const { settings, loading } = useSiteSettings()
+  const { settings } = useSiteSettings()
 
   return (
     <footer className="bg-gray-50 border-t border-gray-200">
