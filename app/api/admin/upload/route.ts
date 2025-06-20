@@ -1,17 +1,25 @@
 import { NextResponse } from "next/server"
-import { writeFile } from "fs/promises"
-import path from "path"
+import { createClient } from "@/lib/supabase"
+import { getSession } from "@/lib/auth/session"
 
 export async function POST(request: Request) {
   try {
-    const formData = await request.formData()
-    const file = formData.get("file") as unknown as File
-
-    if (!file) {
-      return NextResponse.json({ error: "File is required" }, { status: 400 })
+    // Check authentication
+    const session = await getSession()
+    if (!session?.user || session.user.role !== "admin") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // Add support for logo and favicon file types
+    // Get the form data
+    const formData = await request.formData()
+    const file = formData.get("file") as File
+    const uploadType = (formData.get("type") as string) || "default"
+
+    if (!file) {
+      return NextResponse.json({ error: "No file provided" }, { status: 400 })
+    }
+
+    // Define allowed types and max sizes based on upload type
     const allowedTypes = {
       logo: ["image/png", "image/jpeg", "image/jpg", "image/svg+xml"],
       favicon: ["image/x-icon", "image/vnd.microsoft.icon", "image/png", "image/svg+xml"],
@@ -24,28 +32,57 @@ export async function POST(request: Request) {
       default: 2 * 1024 * 1024, // 2MB
     }
 
-    // In the POST handler, add validation based on upload type:
-    const uploadType = (formData.get("type") as string) || "default"
     const allowedFileTypes = allowedTypes[uploadType as keyof typeof allowedTypes] || allowedTypes.default
     const maxFileSize = maxSizes[uploadType as keyof typeof maxSizes] || maxSizes.default
 
+    // Validate file type
     if (!allowedFileTypes.includes(file.type)) {
       return NextResponse.json({ error: "Invalid file type" }, { status: 400 })
     }
 
+    // Validate file size
     if (file.size > maxFileSize) {
       return NextResponse.json({ error: "File too large" }, { status: 400 })
     }
 
-    const buffer = Buffer.from(await file.arrayBuffer())
-    const filename = Date.now() + "-" + file.name.replaceAll(" ", "_")
-    const uploadDir = path.join(process.cwd(), "public", "uploads")
+    // Convert file to buffer
+    const arrayBuffer = await file.arrayBuffer()
+    const buffer = Buffer.from(arrayBuffer)
 
-    await writeFile(`${uploadDir}/${filename}`, buffer)
+    // Generate a unique filename
+    const timestamp = Date.now()
+    const fileExtension = file.name.split(".").pop()
+    const fileName = `${uploadType}/${timestamp}-${Math.random().toString(36).substring(2, 15)}.${fileExtension}`
 
-    return NextResponse.json({ data: { filename } })
+    // Upload to Supabase Storage
+    const supabase = createClient()
+
+    // Create the bucket if it doesn't exist
+    const bucketName = "site-assets"
+    const { data: buckets } = await supabase.storage.listBuckets()
+    if (!buckets?.find((bucket) => bucket.name === bucketName)) {
+      await supabase.storage.createBucket(bucketName, {
+        public: true,
+      })
+    }
+
+    const { data, error } = await supabase.storage.from(bucketName).upload(fileName, buffer, {
+      contentType: file.type,
+      cacheControl: "3600",
+      upsert: false,
+    })
+
+    if (error) {
+      console.error("Error uploading file:", error)
+      return NextResponse.json({ error: "Failed to upload file" }, { status: 500 })
+    }
+
+    // Get the public URL
+    const { data: publicUrl } = supabase.storage.from(bucketName).getPublicUrl(fileName)
+
+    return NextResponse.json({ url: publicUrl.publicUrl })
   } catch (error) {
-    console.error("Error uploading file:", error)
-    return NextResponse.json({ error: "Failed to upload file" }, { status: 500 })
+    console.error("Error handling file upload:", error)
+    return NextResponse.json({ error: "Failed to process file" }, { status: 500 })
   }
 }

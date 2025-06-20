@@ -1,13 +1,14 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
-import { Button } from "@/components/ui/button"
-import { useToast } from "@/hooks/use-toast"
-import { Loader2 } from "lucide-react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { toast } from "sonner"
+import { Globe, Check } from "lucide-react"
 
-const SUPPORTED_LANGUAGES = [
+const languages = [
   { code: "uk", name: "Українська", flag: "🇺🇦" },
   { code: "en", name: "English", flag: "🇺🇸" },
   { code: "cs", name: "Čeština", flag: "🇨🇿" },
@@ -16,33 +17,31 @@ const SUPPORTED_LANGUAGES = [
 export function LanguageSelector() {
   const [defaultLanguage, setDefaultLanguage] = useState<string>("uk")
   const [isLoading, setIsLoading] = useState(false)
-  const [isSaving, setIsSaving] = useState(false)
-  const { toast } = useToast()
+  const [isFetching, setIsFetching] = useState(true)
 
   useEffect(() => {
     fetchDefaultLanguage()
   }, [])
 
   const fetchDefaultLanguage = async () => {
-    setIsLoading(true)
     try {
       const response = await fetch("/api/admin/settings")
       if (response.ok) {
         const data = await response.json()
-        const languageSetting = data.settings?.find((s: any) => s.key === "default_language")
-        if (languageSetting) {
-          setDefaultLanguage(languageSetting.value)
+        const langSetting = data.settings?.find((s: any) => s.key === "default_language")
+        if (langSetting) {
+          setDefaultLanguage(langSetting.value)
         }
       }
     } catch (error) {
       console.error("Error fetching default language:", error)
     } finally {
-      setIsLoading(false)
+      setIsFetching(false)
     }
   }
 
   const handleSave = async () => {
-    setIsSaving(true)
+    setIsLoading(true)
     try {
       const response = await fetch("/api/admin/settings", {
         method: "POST",
@@ -56,60 +55,71 @@ export function LanguageSelector() {
       })
 
       if (response.ok) {
-        toast({
-          title: "Success",
-          description: "Default language updated successfully",
-        })
+        toast.success("Мову за замовчуванням успішно оновлено!")
       } else {
-        throw new Error("Failed to update default language")
+        throw new Error("Failed to update language")
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update default language",
-        variant: "destructive",
-      })
+      console.error("Error updating language:", error)
+      toast.error("Помилка при оновленні мови")
     } finally {
-      setIsSaving(false)
+      setIsLoading(false)
     }
   }
 
-  if (isLoading) {
+  if (isFetching) {
     return (
-      <div className="flex items-center space-x-2">
-        <Loader2 className="h-4 w-4 animate-spin" />
-        <span>Loading...</span>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Globe className="h-5 w-5" />
+            Мова за замовчуванням
+          </CardTitle>
+          <CardDescription>Завантаження...</CardDescription>
+        </CardHeader>
+      </Card>
     )
   }
 
   return (
-    <div className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="default-language">Default Site Language</Label>
-        <Select value={defaultLanguage} onValueChange={setDefaultLanguage}>
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Select default language" />
-          </SelectTrigger>
-          <SelectContent>
-            {SUPPORTED_LANGUAGES.map((lang) => (
-              <SelectItem key={lang.code} value={lang.code}>
-                <div className="flex items-center space-x-2">
-                  <span>{lang.flag}</span>
-                  <span>{lang.name}</span>
-                </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <p className="text-sm text-muted-foreground">
-          This language will be displayed to users when they first visit the site.
-        </p>
-      </div>
-      <Button onClick={handleSave} disabled={isSaving}>
-        {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-        Save Language Setting
-      </Button>
-    </div>
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Globe className="h-5 w-5" />
+          Мова за замовчуванням
+        </CardTitle>
+        <CardDescription>Оберіть мову, яка буде відображатися для нових відвідувачів сайту</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="language-select">Мова</Label>
+          <Select value={defaultLanguage} onValueChange={setDefaultLanguage}>
+            <SelectTrigger id="language-select">
+              <SelectValue placeholder="Оберіть мову" />
+            </SelectTrigger>
+            <SelectContent>
+              {languages.map((lang) => (
+                <SelectItem key={lang.code} value={lang.code}>
+                  <div className="flex items-center gap-2">
+                    <span>{lang.flag}</span>
+                    <span>{lang.name}</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <Button onClick={handleSave} disabled={isLoading} className="w-full">
+          {isLoading ? (
+            "Збереження..."
+          ) : (
+            <>
+              <Check className="h-4 w-4 mr-2" />
+              Зберегти
+            </>
+          )}
+        </Button>
+      </CardContent>
+    </Card>
   )
 }

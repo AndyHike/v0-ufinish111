@@ -36,21 +36,13 @@ export default async function SettingsPage() {
         </TabsList>
 
         <TabsContent value="general" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Site Configuration</CardTitle>
-              <CardDescription>Configure basic site settings and appearance</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <LanguageSelector />
-              <div className="border-t pt-6">
-                <LogoUpload />
-              </div>
-              <div className="border-t pt-6">
-                <FaviconUpload />
-              </div>
-            </CardContent>
-          </Card>
+          <div className="grid gap-4 md:grid-cols-2">
+            <LanguageSelector />
+            <div className="space-y-4">
+              <LogoUpload />
+              <FaviconUpload />
+            </div>
+          </div>
         </TabsContent>
 
         <TabsContent value="security" className="space-y-4">
