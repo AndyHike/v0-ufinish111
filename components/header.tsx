@@ -19,7 +19,7 @@ export function Header({ user }) {
   const params = useParams()
   const locale = params.locale as string
   const [isSearchOpen, setIsSearchOpen] = useState(false)
-  const { settings, loading } = useSiteSettings()
+  const { settings } = useSiteSettings()
 
   const navigation = [
     { name: t("home"), href: `/${locale}`, icon: <Home className="h-5 w-5" /> },
@@ -33,26 +33,6 @@ export function Header({ user }) {
       return pathname === `/${locale}`
     }
     return pathname.startsWith(path)
-  }
-
-  // Функція для відображення логотипу
-  const renderLogo = () => {
-    return (
-      <div className="flex items-center gap-2">
-        {settings.siteLogo && (
-          <img
-            src={settings.siteLogo || "/placeholder.svg"}
-            alt="DeviceHelp"
-            className="h-8 w-8 object-contain"
-            onError={(e) => {
-              const target = e.target as HTMLImageElement
-              target.style.display = "none"
-            }}
-          />
-        )}
-        <span className="font-semibold">DeviceHelp</span>
-      </div>
-    )
   }
 
   return (
@@ -119,8 +99,19 @@ export function Header({ user }) {
                 </div>
               </SheetContent>
             </Sheet>
-            <Link href={`/${locale}`} className="flex items-center">
-              {renderLogo()}
+            <Link href={`/${locale}`} className="flex items-center gap-2">
+              {settings.siteLogo && (
+                <img
+                  src={settings.siteLogo || "/placeholder.svg"}
+                  alt="DeviceHelp"
+                  className="h-8 w-8 object-contain"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement
+                    target.style.display = "none"
+                  }}
+                />
+              )}
+              <span className="font-semibold">DeviceHelp</span>
             </Link>
           </div>
           <nav className="hidden md:flex md:gap-6">
