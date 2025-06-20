@@ -5,7 +5,6 @@ import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { getCurrentUser } from "@/lib/auth/session"
 import { getMessages } from "@/lib/get-messages"
-import { getSiteSettingsServer } from "@/lib/settings-server"
 
 export default async function LocaleLayout({
   children,
@@ -23,12 +22,11 @@ export default async function LocaleLayout({
   }
 
   const user = await getCurrentUser()
-  const initialSettings = await getSiteSettingsServer()
 
   return (
     <NextIntlClientProvider locale={locale} messages={messages}>
       <div className="flex min-h-screen flex-col">
-        <Header user={user} initialSettings={initialSettings} />
+        <Header user={user} />
         <main className="flex-1">{children}</main>
         <Footer />
       </div>
