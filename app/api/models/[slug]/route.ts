@@ -6,7 +6,7 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
     const slug = params.slug
     const supabase = createClient()
 
-    // Спочатку спробуємо знайти за с��агом
+    // Спочатку спробуємо знайти за слагом
     let { data, error } = await supabase
       .from("models")
       .select(`
