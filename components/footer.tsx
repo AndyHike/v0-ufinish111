@@ -3,7 +3,7 @@
 import { useTranslations } from "next-intl"
 import Link from "next/link"
 import { useParams } from "next/navigation"
-import { Smartphone, Mail, Phone, MapPin } from "lucide-react"
+import { Mail, Phone, MapPin } from "lucide-react"
 import { useSiteSettings } from "@/hooks/use-site-settings"
 
 export function Footer() {
@@ -18,7 +18,7 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="space-y-3">
             <div className="flex items-center gap-2">
-              {!loading && settings.siteLogo ? (
+              {settings.siteLogo && (
                 <img
                   src={settings.siteLogo || "/placeholder.svg"}
                   alt="DeviceHelp"
@@ -28,8 +28,6 @@ export function Footer() {
                     target.style.display = "none"
                   }}
                 />
-              ) : (
-                <Smartphone className="h-5 w-5" />
               )}
               <span className="font-semibold">DeviceHelp</span>
             </div>

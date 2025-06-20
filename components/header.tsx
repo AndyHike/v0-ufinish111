@@ -37,39 +37,20 @@ export function Header({ user }) {
 
   // Функція для відображення логотипу
   const renderLogo = () => {
-    if (loading || !settings.siteLogo) {
-      return (
-        <div className="flex items-center gap-2">
-          <Smartphone className="h-5 w-5" />
-          <span className="font-semibold">DeviceHelp</span>
-        </div>
-      )
-    }
-
     return (
       <div className="flex items-center gap-2">
-        <img
-          src={settings.siteLogo || "/placeholder.svg"}
-          alt="DeviceHelp"
-          className="h-8 w-8 object-contain"
-          onError={(e) => {
-            // При помилці ховаємо зображення і показуємо fallback
-            const target = e.target as HTMLImageElement
-            target.style.display = "none"
-            const parent = target.parentElement
-            if (parent) {
-              parent.innerHTML = `
-                <div class="flex items-center gap-2">
-                  <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
-                  </svg>
-                  <span class="font-semibold">DeviceHelp</span>
-                </div>
-              `
-            }
-          }}
-        />
-        <span className="hidden font-semibold md:inline-block">DeviceHelp</span>
+        {settings.siteLogo && (
+          <img
+            src={settings.siteLogo || "/placeholder.svg"}
+            alt="DeviceHelp"
+            className="h-8 w-8 object-contain"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement
+              target.style.display = "none"
+            }}
+          />
+        )}
+        <span className="font-semibold">DeviceHelp</span>
       </div>
     )
   }
@@ -89,7 +70,7 @@ export function Header({ user }) {
               <SheetContent side="left" className="w-[280px] sm:w-[320px]">
                 <div className="flex h-full flex-col">
                   <div className="flex items-center gap-2 border-b py-4">
-                    {!loading && settings.siteLogo ? (
+                    {settings.siteLogo && (
                       <img
                         src={settings.siteLogo || "/placeholder.svg"}
                         alt="DeviceHelp"
@@ -99,8 +80,6 @@ export function Header({ user }) {
                           target.style.display = "none"
                         }}
                       />
-                    ) : (
-                      <Smartphone className="h-5 w-5" />
                     )}
                     <span className="font-semibold">DeviceHelp</span>
                   </div>

@@ -8,10 +8,10 @@ interface SiteLogoProps {
 }
 
 export function SiteLogo({ className = "", size = "md" }: SiteLogoProps) {
-  const { settings, loading } = useSiteSettings()
+  const { settings } = useSiteSettings()
 
-  // Не показуємо нічого під час завантаження або якщо немає логотипу
-  if (loading || !settings.siteLogo) {
+  // Якщо немає логотипу, не показуємо нічого
+  if (!settings.siteLogo) {
     return null
   }
 
@@ -23,7 +23,6 @@ export function SiteLogo({ className = "", size = "md" }: SiteLogoProps) {
       alt="Site Logo"
       className={`object-contain ${sizeClasses} ${className}`}
       onError={(e) => {
-        // Ховаємо зображення при помилці
         const target = e.target as HTMLImageElement
         target.style.display = "none"
       }}
