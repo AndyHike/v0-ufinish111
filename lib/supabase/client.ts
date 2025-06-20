@@ -1,7 +1,10 @@
 // Клієнтський клієнт Supabase
-import { createClient } from "@supabase/supabase-js"
+import { createClient as supabaseCreateClient } from "@supabase/supabase-js"
 
-let supabaseClient: ReturnType<typeof createClient> | null = null
+// Додайте цей рядок ↓
+export { supabaseCreateClient as createClient }
+
+let supabaseClient: ReturnType<typeof supabaseCreateClient> | null = null
 
 export function getSupabaseClient() {
   if (!supabaseClient) {
@@ -12,7 +15,7 @@ export function getSupabaseClient() {
       throw new Error("Missing Supabase environment variables")
     }
 
-    supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+    supabaseClient = supabaseCreateClient(supabaseUrl, supabaseAnonKey, {
       auth: {
         persistSession: true,
         autoRefreshToken: true,

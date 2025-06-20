@@ -1,50 +1,57 @@
 "use client"
 
 import type React from "react"
-
 import { createContext, useContext } from "react"
 import { useSiteSettings } from "@/hooks/use-site-settings"
 
 /**
- * Тип налаштувань сайту. Можете розширювати за потребою.
+ * Тип налаштувань сайту
  */
 export interface SiteSettings {
-  logoUrl?: string | null
-  faviconUrl?: string | null
-  defaultLanguage?: string
-  allowRegistration?: boolean
+  defaultLanguage: string
+  siteLogo: string
+  siteFavicon: string
 }
 
 /**
- * Контекст з налаштуваннями сайту.
- * За замовчанням — null, щоб можна було відслідкувати неправильне використання.
+ * Тип контексту з додатковими властивостями
  */
-const SettingsContext = createContext<SiteSettings | null>(null)
+interface SettingsContextType {
+  settings: SiteSettings
+  loading: boolean
+  error: string | null
+  clearCache?: () => void
+}
 
 /**
- * Провайдер, який підтягує налаштування через кастомний хук
- * і передає їх у контекст.
+ * Контекст з налаштуваннями сайту
+ */
+const SettingsContext = createContext<SettingsContextType | null>(null)
+
+/**
+ * Провайдер налаштувань
  */
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
-  const settings = useSiteSettings()
+  const siteSettings = useSiteSettings()
 
-  return <SettingsContext.Provider value={settings}>{children}</SettingsContext.Provider>
+  return <SettingsContext.Provider value={siteSettings}>{children}</SettingsContext.Provider>
 }
 
 /**
- * Іменований хук, що витягує налаштування з контексту.
- * Викидає помилку, якщо використаний поза `SettingsProvider`.
+ * Хук для отримання налаштувань з контексту
+ * УВАГА: Може використовуватися тільки в клієнтських компонентах!
  */
-export function useSettings() {
-  const ctx = useContext(SettingsContext)
-  if (ctx === null) {
-    throw new Error("useSettings must be used within a SettingsProvider")
+export function useSettings(): SettingsContextType {
+  const context = useContext(SettingsContext)
+
+  if (context === null) {
+    throw new Error("useSettings must be used within a SettingsProvider and only in client components")
   }
-  return ctx
+
+  return context
 }
 
 /**
- * Дефолтний експорт залишаємо провайдер,
- * щоб можна було імпортувати `SettingsProvider` за замовчанням.
+ * Дефолтний експорт
  */
 export default SettingsProvider

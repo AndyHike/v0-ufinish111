@@ -13,13 +13,23 @@ import { useState } from "react"
 import { MobileNav } from "@/components/mobile-nav"
 import { useSiteSettings } from "@/hooks/use-site-settings"
 
-export function Header({ user }) {
+interface HeaderProps {
+  user: any
+  initialSettings?: {
+    defaultLanguage: string
+    siteLogo: string
+    siteFavicon: string
+  }
+}
+
+export function Header({ user, initialSettings }: HeaderProps) {
   const t = useTranslations("Header")
   const pathname = usePathname()
   const params = useParams()
   const locale = params.locale as string
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const { settings } = useSiteSettings()
+  const currentSettings = initialSettings || settings
 
   const navigation = [
     { name: t("home"), href: `/${locale}`, icon: <Home className="h-5 w-5" /> },
@@ -50,9 +60,9 @@ export function Header({ user }) {
               <SheetContent side="left" className="w-[280px] sm:w-[320px]">
                 <div className="flex h-full flex-col">
                   <div className="flex items-center gap-2 border-b py-4">
-                    {settings.siteLogo && (
+                    {currentSettings.siteLogo && (
                       <img
-                        src={settings.siteLogo || "/placeholder.svg"}
+                        src={currentSettings.siteLogo || "/placeholder.svg"}
                         alt="DeviceHelp"
                         className="h-8 w-8 object-contain"
                         onError={(e) => {
@@ -100,9 +110,9 @@ export function Header({ user }) {
               </SheetContent>
             </Sheet>
             <Link href={`/${locale}`} className="flex items-center gap-2">
-              {settings.siteLogo && (
+              {currentSettings.siteLogo && (
                 <img
-                  src={settings.siteLogo || "/placeholder.svg"}
+                  src={currentSettings.siteLogo || "/placeholder.svg"}
                   alt="DeviceHelp"
                   className="h-8 w-8 object-contain"
                   onError={(e) => {
