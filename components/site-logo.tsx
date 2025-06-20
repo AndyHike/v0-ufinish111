@@ -10,8 +10,9 @@ interface SiteLogoProps {
 export function SiteLogo({ className = "", size = "md" }: SiteLogoProps) {
   const { settings, loading } = useSiteSettings()
 
-  if (loading) {
-    return <div className={`bg-gray-200 animate-pulse rounded ${getSizeClasses(size)} ${className}`} />
+  // Не показуємо нічого під час завантаження або якщо немає логотипу
+  if (loading || !settings.siteLogo) {
+    return null
   }
 
   const sizeClasses = getSizeClasses(size)
@@ -21,6 +22,11 @@ export function SiteLogo({ className = "", size = "md" }: SiteLogoProps) {
       src={settings.siteLogo || "/placeholder.svg"}
       alt="Site Logo"
       className={`object-contain ${sizeClasses} ${className}`}
+      onError={(e) => {
+        // Ховаємо зображення при помилці
+        const target = e.target as HTMLImageElement
+        target.style.display = "none"
+      }}
     />
   )
 }

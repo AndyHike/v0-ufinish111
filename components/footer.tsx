@@ -4,11 +4,13 @@ import { useTranslations } from "next-intl"
 import Link from "next/link"
 import { useParams } from "next/navigation"
 import { Smartphone, Mail, Phone, MapPin } from "lucide-react"
+import { useSiteSettings } from "@/hooks/use-site-settings"
 
 export function Footer() {
   const t = useTranslations("Footer")
   const params = useParams()
   const locale = params.locale as string
+  const { settings, loading } = useSiteSettings()
 
   return (
     <footer className="bg-gray-50 border-t border-gray-200">
@@ -16,7 +18,19 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="space-y-3">
             <div className="flex items-center gap-2">
-              <Smartphone className="h-5 w-5" />
+              {!loading && settings.siteLogo ? (
+                <img
+                  src={settings.siteLogo || "/placeholder.svg"}
+                  alt="DeviceHelp"
+                  className="h-5 w-5 object-contain"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement
+                    target.style.display = "none"
+                  }}
+                />
+              ) : (
+                <Smartphone className="h-5 w-5" />
+              )}
               <span className="font-semibold">DeviceHelp</span>
             </div>
             <p className="text-sm text-gray-500">{t("tagline")}</p>
