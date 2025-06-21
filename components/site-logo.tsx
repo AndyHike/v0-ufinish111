@@ -10,21 +10,25 @@ interface SiteLogoProps {
 export function SiteLogo({ className = "", size = "md" }: SiteLogoProps) {
   const { settings } = useSiteSettings()
 
-  // Якщо немає логотипу, не показуємо нічого
-  if (!settings.siteLogo) {
-    return null
-  }
+  // Якщо немає логотипу або він не завантажується, показуємо placeholder
+  const logoSrc = settings.siteLogo || "/placeholder-logo.png"
 
   const sizeClasses = getSizeClasses(size)
 
   return (
     <img
-      src={settings.siteLogo || "/placeholder.svg"}
+      src={logoSrc || "/placeholder.svg"}
       alt="Site Logo"
       className={`object-contain ${sizeClasses} ${className}`}
       onError={(e) => {
         const target = e.target as HTMLImageElement
-        target.style.display = "none"
+        // Якщо основний логотип не завантажується, спробуємо placeholder
+        if (target.src !== "/placeholder-logo.png") {
+          target.src = "/placeholder-logo.png"
+        } else {
+          // Якщо і placeholder не завантажується, ховаємо елемент
+          target.style.display = "none"
+        }
       }}
     />
   )
