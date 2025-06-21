@@ -20,7 +20,7 @@ export function Footer() {
             <div className="flex items-center gap-2">
               {settings.siteLogo && (
                 <img
-                  src={settings.siteLogo || "/placeholder.svg"}
+                  src={settings.siteLogo}
                   alt="DeviceHelp"
                   className="h-5 w-5 object-contain"
                   onError={(e) => {
