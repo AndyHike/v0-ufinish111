@@ -1,21 +1,16 @@
 "use client"
 
 import { useTranslations } from "next-intl"
-import Link from "next/navigation"
+import Link from "next/link"
 import { useParams } from "next/navigation"
 import { Mail, Phone, MapPin } from "lucide-react"
 import { useSiteSettings } from "@/hooks/use-site-settings"
-import { useEffect } from "react"
 
 export function Footer() {
   const t = useTranslations("Footer")
   const params = useParams()
   const locale = params.locale as string
   const { settings } = useSiteSettings()
-
-  useEffect(() => {
-    console.log("Footer settings:", settings)
-  }, [settings])
 
   return (
     <footer className="bg-gray-50 border-t border-gray-200">
@@ -28,9 +23,7 @@ export function Footer() {
                   src={settings.siteLogo || "/placeholder.svg"}
                   alt="DeviceHelp"
                   className="h-5 w-5 object-contain"
-                  onLoad={() => console.log("Footer logo loaded:", settings.siteLogo)}
                   onError={(e) => {
-                    console.log("Footer logo failed:", settings.siteLogo)
                     const target = e.target as HTMLImageElement
                     target.style.display = "none"
                   }}

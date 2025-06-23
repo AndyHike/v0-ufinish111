@@ -11,7 +11,7 @@ interface SiteSettings {
 export function useSiteSettings() {
   const [settings, setSettings] = useState<SiteSettings>({
     defaultLanguage: "uk",
-    siteLogo: "/placeholder-logo.svg",
+    siteLogo: "/placeholder-logo.png",
     siteFavicon: "/favicon.ico",
   })
   const [loading, setLoading] = useState(true)
