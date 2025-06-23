@@ -27,7 +27,7 @@ export async function GET() {
 
     return NextResponse.json({
       defaultLanguage: settingsObj.default_language || "uk",
-      siteLogo: settingsObj.site_logo || "/placeholder-logo.png",
+      siteLogo: settingsObj.site_logo || "/placeholder-logo.svg",
       siteFavicon: settingsObj.site_favicon || "/favicon.ico",
     })
   } catch (error) {

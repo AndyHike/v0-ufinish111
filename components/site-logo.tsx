@@ -1,6 +1,7 @@
 "use client"
 
 import { useSiteSettings } from "@/hooks/use-site-settings"
+import { useEffect } from "react"
 
 interface SiteLogoProps {
   className?: string
@@ -10,25 +11,30 @@ interface SiteLogoProps {
 export function SiteLogo({ className = "", size = "md" }: SiteLogoProps) {
   const { settings } = useSiteSettings()
 
-  // Якщо немає логотипу або він не завантажується, показуємо placeholder
-  const logoSrc = settings.siteLogo || "/placeholder-logo.png"
+  useEffect(() => {
+    console.log("SiteLogo settings:", settings)
+  }, [settings])
+
+  // Якщо немає логотипу, не показуємо нічого
+  if (!settings.siteLogo) {
+    console.log("No siteLogo found, returning null")
+    return null
+  }
 
   const sizeClasses = getSizeClasses(size)
 
+  console.log("Rendering logo with src:", settings.siteLogo)
+
   return (
     <img
-      src={logoSrc || "/placeholder.svg"}
+      src={settings.siteLogo || "/placeholder.svg"}
       alt="Site Logo"
       className={`object-contain ${sizeClasses} ${className}`}
+      onLoad={() => console.log("Logo loaded successfully:", settings.siteLogo)}
       onError={(e) => {
+        console.log("Logo failed to load:", settings.siteLogo)
         const target = e.target as HTMLImageElement
-        // Якщо основний логотип не завантажується, спробуємо placeholder
-        if (target.src !== "/placeholder-logo.png") {
-          target.src = "/placeholder-logo.png"
-        } else {
-          // Якщо і placeholder не завантажується, ховаємо елемент
-          target.style.display = "none"
-        }
+        target.style.display = "none"
       }}
     />
   )
