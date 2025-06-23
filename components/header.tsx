@@ -38,8 +38,8 @@ export function Header({ user }) {
   return (
     <>
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 items-center justify-between">
-          <div className="flex items-center gap-2 md:gap-4">
+        <div className="container flex h-16 items-center justify-between px-2 sm:px-4">
+          <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0">
             <Sheet>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="md:hidden">
@@ -111,7 +111,7 @@ export function Header({ user }) {
                   }}
                 />
               )}
-              <span className="font-semibold">DeviceHelp</span>
+              <span className="font-semibold truncate">DeviceHelp</span>
             </Link>
           </div>
           <nav className="hidden md:flex md:gap-6">
@@ -127,7 +127,7 @@ export function Header({ user }) {
               </Link>
             ))}
           </nav>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
             <LanguageSwitcher className="flex" />
             <Button variant="ghost" size="icon" onClick={() => setIsSearchOpen(true)} aria-label={t("search")}>
               <Search className="h-5 w-5" />
