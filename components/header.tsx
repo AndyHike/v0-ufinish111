@@ -9,7 +9,7 @@ import { Menu, Smartphone, Search, Phone, Mail, MapPin, Home, MessageSquare } fr
 import { LanguageSwitcher } from "@/components/language-switcher"
 import { SearchDialog } from "@/components/search-dialog"
 import { UserNav } from "@/components/user-nav"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { MobileNav } from "@/components/mobile-nav"
 import { useSiteSettings } from "@/hooks/use-site-settings"
 
@@ -20,10 +20,6 @@ export function Header({ user }) {
   const locale = params.locale as string
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const { settings } = useSiteSettings()
-
-  useEffect(() => {
-    console.log("Header settings:", settings)
-  }, [settings])
 
   const navigation = [
     { name: t("home"), href: `/${locale}`, icon: <Home className="h-5 w-5" /> },
@@ -59,9 +55,7 @@ export function Header({ user }) {
                         src={settings.siteLogo || "/placeholder.svg"}
                         alt="DeviceHelp"
                         className="h-8 w-8 object-contain"
-                        onLoad={() => console.log("Mobile menu logo loaded:", settings.siteLogo)}
                         onError={(e) => {
-                          console.log("Mobile menu logo failed:", settings.siteLogo)
                           const target = e.target as HTMLImageElement
                           target.style.display = "none"
                         }}
@@ -111,9 +105,7 @@ export function Header({ user }) {
                   src={settings.siteLogo || "/placeholder.svg"}
                   alt="DeviceHelp"
                   className="h-8 w-8 object-contain"
-                  onLoad={() => console.log("Header logo loaded:", settings.siteLogo)}
                   onError={(e) => {
-                    console.log("Header logo failed:", settings.siteLogo)
                     const target = e.target as HTMLImageElement
                     target.style.display = "none"
                   }}
