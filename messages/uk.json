@@ -366,7 +366,7 @@
     "sentToEmail": "Код надіслано на вашу електронну пошту",
     "noEmailForVerification": "Не знайдено електронної пошти для перевірки",
     "registrationSuccessful": "Реєстрація успішна!",
-    "accountCreatedSuccessfully": "Ваш обліковий запис успішно створено. В�� вже увійшли в систему.",
+    "accountCreatedSuccessfully": "Ваш обліковий запис успішно створено. Ви вже увійшли в систему.",
     "goToHomePage": "Перейти на головну сторінку",
     "signInDescription": "Увійдіть до свого облікового запису для доступу до профілю та замовлень.",
     "verificationCodePlaceholder": "Введіть 6-значний код",
