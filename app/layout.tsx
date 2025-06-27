@@ -9,10 +9,23 @@ import { DynamicFavicon } from "@/components/dynamic-favicon"
 
 const inter = Inter({ subsets: ["latin", "cyrillic"] })
 
-export const metadata: Metadata = {
-  title: "DeviceHelp",
-  description: "Професійний ремонт мобільних телефонів",
-  generator: "v0.dev",
+export async function generateMetadata(): Promise<Metadata> {
+  const baseUrl = "https://devicehelp.cz";
+
+  return {
+    title: "DeviceHelp - Profesionální oprava mobilních telefonů v Praze",
+    description: "Rychlá a kvalitní oprava mobilních telefonů v Praze. Výměna displeje, baterie a další. Záruka na všechny opravy.",
+    metadataBase: new URL(baseUrl),
+    alternates: {
+      canonical: `${baseUrl}/cs`,
+      languages: {
+        'cs': `${baseUrl}/cs`,
+        'en': `${baseUrl}/en`,
+        'uk': `${baseUrl}/uk`,
+        'x-default': `${baseUrl}/cs`,
+      },
+    },
+  };
 }
 
 export default function RootLayout({
@@ -34,3 +47,7 @@ export default function RootLayout({
     </html>
   )
 }
+
+export const metadata = {
+      generator: 'v0.dev'
+    };
