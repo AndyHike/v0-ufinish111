@@ -2,9 +2,16 @@ import type { Metadata } from "next"
 import { getTranslations } from "next-intl/server"
 import { UsersManagement } from "@/components/admin/users-management"
 
-export const metadata: Metadata = {
-  title: "User Management",
-  description: "Manage users in your system",
+export async function generateMetadata({
+  params: { locale },
+}: {
+  params: { locale: string }
+}): Promise<Metadata> {
+  const t = await getTranslations({ locale, namespace: "Admin" })
+  return {
+    title: t("users") || "User Management",
+    description: t("usersManagementDescription") || "Manage users in your system",
+  }
 }
 
 export default async function UsersPage() {
