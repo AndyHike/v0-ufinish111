@@ -1,13 +1,11 @@
 import type React from "react"
 import type { Metadata } from "next"
 import { NextIntlClientProvider } from "next-intl"
-import { getMessages } from "next-intl/server"
 import { notFound } from "next/navigation"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
-import { InfoBanner } from "@/components/info-banner"
-import { DynamicFavicon } from "@/components/dynamic-favicon"
-import { Toaster } from "@/components/ui/sonner"
+import { getCurrentUser } from "@/lib/auth/session"
+import { getMessages } from "@/lib/get-messages"
 
 export async function generateMetadata({
   params: { locale },
@@ -50,8 +48,6 @@ export async function generateMetadata({
   }
 }
 
-const locales = ["cs", "en", "uk"]
-
 export default async function LocaleLayout({
   children,
   params: { locale },
@@ -59,29 +55,23 @@ export default async function LocaleLayout({
   children: React.ReactNode
   params: { locale: string }
 }) {
-  // Validate that the incoming `locale` parameter is valid
-  if (!locales.includes(locale as any)) notFound()
+  let messages
+  try {
+    messages = await getMessages(locale)
+  } catch (error) {
+    console.error(`Failed to load messages for locale ${locale}:`, error)
+    notFound()
+  }
 
-  // Providing all messages to the client
-  // side is the easiest way to get started
-  const messages = await getMessages()
+  const user = await getCurrentUser()
 
   return (
-    <html lang={locale}>
-      <head>
-        <DynamicFavicon />
-      </head>
-      <body>
-        <NextIntlClientProvider messages={messages}>
-          <div className="flex min-h-screen flex-col">
-            <InfoBanner />
-            <Header />
-            <main className="flex-1">{children}</main>
-            <Footer />
-          </div>
-          <Toaster />
-        </NextIntlClientProvider>
-      </body>
-    </html>
+    <NextIntlClientProvider locale={locale} messages={messages}>
+      <div className="flex min-h-screen flex-col">
+        <Header user={user} />
+        <main className="flex-1">{children}</main>
+        <Footer />
+      </div>
+    </NextIntlClientProvider>
   )
 }
