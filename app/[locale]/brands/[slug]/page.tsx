@@ -5,6 +5,7 @@ import { notFound } from "next/navigation"
 import { createServerClient } from "@/utils/supabase/server"
 import { ChevronRight, Smartphone } from "lucide-react"
 import { formatImageUrl } from "@/utils/image-url"
+import { locales } from "@/i18n"
 
 type Props = {
   params: {
@@ -16,15 +17,11 @@ type Props = {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug, locale } = params
   const t = await getTranslations({ locale, namespace: "Brands" })
-
   const supabase = createServerClient()
 
-  // Спочатку спробуємо знайти за слагом
-  let { data: brand } = await supabase.from("brands").select("*").eq("slug", slug).single()
-
-  // Якщо не знайдено за слагом, спробуємо знайти за ID
+  let { data: brand } = await supabase.from("brands").select("id, slug, name").eq("slug", slug).single()
   if (!brand) {
-    const { data } = await supabase.from("brands").select("*").eq("id", slug).single()
+    const { data } = await supabase.from("brands").select("id, slug, name").eq("id", slug).single()
     brand = data
   }
 
@@ -35,9 +32,21 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     }
   }
 
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://devicehelp.cz"
+  const path = `/brands/${brand.slug || brand.id}`
+
+  const languages: { [key: string]: string } = {}
+  locales.forEach((lang) => {
+    languages[lang] = `${baseUrl}/${lang}${path}`
+  })
+
   return {
     title: `${brand.name} - ${t("repairServices")}`,
     description: t("brandPageDescription", { brand: brand.name }),
+    alternates: {
+      canonical: `${baseUrl}/${locale}${path}`,
+      languages: languages,
+    },
   }
 }
 

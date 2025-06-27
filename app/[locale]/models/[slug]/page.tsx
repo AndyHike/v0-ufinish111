@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { ChevronLeft } from "lucide-react"
 import { formatCurrency } from "@/lib/format-currency"
 import { formatImageUrl } from "@/utils/image-url"
+import { locales } from "@/i18n"
 
 type Props = {
   params: {
@@ -18,13 +19,9 @@ type Props = {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug, locale } = params
   const t = await getTranslations({ locale, namespace: "Models" })
-
   const supabase = createServerClient()
 
-  // Спочатку спробуємо знайти за слагом
   let { data: model } = await supabase.from("models").select("*, brands(name)").eq("slug", slug).single()
-
-  // Якщо не знайдено за слагом, спробуємо знайти за ID
   if (!model) {
     const { data } = await supabase.from("models").select("*, brands(name)").eq("id", slug).single()
     model = data
@@ -37,9 +34,21 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     }
   }
 
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://devicehelp.cz"
+  const path = `/models/${model.slug || model.id}`
+
+  const languages: { [key: string]: string } = {}
+  locales.forEach((lang) => {
+    languages[lang] = `${baseUrl}/${lang}${path}`
+  })
+
   return {
     title: `${model.name} - ${t("repairServices")}`,
     description: t("modelPageDescription", { model: model.name, brand: model.brands?.name }),
+    alternates: {
+      canonical: `${baseUrl}/${locale}${path}`,
+      languages: languages,
+    },
   }
 }
 
@@ -82,7 +91,8 @@ export default async function ModelPage({ params }: Props) {
   console.log(`[ModelPage] Fetching model services for model ID: ${model.id}, locale: ${locale}`)
   const { data: modelServices, error: modelServicesError } = await supabase
     .from("model_services")
-    .select(`
+    .select(
+      `
       id, 
       price, 
       model_id, 
@@ -96,7 +106,8 @@ export default async function ModelPage({ params }: Props) {
           locale
         )
       )
-    `)
+    `,
+    )
     .eq("model_id", model.id)
     .order("services(position)", { ascending: true })
 
@@ -199,7 +210,9 @@ export default async function ModelPage({ params }: Props) {
                 <div className="mt-4 flex justify-end">
                   <Button variant="outline" asChild>
                     <Link
-                      href={`/${locale}/contact?service=${encodeURIComponent(modelService.service.name)}&model=${encodeURIComponent(model.name)}`}
+                      href={`/${locale}/contact?service=${encodeURIComponent(
+                        modelService.service.name,
+                      )}&model=${encodeURIComponent(model.name)}`}
                     >
                       {commonT("requestService")}
                     </Link>
