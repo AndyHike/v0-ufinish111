@@ -9,12 +9,15 @@ export async function getBrands() {
     // First try to get brands ordered by position
     let { data, error } = await supabase
       .from("brands")
-      .select("*")
+      .select("*, series(id, name, position, slug)")
       .order("position", { ascending: true, nullsLast: true })
 
     // If there's an error or no brands with position, try fetching without ordering
     if (error || !data || data.length === 0) {
-      const { data: fallbackData, error: fallbackError } = await supabase.from("brands").select("*").order("name")
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .from("brands")
+        .select("*, series(id, name, position, slug)")
+        .order("name")
 
       if (fallbackError) throw fallbackError
       data = fallbackData
