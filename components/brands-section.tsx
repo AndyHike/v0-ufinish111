@@ -1,66 +1,35 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { useTranslations, useLocale } from "next-intl"
-import Image from "next/image"
+import { useState, useEffect } from "react"
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Skeleton } from "@/components/ui/skeleton"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { useLocale, useTranslations } from "next-intl"
+import { Smartphone } from "lucide-react"
+import { formatImageUrl } from "@/utils/image-url"
 
-// Оновимо тип Brand, щоб включити серії
-type Brand = {
+interface Brand {
   id: string
   name: string
+  slug: string | null
   logo_url: string | null
-  position: number | null
-  series:
-    | {
-        id: string
-        name: string
-        position: number
-      }[]
-    | null
+  position: number
 }
 
 export function BrandsSection() {
-  const t = useTranslations("BrandsSection")
-  const locale = useLocale()
   const [brands, setBrands] = useState<Brand[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const locale = useLocale()
+  const t = useTranslations("Home")
 
   useEffect(() => {
-    const fetchBrands = async () => {
+    async function fetchBrands() {
       try {
-        setLoading(true)
         const response = await fetch("/api/brands")
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch brands: ${response.status}`)
+        if (response.ok) {
+          const data = await response.json()
+          setBrands(data)
         }
-
-        const data = await response.json()
-        console.log("Fetched brands:", data)
-
-        // Sort brands by position first, then by name
-        const sortedBrands = [...data].sort((a, b) => {
-          // If both have position, sort by position
-          if (a.position !== null && b.position !== null) {
-            return (a.position || 0) - (b.position || 0)
-          }
-          // If only one has position, prioritize the one with position
-          if (a.position !== null) return -1
-          if (b.position !== null) return 1
-          // If neither has position, sort by name
-          return a.name.localeCompare(b.name)
-        })
-
-        setBrands(sortedBrands)
-      } catch (err) {
-        console.error("Error fetching brands:", err)
-        setError("Failed to load brands")
+      } catch (error) {
+        console.error("Error fetching brands:", error)
       } finally {
         setLoading(false)
       }
@@ -69,143 +38,56 @@ export function BrandsSection() {
     fetchBrands()
   }, [])
 
-  if (error) {
+  if (loading) {
     return (
-      <div className="py-12 text-center">
-        <h2 className="text-2xl font-bold mb-4">{t("title")}</h2>
-        <p className="text-red-500">{error}</p>
-      </div>
+      <section className="py-16 bg-gray-50">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl font-bold text-center mb-12">{t("supportedBrands")}</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
+            {Array.from({ length: 12 }).map((_, i) => (
+              <div key={i} className="bg-white rounded-lg p-6 shadow-sm animate-pulse">
+                <div className="w-16 h-16 bg-gray-200 rounded-lg mx-auto mb-4"></div>
+                <div className="h-4 bg-gray-200 rounded mx-auto w-3/4"></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
     )
   }
 
-  // Determine if we should center the brands (when there are few)
-  const shouldCenterBrands = brands.length <= 3
-
   return (
-    <section className="py-12 bg-gray-50">
-      <div className="container px-4 mx-auto">
-        <h2 className="text-3xl font-bold text-center mb-8">{t("title")}</h2>
-        <p className="text-center text-gray-600 mb-10 max-w-2xl mx-auto">{t("description")}</p>
-
-        {loading ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {[...Array(4)].map((_, i) => (
-              <Card key={i} className="border-none shadow-sm">
-                <CardContent className="p-6 flex items-center justify-center">
-                  <Skeleton className="h-16 w-full" />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : brands.length > 0 ? (
-          <>
-            {/* Mobile Layout */}
-            <div className="md:hidden">
-              <div className="overflow-x-auto scrollbar-hide">
-                <div
-                  className="flex gap-4 pb-4"
-                  style={{
-                    paddingLeft: "1rem",
-                    paddingRight: "1rem",
-                    minWidth: "fit-content",
-                  }}
-                >
-                  {brands.map((brand) => (
-                    <div key={brand.id} className="flex-none w-[140px]">
-                      <Link href={`/brands/${brand.id}`}>
-                        <Card className="border-none shadow-sm hover:shadow-md transition-shadow duration-300 h-28">
-                          <CardContent className="p-3 flex flex-col items-center justify-center h-full">
-                            {brand.logo_url ? (
-                              <div className="relative h-12 w-full">
-                                <Image
-                                  src={brand.logo_url || "/placeholder.svg"}
-                                  alt={brand.name}
-                                  width={100}
-                                  height={60}
-                                  className="object-contain mx-auto"
-                                  style={{ maxHeight: "100%", width: "auto" }}
-                                />
-                              </div>
-                            ) : (
-                              <div className="text-sm font-medium text-center">{brand.name}</div>
-                            )}
-                            <span className="mt-1 text-xs text-center line-clamp-2 leading-tight">{brand.name}</span>
-                          </CardContent>
-                        </Card>
-                      </Link>
-                    </div>
-                  ))}
+    <section className="py-16 bg-gray-50">
+      <div className="container mx-auto px-4">
+        <h2 className="text-3xl font-bold text-center mb-12">{t("supportedBrands")}</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
+          {brands.map((brand) => (
+            <Link
+              key={brand.id}
+              href={`/${locale}/brands/${brand.slug || brand.id}`}
+              className="bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow group"
+            >
+              <div className="flex flex-col items-center">
+                <div className="w-16 h-16 mb-4 flex items-center justify-center bg-gray-50 rounded-lg p-2">
+                  {brand.logo_url ? (
+                    <img
+                      src={formatImageUrl(brand.logo_url) || "/placeholder.svg"}
+                      alt={brand.name}
+                      width={64}
+                      height={64}
+                      className="w-full h-full object-contain"
+                      style={{ display: "block" }}
+                    />
+                  ) : (
+                    <Smartphone className="w-8 h-8 text-gray-400" />
+                  )}
                 </div>
+                <h3 className="text-sm font-medium text-center group-hover:text-primary transition-colors">
+                  {brand.name}
+                </h3>
               </div>
-            </div>
-
-            {/* Desktop Layout */}
-            <div className="hidden md:block relative max-w-4xl mx-auto">
-              {/* Custom navigation arrows positioned outside the content */}
-              {brands.length > 3 && (
-                <button
-                  onClick={() => document.getElementById("brands-scroll")?.scrollBy(-200, 0)}
-                  className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 bg-white rounded-full p-2 shadow-md z-10"
-                  aria-label="Previous brands"
-                >
-                  <ChevronLeft className="h-5 w-5" />
-                </button>
-              )}
-
-              <div id="brands-scroll" className="scrollbar-hide">
-                <div
-                  className={`flex overflow-x-auto gap-6 pb-4 snap-x scrollbar-hide ${
-                    shouldCenterBrands ? "justify-center" : ""
-                  }`}
-                  style={{ scrollBehavior: "smooth" }}
-                >
-                  {brands.map((brand) => (
-                    <div key={brand.id} className="flex-none w-[200px] snap-start">
-                      <Link href={`/brands/${brand.id}`}>
-                        <Card className="border-none shadow-sm hover:shadow-md transition-shadow duration-300 h-32">
-                          <CardContent className="p-6 flex flex-col items-center justify-center h-full">
-                            {brand.logo_url ? (
-                              <div className="relative h-16 w-full">
-                                <Image
-                                  src={brand.logo_url || "/placeholder.svg"}
-                                  alt={brand.name}
-                                  width={120}
-                                  height={80}
-                                  className="object-contain mx-auto"
-                                  style={{ maxHeight: "100%", width: "auto" }}
-                                />
-                              </div>
-                            ) : (
-                              <div className="text-lg font-medium">{brand.name}</div>
-                            )}
-                            <span className="mt-2 text-sm text-center">{brand.name}</span>
-                          </CardContent>
-                        </Card>
-                      </Link>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {brands.length > 3 && (
-                <button
-                  onClick={() => document.getElementById("brands-scroll")?.scrollBy(200, 0)}
-                  className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 bg-white rounded-full p-2 shadow-md z-10"
-                  aria-label="Next brands"
-                >
-                  <ChevronRight className="h-5 w-5" />
-                </button>
-              )}
-            </div>
-          </>
-        ) : (
-          <p className="text-center text-gray-500">{t("noBrands")}</p>
-        )}
-
-        <div className="text-center mt-8">
-          <Button asChild variant="outline">
-            <Link href="/brands">{t("allBrandsButton")}</Link>
-          </Button>
+            </Link>
+          ))}
         </div>
       </div>
     </section>
