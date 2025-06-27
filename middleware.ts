@@ -28,63 +28,76 @@ async function getDefaultLanguage(): Promise<string> {
 
 export default async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
+  const supportedLocales = ["uk", "cs", "en"]
 
   // Add exceptions for API routes and webhooks
   if (pathname.startsWith("/api/") || pathname.includes("/webhooks/") || pathname.startsWith("/app/api/")) {
     return NextResponse.next()
   }
 
+  // CRUCIAL CHECK: If pathname already starts with a supported locale, proceed without redirection
+  const hasLocalePrefix = supportedLocales.some(
+    (locale) => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`,
+  )
+
+  if (hasLocalePrefix) {
+    // Handle internationalization for paths that already have locale prefix
+    const response = intlMiddleware(request)
+
+    // Check for protected routes
+    if (pathname.includes("/profile") || pathname.includes("/admin")) {
+      const sessionId = request.cookies.get("session_id")?.value
+
+      if (!sessionId) {
+        // Get locale from URL
+        const locale = pathname.split("/")[1] || "uk"
+
+        // Redirect to login page
+        const redirectUrl = new URL(`/${locale}/auth/login`, request.url)
+        redirectUrl.searchParams.set("redirect", pathname)
+        return NextResponse.redirect(redirectUrl)
+      }
+
+      // Verify that the session exists in the database and is valid
+      try {
+        const supabase = createClient()
+
+        const { data: session, error } = await supabase
+          .from("sessions")
+          .select("id, user_id, expires_at")
+          .eq("id", sessionId)
+          .single()
+
+        if (error || !session || new Date(session.expires_at) < new Date()) {
+          // Session is invalid or expired, redirect to login
+          const locale = pathname.split("/")[1] || "uk"
+          const redirectUrl = new URL(`/${locale}/auth/login`, request.url)
+          redirectUrl.searchParams.set("redirect", pathname)
+
+          // Clear the invalid session cookie
+          const response = NextResponse.redirect(redirectUrl)
+          response.cookies.delete("session_id")
+          return response
+        }
+      } catch (error) {
+        console.error("Error verifying session in middleware:", error)
+      }
+    }
+
+    return response
+  }
+
+  // ONLY apply locale redirection if pathname does NOT have a locale prefix
+
   // Special handling for root path
   if (pathname === "/") {
-    // Get default language from database
     const defaultLanguage = await getDefaultLanguage()
     return NextResponse.redirect(new URL(`/${defaultLanguage}`, request.url))
   }
 
-  // Handle internationalization
-  const response = intlMiddleware(request)
-
-  // Check for protected routes
-  if (pathname.includes("/profile") || pathname.includes("/admin")) {
-    const sessionId = request.cookies.get("session_id")?.value
-
-    if (!sessionId) {
-      // Get locale from URL
-      const locale = pathname.split("/")[1] || "uk"
-
-      // Redirect to login page
-      const redirectUrl = new URL(`/${locale}/auth/login`, request.url)
-      redirectUrl.searchParams.set("redirect", pathname)
-      return NextResponse.redirect(redirectUrl)
-    }
-
-    // Verify that the session exists in the database and is valid
-    try {
-      const supabase = createClient()
-
-      const { data: session, error } = await supabase
-        .from("sessions")
-        .select("id, user_id, expires_at")
-        .eq("id", sessionId)
-        .single()
-
-      if (error || !session || new Date(session.expires_at) < new Date()) {
-        // Session is invalid or expired, redirect to login
-        const locale = pathname.split("/")[1] || "uk"
-        const redirectUrl = new URL(`/${locale}/auth/login`, request.url)
-        redirectUrl.searchParams.set("redirect", pathname)
-
-        // Clear the invalid session cookie
-        const response = NextResponse.redirect(redirectUrl)
-        response.cookies.delete("session_id")
-        return response
-      }
-    } catch (error) {
-      console.error("Error verifying session in middleware:", error)
-    }
-  }
-
-  return response
+  // For any other path without locale prefix, redirect to default locale + path
+  const defaultLanguage = await getDefaultLanguage()
+  return NextResponse.redirect(new URL(`/${defaultLanguage}${pathname}`, request.url))
 }
 
 export const config = {
