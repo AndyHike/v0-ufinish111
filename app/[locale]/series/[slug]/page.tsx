@@ -1,173 +1,129 @@
-import type { Metadata } from "next"
-import { getTranslations } from "next-intl/server"
-import Link from "next/link"
-import { notFound } from "next/navigation"
 import { createServerClient } from "@/utils/supabase/server"
-import { ArrowLeft, Smartphone } from "lucide-react"
-import { formatImageUrl } from "@/utils/image-url"
-import { locales } from "@/i18n"
+import { notFound } from "next/navigation"
+import { PageHeader } from "@/components/page-header"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import Link from "next/link"
+import type { Metadata } from "next"
 
-type Props = {
-  params: {
-    locale: string
-    slug: string
-  }
-}
+const URL = process.env.NEXT_PUBLIC_APP_URL || "https://devicehelp.cz"
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug, locale } = params
-  const t = await getTranslations({ locale, namespace: "Series" })
+export async function generateMetadata({
+  params: { slug, locale },
+}: {
+  params: { slug: string; locale: string }
+}): Promise<Metadata> {
   const supabase = createServerClient()
-
-  let { data: series } = await supabase.from("series").select("*, brands(name)").eq("slug", slug).single()
-  if (!series) {
-    const { data } = await supabase.from("series").select("*, brands(name)").eq("id", slug).single()
-    series = data
-  }
+  const { data: series } = await supabase
+    .from("series")
+    .select(`
+      *,
+      brands (name)
+    `)
+    .or(`slug.eq.${slug},id.eq.${slug}`)
+    .single()
 
   if (!series) {
     return {
-      title: t("seriesNotFound") || "Series not found",
-      description: t("seriesNotFoundDesc") || "The requested series could not be found",
+      title: "Series Not Found",
     }
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://devicehelp.cz"
-  const path = `/series/${series.slug || series.id}`
-
-  const languages: { [key: string]: string } = {}
-  locales.forEach((lang) => {
-    languages[lang] = `${baseUrl}/${lang}${path}`
-  })
+  const title = `${series.name} - ${series.brands?.name} - DeviceHelp.cz`
+  const description = `Professional repair services for ${series.name} series devices from ${series.brands?.name}. Fast and quality repair with warranty.`
 
   return {
-    title: `${series.name} - ${series.brands?.name}`,
-    description:
-      t("seriesPageDescription", { series: series.name, brand: series.brands?.name }) ||
-      `Browse all ${series.name} models from ${series.brands?.name}`,
+    title,
+    description,
     alternates: {
-      canonical: `${baseUrl}/${locale}${path}`,
-      languages: languages,
+      canonical: `${URL}/${locale}/series/${slug}`,
+      languages: {
+        en: `${URL}/en/series/${slug}`,
+        cs: `${URL}/cs/series/${slug}`,
+        uk: `${URL}/uk/series/${slug}`,
+      },
+    },
+    openGraph: {
+      title,
+      description,
+      url: `${URL}/${locale}/series/${slug}`,
     },
   }
 }
 
-export default async function SeriesPage({ params }: Props) {
-  const { slug, locale } = params
-  const t = await getTranslations({ locale, namespace: "Series" })
-  const commonT = await getTranslations({ locale, namespace: "Common" })
-
+export default async function SeriesPage({
+  params: { slug, locale },
+}: {
+  params: { slug: string; locale: string }
+}) {
   const supabase = createServerClient()
 
-  // Спочатку спробуємо знайти за слагом
-  let { data: series, error: seriesError } = await supabase
+  // Get series data with brand info
+  const { data: series, error: seriesError } = await supabase
     .from("series")
-    .select("*, brands(id, name, slug, logo_url)")
-    .eq("slug", slug)
+    .select(`
+      *,
+      brands (name, slug)
+    `)
+    .or(`slug.eq.${slug},id.eq.${slug}`)
     .single()
 
-  // Якщо не знайдено за слагом, спробуємо знайти за ID
-  if (!series) {
-    const { data, error } = await supabase
-      .from("series")
-      .select("*, brands(id, name, slug, logo_url)")
-      .eq("id", slug)
-      .single()
-
-    series = data
-    seriesError = error
-  }
-
   if (seriesError || !series) {
-    console.error("[SeriesPage] Error fetching series:", seriesError)
     notFound()
   }
 
-  // Fetch models for this series
-  const { data: models, error: modelsError } = await supabase
+  // Get models for this series
+  const { data: models } = await supabase
     .from("models")
-    .select("id, name, slug, image_url, created_at")
+    .select("*")
     .eq("series_id", series.id)
-    .order("position", { ascending: true })
-
-  if (modelsError) {
-    console.error("[SeriesPage] Error fetching models:", modelsError)
-  }
+    .order("order_index", { ascending: true })
 
   return (
-    <div className="container px-4 py-12 md:px-6 md:py-24">
-      <div className="mx-auto max-w-6xl">
-        {/* Заголовок серії */}
-        <div className="mb-12 rounded-xl bg-white p-8 shadow-sm">
-          <Link
-            href={`/${locale}/brands/${series.brands?.slug || series.brand_id}`}
-            className="inline-flex items-center gap-2 rounded-md bg-slate-50 px-3 py-1 text-sm font-medium text-muted-foreground hover:text-primary"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            {t("backToBrand", { brand: series.brands?.name })}
+    <div className="container mx-auto px-4 py-8">
+      <div className="mb-6">
+        <nav className="flex items-center space-x-2 text-sm text-muted-foreground mb-4">
+          <Link href={`/${locale}/brands`} className="hover:text-foreground">
+            Brands
           </Link>
-
-          <div className="mt-6 flex flex-col items-center gap-6 md:flex-row">
-            {series.brands?.logo_url && (
-              <div className="relative h-24 w-24 overflow-hidden rounded-lg bg-slate-50 p-3">
-                <img
-                  src={formatImageUrl(series.brands.logo_url) || "/placeholder.svg"}
-                  alt={series.brands.name}
-                  width={96}
-                  height={96}
-                  className="h-full w-full object-contain"
-                  style={{ display: "block" }}
-                />
-              </div>
-            )}
-            <div>
-              <h1 className="text-center text-3xl font-bold tracking-tight md:text-left md:text-4xl">{series.name}</h1>
-              <p className="mt-3 max-w-[900px] text-center text-muted-foreground md:text-left">
-                {t("seriesPageDescription", { series: series.name, brand: series.brands?.name })}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Розділ моделей */}
-        <div>
-          <h2 className="mb-6 border-b pb-2 text-2xl font-bold">{t("availableModels")}</h2>
-
-          {models && models.length > 0 ? (
-            <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-              {models.map((model) => (
-                <Link
-                  key={model.id}
-                  href={`/${locale}/models/${model.slug || model.id}`}
-                  className="group flex flex-col items-center rounded-lg bg-white p-4 shadow-sm hover:shadow"
-                >
-                  <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-lg bg-slate-50 p-2 sm:h-24 sm:w-24">
-                    {model.image_url ? (
-                      <img
-                        src={formatImageUrl(model.image_url) || "/placeholder.svg"}
-                        alt={model.name}
-                        width={96}
-                        height={96}
-                        className="h-full w-full object-contain"
-                        style={{ display: "block" }}
-                      />
-                    ) : (
-                      <Smartphone className="h-8 w-8 text-slate-400" />
-                    )}
-                  </div>
-                  <h3 className="text-center text-base font-medium group-hover:text-primary sm:text-lg">
-                    {model.name}
-                  </h3>
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-8 text-center">
-              <p className="text-muted-foreground">{t("noModelsAvailable")}</p>
-            </div>
-          )}
-        </div>
+          <span>/</span>
+          <Link href={`/${locale}/brands/${series.brands?.slug || series.brand_id}`} className="hover:text-foreground">
+            {series.brands?.name}
+          </Link>
+          <span>/</span>
+          <span className="text-foreground">{series.name}</span>
+        </nav>
       </div>
+
+      <PageHeader
+        title={series.name}
+        description={series.description || `Professional repair services for ${series.name} series devices`}
+      />
+
+      {models && models.length > 0 ? (
+        <section>
+          <h2 className="text-2xl font-bold mb-6">Models in this Series</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {models.map((model) => (
+              <Card key={model.id} className="hover:shadow-lg transition-shadow">
+                <CardHeader>
+                  <CardTitle>{model.name}</CardTitle>
+                  {model.description && <CardDescription>{model.description}</CardDescription>}
+                </CardHeader>
+                <CardContent>
+                  <Button asChild className="w-full">
+                    <Link href={`/${locale}/models/${model.slug || model.id}`}>View Services</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </section>
+      ) : (
+        <div className="text-center py-12">
+          <p className="text-muted-foreground">No models available in this series yet.</p>
+        </div>
+      )}
     </div>
   )
 }

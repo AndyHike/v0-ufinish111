@@ -1,6 +1,6 @@
 import { createServerClient } from "@/utils/supabase/server"
-import { locales } from "@/i18n"
 
+const locales = ["en", "cs", "uk"]
 const URL = process.env.NEXT_PUBLIC_APP_URL || "https://devicehelp.cz"
 
 function generateUrlEntry(path: string, lastmod: string) {
@@ -9,18 +9,17 @@ function generateUrlEntry(path: string, lastmod: string) {
       const loc = `${URL}/${locale}${path === "/" ? "" : path}`
 
       const xhtmlLinks = locales
-        .map((l) => `<xhtml:link rel="alternate" hreflang="${l}" href="${URL}/${l}${path === "/" ? "" : path}"/>`)
-        .join("\n      ")
+        .map((l) => `    <xhtml:link rel="alternate" hreflang="${l}" href="${URL}/${l}${path === "/" ? "" : path}"/>`)
+        .join("\n")
 
-      return `
-  <url>
+      return `  <url>
     <loc>${loc}</loc>
     <lastmod>${lastmod}</lastmod>
     <xhtml:link rel="alternate" hreflang="x-default" href="${URL}/cs${path === "/" ? "" : path}"/>
-    ${xhtmlLinks}
+${xhtmlLinks}
   </url>`
     })
-    .join("")
+    .join("\n")
 
   return urlEntries
 }
@@ -33,39 +32,43 @@ export async function GET() {
 
   let sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-        xmlns:xhtml="http://www.w3.org/1999/xhtml">`
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+`
 
   // Static pages
   staticPaths.forEach((path) => {
-    sitemap += generateUrlEntry(path, today)
+    sitemap += generateUrlEntry(path, today) + "\n"
   })
 
-  // Dynamic pages: Brands
-  const { data: brands } = await supabase.from("brands").select("slug, id, updated_at")
-  brands?.forEach((brand) => {
-    const path = `/brands/${brand.slug || brand.id}`
-    const lastmod = brand.updated_at ? new Date(brand.updated_at).toISOString() : today
-    sitemap += generateUrlEntry(path, lastmod)
-  })
+  try {
+    // Dynamic pages: Brands
+    const { data: brands } = await supabase.from("brands").select("slug, id, updated_at")
+    brands?.forEach((brand) => {
+      const path = `/brands/${brand.slug || brand.id}`
+      const lastmod = brand.updated_at ? new Date(brand.updated_at).toISOString() : today
+      sitemap += generateUrlEntry(path, lastmod) + "\n"
+    })
 
-  // Dynamic pages: Series
-  const { data: seriesList } = await supabase.from("series").select("slug, id, updated_at")
-  seriesList?.forEach((series) => {
-    const path = `/series/${series.slug || series.id}`
-    const lastmod = series.updated_at ? new Date(series.updated_at).toISOString() : today
-    sitemap += generateUrlEntry(path, lastmod)
-  })
+    // Dynamic pages: Series
+    const { data: seriesList } = await supabase.from("series").select("slug, id, updated_at")
+    seriesList?.forEach((series) => {
+      const path = `/series/${series.slug || series.id}`
+      const lastmod = series.updated_at ? new Date(series.updated_at).toISOString() : today
+      sitemap += generateUrlEntry(path, lastmod) + "\n"
+    })
 
-  // Dynamic pages: Models
-  const { data: models } = await supabase.from("models").select("slug, id, updated_at")
-  models?.forEach((model) => {
-    const path = `/models/${model.slug || model.id}`
-    const lastmod = model.updated_at ? new Date(model.updated_at).toISOString() : today
-    sitemap += generateUrlEntry(path, lastmod)
-  })
+    // Dynamic pages: Models
+    const { data: models } = await supabase.from("models").select("slug, id, updated_at")
+    models?.forEach((model) => {
+      const path = `/models/${model.slug || model.id}`
+      const lastmod = model.updated_at ? new Date(model.updated_at).toISOString() : today
+      sitemap += generateUrlEntry(path, lastmod) + "\n"
+    })
+  } catch (error) {
+    console.error("Error generating sitemap:", error)
+  }
 
-  sitemap += `
-</urlset>`
+  sitemap += "</urlset>"
 
   return new Response(sitemap, {
     headers: {

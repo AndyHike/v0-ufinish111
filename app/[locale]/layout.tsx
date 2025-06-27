@@ -2,43 +2,84 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import { NextIntlClientProvider } from "next-intl"
-import { getTranslations } from "next-intl/server"
+import { getMessages } from "next-intl/server"
 import { notFound } from "next/navigation"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { getCurrentUser } from "@/lib/auth/session"
-import { getMessages } from "@/lib/get-messages"
-import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
-import { NextAuthProvider } from "@/components/providers/session-provider"
+import { ThemeProvider } from "@/components/theme-provider"
+import { SessionProvider } from "@/components/providers/session-provider"
+import { InfoBanner } from "@/components/info-banner"
+import { DevEmailNotification } from "@/components/dev-email-notification"
 import { DynamicFavicon } from "@/components/dynamic-favicon"
 import { locales } from "@/i18n"
 import "../globals.css"
 
-const inter = Inter({ subsets: ["latin", "cyrillic"] })
+const inter = Inter({ subsets: ["latin"] })
+
+const URL = process.env.NEXT_PUBLIC_APP_URL || "https://devicehelp.cz"
 
 export async function generateStaticParams() {
   return locales.map((locale) => ({ locale }))
 }
 
-export async function generateMetadata({ params: { locale } }: { params: { locale: string } }): Promise<Metadata> {
-  const t = await getTranslations({ locale, namespace: "Metadata" })
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://devicehelp.cz"
+export async function generateMetadata({
+  params: { locale },
+}: {
+  params: { locale: string }
+}): Promise<Metadata> {
+  const messages = await getMessages(locale)
+
+  const title =
+    locale === "cs"
+      ? "DeviceHelp.cz - Profesionální oprava mobilních telefonů"
+      : locale === "uk"
+        ? "DeviceHelp.cz - Професійний ремонт мобільних телефонів"
+        : "DeviceHelp.cz - Professional Mobile Phone Repair"
+
+  const description =
+    locale === "cs"
+      ? "Rychlá a kvalitní oprava mobilních telefonů s garancí. Specializujeme se na výměnu displejů, baterií a další opravy všech značek telefonů."
+      : locale === "uk"
+        ? "Швидкий та якісний ремонт мобільних телефонів з гарантією. Спеціалізуємося на заміні екранів, батарей та інших ремонтах всіх брендів телефонів."
+        : "Fast and quality mobile phone repair with warranty. We specialize in screen replacement, battery replacement and other repairs for all phone brands."
+
+  const alternates: Record<string, string> = {}
+  locales.forEach((loc) => {
+    alternates[loc] = `${URL}/${loc}`
+  })
 
   return {
-    metadataBase: new URL(baseUrl),
-    title: {
-      default: t("title"),
-      template: `%s | ${t("title")}`,
-    },
-    description: t("description"),
+    title,
+    description,
+    metadataBase: new URL(URL),
     alternates: {
-      canonical: `/${locale}`,
-      languages: {
-        "cs-CZ": "/cs",
-        "en-US": "/en",
-        "uk-UA": "/uk",
-        "x-default": "/cs",
+      canonical: `${URL}/${locale}`,
+      languages: alternates,
+    },
+    openGraph: {
+      title,
+      description,
+      url: `${URL}/${locale}`,
+      siteName: "DeviceHelp.cz",
+      locale: locale,
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    },
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-video-preview": -1,
+        "max-image-preview": "large",
+        "max-snippet": -1,
       },
     },
   }
@@ -51,47 +92,69 @@ export default async function LocaleLayout({
   children: React.ReactNode
   params: { locale: string }
 }) {
-  let messages
-  try {
-    messages = await getMessages(locale)
-  } catch (error) {
-    console.error(`Failed to load messages for locale ${locale}:`, error)
-    notFound()
-  }
+  // Validate that the incoming `locale` parameter is valid
+  if (!locales.includes(locale as any)) notFound()
+
+  // Providing all messages to the client side is the easiest way to get started
+  const messages = await getMessages(locale)
 
   const user = await getCurrentUser()
 
+  // JSON-LD Structured Data
   const organizationSchema = {
     "@context": "https://schema.org",
     "@type": "Organization",
     name: "DeviceHelp",
-    url: "https://devicehelp.cz/",
-    logo: "https://devicehelp.cz/placeholder-logo.png", // Replace with your actual logo URL
+    url: URL,
+    logo: `${URL}/placeholder-logo.png`,
+    contactPoint: {
+      "@type": "ContactPoint",
+      telephone: "+420-XXX-XXX-XXX",
+      contactType: "customer service",
+      availableLanguage: ["Czech", "English", "Ukrainian"],
+    },
+    address: {
+      "@type": "PostalAddress",
+      addressCountry: "CZ",
+      addressLocality: "Praha",
+    },
+    sameAs: [
+      // Add social media URLs here when available
+    ],
   }
 
   const websiteSchema = {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    name: "DeviceHelp",
-    url: "https://devicehelp.cz/",
+    name: "DeviceHelp.cz",
+    url: URL,
     potentialAction: {
       "@type": "SearchAction",
-      target: `${process.env.NEXT_PUBLIC_APP_URL || "https://devicehelp.cz"}/search?q={search_term_string}`,
+      target: {
+        "@type": "EntryPoint",
+        urlTemplate: `${URL}/${locale}/search?q={search_term_string}`,
+      },
       "query-input": "required name=search_term_string",
     },
   }
 
   return (
-    <html lang={locale}>
+    <html lang={locale} suppressHydrationWarning>
       <head>
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }} />
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify([organizationSchema, websiteSchema]),
+          }}
+        />
+        <DynamicFavicon />
       </head>
-      <body className={inter.className}>
-        <NextAuthProvider>
-          <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
+      <body className={inter.className} suppressHydrationWarning>
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
+          <SessionProvider>
             <NextIntlClientProvider locale={locale} messages={messages}>
-              <DynamicFavicon />
+              <InfoBanner />
+              <DevEmailNotification />
               <div className="flex min-h-screen flex-col">
                 <Header user={user} />
                 <main className="flex-1">{children}</main>
@@ -99,8 +162,8 @@ export default async function LocaleLayout({
               </div>
               <Toaster />
             </NextIntlClientProvider>
-          </ThemeProvider>
-        </NextAuthProvider>
+          </SessionProvider>
+        </ThemeProvider>
       </body>
     </html>
   )
