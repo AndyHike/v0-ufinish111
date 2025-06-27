@@ -6,10 +6,10 @@ export async function GET() {
     const supabase = createClient()
     console.log("Fetching brands from Supabase...")
 
-    // Get brands ordered by position
+    // Get brands ordered by position, включаючи slug
     const { data, error } = await supabase
       .from("brands")
-      .select("*, series(id, name, position, slug)")
+      .select("id, name, slug, logo_url, position, series(id, name, position, slug)")
       .order("position", { ascending: true, nullsLast: true })
       .order("name", { ascending: true })
 
@@ -19,6 +19,11 @@ export async function GET() {
     }
 
     console.log(`Successfully fetched ${data?.length || 0} brands`)
+    console.log(
+      "Brands with slugs:",
+      data?.map((b) => ({ name: b.name, slug: b.slug })),
+    )
+
     return NextResponse.json(data)
   } catch (error) {
     console.error("Unexpected error fetching brands:", error)

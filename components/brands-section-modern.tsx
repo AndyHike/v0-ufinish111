@@ -93,7 +93,7 @@ export function BrandsSectionModern() {
             <p className="text-gray-600 max-w-2xl">{t("description")}</p>
           </div>
           <Link href={`/${locale}/brands`} className="mt-4 md:mt-0">
-            <Button variant="outline" className="group">
+            <Button variant="outline" className="group bg-transparent">
               {t("allBrandsButton")}
               <ChevronRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Button>
