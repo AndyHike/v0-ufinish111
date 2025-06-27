@@ -15,7 +15,6 @@ type Brand = {
   name: string
   logo_url: string | null
   position: number | null
-  slug: string | null
   series:
     | {
         id: string
@@ -113,7 +112,7 @@ export function BrandsSection() {
                 >
                   {brands.map((brand) => (
                     <div key={brand.id} className="flex-none w-[140px]">
-                      <Link href={`/${locale}/brands/${brand.slug || brand.id}`}>
+                      <Link href={`/brands/${brand.id}`}>
                         <Card className="border-none shadow-sm hover:shadow-md transition-shadow duration-300 h-28">
                           <CardContent className="p-3 flex flex-col items-center justify-center h-full">
                             {brand.logo_url ? (
@@ -162,7 +161,7 @@ export function BrandsSection() {
                 >
                   {brands.map((brand) => (
                     <div key={brand.id} className="flex-none w-[200px] snap-start">
-                      <Link href={`/${locale}/brands/${brand.slug || brand.id}`}>
+                      <Link href={`/brands/${brand.id}`}>
                         <Card className="border-none shadow-sm hover:shadow-md transition-shadow duration-300 h-32">
                           <CardContent className="p-6 flex flex-col items-center justify-center h-full">
                             {brand.logo_url ? (
@@ -205,7 +204,7 @@ export function BrandsSection() {
 
         <div className="text-center mt-8">
           <Button asChild variant="outline">
-            <Link href={`/${locale}/brands`}>{t("allBrandsButton")}</Link>
+            <Link href="/brands">{t("allBrandsButton")}</Link>
           </Button>
         </div>
       </div>

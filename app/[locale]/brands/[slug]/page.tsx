@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // Спочатку спробуємо знайти за слагом
   let { data: brand } = await supabase.from("brands").select("*").eq("slug", slug).single()
 
-  // Якщо не знайдено за слагом, спробуємо знайти за ID (для зворотної сумісності)
+  // Якщо не знайдено за слагом, спробуємо знайти за ID
   if (!brand) {
     const { data } = await supabase.from("brands").select("*").eq("id", slug).single()
     brand = data
@@ -54,7 +54,7 @@ export default async function BrandPage({ params }: Props) {
     .eq("slug", slug)
     .single()
 
-  // Якщо не знайдено за слагом, спробуємо знайти за ID (для зворотної сумісності)
+  // Якщо не знайдено за слагом, спробуємо знайти за ID
   if (!brand) {
     const { data, error } = await supabase
       .from("brands")
