@@ -15,7 +15,6 @@ type Props = {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug, locale } = params
-  const t = await getTranslations({ locale, namespace: "Series" })
 
   const supabase = createServerClient()
 
@@ -29,17 +28,39 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   if (!series) {
+    const titlePatterns = {
+      cs: "Série nenalezena | DeviceHelp",
+      en: "Series not found | DeviceHelp",
+      uk: "Серію не знайдено | DeviceHelp",
+    }
+
+    const descriptionPatterns = {
+      cs: "Požadovaná série zařízení nebyla nalezena.",
+      en: "The requested device series could not be found.",
+      uk: "Запитувану серію пристроїв не вдалося знайти.",
+    }
+
     return {
-      title: t("seriesNotFound") || "Series not found",
-      description: t("seriesNotFoundDesc") || "The requested series could not be found",
+      title: titlePatterns[locale as keyof typeof titlePatterns] || titlePatterns.en,
+      description: descriptionPatterns[locale as keyof typeof descriptionPatterns] || descriptionPatterns.en,
     }
   }
 
+  const titlePatterns = {
+    cs: `Oprava zařízení ${series.name} ${series.brands?.name} | DeviceHelp`,
+    en: `Repair of ${series.name} ${series.brands?.name} devices | DeviceHelp`,
+    uk: `Ремонт пристроїв ${series.name} ${series.brands?.name} | DeviceHelp`,
+  }
+
+  const descriptionPatterns = {
+    cs: `Profesionální oprava všech modelů ${series.name} od ${series.brands?.name}. Rychlé a kvalitní služby s garancí.`,
+    en: `Professional repair of all ${series.name} models from ${series.brands?.name}. Fast and quality services with warranty.`,
+    uk: `Професійний ремонт усіх моделей ${series.name} від ${series.brands?.name}. Швидкі та якісні послуги з гарантією.`,
+  }
+
   return {
-    title: `${series.name} - ${series.brands?.name}`,
-    description:
-      t("seriesPageDescription", { series: series.name, brand: series.brands?.name }) ||
-      `Browse all ${series.name} models from ${series.brands?.name}`,
+    title: titlePatterns[locale as keyof typeof titlePatterns] || titlePatterns.en,
+    description: descriptionPatterns[locale as keyof typeof descriptionPatterns] || descriptionPatterns.en,
   }
 }
 
