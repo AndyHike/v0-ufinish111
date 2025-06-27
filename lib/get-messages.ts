@@ -1,16 +1,7 @@
 export async function getMessages(locale: string) {
   try {
     // Try to import the messages from the JSON files
-    // return (await import(`../messages/${locale}.json`)).default
-    switch (locale) {
-      case "cs":
-        return (await import("../messages/cs.json")).default
-      case "en":
-        return (await import("../messages/en.json")).default
-      case "uk":
-      default:
-        return (await import("../messages/uk.json")).default
-    }
+    return (await import(`../messages/${locale}.json`)).default
   } catch (error) {
     console.error(`Failed to load messages for locale ${locale}:`, error)
 
