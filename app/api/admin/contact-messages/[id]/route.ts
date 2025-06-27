@@ -65,7 +65,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     // Створюємо клієнта Supabase
     const supabase = createClient()
 
-    // Оновлюємо статус повідомлення
+    // Оновлюємо ст��тус повідомлення
     const { data, error } = await supabase
       .from("contact_messages")
       .update({
