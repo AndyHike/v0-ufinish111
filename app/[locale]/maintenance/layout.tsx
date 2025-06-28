@@ -1,13 +1,19 @@
-import type { ReactNode } from "react"
+import type React from "react"
+import { NextIntlClientProvider } from "next-intl"
+import { getMessages } from "@/lib/get-messages"
 
-/**
- * Layout used only for the maintenance page.
- * It intentionally renders *nothing else* – no header, footer or other wrappers.
- */
-export default function MaintenanceLayout({ children }: { children: ReactNode }) {
+export default async function MaintenanceLayout({
+  children,
+  params: { locale },
+}: {
+  children: React.ReactNode
+  params: { locale: string }
+}) {
+  const messages = await getMessages(locale)
+
   return (
-    <html lang="uk">
-      <body className="bg-white text-gray-900">{children}</body>
-    </html>
+    <NextIntlClientProvider locale={locale} messages={messages}>
+      {children}
+    </NextIntlClientProvider>
   )
 }
