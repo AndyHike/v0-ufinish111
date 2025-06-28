@@ -13,15 +13,14 @@ export function GoogleTagManager({ gtmId }: GoogleTagManagerProps) {
 
   useEffect(() => {
     if (consent.analytics && gtmId && typeof window !== "undefined") {
-      // Push consent state to dataLayer
+      // Push initial dataLayer events
       window.dataLayer = window.dataLayer || []
       window.dataLayer.push({
-        event: "consent_update",
-        analytics_consent: consent.analytics ? "granted" : "denied",
-        marketing_consent: consent.marketing ? "granted" : "denied",
+        event: "gtm.js",
+        "gtm.start": new Date().getTime(),
       })
     }
-  }, [consent.analytics, consent.marketing, gtmId])
+  }, [consent.analytics, gtmId])
 
   if (!consent.analytics || !gtmId) {
     return null
