@@ -12,7 +12,7 @@ export default function PrivacyPage() {
       </div>
 
       <div className="prose prose-sm sm:prose lg:prose-lg mx-auto">
-        {/# Politika zpracování osobních údajů
+        {`# Politika zpracování osobních údajů
 
 ## Základní shrnutí
 Tato politika vysvětluje, jakým způsobem zpracováváme Vaše osobní údaje v souvislosti s provozem webu **devicehelp.cz** a poskytováním našich služeb (opravy mobilních telefonů). Dozvíte se, jaké údaje shromažďujeme, proč je potřebujeme, komu je případně předáváme (např. našim partnerům **RemOnline**, **Vercel**, **Google Ads**, **Facebook Pixel**) a jaká máte **práva** podle GDPR. Osobní údaje chráníme v souladu s platnými právními předpisy (GDPR a české zákony) a používáme je pouze k stanoveným účelům. Web využívá soubory **cookies** pro nutné fungování stránek a s Vaším souhlasem také pro analytiku a marketing – podrobnosti o cookies najdete níže. Prosíme, pečlivě si tuto Politiku přečtěte; obsahuje důležité informace o ochraně Vašeho soukromí.
@@ -116,7 +116,7 @@ Tuto Politiku zpracování osobních údajů můžeme podle potřeby **aktualizo
 
 Pokud s touto politikou nesouhlasíte, bohužel Vám nemůžeme poskytnout naše služby, jelikož zpracování Vašich údajů (zejména pro účely objednávky) je pro to nezbytné. Odesláním online poptávky či objednávky, registrací na webu, uzavřením servisní smlouvy, nebo i předáním zařízení k opravě osobně **stvrzujete, že jste se s touto Politikou ochrany osobních údajů seznámil(a) a že s ní souhlasíte**.
 
-Tato verze Zásad ochrany osobních údajů je účinná od 28.06.2025.
+Tato verze Zásad ochrany osobních údajů je účinná od 28.06.2025.`
 }
         <p>{t("contentPlaceholder")}</p>
       </div>
