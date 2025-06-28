@@ -49,10 +49,6 @@ export function GoogleAnalytics({ gaId, consent }: GoogleAnalyticsProps) {
       page_title: document.title,
       page_location: window.location.href,
       transport_type: "beacon",
-      // Відключаємо ecommerce tracking на адмін сторінках
-      allow_enhanced_conversions: false,
-      allow_ad_personalization_signals: false,
-      custom_map: {},
     })
 
     gaInitializedRef.current = true
@@ -62,39 +58,33 @@ export function GoogleAnalytics({ gaId, consent }: GoogleAnalyticsProps) {
   const activateAnalytics = () => {
     if (typeof window === "undefined" || !window.gtag || !gaId) return
 
-    // Перевіряємо чи це адмін сторінка
-    const isAdminPage = window.location.pathname.includes("/admin")
-    const isAuthPage = window.location.pathname.includes("/auth")
-
     // Оновлюємо consent
     window.gtag("consent", "update", {
       analytics_storage: "granted",
     })
 
-    // Відправляємо page_view одразу (але без ecommerce даних для адмін сторінок)
+    // Відправляємо page_view одразу
     window.gtag("event", "page_view", {
       page_title: document.title,
       page_location: window.location.href,
       send_to: gaId,
       transport_type: "beacon",
-      // Відключаємо ecommerce для адмін/auth сторінок
-      ...(isAdminPage || isAuthPage
-        ? {
-            custom_parameter_ecommerce: false,
-            enhanced_ecommerce: false,
-          }
-        : {}),
     })
 
-    // Відправляємо подію про активацію тільки для звичайних сторінок
-    if (!isAdminPage && !isAuthPage) {
-      window.gtag("event", "analytics_activated", {
-        event_category: "consent",
-        event_label: "immediate_activation",
-        send_to: gaId,
-        transport_type: "beacon",
-      })
-    }
+    // Відправляємо подію про активацію
+    window.gtag("event", "analytics_activated", {
+      event_category: "consent",
+      event_label: "immediate_activation",
+      send_to: gaId,
+      transport_type: "beacon",
+    })
+
+    // Відправляємо додаткову подію для впевненості
+    window.gtag("event", "user_engagement", {
+      engagement_time_msec: 1000,
+      send_to: gaId,
+      transport_type: "beacon",
+    })
 
     consentProcessedRef.current = true
   }
@@ -165,7 +155,7 @@ export function GoogleAnalytics({ gaId, consent }: GoogleAnalyticsProps) {
   return null
 }
 
-// Експортуємо функції для ручного відстеження (без логування)
+// Експортуємо функції для ручного відстеження
 export const trackEvent = (action: string, category: string, label?: string, value?: number) => {
   if (typeof window !== "undefined" && window.gtag) {
     window.gtag("event", action, {

@@ -1,61 +1,91 @@
 import type React from "react"
-import { Inter } from "next/font/google"
+import type { Metadata } from "next"
 import { NextIntlClientProvider } from "next-intl"
-import { getMessages } from "next-intl/server"
-import { ThemeProvider } from "@/components/theme-provider"
-import { Toaster } from "@/components/ui/sonner"
+import { notFound } from "next/navigation"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
-import { InfoBanner } from "@/components/info-banner"
-import { CookieBanner } from "@/components/cookie-banner"
+import { getCurrentUser } from "@/lib/auth/session"
+import { getMessages } from "@/lib/get-messages"
 import { CookieConsentProvider } from "@/contexts/cookie-consent-context"
-import { SessionProvider } from "@/components/providers/session-provider"
+import { CookieBanner } from "@/components/cookie-banner"
 import { AnalyticsProvider } from "@/components/analytics/analytics-provider"
-import { ConsoleBlocker } from "@/components/console-blocker"
-import { DynamicFavicon } from "@/components/dynamic-favicon"
-import { AdminAnalyticsBlocker } from "@/components/analytics/admin-analytics-blocker"
 import { Suspense } from "react"
+import { SessionProvider } from "@/components/providers/session-provider"
 import "@/app/globals.css"
 
-const inter = Inter({ subsets: ["latin"] })
+export async function generateMetadata({
+  params: { locale },
+}: {
+  params: { locale: string }
+}): Promise<Metadata> {
+  const baseUrl = "https://devicehelp.cz"
+  const canonicalUrl = `${baseUrl}/${locale}`
 
-export default async function RootLayout({
+  const seoData = {
+    cs: {
+      title: "DeviceHelp - Profesionální oprava mobilních telefonů v Praze",
+      description: "Rychlá a kvalitní oprava mobilních telefonů v Praze. Záruka na všechny opravy.",
+    },
+    en: {
+      title: "DeviceHelp - Professional Mobile Phone Repair in Prague",
+      description: "Fast and quality mobile phone repair in Prague. Warranty on all repairs.",
+    },
+    uk: {
+      title: "DeviceHelp - DeviceHelp - Професійний ремонт мобільних телефонів у Празі",
+      description: "Швидкий та якісний ремонт мобільних телефонів у Празі. Гарантія на всі ремонти.",
+    },
+  }
+
+  const currentSeo = seoData[locale as keyof typeof seoData] || seoData.cs
+
+  return {
+    title: currentSeo.title,
+    description: currentSeo.description,
+    metadataBase: new URL(baseUrl),
+    alternates: {
+      canonical: canonicalUrl,
+      languages: {
+        cs: `${baseUrl}/cs`,
+        en: `${baseUrl}/en`,
+        uk: `${baseUrl}/uk`,
+        "x-default": `${baseUrl}/cs`,
+      },
+    },
+  }
+}
+
+export default async function LocaleLayout({
   children,
   params: { locale },
 }: {
   children: React.ReactNode
   params: { locale: string }
 }) {
-  const messages = await getMessages()
+  let messages
+  try {
+    messages = await getMessages(locale)
+  } catch (error) {
+    console.error(`Failed to load messages for locale ${locale}:`, error)
+    notFound()
+  }
+
+  const user = await getCurrentUser()
 
   return (
-    <html lang={locale} suppressHydrationWarning>
-      <head>
-        <DynamicFavicon />
-      </head>
-      <body className={inter.className}>
-        <ConsoleBlocker />
-        <AdminAnalyticsBlocker />
-        <Suspense fallback="Loading...">
-          <SessionProvider>
-            <NextIntlClientProvider messages={messages}>
-              <CookieConsentProvider>
-                <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
-                  <AnalyticsProvider />
-                  <div className="min-h-screen flex flex-col">
-                    <InfoBanner />
-                    <Header />
-                    <main className="flex-1">{children}</main>
-                    <Footer />
-                  </div>
-                  <Toaster />
-                  <CookieBanner />
-                </ThemeProvider>
-              </CookieConsentProvider>
-            </NextIntlClientProvider>
-          </SessionProvider>
-        </Suspense>
-      </body>
-    </html>
+    <NextIntlClientProvider locale={locale} messages={messages}>
+      <SessionProvider>
+        <CookieConsentProvider>
+          <div className="flex min-h-screen flex-col">
+            <Header user={user} />
+            <main className="flex-1">{children}</main>
+            <Footer />
+            <CookieBanner />
+            <Suspense fallback={null}>
+              <AnalyticsProvider />
+            </Suspense>
+          </div>
+        </CookieConsentProvider>
+      </SessionProvider>
+    </NextIntlClientProvider>
   )
 }
