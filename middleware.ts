@@ -86,30 +86,34 @@ export default async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // Check maintenance mode
+  // Check maintenance mode FIRST
   const maintenanceEnabled = await isMaintenanceModeEnabled()
 
   if (maintenanceEnabled) {
     const sessionId = request.cookies.get("session_id")?.value
-    const isAdmin = sessionId ? await isUserAdmin(sessionId) : false
+    let isAdmin = false
 
-    // Allow access to maintenance page and admin login
-    if (
-      pathname.includes("/maintenance") ||
-      (pathname.includes("/auth/login") && !isAdmin) ||
-      pathname.includes("/admin")
-    ) {
-      // Continue with normal processing
-    } else if (!isAdmin) {
-      // Redirect non-admin users to maintenance page
-      const locale = pathname.split("/")[1] || "uk"
-      if (supportedLocales.includes(locale)) {
-        return NextResponse.redirect(new URL(`/${locale}/maintenance`, request.url))
+    if (sessionId) {
+      isAdmin = await isUserAdmin(sessionId)
+    }
+
+    // If user is not admin, redirect to maintenance page (except for maintenance page itself and login)
+    if (!isAdmin) {
+      // Allow access only to maintenance page and login page
+      if (pathname.includes("/maintenance") || pathname.includes("/auth/login")) {
+        // Continue with normal processing
       } else {
-        const defaultLanguage = await getDefaultLanguage()
-        return NextResponse.redirect(new URL(`/${defaultLanguage}/maintenance`, request.url))
+        // Redirect to maintenance page
+        const locale = pathname.split("/")[1]
+        if (supportedLocales.includes(locale)) {
+          return NextResponse.redirect(new URL(`/${locale}/maintenance`, request.url))
+        } else {
+          const defaultLanguage = await getDefaultLanguage()
+          return NextResponse.redirect(new URL(`/${defaultLanguage}/maintenance`, request.url))
+        }
       }
     }
+    // If user is admin, allow access to everything (continue with normal processing)
   }
 
   // CRUCIAL CHECK: If pathname already starts with a supported locale, proceed without redirection
@@ -121,7 +125,7 @@ export default async function middleware(request: NextRequest) {
     // Handle internationalization for paths that already have locale prefix
     const response = intlMiddleware(request)
 
-    // Check for protected routes
+    // Check for protected routes (only if not in maintenance mode or user is admin)
     if (pathname.includes("/profile") || pathname.includes("/admin")) {
       const sessionId = request.cookies.get("session_id")?.value
 

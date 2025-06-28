@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
-import { Loader2, AlertTriangle } from "lucide-react"
+import { Loader2, AlertTriangle, Eye } from "lucide-react"
+import Link from "next/link"
 
 interface MaintenanceSettings {
   enabled: boolean
@@ -73,7 +74,9 @@ export function MaintenanceModeToggle() {
       if (response.ok) {
         toast({
           title: "Налаштування збережено",
-          description: "Режим технічних робіт оновлено",
+          description: settings.enabled
+            ? "Режим технічних робіт увімкнено. Сайт тепер доступний тільки адміністраторам."
+            : "Режим технічних робіт вимкнено. Сайт знову доступний для всіх користувачів.",
         })
       } else {
         throw new Error("Failed to save settings")
@@ -107,7 +110,7 @@ export function MaintenanceModeToggle() {
           Режим технічних робіт
         </CardTitle>
         <CardDescription>
-          Увімкніть режим технічних робіт, щоб обмежити доступ до сайту тільки для адміністраторів
+          Увімкніть режим технічних робіт, щоб повністю обмежити доступ до сайту. Тільки адміністратори зможуть увійти.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -123,10 +126,18 @@ export function MaintenanceModeToggle() {
         </div>
 
         {settings.enabled && (
-          <div className="space-y-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
-            <div className="flex items-center gap-2 text-orange-800">
+          <div className="space-y-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <div className="flex items-center gap-2 text-red-800">
               <AlertTriangle className="h-4 w-4" />
-              <span className="text-sm font-medium">Увага: Сайт буде доступний тільки адміністраторам</span>
+              <span className="text-sm font-medium">УВАГА: Сайт повністю недоступний для звичайних користувачів</span>
+            </div>
+            <div className="flex gap-2">
+              <Button asChild variant="outline" size="sm">
+                <Link href="/uk/maintenance" target="_blank" className="flex items-center gap-2">
+                  <Eye className="h-4 w-4" />
+                  Переглянути сторінку технічних робіт
+                </Link>
+              </Button>
             </div>
           </div>
         )}
@@ -148,7 +159,7 @@ export function MaintenanceModeToggle() {
               id="maintenance-message"
               value={settings.message}
               onChange={(e) => setSettings((prev) => ({ ...prev, message: e.target.value }))}
-              placeholder="Наразі проводяться технічні роботи..."
+              placeholder="Наразі проводяться технічні роботи. Будь ласка, спробуйте пізніше."
               rows={4}
             />
           </div>
