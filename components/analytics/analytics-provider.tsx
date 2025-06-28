@@ -24,17 +24,13 @@ export function AnalyticsProvider() {
     // Завантажуємо налаштування аналітики
     const fetchSettings = async () => {
       try {
-        console.log("Fetching analytics settings...")
         const response = await fetch("/api/admin/cookie-settings")
         if (response.ok) {
           const data = await response.json()
-          console.log("Analytics settings loaded:", data)
           setSettings(data)
-        } else {
-          console.error("Failed to fetch analytics settings, status:", response.status)
         }
       } catch (error) {
-        console.error("Error fetching analytics settings:", error)
+        // Тихо обробляємо помилку
       } finally {
         setIsLoaded(true)
       }
@@ -43,46 +39,7 @@ export function AnalyticsProvider() {
     fetchSettings()
   }, [])
 
-  // Логування стану consent
-  useEffect(() => {
-    console.log("Cookie consent state:", consent)
-    console.log("Analytics consent:", consent.analytics)
-    console.log("Marketing consent:", consent.marketing)
-
-    if (!consent.analytics) {
-      console.log("⚠️ Analytics consent is FALSE - Google Analytics will NOT load")
-      console.log("💡 Accept analytics cookies to enable Google Analytics")
-    }
-  }, [consent])
-
-  // Логування налаштувань
-  useEffect(() => {
-    if (settings) {
-      console.log("Current analytics settings:", {
-        gaId: settings.google_analytics_id,
-        gtmId: settings.google_tag_manager_id,
-        fbPixelId: settings.facebook_pixel_id,
-        analyticsConsent: consent.analytics,
-        marketingConsent: consent.marketing,
-      })
-
-      // Перевіряємо чи повинен завантажуватися GA
-      const shouldLoadGA = consent.analytics && settings.google_analytics_id
-      console.log("Should load Google Analytics:", shouldLoadGA)
-
-      if (settings.google_analytics_id && !consent.analytics) {
-        console.log("🔒 Google Analytics ID is set but consent is denied")
-      }
-    }
-  }, [settings, consent])
-
-  if (!isLoaded) {
-    console.log("Analytics provider not loaded yet")
-    return null
-  }
-
-  if (!settings) {
-    console.log("No analytics settings found")
+  if (!isLoaded || !settings) {
     return null
   }
 

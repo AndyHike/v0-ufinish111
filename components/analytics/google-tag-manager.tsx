@@ -16,19 +16,13 @@ declare global {
 
 export function GoogleTagManager({ gtmId, consent }: GoogleTagManagerProps) {
   useEffect(() => {
-    if (consent && gtmId) {
-      console.log(`Google Tag Manager initialized with ID: ${gtmId}`)
-
+    if (consent && gtmId && typeof window !== "undefined") {
       // Ініціалізуємо dataLayer для GTM
-      if (typeof window !== "undefined") {
-        window.dataLayer = window.dataLayer || []
-        window.dataLayer.push({
-          "gtm.start": new Date().getTime(),
-          event: "gtm.js",
-        })
-      }
-    } else {
-      console.log("Google Tag Manager not loaded - consent:", consent, "gtmId:", gtmId)
+      window.dataLayer = window.dataLayer || []
+      window.dataLayer.push({
+        "gtm.start": new Date().getTime(),
+        event: "gtm.js",
+      })
     }
   }, [gtmId, consent])
 

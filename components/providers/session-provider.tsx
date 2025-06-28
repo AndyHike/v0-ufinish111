@@ -13,5 +13,4 @@ export function SessionProvider({ children, session }: SessionProviderProps) {
   return <NextAuthSessionProvider session={session}>{children}</NextAuthSessionProvider>
 }
 
-// Також експортуємо як NextAuthProvider для сумісності
-export const NextAuthProvider = SessionProvider
+export { SessionProvider as NextAuthProvider }

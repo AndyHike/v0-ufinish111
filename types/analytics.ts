@@ -1,18 +1,3 @@
-export interface GoogleAnalyticsConfig {
-  gaId: string
-  consent: boolean
-}
-
-export interface GoogleTagManagerConfig {
-  gtmId: string
-  consent: boolean
-}
-
-export interface FacebookPixelConfig {
-  pixelId: string
-  consent: boolean
-}
-
 export interface AnalyticsSettings {
   google_analytics_id: string
   google_tag_manager_id: string
@@ -20,6 +5,12 @@ export interface AnalyticsSettings {
   cookie_banner_enabled: boolean
   analytics_enabled: boolean
   marketing_enabled: boolean
+}
+
+export interface CookieConsent {
+  necessary: boolean
+  analytics: boolean
+  marketing: boolean
 }
 
 declare global {
