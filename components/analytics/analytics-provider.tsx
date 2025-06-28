@@ -21,7 +21,6 @@ export function AnalyticsProvider() {
   const { consent } = useCookieConsent()
 
   useEffect(() => {
-    // Завантажуємо налаштування аналітики
     const fetchSettings = async () => {
       try {
         const response = await fetch("/api/admin/cookie-settings")
@@ -45,20 +44,18 @@ export function AnalyticsProvider() {
 
   return (
     <>
-      {/* Google Analytics - завантажується тільки при згоді на аналітику */}
-      {settings.google_analytics_id && consent.analytics && (
+      {/* Google Analytics - завантажується динамічно при згоді */}
+      {settings.google_analytics_id && (
         <GoogleAnalytics gaId={settings.google_analytics_id} consent={consent.analytics} />
       )}
 
-      {/* Google Tag Manager - завантажується тільки при згоді на аналітику */}
-      {settings.google_tag_manager_id && consent.analytics && (
+      {/* Google Tag Manager - завантажується динамічно при згоді */}
+      {settings.google_tag_manager_id && (
         <GoogleTagManager gtmId={settings.google_tag_manager_id} consent={consent.analytics} />
       )}
 
-      {/* Facebook Pixel - завантажується тільки при згоді на маркетинг */}
-      {settings.facebook_pixel_id && consent.marketing && (
-        <FacebookPixel pixelId={settings.facebook_pixel_id} consent={consent.marketing} />
-      )}
+      {/* Facebook Pixel - завантажується динамічно при згоді */}
+      {settings.facebook_pixel_id && <FacebookPixel pixelId={settings.facebook_pixel_id} consent={consent.marketing} />}
     </>
   )
 }

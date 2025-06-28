@@ -38,13 +38,13 @@ export async function GET() {
       marketing_enabled: true,
     }
 
-    settingsData?.forEach((setting) => {
-      const key = setting.setting_key as keyof typeof settings
+    settingsData?.forEach((item) => {
+      const key = item.setting_key as keyof typeof settings
       if (key in settings) {
         if (typeof settings[key] === "boolean") {
-          settings[key] = setting.setting_value === "true" || setting.setting_value === true
+          settings[key] = item.setting_value === "true" || item.setting_value === true
         } else {
-          settings[key] = setting.setting_value || ""
+          settings[key] = item.setting_value || ""
         }
       }
     })

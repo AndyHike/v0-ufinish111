@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect } from "react"
-import Script from "next/script"
 
 interface FacebookPixelProps {
   pixelId: string
@@ -17,35 +16,47 @@ declare global {
 
 export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
   useEffect(() => {
-    if (consent && pixelId && typeof window !== "undefined") {
-      // Ініціалізуємо Facebook Pixel
+    if (!consent || !pixelId) return
+
+    // Перевіряємо чи вже завантажений Facebook Pixel
+    const existingScript = document.querySelector('script[src*="connect.facebook.net"]')
+
+    if (!existingScript) {
+      // Ініціалізуємо fbq
       window.fbq =
         window.fbq ||
-        ((...args: any[]) => {
-          ;(window.fbq.q = window.fbq.q || []).push(args)
+        (() => {
+          ;(window.fbq.q = window.fbq.q || []).push(arguments)
         })
-      window.fbq.l = +new Date()
-      window.fbq("init", pixelId)
+      window._fbq = window._fbq || window.fbq
+      window.fbq.push = window.fbq
+      window.fbq.loaded = true
+      window.fbq.version = "2.0"
+      window.fbq.queue = []
+
+      // Створюємо та додаємо скрипт
+      const script = document.createElement("script")
+      script.src = "https://connect.facebook.net/en_US/fbevents.js"
+      script.async = true
+
+      script.onload = () => {
+        window.fbq("init", pixelId)
+        window.fbq("track", "PageView")
+      }
+
+      document.head.appendChild(script)
+    } else if (window.fbq) {
+      // Якщо скрипт вже завантажений, просто відправляємо PageView
       window.fbq("track", "PageView")
     }
   }, [pixelId, consent])
 
-  if (!consent || !pixelId) {
-    return null
-  }
+  // Відправляємо PageView при зміні consent з false на true
+  useEffect(() => {
+    if (consent && window.fbq) {
+      window.fbq("track", "PageView")
+    }
+  }, [consent])
 
-  return (
-    <>
-      <Script id="fb-pixel" strategy="afterInteractive" src="https://connect.facebook.net/en_US/fbevents.js" />
-      <noscript>
-        <img
-          height="1"
-          width="1"
-          style={{ display: "none" }}
-          src={`https://www.facebook.com/tr?id=${pixelId}&ev=PageView&noscript=1`}
-          alt=""
-        />
-      </noscript>
-    </>
-  )
+  return null
 }

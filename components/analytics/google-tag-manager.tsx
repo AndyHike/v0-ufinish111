@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect } from "react"
-import Script from "next/script"
 
 interface GoogleTagManagerProps {
   gtmId: string
@@ -16,43 +15,37 @@ declare global {
 
 export function GoogleTagManager({ gtmId, consent }: GoogleTagManagerProps) {
   useEffect(() => {
-    if (consent && gtmId && typeof window !== "undefined") {
-      // Ініціалізуємо dataLayer для GTM
+    if (!consent || !gtmId) return
+
+    // Перевіряємо чи вже завантажений GTM
+    const existingScript = document.querySelector(`script[src*="googletagmanager.com/gtm.js?id=${gtmId}"]`)
+
+    if (!existingScript) {
+      // Ініціалізуємо dataLayer
       window.dataLayer = window.dataLayer || []
       window.dataLayer.push({
         "gtm.start": new Date().getTime(),
         event: "gtm.js",
       })
+
+      // Створюємо та додаємо скрипт
+      const script = document.createElement("script")
+      script.src = `https://www.googletagmanager.com/gtm.js?id=${gtmId}`
+      script.async = true
+      document.head.appendChild(script)
+
+      // Додаємо noscript iframe
+      const noscript = document.createElement("noscript")
+      const iframe = document.createElement("iframe")
+      iframe.src = `https://www.googletagmanager.com/ns.html?id=${gtmId}`
+      iframe.height = "0"
+      iframe.width = "0"
+      iframe.style.display = "none"
+      iframe.style.visibility = "hidden"
+      noscript.appendChild(iframe)
+      document.body.appendChild(noscript)
     }
   }, [gtmId, consent])
 
-  if (!consent || !gtmId) {
-    return null
-  }
-
-  return (
-    <>
-      <Script
-        id="gtm-script"
-        strategy="afterInteractive"
-        dangerouslySetInnerHTML={{
-          __html: `
-            (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-            new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-            j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-            'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-            })(window,document,'script','dataLayer','${gtmId}');
-          `,
-        }}
-      />
-      <noscript>
-        <iframe
-          src={`https://www.googletagmanager.com/ns.html?id=${gtmId}`}
-          height="0"
-          width="0"
-          style={{ display: "none", visibility: "hidden" }}
-        />
-      </noscript>
-    </>
-  )
+  return null
 }

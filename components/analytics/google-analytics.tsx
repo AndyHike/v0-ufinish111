@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect } from "react"
-import Script from "next/script"
 
 interface GoogleAnalyticsProps {
   gaId: string
@@ -17,62 +16,57 @@ declare global {
 
 export function GoogleAnalytics({ gaId, consent }: GoogleAnalyticsProps) {
   useEffect(() => {
-    if (consent && gaId && typeof window !== "undefined") {
+    if (!consent || !gaId) return
+
+    // Перевіряємо чи вже завантажений скрипт
+    const existingScript = document.querySelector(`script[src*="gtag/js?id=${gaId}"]`)
+
+    if (!existingScript) {
       // Ініціалізуємо dataLayer
       window.dataLayer = window.dataLayer || []
-
-      // Функція gtag
-      function gtag(...args: any[]) {
-        window.dataLayer.push(args)
+      window.gtag = function gtag() {
+        window.dataLayer.push(arguments)
       }
 
-      // Встановлюємо gtag глобально
-      window.gtag = gtag
+      // Створюємо та додаємо скрипт
+      const script = document.createElement("script")
+      script.src = `https://www.googletagmanager.com/gtag/js?id=${gaId}`
+      script.async = true
 
-      // Ініціалізуємо Google Analytics
-      gtag("js", new Date())
-      gtag("config", gaId, {
-        page_title: document.title,
-        page_location: window.location.href,
-        send_page_view: true,
-      })
+      script.onload = () => {
+        // Конфігуруємо GA після завантаження скрипта
+        window.gtag("js", new Date())
+        window.gtag("config", gaId, {
+          page_title: document.title,
+          page_location: window.location.href,
+        })
 
-      // Відправляємо page_view event
-      gtag("event", "page_view", {
+        // Відправляємо початкову подію page_view
+        window.gtag("event", "page_view", {
+          page_title: document.title,
+          page_location: window.location.href,
+        })
+      }
+
+      document.head.appendChild(script)
+    } else if (window.gtag) {
+      // Якщо скрипт вже завантажений, просто відправляємо page_view
+      window.gtag("event", "page_view", {
         page_title: document.title,
         page_location: window.location.href,
       })
     }
   }, [gaId, consent])
 
-  if (!consent || !gaId) {
-    return null
-  }
+  // Відправляємо page_view при зміні consent з false на true
+  useEffect(() => {
+    if (consent && window.gtag) {
+      window.gtag("event", "page_view", {
+        page_title: document.title,
+        page_location: window.location.href,
+      })
+    }
+  }, [consent])
 
-  return (
-    <>
-      <Script src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`} strategy="afterInteractive" />
-    </>
-  )
-}
-
-// Функція для відстеження подій
-export function trackEvent(action: string, category: string, label?: string, value?: number) {
-  if (typeof window !== "undefined" && window.gtag) {
-    window.gtag("event", action, {
-      event_category: category,
-      event_label: label,
-      value: value,
-    })
-  }
-}
-
-// Функція для відстеження переглядів сторінок
-export function trackPageView(url: string, title?: string) {
-  if (typeof window !== "undefined" && window.gtag) {
-    window.gtag("event", "page_view", {
-      page_location: url,
-      page_title: title || document.title,
-    })
-  }
+  return null
 }
