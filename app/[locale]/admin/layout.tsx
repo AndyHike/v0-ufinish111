@@ -1,32 +1,36 @@
 import type React from "react"
-import { AdminSidebar } from "@/components/admin/admin-sidebar"
 import type { Metadata } from "next"
-import { getTranslations } from "next-intl/server"
+import { getServerSession } from "next-auth"
+import { redirect } from "next/navigation"
+import { authOptions } from "@/lib/auth"
+import { AdminSidebar } from "@/components/admin/admin-sidebar"
+import { AdminAnalyticsBlocker } from "@/components/analytics/admin-analytics-blocker"
+import { ConsoleBlocker } from "@/components/console-blocker"
 
-export async function generateMetadata({
-  params: { locale },
-}: {
-  params: { locale: string }
-}): Promise<Metadata> {
-  const t = await getTranslations({ locale, namespace: "Admin" })
-  return {
-    title: t("adminPanel"),
-  }
+export const metadata: Metadata = {
+  title: "Admin Panel",
+  description: "Administration panel for managing the repair service",
 }
 
-export default function AdminLayout({
+export default async function AdminLayout({
   children,
-  params: { locale },
 }: {
   children: React.ReactNode
-  params: { locale: string }
 }) {
+  const session = await getServerSession(authOptions)
+
+  if (!session?.user?.isAdmin) {
+    redirect("/auth/signin")
+  }
+
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen bg-gray-100">
+      <ConsoleBlocker />
+      <AdminAnalyticsBlocker />
       <AdminSidebar />
-      <div className="flex flex-1 flex-col overflow-hidden">
-        <main className="flex-1 overflow-y-auto p-6">{children}</main>
-      </div>
+      <main className="flex-1 overflow-y-auto">
+        <div className="p-6">{children}</div>
+      </main>
     </div>
   )
 }

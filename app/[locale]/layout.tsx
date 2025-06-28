@@ -1,91 +1,61 @@
 import type React from "react"
-import type { Metadata } from "next"
+import { Inter } from "next/font/google"
 import { NextIntlClientProvider } from "next-intl"
-import { notFound } from "next/navigation"
+import { getMessages } from "next-intl/server"
+import { ThemeProvider } from "@/components/theme-provider"
+import { Toaster } from "@/components/ui/sonner"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
-import { getCurrentUser } from "@/lib/auth/session"
-import { getMessages } from "@/lib/get-messages"
-import { CookieConsentProvider } from "@/contexts/cookie-consent-context"
+import { InfoBanner } from "@/components/info-banner"
 import { CookieBanner } from "@/components/cookie-banner"
-import { AnalyticsProvider } from "@/components/analytics/analytics-provider"
-import { Suspense } from "react"
+import { CookieConsentProvider } from "@/contexts/cookie-consent-context"
 import { SessionProvider } from "@/components/providers/session-provider"
+import { AnalyticsProvider } from "@/components/analytics/analytics-provider"
+import { ConsoleBlocker } from "@/components/console-blocker"
+import { DynamicFavicon } from "@/components/dynamic-favicon"
+import { AdminAnalyticsBlocker } from "@/components/analytics/admin-analytics-blocker"
+import { Suspense } from "react"
 import "@/app/globals.css"
 
-export async function generateMetadata({
-  params: { locale },
-}: {
-  params: { locale: string }
-}): Promise<Metadata> {
-  const baseUrl = "https://devicehelp.cz"
-  const canonicalUrl = `${baseUrl}/${locale}`
+const inter = Inter({ subsets: ["latin"] })
 
-  const seoData = {
-    cs: {
-      title: "DeviceHelp - Profesionální oprava mobilních telefonů v Praze",
-      description: "Rychlá a kvalitní oprava mobilních telefonů v Praze. Záruka na všechny opravy.",
-    },
-    en: {
-      title: "DeviceHelp - Professional Mobile Phone Repair in Prague",
-      description: "Fast and quality mobile phone repair in Prague. Warranty on all repairs.",
-    },
-    uk: {
-      title: "DeviceHelp - DeviceHelp - Професійний ремонт мобільних телефонів у Празі",
-      description: "Швидкий та якісний ремонт мобільних телефонів у Празі. Гарантія на всі ремонти.",
-    },
-  }
-
-  const currentSeo = seoData[locale as keyof typeof seoData] || seoData.cs
-
-  return {
-    title: currentSeo.title,
-    description: currentSeo.description,
-    metadataBase: new URL(baseUrl),
-    alternates: {
-      canonical: canonicalUrl,
-      languages: {
-        cs: `${baseUrl}/cs`,
-        en: `${baseUrl}/en`,
-        uk: `${baseUrl}/uk`,
-        "x-default": `${baseUrl}/cs`,
-      },
-    },
-  }
-}
-
-export default async function LocaleLayout({
+export default async function RootLayout({
   children,
   params: { locale },
 }: {
   children: React.ReactNode
   params: { locale: string }
 }) {
-  let messages
-  try {
-    messages = await getMessages(locale)
-  } catch (error) {
-    console.error(`Failed to load messages for locale ${locale}:`, error)
-    notFound()
-  }
-
-  const user = await getCurrentUser()
+  const messages = await getMessages()
 
   return (
-    <NextIntlClientProvider locale={locale} messages={messages}>
-      <SessionProvider>
-        <CookieConsentProvider>
-          <div className="flex min-h-screen flex-col">
-            <Header user={user} />
-            <main className="flex-1">{children}</main>
-            <Footer />
-            <CookieBanner />
-            <Suspense fallback={null}>
-              <AnalyticsProvider />
-            </Suspense>
-          </div>
-        </CookieConsentProvider>
-      </SessionProvider>
-    </NextIntlClientProvider>
+    <html lang={locale} suppressHydrationWarning>
+      <head>
+        <DynamicFavicon />
+      </head>
+      <body className={inter.className}>
+        <ConsoleBlocker />
+        <AdminAnalyticsBlocker />
+        <Suspense fallback="Loading...">
+          <SessionProvider>
+            <NextIntlClientProvider messages={messages}>
+              <CookieConsentProvider>
+                <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
+                  <AnalyticsProvider />
+                  <div className="min-h-screen flex flex-col">
+                    <InfoBanner />
+                    <Header />
+                    <main className="flex-1">{children}</main>
+                    <Footer />
+                  </div>
+                  <Toaster />
+                  <CookieBanner />
+                </ThemeProvider>
+              </CookieConsentProvider>
+            </NextIntlClientProvider>
+          </SessionProvider>
+        </Suspense>
+      </body>
+    </html>
   )
 }
