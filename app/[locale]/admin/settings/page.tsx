@@ -6,6 +6,8 @@ import { RegistrationToggle } from "@/components/admin/registration-toggle"
 import { LanguageSelector } from "@/components/admin/language-selector"
 import { LogoUpload } from "@/components/admin/logo-upload"
 import { FaviconUpload } from "@/components/admin/favicon-upload"
+import { PrivacyPolicyManager } from "@/components/admin/privacy-policy-manager"
+import { TermsOfServiceManager } from "@/components/admin/terms-of-service-manager"
 
 export async function generateMetadata({
   params: { locale },
@@ -30,6 +32,7 @@ export default async function SettingsPage() {
         <TabsList>
           <TabsTrigger value="general">General</TabsTrigger>
           <TabsTrigger value="security">Security</TabsTrigger>
+          <TabsTrigger value="content">Content</TabsTrigger>
           <TabsTrigger value="appearance">Appearance</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
           <TabsTrigger value="advanced">Advanced</TabsTrigger>
@@ -55,6 +58,13 @@ export default async function SettingsPage() {
               <RegistrationToggle />
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="content" className="space-y-4">
+          <div className="space-y-6">
+            <PrivacyPolicyManager />
+            <TermsOfServiceManager />
+          </div>
         </TabsContent>
 
         <TabsContent value="appearance" className="space-y-4">

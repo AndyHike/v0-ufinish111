@@ -1,9 +1,13 @@
-"use client"
+import { getTranslations } from "next-intl/server"
+import { getAppSetting } from "@/lib/app-settings"
 
-import { useTranslations } from "next-intl"
-
-export default function TermsPage() {
-  const t = useTranslations("Terms")
+export default async function TermsPage({
+  params: { locale },
+}: {
+  params: { locale: string }
+}) {
+  const t = await getTranslations({ locale, namespace: "Terms" })
+  const termsContent = await getAppSetting("terms_of_service_content")
 
   return (
     <div className="container mx-auto px-4 py-12">
@@ -12,8 +16,7 @@ export default function TermsPage() {
       </div>
 
       <div className="prose prose-sm sm:prose lg:prose-lg mx-auto">
-        {/* Контент буде додано пізніше */}
-        <p>{t("contentPlaceholder")}</p>
+        {termsContent ? <div className="whitespace-pre-wrap">{termsContent}</div> : <p>{t("contentPlaceholder")}</p>}
       </div>
     </div>
   )
