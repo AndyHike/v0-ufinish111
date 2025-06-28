@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { toast } from "sonner"
-import { Loader2, Save, Settings, Eye, EyeOff, CheckCircle, AlertCircle, TestTube } from "lucide-react"
+import { Loader2, Save, Settings, Eye, EyeOff, CheckCircle, AlertCircle, TestTube, Activity } from "lucide-react"
 
 interface CookieSettings {
   google_analytics_id: string
@@ -47,10 +47,10 @@ export function CookieSettingsManager() {
       }
 
       const data = await response.json()
-      console.log("Fetched settings:", data)
+      console.log("Admin: Fetched settings:", data)
       setSettings(data)
     } catch (error) {
-      console.error("Error fetching cookie settings:", error)
+      console.error("Admin: Error fetching cookie settings:", error)
       toast.error("Failed to load cookie settings")
     } finally {
       setLoading(false)
@@ -60,7 +60,7 @@ export function CookieSettingsManager() {
   const handleSave = async () => {
     setSaving(true)
     try {
-      console.log("Saving settings:", settings)
+      console.log("Admin: Saving settings:", settings)
 
       const response = await fetch("/api/admin/cookie-settings", {
         method: "POST",
@@ -71,7 +71,7 @@ export function CookieSettingsManager() {
       })
 
       const result = await response.json()
-      console.log("Save response:", result)
+      console.log("Admin: Save response:", result)
 
       if (!response.ok) {
         throw new Error(result.error || "Failed to save settings")
@@ -80,7 +80,7 @@ export function CookieSettingsManager() {
       setLastSaved(new Date())
       toast.success("Cookie settings saved successfully!")
     } catch (error) {
-      console.error("Error saving cookie settings:", error)
+      console.error("Admin: Error saving cookie settings:", error)
       toast.error("Failed to save cookie settings")
     } finally {
       setSaving(false)
@@ -92,41 +92,98 @@ export function CookieSettingsManager() {
   }
 
   const testAnalytics = () => {
+    console.log("🧪 Testing Google Analytics...")
+
     if (typeof window !== "undefined" && window.gtag) {
-      window.gtag("event", "test_event", {
+      const testEventName = "admin_test_" + Date.now()
+
+      window.gtag("event", testEventName, {
         event_category: "admin_test",
-        event_label: "cookie_settings_test",
+        event_label: "manual_test_from_admin",
         value: 1,
-      })
-      toast.success("Test event sent to Google Analytics!")
-      console.log("✅ Test event sent to GA4")
-    } else {
-      toast.error("Google Analytics not loaded. Please accept analytics cookies first.")
-      console.error("❌ GA not available - gtag function not found")
-    }
-  }
-
-  const testRealTimeTracking = () => {
-    if (typeof window !== "undefined" && window.gtag) {
-      // Відправляємо кілька тестових подій
-      window.gtag("event", "admin_test_realtime", {
-        event_category: "admin",
-        event_label: "realtime_test",
         custom_parameter: "test_value",
+        test_timestamp: new Date().toISOString(),
       })
 
+      // Також відправляємо page_view для впевненості
       window.gtag("event", "page_view", {
-        page_title: "Admin Test Page",
+        page_title: "Admin Test - " + document.title,
         page_location: window.location.href,
         custom_parameter: "admin_test",
       })
 
-      toast.success("Real-time test events sent! Check GA4 Real-time reports.")
-      console.log("🚀 Real-time test events sent to GA4")
+      toast.success(`Test events sent! Event: ${testEventName}`)
+      console.log("✅ Test events sent:", {
+        event: testEventName,
+        page_view: "admin_test",
+        timestamp: new Date().toISOString(),
+      })
+    } else {
+      toast.error("Google Analytics not loaded. Please accept analytics cookies first.")
+      console.error("❌ gtag function not available")
+      console.log("Debug info:", {
+        window: typeof window,
+        gtag: typeof window?.gtag,
+        dataLayer: window?.dataLayer?.length || 0,
+      })
+    }
+  }
+
+  const testRealTimeTracking = () => {
+    console.log("🔴 Testing Real-time tracking...")
+
+    if (typeof window !== "undefined" && window.gtag) {
+      const timestamp = Date.now()
+
+      // Відправляємо серію подій для real-time тестування
+      window.gtag("event", "realtime_test_start", {
+        event_category: "realtime_test",
+        event_label: "test_session_" + timestamp,
+        value: 1,
+      })
+
+      setTimeout(() => {
+        window.gtag("event", "realtime_test_action", {
+          event_category: "realtime_test",
+          event_label: "delayed_action_" + timestamp,
+          value: 2,
+        })
+      }, 1000)
+
+      setTimeout(() => {
+        window.gtag("event", "realtime_test_complete", {
+          event_category: "realtime_test",
+          event_label: "test_complete_" + timestamp,
+          value: 3,
+        })
+      }, 2000)
+
+      toast.success("Real-time test sequence started! Check GA4 Real-time reports in 30 seconds.")
+      console.log("🚀 Real-time test sequence initiated:", timestamp)
     } else {
       toast.error("Google Analytics not available")
-      console.error("❌ gtag not available for real-time test")
+      console.error("❌ Cannot perform real-time test - gtag not available")
     }
+  }
+
+  const debugAnalytics = () => {
+    console.log("🔍 Analytics Debug Information:")
+    console.log("Window object:", typeof window)
+    console.log("gtag function:", typeof window?.gtag)
+    console.log("dataLayer:", window?.dataLayer)
+    console.log("dataLayer length:", window?.dataLayer?.length || 0)
+    console.log("Current settings:", settings)
+    console.log("Current URL:", window?.location?.href)
+    console.log("Document title:", document?.title)
+
+    // Перевіряємо чи є скрипт в DOM
+    const gaScripts = document.querySelectorAll('script[src*="gtag/js"]')
+    console.log("GA scripts in DOM:", gaScripts.length)
+    gaScripts.forEach((script, index) => {
+      console.log(`Script ${index + 1}:`, script.src)
+    })
+
+    toast.info("Debug information logged to console")
   }
 
   if (loading) {
@@ -190,7 +247,11 @@ export function CookieSettingsManager() {
                     Test
                   </Button>
                   <Button variant="outline" size="sm" onClick={testRealTimeTracking}>
+                    <Activity className="h-4 w-4 mr-1" />
                     Real-time
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={debugAnalytics}>
+                    Debug
                   </Button>
                 </div>
               )}
@@ -296,14 +357,18 @@ export function CookieSettingsManager() {
           )}
         </Button>
 
-        {/* Debug Info */}
+        {/* Enhanced Debug Info */}
         <div className="mt-4 p-4 bg-gray-50 rounded-lg">
           <h4 className="text-sm font-medium mb-2">Debug Information</h4>
           <div className="text-xs space-y-1">
             <div>GA ID: {settings.google_analytics_id || "Not set"}</div>
             <div>Analytics Enabled: {settings.analytics_enabled ? "Yes" : "No"}</div>
             <div>Cookie Banner: {settings.cookie_banner_enabled ? "Enabled" : "Disabled"}</div>
-            <div>gtag Available: {typeof window !== "undefined" && window.gtag ? "Yes" : "No"}</div>
+            <div>gtag Available: {typeof window !== "undefined" && window.gtag ? "✅ Yes" : "❌ No"}</div>
+            <div>
+              dataLayer Length: {typeof window !== "undefined" && window.dataLayer ? window.dataLayer.length : "N/A"}
+            </div>
+            <div>Current URL: {typeof window !== "undefined" ? window.location.href : "N/A"}</div>
           </div>
         </div>
       </CardContent>

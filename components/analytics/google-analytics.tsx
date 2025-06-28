@@ -16,68 +16,68 @@ declare global {
 
 export function GoogleAnalytics({ gaId, consent }: GoogleAnalyticsProps) {
   const scriptLoadedRef = useRef(false)
-  const initializedRef = useRef(false)
+  const gaInitializedRef = useRef(false)
 
   useEffect(() => {
-    if (!consent || !gaId) {
-      console.log("GA not loaded - consent:", consent, "gaId:", gaId)
+    if (!consent || !gaId || typeof window === "undefined") {
+      console.log("❌ GA not initialized:", { consent, gaId, window: typeof window })
       return
     }
 
-    // Функція для ініціалізації Google Analytics
-    const initializeGA = () => {
-      if (typeof window === "undefined") return
+    console.log("🚀 Starting GA initialization process...")
 
-      // Ініціалізуємо dataLayer якщо його немає
+    const initializeGoogleAnalytics = () => {
+      // Ініціалізуємо dataLayer
       window.dataLayer = window.dataLayer || []
 
-      // Створюємо функцію gtag
-      function gtag(...args: any[]) {
-        window.dataLayer.push(args)
+      // Створюємо gtag функцію
+      window.gtag = function gtag() {
+        window.dataLayer.push(arguments)
       }
 
-      // Встановлюємо gtag глобально
-      window.gtag = gtag
+      // Встановлюємо час
+      window.gtag("js", new Date())
 
-      // Ініціалізуємо Google Analytics
-      gtag("js", new Date())
-      gtag("config", gaId, {
-        page_title: document.title,
-        page_location: window.location.href,
+      // Конфігуруємо GA4
+      window.gtag("config", gaId, {
         send_page_view: true,
-      })
-
-      // Відправляємо початкову page_view подію
-      gtag("event", "page_view", {
         page_title: document.title,
         page_location: window.location.href,
       })
 
-      initializedRef.current = true
-      console.log("✅ Google Analytics initialized successfully!")
-      console.log("📊 GA ID:", gaId)
-      console.log("📄 Page view sent:", window.location.href)
+      gaInitializedRef.current = true
+      console.log("✅ GA4 configured successfully!")
+      console.log("📊 Property ID:", gaId)
+      console.log("📄 Current page:", window.location.href)
+
+      // Відправляємо тестову подію для перевірки
+      setTimeout(() => {
+        window.gtag("event", "ga_initialized", {
+          event_category: "system",
+          event_label: "automatic_initialization",
+          custom_parameter_1: gaId,
+        })
+        console.log("🎯 Test event sent: ga_initialized")
+      }, 1000)
     }
 
-    // Функція для завантаження скрипта
-    const loadGAScript = () => {
+    const loadScript = () => {
       return new Promise<void>((resolve, reject) => {
-        // Перевіряємо чи скрипт вже завантажений
+        // Перевіряємо чи скрипт вже існує
         const existingScript = document.querySelector(`script[src*="gtag/js?id=${gaId}"]`)
-
         if (existingScript) {
-          console.log("GA script already exists")
+          console.log("📦 GA script already exists")
           resolve()
           return
         }
 
-        // Створюємо новий скрипт
+        console.log("📥 Loading GA script from CDN...")
         const script = document.createElement("script")
-        script.src = `https://www.googletagmanager.com/gtag/js?id=${gaId}`
         script.async = true
+        script.src = `https://www.googletagmanager.com/gtag/js?id=${gaId}`
 
         script.onload = () => {
-          console.log("🚀 GA script loaded from CDN")
+          console.log("✅ GA script loaded successfully")
           scriptLoadedRef.current = true
           resolve()
         }
@@ -87,49 +87,43 @@ export function GoogleAnalytics({ gaId, consent }: GoogleAnalyticsProps) {
           reject(error)
         }
 
-        // Додаємо скрипт до head
         document.head.appendChild(script)
-        console.log("📥 Loading GA script...")
       })
     }
 
-    // Основна логіка завантаження та ініціалізації
     const setupGA = async () => {
       try {
-        console.log("🔄 Setting up Google Analytics...")
-
         // Завантажуємо скрипт
-        await loadGAScript()
+        await loadScript()
+
+        // Чекаємо трохи щоб скрипт повністю завантажився
+        await new Promise((resolve) => setTimeout(resolve, 500))
 
         // Ініціалізуємо GA
-        initializeGA()
+        initializeGoogleAnalytics()
+
+        console.log("🎉 Google Analytics setup completed!")
       } catch (error) {
         console.error("❌ Error setting up Google Analytics:", error)
       }
     }
 
-    // Якщо згода надана, запускаємо налаштування
-    if (consent && gaId && !initializedRef.current) {
+    // Запускаємо налаштування тільки якщо ще не ініціалізовано
+    if (!gaInitializedRef.current) {
       setupGA()
     }
-  }, [gaId, consent])
 
-  // Відправляємо page_view при зміні consent з false на true
-  useEffect(() => {
-    if (consent && initializedRef.current && typeof window !== "undefined" && window.gtag) {
-      console.log("🔄 Consent changed to true, sending page_view")
-      window.gtag("event", "page_view", {
-        page_title: document.title,
-        page_location: window.location.href,
-      })
+    // Cleanup function
+    return () => {
+      console.log("🧹 GA component cleanup")
     }
-  }, [consent])
+  }, [gaId, consent])
 
   return null
 }
 
-// Допоміжні функції для відстеження
-export function trackEvent(action: string, category: string, label?: string, value?: number) {
+// Експортуємо функції для ручного відстеження
+export const trackEvent = (action: string, category: string, label?: string, value?: number) => {
   if (typeof window !== "undefined" && window.gtag) {
     window.gtag("event", action, {
       event_category: category,
@@ -137,19 +131,23 @@ export function trackEvent(action: string, category: string, label?: string, val
       value: value,
     })
     console.log("📊 Event tracked:", { action, category, label, value })
+    return true
   } else {
     console.warn("⚠️ gtag not available for event tracking")
+    return false
   }
 }
 
-export function trackPageView(url: string, title?: string) {
+export const trackPageView = (url?: string, title?: string) => {
   if (typeof window !== "undefined" && window.gtag) {
     window.gtag("event", "page_view", {
-      page_location: url,
+      page_location: url || window.location.href,
       page_title: title || document.title,
     })
-    console.log("📄 Page view tracked:", url)
+    console.log("📄 Page view tracked:", url || window.location.href)
+    return true
   } else {
     console.warn("⚠️ gtag not available for page view tracking")
+    return false
   }
 }

@@ -19,6 +19,8 @@ export function useCookieConsent() {
   })
 
   useEffect(() => {
+    console.log("🍪 Initializing cookie consent...")
+
     const stored = localStorage.getItem(COOKIE_CONSENT_KEY)
     if (stored) {
       try {
@@ -34,7 +36,7 @@ export function useCookieConsent() {
             hasInteracted: true,
             consentDate: parsed.consentDate,
           })
-          console.log("🍪 Existing consent loaded:", parsed.consent)
+          console.log("✅ Existing consent loaded:", parsed.consent)
         } else {
           // Consent expired, show banner again
           setState((prev) => ({ ...prev, showBanner: true }))
@@ -67,10 +69,15 @@ export function useCookieConsent() {
 
     // Логування змін для аналітики
     if (consent.analytics) {
-      console.log("🚀 Analytics consent granted - Google Analytics will activate!")
+      console.log("🚀 Analytics consent granted - Google Analytics should activate!")
+    } else {
+      console.log("🔒 Analytics consent denied - Google Analytics blocked")
     }
+
     if (consent.marketing) {
-      console.log("📢 Marketing consent granted - Marketing pixels will activate!")
+      console.log("📢 Marketing consent granted - Marketing pixels should activate!")
+    } else {
+      console.log("🔒 Marketing consent denied - Marketing pixels blocked")
     }
   }
 
