@@ -17,31 +17,28 @@ declare global {
 
 export function GoogleAnalytics({ gaId, consent }: GoogleAnalyticsProps) {
   useEffect(() => {
-    if (consent && gaId && typeof window !== "undefined") {
-      // Ініціалізуємо dataLayer
-      window.dataLayer = window.dataLayer || []
+    if (consent && gaId) {
+      console.log(`Google Analytics initialized with ID: ${gaId}`)
 
-      // Функція gtag
-      function gtag(...args: any[]) {
-        window.dataLayer.push(args)
+      // Ініціалізуємо dataLayer якщо його немає
+      if (typeof window !== "undefined") {
+        window.dataLayer = window.dataLayer || []
+        window.gtag = function gtag() {
+          window.dataLayer.push(arguments)
+        }
+
+        window.gtag("js", new Date())
+        window.gtag("config", gaId, {
+          page_title: document.title,
+          page_location: window.location.href,
+        })
+
+        console.log("GA script loaded successfully")
+        console.log("gtag available after load:", typeof window.gtag)
+        console.log("dataLayer:", window.dataLayer)
       }
-
-      // Встановлюємо gtag глобально
-      window.gtag = gtag
-
-      // Ініціалізуємо Google Analytics
-      gtag("js", new Date())
-      gtag("config", gaId, {
-        page_title: document.title,
-        page_location: window.location.href,
-        send_page_view: true,
-      })
-
-      // Відправляємо page_view event
-      gtag("event", "page_view", {
-        page_title: document.title,
-        page_location: window.location.href,
-      })
+    } else {
+      console.log("Google Analytics not loaded - consent:", consent, "gaId:", gaId)
     }
   }, [gaId, consent])
 
@@ -51,28 +48,16 @@ export function GoogleAnalytics({ gaId, consent }: GoogleAnalyticsProps) {
 
   return (
     <>
-      <Script src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`} strategy="afterInteractive" />
+      <Script
+        strategy="afterInteractive"
+        src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}
+        onLoad={() => {
+          console.log("GA script loaded from CDN")
+        }}
+        onError={(e) => {
+          console.error("Failed to load GA script:", e)
+        }}
+      />
     </>
   )
-}
-
-// Функція для відстеження подій
-export function trackEvent(action: string, category: string, label?: string, value?: number) {
-  if (typeof window !== "undefined" && window.gtag) {
-    window.gtag("event", action, {
-      event_category: category,
-      event_label: label,
-      value: value,
-    })
-  }
-}
-
-// Функція для відстеження переглядів сторінок
-export function trackPageView(url: string, title?: string) {
-  if (typeof window !== "undefined" && window.gtag) {
-    window.gtag("event", "page_view", {
-      page_location: url,
-      page_title: title || document.title,
-    })
-  }
 }

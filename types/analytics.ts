@@ -22,13 +22,6 @@ export interface AnalyticsSettings {
   marketing_enabled: boolean
 }
 
-export interface CookieConsent {
-  necessary: boolean
-  analytics: boolean
-  marketing: boolean
-  preferences: boolean
-}
-
 declare global {
   interface Window {
     gtag: (...args: any[]) => void

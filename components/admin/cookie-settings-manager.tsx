@@ -4,12 +4,11 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
-import { Loader2, Save, Eye, EyeOff, TestTube } from "lucide-react"
+import { Loader2, Save, Settings, Eye, EyeOff, CheckCircle, AlertCircle } from "lucide-react"
 
 interface CookieSettings {
   google_analytics_id: string
@@ -29,9 +28,10 @@ export function CookieSettingsManager() {
     analytics_enabled: true,
     marketing_enabled: true,
   })
-  const [isLoading, setIsLoading] = useState(true)
-  const [isSaving, setIsSaving] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
   const [showIds, setShowIds] = useState(false)
+  const [lastSaved, setLastSaved] = useState<Date | null>(null)
 
   useEffect(() => {
     fetchSettings()
@@ -39,23 +39,29 @@ export function CookieSettingsManager() {
 
   const fetchSettings = async () => {
     try {
+      setLoading(true)
       const response = await fetch("/api/admin/cookie-settings")
-      if (response.ok) {
-        const data = await response.json()
-        setSettings(data)
-      } else {
-        toast.error("Failed to load cookie settings")
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
       }
+
+      const data = await response.json()
+      console.log("Fetched settings:", data)
+      setSettings(data)
     } catch (error) {
-      toast.error("Error loading cookie settings")
+      console.error("Error fetching cookie settings:", error)
+      toast.error("Failed to load cookie settings")
     } finally {
-      setIsLoading(false)
+      setLoading(false)
     }
   }
 
   const handleSave = async () => {
-    setIsSaving(true)
+    setSaving(true)
     try {
+      console.log("Saving settings:", settings)
+
       const response = await fetch("/api/admin/cookie-settings", {
         method: "POST",
         headers: {
@@ -64,29 +70,20 @@ export function CookieSettingsManager() {
         body: JSON.stringify(settings),
       })
 
-      if (response.ok) {
-        toast.success("Cookie settings saved successfully!")
-      } else {
-        const errorData = await response.json()
-        toast.error(`Error: ${errorData.error || "Failed to save settings"}`)
-      }
-    } catch (error) {
-      toast.error("Error saving cookie settings")
-    } finally {
-      setIsSaving(false)
-    }
-  }
+      const result = await response.json()
+      console.log("Save response:", result)
 
-  const testGoogleAnalytics = () => {
-    if (typeof window !== "undefined" && window.gtag) {
-      window.gtag("event", "test_event", {
-        event_category: "admin_test",
-        event_label: "manual_test",
-        value: 1,
-      })
-      toast.success("Test event sent to Google Analytics!")
-    } else {
-      toast.error("Google Analytics not loaded. Make sure you've accepted analytics cookies.")
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to save settings")
+      }
+
+      setLastSaved(new Date())
+      toast.success("Cookie settings saved successfully!")
+    } catch (error) {
+      console.error("Error saving cookie settings:", error)
+      toast.error("Failed to save cookie settings")
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -94,7 +91,22 @@ export function CookieSettingsManager() {
     setSettings((prev) => ({ ...prev, [key]: value }))
   }
 
-  if (isLoading) {
+  const testAnalytics = () => {
+    if (typeof window !== "undefined" && window.gtag) {
+      window.gtag("event", "test_event", {
+        event_category: "admin_test",
+        event_label: "cookie_settings_test",
+        value: 1,
+      })
+      toast.success("Test event sent to Google Analytics!")
+      console.log("Test event sent to GA4")
+    } else {
+      toast.error("Google Analytics not loaded")
+      console.error("GA not available")
+    }
+  }
+
+  if (loading) {
     return (
       <Card>
         <CardContent className="flex items-center justify-center p-6">
@@ -109,18 +121,101 @@ export function CookieSettingsManager() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
-          Cookie & Analytics Settings
-          <Button variant="outline" size="sm" onClick={() => setShowIds(!showIds)}>
-            {showIds ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            {showIds ? "Hide IDs" : "Show IDs"}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Settings className="h-5 w-5" />
+            Cookie & Analytics Settings
+          </div>
+          <div className="flex items-center gap-2">
+            {lastSaved && (
+              <div className="flex items-center text-sm text-green-600">
+                <CheckCircle className="h-4 w-4 mr-1" />
+                Saved {lastSaved.toLocaleTimeString()}
+              </div>
+            )}
+            <Button variant="outline" size="sm" onClick={() => setShowIds(!showIds)}>
+              {showIds ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              {showIds ? "Hide IDs" : "Show IDs"}
+            </Button>
+          </div>
         </CardTitle>
-        <CardDescription>Configure cookie consent banner and analytics tracking services</CardDescription>
+        <CardDescription>
+          Configure analytics and marketing services. Services will only load when users consent to cookies.
+        </CardDescription>
       </CardHeader>
+
       <CardContent className="space-y-6">
+        {/* Analytics Services */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium">Analytics Services</h3>
+
+          <div className="space-y-2">
+            <Label htmlFor="google_analytics_id">Google Analytics 4 Property ID</Label>
+            <div className="flex gap-2">
+              <Input
+                id="google_analytics_id"
+                type={showIds ? "text" : "password"}
+                placeholder="G-XXXXXXXXXX"
+                value={settings.google_analytics_id}
+                onChange={(e) => updateSetting("google_analytics_id", e.target.value)}
+                className="flex-1"
+              />
+              {settings.google_analytics_id && (
+                <Button variant="outline" size="sm" onClick={testAnalytics}>
+                  Test
+                </Button>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Find this in Google Analytics → Admin → Property Settings → Property Details
+            </p>
+            {settings.google_analytics_id && (
+              <div className="flex items-center gap-2 text-sm">
+                <AlertCircle className="h-4 w-4 text-blue-500" />
+                <span className="text-blue-600">
+                  Current ID: {showIds ? settings.google_analytics_id : "G-***********"}
+                </span>
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="google_tag_manager_id">Google Tag Manager Container ID</Label>
+            <Input
+              id="google_tag_manager_id"
+              type={showIds ? "text" : "password"}
+              placeholder="GTM-XXXXXXX"
+              value={settings.google_tag_manager_id}
+              onChange={(e) => updateSetting("google_tag_manager_id", e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">Find this in Google Tag Manager → Container Settings</p>
+          </div>
+        </div>
+
+        <Separator />
+
+        {/* Marketing Services */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium">Marketing Services</h3>
+
+          <div className="space-y-2">
+            <Label htmlFor="facebook_pixel_id">Facebook Pixel ID</Label>
+            <Input
+              id="facebook_pixel_id"
+              type={showIds ? "text" : "password"}
+              placeholder="1234567890123456"
+              value={settings.facebook_pixel_id}
+              onChange={(e) => updateSetting("facebook_pixel_id", e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">Find this in Facebook Business Manager → Events Manager</p>
+          </div>
+        </div>
+
+        <Separator />
+
         {/* Cookie Banner Settings */}
         <div className="space-y-4">
-          <h3 className="text-lg font-medium">Cookie Banner</h3>
+          <h3 className="text-lg font-medium">Cookie Banner Settings</h3>
+
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label>Enable Cookie Banner</Label>
@@ -131,44 +226,10 @@ export function CookieSettingsManager() {
               onCheckedChange={(checked) => updateSetting("cookie_banner_enabled", checked)}
             />
           </div>
-        </div>
-
-        <Separator />
-
-        {/* Google Analytics */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-medium">Google Analytics</h3>
-            <div className="flex items-center gap-2">
-              <Badge variant={settings.google_analytics_id ? "default" : "secondary"}>
-                {settings.google_analytics_id ? "Configured" : "Not Set"}
-              </Badge>
-              {settings.google_analytics_id && (
-                <Button variant="outline" size="sm" onClick={testGoogleAnalytics}>
-                  <TestTube className="h-4 w-4 mr-1" />
-                  Test
-                </Button>
-              )}
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="ga-id">Google Analytics Measurement ID</Label>
-            <Input
-              id="ga-id"
-              type={showIds ? "text" : "password"}
-              placeholder="G-XXXXXXXXXX"
-              value={settings.google_analytics_id}
-              onChange={(e) => updateSetting("google_analytics_id", e.target.value)}
-            />
-            <p className="text-xs text-muted-foreground">
-              Find this in Google Analytics → Admin → Property Settings → Measurement ID
-            </p>
-          </div>
 
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label>Enable Analytics Tracking</Label>
+              <Label>Analytics Cookies Default</Label>
               <p className="text-sm text-muted-foreground">Default state for analytics cookies</p>
             </div>
             <Switch
@@ -176,62 +237,10 @@ export function CookieSettingsManager() {
               onCheckedChange={(checked) => updateSetting("analytics_enabled", checked)}
             />
           </div>
-        </div>
-
-        <Separator />
-
-        {/* Google Tag Manager */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-medium">Google Tag Manager</h3>
-            <Badge variant={settings.google_tag_manager_id ? "default" : "secondary"}>
-              {settings.google_tag_manager_id ? "Configured" : "Not Set"}
-            </Badge>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="gtm-id">Google Tag Manager Container ID</Label>
-            <Input
-              id="gtm-id"
-              type={showIds ? "text" : "password"}
-              placeholder="GTM-XXXXXXX"
-              value={settings.google_tag_manager_id}
-              onChange={(e) => updateSetting("google_tag_manager_id", e.target.value)}
-            />
-            <p className="text-xs text-muted-foreground">
-              Find this in Google Tag Manager → Container Settings → Container ID
-            </p>
-          </div>
-        </div>
-
-        <Separator />
-
-        {/* Facebook Pixel */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-medium">Facebook Pixel</h3>
-            <Badge variant={settings.facebook_pixel_id ? "default" : "secondary"}>
-              {settings.facebook_pixel_id ? "Configured" : "Not Set"}
-            </Badge>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="fb-pixel-id">Facebook Pixel ID</Label>
-            <Input
-              id="fb-pixel-id"
-              type={showIds ? "text" : "password"}
-              placeholder="1234567890123456"
-              value={settings.facebook_pixel_id}
-              onChange={(e) => updateSetting("facebook_pixel_id", e.target.value)}
-            />
-            <p className="text-xs text-muted-foreground">
-              Find this in Facebook Business Manager → Events Manager → Pixels
-            </p>
-          </div>
 
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label>Enable Marketing Tracking</Label>
+              <Label>Marketing Cookies Default</Label>
               <p className="text-sm text-muted-foreground">Default state for marketing cookies</p>
             </div>
             <Switch
@@ -243,19 +252,8 @@ export function CookieSettingsManager() {
 
         <Separator />
 
-        {/* Debug Information */}
-        <div className="space-y-2">
-          <h3 className="text-lg font-medium">Debug Information</h3>
-          <div className="text-sm text-muted-foreground space-y-1">
-            <p>GA ID: {settings.google_analytics_id || "Not set"}</p>
-            <p>Analytics Enabled: {settings.analytics_enabled ? "Yes" : "No"}</p>
-            <p>Cookie Banner: {settings.cookie_banner_enabled ? "Enabled" : "Disabled"}</p>
-          </div>
-        </div>
-
-        {/* Save Button */}
-        <Button onClick={handleSave} disabled={isSaving} className="w-full">
-          {isSaving ? (
+        <Button onClick={handleSave} disabled={saving} className="w-full">
+          {saving ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Saving...
@@ -267,6 +265,16 @@ export function CookieSettingsManager() {
             </>
           )}
         </Button>
+
+        {/* Debug Info */}
+        <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+          <h4 className="text-sm font-medium mb-2">Debug Information</h4>
+          <div className="text-xs space-y-1">
+            <div>GA ID: {settings.google_analytics_id || "Not set"}</div>
+            <div>Analytics Enabled: {settings.analytics_enabled ? "Yes" : "No"}</div>
+            <div>Cookie Banner: {settings.cookie_banner_enabled ? "Enabled" : "Disabled"}</div>
+          </div>
+        </div>
       </CardContent>
     </Card>
   )

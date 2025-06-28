@@ -17,28 +17,22 @@ declare global {
 
 export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
   useEffect(() => {
-    if (consent && pixelId && typeof window !== "undefined") {
-      // Ініціалізуємо Facebook Pixel
-      window.fbq = function fbq() {
-        if (window.fbq.callMethod) {
-          window.fbq.callMethod.apply(window.fbq, arguments)
-        } else {
-          window.fbq.queue.push(arguments)
-        }
+    if (consent && pixelId) {
+      console.log(`Facebook Pixel initialized with ID: ${pixelId}`)
+
+      if (typeof window !== "undefined") {
+        // Ініціалізуємо Facebook Pixel
+        window.fbq =
+          window.fbq ||
+          (() => {
+            ;(window.fbq.q = window.fbq.q || []).push(arguments)
+          })
+        window.fbq.l = +new Date()
+        window.fbq("init", pixelId)
+        window.fbq("track", "PageView")
       }
-
-      if (!window._fbq) {
-        window._fbq = window.fbq
-      }
-
-      window.fbq.push = window.fbq
-      window.fbq.loaded = true
-      window.fbq.version = "2.0"
-      window.fbq.queue = []
-
-      // Ініціалізуємо pixel
-      window.fbq("init", pixelId)
-      window.fbq("track", "PageView")
+    } else {
+      console.log("Facebook Pixel not loaded - consent:", consent, "pixelId:", pixelId)
     }
   }, [pixelId, consent])
 
@@ -48,7 +42,17 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
 
   return (
     <>
-      <Script src="https://connect.facebook.net/en_US/fbevents.js" strategy="afterInteractive" />
+      <Script
+        id="fb-pixel"
+        strategy="afterInteractive"
+        src="https://connect.facebook.net/en_US/fbevents.js"
+        onLoad={() => {
+          console.log("Facebook Pixel script loaded")
+        }}
+        onError={(e) => {
+          console.error("Failed to load Facebook Pixel script:", e)
+        }}
+      />
       <noscript>
         <img
           height="1"
