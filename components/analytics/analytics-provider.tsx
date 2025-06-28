@@ -6,7 +6,7 @@ import { GoogleTagManager } from "./google-tag-manager"
 import { FacebookPixel } from "./facebook-pixel"
 import { useCookieConsent } from "@/hooks/use-cookie-consent"
 
-interface CookieSettings {
+interface AnalyticsSettings {
   google_analytics_id: string
   google_tag_manager_id: string
   facebook_pixel_id: string
@@ -16,10 +16,11 @@ interface CookieSettings {
 }
 
 export function AnalyticsProvider() {
-  const [settings, setSettings] = useState<CookieSettings | null>(null)
+  const [settings, setSettings] = useState<AnalyticsSettings | null>(null)
   const { consent } = useCookieConsent()
 
   useEffect(() => {
+    // Завантажуємо налаштування аналітики
     const fetchSettings = async () => {
       try {
         const response = await fetch("/api/admin/cookie-settings")
@@ -28,24 +29,31 @@ export function AnalyticsProvider() {
           setSettings(data)
         }
       } catch (error) {
-        console.error("Error fetching cookie settings:", error)
+        console.error("Error fetching analytics settings:", error)
       }
     }
 
     fetchSettings()
   }, [])
 
-  if (!settings) return null
-
-  const shouldLoadAnalytics = consent.analytics && settings.google_analytics_id
-  const shouldLoadGTM = consent.analytics && settings.google_tag_manager_id
-  const shouldLoadFacebookPixel = consent.marketing && settings.facebook_pixel_id
+  if (!settings) {
+    return null
+  }
 
   return (
     <>
-      {shouldLoadAnalytics && <GoogleAnalytics measurementId={settings.google_analytics_id} />}
-      {shouldLoadGTM && <GoogleTagManager containerId={settings.google_tag_manager_id} />}
-      {shouldLoadFacebookPixel && <FacebookPixel pixelId={settings.facebook_pixel_id} />}
+      {/* Google Analytics - завантажується тільки при згоді на аналітику */}
+      {settings.google_analytics_id && (
+        <GoogleAnalytics gaId={settings.google_analytics_id} consent={consent.analytics} />
+      )}
+
+      {/* Google Tag Manager - завантажується тільки при згоді на аналітику */}
+      {settings.google_tag_manager_id && (
+        <GoogleTagManager gtmId={settings.google_tag_manager_id} consent={consent.analytics} />
+      )}
+
+      {/* Facebook Pixel - завантажується тільки при згоді на маркетинг */}
+      {settings.facebook_pixel_id && <FacebookPixel pixelId={settings.facebook_pixel_id} consent={consent.marketing} />}
     </>
   )
 }

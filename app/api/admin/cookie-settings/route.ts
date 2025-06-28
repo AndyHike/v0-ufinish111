@@ -6,23 +6,44 @@ export async function GET() {
   try {
     const supabase = createClient()
 
-    const { data, error } = await supabase.from("site_settings").select("*").eq("key", "cookie_settings").single()
+    // Отримуємо всі налаштування cookies з app_settings
+    const { data: settings, error } = await supabase
+      .from("app_settings")
+      .select("key, value")
+      .in("key", [
+        "google_analytics_id",
+        "google_tag_manager_id",
+        "facebook_pixel_id",
+        "cookie_banner_enabled",
+        "analytics_enabled",
+        "marketing_enabled",
+      ])
 
-    if (error && error.code !== "PGRST116") {
+    if (error) {
       console.error("Error fetching cookie settings:", error)
       return NextResponse.json({ error: "Failed to fetch settings" }, { status: 500 })
     }
 
-    const settings = data?.value || {
-      google_analytics_id: "",
-      google_tag_manager_id: "",
-      facebook_pixel_id: "",
-      cookie_banner_enabled: true,
-      analytics_enabled: true,
-      marketing_enabled: true,
+    // Конвертуємо масив в об'єкт
+    const settingsObj = settings.reduce(
+      (acc, setting) => {
+        acc[setting.key] = setting.value
+        return acc
+      },
+      {} as Record<string, any>,
+    )
+
+    // Повертаємо з дефолтними значеннями
+    const cookieSettings = {
+      google_analytics_id: settingsObj.google_analytics_id || "",
+      google_tag_manager_id: settingsObj.google_tag_manager_id || "",
+      facebook_pixel_id: settingsObj.facebook_pixel_id || "",
+      cookie_banner_enabled: settingsObj.cookie_banner_enabled !== "false",
+      analytics_enabled: settingsObj.analytics_enabled !== "false",
+      marketing_enabled: settingsObj.marketing_enabled !== "false",
     }
 
-    return NextResponse.json(settings)
+    return NextResponse.json(cookieSettings)
   } catch (error) {
     console.error("Error in cookie settings GET:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
@@ -40,18 +61,42 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const supabase = createClient()
 
-    const { error } = await supabase.from("site_settings").upsert({
-      key: "cookie_settings",
-      value: body,
-      updated_at: new Date().toISOString(),
-    })
+    // Зберігаємо кожне налаштування окремо в app_settings
+    for (const [key, value] of Object.entries(body)) {
+      // Перевіряємо чи існує запис
+      const { data: existing } = await supabase.from("app_settings").select("key").eq("key", key).single()
 
-    if (error) {
-      console.error("Error saving cookie settings:", error)
-      return NextResponse.json({ error: "Failed to save settings" }, { status: 500 })
+      if (existing) {
+        // Оновлюємо існуючий запис
+        const { error: updateError } = await supabase
+          .from("app_settings")
+          .update({
+            value: String(value),
+            updated_at: new Date().toISOString(),
+          })
+          .eq("key", key)
+
+        if (updateError) {
+          console.error(`Error updating ${key}:`, updateError)
+          throw updateError
+        }
+      } else {
+        // Створюємо новий запис
+        const { error: insertError } = await supabase.from("app_settings").insert({
+          key,
+          value: String(value),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+
+        if (insertError) {
+          console.error(`Error inserting ${key}:`, insertError)
+          throw insertError
+        }
+      }
     }
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true, message: "Settings saved successfully" })
   } catch (error) {
     console.error("Error in cookie settings POST:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })

@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { toast } from "sonner"
-import { Loader2, Save, Settings } from "lucide-react"
+import { Loader2, Save, Settings, Eye, EyeOff, CheckCircle } from "lucide-react"
 
 interface CookieSettings {
   google_analytics_id: string
@@ -30,6 +30,8 @@ export function CookieSettingsManager() {
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [showIds, setShowIds] = useState(false)
+  const [lastSaved, setLastSaved] = useState<Date | null>(null)
 
   useEffect(() => {
     fetchSettings()
@@ -37,11 +39,16 @@ export function CookieSettingsManager() {
 
   const fetchSettings = async () => {
     try {
+      setLoading(true)
       const response = await fetch("/api/admin/cookie-settings")
-      if (response.ok) {
-        const data = await response.json()
-        setSettings(data)
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
       }
+
+      const data = await response.json()
+      console.log("Fetched settings:", data)
+      setSettings(data)
     } catch (error) {
       console.error("Error fetching cookie settings:", error)
       toast.error("Failed to load cookie settings")
@@ -53,6 +60,8 @@ export function CookieSettingsManager() {
   const handleSave = async () => {
     setSaving(true)
     try {
+      console.log("Saving settings:", settings)
+
       const response = await fetch("/api/admin/cookie-settings", {
         method: "POST",
         headers: {
@@ -61,12 +70,15 @@ export function CookieSettingsManager() {
         body: JSON.stringify(settings),
       })
 
-      if (response.ok) {
-        toast.success("Cookie settings saved successfully!")
-      } else {
-        const error = await response.json()
-        toast.error(error.message || "Failed to save cookie settings")
+      const result = await response.json()
+      console.log("Save response:", result)
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to save settings")
       }
+
+      setLastSaved(new Date())
+      toast.success("Cookie settings saved successfully!")
     } catch (error) {
       console.error("Error saving cookie settings:", error)
       toast.error("Failed to save cookie settings")
@@ -83,7 +95,8 @@ export function CookieSettingsManager() {
     return (
       <Card>
         <CardContent className="flex items-center justify-center p-6">
-          <Loader2 className="h-6 w-6 animate-spin" />
+          <Loader2 className="h-6 w-6 animate-spin mr-2" />
+          Loading cookie settings...
         </CardContent>
       </Card>
     )
@@ -92,45 +105,77 @@ export function CookieSettingsManager() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Settings className="h-5 w-5" />
-          Cookie & Analytics Settings
+        <CardTitle className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Settings className="h-5 w-5" />
+            Cookie & Analytics Settings
+          </div>
+          <div className="flex items-center gap-2">
+            {lastSaved && (
+              <div className="flex items-center text-sm text-green-600">
+                <CheckCircle className="h-4 w-4 mr-1" />
+                Saved {lastSaved.toLocaleTimeString()}
+              </div>
+            )}
+            <Button variant="outline" size="sm" onClick={() => setShowIds(!showIds)}>
+              {showIds ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              {showIds ? "Hide IDs" : "Show IDs"}
+            </Button>
+          </div>
         </CardTitle>
-        <CardDescription>Configure cookie consent and analytics tracking services</CardDescription>
+        <CardDescription>
+          Configure analytics and marketing services. Services will only load when users consent to cookies.
+        </CardDescription>
       </CardHeader>
+
       <CardContent className="space-y-6">
         {/* Analytics Services */}
         <div className="space-y-4">
           <h3 className="text-lg font-medium">Analytics Services</h3>
 
           <div className="space-y-2">
-            <Label htmlFor="google_analytics_id">Google Analytics ID</Label>
+            <Label htmlFor="google_analytics_id">Google Analytics 4 Property ID</Label>
             <Input
               id="google_analytics_id"
+              type={showIds ? "text" : "password"}
               placeholder="G-XXXXXXXXXX"
               value={settings.google_analytics_id}
               onChange={(e) => updateSetting("google_analytics_id", e.target.value)}
             />
+            <p className="text-xs text-muted-foreground">
+              Find this in Google Analytics → Admin → Property Settings → Property Details
+            </p>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="google_tag_manager_id">Google Tag Manager ID</Label>
+            <Label htmlFor="google_tag_manager_id">Google Tag Manager Container ID</Label>
             <Input
               id="google_tag_manager_id"
+              type={showIds ? "text" : "password"}
               placeholder="GTM-XXXXXXX"
               value={settings.google_tag_manager_id}
               onChange={(e) => updateSetting("google_tag_manager_id", e.target.value)}
             />
+            <p className="text-xs text-muted-foreground">Find this in Google Tag Manager → Container Settings</p>
           </div>
+        </div>
+
+        <Separator />
+
+        {/* Marketing Services */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium">Marketing Services</h3>
 
           <div className="space-y-2">
             <Label htmlFor="facebook_pixel_id">Facebook Pixel ID</Label>
             <Input
               id="facebook_pixel_id"
+              type={showIds ? "text" : "password"}
               placeholder="1234567890123456"
               value={settings.facebook_pixel_id}
               onChange={(e) => updateSetting("facebook_pixel_id", e.target.value)}
             />
+            <p className="text-xs text-muted-foreground">Find this in Facebook Business Manager → Events Manager</p>
           </div>
         </div>
 

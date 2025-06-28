@@ -1,13 +1,30 @@
 "use client"
 
+import { useEffect } from "react"
 import Script from "next/script"
 
 interface GoogleTagManagerProps {
-  containerId: string
+  gtmId: string
+  consent: boolean
 }
 
-export function GoogleTagManager({ containerId }: GoogleTagManagerProps) {
-  if (!containerId) return null
+export function GoogleTagManager({ gtmId, consent }: GoogleTagManagerProps) {
+  useEffect(() => {
+    if (consent && gtmId && typeof window !== "undefined") {
+      // Ініціалізуємо dataLayer для GTM
+      window.dataLayer = window.dataLayer || []
+      window.dataLayer.push({
+        "gtm.start": new Date().getTime(),
+        event: "gtm.js",
+      })
+
+      console.log("Google Tag Manager initialized with ID:", gtmId)
+    }
+  }, [gtmId, consent])
+
+  if (!consent || !gtmId) {
+    return null
+  }
 
   return (
     <>
@@ -20,13 +37,13 @@ export function GoogleTagManager({ containerId }: GoogleTagManagerProps) {
             new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
             j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-            })(window,document,'script','dataLayer','${containerId}');
+            })(window,document,'script','dataLayer','${gtmId}');
           `,
         }}
       />
       <noscript>
         <iframe
-          src={`https://www.googletagmanager.com/ns.html?id=${containerId}`}
+          src={`https://www.googletagmanager.com/ns.html?id=${gtmId}`}
           height="0"
           width="0"
           style={{ display: "none", visibility: "hidden" }}
@@ -34,4 +51,14 @@ export function GoogleTagManager({ containerId }: GoogleTagManagerProps) {
       </noscript>
     </>
   )
+}
+
+// Функція для відправки подій в GTM
+export function pushToDataLayer(event: string, data?: Record<string, any>) {
+  if (typeof window !== "undefined" && window.dataLayer) {
+    window.dataLayer.push({
+      event,
+      ...data,
+    })
+  }
 }
