@@ -41,12 +41,10 @@ export function MaintenanceModeToggle() {
         const data = await response.json()
         if (data.settings) {
           setSettings({
-            enabled: data.settings.maintenance_mode_enabled === "true",
-            title: data.settings.maintenance_mode_title || "Технічні роботи",
-            message:
-              data.settings.maintenance_mode_message ||
-              "Наразі проводяться технічні роботи. Будь ласка, спробуйте пізніше.",
-            estimated_completion: data.settings.maintenance_mode_estimated_completion || "",
+            enabled: data.settings.enabled === "true",
+            title: data.settings.title || "Технічні роботи",
+            message: data.settings.message || "Наразі проводяться технічні роботи. Будь ласка, спробуйте пізніше.",
+            estimated_completion: data.settings.estimated_completion || "",
           })
         }
       }

@@ -1,18 +1,20 @@
-import type { ReactNode } from "react"
+import type React from "react"
+import type { Metadata } from "next"
 
-interface MaintenanceLayoutProps {
-  children: ReactNode
+export const metadata: Metadata = {
+  title: "Технічні роботи",
+  description: "Сайт тимчасово недоступний через технічні роботи",
 }
 
-export default function MaintenanceLayout({ children }: MaintenanceLayoutProps) {
+export default function MaintenanceLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   return (
-    <html>
-      <head>
-        <title>Технічні роботи</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="robots" content="noindex, nofollow" />
-      </head>
-      <body className="overflow-hidden">{children}</body>
+    <html lang="uk" suppressHydrationWarning>
+      <head />
+      <body className="antialiased">{children}</body>
     </html>
   )
 }

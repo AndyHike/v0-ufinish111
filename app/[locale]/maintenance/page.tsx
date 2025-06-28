@@ -15,7 +15,7 @@ export default async function MaintenancePage({
   const estimatedCompletion = await getAppSetting("maintenance_mode_estimated_completion")
 
   return (
-    <div className="fixed inset-0 w-screen h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 overflow-hidden">
+    <div className="fixed inset-0 w-screen h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 overflow-hidden z-[9999]">
       {/* Admin Login Button - Fixed Position */}
       <div className="absolute top-6 right-6 z-50">
         <Button
