@@ -1,3 +1,15 @@
+export interface AnalyticsEvent {
+  action: string
+  category: string
+  label?: string
+  value?: number
+}
+
+export interface GTMEvent {
+  event: string
+  [key: string]: any
+}
+
 declare global {
   interface Window {
     gtag: (...args: any[]) => void
@@ -6,5 +18,3 @@ declare global {
     _fbq: any
   }
 }
-
-export {}

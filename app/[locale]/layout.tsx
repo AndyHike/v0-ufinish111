@@ -72,15 +72,15 @@ export default async function LocaleLayout({
   return (
     <NextIntlClientProvider locale={locale} messages={messages}>
       <CookieConsentProvider>
-        <Suspense fallback={<div>Loading...</div>}>
-          <div className="flex min-h-screen flex-col">
-            <Header user={user} />
-            <main className="flex-1">{children}</main>
-            <Footer />
-            <CookieBanner />
+        <div className="flex min-h-screen flex-col">
+          <Header user={user} />
+          <main className="flex-1">{children}</main>
+          <Footer />
+          <CookieBanner />
+          <Suspense fallback={null}>
             <AnalyticsProvider />
-          </div>
-        </Suspense>
+          </Suspense>
+        </div>
       </CookieConsentProvider>
     </NextIntlClientProvider>
   )

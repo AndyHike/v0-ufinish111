@@ -8,6 +8,13 @@ interface FacebookPixelProps {
   pixelId: string
 }
 
+declare global {
+  interface Window {
+    fbq: (...args: any[]) => void
+    _fbq: any
+  }
+}
+
 export function FacebookPixel({ pixelId }: FacebookPixelProps) {
   const { consent } = useCookieConsentContext()
 

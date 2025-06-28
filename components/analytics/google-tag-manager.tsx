@@ -13,11 +13,11 @@ export function GoogleTagManager({ gtmId }: GoogleTagManagerProps) {
 
   useEffect(() => {
     if (consent.analytics && gtmId && typeof window !== "undefined") {
-      // Push initial dataLayer events
+      // Push GTM events
       window.dataLayer = window.dataLayer || []
       window.dataLayer.push({
-        event: "gtm.js",
         "gtm.start": new Date().getTime(),
+        event: "gtm.js",
       })
     }
   }, [consent.analytics, gtmId])

@@ -8,9 +8,9 @@ import type { CookieSettings } from "@/types/cookie-consent"
 
 export function AnalyticsProvider() {
   const [settings, setSettings] = useState<CookieSettings | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    // Fetch cookie settings from API
     const fetchSettings = async () => {
       try {
         const response = await fetch("/api/admin/cookie-settings")
@@ -20,13 +20,15 @@ export function AnalyticsProvider() {
         }
       } catch (error) {
         console.error("Error fetching cookie settings:", error)
+      } finally {
+        setIsLoading(false)
       }
     }
 
     fetchSettings()
   }, [])
 
-  if (!settings || !settings.cookieBannerEnabled) {
+  if (isLoading || !settings || !settings.cookieBannerEnabled) {
     return null
   }
 

@@ -8,6 +8,13 @@ interface GoogleAnalyticsProps {
   gaId: string
 }
 
+declare global {
+  interface Window {
+    gtag: (...args: any[]) => void
+    dataLayer: any[]
+  }
+}
+
 export function GoogleAnalytics({ gaId }: GoogleAnalyticsProps) {
   const { consent } = useCookieConsentContext()
 
