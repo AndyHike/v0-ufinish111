@@ -117,6 +117,8 @@
     "allBrands": "All Brands",
     "allBrandsDescription": "Complete list of all mobile phone brands we repair",
     "allBrandsButton": "View All Brands",
+    "productLines": "Product Lines",
+    "viewAllModels": "View All Models",
     "brandPageDescription": "Browse all available phone models for {brand} that we repair.",
     "availableModels": "Available Models",
     "noModelsAvailable": "No models available for {brand} yet.",
