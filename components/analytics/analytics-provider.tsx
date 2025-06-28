@@ -18,23 +18,23 @@ interface AnalyticsSettings {
 export function AnalyticsProvider() {
   const [settings, setSettings] = useState<AnalyticsSettings | null>(null)
   const [isLoaded, setIsLoaded] = useState(false)
-  const { consent } = useCookieConsent()
+  const { consent, hasInteracted } = useCookieConsent()
 
   useEffect(() => {
     // Завантажуємо налаштування аналітики
     const fetchSettings = async () => {
       try {
-        console.log("Fetching analytics settings...")
+        console.log("🔄 Fetching analytics settings...")
         const response = await fetch("/api/admin/cookie-settings")
         if (response.ok) {
           const data = await response.json()
-          console.log("Analytics settings loaded:", data)
+          console.log("✅ Analytics settings loaded:", data)
           setSettings(data)
         } else {
-          console.error("Failed to fetch analytics settings, status:", response.status)
+          console.error("❌ Failed to fetch analytics settings, status:", response.status)
         }
       } catch (error) {
-        console.error("Error fetching analytics settings:", error)
+        console.error("❌ Error fetching analytics settings:", error)
       } finally {
         setIsLoaded(true)
       }
@@ -43,62 +43,58 @@ export function AnalyticsProvider() {
     fetchSettings()
   }, [])
 
-  // Логування стану consent
+  // Логування стану consent при зміні
   useEffect(() => {
-    console.log("Cookie consent state:", consent)
-    console.log("Analytics consent:", consent.analytics)
-    console.log("Marketing consent:", consent.marketing)
+    if (hasInteracted) {
+      console.log("🍪 Cookie consent state updated:")
+      console.log("  - Analytics:", consent.analytics ? "✅ ACCEPTED" : "❌ DENIED")
+      console.log("  - Marketing:", consent.marketing ? "✅ ACCEPTED" : "❌ DENIED")
+      console.log("  - Necessary:", consent.necessary ? "✅ ACCEPTED" : "❌ DENIED")
 
-    if (!consent.analytics) {
-      console.log("⚠️ Analytics consent is FALSE - Google Analytics will NOT load")
-      console.log("💡 Accept analytics cookies to enable Google Analytics")
-    }
-  }, [consent])
-
-  // Логування налаштувань
-  useEffect(() => {
-    if (settings) {
-      console.log("Current analytics settings:", {
-        gaId: settings.google_analytics_id,
-        gtmId: settings.google_tag_manager_id,
-        fbPixelId: settings.facebook_pixel_id,
-        analyticsConsent: consent.analytics,
-        marketingConsent: consent.marketing,
-      })
-
-      // Перевіряємо чи повинен завантажуватися GA
-      const shouldLoadGA = consent.analytics && settings.google_analytics_id
-      console.log("Should load Google Analytics:", shouldLoadGA)
-
-      if (settings.google_analytics_id && !consent.analytics) {
-        console.log("🔒 Google Analytics ID is set but consent is denied")
+      if (settings?.google_analytics_id) {
+        if (consent.analytics) {
+          console.log("🚀 Google Analytics will be activated!")
+        } else {
+          console.log("🔒 Google Analytics blocked by user consent")
+        }
       }
     }
-  }, [settings, consent])
+  }, [consent, hasInteracted, settings])
+
+  // Логування налаштувань при завантаженні
+  useEffect(() => {
+    if (settings && isLoaded) {
+      console.log("⚙️ Analytics configuration:")
+      console.log("  - GA4 ID:", settings.google_analytics_id || "Not configured")
+      console.log("  - GTM ID:", settings.google_tag_manager_id || "Not configured")
+      console.log("  - FB Pixel:", settings.facebook_pixel_id || "Not configured")
+      console.log("  - Cookie Banner:", settings.cookie_banner_enabled ? "Enabled" : "Disabled")
+    }
+  }, [settings, isLoaded])
 
   if (!isLoaded) {
-    console.log("Analytics provider not loaded yet")
+    console.log("⏳ Analytics provider loading...")
     return null
   }
 
   if (!settings) {
-    console.log("No analytics settings found")
+    console.log("⚠️ No analytics settings found")
     return null
   }
 
   return (
     <>
-      {/* Google Analytics - завантажується тільки при згоді на аналітику */}
-      {settings.google_analytics_id && consent.analytics && (
+      {/* Google Analytics - активується динамічно при згоді */}
+      {settings.google_analytics_id && (
         <GoogleAnalytics gaId={settings.google_analytics_id} consent={consent.analytics} />
       )}
 
-      {/* Google Tag Manager - завантажується тільки при згоді на аналітику */}
+      {/* Google Tag Manager - активується динамічно при згоді */}
       {settings.google_tag_manager_id && consent.analytics && (
         <GoogleTagManager gtmId={settings.google_tag_manager_id} consent={consent.analytics} />
       )}
 
-      {/* Facebook Pixel - завантажується тільки при згоді на маркетинг */}
+      {/* Facebook Pixel - активується динамічно при згоді */}
       {settings.facebook_pixel_id && consent.marketing && (
         <FacebookPixel pixelId={settings.facebook_pixel_id} consent={consent.marketing} />
       )}

@@ -34,16 +34,19 @@ export function useCookieConsent() {
             hasInteracted: true,
             consentDate: parsed.consentDate,
           })
+          console.log("🍪 Existing consent loaded:", parsed.consent)
         } else {
           // Consent expired, show banner again
           setState((prev) => ({ ...prev, showBanner: true }))
+          console.log("⏰ Consent expired, showing banner")
         }
       } catch (error) {
-        console.error("Error parsing cookie consent:", error)
+        console.error("❌ Error parsing cookie consent:", error)
         setState((prev) => ({ ...prev, showBanner: true }))
       }
     } else {
       setState((prev) => ({ ...prev, showBanner: true }))
+      console.log("🆕 No existing consent, showing banner")
     }
   }, [])
 
@@ -59,9 +62,20 @@ export function useCookieConsent() {
       hasInteracted: true,
       consentDate: consentData.consentDate,
     })
+
+    console.log("💾 Consent saved:", consent)
+
+    // Логування змін для аналітики
+    if (consent.analytics) {
+      console.log("🚀 Analytics consent granted - Google Analytics will activate!")
+    }
+    if (consent.marketing) {
+      console.log("📢 Marketing consent granted - Marketing pixels will activate!")
+    }
   }
 
   const acceptAll = () => {
+    console.log("✅ User accepted all cookies")
     saveConsent({
       necessary: true,
       analytics: true,
@@ -70,6 +84,7 @@ export function useCookieConsent() {
   }
 
   const acceptNecessary = () => {
+    console.log("🔒 User accepted only necessary cookies")
     saveConsent({
       necessary: true,
       analytics: false,
@@ -85,14 +100,17 @@ export function useCookieConsent() {
         [category]: category === "necessary" ? true : value,
       },
     }))
+    console.log(`🔄 Updated ${category} consent to:`, value)
   }
 
   const saveCurrentSettings = () => {
+    console.log("💾 Saving current cookie settings:", state.consent)
     saveConsent(state.consent)
   }
 
   const setShowBanner = (show: boolean) => {
     setState((prev) => ({ ...prev, showBanner: show }))
+    console.log("🏷️ Banner visibility:", show ? "shown" : "hidden")
   }
 
   return {

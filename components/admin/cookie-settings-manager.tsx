@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { toast } from "sonner"
-import { Loader2, Save, Settings, Eye, EyeOff, CheckCircle, AlertCircle } from "lucide-react"
+import { Loader2, Save, Settings, Eye, EyeOff, CheckCircle, AlertCircle, TestTube } from "lucide-react"
 
 interface CookieSettings {
   google_analytics_id: string
@@ -99,10 +99,33 @@ export function CookieSettingsManager() {
         value: 1,
       })
       toast.success("Test event sent to Google Analytics!")
-      console.log("Test event sent to GA4")
+      console.log("✅ Test event sent to GA4")
     } else {
-      toast.error("Google Analytics not loaded")
-      console.error("GA not available")
+      toast.error("Google Analytics not loaded. Please accept analytics cookies first.")
+      console.error("❌ GA not available - gtag function not found")
+    }
+  }
+
+  const testRealTimeTracking = () => {
+    if (typeof window !== "undefined" && window.gtag) {
+      // Відправляємо кілька тестових подій
+      window.gtag("event", "admin_test_realtime", {
+        event_category: "admin",
+        event_label: "realtime_test",
+        custom_parameter: "test_value",
+      })
+
+      window.gtag("event", "page_view", {
+        page_title: "Admin Test Page",
+        page_location: window.location.href,
+        custom_parameter: "admin_test",
+      })
+
+      toast.success("Real-time test events sent! Check GA4 Real-time reports.")
+      console.log("🚀 Real-time test events sent to GA4")
+    } else {
+      toast.error("Google Analytics not available")
+      console.error("❌ gtag not available for real-time test")
     }
   }
 
@@ -139,7 +162,8 @@ export function CookieSettingsManager() {
           </div>
         </CardTitle>
         <CardDescription>
-          Configure analytics and marketing services. Services will only load when users consent to cookies.
+          Configure analytics and marketing services. Services will automatically activate when users consent to
+          cookies.
         </CardDescription>
       </CardHeader>
 
@@ -160,9 +184,15 @@ export function CookieSettingsManager() {
                 className="flex-1"
               />
               {settings.google_analytics_id && (
-                <Button variant="outline" size="sm" onClick={testAnalytics}>
-                  Test
-                </Button>
+                <div className="flex gap-1">
+                  <Button variant="outline" size="sm" onClick={testAnalytics}>
+                    <TestTube className="h-4 w-4 mr-1" />
+                    Test
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={testRealTimeTracking}>
+                    Real-time
+                  </Button>
+                </div>
               )}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -273,6 +303,7 @@ export function CookieSettingsManager() {
             <div>GA ID: {settings.google_analytics_id || "Not set"}</div>
             <div>Analytics Enabled: {settings.analytics_enabled ? "Yes" : "No"}</div>
             <div>Cookie Banner: {settings.cookie_banner_enabled ? "Enabled" : "Disabled"}</div>
+            <div>gtag Available: {typeof window !== "undefined" && window.gtag ? "Yes" : "No"}</div>
           </div>
         </div>
       </CardContent>
