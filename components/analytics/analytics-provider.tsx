@@ -6,19 +6,17 @@ import { GoogleTagManager } from "./google-tag-manager"
 import { FacebookPixel } from "./facebook-pixel"
 import { useCookieConsent } from "@/hooks/use-cookie-consent"
 
-interface AnalyticsSettings {
-  googleAnalyticsId: string
-  googleTagManagerId: string
-  facebookPixelId: string
+interface CookieSettings {
+  google_analytics_id: string
+  google_tag_manager_id: string
+  facebook_pixel_id: string
+  cookie_banner_enabled: boolean
+  analytics_enabled: boolean
+  marketing_enabled: boolean
 }
 
 export function AnalyticsProvider() {
-  const [settings, setSettings] = useState<AnalyticsSettings>({
-    googleAnalyticsId: "",
-    googleTagManagerId: "",
-    facebookPixelId: "",
-  })
-  const [isLoaded, setIsLoaded] = useState(false)
+  const [settings, setSettings] = useState<CookieSettings | null>(null)
   const { consent } = useCookieConsent()
 
   useEffect(() => {
@@ -27,40 +25,27 @@ export function AnalyticsProvider() {
         const response = await fetch("/api/admin/cookie-settings")
         if (response.ok) {
           const data = await response.json()
-          setSettings({
-            googleAnalyticsId: data.googleAnalyticsId || "",
-            googleTagManagerId: data.googleTagManagerId || "",
-            facebookPixelId: data.facebookPixelId || "",
-          })
+          setSettings(data)
         }
       } catch (error) {
-        console.error("Error fetching analytics settings:", error)
-      } finally {
-        setIsLoaded(true)
+        console.error("Error fetching cookie settings:", error)
       }
     }
 
     fetchSettings()
   }, [])
 
-  if (!isLoaded) {
-    return null
-  }
+  if (!settings) return null
+
+  const shouldLoadAnalytics = consent.analytics && settings.google_analytics_id
+  const shouldLoadGTM = consent.analytics && settings.google_tag_manager_id
+  const shouldLoadFacebookPixel = consent.marketing && settings.facebook_pixel_id
 
   return (
     <>
-      {/* Google Analytics - only load if analytics consent is given */}
-      {consent.analytics && settings.googleAnalyticsId && (
-        <GoogleAnalytics measurementId={settings.googleAnalyticsId} />
-      )}
-
-      {/* Google Tag Manager - only load if analytics consent is given */}
-      {consent.analytics && settings.googleTagManagerId && (
-        <GoogleTagManager containerId={settings.googleTagManagerId} />
-      )}
-
-      {/* Facebook Pixel - only load if marketing consent is given */}
-      {consent.marketing && settings.facebookPixelId && <FacebookPixel pixelId={settings.facebookPixelId} />}
+      {shouldLoadAnalytics && <GoogleAnalytics measurementId={settings.google_analytics_id} />}
+      {shouldLoadGTM && <GoogleTagManager containerId={settings.google_tag_manager_id} />}
+      {shouldLoadFacebookPixel && <FacebookPixel pixelId={settings.facebook_pixel_id} />}
     </>
   )
 }

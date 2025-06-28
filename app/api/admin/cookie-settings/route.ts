@@ -1,98 +1,59 @@
-import { createClient } from "@/lib/supabase"
-import { NextResponse } from "next/server"
-import { getSession } from "@/lib/auth/session"
+import { type NextRequest, NextResponse } from "next/server"
+import { createClient } from "@/utils/supabase/server"
+import { getCurrentUser } from "@/lib/auth/session"
 
-// GET endpoint to retrieve cookie settings
 export async function GET() {
   try {
     const supabase = createClient()
-    const { data: settings, error } = await supabase
-      .from("app_settings")
-      .select("key, value")
-      .in("key", [
-        "googleAnalyticsId",
-        "googleTagManagerId",
-        "facebookPixelId",
-        "cookieBannerEnabled",
-        "cookieConsentVersion",
-      ])
 
-    if (error) {
+    const { data, error } = await supabase.from("site_settings").select("*").eq("key", "cookie_settings").single()
+
+    if (error && error.code !== "PGRST116") {
       console.error("Error fetching cookie settings:", error)
       return NextResponse.json({ error: "Failed to fetch settings" }, { status: 500 })
     }
 
-    // Convert array to object
-    const settingsObj = settings.reduce(
-      (acc, setting) => {
-        acc[setting.key] = setting.value
-        return acc
-      },
-      {} as Record<string, any>,
-    )
-
-    // Set defaults
-    const cookieSettings = {
-      googleAnalyticsId: settingsObj.googleAnalyticsId || "",
-      googleTagManagerId: settingsObj.googleTagManagerId || "",
-      facebookPixelId: settingsObj.facebookPixelId || "",
-      cookieBannerEnabled: settingsObj.cookieBannerEnabled !== "false",
-      cookieConsentVersion: settingsObj.cookieConsentVersion || "1.0",
+    const settings = data?.value || {
+      google_analytics_id: "",
+      google_tag_manager_id: "",
+      facebook_pixel_id: "",
+      cookie_banner_enabled: true,
+      analytics_enabled: true,
+      marketing_enabled: true,
     }
 
-    return NextResponse.json(cookieSettings)
+    return NextResponse.json(settings)
   } catch (error) {
     console.error("Error in cookie settings GET:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
 
-// POST endpoint to update cookie settings
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const session = await getSession()
-    if (!session?.user || session.user.role !== "admin") {
+    const user = await getCurrentUser()
+
+    if (!user || user.role !== "admin") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const settings = await request.json()
+    const body = await request.json()
     const supabase = createClient()
 
-    // Update each setting
-    for (const [key, value] of Object.entries(settings)) {
-      const { data: existingSetting } = await supabase.from("app_settings").select("id").eq("key", key).single()
+    const { error } = await supabase.from("site_settings").upsert({
+      key: "cookie_settings",
+      value: body,
+      updated_at: new Date().toISOString(),
+    })
 
-      if (existingSetting) {
-        const { error: updateError } = await supabase
-          .from("app_settings")
-          .update({
-            value: String(value),
-            updated_at: new Date().toISOString(),
-          })
-          .eq("key", key)
-
-        if (updateError) {
-          console.error(`Error updating ${key}:`, updateError)
-          throw updateError
-        }
-      } else {
-        const { error: insertError } = await supabase.from("app_settings").insert({
-          key,
-          value: String(value),
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-
-        if (insertError) {
-          console.error(`Error inserting ${key}:`, insertError)
-          throw insertError
-        }
-      }
+    if (error) {
+      console.error("Error saving cookie settings:", error)
+      return NextResponse.json({ error: "Failed to save settings" }, { status: 500 })
     }
 
-    return NextResponse.json({ success: true, message: "Settings saved successfully" })
+    return NextResponse.json({ success: true })
   } catch (error) {
     console.error("Error in cookie settings POST:", error)
-    return NextResponse.json({ error: "Failed to save settings" }, { status: 500 })
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

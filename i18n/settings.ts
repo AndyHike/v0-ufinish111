@@ -1,11 +1,15 @@
-/**
- * Глобальні мовні налаштування застосунку.
- * Додавайте сюди нові коди мов, якщо розширюватимете локалізацію.
- */
-export const languages = ["cs", "en", "uk"] as const
-export type SupportedLocale = (typeof languages)[number]
+export const fallbackLng = "cs"
+export const languages = ["cs", "en", "uk"]
+export const defaultNS = "common"
 
-/**
- * Мова за замовчуванням, якщо не вдалося визначити іншу.
- */
-export const defaultLocale: SupportedLocale = "cs"
+export function getOptions(lng = fallbackLng, ns = defaultNS) {
+  return {
+    // debug: true,
+    supportedLngs: languages,
+    fallbackLng,
+    lng,
+    fallbackNS: defaultNS,
+    defaultNS,
+    ns,
+  }
+}

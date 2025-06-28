@@ -1,26 +1,27 @@
-export interface AnalyticsConfig {
-  googleAnalyticsId?: string
-  googleTagManagerId?: string
-  facebookPixelId?: string
+declare global {
+  interface Window {
+    dataLayer: any[]
+    gtag: (...args: any[]) => void
+    fbq: {
+      (...args: any[]): void
+      q: any[]
+      l: number
+    }
+  }
 }
 
-export interface GoogleAnalyticsEvent {
+export interface AnalyticsEvent {
   action: string
   category: string
   label?: string
   value?: number
 }
 
-export interface FacebookPixelEvent {
-  eventName: string
-  parameters?: Record<string, any>
-}
-
-declare global {
-  interface Window {
-    gtag: (...args: any[]) => void
-    dataLayer: any[]
-    fbq: (...args: any[]) => void
-    _fbq: any
-  }
+export interface CookieSettings {
+  google_analytics_id: string
+  google_tag_manager_id: string
+  facebook_pixel_id: string
+  cookie_banner_enabled: boolean
+  analytics_enabled: boolean
+  marketing_enabled: boolean
 }
