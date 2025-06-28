@@ -1,117 +1,106 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
-import type { CookieConsent, CookieCategory } from "@/types/cookie-consent"
+import { useState, useEffect } from "react"
+import type { CookieConsent, CookieConsentState } from "@/types/cookie-consent"
 
 const COOKIE_CONSENT_KEY = "cookie-consent"
-const CONSENT_VERSION = "1.0"
-
-const defaultConsent: CookieConsent = {
-  necessary: true,
-  analytics: false,
-  marketing: false,
-  timestamp: 0,
-  version: CONSENT_VERSION,
-}
+const CONSENT_EXPIRY_DAYS = 365
 
 export function useCookieConsent() {
-  const [consent, setConsent] = useState<CookieConsent>(defaultConsent)
-  const [isLoaded, setIsLoaded] = useState(false)
-  const [showBanner, setShowBanner] = useState(false)
+  const [state, setState] = useState<CookieConsentState>({
+    consent: {
+      necessary: true,
+      analytics: false,
+      marketing: false,
+    },
+    showBanner: false,
+    hasInteracted: false,
+    consentDate: null,
+  })
 
-  // Load consent from localStorage
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(COOKIE_CONSENT_KEY)
-      if (stored) {
-        const parsedConsent = JSON.parse(stored) as CookieConsent
+    const stored = localStorage.getItem(COOKIE_CONSENT_KEY)
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored)
+        const consentDate = new Date(parsed.consentDate)
+        const now = new Date()
+        const daysDiff = (now.getTime() - consentDate.getTime()) / (1000 * 3600 * 24)
 
-        // Check if consent is still valid (not older than 1 year)
-        const oneYearAgo = Date.now() - 365 * 24 * 60 * 60 * 1000
-        const isExpired = parsedConsent.timestamp < oneYearAgo
-        const isOldVersion = parsedConsent.version !== CONSENT_VERSION
-
-        if (isExpired || isOldVersion) {
-          setShowBanner(true)
-          setConsent(defaultConsent)
+        if (daysDiff < CONSENT_EXPIRY_DAYS) {
+          setState({
+            consent: parsed.consent,
+            showBanner: false,
+            hasInteracted: true,
+            consentDate: parsed.consentDate,
+          })
         } else {
-          setConsent(parsedConsent)
-          setShowBanner(false)
+          // Consent expired, show banner again
+          setState((prev) => ({ ...prev, showBanner: true }))
         }
-      } else {
-        setShowBanner(true)
+      } catch (error) {
+        console.error("Error parsing cookie consent:", error)
+        setState((prev) => ({ ...prev, showBanner: true }))
       }
-    } catch (error) {
-      console.error("Error loading cookie consent:", error)
-      setShowBanner(true)
+    } else {
+      setState((prev) => ({ ...prev, showBanner: true }))
     }
-    setIsLoaded(true)
   }, [])
 
-  // Save consent to localStorage
-  const saveConsent = useCallback(
-    (newConsent: Partial<CookieConsent>) => {
-      const updatedConsent: CookieConsent = {
-        ...consent,
-        ...newConsent,
-        necessary: true, // Always true
-        timestamp: Date.now(),
-        version: CONSENT_VERSION,
-      }
+  const saveConsent = (consent: CookieConsent) => {
+    const consentData = {
+      consent,
+      consentDate: new Date().toISOString(),
+    }
+    localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(consentData))
+    setState({
+      consent,
+      showBanner: false,
+      hasInteracted: true,
+      consentDate: consentData.consentDate,
+    })
+  }
 
-      setConsent(updatedConsent)
-      localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(updatedConsent))
-      setShowBanner(false)
-
-      // Trigger custom event for script loading
-      window.dispatchEvent(
-        new CustomEvent("cookieConsentUpdated", {
-          detail: updatedConsent,
-        }),
-      )
-    },
-    [consent],
-  )
-
-  const acceptAll = useCallback(() => {
+  const acceptAll = () => {
     saveConsent({
+      necessary: true,
       analytics: true,
       marketing: true,
     })
-  }, [saveConsent])
+  }
 
-  const acceptNecessary = useCallback(() => {
+  const acceptNecessary = () => {
     saveConsent({
+      necessary: true,
       analytics: false,
       marketing: false,
     })
-  }, [saveConsent])
+  }
 
-  const updateCategory = useCallback(
-    (category: CookieCategory, value: boolean) => {
-      if (category === "necessary") return // Can't change necessary cookies
+  const updateCategory = (category: keyof CookieConsent, value: boolean) => {
+    setState((prev) => ({
+      ...prev,
+      consent: {
+        ...prev.consent,
+        [category]: category === "necessary" ? true : value,
+      },
+    }))
+  }
 
-      saveConsent({
-        [category]: value,
-      })
-    },
-    [saveConsent],
-  )
+  const saveCurrentSettings = () => {
+    saveConsent(state.consent)
+  }
 
-  const resetConsent = useCallback(() => {
-    localStorage.removeItem(COOKIE_CONSENT_KEY)
-    setConsent(defaultConsent)
-    setShowBanner(true)
-  }, [])
+  const setShowBanner = (show: boolean) => {
+    setState((prev) => ({ ...prev, showBanner: show }))
+  }
 
   return {
-    consent,
-    isLoaded,
-    showBanner,
+    ...state,
     acceptAll,
     acceptNecessary,
     updateCategory,
-    resetConsent,
+    saveCurrentSettings,
     setShowBanner,
   }
 }

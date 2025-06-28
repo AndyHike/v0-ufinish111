@@ -2,8 +2,21 @@ export interface CookieConsent {
   necessary: boolean
   analytics: boolean
   marketing: boolean
-  timestamp: number
-  version: string
+}
+
+export interface CookieConsentState {
+  consent: CookieConsent
+  showBanner: boolean
+  hasInteracted: boolean
+  consentDate: string | null
+}
+
+export interface CookieCategoryInfo {
+  id: keyof CookieConsent
+  name: string
+  description: string
+  required: boolean
+  services: string[]
 }
 
 export interface CookieSettings {
@@ -12,14 +25,4 @@ export interface CookieSettings {
   facebookPixelId?: string
   cookieBannerEnabled: boolean
   cookieConsentVersion: string
-}
-
-export type CookieCategory = "necessary" | "analytics" | "marketing"
-
-export interface CookieCategoryInfo {
-  id: CookieCategory
-  name: string
-  description: string
-  required: boolean
-  services: string[]
 }

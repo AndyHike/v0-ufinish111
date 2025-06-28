@@ -87,17 +87,17 @@
       "description": "Záchrana zařízení po kontaktu s tekutinou"
     }
   },
-"cookies": {
-   "banner": {
-    "title": "Používáme cookies",
-     "description": "Používáme cookies k zajištění nejlepšího zážitku na našich webových stránkách. Některé jsou nezbytné, jiné nám pomáhají zlepšovat naše služby a porozumět tomu, jak náš web používáte.",
+  "cookies": {
+    "banner": {
+      "title": "Používáme cookies",
+      "description": "Používáme cookies k zajištění základních funkcí webu a ke zlepšení vašeho zážitku. Můžete si vybrat, které kategorie chcete povolit.",
       "acceptAll": "Přijmout vše",
       "acceptNecessary": "Pouze nezbytné",
-      "customize": "Přizpůsobit"
+      "customize": "Nastavit"
     },
     "settings": {
       "title": "Nastavení cookies",
-      "description": "Můžete si vybrat, které typy cookies chcete povolit. Vaše volba bude uložena po dobu jednoho roku.",
+      "description": "Zde můžete spravovat své preference ohledně cookies. Můžete povolit nebo zakázat různé kategorie podle svých preferencí.",
       "required": "povinné",
       "services": "Služby",
       "acceptAll": "Přijmout vše",
@@ -108,16 +108,16 @@
       "necessary": {
         "name": "Nezbytné cookies",
         "description": "Tyto cookies jsou nezbytné pro správné fungování webu a nelze je vypnout.",
-        "services": "Relace, jazykové nastavení, košík"
+        "services": "Relace, autentifikace, jazykové nastavení"
       },
       "analytics": {
         "name": "Analytické cookies",
-        "description": "Pomáhají nám pochopit, jak návštěvníci používají náš web, abychom jej mohli zlepšovat.",
+        "description": "Tyto cookies nám pomáhají pochopit, jak návštěvníci používají náš web.",
         "services": "Google Analytics, Google Tag Manager"
       },
       "marketing": {
         "name": "Marketingové cookies",
-        "description": "Používají se k zobrazování relevantních reklam a měření efektivity reklamních kampaní.",
+        "description": "Tyto cookies se používají k zobrazování relevantních reklam a měření jejich účinnosti.",
         "services": "Facebook Pixel, Google Ads, Remarketing"
       }
     }

@@ -1,23 +1,25 @@
 "use client"
 
-import { createContext, useContext, type ReactNode } from "react"
+import type React from "react"
+import { createContext, useContext } from "react"
 import { useCookieConsent } from "@/hooks/use-cookie-consent"
-import type { CookieConsent, CookieCategory } from "@/types/cookie-consent"
+import type { CookieConsent } from "@/types/cookie-consent"
 
 interface CookieConsentContextType {
   consent: CookieConsent
-  isLoaded: boolean
   showBanner: boolean
+  hasInteracted: boolean
+  consentDate: string | null
   acceptAll: () => void
   acceptNecessary: () => void
-  updateCategory: (category: CookieCategory, value: boolean) => void
-  resetConsent: () => void
+  updateCategory: (category: keyof CookieConsent, value: boolean) => void
+  saveCurrentSettings: () => void
   setShowBanner: (show: boolean) => void
 }
 
 const CookieConsentContext = createContext<CookieConsentContextType | undefined>(undefined)
 
-export function CookieConsentProvider({ children }: { children: ReactNode }) {
+export function CookieConsentProvider({ children }: { children: React.ReactNode }) {
   const cookieConsent = useCookieConsent()
 
   return <CookieConsentContext.Provider value={cookieConsent}>{children}</CookieConsentContext.Provider>

@@ -23,7 +23,7 @@ interface CookieSettingsModalProps {
 
 export function CookieSettingsModal({ open, onOpenChange }: CookieSettingsModalProps) {
   const t = useTranslations("cookies")
-  const { consent, updateCategory, acceptAll, acceptNecessary } = useCookieConsentContext()
+  const { consent, updateCategory, acceptAll, acceptNecessary, saveCurrentSettings } = useCookieConsentContext()
 
   const cookieCategories: CookieCategoryInfo[] = [
     {
@@ -50,6 +50,17 @@ export function CookieSettingsModal({ open, onOpenChange }: CookieSettingsModalP
   ]
 
   const handleSaveAndClose = () => {
+    saveCurrentSettings()
+    onOpenChange(false)
+  }
+
+  const handleAcceptAll = () => {
+    acceptAll()
+    onOpenChange(false)
+  }
+
+  const handleAcceptNecessary = () => {
+    acceptNecessary()
     onOpenChange(false)
   }
 
@@ -91,11 +102,11 @@ export function CookieSettingsModal({ open, onOpenChange }: CookieSettingsModalP
         </div>
 
         <DialogFooter className="flex-col gap-2 sm:flex-row">
-          <Button variant="outline" onClick={acceptNecessary} className="w-full sm:w-auto bg-transparent">
+          <Button variant="outline" onClick={handleAcceptNecessary} className="w-full sm:w-auto bg-transparent">
             {t("settings.acceptNecessary")}
           </Button>
 
-          <Button onClick={acceptAll} className="w-full sm:w-auto">
+          <Button onClick={handleAcceptAll} className="w-full sm:w-auto">
             {t("settings.acceptAll")}
           </Button>
 

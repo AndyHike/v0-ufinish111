@@ -103,37 +103,37 @@
       "description": "Rescue of devices after contact with liquid"
     }
   },
- "cookies": {
+  "cookies": {
     "banner": {
       "title": "We use cookies",
-      "description": "We use cookies to ensure the best experience on our website. Some are necessary, others help us improve our services and understand how you use our site.",
+      "description": "We use cookies to ensure basic website functionality and to improve your experience. You can choose which categories you want to allow.",
       "acceptAll": "Accept All",
       "acceptNecessary": "Necessary Only",
       "customize": "Customize"
     },
     "settings": {
       "title": "Cookie Settings",
-      "description": "You can choose which types of cookies you want to allow. Your choice will be saved for one year.",
+      "description": "Here you can manage your cookie preferences. You can enable or disable different categories according to your preferences.",
       "required": "required",
       "services": "Services",
       "acceptAll": "Accept All",
       "acceptNecessary": "Necessary Only",
-      "saveAndClose": "Save & Close"
+      "saveAndClose": "Save and Close"
     },
     "categories": {
       "necessary": {
         "name": "Necessary Cookies",
-        "description": "These cookies are essential for the website to function properly and cannot be disabled.",
-        "services": "Sessions, language settings, cart"
+        "description": "These cookies are essential for the proper functioning of the website and cannot be disabled.",
+        "services": "Sessions, authentication, language settings"
       },
       "analytics": {
         "name": "Analytics Cookies",
-        "description": "Help us understand how visitors use our website so we can improve it.",
+        "description": "These cookies help us understand how visitors use our website.",
         "services": "Google Analytics, Google Tag Manager"
       },
       "marketing": {
         "name": "Marketing Cookies",
-        "description": "Used to display relevant ads and measure the effectiveness of advertising campaigns.",
+        "description": "These cookies are used to display relevant ads and measure their effectiveness.",
         "services": "Facebook Pixel, Google Ads, Remarketing"
       }
     }
