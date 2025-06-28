@@ -35,7 +35,6 @@ export function AnalyticsProvider() {
         setSettings(data)
       } catch (error) {
         console.error("❌ Error fetching analytics settings:", error)
-        // Встановлюємо дефолтні налаштування у випадку помилки
         setSettings({
           google_analytics_id: "",
           google_tag_manager_id: "",
@@ -52,31 +51,31 @@ export function AnalyticsProvider() {
     fetchSettings()
   }, [])
 
-  // Логування стану consent
   useEffect(() => {
     if (hasInteracted) {
-      console.log("🍪 Cookie consent updated:")
+      console.log("🍪 Cookie consent status:")
       console.log("  Analytics:", consent.analytics ? "✅ GRANTED" : "❌ DENIED")
       console.log("  Marketing:", consent.marketing ? "✅ GRANTED" : "❌ DENIED")
       console.log("  Necessary:", consent.necessary ? "✅ GRANTED" : "❌ DENIED")
     }
   }, [consent, hasInteracted])
 
-  // Логування готовності до завантаження аналітики
   useEffect(() => {
     if (settings && isLoaded) {
       console.log("📊 Analytics Provider Status:")
       console.log("  Settings loaded:", "✅")
       console.log("  GA4 ID:", settings.google_analytics_id || "❌ Not set")
       console.log("  Analytics consent:", consent.analytics ? "✅" : "❌")
-      console.log("  Should load GA:", !!(settings.google_analytics_id && consent.analytics))
+      console.log("  Should load GA:", !!settings.google_analytics_id)
 
-      if (settings.google_analytics_id && consent.analytics) {
-        console.log("🚀 All conditions met - Google Analytics should load!")
-      } else if (!settings.google_analytics_id) {
+      if (settings.google_analytics_id) {
+        if (consent.analytics) {
+          console.log("🚀 GA will be active immediately!")
+        } else {
+          console.log("⏳ GA loaded but waiting for consent...")
+        }
+      } else {
         console.log("⚠️ Google Analytics ID not configured")
-      } else if (!consent.analytics) {
-        console.log("⚠️ Analytics consent not granted")
       }
     }
   }, [settings, isLoaded, consent])
@@ -93,7 +92,7 @@ export function AnalyticsProvider() {
 
   return (
     <>
-      {/* Google Analytics - завантажується при наявності ID та згоди */}
+      {/* Google Analytics - завантажується завжди, але активується тільки при згоді */}
       {settings.google_analytics_id && (
         <GoogleAnalytics gaId={settings.google_analytics_id} consent={consent.analytics} />
       )}

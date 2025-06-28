@@ -11,184 +11,162 @@ declare global {
   interface Window {
     gtag: (...args: any[]) => void
     dataLayer: any[]
-    ga_debug?: boolean
   }
 }
 
 export function GoogleAnalytics({ gaId, consent }: GoogleAnalyticsProps) {
   const scriptLoadedRef = useRef(false)
   const gaInitializedRef = useRef(false)
-  const consentGrantedRef = useRef(false)
+  const consentProcessedRef = useRef(false)
 
-  useEffect(() => {
-    if (!consent || !gaId || typeof window === "undefined") {
-      console.log("❌ GA not initialized:", { consent, gaId, window: typeof window })
-      return
+  // Функція для ініціалізації GA
+  const initializeGA = () => {
+    if (typeof window === "undefined" || !gaId) return
+
+    console.log("🚀 Initializing Google Analytics...")
+
+    // Ініціалізуємо dataLayer
+    window.dataLayer = window.dataLayer || []
+
+    // Створюємо gtag функцію
+    window.gtag = function gtag() {
+      window.dataLayer.push(arguments)
     }
 
-    console.log("🚀 Starting GA initialization process...")
+    // Встановлюємо час
+    window.gtag("js", new Date())
 
-    const initializeGoogleAnalytics = () => {
-      // Ініціалізуємо dataLayer
-      window.dataLayer = window.dataLayer || []
+    // Налаштовуємо consent
+    window.gtag("consent", "default", {
+      analytics_storage: consent ? "granted" : "denied",
+      ad_storage: "denied",
+      functionality_storage: "granted",
+      personalization_storage: "granted",
+      security_storage: "granted",
+    })
 
-      // Створюємо gtag функцію
-      window.gtag = function gtag() {
-        window.dataLayer.push(arguments)
+    // Конфігуруємо GA4
+    window.gtag("config", gaId, {
+      send_page_view: true,
+      page_title: document.title,
+      page_location: window.location.href,
+      transport_type: "beacon",
+    })
+
+    gaInitializedRef.current = true
+    console.log("✅ GA4 initialized with ID:", gaId)
+  }
+
+  // Функція для активації аналітики після згоди
+  const activateAnalytics = () => {
+    if (typeof window === "undefined" || !window.gtag || !gaId) return
+
+    console.log("🔥 ACTIVATING ANALYTICS IMMEDIATELY!")
+
+    // Оновлюємо consent
+    window.gtag("consent", "update", {
+      analytics_storage: "granted",
+    })
+
+    // Відправляємо page_view одразу
+    window.gtag("event", "page_view", {
+      page_title: document.title,
+      page_location: window.location.href,
+      send_to: gaId,
+      transport_type: "beacon",
+    })
+
+    // Відправляємо подію про активацію
+    window.gtag("event", "analytics_activated", {
+      event_category: "consent",
+      event_label: "immediate_activation",
+      send_to: gaId,
+      transport_type: "beacon",
+    })
+
+    // Відправляємо додаткову подію для впевненості
+    window.gtag("event", "user_engagement", {
+      engagement_time_msec: 1000,
+      send_to: gaId,
+      transport_type: "beacon",
+    })
+
+    console.log("📊 Analytics data sent immediately!")
+    consentProcessedRef.current = true
+  }
+
+  // Завантаження скрипта
+  useEffect(() => {
+    if (!gaId || typeof window === "undefined") return
+
+    const loadScript = async () => {
+      // Перевіряємо чи скрипт вже існує
+      const existingScript = document.querySelector(`script[src*="gtag/js?id=${gaId}"]`)
+      if (existingScript || scriptLoadedRef.current) {
+        console.log("📦 GA script already loaded")
+        if (!gaInitializedRef.current) {
+          initializeGA()
+        }
+        return
       }
 
-      // Встановлюємо час
-      window.gtag("js", new Date())
+      console.log("📥 Loading GA script...")
+      const script = document.createElement("script")
+      script.async = true
+      script.src = `https://www.googletagmanager.com/gtag/js?id=${gaId}`
 
-      // ВАЖЛИВО: Спочатку налаштовуємо consent
-      window.gtag("consent", "default", {
-        analytics_storage: "granted",
-        ad_storage: "denied",
-        functionality_storage: "granted",
-        personalization_storage: "granted",
-        security_storage: "granted",
-      })
+      script.onload = () => {
+        console.log("✅ GA script loaded successfully")
+        scriptLoadedRef.current = true
 
-      // Конфігуруємо GA4 з правильними параметрами
-      window.gtag("config", gaId, {
-        send_page_view: true,
-        page_title: document.title,
-        page_location: window.location.href,
-        transport_type: "beacon", // Важливо для надійної відправки
-        custom_map: {
-          custom_parameter_1: "dimension1",
-        },
-      })
-
-      gaInitializedRef.current = true
-      console.log("✅ GA4 configured successfully!")
-      console.log("📊 Property ID:", gaId)
-      console.log("📄 Current page:", window.location.href)
-
-      // Форсуємо відправку початкової події
-      setTimeout(() => {
-        window.gtag("event", "page_view", {
-          page_title: document.title,
-          page_location: window.location.href,
-          send_to: gaId,
-        })
-        console.log("📄 Manual page_view sent")
-      }, 500)
-
-      // Відправляємо тестову подію для перевірки
-      setTimeout(() => {
-        window.gtag("event", "ga_initialized", {
-          event_category: "system",
-          event_label: "automatic_initialization",
-          send_to: gaId,
-          transport_type: "beacon",
-        })
-        console.log("🎯 Test event sent: ga_initialized")
-      }, 1000)
-    }
-
-    const loadScript = () => {
-      return new Promise<void>((resolve, reject) => {
-        // Перевіряємо чи скрипт вже існує
-        const existingScript = document.querySelector(`script[src*="gtag/js?id=${gaId}"]`)
-        if (existingScript) {
-          console.log("📦 GA script already exists")
-          resolve()
-          return
-        }
-
-        console.log("📥 Loading GA script from CDN...")
-        const script = document.createElement("script")
-        script.async = true
-        script.src = `https://www.googletagmanager.com/gtag/js?id=${gaId}`
-
-        script.onload = () => {
-          console.log("✅ GA script loaded successfully")
-          scriptLoadedRef.current = true
-          resolve()
-        }
-
-        script.onerror = (error) => {
-          console.error("❌ Failed to load GA script:", error)
-          reject(error)
-        }
-
-        document.head.appendChild(script)
-      })
-    }
-
-    const setupGA = async () => {
-      try {
-        // Завантажуємо скрипт
-        await loadScript()
-
-        // Чекаємо трохи щоб скрипт повністю завантажився
-        await new Promise((resolve) => setTimeout(resolve, 1000))
-
-        // Ініціалізуємо GA
-        initializeGoogleAnalytics()
-
-        // Додаткова затримка для стабільності
+        // Ініціалізуємо GA після завантаження скрипта
         setTimeout(() => {
-          if (window.gtag) {
-            // Форсуємо відправку даних
-            window.gtag("event", "consent_granted", {
-              event_category: "consent",
-              event_label: "analytics_consent_granted",
-              send_to: gaId,
-              transport_type: "beacon",
-            })
-            console.log("🍪 Consent granted event sent")
+          initializeGA()
+
+          // Якщо consent вже є, активуємо одразу
+          if (consent && !consentProcessedRef.current) {
+            setTimeout(() => {
+              activateAnalytics()
+            }, 500)
           }
-        }, 2000)
-
-        console.log("🎉 Google Analytics setup completed!")
-      } catch (error) {
-        console.error("❌ Error setting up Google Analytics:", error)
+        }, 100)
       }
+
+      script.onerror = (error) => {
+        console.error("❌ Failed to load GA script:", error)
+      }
+
+      document.head.appendChild(script)
     }
 
-    // Запускаємо налаштування тільки якщо ще не ініціалізовано
-    if (!gaInitializedRef.current) {
-      setupGA()
-    }
+    loadScript()
+  }, [gaId])
 
-    // Cleanup function
-    return () => {
-      console.log("🧹 GA component cleanup")
-    }
-  }, [gaId, consent])
-
-  // Окремий useEffect для відстеження зміни consent
+  // Реагування на зміну consent
   useEffect(() => {
-    if (consent && gaInitializedRef.current && !consentGrantedRef.current) {
-      console.log("🔄 Consent changed to true, forcing data send...")
-      consentGrantedRef.current = true
+    if (!consent || consentProcessedRef.current) return
 
-      if (typeof window !== "undefined" && window.gtag) {
-        // Оновлюємо consent
-        window.gtag("consent", "update", {
-          analytics_storage: "granted",
-        })
+    console.log("🍪 Consent granted, checking GA status...")
 
-        // Форсуємо відправку page_view
-        window.gtag("event", "page_view", {
-          page_title: document.title,
-          page_location: window.location.href,
-          send_to: gaId,
-          transport_type: "beacon",
-        })
+    if (gaInitializedRef.current && scriptLoadedRef.current) {
+      // GA вже готовий, активуємо одразу
+      console.log("⚡ GA ready, activating immediately!")
+      activateAnalytics()
+    } else {
+      // Чекаємо поки GA буде готовий
+      console.log("⏳ Waiting for GA to be ready...")
+      const checkGA = setInterval(() => {
+        if (gaInitializedRef.current && scriptLoadedRef.current && typeof window !== "undefined" && window.gtag) {
+          console.log("⚡ GA now ready, activating!")
+          clearInterval(checkGA)
+          activateAnalytics()
+        }
+      }, 100)
 
-        // Відправляємо подію про зміну consent
-        window.gtag("event", "consent_update", {
-          event_category: "consent",
-          event_label: "analytics_enabled_dynamically",
-          send_to: gaId,
-          transport_type: "beacon",
-        })
-
-        console.log("🚀 Forced data send after consent change")
-      }
+      // Очищуємо інтервал через 10 секунд якщо щось пішло не так
+      setTimeout(() => {
+        clearInterval(checkGA)
+      }, 10000)
     }
   }, [consent, gaId])
 
@@ -202,7 +180,7 @@ export const trackEvent = (action: string, category: string, label?: string, val
       event_category: category,
       event_label: label,
       value: value,
-      transport_type: "beacon", // Важливо для надійної відправки
+      transport_type: "beacon",
     })
     console.log("📊 Event tracked:", { action, category, label, value })
     return true

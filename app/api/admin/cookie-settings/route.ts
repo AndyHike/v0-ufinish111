@@ -7,7 +7,6 @@ export async function GET() {
     console.log("API: Fetching cookie settings...")
     const supabase = createClient()
 
-    // Отримуємо всі налаштування cookies з app_settings
     const { data: settings, error } = await supabase
       .from("app_settings")
       .select("key, value")
@@ -27,7 +26,6 @@ export async function GET() {
 
     console.log("API: Raw settings from DB:", settings)
 
-    // Конвертуємо масив в об'єкт
     const settingsObj =
       settings?.reduce(
         (acc, setting) => {
@@ -37,7 +35,6 @@ export async function GET() {
         {} as Record<string, any>,
       ) || {}
 
-    // Повертаємо з дефолтними значеннями
     const cookieSettings = {
       google_analytics_id: settingsObj.google_analytics_id || "",
       google_tag_manager_id: settingsObj.google_tag_manager_id || "",
@@ -70,15 +67,12 @@ export async function POST(request: NextRequest) {
 
     const supabase = createClient()
 
-    // Зберігаємо кожне налаштування окремо в app_settings
     for (const [key, value] of Object.entries(body)) {
       console.log(`API: Processing ${key} = ${value}`)
 
-      // Перевіряємо чи існує запис
       const { data: existing } = await supabase.from("app_settings").select("key").eq("key", key).single()
 
       if (existing) {
-        // Оновлюємо існуючий запис
         const { error: updateError } = await supabase
           .from("app_settings")
           .update({
@@ -94,7 +88,6 @@ export async function POST(request: NextRequest) {
           console.log(`API: Updated ${key} successfully`)
         }
       } else {
-        // Створюємо новий запис
         const { error: insertError } = await supabase.from("app_settings").insert({
           key,
           value: String(value),

@@ -97,18 +97,16 @@ export function CookieSettingsManager() {
     if (typeof window !== "undefined" && window.gtag) {
       const testEventName = "admin_test_" + Date.now()
 
-      // Відправляємо тестову подію з форсованою відправкою
       window.gtag("event", testEventName, {
         event_category: "admin_test",
         event_label: "manual_test_from_admin",
         value: 1,
         custom_parameter: "test_value",
         test_timestamp: new Date().toISOString(),
-        transport_type: "beacon", // Форсуємо відправку
+        transport_type: "beacon",
         send_to: settings.google_analytics_id,
       })
 
-      // Також відправляємо page_view для впевненості
       window.gtag("event", "page_view", {
         page_title: "Admin Test - " + document.title,
         page_location: window.location.href,
@@ -117,8 +115,8 @@ export function CookieSettingsManager() {
         send_to: settings.google_analytics_id,
       })
 
-      toast.success(`Test events sent with beacon transport! Event: ${testEventName}`)
-      console.log("✅ Test events sent with forced transport:", {
+      toast.success(`Test events sent! Event: ${testEventName}`)
+      console.log("✅ Test events sent:", {
         event: testEventName,
         page_view: "admin_test",
         timestamp: new Date().toISOString(),
@@ -136,12 +134,11 @@ export function CookieSettingsManager() {
   }
 
   const testRealTimeTracking = () => {
-    console.log("🔴 Testing Real-time tracking with forced transport...")
+    console.log("🔴 Testing Real-time tracking...")
 
     if (typeof window !== "undefined" && window.gtag) {
       const timestamp = Date.now()
 
-      // Відправляємо серію подій для real-time тестування з форсованою відправкою
       window.gtag("event", "realtime_test_start", {
         event_category: "realtime_test",
         event_label: "test_session_" + timestamp,
@@ -170,7 +167,6 @@ export function CookieSettingsManager() {
         })
       }, 2000)
 
-      // Форсуємо відправку page_view
       setTimeout(() => {
         window.gtag("event", "page_view", {
           page_title: "Real-time Test Page",
@@ -181,44 +177,11 @@ export function CookieSettingsManager() {
         })
       }, 3000)
 
-      toast.success("Real-time test sequence with beacon transport started! Check GA4 Real-time reports now.")
-      console.log("🚀 Real-time test sequence with forced transport initiated:", timestamp)
+      toast.success("Real-time test sequence started! Check GA4 Real-time reports now.")
+      console.log("🚀 Real-time test sequence initiated:", timestamp)
     } else {
       toast.error("Google Analytics not available")
       console.error("❌ Cannot perform real-time test - gtag not available")
-    }
-  }
-
-  const forceDataSend = () => {
-    console.log("🚀 Forcing immediate data send...")
-
-    if (typeof window !== "undefined" && window.gtag) {
-      // Оновлюємо consent
-      window.gtag("consent", "update", {
-        analytics_storage: "granted",
-      })
-
-      // Форсуємо відправку поточної сторінки
-      window.gtag("event", "page_view", {
-        page_title: document.title,
-        page_location: window.location.href,
-        transport_type: "beacon",
-        send_to: settings.google_analytics_id,
-      })
-
-      // Відправляємо подію про форсовану відправку
-      window.gtag("event", "force_data_send", {
-        event_category: "admin_action",
-        event_label: "manual_force_send",
-        transport_type: "beacon",
-        send_to: settings.google_analytics_id,
-      })
-
-      toast.success("Data send forced! Check Real-time reports.")
-      console.log("✅ Forced data send completed")
-    } else {
-      toast.error("Google Analytics not available")
-      console.error("❌ Cannot force data send - gtag not available")
     }
   }
 
@@ -232,14 +195,12 @@ export function CookieSettingsManager() {
     console.log("Current URL:", window?.location?.href)
     console.log("Document title:", document?.title)
 
-    // Перевіряємо чи є скрипт в DOM
     const gaScripts = document.querySelectorAll('script[src*="gtag/js"]')
     console.log("GA scripts in DOM:", gaScripts.length)
     gaScripts.forEach((script, index) => {
       console.log(`Script ${index + 1}:`, script.src)
     })
 
-    // Перевіряємо dataLayer
     if (window?.dataLayer) {
       console.log("DataLayer contents:", window.dataLayer)
     }
@@ -280,13 +241,12 @@ export function CookieSettingsManager() {
           </div>
         </CardTitle>
         <CardDescription>
-          Configure analytics and marketing services. Services will automatically activate when users consent to
-          cookies.
+          Configure analytics and marketing services. Analytics will activate immediately when users consent to cookies
+          without requiring page reload.
         </CardDescription>
       </CardHeader>
 
       <CardContent className="space-y-6">
-        {/* Analytics Services */}
         <div className="space-y-4">
           <h3 className="text-lg font-medium">Analytics Services</h3>
 
@@ -310,9 +270,6 @@ export function CookieSettingsManager() {
                   <Button variant="outline" size="sm" onClick={testRealTimeTracking}>
                     <Activity className="h-4 w-4 mr-1" />
                     Real-time
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={forceDataSend}>
-                    Force Send
                   </Button>
                   <Button variant="outline" size="sm" onClick={debugAnalytics}>
                     <Bug className="h-4 w-4 mr-1" />
@@ -349,7 +306,6 @@ export function CookieSettingsManager() {
 
         <Separator />
 
-        {/* Marketing Services */}
         <div className="space-y-4">
           <h3 className="text-lg font-medium">Marketing Services</h3>
 
@@ -368,7 +324,6 @@ export function CookieSettingsManager() {
 
         <Separator />
 
-        {/* Cookie Banner Settings */}
         <div className="space-y-4">
           <h3 className="text-lg font-medium">Cookie Banner Settings</h3>
 
@@ -422,7 +377,6 @@ export function CookieSettingsManager() {
           )}
         </Button>
 
-        {/* Enhanced Debug Info */}
         <div className="mt-4 p-4 bg-gray-50 rounded-lg">
           <h4 className="text-sm font-medium mb-2">Debug Information</h4>
           <div className="text-xs space-y-1">

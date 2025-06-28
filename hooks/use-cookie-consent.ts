@@ -38,7 +38,6 @@ export function useCookieConsent() {
           })
           console.log("✅ Existing consent loaded:", parsed.consent)
         } else {
-          // Consent expired, show banner again
           setState((prev) => ({ ...prev, showBanner: true }))
           console.log("⏰ Consent expired, showing banner")
         }
@@ -58,6 +57,8 @@ export function useCookieConsent() {
       consentDate: new Date().toISOString(),
     }
     localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(consentData))
+
+    // Оновлюємо стан
     setState({
       consent,
       showBanner: false,
@@ -67,21 +68,21 @@ export function useCookieConsent() {
 
     console.log("💾 Consent saved:", consent)
 
-    // Логування змін для аналітики
     if (consent.analytics) {
-      console.log("🚀 Analytics consent granted - Google Analytics should activate!")
+      console.log("🚀 Analytics consent granted - triggering immediate activation!")
 
-      // Додаємо невелику затримку для активації аналітики
+      // Додаємо невелику затримку для того щоб React встиг оновити стан
       setTimeout(() => {
+        // Перевіряємо чи GA доступний і відправляємо дані
         if (typeof window !== "undefined" && window.gtag) {
-          console.log("🔄 Triggering immediate analytics activation...")
+          console.log("⚡ Sending immediate analytics data...")
 
           // Оновлюємо consent в GA
           window.gtag("consent", "update", {
             analytics_storage: "granted",
           })
 
-          // Форсуємо відправку page_view
+          // Відправляємо page_view
           window.gtag("event", "page_view", {
             page_title: document.title,
             page_location: window.location.href,
@@ -89,23 +90,31 @@ export function useCookieConsent() {
           })
 
           // Відправляємо подію про надання згоди
-          window.gtag("event", "consent_granted", {
+          window.gtag("event", "consent_granted_immediate", {
             event_category: "consent",
-            event_label: "analytics_consent_granted_dynamically",
+            event_label: "user_accepted_analytics",
             transport_type: "beacon",
           })
 
-          console.log("✅ Analytics activated immediately after consent!")
+          // Відправляємо engagement подію
+          window.gtag("event", "user_engagement", {
+            engagement_time_msec: 1000,
+            transport_type: "beacon",
+          })
+
+          console.log("✅ Immediate analytics data sent!")
+        } else {
+          console.log("⏳ GA not ready yet, will be handled by GoogleAnalytics component")
         }
-      }, 1000)
+      }, 100)
     } else {
-      console.log("🔒 Analytics consent denied - Google Analytics blocked")
+      console.log("🔒 Analytics consent denied")
     }
 
     if (consent.marketing) {
-      console.log("📢 Marketing consent granted - Marketing pixels should activate!")
+      console.log("📢 Marketing consent granted")
     } else {
-      console.log("🔒 Marketing consent denied - Marketing pixels blocked")
+      console.log("🔒 Marketing consent denied")
     }
   }
 
