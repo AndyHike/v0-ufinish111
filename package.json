@@ -14,6 +14,7 @@
     "@formatjs/intl-localematcher": "latest",
     "@hello-pangea/dnd": "latest",
     "@hookform/resolvers": "latest",
+    "@kinde-oss/kinde-auth-nextjs": "latest",
     "@radix-ui/react-accordion": "latest",
     "@radix-ui/react-alert-dialog": "latest",
     "@radix-ui/react-aspect-ratio": "latest",

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
-import { Loader2, AlertTriangle, Eye } from "lucide-react"
+import { Loader2, AlertTriangle, Eye, ExternalLink } from "lucide-react"
 import Link from "next/link"
 
 interface MaintenanceSettings {
@@ -41,10 +41,12 @@ export function MaintenanceModeToggle() {
         const data = await response.json()
         if (data.settings) {
           setSettings({
-            enabled: data.settings.enabled === "true",
-            title: data.settings.title || "Технічні роботи",
-            message: data.settings.message || "Наразі проводяться технічні роботи. Будь ласка, спробуйте пізніше.",
-            estimated_completion: data.settings.estimated_completion || "",
+            enabled: data.settings.maintenance_mode_enabled === "true",
+            title: data.settings.maintenance_mode_title || "Технічні роботи",
+            message:
+              data.settings.maintenance_mode_message ||
+              "Наразі проводяться технічні роботи. Будь ласка, спробуйте пізніше.",
+            estimated_completion: data.settings.maintenance_mode_estimated_completion || "",
           })
         }
       }
@@ -75,7 +77,7 @@ export function MaintenanceModeToggle() {
         toast({
           title: "Налаштування збережено",
           description: settings.enabled
-            ? "Режим технічних робіт увімкнено. Сайт тепер доступний тільки адміністраторам."
+            ? "Режим технічних робіт увімкнено. Сайт тепер повністю недоступний для звичайних користувачів."
             : "Режим технічних робіт вимкнено. Сайт знову доступний для всіх користувачів.",
         })
       } else {
@@ -110,7 +112,8 @@ export function MaintenanceModeToggle() {
           Режим технічних робіт
         </CardTitle>
         <CardDescription>
-          Увімкніть режим технічних робіт, щоб повністю обмежити доступ до сайту. Тільки адміністратори зможуть увійти.
+          Увімкніть режим технічних робіт, щоб повністю заблокувати доступ до сайту. Користувачі побачать повноекранну
+          сторінку технічних робіт замість звичайного сайту.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -129,13 +132,16 @@ export function MaintenanceModeToggle() {
           <div className="space-y-4 p-4 bg-red-50 border border-red-200 rounded-lg">
             <div className="flex items-center gap-2 text-red-800">
               <AlertTriangle className="h-4 w-4" />
-              <span className="text-sm font-medium">УВАГА: Сайт повністю недоступний для звичайних користувачів</span>
+              <span className="text-sm font-medium">
+                УВАГА: Сайт повністю недоступний! Тільки адміністратори можуть увійти.
+              </span>
             </div>
             <div className="flex gap-2">
               <Button asChild variant="outline" size="sm">
                 <Link href="/uk/maintenance" target="_blank" className="flex items-center gap-2">
                   <Eye className="h-4 w-4" />
-                  Переглянути сторінку технічних робіт
+                  Переглянути сторінку
+                  <ExternalLink className="h-3 w-3" />
                 </Link>
               </Button>
             </div>
@@ -150,6 +156,7 @@ export function MaintenanceModeToggle() {
               value={settings.title}
               onChange={(e) => setSettings((prev) => ({ ...prev, title: e.target.value }))}
               placeholder="Технічні роботи"
+              className="mt-1"
             />
           </div>
 
@@ -161,6 +168,7 @@ export function MaintenanceModeToggle() {
               onChange={(e) => setSettings((prev) => ({ ...prev, message: e.target.value }))}
               placeholder="Наразі проводяться технічні роботи. Будь ласка, спробуйте пізніше."
               rows={4}
+              className="mt-1"
             />
           </div>
 
@@ -171,7 +179,11 @@ export function MaintenanceModeToggle() {
               type="datetime-local"
               value={settings.estimated_completion}
               onChange={(e) => setSettings((prev) => ({ ...prev, estimated_completion: e.target.value }))}
+              className="mt-1"
             />
+            <p className="text-xs text-muted-foreground mt-1">
+              Якщо вказано, користувачі побачать очікуваний час завершення робіт
+            </p>
           </div>
         </div>
 

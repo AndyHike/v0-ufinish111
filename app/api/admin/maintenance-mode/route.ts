@@ -20,7 +20,7 @@ export async function GET() {
       return NextResponse.json({ error: "Failed to fetch settings" }, { status: 500 })
     }
 
-    const settingsMap =
+    const settingsObj =
       settings?.reduce(
         (acc, setting) => {
           acc[setting.key] = setting.value
@@ -29,15 +29,7 @@ export async function GET() {
         {} as Record<string, string>,
       ) || {}
 
-    return NextResponse.json({
-      settings: {
-        enabled: settingsMap.maintenance_mode_enabled || "false",
-        title: settingsMap.maintenance_mode_title || "Технічні роботи",
-        message:
-          settingsMap.maintenance_mode_message || "Наразі проводяться технічні роботи. Будь ласка, спробуйте пізніше.",
-        estimated_completion: settingsMap.maintenance_mode_estimated_completion || "",
-      },
-    })
+    return NextResponse.json({ settings: settingsObj })
   } catch (error) {
     console.error("Error in maintenance mode GET:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
@@ -51,6 +43,7 @@ export async function POST(request: NextRequest) {
 
     const supabase = createClient()
 
+    // Prepare settings to upsert
     const settingsToUpdate = [
       { key: "maintenance_mode_enabled", value: enabled },
       { key: "maintenance_mode_title", value: title },
@@ -58,15 +51,11 @@ export async function POST(request: NextRequest) {
       { key: "maintenance_mode_estimated_completion", value: estimated_completion },
     ]
 
-    for (const setting of settingsToUpdate) {
-      const { error } = await supabase
-        .from("app_settings")
-        .upsert({ key: setting.key, value: setting.value }, { onConflict: "key" })
+    const { error } = await supabase.from("app_settings").upsert(settingsToUpdate, { onConflict: "key" })
 
-      if (error) {
-        console.error(`Error updating setting ${setting.key}:`, error)
-        return NextResponse.json({ error: `Failed to update ${setting.key}` }, { status: 500 })
-      }
+    if (error) {
+      console.error("Error updating maintenance settings:", error)
+      return NextResponse.json({ error: "Failed to update settings" }, { status: 500 })
     }
 
     return NextResponse.json({ success: true })
