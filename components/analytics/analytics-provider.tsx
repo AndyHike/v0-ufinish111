@@ -45,9 +45,30 @@ export function AnalyticsProvider() {
   // Логування стану consent
   useEffect(() => {
     console.log("Cookie consent state:", consent)
+    console.log("Analytics consent:", consent.analytics)
+    console.log("Marketing consent:", consent.marketing)
   }, [consent])
 
-  if (!isLoaded || !settings) {
+  // Логування налаштувань
+  useEffect(() => {
+    if (settings) {
+      console.log("Current analytics settings:", {
+        gaId: settings.google_analytics_id,
+        gtmId: settings.google_tag_manager_id,
+        fbPixelId: settings.facebook_pixel_id,
+        analyticsConsent: consent.analytics,
+        marketingConsent: consent.marketing,
+      })
+    }
+  }, [settings, consent])
+
+  if (!isLoaded) {
+    console.log("Analytics provider not loaded yet")
+    return null
+  }
+
+  if (!settings) {
+    console.log("No analytics settings found")
     return null
   }
 

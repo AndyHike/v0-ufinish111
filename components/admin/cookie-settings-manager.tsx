@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { toast } from "sonner"
-import { Loader2, Save, Settings, Eye, EyeOff, CheckCircle } from "lucide-react"
+import { Loader2, Save, Settings, Eye, EyeOff, CheckCircle, AlertCircle } from "lucide-react"
 
 interface CookieSettings {
   google_analytics_id: string
@@ -91,6 +91,21 @@ export function CookieSettingsManager() {
     setSettings((prev) => ({ ...prev, [key]: value }))
   }
 
+  const testAnalytics = () => {
+    if (typeof window !== "undefined" && window.gtag) {
+      window.gtag("event", "test_event", {
+        event_category: "admin_test",
+        event_label: "cookie_settings_test",
+        value: 1,
+      })
+      toast.success("Test event sent to Google Analytics!")
+      console.log("Test event sent to GA4")
+    } else {
+      toast.error("Google Analytics not loaded")
+      console.error("GA not available")
+    }
+  }
+
   if (loading) {
     return (
       <Card>
@@ -135,16 +150,32 @@ export function CookieSettingsManager() {
 
           <div className="space-y-2">
             <Label htmlFor="google_analytics_id">Google Analytics 4 Property ID</Label>
-            <Input
-              id="google_analytics_id"
-              type={showIds ? "text" : "password"}
-              placeholder="G-XXXXXXXXXX"
-              value={settings.google_analytics_id}
-              onChange={(e) => updateSetting("google_analytics_id", e.target.value)}
-            />
+            <div className="flex gap-2">
+              <Input
+                id="google_analytics_id"
+                type={showIds ? "text" : "password"}
+                placeholder="G-XXXXXXXXXX"
+                value={settings.google_analytics_id}
+                onChange={(e) => updateSetting("google_analytics_id", e.target.value)}
+                className="flex-1"
+              />
+              {settings.google_analytics_id && (
+                <Button variant="outline" size="sm" onClick={testAnalytics}>
+                  Test
+                </Button>
+              )}
+            </div>
             <p className="text-xs text-muted-foreground">
               Find this in Google Analytics → Admin → Property Settings → Property Details
             </p>
+            {settings.google_analytics_id && (
+              <div className="flex items-center gap-2 text-sm">
+                <AlertCircle className="h-4 w-4 text-blue-500" />
+                <span className="text-blue-600">
+                  Current ID: {showIds ? settings.google_analytics_id : "G-***********"}
+                </span>
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -234,6 +265,16 @@ export function CookieSettingsManager() {
             </>
           )}
         </Button>
+
+        {/* Debug Info */}
+        <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+          <h4 className="text-sm font-medium mb-2">Debug Information</h4>
+          <div className="text-xs space-y-1">
+            <div>GA ID: {settings.google_analytics_id || "Not set"}</div>
+            <div>Analytics Enabled: {settings.analytics_enabled ? "Yes" : "No"}</div>
+            <div>Cookie Banner: {settings.cookie_banner_enabled ? "Enabled" : "Disabled"}</div>
+          </div>
+        </div>
       </CardContent>
     </Card>
   )

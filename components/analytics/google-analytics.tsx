@@ -34,19 +34,35 @@ export function GoogleAnalytics({ gaId, consent }: GoogleAnalyticsProps) {
       gtag("config", gaId, {
         page_title: document.title,
         page_location: window.location.href,
+        send_page_view: true,
+      })
+
+      // Відправляємо додатковий page_view event
+      gtag("event", "page_view", {
+        page_title: document.title,
+        page_location: window.location.href,
       })
 
       console.log("Google Analytics initialized with ID:", gaId)
+      console.log("Page view sent to GA4")
+      console.log("Current URL:", window.location.href)
+      console.log("DataLayer:", window.dataLayer)
     }
   }, [gaId, consent])
 
   if (!consent || !gaId) {
+    console.log("GA not loaded - consent:", consent, "gaId:", gaId)
     return null
   }
 
   return (
     <>
-      <Script src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`} strategy="afterInteractive" />
+      <Script
+        src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}
+        strategy="afterInteractive"
+        onLoad={() => console.log("GA script loaded successfully")}
+        onError={() => console.error("Failed to load GA script")}
+      />
     </>
   )
 }
@@ -59,15 +75,17 @@ export function trackEvent(action: string, category: string, label?: string, val
       event_label: label,
       value: value,
     })
+    console.log("Event tracked:", { action, category, label, value })
   }
 }
 
 // Функція для відстеження переглядів сторінок
 export function trackPageView(url: string, title?: string) {
   if (typeof window !== "undefined" && window.gtag) {
-    window.gtag("config", "GA_MEASUREMENT_ID", {
+    window.gtag("event", "page_view", {
       page_location: url,
-      page_title: title,
+      page_title: title || document.title,
     })
+    console.log("Page view tracked:", { url, title })
   }
 }

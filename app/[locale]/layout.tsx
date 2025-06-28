@@ -10,6 +10,7 @@ import { CookieConsentProvider } from "@/contexts/cookie-consent-context"
 import { CookieBanner } from "@/components/cookie-banner"
 import { AnalyticsProvider } from "@/components/analytics/analytics-provider"
 import { Suspense } from "react"
+import { SessionProvider } from "@/components/providers/session-provider"
 import "@/app/globals.css"
 
 export async function generateMetadata({
@@ -30,7 +31,7 @@ export async function generateMetadata({
       description: "Fast and quality mobile phone repair in Prague. Warranty on all repairs.",
     },
     uk: {
-      title: "DeviceHelp - Професійний ремонт мобільних телефонів у Празі",
+      title: "DeviceHelp - DeviceHelp - Професійний ремонт мобільних телефонів у Празі",
       description: "Швидкий та якісний ремонт мобільних телефонів у Празі. Гарантія на всі ремонти.",
     },
   }
@@ -72,17 +73,19 @@ export default async function LocaleLayout({
 
   return (
     <NextIntlClientProvider locale={locale} messages={messages}>
-      <CookieConsentProvider>
-        <div className="flex min-h-screen flex-col">
-          <Header user={user} />
-          <main className="flex-1">{children}</main>
-          <Footer />
-          <CookieBanner />
-          <Suspense fallback={null}>
-            <AnalyticsProvider />
-          </Suspense>
-        </div>
-      </CookieConsentProvider>
+      <SessionProvider>
+        <CookieConsentProvider>
+          <div className="flex min-h-screen flex-col">
+            <Header user={user} />
+            <main className="flex-1">{children}</main>
+            <Footer />
+            <CookieBanner />
+            <Suspense fallback={null}>
+              <AnalyticsProvider />
+            </Suspense>
+          </div>
+        </CookieConsentProvider>
+      </SessionProvider>
     </NextIntlClientProvider>
   )
 }
