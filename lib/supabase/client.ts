@@ -22,3 +22,5 @@ export function getSupabaseClient() {
 
   return supabaseClient
 }
+
+export { createClient }

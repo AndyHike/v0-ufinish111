@@ -6,6 +6,8 @@ import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { getCurrentUser } from "@/lib/auth/session"
 import { getMessages } from "@/lib/get-messages"
+import { CookieConsentProvider } from "@/contexts/cookie-consent-context"
+import { CookieBanner } from "@/components/cookie-banner"
 
 export async function generateMetadata({
   params: { locale },
@@ -67,11 +69,14 @@ export default async function LocaleLayout({
 
   return (
     <NextIntlClientProvider locale={locale} messages={messages}>
-      <div className="flex min-h-screen flex-col">
-        <Header user={user} />
-        <main className="flex-1">{children}</main>
-        <Footer />
-      </div>
+      <CookieConsentProvider>
+        <div className="flex min-h-screen flex-col">
+          <Header user={user} />
+          <main className="flex-1">{children}</main>
+          <Footer />
+          <CookieBanner />
+        </div>
+      </CookieConsentProvider>
     </NextIntlClientProvider>
   )
 }

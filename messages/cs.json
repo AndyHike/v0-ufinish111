@@ -27,6 +27,7 @@
     "tagline": "Profesionální opravy mobilních telefonů",
     "company": "Společnost"
   },
+
   "UserNav": {
     "login": "Přihlásit se",
     "profile": "Profil",
@@ -84,6 +85,47 @@
     "waterDamage": {
       "title": "Oprava po poškození vodou",
       "description": "Záchrana zařízení po kontaktu s tekutinou"
+    }
+  },
+"cookies": {
+   "banner": {
+    "title": "Používáme cookies",
+     "description": "Používáme cookies k zajištění nejlepšího zážitku na našich webových stránkách. Některé jsou nezbytné, jiné nám pomáhají zlepšovat naše služby a porozumět tomu, jak náš web používáte.",
+      "acceptAll": "Přijmout vše",
+      "acceptNecessary": "Pouze nezbytné",
+      "customize": "Přizpůsobit"
+    },
+    "settings": {
+      "title": "Nastavení cookies",
+      "description": "Můžete si vybrat, které typy cookies chcete povolit. Vaše volba bude uložena po dobu jednoho roku.",
+      "required": "povinné",
+      "services": "Služby",
+      "acceptAll": "Přijmout vše",
+      "acceptNecessary": "Pouze nezbytné",
+      "saveAndClose": "Uložit a zavřít"
+    },
+    "categories": {
+      "necessary": {
+        "name": "Nezbytné cookies",
+        "description": "Tyto cookies jsou nezbytné pro správné fungování webu a nelze je vypnout.",
+        "services": "Relace, jazykové nastavení, košík"
+      },
+      "analytics": {
+        "name": "Analytické cookies",
+        "description": "Pomáhají nám pochopit, jak návštěvníci používají náš web, abychom jej mohli zlepšovat.",
+        "services": "Google Analytics, Google Tag Manager"
+      },
+      "marketing": {
+        "name": "Marketingové cookies",
+        "description": "Používají se k zobrazování relevantních reklam a měření efektivity reklamních kampaní.",
+        "services": "Facebook Pixel, Google Ads, Remarketing"
+      }
+    }
+  },
+  "admin": {
+    "cookieSettings": {
+      "title": "Nastavení cookies a analytiky",
+      "description": "Spravujte nastavení pro cookies, analytické a marketingové služby."
     }
   },
   "Services": {
