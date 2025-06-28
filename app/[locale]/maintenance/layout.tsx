@@ -1,20 +1,13 @@
-import type React from "react"
-import type { Metadata } from "next"
+import type { ReactNode } from "react"
 
-export const metadata: Metadata = {
-  title: "Технічні роботи",
-  description: "Сайт тимчасово недоступний через технічні роботи",
-}
-
-export default function MaintenanceLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+/**
+ * Layout used only for the maintenance page.
+ * It intentionally renders *nothing else* – no header, footer or other wrappers.
+ */
+export default function MaintenanceLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="uk" suppressHydrationWarning>
-      <head />
-      <body className="antialiased">{children}</body>
+    <html lang="uk">
+      <body className="bg-white text-gray-900">{children}</body>
     </html>
   )
 }

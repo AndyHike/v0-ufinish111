@@ -97,13 +97,17 @@ export default async function middleware(request: NextRequest) {
       isAdmin = await isUserAdmin(sessionId)
     }
 
-    // If user is not admin, redirect to maintenance page (except for maintenance page itself and login)
+    // Allow access to maintenance page and ALL auth routes for everyone
+    const isMaintenancePage = pathname.includes("/maintenance")
+    const isAuthRoute = pathname.includes("/auth/")
+    const isAdminRoute = pathname.includes("/admin")
+
     if (!isAdmin) {
-      // Allow access only to maintenance page and login page
-      if (pathname.includes("/maintenance") || pathname.includes("/auth/login")) {
-        // Continue with normal processing
+      // Allow access to maintenance page and auth routes
+      if (isMaintenancePage || isAuthRoute) {
+        // Continue with normal processing - allow access
       } else {
-        // Redirect to maintenance page
+        // Redirect all other pages to maintenance
         const locale = pathname.split("/")[1]
         if (supportedLocales.includes(locale)) {
           return NextResponse.redirect(new URL(`/${locale}/maintenance`, request.url))
@@ -113,7 +117,7 @@ export default async function middleware(request: NextRequest) {
         }
       }
     }
-    // If user is admin, allow access to everything (continue with normal processing)
+    // If user is admin, allow access to everything
   }
 
   // CRUCIAL CHECK: If pathname already starts with a supported locale, proceed without redirection
