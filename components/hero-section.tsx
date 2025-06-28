@@ -31,7 +31,7 @@ export function HeroSection() {
             )}
           >
             <img
-              src="/focused-phone-fix.png"
+              src="/focused-phone-fix.webp"
               alt={t("imageAlt")}
               width={400}
               height={300}
@@ -75,7 +75,7 @@ export function HeroSection() {
               </Button>
             </Link>
             <Link href={`/${locale}/contact`} passHref className="w-full">
-              <Button size="lg" variant="outline" className="w-full border-2 shadow-sm">
+              <Button size="lg" variant="outline" className="w-full border-2 shadow-sm bg-transparent">
                 <Phone className="mr-2 h-5 w-5" />
                 {t("contactButton")}
               </Button>
@@ -153,7 +153,7 @@ export function HeroSection() {
                 </Button>
               </Link>
               <Link href={`/${locale}/contact`} passHref>
-                <Button size="lg" variant="outline" className="w-full sm:w-auto">
+                <Button size="lg" variant="outline" className="w-full sm:w-auto bg-transparent">
                   {t("contactButton")}
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
@@ -168,7 +168,7 @@ export function HeroSection() {
             )}
           >
             <img
-              src="/focused-phone-fix.png"
+              src="/focused-phone-fix.webp"
               alt={t("imageAlt")}
               width={500}
               height={350}
