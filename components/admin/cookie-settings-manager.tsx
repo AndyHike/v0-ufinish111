@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { toast } from "sonner"
-import { Loader2, Save, Settings, Eye, EyeOff, CheckCircle, AlertCircle, TestTube, Activity, Bug } from "lucide-react"
+import { Loader2, Save, Settings, Eye, EyeOff, CheckCircle, AlertCircle } from "lucide-react"
 
 interface CookieSettings {
   google_analytics_id: string
@@ -47,10 +47,8 @@ export function CookieSettingsManager() {
       }
 
       const data = await response.json()
-      console.log("Admin: Fetched settings:", data)
       setSettings(data)
     } catch (error) {
-      console.error("Admin: Error fetching cookie settings:", error)
       toast.error("Failed to load cookie settings")
     } finally {
       setLoading(false)
@@ -60,8 +58,6 @@ export function CookieSettingsManager() {
   const handleSave = async () => {
     setSaving(true)
     try {
-      console.log("Admin: Saving settings:", settings)
-
       const response = await fetch("/api/admin/cookie-settings", {
         method: "POST",
         headers: {
@@ -71,7 +67,6 @@ export function CookieSettingsManager() {
       })
 
       const result = await response.json()
-      console.log("Admin: Save response:", result)
 
       if (!response.ok) {
         throw new Error(result.error || "Failed to save settings")
@@ -80,7 +75,6 @@ export function CookieSettingsManager() {
       setLastSaved(new Date())
       toast.success("Cookie settings saved successfully!")
     } catch (error) {
-      console.error("Admin: Error saving cookie settings:", error)
       toast.error("Failed to save cookie settings")
     } finally {
       setSaving(false)
@@ -89,123 +83,6 @@ export function CookieSettingsManager() {
 
   const updateSetting = (key: keyof CookieSettings, value: string | boolean) => {
     setSettings((prev) => ({ ...prev, [key]: value }))
-  }
-
-  const testAnalytics = () => {
-    console.log("🧪 Testing Google Analytics...")
-
-    if (typeof window !== "undefined" && window.gtag) {
-      const testEventName = "admin_test_" + Date.now()
-
-      window.gtag("event", testEventName, {
-        event_category: "admin_test",
-        event_label: "manual_test_from_admin",
-        value: 1,
-        custom_parameter: "test_value",
-        test_timestamp: new Date().toISOString(),
-        transport_type: "beacon",
-        send_to: settings.google_analytics_id,
-      })
-
-      window.gtag("event", "page_view", {
-        page_title: "Admin Test - " + document.title,
-        page_location: window.location.href,
-        custom_parameter: "admin_test",
-        transport_type: "beacon",
-        send_to: settings.google_analytics_id,
-      })
-
-      toast.success(`Test events sent! Event: ${testEventName}`)
-      console.log("✅ Test events sent:", {
-        event: testEventName,
-        page_view: "admin_test",
-        timestamp: new Date().toISOString(),
-        transport: "beacon",
-      })
-    } else {
-      toast.error("Google Analytics not loaded. Please accept analytics cookies first.")
-      console.error("❌ gtag function not available")
-      console.log("Debug info:", {
-        window: typeof window,
-        gtag: typeof window?.gtag,
-        dataLayer: window?.dataLayer?.length || 0,
-      })
-    }
-  }
-
-  const testRealTimeTracking = () => {
-    console.log("🔴 Testing Real-time tracking...")
-
-    if (typeof window !== "undefined" && window.gtag) {
-      const timestamp = Date.now()
-
-      window.gtag("event", "realtime_test_start", {
-        event_category: "realtime_test",
-        event_label: "test_session_" + timestamp,
-        value: 1,
-        transport_type: "beacon",
-        send_to: settings.google_analytics_id,
-      })
-
-      setTimeout(() => {
-        window.gtag("event", "realtime_test_action", {
-          event_category: "realtime_test",
-          event_label: "delayed_action_" + timestamp,
-          value: 2,
-          transport_type: "beacon",
-          send_to: settings.google_analytics_id,
-        })
-      }, 1000)
-
-      setTimeout(() => {
-        window.gtag("event", "realtime_test_complete", {
-          event_category: "realtime_test",
-          event_label: "test_complete_" + timestamp,
-          value: 3,
-          transport_type: "beacon",
-          send_to: settings.google_analytics_id,
-        })
-      }, 2000)
-
-      setTimeout(() => {
-        window.gtag("event", "page_view", {
-          page_title: "Real-time Test Page",
-          page_location: window.location.href,
-          custom_parameter: "realtime_test",
-          transport_type: "beacon",
-          send_to: settings.google_analytics_id,
-        })
-      }, 3000)
-
-      toast.success("Real-time test sequence started! Check GA4 Real-time reports now.")
-      console.log("🚀 Real-time test sequence initiated:", timestamp)
-    } else {
-      toast.error("Google Analytics not available")
-      console.error("❌ Cannot perform real-time test - gtag not available")
-    }
-  }
-
-  const debugAnalytics = () => {
-    console.log("🔍 Analytics Debug Information:")
-    console.log("Window object:", typeof window)
-    console.log("gtag function:", typeof window?.gtag)
-    console.log("dataLayer:", window?.dataLayer)
-    console.log("dataLayer length:", window?.dataLayer?.length || 0)
-    console.log("Current settings:", settings)
-    console.log("Current URL:", window?.location?.href)
-    console.log("Document title:", document?.title)
-
-    const gaScripts = document.querySelectorAll('script[src*="gtag/js"]')
-    console.log("GA scripts in DOM:", gaScripts.length)
-    gaScripts.forEach((script, index) => {
-      console.log(`Script ${index + 1}:`, script.src)
-    })
-
-    if (window?.dataLayer) {
-      console.log("DataLayer contents:", window.dataLayer)
-    }
-
-    toast.info("Debug information logged to console")
   }
 
   if (loading) {
@@ -252,32 +129,13 @@ export function CookieSettingsManager() {
 
           <div className="space-y-2">
             <Label htmlFor="google_analytics_id">Google Analytics 4 Property ID</Label>
-            <div className="flex gap-2">
-              <Input
-                id="google_analytics_id"
-                type={showIds ? "text" : "password"}
-                placeholder="G-XXXXXXXXXX"
-                value={settings.google_analytics_id}
-                onChange={(e) => updateSetting("google_analytics_id", e.target.value)}
-                className="flex-1"
-              />
-              {settings.google_analytics_id && (
-                <div className="flex gap-1">
-                  <Button variant="outline" size="sm" onClick={testAnalytics}>
-                    <TestTube className="h-4 w-4 mr-1" />
-                    Test
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={testRealTimeTracking}>
-                    <Activity className="h-4 w-4 mr-1" />
-                    Real-time
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={debugAnalytics}>
-                    <Bug className="h-4 w-4 mr-1" />
-                    Debug
-                  </Button>
-                </div>
-              )}
-            </div>
+            <Input
+              id="google_analytics_id"
+              type={showIds ? "text" : "password"}
+              placeholder="G-XXXXXXXXXX"
+              value={settings.google_analytics_id}
+              onChange={(e) => updateSetting("google_analytics_id", e.target.value)}
+            />
             <p className="text-xs text-muted-foreground">
               Find this in Google Analytics → Admin → Property Settings → Property Details
             </p>
@@ -376,20 +234,6 @@ export function CookieSettingsManager() {
             </>
           )}
         </Button>
-
-        <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-          <h4 className="text-sm font-medium mb-2">Debug Information</h4>
-          <div className="text-xs space-y-1">
-            <div>GA ID: {settings.google_analytics_id || "Not set"}</div>
-            <div>Analytics Enabled: {settings.analytics_enabled ? "Yes" : "No"}</div>
-            <div>Cookie Banner: {settings.cookie_banner_enabled ? "Enabled" : "Disabled"}</div>
-            <div>gtag Available: {typeof window !== "undefined" && window.gtag ? "✅ Yes" : "❌ No"}</div>
-            <div>
-              dataLayer Length: {typeof window !== "undefined" && window.dataLayer ? window.dataLayer.length : "N/A"}
-            </div>
-            <div>Current URL: {typeof window !== "undefined" ? window.location.href : "N/A"}</div>
-          </div>
-        </div>
       </CardContent>
     </Card>
   )

@@ -23,8 +23,6 @@ export function GoogleAnalytics({ gaId, consent }: GoogleAnalyticsProps) {
   const initializeGA = () => {
     if (typeof window === "undefined" || !gaId) return
 
-    console.log("🚀 Initializing Google Analytics...")
-
     // Ініціалізуємо dataLayer
     window.dataLayer = window.dataLayer || []
 
@@ -54,14 +52,11 @@ export function GoogleAnalytics({ gaId, consent }: GoogleAnalyticsProps) {
     })
 
     gaInitializedRef.current = true
-    console.log("✅ GA4 initialized with ID:", gaId)
   }
 
   // Функція для активації аналітики після згоди
   const activateAnalytics = () => {
     if (typeof window === "undefined" || !window.gtag || !gaId) return
-
-    console.log("🔥 ACTIVATING ANALYTICS IMMEDIATELY!")
 
     // Оновлюємо consent
     window.gtag("consent", "update", {
@@ -91,7 +86,6 @@ export function GoogleAnalytics({ gaId, consent }: GoogleAnalyticsProps) {
       transport_type: "beacon",
     })
 
-    console.log("📊 Analytics data sent immediately!")
     consentProcessedRef.current = true
   }
 
@@ -103,20 +97,17 @@ export function GoogleAnalytics({ gaId, consent }: GoogleAnalyticsProps) {
       // Перевіряємо чи скрипт вже існує
       const existingScript = document.querySelector(`script[src*="gtag/js?id=${gaId}"]`)
       if (existingScript || scriptLoadedRef.current) {
-        console.log("📦 GA script already loaded")
         if (!gaInitializedRef.current) {
           initializeGA()
         }
         return
       }
 
-      console.log("📥 Loading GA script...")
       const script = document.createElement("script")
       script.async = true
       script.src = `https://www.googletagmanager.com/gtag/js?id=${gaId}`
 
       script.onload = () => {
-        console.log("✅ GA script loaded successfully")
         scriptLoadedRef.current = true
 
         // Ініціалізуємо GA після завантаження скрипта
@@ -132,10 +123,6 @@ export function GoogleAnalytics({ gaId, consent }: GoogleAnalyticsProps) {
         }, 100)
       }
 
-      script.onerror = (error) => {
-        console.error("❌ Failed to load GA script:", error)
-      }
-
       document.head.appendChild(script)
     }
 
@@ -146,18 +133,13 @@ export function GoogleAnalytics({ gaId, consent }: GoogleAnalyticsProps) {
   useEffect(() => {
     if (!consent || consentProcessedRef.current) return
 
-    console.log("🍪 Consent granted, checking GA status...")
-
     if (gaInitializedRef.current && scriptLoadedRef.current) {
       // GA вже готовий, активуємо одразу
-      console.log("⚡ GA ready, activating immediately!")
       activateAnalytics()
     } else {
       // Чекаємо поки GA буде готовий
-      console.log("⏳ Waiting for GA to be ready...")
       const checkGA = setInterval(() => {
         if (gaInitializedRef.current && scriptLoadedRef.current && typeof window !== "undefined" && window.gtag) {
-          console.log("⚡ GA now ready, activating!")
           clearInterval(checkGA)
           activateAnalytics()
         }
@@ -182,10 +164,8 @@ export const trackEvent = (action: string, category: string, label?: string, val
       value: value,
       transport_type: "beacon",
     })
-    console.log("📊 Event tracked:", { action, category, label, value })
     return true
   } else {
-    console.warn("⚠️ gtag not available for event tracking")
     return false
   }
 }
@@ -197,10 +177,8 @@ export const trackPageView = (url?: string, title?: string) => {
       page_title: title || document.title,
       transport_type: "beacon",
     })
-    console.log("📄 Page view tracked:", url || window.location.href)
     return true
   } else {
-    console.warn("⚠️ gtag not available for page view tracking")
     return false
   }
 }
