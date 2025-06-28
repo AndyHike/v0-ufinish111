@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
+import { Loader2, Save, Eye, EyeOff, TestTube } from "lucide-react"
 
 interface CookieSettings {
   google_analytics_id: string
@@ -28,23 +29,25 @@ export function CookieSettingsManager() {
     analytics_enabled: true,
     marketing_enabled: true,
   })
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const [showIds, setShowIds] = useState(false)
 
   useEffect(() => {
     fetchSettings()
   }, [])
 
   const fetchSettings = async () => {
-    setIsLoading(true)
     try {
       const response = await fetch("/api/admin/cookie-settings")
       if (response.ok) {
         const data = await response.json()
         setSettings(data)
+      } else {
+        toast.error("Failed to load cookie settings")
       }
     } catch (error) {
-      toast.error("Failed to load cookie settings")
+      toast.error("Error loading cookie settings")
     } finally {
       setIsLoading(false)
     }
@@ -65,7 +68,7 @@ export function CookieSettingsManager() {
         toast.success("Cookie settings saved successfully!")
       } else {
         const errorData = await response.json()
-        toast.error(`Error saving cookie settings: ${errorData.error || "Unknown error"}`)
+        toast.error(`Error: ${errorData.error || "Failed to save settings"}`)
       }
     } catch (error) {
       toast.error("Error saving cookie settings")
@@ -87,27 +90,46 @@ export function CookieSettingsManager() {
     }
   }
 
+  const updateSetting = (key: keyof CookieSettings, value: string | boolean) => {
+    setSettings((prev) => ({ ...prev, [key]: value }))
+  }
+
   if (isLoading) {
-    return <div>Loading cookie settings...</div>
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center p-6">
+          <Loader2 className="h-6 w-6 animate-spin mr-2" />
+          Loading cookie settings...
+        </CardContent>
+      </Card>
+    )
   }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Cookie & Analytics Settings</CardTitle>
+        <CardTitle className="flex items-center justify-between">
+          Cookie & Analytics Settings
+          <Button variant="outline" size="sm" onClick={() => setShowIds(!showIds)}>
+            {showIds ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            {showIds ? "Hide IDs" : "Show IDs"}
+          </Button>
+        </CardTitle>
         <CardDescription>Configure cookie consent banner and analytics tracking services</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Cookie Banner Settings */}
         <div className="space-y-4">
           <h3 className="text-lg font-medium">Cookie Banner</h3>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label>Enable Cookie Banner</Label>
+              <p className="text-sm text-muted-foreground">Show cookie consent banner to users</p>
+            </div>
             <Switch
-              id="cookie-banner"
               checked={settings.cookie_banner_enabled}
-              onCheckedChange={(checked) => setSettings({ ...settings, cookie_banner_enabled: checked })}
+              onCheckedChange={(checked) => updateSetting("cookie_banner_enabled", checked)}
             />
-            <Label htmlFor="cookie-banner">Enable Cookie Consent Banner</Label>
           </div>
         </div>
 
@@ -117,33 +139,42 @@ export function CookieSettingsManager() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-medium">Google Analytics</h3>
-            <Badge variant={settings.google_analytics_id ? "default" : "secondary"}>
-              {settings.google_analytics_id ? "Configured" : "Not Set"}
-            </Badge>
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="ga-id">Google Analytics Measurement ID</Label>
-            <div className="flex gap-2">
-              <Input
-                id="ga-id"
-                placeholder="G-XXXXXXXXXX"
-                value={settings.google_analytics_id}
-                onChange={(e) => setSettings({ ...settings, google_analytics_id: e.target.value })}
-              />
-              <Button variant="outline" onClick={testGoogleAnalytics} disabled={!settings.google_analytics_id}>
-                Test
-              </Button>
+            <div className="flex items-center gap-2">
+              <Badge variant={settings.google_analytics_id ? "default" : "secondary"}>
+                {settings.google_analytics_id ? "Configured" : "Not Set"}
+              </Badge>
+              {settings.google_analytics_id && (
+                <Button variant="outline" size="sm" onClick={testGoogleAnalytics}>
+                  <TestTube className="h-4 w-4 mr-1" />
+                  Test
+                </Button>
+              )}
             </div>
           </div>
 
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="analytics-enabled"
-              checked={settings.analytics_enabled}
-              onCheckedChange={(checked) => setSettings({ ...settings, analytics_enabled: checked })}
+          <div className="space-y-2">
+            <Label htmlFor="ga-id">Google Analytics Measurement ID</Label>
+            <Input
+              id="ga-id"
+              type={showIds ? "text" : "password"}
+              placeholder="G-XXXXXXXXXX"
+              value={settings.google_analytics_id}
+              onChange={(e) => updateSetting("google_analytics_id", e.target.value)}
             />
-            <Label htmlFor="analytics-enabled">Enable Analytics Tracking</Label>
+            <p className="text-xs text-muted-foreground">
+              Find this in Google Analytics → Admin → Property Settings → Measurement ID
+            </p>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label>Enable Analytics Tracking</Label>
+              <p className="text-sm text-muted-foreground">Default state for analytics cookies</p>
+            </div>
+            <Switch
+              checked={settings.analytics_enabled}
+              onCheckedChange={(checked) => updateSetting("analytics_enabled", checked)}
+            />
           </div>
         </div>
 
@@ -158,14 +189,18 @@ export function CookieSettingsManager() {
             </Badge>
           </div>
 
-          <div className="grid gap-2">
+          <div className="space-y-2">
             <Label htmlFor="gtm-id">Google Tag Manager Container ID</Label>
             <Input
               id="gtm-id"
+              type={showIds ? "text" : "password"}
               placeholder="GTM-XXXXXXX"
               value={settings.google_tag_manager_id}
-              onChange={(e) => setSettings({ ...settings, google_tag_manager_id: e.target.value })}
+              onChange={(e) => updateSetting("google_tag_manager_id", e.target.value)}
             />
+            <p className="text-xs text-muted-foreground">
+              Find this in Google Tag Manager → Container Settings → Container ID
+            </p>
           </div>
         </div>
 
@@ -180,23 +215,29 @@ export function CookieSettingsManager() {
             </Badge>
           </div>
 
-          <div className="grid gap-2">
+          <div className="space-y-2">
             <Label htmlFor="fb-pixel-id">Facebook Pixel ID</Label>
             <Input
               id="fb-pixel-id"
+              type={showIds ? "text" : "password"}
               placeholder="1234567890123456"
               value={settings.facebook_pixel_id}
-              onChange={(e) => setSettings({ ...settings, facebook_pixel_id: e.target.value })}
+              onChange={(e) => updateSetting("facebook_pixel_id", e.target.value)}
             />
+            <p className="text-xs text-muted-foreground">
+              Find this in Facebook Business Manager → Events Manager → Pixels
+            </p>
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label>Enable Marketing Tracking</Label>
+              <p className="text-sm text-muted-foreground">Default state for marketing cookies</p>
+            </div>
             <Switch
-              id="marketing-enabled"
               checked={settings.marketing_enabled}
-              onCheckedChange={(checked) => setSettings({ ...settings, marketing_enabled: checked })}
+              onCheckedChange={(checked) => updateSetting("marketing_enabled", checked)}
             />
-            <Label htmlFor="marketing-enabled">Enable Marketing Tracking</Label>
           </div>
         </div>
 
@@ -214,7 +255,17 @@ export function CookieSettingsManager() {
 
         {/* Save Button */}
         <Button onClick={handleSave} disabled={isSaving} className="w-full">
-          {isSaving ? "Saving..." : "Save Cookie Settings"}
+          {isSaving ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            <>
+              <Save className="mr-2 h-4 w-4" />
+              Save Cookie Settings
+            </>
+          )}
         </Button>
       </CardContent>
     </Card>

@@ -4,18 +4,13 @@ import { getCurrentUser } from "@/lib/auth/session"
 
 export async function GET() {
   try {
-    const user = await getCurrentUser()
-    if (!user || user.role !== "admin") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
     const supabase = createClient()
 
     // Отримуємо всі налаштування з app_settings
     const { data: settingsData, error: settingsError } = await supabase
       .from("app_settings")
-      .select("setting_key, setting_value")
-      .in("setting_key", [
+      .select("key, value")
+      .in("key", [
         "google_analytics_id",
         "google_tag_manager_id",
         "facebook_pixel_id",
@@ -39,12 +34,12 @@ export async function GET() {
     }
 
     settingsData?.forEach((item) => {
-      const key = item.setting_key as keyof typeof settings
+      const key = item.key as keyof typeof settings
       if (key in settings) {
         if (typeof settings[key] === "boolean") {
-          settings[key] = item.setting_value === "true" || item.setting_value === true
+          settings[key] = item.value === "true" || item.value === true
         } else {
-          settings[key] = item.setting_value || ""
+          settings[key] = item.value || ""
         }
       }
     })
@@ -65,7 +60,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const supabase = createClient()
 
-    // Зберігаємо кожне налаштування окремо
+    // Зберігаємо кожне налаштування окремо в app_settings
     const settingsToSave = [
       { key: "google_analytics_id", value: body.google_analytics_id || "" },
       { key: "google_tag_manager_id", value: body.google_tag_manager_id || "" },
@@ -76,19 +71,34 @@ export async function POST(request: NextRequest) {
     ]
 
     for (const setting of settingsToSave) {
-      const { error } = await supabase.from("app_settings").upsert(
-        {
-          setting_key: setting.key,
-          setting_value: setting.value,
-          updated_at: new Date().toISOString(),
-        },
-        {
-          onConflict: "setting_key",
-        },
-      )
+      // Перевіряємо чи існує запис
+      const { data: existing } = await supabase.from("app_settings").select("key").eq("key", setting.key).single()
 
-      if (error) {
-        return NextResponse.json({ error: error.message }, { status: 500 })
+      if (existing) {
+        // Оновлюємо існуючий запис
+        const { error: updateError } = await supabase
+          .from("app_settings")
+          .update({
+            value: setting.value,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("key", setting.key)
+
+        if (updateError) {
+          return NextResponse.json({ error: updateError.message }, { status: 500 })
+        }
+      } else {
+        // Створюємо новий запис
+        const { error: insertError } = await supabase.from("app_settings").insert({
+          key: setting.key,
+          value: setting.value,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+
+        if (insertError) {
+          return NextResponse.json({ error: insertError.message }, { status: 500 })
+        }
       }
     }
 

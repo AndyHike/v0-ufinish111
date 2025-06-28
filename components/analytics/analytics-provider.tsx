@@ -44,18 +44,20 @@ export function AnalyticsProvider() {
 
   return (
     <>
-      {/* Google Analytics - завантажується динамічно при згоді */}
-      {settings.google_analytics_id && (
+      {/* Google Analytics - завантажується тільки при згоді на аналітику */}
+      {settings.google_analytics_id && consent.analytics && (
         <GoogleAnalytics gaId={settings.google_analytics_id} consent={consent.analytics} />
       )}
 
-      {/* Google Tag Manager - завантажується динамічно при згоді */}
-      {settings.google_tag_manager_id && (
+      {/* Google Tag Manager - завантажується тільки при згоді на аналітику */}
+      {settings.google_tag_manager_id && consent.analytics && (
         <GoogleTagManager gtmId={settings.google_tag_manager_id} consent={consent.analytics} />
       )}
 
-      {/* Facebook Pixel - завантажується динамічно при згоді */}
-      {settings.facebook_pixel_id && <FacebookPixel pixelId={settings.facebook_pixel_id} consent={consent.marketing} />}
+      {/* Facebook Pixel - завантажується тільки при згоді на маркетинг */}
+      {settings.facebook_pixel_id && consent.marketing && (
+        <FacebookPixel pixelId={settings.facebook_pixel_id} consent={consent.marketing} />
+      )}
     </>
   )
 }

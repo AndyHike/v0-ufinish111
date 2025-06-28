@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect } from "react"
+import Script from "next/script"
 
 interface FacebookPixelProps {
   pixelId: string
@@ -16,47 +17,47 @@ declare global {
 
 export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
   useEffect(() => {
-    if (!consent || !pixelId) return
+    if (consent && pixelId && typeof window !== "undefined") {
+      // Ініціалізуємо Facebook Pixel
+      window.fbq = function fbq() {
+        if (window.fbq.callMethod) {
+          window.fbq.callMethod.apply(window.fbq, arguments)
+        } else {
+          window.fbq.queue.push(arguments)
+        }
+      }
 
-    // Перевіряємо чи вже завантажений Facebook Pixel
-    const existingScript = document.querySelector('script[src*="connect.facebook.net"]')
+      if (!window._fbq) {
+        window._fbq = window.fbq
+      }
 
-    if (!existingScript) {
-      // Ініціалізуємо fbq
-      window.fbq =
-        window.fbq ||
-        (() => {
-          ;(window.fbq.q = window.fbq.q || []).push(arguments)
-        })
-      window._fbq = window._fbq || window.fbq
       window.fbq.push = window.fbq
       window.fbq.loaded = true
       window.fbq.version = "2.0"
       window.fbq.queue = []
 
-      // Створюємо та додаємо скрипт
-      const script = document.createElement("script")
-      script.src = "https://connect.facebook.net/en_US/fbevents.js"
-      script.async = true
-
-      script.onload = () => {
-        window.fbq("init", pixelId)
-        window.fbq("track", "PageView")
-      }
-
-      document.head.appendChild(script)
-    } else if (window.fbq) {
-      // Якщо скрипт вже завантажений, просто відправляємо PageView
+      // Ініціалізуємо pixel
+      window.fbq("init", pixelId)
       window.fbq("track", "PageView")
     }
   }, [pixelId, consent])
 
-  // Відправляємо PageView при зміні consent з false на true
-  useEffect(() => {
-    if (consent && window.fbq) {
-      window.fbq("track", "PageView")
-    }
-  }, [consent])
+  if (!consent || !pixelId) {
+    return null
+  }
 
-  return null
+  return (
+    <>
+      <Script src="https://connect.facebook.net/en_US/fbevents.js" strategy="afterInteractive" />
+      <noscript>
+        <img
+          height="1"
+          width="1"
+          style={{ display: "none" }}
+          src={`https://www.facebook.com/tr?id=${pixelId}&ev=PageView&noscript=1`}
+          alt=""
+        />
+      </noscript>
+    </>
+  )
 }
