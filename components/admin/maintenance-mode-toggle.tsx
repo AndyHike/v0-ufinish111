@@ -5,17 +5,18 @@ import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { AlertTriangle, Settings } from "lucide-react"
-import { toast } from "sonner"
+import { useToast } from "@/hooks/use-toast"
 
 export function MaintenanceModeToggle() {
   const [isEnabled, setIsEnabled] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const { toast } = useToast()
 
   useEffect(() => {
-    fetchMaintenanceStatus()
+    fetchMaintenanceMode()
   }, [])
 
-  const fetchMaintenanceStatus = async () => {
+  const fetchMaintenanceMode = async () => {
     try {
       const response = await fetch("/api/admin/maintenance-mode")
       if (response.ok) {
@@ -23,8 +24,7 @@ export function MaintenanceModeToggle() {
         setIsEnabled(data.enabled)
       }
     } catch (error) {
-      console.error("Failed to fetch maintenance status:", error)
-      toast.error("Помилка завантаження статусу технічних робіт")
+      console.error("Error fetching maintenance mode:", error)
     } finally {
       setIsLoading(false)
     }
@@ -43,13 +43,22 @@ export function MaintenanceModeToggle() {
 
       if (response.ok) {
         setIsEnabled(enabled)
-        toast.success(enabled ? "Режим технічних робіт увімкнено" : "Режим технічних робіт вимкнено")
+        toast({
+          title: enabled ? "Режим технічних робіт увімкнено" : "Режим технічних робіт вимкнено",
+          description: enabled
+            ? "Тільки адміністратори можуть отримати доступ до сайту"
+            : "Сайт знову доступний для всіх користувачів",
+        })
       } else {
         throw new Error("Failed to update maintenance mode")
       }
     } catch (error) {
-      console.error("Failed to toggle maintenance mode:", error)
-      toast.error("Помилка зміни режиму технічних робіт")
+      console.error("Error updating maintenance mode:", error)
+      toast({
+        title: "Помилка",
+        description: "Не вдалося оновити режим технічних робіт",
+        variant: "destructive",
+      })
     } finally {
       setIsLoading(false)
     }
@@ -62,7 +71,9 @@ export function MaintenanceModeToggle() {
           <Settings className="h-5 w-5" />
           Режим технічних робіт
         </CardTitle>
-        <CardDescription>Увімкніть для блокування доступу звичайних користувачів до сайту</CardDescription>
+        <CardDescription>
+          Увімкніть режим технічних робіт, щоб обмежити доступ до сайту тільки для адміністраторів
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="flex items-center space-x-2">
@@ -77,13 +88,12 @@ export function MaintenanceModeToggle() {
             {isEnabled ? "Увімкнено" : "Вимкнено"}
           </Label>
         </div>
-
         {isEnabled && (
           <div className="mt-4 p-3 bg-orange-50 border border-orange-200 rounded-md">
-            <div className="flex items-center gap-2 text-orange-800">
-              <AlertTriangle className="h-4 w-4" />
-              <span className="text-sm font-medium">Увага: Сайт недоступний для звичайних користувачів</span>
-            </div>
+            <p className="text-sm text-orange-800">
+              <strong>Увага:</strong> Режим технічних робіт активний. Тільки адміністратори можуть отримати доступ до
+              сайту.
+            </p>
           </div>
         )}
       </CardContent>

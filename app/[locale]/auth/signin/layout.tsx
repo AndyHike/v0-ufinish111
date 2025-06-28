@@ -1,14 +1,24 @@
 import type React from "react"
 import { NextIntlClientProvider } from "next-intl"
 import { getMessages } from "@/lib/get-messages"
-import { getAppSetting } from "@/lib/app-settings"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
+import { createClient } from "@/lib/supabase"
 
 async function isMaintenanceModeEnabled(): Promise<boolean> {
   try {
-    const enabled = await getAppSetting("maintenance_mode_enabled")
-    return enabled === "true"
+    const supabase = createClient()
+    const { data, error } = await supabase
+      .from("app_settings")
+      .select("value")
+      .eq("key", "maintenance_mode_enabled")
+      .single()
+
+    if (error || !data) {
+      return false
+    }
+
+    return data.value === "true"
   } catch (error) {
     console.error("Error checking maintenance mode:", error)
     return false
@@ -31,7 +41,7 @@ export default async function SignInLayout({
       <html lang={locale}>
         <body>
           <NextIntlClientProvider locale={locale} messages={messages}>
-            <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+            <div className="fixed inset-0 w-screen h-screen z-[9999] bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
               {/* Background pattern */}
               <div className="absolute inset-0 bg-[url('/placeholder.svg?height=1080&width=1920')] bg-cover bg-center opacity-10" />
 
