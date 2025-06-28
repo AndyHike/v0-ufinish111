@@ -63,18 +63,36 @@ export async function POST(request: Request) {
       const { data: existingSetting } = await supabase.from("app_settings").select("id").eq("key", key).single()
 
       if (existingSetting) {
-        await supabase
+        const { error: updateError } = await supabase
           .from("app_settings")
-          .update({ value: String(value), updated_at: new Date().toISOString() })
+          .update({
+            value: String(value),
+            updated_at: new Date().toISOString(),
+          })
           .eq("key", key)
+
+        if (updateError) {
+          console.error(`Error updating ${key}:`, updateError)
+          throw updateError
+        }
       } else {
-        await supabase.from("app_settings").insert({ key, value: String(value) })
+        const { error: insertError } = await supabase.from("app_settings").insert({
+          key,
+          value: String(value),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+
+        if (insertError) {
+          console.error(`Error inserting ${key}:`, insertError)
+          throw insertError
+        }
       }
     }
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true, message: "Settings saved successfully" })
   } catch (error) {
     console.error("Error in cookie settings POST:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    return NextResponse.json({ error: "Failed to save settings" }, { status: 500 })
   }
 }
