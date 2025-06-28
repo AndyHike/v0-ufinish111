@@ -191,6 +191,8 @@
     "loading": "Завантаження брендів...",
     "allBrandsButton": "Переглянути всі бренди",
     "brandPageDescription": "Перегляньте всі доступні моделі телефонів {brand}, які ми ремонтуємо.",
+    "allBrands": "Всі бренди",
+    "allBrandsDescription": "Повний список всіх брендів мобільних телефонів, які ми ремонтуємо",
     "availableModels": "Доступні моделі",
     "noModelsAvailable": "Поки що немає доступних моделей для {brand}.",
     "backToAllBrands": "Назад до всіх брендів",

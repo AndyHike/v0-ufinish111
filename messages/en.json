@@ -114,6 +114,8 @@
     "title": "Brands We Service",
     "subtitle": "We specialize in repairing all major smartphone brands",
     "loading": "Loading brands...",
+    "allBrands": "All Brands",
+    "allBrandsDescription": "Complete list of all mobile phone brands we repair",
     "allBrandsButton": "View All Brands",
     "brandPageDescription": "Browse all available phone models for {brand} that we repair.",
     "availableModels": "Available Models",

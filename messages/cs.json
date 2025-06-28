@@ -183,6 +183,8 @@
     "title": "Značky, které servisujeme",
     "subtitle": "Specializujeme se na opravy všech hlavních značek smartphonů",
     "loading": "Načítání značek...",
+    "allBrands": "Všechny značky",
+    "allBrandsDescription": "Kompletní seznam všech značek mobilních telefonů, které opravujeme",
     "allBrandsButton": "Zobrazit všechny značky",
     "brandPageDescription": "Prozkoumejte všechny dostupné modely telefonů {brand}, které opravujeme.",
     "availableModels": "Dostupné modely",
