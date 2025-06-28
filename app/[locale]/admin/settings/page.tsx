@@ -9,6 +9,7 @@ import { FaviconUpload } from "@/components/admin/favicon-upload"
 import { PrivacyPolicyManager } from "@/components/admin/privacy-policy-manager"
 import { TermsOfServiceManager } from "@/components/admin/terms-of-service-manager"
 import { CookieSettingsManager } from "@/components/admin/cookie-settings-manager"
+import { MaintenanceModeToggle } from "@/components/admin/maintenance-mode-toggle"
 
 export async function generateMetadata({
   params: { locale },
@@ -35,6 +36,7 @@ export default async function SettingsPage() {
           <TabsTrigger value="security">Security</TabsTrigger>
           <TabsTrigger value="content">Content</TabsTrigger>
           <TabsTrigger value="cookies">Cookies & Analytics</TabsTrigger>
+          <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
           <TabsTrigger value="appearance">Appearance</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
           <TabsTrigger value="advanced">Advanced</TabsTrigger>
@@ -71,6 +73,10 @@ export default async function SettingsPage() {
 
         <TabsContent value="cookies" className="space-y-4">
           <CookieSettingsManager />
+        </TabsContent>
+
+        <TabsContent value="maintenance" className="space-y-4">
+          <MaintenanceModeToggle />
         </TabsContent>
 
         <TabsContent value="appearance" className="space-y-4">

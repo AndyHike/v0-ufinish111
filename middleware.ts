@@ -26,6 +26,57 @@ async function getDefaultLanguage(): Promise<string> {
   }
 }
 
+async function isMaintenanceModeEnabled(): Promise<boolean> {
+  try {
+    const supabase = createClient()
+    const { data, error } = await supabase
+      .from("app_settings")
+      .select("value")
+      .eq("key", "maintenance_mode_enabled")
+      .single()
+
+    if (error || !data) {
+      return false
+    }
+
+    return data.value === "true"
+  } catch (error) {
+    console.error("Error checking maintenance mode:", error)
+    return false
+  }
+}
+
+async function isUserAdmin(sessionId: string): Promise<boolean> {
+  try {
+    const supabase = createClient()
+
+    const { data: session, error: sessionError } = await supabase
+      .from("sessions")
+      .select("user_id")
+      .eq("id", sessionId)
+      .single()
+
+    if (sessionError || !session) {
+      return false
+    }
+
+    const { data: user, error: userError } = await supabase
+      .from("users")
+      .select("role")
+      .eq("id", session.user_id)
+      .single()
+
+    if (userError || !user) {
+      return false
+    }
+
+    return user.role === "admin"
+  } catch (error) {
+    console.error("Error checking user admin status:", error)
+    return false
+  }
+}
+
 export default async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
   const supportedLocales = ["uk", "cs", "en"]
@@ -33,6 +84,32 @@ export default async function middleware(request: NextRequest) {
   // Add exceptions for API routes and webhooks
   if (pathname.startsWith("/api/") || pathname.includes("/webhooks/") || pathname.startsWith("/app/api/")) {
     return NextResponse.next()
+  }
+
+  // Check maintenance mode
+  const maintenanceEnabled = await isMaintenanceModeEnabled()
+
+  if (maintenanceEnabled) {
+    const sessionId = request.cookies.get("session_id")?.value
+    const isAdmin = sessionId ? await isUserAdmin(sessionId) : false
+
+    // Allow access to maintenance page and admin login
+    if (
+      pathname.includes("/maintenance") ||
+      (pathname.includes("/auth/login") && !isAdmin) ||
+      pathname.includes("/admin")
+    ) {
+      // Continue with normal processing
+    } else if (!isAdmin) {
+      // Redirect non-admin users to maintenance page
+      const locale = pathname.split("/")[1] || "uk"
+      if (supportedLocales.includes(locale)) {
+        return NextResponse.redirect(new URL(`/${locale}/maintenance`, request.url))
+      } else {
+        const defaultLanguage = await getDefaultLanguage()
+        return NextResponse.redirect(new URL(`/${defaultLanguage}/maintenance`, request.url))
+      }
+    }
   }
 
   // CRUCIAL CHECK: If pathname already starts with a supported locale, proceed without redirection
