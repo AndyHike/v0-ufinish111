@@ -10,6 +10,7 @@ import { CookieConsentProvider } from "@/contexts/cookie-consent-context"
 import { CookieBanner } from "@/components/cookie-banner"
 import { AnalyticsProvider } from "@/components/analytics/analytics-provider"
 import { Suspense } from "react"
+import "@/app/globals.css"
 
 export async function generateMetadata({
   params: { locale },

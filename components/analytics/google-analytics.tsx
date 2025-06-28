@@ -8,6 +8,13 @@ interface GoogleAnalyticsProps {
   consent: boolean
 }
 
+declare global {
+  interface Window {
+    gtag: (...args: any[]) => void
+    dataLayer: any[]
+  }
+}
+
 export function GoogleAnalytics({ gaId, consent }: GoogleAnalyticsProps) {
   useEffect(() => {
     if (consent && gaId && typeof window !== "undefined") {

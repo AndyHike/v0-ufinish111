@@ -17,6 +17,7 @@ interface AnalyticsSettings {
 
 export function AnalyticsProvider() {
   const [settings, setSettings] = useState<AnalyticsSettings | null>(null)
+  const [isLoaded, setIsLoaded] = useState(false)
   const { consent } = useCookieConsent()
 
   useEffect(() => {
@@ -26,17 +27,27 @@ export function AnalyticsProvider() {
         const response = await fetch("/api/admin/cookie-settings")
         if (response.ok) {
           const data = await response.json()
+          console.log("Analytics settings loaded:", data)
           setSettings(data)
+        } else {
+          console.error("Failed to fetch analytics settings")
         }
       } catch (error) {
         console.error("Error fetching analytics settings:", error)
+      } finally {
+        setIsLoaded(true)
       }
     }
 
     fetchSettings()
   }, [])
 
-  if (!settings) {
+  // Логування стану consent
+  useEffect(() => {
+    console.log("Cookie consent state:", consent)
+  }, [consent])
+
+  if (!isLoaded || !settings) {
     return null
   }
 
