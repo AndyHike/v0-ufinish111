@@ -8,6 +8,8 @@ import { getCurrentUser } from "@/lib/auth/session"
 import { getMessages } from "@/lib/get-messages"
 import { CookieConsentProvider } from "@/contexts/cookie-consent-context"
 import { CookieBanner } from "@/components/cookie-banner"
+import { AnalyticsProvider } from "@/components/analytics/analytics-provider"
+import { Suspense } from "react"
 
 export async function generateMetadata({
   params: { locale },
@@ -70,12 +72,15 @@ export default async function LocaleLayout({
   return (
     <NextIntlClientProvider locale={locale} messages={messages}>
       <CookieConsentProvider>
-        <div className="flex min-h-screen flex-col">
-          <Header user={user} />
-          <main className="flex-1">{children}</main>
-          <Footer />
-          <CookieBanner />
-        </div>
+        <Suspense fallback={<div>Loading...</div>}>
+          <div className="flex min-h-screen flex-col">
+            <Header user={user} />
+            <main className="flex-1">{children}</main>
+            <Footer />
+            <CookieBanner />
+            <AnalyticsProvider />
+          </div>
+        </Suspense>
       </CookieConsentProvider>
     </NextIntlClientProvider>
   )
