@@ -2,23 +2,16 @@
 
 import { SessionProvider as NextAuthSessionProvider } from "next-auth/react"
 import type { Session } from "next-auth"
-import type React from "react"
+import type { ReactNode } from "react"
 
-/**
- * Глобальний провайдер next-auth.
- *
- * Використовуйте `useSession()` у будь-якому клієнтському компоненті, що лежить
- * всередині цього провайдера.
- */
-export function SessionProvider({
-  children,
-  session,
-}: {
-  children: React.ReactNode
+interface SessionProviderProps {
+  children: ReactNode
   session?: Session | null
-}) {
+}
+
+export function SessionProvider({ children, session }: SessionProviderProps) {
   return <NextAuthSessionProvider session={session}>{children}</NextAuthSessionProvider>
 }
 
-/* Додатковий експорт, якщо хтось очікує цю назву */
-export { SessionProvider as NextAuthProvider }
+// Експортуємо також як NextAuthProvider для сумісності
+export const NextAuthProvider = SessionProvider

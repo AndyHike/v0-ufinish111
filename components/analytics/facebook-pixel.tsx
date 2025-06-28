@@ -8,6 +8,13 @@ interface FacebookPixelProps {
   consent: boolean
 }
 
+declare global {
+  interface Window {
+    fbq: (...args: any[]) => void
+    _fbq: any
+  }
+}
+
 export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
   useEffect(() => {
     if (consent && pixelId && typeof window !== "undefined") {
@@ -15,12 +22,14 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
       window.fbq =
         window.fbq ||
         ((...args: any[]) => {
-          if (window.fbq.q) {
-            window.fbq.q.push(args)
-          }
+          ;(window.fbq.q = window.fbq.q || []).push(args)
         })
-      window.fbq.q = window.fbq.q || []
-      window.fbq.l = +new Date()
+      window._fbq = window._fbq || window.fbq
+      window.fbq.push = window.fbq
+      window.fbq.loaded = true
+      window.fbq.version = "2.0"
+      window.fbq.queue = []
+
       window.fbq("init", pixelId)
       window.fbq("track", "PageView")
 
@@ -29,34 +38,18 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
   }, [pixelId, consent])
 
   if (!consent || !pixelId) {
+    console.log("Facebook Pixel not loaded - consent:", consent, "pixelId:", pixelId)
     return null
   }
 
   return (
     <>
-      <Script id="facebook-pixel" strategy="afterInteractive">
-        {`
-          !function(f,b,e,v,n,t,s)
-          {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-          n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-          if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-          n.queue=[];t=b.createElement(e);t.async=!0;
-          t.src=v;s=b.getElementsByTagName(e)[0];
-          s.parentNode.insertBefore(t,s)}(window, document,'script',
-          'https://connect.facebook.net/en_US/fbevents.js');
-          fbq('init', '${pixelId}');
-          fbq('track', 'PageView');
-        `}
-      </Script>
-      <noscript>
-        <img
-          height="1"
-          width="1"
-          style={{ display: "none" }}
-          src={`https://www.facebook.com/tr?id=${pixelId}&ev=PageView&noscript=1`}
-          alt=""
-        />
-      </noscript>
+      <Script
+        src="https://connect.facebook.net/en_US/fbevents.js"
+        strategy="afterInteractive"
+        onLoad={() => console.log("Facebook Pixel script loaded successfully")}
+        onError={() => console.error("Failed to load Facebook Pixel script")}
+      />
     </>
   )
 }

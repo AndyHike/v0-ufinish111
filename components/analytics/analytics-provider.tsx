@@ -24,13 +24,14 @@ export function AnalyticsProvider() {
     // Завантажуємо налаштування аналітики
     const fetchSettings = async () => {
       try {
+        console.log("Fetching analytics settings...")
         const response = await fetch("/api/admin/cookie-settings")
         if (response.ok) {
           const data = await response.json()
           console.log("Analytics settings loaded:", data)
           setSettings(data)
         } else {
-          console.error("Failed to fetch analytics settings")
+          console.error("Failed to fetch analytics settings, status:", response.status)
         }
       } catch (error) {
         console.error("Error fetching analytics settings:", error)
@@ -59,6 +60,10 @@ export function AnalyticsProvider() {
         analyticsConsent: consent.analytics,
         marketingConsent: consent.marketing,
       })
+
+      // Перевіряємо чи повинен завантажуватися GA
+      const shouldLoadGA = consent.analytics && settings.google_analytics_id
+      console.log("Should load Google Analytics:", shouldLoadGA)
     }
   }, [settings, consent])
 
@@ -75,17 +80,19 @@ export function AnalyticsProvider() {
   return (
     <>
       {/* Google Analytics - завантажується тільки при згоді на аналітику */}
-      {settings.google_analytics_id && (
+      {settings.google_analytics_id && consent.analytics && (
         <GoogleAnalytics gaId={settings.google_analytics_id} consent={consent.analytics} />
       )}
 
       {/* Google Tag Manager - завантажується тільки при згоді на аналітику */}
-      {settings.google_tag_manager_id && (
+      {settings.google_tag_manager_id && consent.analytics && (
         <GoogleTagManager gtmId={settings.google_tag_manager_id} consent={consent.analytics} />
       )}
 
       {/* Facebook Pixel - завантажується тільки при згоді на маркетинг */}
-      {settings.facebook_pixel_id && <FacebookPixel pixelId={settings.facebook_pixel_id} consent={consent.marketing} />}
+      {settings.facebook_pixel_id && consent.marketing && (
+        <FacebookPixel pixelId={settings.facebook_pixel_id} consent={consent.marketing} />
+      )}
     </>
   )
 }

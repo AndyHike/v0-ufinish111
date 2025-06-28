@@ -1,29 +1,29 @@
-export interface AnalyticsSettings {
-  google_analytics_id: string
-  google_tag_manager_id: string
-  facebook_pixel_id: string
-  cookie_banner_enabled: boolean
-  analytics_enabled: boolean
-  marketing_enabled: boolean
+export interface GoogleAnalyticsConfig {
+  measurementId: string
+  enabled: boolean
 }
 
-export interface CookieConsent {
+export interface GoogleTagManagerConfig {
+  containerId: string
+  enabled: boolean
+}
+
+export interface FacebookPixelConfig {
+  pixelId: string
+  enabled: boolean
+}
+
+export interface AnalyticsConfig {
+  googleAnalytics?: GoogleAnalyticsConfig
+  googleTagManager?: GoogleTagManagerConfig
+  facebookPixel?: FacebookPixelConfig
+}
+
+export interface CookieConsentState {
   necessary: boolean
   analytics: boolean
   marketing: boolean
   preferences: boolean
-}
-
-export interface GoogleAnalyticsEvent {
-  action: string
-  category: string
-  label?: string
-  value?: number
-}
-
-export interface FacebookPixelEvent {
-  event: string
-  parameters?: Record<string, any>
 }
 
 declare global {

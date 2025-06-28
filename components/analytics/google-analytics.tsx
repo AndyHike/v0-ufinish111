@@ -47,6 +47,7 @@ export function GoogleAnalytics({ gaId, consent }: GoogleAnalyticsProps) {
       console.log("Page view sent to GA4")
       console.log("Current URL:", window.location.href)
       console.log("DataLayer:", window.dataLayer)
+      console.log("gtag function available:", typeof window.gtag)
     }
   }, [gaId, consent])
 
@@ -60,8 +61,13 @@ export function GoogleAnalytics({ gaId, consent }: GoogleAnalyticsProps) {
       <Script
         src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}
         strategy="afterInteractive"
-        onLoad={() => console.log("GA script loaded successfully")}
-        onError={() => console.error("Failed to load GA script")}
+        onLoad={() => {
+          console.log("GA script loaded successfully")
+          console.log("gtag available after load:", typeof window.gtag)
+        }}
+        onError={(error) => {
+          console.error("Failed to load GA script:", error)
+        }}
       />
     </>
   )
@@ -76,6 +82,8 @@ export function trackEvent(action: string, category: string, label?: string, val
       value: value,
     })
     console.log("Event tracked:", { action, category, label, value })
+  } else {
+    console.log("gtag not available for event tracking")
   }
 }
 
@@ -87,5 +95,7 @@ export function trackPageView(url: string, title?: string) {
       page_title: title || document.title,
     })
     console.log("Page view tracked:", { url, title })
+  } else {
+    console.log("gtag not available for page view tracking")
   }
 }
