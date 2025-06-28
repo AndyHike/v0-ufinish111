@@ -11,12 +11,14 @@ declare global {
   interface Window {
     gtag: (...args: any[]) => void
     dataLayer: any[]
+    ga_debug?: boolean
   }
 }
 
 export function GoogleAnalytics({ gaId, consent }: GoogleAnalyticsProps) {
   const scriptLoadedRef = useRef(false)
   const gaInitializedRef = useRef(false)
+  const consentGrantedRef = useRef(false)
 
   useEffect(() => {
     if (!consent || !gaId || typeof window === "undefined") {
@@ -38,11 +40,24 @@ export function GoogleAnalytics({ gaId, consent }: GoogleAnalyticsProps) {
       // Встановлюємо час
       window.gtag("js", new Date())
 
-      // Конфігуруємо GA4
+      // ВАЖЛИВО: Спочатку налаштовуємо consent
+      window.gtag("consent", "default", {
+        analytics_storage: "granted",
+        ad_storage: "denied",
+        functionality_storage: "granted",
+        personalization_storage: "granted",
+        security_storage: "granted",
+      })
+
+      // Конфігуруємо GA4 з правильними параметрами
       window.gtag("config", gaId, {
         send_page_view: true,
         page_title: document.title,
         page_location: window.location.href,
+        transport_type: "beacon", // Важливо для надійної відправки
+        custom_map: {
+          custom_parameter_1: "dimension1",
+        },
       })
 
       gaInitializedRef.current = true
@@ -50,12 +65,23 @@ export function GoogleAnalytics({ gaId, consent }: GoogleAnalyticsProps) {
       console.log("📊 Property ID:", gaId)
       console.log("📄 Current page:", window.location.href)
 
+      // Форсуємо відправку початкової події
+      setTimeout(() => {
+        window.gtag("event", "page_view", {
+          page_title: document.title,
+          page_location: window.location.href,
+          send_to: gaId,
+        })
+        console.log("📄 Manual page_view sent")
+      }, 500)
+
       // Відправляємо тестову подію для перевірки
       setTimeout(() => {
         window.gtag("event", "ga_initialized", {
           event_category: "system",
           event_label: "automatic_initialization",
-          custom_parameter_1: gaId,
+          send_to: gaId,
+          transport_type: "beacon",
         })
         console.log("🎯 Test event sent: ga_initialized")
       }, 1000)
@@ -97,10 +123,24 @@ export function GoogleAnalytics({ gaId, consent }: GoogleAnalyticsProps) {
         await loadScript()
 
         // Чекаємо трохи щоб скрипт повністю завантажився
-        await new Promise((resolve) => setTimeout(resolve, 500))
+        await new Promise((resolve) => setTimeout(resolve, 1000))
 
         // Ініціалізуємо GA
         initializeGoogleAnalytics()
+
+        // Додаткова затримка для стабільності
+        setTimeout(() => {
+          if (window.gtag) {
+            // Форсуємо відправку даних
+            window.gtag("event", "consent_granted", {
+              event_category: "consent",
+              event_label: "analytics_consent_granted",
+              send_to: gaId,
+              transport_type: "beacon",
+            })
+            console.log("🍪 Consent granted event sent")
+          }
+        }, 2000)
 
         console.log("🎉 Google Analytics setup completed!")
       } catch (error) {
@@ -119,6 +159,39 @@ export function GoogleAnalytics({ gaId, consent }: GoogleAnalyticsProps) {
     }
   }, [gaId, consent])
 
+  // Окремий useEffect для відстеження зміни consent
+  useEffect(() => {
+    if (consent && gaInitializedRef.current && !consentGrantedRef.current) {
+      console.log("🔄 Consent changed to true, forcing data send...")
+      consentGrantedRef.current = true
+
+      if (typeof window !== "undefined" && window.gtag) {
+        // Оновлюємо consent
+        window.gtag("consent", "update", {
+          analytics_storage: "granted",
+        })
+
+        // Форсуємо відправку page_view
+        window.gtag("event", "page_view", {
+          page_title: document.title,
+          page_location: window.location.href,
+          send_to: gaId,
+          transport_type: "beacon",
+        })
+
+        // Відправляємо подію про зміну consent
+        window.gtag("event", "consent_update", {
+          event_category: "consent",
+          event_label: "analytics_enabled_dynamically",
+          send_to: gaId,
+          transport_type: "beacon",
+        })
+
+        console.log("🚀 Forced data send after consent change")
+      }
+    }
+  }, [consent, gaId])
+
   return null
 }
 
@@ -129,6 +202,7 @@ export const trackEvent = (action: string, category: string, label?: string, val
       event_category: category,
       event_label: label,
       value: value,
+      transport_type: "beacon", // Важливо для надійної відправки
     })
     console.log("📊 Event tracked:", { action, category, label, value })
     return true
@@ -143,6 +217,7 @@ export const trackPageView = (url?: string, title?: string) => {
     window.gtag("event", "page_view", {
       page_location: url || window.location.href,
       page_title: title || document.title,
+      transport_type: "beacon",
     })
     console.log("📄 Page view tracked:", url || window.location.href)
     return true

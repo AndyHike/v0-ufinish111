@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { toast } from "sonner"
-import { Loader2, Save, Settings, Eye, EyeOff, CheckCircle, AlertCircle, TestTube, Activity } from "lucide-react"
+import { Loader2, Save, Settings, Eye, EyeOff, CheckCircle, AlertCircle, TestTube, Activity, Bug } from "lucide-react"
 
 interface CookieSettings {
   google_analytics_id: string
@@ -97,12 +97,15 @@ export function CookieSettingsManager() {
     if (typeof window !== "undefined" && window.gtag) {
       const testEventName = "admin_test_" + Date.now()
 
+      // Відправляємо тестову подію з форсованою відправкою
       window.gtag("event", testEventName, {
         event_category: "admin_test",
         event_label: "manual_test_from_admin",
         value: 1,
         custom_parameter: "test_value",
         test_timestamp: new Date().toISOString(),
+        transport_type: "beacon", // Форсуємо відправку
+        send_to: settings.google_analytics_id,
       })
 
       // Також відправляємо page_view для впевненості
@@ -110,13 +113,16 @@ export function CookieSettingsManager() {
         page_title: "Admin Test - " + document.title,
         page_location: window.location.href,
         custom_parameter: "admin_test",
+        transport_type: "beacon",
+        send_to: settings.google_analytics_id,
       })
 
-      toast.success(`Test events sent! Event: ${testEventName}`)
-      console.log("✅ Test events sent:", {
+      toast.success(`Test events sent with beacon transport! Event: ${testEventName}`)
+      console.log("✅ Test events sent with forced transport:", {
         event: testEventName,
         page_view: "admin_test",
         timestamp: new Date().toISOString(),
+        transport: "beacon",
       })
     } else {
       toast.error("Google Analytics not loaded. Please accept analytics cookies first.")
@@ -130,16 +136,18 @@ export function CookieSettingsManager() {
   }
 
   const testRealTimeTracking = () => {
-    console.log("🔴 Testing Real-time tracking...")
+    console.log("🔴 Testing Real-time tracking with forced transport...")
 
     if (typeof window !== "undefined" && window.gtag) {
       const timestamp = Date.now()
 
-      // Відправляємо серію подій для real-time тестування
+      // Відправляємо серію подій для real-time тестування з форсованою відправкою
       window.gtag("event", "realtime_test_start", {
         event_category: "realtime_test",
         event_label: "test_session_" + timestamp,
         value: 1,
+        transport_type: "beacon",
+        send_to: settings.google_analytics_id,
       })
 
       setTimeout(() => {
@@ -147,6 +155,8 @@ export function CookieSettingsManager() {
           event_category: "realtime_test",
           event_label: "delayed_action_" + timestamp,
           value: 2,
+          transport_type: "beacon",
+          send_to: settings.google_analytics_id,
         })
       }, 1000)
 
@@ -155,14 +165,60 @@ export function CookieSettingsManager() {
           event_category: "realtime_test",
           event_label: "test_complete_" + timestamp,
           value: 3,
+          transport_type: "beacon",
+          send_to: settings.google_analytics_id,
         })
       }, 2000)
 
-      toast.success("Real-time test sequence started! Check GA4 Real-time reports in 30 seconds.")
-      console.log("🚀 Real-time test sequence initiated:", timestamp)
+      // Форсуємо відправку page_view
+      setTimeout(() => {
+        window.gtag("event", "page_view", {
+          page_title: "Real-time Test Page",
+          page_location: window.location.href,
+          custom_parameter: "realtime_test",
+          transport_type: "beacon",
+          send_to: settings.google_analytics_id,
+        })
+      }, 3000)
+
+      toast.success("Real-time test sequence with beacon transport started! Check GA4 Real-time reports now.")
+      console.log("🚀 Real-time test sequence with forced transport initiated:", timestamp)
     } else {
       toast.error("Google Analytics not available")
       console.error("❌ Cannot perform real-time test - gtag not available")
+    }
+  }
+
+  const forceDataSend = () => {
+    console.log("🚀 Forcing immediate data send...")
+
+    if (typeof window !== "undefined" && window.gtag) {
+      // Оновлюємо consent
+      window.gtag("consent", "update", {
+        analytics_storage: "granted",
+      })
+
+      // Форсуємо відправку поточної сторінки
+      window.gtag("event", "page_view", {
+        page_title: document.title,
+        page_location: window.location.href,
+        transport_type: "beacon",
+        send_to: settings.google_analytics_id,
+      })
+
+      // Відправляємо подію про форсовану відправку
+      window.gtag("event", "force_data_send", {
+        event_category: "admin_action",
+        event_label: "manual_force_send",
+        transport_type: "beacon",
+        send_to: settings.google_analytics_id,
+      })
+
+      toast.success("Data send forced! Check Real-time reports.")
+      console.log("✅ Forced data send completed")
+    } else {
+      toast.error("Google Analytics not available")
+      console.error("❌ Cannot force data send - gtag not available")
     }
   }
 
@@ -182,6 +238,11 @@ export function CookieSettingsManager() {
     gaScripts.forEach((script, index) => {
       console.log(`Script ${index + 1}:`, script.src)
     })
+
+    // Перевіряємо dataLayer
+    if (window?.dataLayer) {
+      console.log("DataLayer contents:", window.dataLayer)
+    }
 
     toast.info("Debug information logged to console")
   }
@@ -250,7 +311,11 @@ export function CookieSettingsManager() {
                     <Activity className="h-4 w-4 mr-1" />
                     Real-time
                   </Button>
+                  <Button variant="outline" size="sm" onClick={forceDataSend}>
+                    Force Send
+                  </Button>
                   <Button variant="outline" size="sm" onClick={debugAnalytics}>
+                    <Bug className="h-4 w-4 mr-1" />
                     Debug
                   </Button>
                 </div>

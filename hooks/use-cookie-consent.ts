@@ -70,6 +70,34 @@ export function useCookieConsent() {
     // Логування змін для аналітики
     if (consent.analytics) {
       console.log("🚀 Analytics consent granted - Google Analytics should activate!")
+
+      // Додаємо невелику затримку для активації аналітики
+      setTimeout(() => {
+        if (typeof window !== "undefined" && window.gtag) {
+          console.log("🔄 Triggering immediate analytics activation...")
+
+          // Оновлюємо consent в GA
+          window.gtag("consent", "update", {
+            analytics_storage: "granted",
+          })
+
+          // Форсуємо відправку page_view
+          window.gtag("event", "page_view", {
+            page_title: document.title,
+            page_location: window.location.href,
+            transport_type: "beacon",
+          })
+
+          // Відправляємо подію про надання згоди
+          window.gtag("event", "consent_granted", {
+            event_category: "consent",
+            event_label: "analytics_consent_granted_dynamically",
+            transport_type: "beacon",
+          })
+
+          console.log("✅ Analytics activated immediately after consent!")
+        }
+      }, 1000)
     } else {
       console.log("🔒 Analytics consent denied - Google Analytics blocked")
     }
