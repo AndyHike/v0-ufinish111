@@ -1,55 +1,65 @@
 "use client"
 
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
-import type { CookieConsent } from "@/types/cookie-consent"
+import { useState, useEffect } from "react"
+import type { CookieConsent, CookieConsentState } from "@/types/cookie-consent"
 
-interface CookieConsentContextType {
-  consent: CookieConsent
-  saveConsent: (newConsent: Partial<CookieConsent>) => void
-  resetConsent: () => void
-  hasConsented: boolean
-}
+const COOKIE_CONSENT_KEY = "cookie-consent"
+const CONSENT_EXPIRY_DAYS = 365
 
-const CookieConsentContext = createContext<CookieConsentContextType | undefined>(undefined)
-
-const defaultConsent: CookieConsent = {
-  necessary: true,
-  analytics: false,
-  marketing: false,
-  preferences: false,
-  timestamp: null,
-}
-
-export function CookieConsentProvider({ children }: { children: ReactNode }) {
-  const [consent, setConsent] = useState<CookieConsent>(defaultConsent)
-  const [hasConsented, setHasConsented] = useState(false)
+export function useCookieConsent() {
+  const [state, setState] = useState<CookieConsentState>({
+    consent: {
+      necessary: true,
+      analytics: false,
+      marketing: false,
+    },
+    showBanner: false,
+    hasInteracted: false,
+    consentDate: null,
+  })
 
   useEffect(() => {
-    const stored = localStorage.getItem("cookie-consent")
+    const stored = localStorage.getItem(COOKIE_CONSENT_KEY)
     if (stored) {
       try {
-        const parsedConsent = JSON.parse(stored)
-        setConsent(parsedConsent)
-        setHasConsented(true)
+        const parsed = JSON.parse(stored)
+        const consentDate = new Date(parsed.consentDate)
+        const now = new Date()
+        const daysDiff = (now.getTime() - consentDate.getTime()) / (1000 * 3600 * 24)
+
+        if (daysDiff < CONSENT_EXPIRY_DAYS) {
+          setState({
+            consent: parsed.consent,
+            showBanner: false,
+            hasInteracted: true,
+            consentDate: parsed.consentDate,
+          })
+        } else {
+          setState((prev) => ({ ...prev, showBanner: true }))
+        }
       } catch (error) {
-        // Invalid stored consent, use defaults
+        setState((prev) => ({ ...prev, showBanner: true }))
       }
+    } else {
+      setState((prev) => ({ ...prev, showBanner: true }))
     }
   }, [])
 
-  const saveConsent = (newConsent: Partial<CookieConsent>) => {
-    const updatedConsent = {
-      ...consent,
-      ...newConsent,
-      timestamp: new Date().toISOString(),
+  const saveConsent = (consent: CookieConsent) => {
+    const consentData = {
+      consent,
+      consentDate: new Date().toISOString(),
     }
+    localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(consentData))
 
-    setConsent(updatedConsent)
-    setHasConsented(true)
-    localStorage.setItem("cookie-consent", JSON.stringify(updatedConsent))
+    setState({
+      consent,
+      showBanner: false,
+      hasInteracted: true,
+      consentDate: consentData.consentDate,
+    })
 
-    // Активуємо Google Analytics якщо дозволено
-    if (updatedConsent.analytics && typeof window !== "undefined") {
+    if (consent.analytics && typeof window !== "undefined") {
       setTimeout(() => {
         if (window.gtag) {
           window.gtag("consent", "update", {
@@ -62,9 +72,14 @@ export function CookieConsentProvider({ children }: { children: ReactNode }) {
             transport_type: "beacon",
           })
 
-          window.gtag("event", "consent_granted", {
+          window.gtag("event", "consent_granted_immediate", {
             event_category: "consent",
-            event_label: "analytics_consent_granted",
+            event_label: "user_accepted_analytics",
+            transport_type: "beacon",
+          })
+
+          window.gtag("event", "user_engagement", {
+            engagement_time_msec: 1000,
             transport_type: "beacon",
           })
         }
@@ -72,23 +87,46 @@ export function CookieConsentProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const resetConsent = () => {
-    setConsent(defaultConsent)
-    setHasConsented(false)
-    localStorage.removeItem("cookie-consent")
+  const acceptAll = () => {
+    saveConsent({
+      necessary: true,
+      analytics: true,
+      marketing: true,
+    })
   }
 
-  return (
-    <CookieConsentContext.Provider value={{ consent, saveConsent, resetConsent, hasConsented }}>
-      {children}
-    </CookieConsentContext.Provider>
-  )
-}
-
-export function useCookieConsent() {
-  const context = useContext(CookieConsentContext)
-  if (context === undefined) {
-    throw new Error("useCookieConsent must be used within a CookieConsentProvider")
+  const acceptNecessary = () => {
+    saveConsent({
+      necessary: true,
+      analytics: false,
+      marketing: false,
+    })
   }
-  return context
+
+  const updateCategory = (category: keyof CookieConsent, value: boolean) => {
+    setState((prev) => ({
+      ...prev,
+      consent: {
+        ...prev.consent,
+        [category]: category === "necessary" ? true : value,
+      },
+    }))
+  }
+
+  const saveCurrentSettings = () => {
+    saveConsent(state.consent)
+  }
+
+  const setShowBanner = (show: boolean) => {
+    setState((prev) => ({ ...prev, showBanner: show }))
+  }
+
+  return {
+    ...state,
+    acceptAll,
+    acceptNecessary,
+    updateCategory,
+    saveCurrentSettings,
+    setShowBanner,
+  }
 }
