@@ -16,30 +16,40 @@ declare global {
 
 export function GoogleTagManager({ gtmId, consent }: GoogleTagManagerProps) {
   useEffect(() => {
-    if (consent && gtmId && typeof window !== "undefined") {
-      // Ініціалізуємо dataLayer для GTM
-      window.dataLayer = window.dataLayer || []
-      window.dataLayer.push({
-        "gtm.start": new Date().getTime(),
-        event: "gtm.js",
-      })
+    if (consent && gtmId) {
+      console.log(`Google Tag Manager initialized with ID: ${gtmId}`)
 
-      console.log("Google Tag Manager initialized with ID:", gtmId)
+      // Ініціалізуємо dataLayer для GTM
+      if (typeof window !== "undefined") {
+        window.dataLayer = window.dataLayer || []
+        window.dataLayer.push({
+          "gtm.start": new Date().getTime(),
+          event: "gtm.js",
+        })
+      }
+    } else {
+      console.log("Google Tag Manager not loaded - consent:", consent, "gtmId:", gtmId)
     }
   }, [gtmId, consent])
 
   if (!consent || !gtmId) {
-    console.log("GTM not loaded - consent:", consent, "gtmId:", gtmId)
     return null
   }
 
   return (
     <>
       <Script
-        src={`https://www.googletagmanager.com/gtm.js?id=${gtmId}`}
+        id="gtm-script"
         strategy="afterInteractive"
-        onLoad={() => console.log("GTM script loaded successfully")}
-        onError={() => console.error("Failed to load GTM script")}
+        dangerouslySetInnerHTML={{
+          __html: `
+            (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+            new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+            j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+            'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+            })(window,document,'script','dataLayer','${gtmId}');
+          `,
+        }}
       />
       <noscript>
         <iframe

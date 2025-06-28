@@ -17,39 +17,51 @@ declare global {
 
 export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
   useEffect(() => {
-    if (consent && pixelId && typeof window !== "undefined") {
-      // Ініціалізуємо Facebook Pixel
-      window.fbq =
-        window.fbq ||
-        ((...args: any[]) => {
-          ;(window.fbq.q = window.fbq.q || []).push(args)
-        })
-      window._fbq = window._fbq || window.fbq
-      window.fbq.push = window.fbq
-      window.fbq.loaded = true
-      window.fbq.version = "2.0"
-      window.fbq.queue = []
+    if (consent && pixelId) {
+      console.log(`Facebook Pixel initialized with ID: ${pixelId}`)
 
-      window.fbq("init", pixelId)
-      window.fbq("track", "PageView")
-
-      console.log("Facebook Pixel initialized with ID:", pixelId)
+      if (typeof window !== "undefined") {
+        // Ініціалізуємо Facebook Pixel
+        window.fbq =
+          window.fbq ||
+          (() => {
+            ;(window.fbq.q = window.fbq.q || []).push(arguments)
+          })
+        window.fbq.l = +new Date()
+        window.fbq("init", pixelId)
+        window.fbq("track", "PageView")
+      }
+    } else {
+      console.log("Facebook Pixel not loaded - consent:", consent, "pixelId:", pixelId)
     }
   }, [pixelId, consent])
 
   if (!consent || !pixelId) {
-    console.log("Facebook Pixel not loaded - consent:", consent, "pixelId:", pixelId)
     return null
   }
 
   return (
     <>
       <Script
-        src="https://connect.facebook.net/en_US/fbevents.js"
+        id="fb-pixel"
         strategy="afterInteractive"
-        onLoad={() => console.log("Facebook Pixel script loaded successfully")}
-        onError={() => console.error("Failed to load Facebook Pixel script")}
+        src="https://connect.facebook.net/en_US/fbevents.js"
+        onLoad={() => {
+          console.log("Facebook Pixel script loaded")
+        }}
+        onError={(e) => {
+          console.error("Failed to load Facebook Pixel script:", e)
+        }}
       />
+      <noscript>
+        <img
+          height="1"
+          width="1"
+          style={{ display: "none" }}
+          src={`https://www.facebook.com/tr?id=${pixelId}&ev=PageView&noscript=1`}
+          alt=""
+        />
+      </noscript>
     </>
   )
 }

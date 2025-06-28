@@ -48,6 +48,11 @@ export function AnalyticsProvider() {
     console.log("Cookie consent state:", consent)
     console.log("Analytics consent:", consent.analytics)
     console.log("Marketing consent:", consent.marketing)
+
+    if (!consent.analytics) {
+      console.log("⚠️ Analytics consent is FALSE - Google Analytics will NOT load")
+      console.log("💡 Accept analytics cookies to enable Google Analytics")
+    }
   }, [consent])
 
   // Логування налаштувань
@@ -64,6 +69,10 @@ export function AnalyticsProvider() {
       // Перевіряємо чи повинен завантажуватися GA
       const shouldLoadGA = consent.analytics && settings.google_analytics_id
       console.log("Should load Google Analytics:", shouldLoadGA)
+
+      if (settings.google_analytics_id && !consent.analytics) {
+        console.log("🔒 Google Analytics ID is set but consent is denied")
+      }
     }
   }, [settings, consent])
 

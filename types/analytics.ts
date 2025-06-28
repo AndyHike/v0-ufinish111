@@ -1,29 +1,25 @@
 export interface GoogleAnalyticsConfig {
-  measurementId: string
-  enabled: boolean
+  gaId: string
+  consent: boolean
 }
 
 export interface GoogleTagManagerConfig {
-  containerId: string
-  enabled: boolean
+  gtmId: string
+  consent: boolean
 }
 
 export interface FacebookPixelConfig {
   pixelId: string
-  enabled: boolean
+  consent: boolean
 }
 
-export interface AnalyticsConfig {
-  googleAnalytics?: GoogleAnalyticsConfig
-  googleTagManager?: GoogleTagManagerConfig
-  facebookPixel?: FacebookPixelConfig
-}
-
-export interface CookieConsentState {
-  necessary: boolean
-  analytics: boolean
-  marketing: boolean
-  preferences: boolean
+export interface AnalyticsSettings {
+  google_analytics_id: string
+  google_tag_manager_id: string
+  facebook_pixel_id: string
+  cookie_banner_enabled: boolean
+  analytics_enabled: boolean
+  marketing_enabled: boolean
 }
 
 declare global {
