@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { GoogleAnalytics } from "./google-analytics"
 import { GoogleTagManager } from "./google-tag-manager"
-import { FacebookPixel } from "./facebook-pixel"
+import { FacebookPixelHybrid } from "./facebook-pixel-hybrid"
 import { useCookieConsent } from "@/hooks/use-cookie-consent"
 
 interface AnalyticsSettings {
@@ -77,20 +77,6 @@ export function AnalyticsProvider() {
     }
   }, [consent, hasInteracted, settings, settingsError])
 
-  // Log when analytics services are being loaded
-  useEffect(() => {
-    if (isLoaded && settings && process.env.NODE_ENV === "development") {
-      const services = []
-      if (settings.google_analytics_id && consent.analytics) services.push("Google Analytics")
-      if (settings.google_tag_manager_id && consent.analytics) services.push("Google Tag Manager")
-      if (settings.facebook_pixel_id && consent.marketing) services.push("Facebook Pixel")
-
-      if (services.length > 0) {
-        console.log(`Loading analytics services: ${services.join(", ")}`)
-      }
-    }
-  }, [isLoaded, settings, consent])
-
   if (!isLoaded) {
     return null
   }
@@ -109,7 +95,9 @@ export function AnalyticsProvider() {
         <GoogleTagManager gtmId={settings.google_tag_manager_id} consent={consent.analytics} />
       )}
 
-      {settings.facebook_pixel_id && <FacebookPixel pixelId={settings.facebook_pixel_id} consent={consent.marketing} />}
+      {settings.facebook_pixel_id && (
+        <FacebookPixelHybrid pixelId={settings.facebook_pixel_id} consent={consent.marketing} />
+      )}
     </>
   )
 }
