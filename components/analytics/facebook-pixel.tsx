@@ -21,6 +21,7 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
   const initializationRef = useRef(false)
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
   const previousConsentRef = useRef<boolean>(false)
+  const pixelInitializedRef = useRef(false)
 
   // Initialize Facebook Pixel when consent is granted
   useEffect(() => {
@@ -31,6 +32,7 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
       // Reset states if consent just changed from false to true
       if (consentChanged && consent) {
         initializationRef.current = false
+        pixelInitializedRef.current = false
         setIsInitialized(false)
         setIsLoaded(false)
         setIsBlocked(false)
@@ -58,7 +60,7 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
               }
             }, 5000)
 
-            // Use the exact Facebook Pixel code provided with immediate activation
+            // Use the exact Facebook Pixel code provided
             !((f: any, b: any, e: any, v: any, n: any, t: any, s: any) => {
               if (f.fbq) return
               n = f.fbq = (...args: any[]) => {
@@ -103,11 +105,10 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
                   timeoutRef.current = null
                 }
 
-                // Initialize pixel immediately after script loads
+                // Initialize pixel after script loads ONLY if not already initialized
                 setTimeout(() => {
                   try {
-                    if (window.fbq && !isInitialized) {
-                      // Initialize only once
+                    if (window.fbq && !pixelInitializedRef.current) {
                       window.fbq("init", pixelId)
                       window.fbq("track", "PageView")
 
@@ -117,8 +118,11 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
                         content_category: "User Interaction",
                       })
 
+                      pixelInitializedRef.current = true
                       setIsInitialized(true)
                       console.log(`Facebook Pixel initialized successfully with ID: ${pixelId}`)
+                    } else if (pixelInitializedRef.current) {
+                      console.log("Facebook Pixel already initialized, skipping duplicate initialization")
                     }
                   } catch (error) {
                     console.warn("Facebook Pixel initialization error:", error)
@@ -131,18 +135,21 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
               s.parentNode.insertBefore(t, s)
             })(window, document, "script", "https://connect.facebook.net/en_US/fbevents.js")
 
-            // Immediate initialization attempt (for very fast loading)
+            // Immediate initialization attempt (for very fast loading) - ONLY if not already initialized
             setTimeout(() => {
               try {
-                if (window.fbq && !isInitialized) {
+                if (window.fbq && !pixelInitializedRef.current) {
                   window.fbq("init", pixelId)
                   window.fbq("track", "PageView")
                   window.fbq("track", "ViewContent", {
                     content_name: "Immediate Consent",
                     content_category: "User Interaction",
                   })
+                  pixelInitializedRef.current = true
                   setIsInitialized(true)
                   console.log(`Facebook Pixel immediate initialization completed for ID: ${pixelId}`)
+                } else if (pixelInitializedRef.current) {
+                  console.log("Facebook Pixel already initialized via immediate init, skipping")
                 }
               } catch (error) {
                 // This is expected if script hasn't loaded yet
@@ -175,8 +182,9 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
         timeoutRef.current = null
       }
 
-      // Reset initialization flag
+      // Reset initialization flags
       initializationRef.current = false
+      pixelInitializedRef.current = false
       setIsInitialized(false)
       setIsLoaded(false)
       setIsBlocked(false)
