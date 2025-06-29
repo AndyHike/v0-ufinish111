@@ -222,6 +222,8 @@
     "noBrands": "Žádné značky k dispozici"
   },
   "Brands": {
+    "backToBrands":"Zpět na značky",
+    "backToHome":"Zpět na hlavní stránku",
     "title": "Značky, které servisujeme",
     "subtitle": "Specializujeme se na opravy všech hlavních značek smartphonů",
     "loading": "Načítání značek...",
@@ -244,6 +246,7 @@
     "pageDescription": "Vyberte značku vašeho telefonu pro zobrazení dostupných modelů a cen oprav"
   },
   "Models": {
+    "backToSeries":"Zpět na modely ",
     "repairServices": "Opravárenské služby",
     "modelNotFound": "Model nenalezen",
     "modelNotFoundDesc": "Požadovaný model nebyl nalezen.",

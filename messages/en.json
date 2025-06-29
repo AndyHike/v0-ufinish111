@@ -152,6 +152,8 @@
     "noBrands": "No brands available"
   },
   "Brands": {
+    "backToBrands":"Back to all brands",
+    "backToHome":"Back to home",
     "title": "Brands We Service",
     "subtitle": "We specialize in repairing all major smartphone brands",
     "loading": "Loading brands...",
@@ -182,6 +184,7 @@
     "seriesNotFoundDesc": "The requested series could not be found."
   },
   "Models": {
+    "backToSeries":"Back to models",
     "repairServices": "Repair Services",
     "modelNotFound": "Model Not Found",
     "modelNotFoundDesc": "The requested model could not be found.",
