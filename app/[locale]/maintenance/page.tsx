@@ -1,12 +1,21 @@
 import { getAppSetting } from "@/lib/app-settings"
 import { AlertTriangle, Clock, Wrench, Settings } from "lucide-react"
 import Link from "next/link"
+import { redirect } from "next/navigation"
 
 export default async function MaintenancePage({
   params: { locale },
 }: {
   params: { locale: string }
 }) {
+  // Check if maintenance mode is still enabled
+  const maintenanceEnabled = await getAppSetting("maintenance_mode_enabled")
+
+  // If maintenance mode is disabled, redirect to home page
+  if (maintenanceEnabled !== "true") {
+    redirect(`/${locale}`)
+  }
+
   const title = (await getAppSetting("maintenance_mode_title")) || "Технічні роботи"
   const message =
     (await getAppSetting("maintenance_mode_message")) ||
