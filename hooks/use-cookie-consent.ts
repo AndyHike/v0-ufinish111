@@ -22,28 +22,52 @@ export function useCookieConsent() {
   const clearGACookies = () => {
     if (typeof document === "undefined") return
 
-    // Список всіх можливих GA cookies
+    // Розширений список всіх можливих GA cookies
     const gaCookies = [
       "_ga",
-      "_ga_" + (process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || "").replace("G-", ""),
+      "_ga_WZ0WCHZ3XT", // Конкретний cookie який згадував користувач
       "_gid",
       "_gat",
-      "_gat_gtag_" + (process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || "").replace("G-", ""),
+      "_gat_gtag_G_WZ0WCHZ3XT",
       "__utma",
       "__utmb",
       "__utmc",
       "__utmt",
       "__utmz",
+      "_gcl_au",
     ]
 
-    // Видаляємо cookies для всіх доменів
-    const domains = [window.location.hostname, "." + window.location.hostname, ".devicehelp.cz", "devicehelp.cz"]
+    // Додаємо динамічні GA cookies на основі measurement ID
+    const measurementIds = [
+      process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID,
+      "WZ0WCHZ3XT", // Конкретний ID
+    ].filter(Boolean)
+
+    measurementIds.forEach((id) => {
+      if (id) {
+        const cleanId = id.replace("G-", "")
+        gaCookies.push(`_ga_${cleanId}`)
+        gaCookies.push(`_gat_gtag_G_${cleanId}`)
+      }
+    })
+
+    // Домени та шляхи для очищення
+    const domains = ["", window.location.hostname, "." + window.location.hostname, ".devicehelp.cz", "devicehelp.cz"]
+    const paths = ["/", "/admin", "/auth"]
+
+    console.log("Clearing GA cookies:", gaCookies)
 
     gaCookies.forEach((cookieName) => {
       domains.forEach((domain) => {
-        // Видаляємо cookie
-        document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${domain};`
-        document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`
+        paths.forEach((path) => {
+          const expireDate = "Thu, 01 Jan 1970 00:00:00 UTC"
+          if (domain) {
+            document.cookie = `${cookieName}=; expires=${expireDate}; path=${path}; domain=${domain}; SameSite=Lax`
+            document.cookie = `${cookieName}=; expires=${expireDate}; path=${path}; domain=${domain}; SameSite=None; Secure`
+          }
+          document.cookie = `${cookieName}=; expires=${expireDate}; path=${path}; SameSite=Lax`
+          document.cookie = `${cookieName}=; expires=${expireDate}; path=${path}; SameSite=None; Secure`
+        })
       })
     })
 
@@ -89,7 +113,7 @@ export function useCookieConsent() {
     }
     localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(consentData))
 
-    // Якщо аналітика відключена - очищуємо cookies
+    // Якщо аналітика відключена - очищуємо cookies НЕГАЙНО
     if (!consent.analytics) {
       clearGACookies()
     }
@@ -102,6 +126,15 @@ export function useCookieConsent() {
     })
 
     console.log("Cookie consent saved:", consent)
+
+    // Тригеримо подію для негайного оновлення аналітики
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("cookieConsentChanged", {
+          detail: { consent, immediate: true },
+        }),
+      )
+    }
   }
 
   const acceptAll = () => {
@@ -142,13 +175,13 @@ export function useCookieConsent() {
 
   // Функція для скидання всіх налаштувань cookies
   const resetConsent = () => {
-    // Очищуємо всі GA cookies
+    // Очищуємо всі GA cookies НЕГАЙНО
     clearGACookies()
 
     // Видаляємо збережені налаштування
     localStorage.removeItem(COOKIE_CONSENT_KEY)
 
-    setState({
+    const resetState = {
       consent: {
         necessary: true,
         analytics: false,
@@ -157,7 +190,18 @@ export function useCookieConsent() {
       showBanner: true,
       hasInteracted: false,
       consentDate: null,
-    })
+    }
+
+    setState(resetState)
+
+    // Тригеримо подію для негайного оновлення аналітики
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("cookieConsentChanged", {
+          detail: { consent: resetState.consent, immediate: true, reset: true },
+        }),
+      )
+    }
 
     console.log("Cookie consent reset and GA cookies cleared")
   }

@@ -31,12 +31,11 @@ export function CookieSettingsModal({ open, onOpenChange }: CookieSettingsModalP
   const handleSave = () => {
     console.log("Saving cookie settings:", localConsent)
 
-    // Оновлюємо кожну категорію окремо
+    // Зберігаємо поточні локальні налаштування
     Object.entries(localConsent).forEach(([category, value]) => {
       updateCategory(category as keyof typeof consent, value)
     })
 
-    // Зберігаємо налаштування з невеликою затримкою
     setTimeout(() => {
       saveCurrentSettings()
       onOpenChange(false)
@@ -54,6 +53,42 @@ export function CookieSettingsModal({ open, onOpenChange }: CookieSettingsModalP
       ...prev,
       [category]: category === "necessary" ? true : value,
     }))
+  }
+
+  const handleAcceptAll = () => {
+    const allAccepted = {
+      necessary: true,
+      analytics: true,
+      marketing: true,
+    }
+    setLocalConsent(allAccepted)
+
+    Object.entries(allAccepted).forEach(([category, value]) => {
+      updateCategory(category as keyof typeof consent, value)
+    })
+
+    setTimeout(() => {
+      saveCurrentSettings()
+      onOpenChange(false)
+    }, 100)
+  }
+
+  const handleRejectAll = () => {
+    const onlyNecessary = {
+      necessary: true,
+      analytics: false,
+      marketing: false,
+    }
+    setLocalConsent(onlyNecessary)
+
+    Object.entries(onlyNecessary).forEach(([category, value]) => {
+      updateCategory(category as keyof typeof consent, value)
+    })
+
+    setTimeout(() => {
+      saveCurrentSettings()
+      onOpenChange(false)
+    }, 100)
   }
 
   return (
@@ -115,15 +150,24 @@ export function CookieSettingsModal({ open, onOpenChange }: CookieSettingsModalP
         </div>
 
         <DialogFooter className="flex-col sm:flex-row gap-2">
-          <Button variant="outline" onClick={handleReset} className="w-full sm:w-auto bg-transparent">
-            Скинути всі
-          </Button>
-          <div className="flex gap-2 w-full sm:w-auto">
-            <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1 sm:flex-none">
-              Скасувати
+          <div className="flex gap-2 w-full">
+            <Button variant="outline" onClick={handleRejectAll} className="flex-1 bg-transparent">
+              Відхилити всі
             </Button>
-            <Button onClick={handleSave} className="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700">
-              Зберегти
+            <Button onClick={handleAcceptAll} className="flex-1 bg-green-600 hover:bg-green-700">
+              Прийняти всі
+            </Button>
+          </div>
+          <div className="flex gap-2 w-full">
+            <Button
+              variant="outline"
+              onClick={handleReset}
+              className="flex-1 text-red-600 border-red-200 hover:bg-red-50 bg-transparent"
+            >
+              Скинути всі
+            </Button>
+            <Button onClick={handleSave} className="flex-1 bg-blue-600 hover:bg-blue-700">
+              Зберегти налаштування
             </Button>
           </div>
         </DialogFooter>

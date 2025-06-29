@@ -20,25 +20,73 @@ export function GoogleAnalytics({ gaId, consent }: GoogleAnalyticsProps) {
 
   // Функція для повного видалення GA скрипта
   const removeGAScript = () => {
-    const scripts = document.querySelectorAll(`script[src*="gtag/js?id=${gaId}"]`)
-    scripts.forEach((script) => script.remove())
+    console.log("Removing GA script and cleaning up...")
 
-    // Очищуємо dataLayer
+    // Видаляємо всі GA скрипти
+    const scripts = document.querySelectorAll(`script[src*="gtag/js"], script[src*="googletagmanager.com"]`)
+    scripts.forEach((script) => {
+      script.remove()
+      console.log("Removed GA script:", script.getAttribute("src"))
+    })
+
+    // Очищуємо dataLayer та gtag
     if (typeof window !== "undefined") {
       window.dataLayer = []
       delete window.gtag
+      console.log("Cleared dataLayer and gtag")
     }
+
+    // Очищуємо всі GA cookies
+    clearAllGACookies()
 
     scriptLoadedRef.current = false
     gaInitializedRef.current = false
+  }
+
+  const clearAllGACookies = () => {
+    if (typeof document === "undefined") return
+
+    const gaCookies = [
+      "_ga",
+      "_ga_WZ0WCHZ3XT",
+      "_gid",
+      "_gat",
+      "_gat_gtag_G_WZ0WCHZ3XT",
+      "__utma",
+      "__utmb",
+      "__utmc",
+      "__utmt",
+      "__utmz",
+      "_gcl_au",
+    ]
+
+    const domains = ["", window.location.hostname, "." + window.location.hostname]
+    const paths = ["/", "/admin", "/auth"]
+
+    gaCookies.forEach((cookieName) => {
+      domains.forEach((domain) => {
+        paths.forEach((path) => {
+          const expireDate = "Thu, 01 Jan 1970 00:00:00 UTC"
+          if (domain) {
+            document.cookie = `${cookieName}=; expires=${expireDate}; path=${path}; domain=${domain}`
+          }
+          document.cookie = `${cookieName}=; expires=${expireDate}; path=${path}`
+        })
+      })
+    })
+
+    console.log("All GA cookies cleared")
   }
 
   // Функція для завантаження та ініціалізації GA
   const loadAndInitializeGA = () => {
     if (!gaId || typeof window === "undefined" || !consent) return
 
+    console.log("Loading and initializing GA with consent:", consent)
+
     // Перевіряємо чи скрипт вже завантажений
     if (scriptLoadedRef.current && gaInitializedRef.current) {
+      console.log("GA already loaded and initialized")
       return
     }
 
@@ -69,29 +117,28 @@ export function GoogleAnalytics({ gaId, consent }: GoogleAnalyticsProps) {
 
     script.onload = () => {
       scriptLoadedRef.current = true
+      console.log("GA script loaded successfully")
 
-      // Конфігуруємо GA4 після завантаження
-      setTimeout(() => {
-        if (window.gtag && consent) {
-          window.gtag("config", gaId, {
-            send_page_view: true,
-            page_title: document.title,
-            page_location: window.location.href,
-            transport_type: "beacon",
-          })
+      // Конфігуруємо GA4 НЕГАЙНО після завантаження
+      if (window.gtag && consent) {
+        window.gtag("config", gaId, {
+          send_page_view: true,
+          page_title: document.title,
+          page_location: window.location.href,
+          transport_type: "beacon",
+        })
 
-          // Відправляємо подію про активацію
-          window.gtag("event", "analytics_activated", {
-            event_category: "consent",
-            event_label: "immediate_activation",
-            send_to: gaId,
-            transport_type: "beacon",
-          })
+        // Відправляємо подію про активацію
+        window.gtag("event", "analytics_activated", {
+          event_category: "consent",
+          event_label: "immediate_activation",
+          send_to: gaId,
+          transport_type: "beacon",
+        })
 
-          gaInitializedRef.current = true
-          console.log("Google Analytics loaded and activated immediately")
-        }
-      }, 100)
+        gaInitializedRef.current = true
+        console.log("Google Analytics loaded and activated immediately")
+      }
     }
 
     script.onerror = () => {
@@ -120,6 +167,31 @@ export function GoogleAnalytics({ gaId, consent }: GoogleAnalyticsProps) {
       }
     }
   }, [consent, gaId])
+
+  // Слухач для негайних змін consent
+  useEffect(() => {
+    const handleConsentChange = (event: CustomEvent) => {
+      const { consent: newConsent, immediate, reset } = event.detail
+      console.log("Consent changed event received:", { newConsent, immediate, reset })
+
+      if (reset || !newConsent.analytics) {
+        // Негайно видаляємо GA при скиданні або відкликанні згоди
+        removeGAScript()
+      } else if (newConsent.analytics && immediate) {
+        // Негайно завантажуємо GA при наданні згоди
+        setTimeout(() => {
+          loadAndInitializeGA()
+        }, 100)
+      }
+    }
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("cookieConsentChanged", handleConsentChange as EventListener)
+      return () => {
+        window.removeEventListener("cookieConsentChanged", handleConsentChange as EventListener)
+      }
+    }
+  }, [gaId])
 
   return null
 }
