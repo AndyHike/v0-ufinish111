@@ -117,9 +117,11 @@ export function useCookieConsent() {
     }, 100)
   }
 
-  // Function to force activate Facebook Pixel
+  // Function to force activate Facebook Pixel with better error handling
   const forceActivateFacebookPixel = (pixelId: string) => {
     if (typeof window === "undefined" || !pixelId) return
+
+    console.log(`Attempting to force activate Facebook Pixel: ${pixelId}`)
 
     // Clear existing Facebook Pixel if any
     delete window.fbq
@@ -129,29 +131,58 @@ export function useCookieConsent() {
     const existingScripts = document.querySelectorAll(`script[src*="fbevents.js"]`)
     existingScripts.forEach((script) => script.remove())
 
-    // Initialize Facebook Pixel with the exact code
-    !((f: any, b: any, e: any, v: any, n: any, t: any, s: any) => {
-      if (f.fbq) return
-      n = f.fbq = () => {
-        n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments)
-      }
-      if (!f._fbq) f._fbq = n
-      n.push = n
-      n.loaded = !0
-      n.version = "2.0"
-      n.queue = []
-      t = b.createElement(e)
-      t.async = !0
-      t.src = v
-      s = b.getElementsByTagName(e)[0]
-      s.parentNode.insertBefore(t, s)
-    })(window, document, "script", "https://connect.facebook.net/en_US/fbevents.js")
+    try {
+      // Initialize Facebook Pixel with the exact code and error handling
+      !((f: any, b: any, e: any, v: any, n: any, t: any, s: any) => {
+        if (f.fbq) return
+        n = f.fbq = (...args: any[]) => {
+          n.callMethod ? n.callMethod.apply(n, args) : n.queue.push(args)
+        }
+        if (!f._fbq) f._fbq = n
+        n.push = n
+        n.loaded = !0
+        n.version = "2.0"
+        n.queue = []
+        t = b.createElement(e)
+        t.async = !0
+        t.src = v
 
-    // Initialize and track
-    window.fbq("init", pixelId)
-    window.fbq("track", "PageView")
+        // Add comprehensive error handling
+        t.onerror = () => {
+          console.warn("Facebook Pixel script blocked or failed to load")
+          // Create a dummy fbq function to prevent errors
+          if (!f.fbq) {
+            f.fbq = (...args: any[]) => {
+              console.log("Facebook Pixel call (blocked):", args)
+            }
+          }
+        }
 
-    console.log(`Facebook Pixel force activated with ID: ${pixelId}`)
+        t.onload = () => {
+          console.log("Facebook Pixel script loaded successfully via force activation")
+        }
+
+        s = b.getElementsByTagName(e)[0]
+        s.parentNode.insertBefore(t, s)
+      })(window, document, "script", "https://connect.facebook.net/en_US/fbevents.js")
+
+      // Initialize and track with delay and error handling
+      setTimeout(() => {
+        try {
+          if (window.fbq) {
+            window.fbq("init", pixelId)
+            window.fbq("track", "PageView")
+            console.log(`Facebook Pixel force activated successfully with ID: ${pixelId}`)
+          } else {
+            console.warn("Facebook Pixel fbq function not available after force activation")
+          }
+        } catch (error) {
+          console.warn("Facebook Pixel force activation error:", error)
+        }
+      }, 200)
+    } catch (error) {
+      console.warn("Facebook Pixel force activation setup error:", error)
+    }
   }
 
   // Function to force GA cookies creation and activation
@@ -227,6 +258,10 @@ export function useCookieConsent() {
           transport_type: "beacon",
         })
       }, 500)
+    }
+
+    script.onerror = () => {
+      console.warn("Google Analytics script failed to load")
     }
 
     document.head.appendChild(script)
@@ -310,10 +345,18 @@ export function useCookieConsent() {
             const settings = await response.json()
             if (settings.facebook_pixel_id) {
               forceActivateFacebookPixel(settings.facebook_pixel_id)
+            } else {
+              // Fallback to hardcoded ID if settings fail
+              forceActivateFacebookPixel("1823195131746594")
             }
+          } else {
+            // Fallback to hardcoded ID if settings fail
+            forceActivateFacebookPixel("1823195131746594")
           }
         } catch (error) {
           console.warn("Could not activate Facebook Pixel:", error)
+          // Fallback to hardcoded ID
+          forceActivateFacebookPixel("1823195131746594")
         }
       }, 200)
     }

@@ -18,6 +18,7 @@ interface AnalyticsSettings {
 export function AnalyticsProvider() {
   const [settings, setSettings] = useState<AnalyticsSettings | null>(null)
   const [isLoaded, setIsLoaded] = useState(false)
+  const [settingsError, setSettingsError] = useState<string | null>(null)
   const { consent, hasInteracted } = useCookieConsent()
 
   useEffect(() => {
@@ -31,8 +32,11 @@ export function AnalyticsProvider() {
 
         const data = await response.json()
         setSettings(data)
+        setSettingsError(null)
       } catch (error) {
         console.warn("Failed to fetch analytics settings:", error)
+        setSettingsError(error instanceof Error ? error.message : "Unknown error")
+
         // Set default settings with your Facebook Pixel ID
         setSettings({
           google_analytics_id: "",
@@ -52,7 +56,7 @@ export function AnalyticsProvider() {
 
   // Log consent changes for debugging
   useEffect(() => {
-    if (hasInteracted) {
+    if (hasInteracted && process.env.NODE_ENV === "development") {
       console.log("Analytics consent status:", {
         analytics: consent.analytics,
         marketing: consent.marketing,
@@ -63,9 +67,24 @@ export function AnalyticsProvider() {
               fb_pixel_id: settings.facebook_pixel_id ? "Set" : "Not set",
             }
           : "Loading...",
+        settingsError,
       })
     }
-  }, [consent, hasInteracted, settings])
+  }, [consent, hasInteracted, settings, settingsError])
+
+  // Log when analytics services are being loaded
+  useEffect(() => {
+    if (isLoaded && settings && process.env.NODE_ENV === "development") {
+      const services = []
+      if (settings.google_analytics_id && consent.analytics) services.push("Google Analytics")
+      if (settings.google_tag_manager_id && consent.analytics) services.push("Google Tag Manager")
+      if (settings.facebook_pixel_id && consent.marketing) services.push("Facebook Pixel")
+
+      if (services.length > 0) {
+        console.log(`Loading analytics services: ${services.join(", ")}`)
+      }
+    }
+  }, [isLoaded, settings, consent])
 
   if (!isLoaded) {
     return null
