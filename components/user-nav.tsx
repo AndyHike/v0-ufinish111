@@ -2,8 +2,7 @@
 
 import { useTranslations } from "next-intl"
 import Link from "next/link"
-import { useParams } from "next/navigation"
-import { useRouter } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import {
   DropdownMenu,
   DropdownMenuContent,
