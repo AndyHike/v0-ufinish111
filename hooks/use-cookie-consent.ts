@@ -59,32 +59,7 @@ export function useCookieConsent() {
       consentDate: consentData.consentDate,
     })
 
-    if (consent.analytics && typeof window !== "undefined") {
-      setTimeout(() => {
-        if (window.gtag) {
-          window.gtag("consent", "update", {
-            analytics_storage: "granted",
-          })
-
-          window.gtag("event", "page_view", {
-            page_title: document.title,
-            page_location: window.location.href,
-            transport_type: "beacon",
-          })
-
-          window.gtag("event", "consent_granted_immediate", {
-            event_category: "consent",
-            event_label: "user_accepted_analytics",
-            transport_type: "beacon",
-          })
-
-          window.gtag("event", "user_engagement", {
-            engagement_time_msec: 1000,
-            transport_type: "beacon",
-          })
-        }
-      }, 100)
-    }
+    // Не відправляємо автоматично події до GA - це буде зроблено в компоненті GoogleAnalytics
   }
 
   const acceptAll = () => {
@@ -121,6 +96,21 @@ export function useCookieConsent() {
     setState((prev) => ({ ...prev, showBanner: show }))
   }
 
+  // Функція для скидання всіх налаштувань cookies
+  const resetConsent = () => {
+    localStorage.removeItem(COOKIE_CONSENT_KEY)
+    setState({
+      consent: {
+        necessary: true,
+        analytics: false,
+        marketing: false,
+      },
+      showBanner: true,
+      hasInteracted: false,
+      consentDate: null,
+    })
+  }
+
   return {
     ...state,
     acceptAll,
@@ -128,5 +118,6 @@ export function useCookieConsent() {
     updateCategory,
     saveCurrentSettings,
     setShowBanner,
+    resetConsent,
   }
 }
