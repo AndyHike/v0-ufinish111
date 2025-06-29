@@ -18,8 +18,8 @@ export function useCookieConsent() {
     consentDate: null,
   })
 
-  // Функція для очищення cookies
-  const clearCookiesByCategory = (category: "analytics" | "marketing") => {
+  // Функція для миттєвого очищення cookies в реальному часі
+  const clearCookiesImmediately = (category: "analytics" | "marketing") => {
     if (typeof document === "undefined") return
 
     let cookiesToClear: string[] = []
@@ -47,32 +47,28 @@ export function useCookieConsent() {
     const domains = ["", window.location.hostname, "." + window.location.hostname, ".devicehelp.cz", "devicehelp.cz"]
     const paths = ["/", "/admin", "/auth"]
 
-    // Очищуємо cookies
+    // Агресивне очищення cookies
     cookiesToClear.forEach((cookieName) => {
       domains.forEach((domain) => {
         paths.forEach((path) => {
           const expireDate = "Thu, 01 Jan 1970 00:00:00 UTC"
 
-          // Різні варіанти очищення
+          // Множинні спроби очищення
           if (domain) {
             document.cookie = `${cookieName}=; expires=${expireDate}; path=${path}; domain=${domain}; SameSite=Lax`
             document.cookie = `${cookieName}=; expires=${expireDate}; path=${path}; domain=${domain}; SameSite=None; Secure`
             document.cookie = `${cookieName}=; expires=${expireDate}; path=${path}; domain=${domain}`
+            document.cookie = `${cookieName}=; max-age=0; path=${path}; domain=${domain}`
           }
           document.cookie = `${cookieName}=; expires=${expireDate}; path=${path}; SameSite=Lax`
           document.cookie = `${cookieName}=; expires=${expireDate}; path=${path}; SameSite=None; Secure`
           document.cookie = `${cookieName}=; expires=${expireDate}; path=${path}`
-
-          // Додаткове очищення з max-age
-          if (domain) {
-            document.cookie = `${cookieName}=; max-age=0; path=${path}; domain=${domain}`
-          }
           document.cookie = `${cookieName}=; max-age=0; path=${path}`
         })
       })
     })
 
-    // Додатково очищуємо localStorage та sessionStorage для GA
+    // Очищення localStorage та sessionStorage
     if (category === "analytics") {
       try {
         const keysToRemove = []
@@ -97,14 +93,20 @@ export function useCookieConsent() {
       }
     }
 
-    // Оновлюємо consent в gtag якщо він існує
+    // Оновлення gtag consent
     if (typeof window !== "undefined" && window.gtag && category === "analytics") {
       window.gtag("consent", "update", {
         analytics_storage: "denied",
       })
     }
 
-    console.log(`${category} cookies cleared:`, cookiesToClear)
+    console.log(`${category} cookies cleared immediately:`, cookiesToClear)
+
+    // Примусове оновлення DOM для миттєвого відображення змін
+    setTimeout(() => {
+      // Тригеримо подію для оновлення DevTools
+      window.dispatchEvent(new Event("cookiesCleared"))
+    }, 100)
   }
 
   useEffect(() => {
@@ -141,20 +143,13 @@ export function useCookieConsent() {
     }
     localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(consentData))
 
-    // Очищуємо cookies для категорій, які були відключені
+    // Миттєво очищуємо cookies для відключених категорій
     if (previousConsent) {
       if (previousConsent.analytics && !consent.analytics) {
-        clearCookiesByCategory("analytics")
-
-        // Додатково оновлюємо gtag consent
-        if (typeof window !== "undefined" && window.gtag) {
-          window.gtag("consent", "update", {
-            analytics_storage: "denied",
-          })
-        }
+        clearCookiesImmediately("analytics")
       }
       if (previousConsent.marketing && !consent.marketing) {
-        clearCookiesByCategory("marketing")
+        clearCookiesImmediately("marketing")
       }
     }
 
@@ -165,6 +160,7 @@ export function useCookieConsent() {
       consentDate: consentData.consentDate,
     })
 
+    // Активація аналітики при згоді
     if (consent.analytics && typeof window !== "undefined") {
       setTimeout(() => {
         if (window.gtag) {

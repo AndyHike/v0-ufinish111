@@ -143,6 +143,34 @@ export function GoogleAnalytics({ gaId, consent }: GoogleAnalyticsProps) {
   useEffect(() => {
     if (!consent) {
       consentProcessedRef.current = false
+
+      // Миттєво очищуємо GA cookies при відкликанні згоди
+      if (typeof window !== "undefined") {
+        const gaCookies = ["_ga", "_ga_WZ0WCHZ3XT", "_gid", "_gat", "_gat_gtag_G_WZ0WCHZ3XT"]
+        const domains = ["", window.location.hostname, "." + window.location.hostname, ".devicehelp.cz"]
+        const paths = ["/", "/admin", "/auth"]
+
+        gaCookies.forEach((cookieName) => {
+          domains.forEach((domain) => {
+            paths.forEach((path) => {
+              const expireDate = "Thu, 01 Jan 1970 00:00:00 UTC"
+              if (domain) {
+                document.cookie = `${cookieName}=; expires=${expireDate}; path=${path}; domain=${domain}`
+                document.cookie = `${cookieName}=; max-age=0; path=${path}; domain=${domain}`
+              }
+              document.cookie = `${cookieName}=; expires=${expireDate}; path=${path}`
+              document.cookie = `${cookieName}=; max-age=0; path=${path}`
+            })
+          })
+        })
+
+        // Оновлюємо gtag consent
+        if (window.gtag) {
+          window.gtag("consent", "update", {
+            analytics_storage: "denied",
+          })
+        }
+      }
       return
     }
 
