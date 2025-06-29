@@ -66,9 +66,7 @@ export function AnalyticsProvider() {
         <GoogleTagManager gtmId={settings.google_tag_manager_id} consent={consent.analytics} />
       )}
 
-      {settings.facebook_pixel_id && consent.marketing && (
-        <FacebookPixel pixelId={settings.facebook_pixel_id} consent={consent.marketing} />
-      )}
+      {settings.facebook_pixel_id && <FacebookPixel pixelId={settings.facebook_pixel_id} consent={consent.marketing} />}
     </>
   )
 }

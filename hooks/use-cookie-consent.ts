@@ -41,7 +41,7 @@ export function useCookieConsent() {
         "_gac_gb_",
       ]
     } else if (category === "marketing") {
-      cookiesToClear = ["_fbp", "_fbc", "fr", "_gcl_aw", "_gcl_dc", "_gcl_gb", "_gcl_gf", "_gcl_ha"]
+      cookiesToClear = ["_fbp", "_fbc", "fr", "_gcl_aw", "_gcl_dc", "_gcl_gb", "_gcl_gf", "_gcl_ha", "fbm_*", "fbsr_*"]
     }
 
     const domains = ["", window.location.hostname, "." + window.location.hostname, ".devicehelp.cz", "devicehelp.cz"]
@@ -97,6 +97,45 @@ export function useCookieConsent() {
         })
       } catch (error) {
         console.warn("Could not clear storage:", error)
+      }
+    }
+
+    // Очищення Facebook storage та глобальних змінних
+    if (category === "marketing") {
+      try {
+        // localStorage
+        Object.keys(localStorage).forEach((key) => {
+          if (
+            key.includes("facebook") ||
+            key.includes("_fb") ||
+            key.startsWith("fbp") ||
+            key.startsWith("fbm_") ||
+            key.startsWith("fbsr_")
+          ) {
+            localStorage.removeItem(key)
+          }
+        })
+
+        // sessionStorage
+        Object.keys(sessionStorage).forEach((key) => {
+          if (
+            key.includes("facebook") ||
+            key.includes("_fb") ||
+            key.startsWith("fbp") ||
+            key.startsWith("fbm_") ||
+            key.startsWith("fbsr_")
+          ) {
+            sessionStorage.removeItem(key)
+          }
+        })
+
+        // Очищення глобальних змінних Facebook
+        if (typeof window !== "undefined") {
+          delete window.fbq
+          delete window._fbq
+        }
+      } catch (error) {
+        console.warn("Could not clear Facebook storage:", error)
       }
     }
 
