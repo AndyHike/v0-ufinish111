@@ -25,19 +25,22 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
   useEffect(() => {
     if (consent && pixelId && !initializationRef.current) {
       initializationRef.current = true
-      console.log(`Facebook Pixel initializing with ID: ${pixelId}`)
+      console.log(`Facebook Pixel component initializing with ID: ${pixelId}`)
 
       if (typeof window !== "undefined") {
-        // Check if fbq already exists to prevent duplicate initialization
+        // Check if fbq already exists (might be created by force activation)
         if (window.fbq && window._fbq) {
-          console.log("Facebook Pixel already exists, just tracking PageView")
+          console.log("Facebook Pixel already exists (likely from force activation), verifying initialization")
           try {
+            // Ensure it's properly initialized
+            window.fbq("init", pixelId)
             window.fbq("track", "PageView")
             setIsLoaded(true)
             setIsInitialized(true)
+            console.log("Facebook Pixel verified and tracking PageView")
             return
           } catch (error) {
-            console.warn("Error tracking with existing fbq:", error)
+            console.warn("Error with existing fbq, reinitializing:", error)
           }
         }
 
@@ -103,14 +106,21 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
                 timeoutRef.current = null
               }
 
-              // Initialize pixel after script loads
+              // Initialize pixel after script loads with enhanced tracking
               setTimeout(() => {
                 try {
                   if (window.fbq && !isInitialized) {
                     window.fbq("init", pixelId)
                     window.fbq("track", "PageView")
+
+                    // Add additional tracking to ensure cookie creation
+                    window.fbq("track", "ViewContent", {
+                      content_name: "Initial Page Load",
+                      content_category: "Website Navigation",
+                    })
+
                     setIsInitialized(true)
-                    console.log(`Facebook Pixel initialized successfully with ID: ${pixelId}`)
+                    console.log(`Facebook Pixel initialized successfully with enhanced tracking for ID: ${pixelId}`)
                   }
                 } catch (error) {
                   console.warn("Facebook Pixel initialization error:", error)
