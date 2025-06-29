@@ -1,42 +1,44 @@
 "use client"
 
-import type React from "react"
+import Script from "next/script"
+import { usePathname } from "next/navigation"
 import { useEffect } from "react"
-import ReactGA from "react-ga4"
 
-interface GoogleAnalyticsProps {
-  trackingId: string
-}
+const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID
 
-const GoogleAnalytics: React.FC<GoogleAnalyticsProps> = ({ trackingId }) => {
+export function GoogleAnalytics() {
+  const pathname = usePathname()
+
   useEffect(() => {
-    if (!trackingId) {
-      console.error("Google Analytics tracking ID is missing. Ensure TRACKING_ID is set in your environment variables.")
-      return
+    if (!GA_MEASUREMENT_ID) return
+
+    // Track page views without logging
+    if (typeof window !== "undefined" && window.gtag) {
+      window.gtag("config", GA_MEASUREMENT_ID, {
+        page_path: pathname,
+        debug_mode: false,
+      })
     }
+  }, [pathname])
 
-    try {
-      ReactGA.initialize(trackingId)
-    } catch (error) {
-      console.error("Error initializing Google Analytics:", error)
-      return
-    }
+  if (!GA_MEASUREMENT_ID) {
+    return null
+  }
 
-    ReactGA.send({ hitType: "pageview", page: window.location.pathname, title: document.title })
-
-    const handleRouteChange = () => {
-      ReactGA.send({ hitType: "pageview", page: window.location.pathname, title: document.title })
-    }
-
-    // Subscribe to route changes (example using window.addEventListener - adapt to your routing library)
-    window.addEventListener("popstate", handleRouteChange)
-
-    return () => {
-      window.removeEventListener("popstate", handleRouteChange)
-    }
-  }, [trackingId])
-
-  return null
+  return (
+    <>
+      <Script src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`} strategy="afterInteractive" />
+      <Script id="google-analytics" strategy="afterInteractive">
+        {`
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', '${GA_MEASUREMENT_ID}', {
+            debug_mode: false,
+            send_page_view: false
+          });
+        `}
+      </Script>
+    </>
+  )
 }
-
-export default GoogleAnalytics

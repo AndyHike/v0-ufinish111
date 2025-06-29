@@ -1,44 +1,41 @@
 "use client"
 
-import type React from "react"
+import Script from "next/script"
+import { usePathname } from "next/navigation"
 import { useEffect } from "react"
 
-interface FacebookPixelProps {
-  pixelId: string
-}
+const FACEBOOK_PIXEL_ID = process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID
 
-const FacebookPixel: React.FC<FacebookPixelProps> = ({ pixelId }) => {
+export function FacebookPixel() {
+  const pathname = usePathname()
+
   useEffect(() => {
-    if (typeof window === "undefined") {
-      return
-    }
+    if (!FACEBOOK_PIXEL_ID) return
 
-    !window.fbq
-      ? (window.fbq = () => {
-          ;(window.fbq.q = window.fbq.q || []).push(arguments)
-        })
-      : void 0
-    // @ts-ignore
-    window._fbq = window._fbq || []
-    // @ts-ignore
-    if (!window._fbq.loaded) {
-      // @ts-ignore
-      window._fbq.loaded = true
-      window.fbq("init", pixelId)
+    // Track page views without logging
+    if (typeof window !== "undefined" && window.fbq) {
       window.fbq("track", "PageView")
-
-      const fbScript = document.createElement("script")
-      fbScript.async = true
-      fbScript.src = `https://connect.facebook.net/en_US/fbevents.js`
-      document.head.appendChild(fbScript)
     }
+  }, [pathname])
 
-    return () => {
-      // Cleanup function (optional)
-    }
-  }, [pixelId])
+  if (!FACEBOOK_PIXEL_ID) {
+    return null
+  }
 
-  return null
+  return (
+    <Script id="facebook-pixel" strategy="afterInteractive">
+      {`
+        !function(f,b,e,v,n,t,s)
+        {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+        n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+        if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+        n.queue=[];t=b.createElement(e);t.async=!0;
+        t.src=v;s=b.getElementsByTagName(e)[0];
+        s.parentNode.insertBefore(t,s)}(window, document,'script',
+        'https://connect.facebook.net/en_US/fbevents.js');
+        fbq('init', '${FACEBOOK_PIXEL_ID}');
+        fbq('track', 'PageView');
+      `}
+    </Script>
+  )
 }
-
-export default FacebookPixel
