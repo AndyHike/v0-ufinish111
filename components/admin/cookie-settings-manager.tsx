@@ -7,9 +7,8 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { Alert, AlertDescription } from "@/components/ui/alert"
 import { toast } from "sonner"
-import { Loader2, Save, Settings, Eye, EyeOff, CheckCircle, AlertCircle, Shield, Info } from "lucide-react"
+import { Loader2, Save, Settings, Eye, EyeOff, CheckCircle, AlertCircle } from "lucide-react"
 
 interface CookieSettings {
   google_analytics_id: string
@@ -51,7 +50,6 @@ export function CookieSettingsManager() {
       setSettings(data)
     } catch (error) {
       toast.error("Failed to load cookie settings")
-      console.error("Cookie settings fetch error:", error)
     } finally {
       setLoading(false)
     }
@@ -78,7 +76,6 @@ export function CookieSettingsManager() {
       toast.success("Cookie settings saved successfully!")
     } catch (error) {
       toast.error("Failed to save cookie settings")
-      console.error("Cookie settings save error:", error)
     } finally {
       setSaving(false)
     }
@@ -127,16 +124,6 @@ export function CookieSettingsManager() {
       </CardHeader>
 
       <CardContent className="space-y-6">
-        {/* Ad Blocker Warning */}
-        <Alert>
-          <Shield className="h-4 w-4" />
-          <AlertDescription>
-            <strong>Ad Blocker Notice:</strong> Some users may have ad blockers or privacy extensions that block
-            Facebook Pixel and other tracking scripts. The system includes fallback mechanisms to handle this
-            gracefully.
-          </AlertDescription>
-        </Alert>
-
         <div className="space-y-4">
           <h3 className="text-lg font-medium">Analytics Services</h3>
 
@@ -185,19 +172,11 @@ export function CookieSettingsManager() {
             <Input
               id="facebook_pixel_id"
               type={showIds ? "text" : "password"}
-              placeholder="1823195131746594"
+              placeholder="1234567890123456"
               value={settings.facebook_pixel_id}
               onChange={(e) => updateSetting("facebook_pixel_id", e.target.value)}
             />
             <p className="text-xs text-muted-foreground">Find this in Facebook Business Manager → Events Manager</p>
-            {settings.facebook_pixel_id && (
-              <div className="flex items-center gap-2 text-sm">
-                <Info className="h-4 w-4 text-orange-500" />
-                <span className="text-orange-600">
-                  Facebook Pixel may be blocked by ad blockers. Check browser console for status.
-                </span>
-              </div>
-            )}
           </div>
         </div>
 
