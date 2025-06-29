@@ -115,8 +115,6 @@ export function useCookieConsent() {
     setTimeout(() => {
       document.body.removeChild(iframe)
     }, 100)
-
-    console.log(`${category} cookies force cleared:`, cookiesToClear)
   }
 
   // Функція для форсованого створення GA cookies та активації
@@ -191,13 +189,7 @@ export function useCookieConsent() {
           send_to: gaId,
           transport_type: "beacon",
         })
-
-        console.log("Google Analytics force activated with cookies")
       }, 500)
-    }
-
-    script.onerror = () => {
-      console.warn("Failed to load Google Analytics script")
     }
 
     document.head.appendChild(script)

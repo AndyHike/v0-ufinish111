@@ -123,13 +123,7 @@ export function GoogleAnalytics({ gaId, consent }: GoogleAnalyticsProps) {
         })
 
         consentProcessedRef.current = true
-        console.log("Google Analytics initialized from scratch")
       }, 300)
-    }
-
-    script.onerror = () => {
-      console.warn("Failed to load Google Analytics script")
-      scriptLoadedRef.current = false
     }
 
     document.head.appendChild(script)

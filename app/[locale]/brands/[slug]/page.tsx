@@ -3,7 +3,7 @@ import { getTranslations } from "next-intl/server"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { createServerClient } from "@/utils/supabase/server"
-import { ChevronRight, Smartphone } from "lucide-react"
+import { ChevronRight, Smartphone, ArrowLeft } from "lucide-react"
 import { formatImageUrl } from "@/utils/image-url"
 
 type Props = {
@@ -97,6 +97,15 @@ export default async function BrandPage({ params }: Props) {
   return (
     <div className="container px-4 py-12 md:px-6 md:py-24">
       <div className="mx-auto max-w-6xl">
+        {/* Кнопка повернення до списку брендів */}
+        <Link
+          href={`/${locale}/brands`}
+          className="mb-8 inline-flex items-center gap-2 rounded-md bg-slate-50 px-3 py-1 text-sm font-medium text-muted-foreground hover:text-primary"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          {t("backToBrands") || "До списку брендів"}
+        </Link>
+
         {/* Заголовок бренду */}
         <div className="mb-12 flex flex-col items-center gap-6 rounded-xl bg-white p-8 shadow-sm md:flex-row">
           <div className="relative h-32 w-32 overflow-hidden rounded-xl bg-slate-50 p-4">

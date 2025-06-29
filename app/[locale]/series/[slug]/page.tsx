@@ -67,7 +67,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function SeriesPage({ params }: Props) {
   const { slug, locale } = params
   const t = await getTranslations({ locale, namespace: "Series" })
-  const commonT = await getTranslations({ locale, namespace: "Common" })
 
   const supabase = createServerClient()
 
@@ -91,7 +90,6 @@ export default async function SeriesPage({ params }: Props) {
   }
 
   if (seriesError || !series) {
-    console.error("[SeriesPage] Error fetching series:", seriesError)
     notFound()
   }
 
@@ -102,24 +100,21 @@ export default async function SeriesPage({ params }: Props) {
     .eq("series_id", series.id)
     .order("position", { ascending: true })
 
-  if (modelsError) {
-    console.error("[SeriesPage] Error fetching models:", modelsError)
-  }
-
   return (
     <div className="container px-4 py-12 md:px-6 md:py-24">
       <div className="mx-auto max-w-6xl">
+        {/* Кнопка повернення до бренду */}
+        <Link
+          href={`/${locale}/brands/${series.brands?.slug || series.brand_id}`}
+          className="mb-8 inline-flex items-center gap-2 rounded-md bg-slate-50 px-3 py-1 text-sm font-medium text-muted-foreground hover:text-primary"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          {t("backToBrand", { brand: series.brands?.name }) || `До ${series.brands?.name}`}
+        </Link>
+
         {/* Заголовок серії */}
         <div className="mb-12 rounded-xl bg-white p-8 shadow-sm">
-          <Link
-            href={`/${locale}/brands/${series.brands?.slug || series.brand_id}`}
-            className="inline-flex items-center gap-2 rounded-md bg-slate-50 px-3 py-1 text-sm font-medium text-muted-foreground hover:text-primary"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            {t("backToBrand", { brand: series.brands?.name })}
-          </Link>
-
-          <div className="mt-6 flex flex-col items-center gap-6 md:flex-row">
+          <div className="flex flex-col items-center gap-6 md:flex-row">
             {series.brands?.logo_url && (
               <div className="relative h-24 w-24 overflow-hidden rounded-lg bg-slate-50 p-3">
                 <img
@@ -143,7 +138,7 @@ export default async function SeriesPage({ params }: Props) {
 
         {/* Розділ моделей */}
         <div>
-          <h2 className="mb-6 border-b pb-2 text-2xl font-bold">{t("availableModels")}</h2>
+          <h2 className="mb-6 border-b pb-2 text-2xl font-bold">{t("availableModels") || "Доступні моделі"}</h2>
 
           {models && models.length > 0 ? (
             <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
@@ -175,7 +170,7 @@ export default async function SeriesPage({ params }: Props) {
             </div>
           ) : (
             <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-8 text-center">
-              <p className="text-muted-foreground">{t("noModelsAvailable")}</p>
+              <p className="text-muted-foreground">{t("noModelsAvailable") || "Моделі недоступні"}</p>
             </div>
           )}
         </div>
