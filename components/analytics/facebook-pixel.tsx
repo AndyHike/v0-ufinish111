@@ -19,6 +19,7 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
   const [isLoaded, setIsLoaded] = useState(false)
   const [isInitialized, setIsInitialized] = useState(false)
   const initializationRef = useRef(false)
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   // Initialize Facebook Pixel only once when consent is granted
   useEffect(() => {
@@ -49,6 +50,14 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
         existingScripts.forEach((script) => script.remove())
 
         try {
+          // Set timeout for fallback check
+          timeoutRef.current = setTimeout(() => {
+            if (!isLoaded && !isBlocked) {
+              console.warn("Facebook Pixel script didn't load within 5 seconds - may be blocked")
+              setIsBlocked(true)
+            }
+          }, 5000)
+
           // Use the exact Facebook Pixel code provided with error handling
           !((f: any, b: any, e: any, v: any, n: any, t: any, s: any) => {
             if (f.fbq) return
@@ -69,6 +78,12 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
               console.warn("Facebook Pixel script blocked by ad blocker or failed to load")
               setIsBlocked(true)
 
+              // Clear timeout since we got an error
+              if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current)
+                timeoutRef.current = null
+              }
+
               // Create a dummy fbq function to prevent errors
               if (!f.fbq) {
                 f.fbq = (...args: any[]) => {
@@ -81,6 +96,12 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
               console.log("Facebook Pixel script loaded successfully")
               setIsLoaded(true)
               setIsBlocked(false)
+
+              // Clear timeout since script loaded successfully
+              if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current)
+                timeoutRef.current = null
+              }
 
               // Initialize pixel after script loads
               setTimeout(() => {
@@ -101,17 +122,15 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
             s = b.getElementsByTagName(e)[0]
             s.parentNode.insertBefore(t, s)
           })(window, document, "script", "https://connect.facebook.net/en_US/fbevents.js")
-
-          // Fallback check after 5 seconds
-          setTimeout(() => {
-            if (!isLoaded && !isBlocked) {
-              console.warn("Facebook Pixel script didn't load within 5 seconds - may be blocked")
-              setIsBlocked(true)
-            }
-          }, 5000)
         } catch (error) {
           console.warn("Facebook Pixel setup error:", error)
           setIsBlocked(true)
+
+          // Clear timeout on error
+          if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current)
+            timeoutRef.current = null
+          }
         }
       }
     }
@@ -121,6 +140,12 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
   useEffect(() => {
     if (!consent && typeof window !== "undefined") {
       console.log("Clearing Facebook Pixel data due to consent revocation")
+
+      // Clear timeout if it exists
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+        timeoutRef.current = null
+      }
 
       // Reset initialization flag
       initializationRef.current = false
@@ -158,6 +183,15 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
       }
     }
   }, [consent])
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+      }
+    }
+  }, [])
 
   // Show status in development
   useEffect(() => {
