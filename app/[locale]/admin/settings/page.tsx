@@ -1,118 +1,116 @@
-import { getTranslations } from "next-intl/server"
+import { Suspense } from "react"
+import { getCurrentUser } from "@/lib/auth/session"
+import { redirect } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import type { Metadata } from "next"
-import { RegistrationToggle } from "@/components/admin/registration-toggle"
-import { LanguageSelector } from "@/components/admin/language-selector"
-import { LogoUpload } from "@/components/admin/logo-upload"
-import { FaviconUpload } from "@/components/admin/favicon-upload"
+import { Skeleton } from "@/components/ui/skeleton"
+import { CookieSettingsManager } from "@/components/admin/cookie-settings-manager"
+import { FacebookPixelTest } from "@/components/admin/facebook-pixel-test"
+import { MaintenanceModeToggle } from "@/components/admin/maintenance-mode-toggle"
 import { PrivacyPolicyManager } from "@/components/admin/privacy-policy-manager"
 import { TermsOfServiceManager } from "@/components/admin/terms-of-service-manager"
-import { CookieSettingsManager } from "@/components/admin/cookie-settings-manager"
-import { MaintenanceModeToggle } from "@/components/admin/maintenance-mode-toggle"
+import { RegistrationToggle } from "@/components/admin/registration-toggle"
+import { LogoUpload } from "@/components/admin/logo-upload"
+import { FaviconUpload } from "@/components/admin/favicon-upload"
+import { InfoBannerManager } from "@/components/admin/info-banner-manager"
+import { LanguageSelector } from "@/components/admin/language-selector"
 
-export async function generateMetadata({
-  params: { locale },
-}: {
-  params: { locale: string }
-}): Promise<Metadata> {
-  const t = await getTranslations({ locale, namespace: "Admin" })
-  return {
-    title: t("settings"),
+export default async function AdminSettingsPage() {
+  const user = await getCurrentUser()
+
+  if (!user || user.role !== "admin") {
+    redirect("/auth/signin")
   }
-}
 
-export default async function SettingsPage() {
   return (
-    <div className="space-y-6">
+    <div className="container mx-auto py-6 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-        <p className="text-muted-foreground">Manage your application settings</p>
+        <h1 className="text-3xl font-bold">Settings</h1>
+        <p className="text-muted-foreground">Manage your application settings and configuration.</p>
       </div>
 
-      <Tabs defaultValue="general">
-        <TabsList>
+      <Tabs defaultValue="general" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="general">General</TabsTrigger>
-          <TabsTrigger value="security">Security</TabsTrigger>
-          <TabsTrigger value="content">Content</TabsTrigger>
+          <TabsTrigger value="branding">Branding</TabsTrigger>
           <TabsTrigger value="cookies">Cookies & Analytics</TabsTrigger>
+          <TabsTrigger value="legal">Legal</TabsTrigger>
           <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
-          <TabsTrigger value="appearance">Appearance</TabsTrigger>
-          <TabsTrigger value="notifications">Notifications</TabsTrigger>
-          <TabsTrigger value="advanced">Advanced</TabsTrigger>
+          <TabsTrigger value="testing">Testing</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="general" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
+        <TabsContent value="general" className="space-y-6">
+          <div className="grid gap-6">
             <LanguageSelector />
-            <div className="space-y-4">
-              <LogoUpload />
-              <FaviconUpload />
-            </div>
+            <RegistrationToggle />
           </div>
         </TabsContent>
 
-        <TabsContent value="security" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Security Settings</CardTitle>
-              <CardDescription>Configure security and access settings</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <RegistrationToggle />
-            </CardContent>
-          </Card>
+        <TabsContent value="branding" className="space-y-6">
+          <div className="grid gap-6">
+            <LogoUpload />
+            <FaviconUpload />
+            <InfoBannerManager />
+          </div>
         </TabsContent>
 
-        <TabsContent value="content" className="space-y-4">
-          <div className="space-y-6">
+        <TabsContent value="cookies" className="space-y-6">
+          <Suspense
+            fallback={
+              <Card>
+                <CardHeader>
+                  <Skeleton className="h-6 w-48" />
+                  <Skeleton className="h-4 w-96" />
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+                </CardContent>
+              </Card>
+            }
+          >
+            <CookieSettingsManager />
+          </Suspense>
+        </TabsContent>
+
+        <TabsContent value="legal" className="space-y-6">
+          <div className="grid gap-6">
             <PrivacyPolicyManager />
             <TermsOfServiceManager />
           </div>
         </TabsContent>
 
-        <TabsContent value="cookies" className="space-y-4">
-          <CookieSettingsManager />
-        </TabsContent>
-
-        <TabsContent value="maintenance" className="space-y-4">
+        <TabsContent value="maintenance" className="space-y-6">
           <MaintenanceModeToggle />
         </TabsContent>
 
-        <TabsContent value="appearance" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Appearance Settings</CardTitle>
-              <CardDescription>Customize the look and feel of your application</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p>Appearance settings will be available soon.</p>
-            </CardContent>
-          </Card>
-        </TabsContent>
+        <TabsContent value="testing" className="space-y-6">
+          <div className="grid gap-6">
+            <FacebookPixelTest />
 
-        <TabsContent value="notifications" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Notification Settings</CardTitle>
-              <CardDescription>Configure how notifications are sent</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p>Notification settings will be available soon.</p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="advanced" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Advanced Settings</CardTitle>
-              <CardDescription>Configure advanced system settings</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p>Advanced settings will be available soon.</p>
-            </CardContent>
-          </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Debug Information</CardTitle>
+                <CardDescription>Additional debugging tools and information</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2 text-sm">
+                  <p>
+                    <strong>Environment:</strong> {process.env.NODE_ENV}
+                  </p>
+                  <p>
+                    <strong>Domain:</strong> {process.env.NEXT_PUBLIC_APP_URL}
+                  </p>
+                  <p>
+                    <strong>Build Time:</strong> {new Date().toISOString()}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
       </Tabs>
     </div>
