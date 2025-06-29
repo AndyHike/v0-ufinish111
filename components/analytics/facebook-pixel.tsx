@@ -15,232 +15,207 @@ declare global {
 }
 
 export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
-  const [isBlocked, setIsBlocked] = useState(false)
-  const [isLoaded, setIsLoaded] = useState(false)
   const [isInitialized, setIsInitialized] = useState(false)
-  const initializationRef = useRef(false)
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const previousConsentRef = useRef<boolean>(false)
-  const pixelInitializedRef = useRef(false)
+  const [isBlocked, setIsBlocked] = useState(false)
+  const previousConsentRef = useRef<boolean | null>(null)
+  const initializationInProgressRef = useRef(false)
 
-  // Initialize Facebook Pixel when consent is granted
-  useEffect(() => {
-    const consentChanged = previousConsentRef.current !== consent
-    previousConsentRef.current = consent
+  // Функція для повного очищення Facebook Pixel
+  const clearFacebookPixel = () => {
+    if (typeof window === "undefined") return
 
-    if (consent && pixelId && (!initializationRef.current || consentChanged)) {
-      // Reset states if consent just changed from false to true
-      if (consentChanged && consent) {
-        initializationRef.current = false
-        pixelInitializedRef.current = false
-        setIsInitialized(false)
-        setIsLoaded(false)
-        setIsBlocked(false)
-      }
+    console.log("Clearing Facebook Pixel data...")
 
-      if (!initializationRef.current) {
-        initializationRef.current = true
-        console.log(`Facebook Pixel initializing with ID: ${pixelId}`)
+    try {
+      // Видалити cookies
+      const fbCookies = ["_fbp", "_fbc", "fr"]
+      const domains = ["", window.location.hostname, "." + window.location.hostname]
+      const paths = ["/", ""]
 
-        if (typeof window !== "undefined") {
-          // Clear any existing Facebook Pixel setup completely
-          delete window.fbq
-          delete window._fbq
-
-          // Remove existing Facebook scripts
-          const existingScripts = document.querySelectorAll(`script[src*="fbevents.js"]`)
-          existingScripts.forEach((script) => script.remove())
-
-          try {
-            // Set timeout for fallback check
-            timeoutRef.current = setTimeout(() => {
-              if (!isLoaded && !isBlocked) {
-                console.warn("Facebook Pixel script didn't load within 5 seconds - may be blocked")
-                setIsBlocked(true)
-              }
-            }, 5000)
-
-            // Use the exact Facebook Pixel code provided
-            !((f: any, b: any, e: any, v: any, n: any, t: any, s: any) => {
-              if (f.fbq) return
-              n = f.fbq = (...args: any[]) => {
-                n.callMethod ? n.callMethod.apply(n, args) : n.queue.push(args)
-              }
-              if (!f._fbq) f._fbq = n
-              n.push = n
-              n.loaded = !0
-              n.version = "2.0"
-              n.queue = []
-              t = b.createElement(e)
-              t.async = !0
-              t.src = v
-
-              // Add error handling for script loading
-              t.onerror = () => {
-                console.warn("Facebook Pixel script blocked by ad blocker or failed to load")
-                setIsBlocked(true)
-
-                // Clear timeout since we got an error
-                if (timeoutRef.current) {
-                  clearTimeout(timeoutRef.current)
-                  timeoutRef.current = null
-                }
-
-                // Create a dummy fbq function to prevent errors
-                if (!f.fbq) {
-                  f.fbq = (...args: any[]) => {
-                    console.log("Facebook Pixel call (blocked):", args)
-                  }
-                }
-              }
-
-              t.onload = () => {
-                console.log("Facebook Pixel script loaded successfully")
-                setIsLoaded(true)
-                setIsBlocked(false)
-
-                // Clear timeout since script loaded successfully
-                if (timeoutRef.current) {
-                  clearTimeout(timeoutRef.current)
-                  timeoutRef.current = null
-                }
-
-                // Initialize pixel after script loads ONLY if not already initialized
-                setTimeout(() => {
-                  try {
-                    if (window.fbq && !pixelInitializedRef.current) {
-                      window.fbq("init", pixelId)
-                      window.fbq("track", "PageView")
-
-                      // Add additional tracking to ensure cookie creation
-                      window.fbq("track", "ViewContent", {
-                        content_name: "Consent Granted",
-                        content_category: "User Interaction",
-                      })
-
-                      pixelInitializedRef.current = true
-                      setIsInitialized(true)
-                      console.log(`Facebook Pixel initialized successfully with ID: ${pixelId}`)
-                    } else if (pixelInitializedRef.current) {
-                      console.log("Facebook Pixel already initialized, skipping duplicate initialization")
-                    }
-                  } catch (error) {
-                    console.warn("Facebook Pixel initialization error:", error)
-                    setIsBlocked(true)
-                  }
-                }, 100)
-              }
-
-              s = b.getElementsByTagName(e)[0]
-              s.parentNode.insertBefore(t, s)
-            })(window, document, "script", "https://connect.facebook.net/en_US/fbevents.js")
-
-            // Immediate initialization attempt (for very fast loading) - ONLY if not already initialized
-            setTimeout(() => {
-              try {
-                if (window.fbq && !pixelInitializedRef.current) {
-                  window.fbq("init", pixelId)
-                  window.fbq("track", "PageView")
-                  window.fbq("track", "ViewContent", {
-                    content_name: "Immediate Consent",
-                    content_category: "User Interaction",
-                  })
-                  pixelInitializedRef.current = true
-                  setIsInitialized(true)
-                  console.log(`Facebook Pixel immediate initialization completed for ID: ${pixelId}`)
-                } else if (pixelInitializedRef.current) {
-                  console.log("Facebook Pixel already initialized via immediate init, skipping")
-                }
-              } catch (error) {
-                // This is expected if script hasn't loaded yet
-                console.log("Facebook Pixel immediate initialization pending script load")
-              }
-            }, 50)
-          } catch (error) {
-            console.warn("Facebook Pixel setup error:", error)
-            setIsBlocked(true)
-
-            // Clear timeout on error
-            if (timeoutRef.current) {
-              clearTimeout(timeoutRef.current)
-              timeoutRef.current = null
-            }
-          }
-        }
-      }
-    }
-  }, [pixelId, consent, isLoaded, isInitialized])
-
-  // Clear Facebook Pixel when consent is revoked
-  useEffect(() => {
-    if (!consent && typeof window !== "undefined") {
-      console.log("Clearing Facebook Pixel data due to consent revocation")
-
-      // Clear timeout if it exists
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current)
-        timeoutRef.current = null
-      }
-
-      // Reset initialization flags
-      initializationRef.current = false
-      pixelInitializedRef.current = false
-      setIsInitialized(false)
-      setIsLoaded(false)
-      setIsBlocked(false)
-
-      try {
-        // Remove Facebook cookies
-        const fbCookies = ["_fbp", "_fbc", "fr"]
-        const domains = ["", window.location.hostname, "." + window.location.hostname]
-
-        fbCookies.forEach((cookieName) => {
-          domains.forEach((domain) => {
+      fbCookies.forEach((cookieName) => {
+        domains.forEach((domain) => {
+          paths.forEach((path) => {
+            const expireDate = "Thu, 01 Jan 1970 00:00:00 UTC"
             const cookieString = domain
-              ? `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${domain};`
-              : `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`
+              ? `${cookieName}=; expires=${expireDate}; path=${path}; domain=${domain};`
+              : `${cookieName}=; expires=${expireDate}; path=${path};`
             document.cookie = cookieString
           })
         })
+      })
 
-        // Clear fbq function
-        if (window.fbq) {
-          delete window.fbq
-          delete window._fbq
+      // Видалити глобальні змінні
+      delete window.fbq
+      delete window._fbq
+
+      // Видалити скрипти
+      const fbScripts = document.querySelectorAll(`script[src*="fbevents.js"]`)
+      fbScripts.forEach((script) => script.remove())
+
+      console.log("Facebook Pixel data cleared successfully")
+    } catch (error) {
+      console.warn("Error clearing Facebook Pixel:", error)
+    }
+  }
+
+  // Функція для ініціалізації Facebook Pixel з форсованим створенням cookies
+  const initializeFacebookPixel = () => {
+    if (typeof window === "undefined" || !pixelId || initializationInProgressRef.current) return
+
+    initializationInProgressRef.current = true
+    console.log(`Initializing Facebook Pixel with ID: ${pixelId}`)
+
+    try {
+      // Спочатку повністю очищуємо попередні ініціалізації
+      clearFacebookPixel()
+
+      // Створюємо Facebook Pixel код
+      !((f: any, b: any, e: any, v: any, n: any, t: any, s: any) => {
+        if (f.fbq) return
+        n = f.fbq = (...args: any[]) => {
+          n.callMethod ? n.callMethod.apply(n, args) : n.queue.push(args)
+        }
+        if (!f._fbq) f._fbq = n
+        n.push = n
+        n.loaded = !0
+        n.version = "2.0"
+        n.queue = []
+        t = b.createElement(e)
+        t.async = !0
+        t.src = v
+
+        t.onerror = () => {
+          console.warn("Facebook Pixel script blocked or failed to load")
+          setIsBlocked(true)
+          initializationInProgressRef.current = false
         }
 
-        // Remove Facebook scripts
-        const fbScripts = document.querySelectorAll(`script[src*="fbevents.js"]`)
-        fbScripts.forEach((script) => script.remove())
+        t.onload = () => {
+          console.log("Facebook Pixel script loaded successfully")
 
-        console.log("Facebook Pixel data cleared successfully")
-      } catch (error) {
-        console.warn("Could not clear Facebook cookies:", error)
+          // Негайна ініціалізація після завантаження скрипта
+          setTimeout(() => {
+            try {
+              if (window.fbq) {
+                // Ініціалізуємо піксель
+                window.fbq("init", pixelId)
+
+                // Відправляємо PageView для створення cookies
+                window.fbq("track", "PageView")
+
+                // Додаткові події для гарантованого створення cookies
+                window.fbq("track", "ViewContent", {
+                  content_name: "Consent Granted",
+                  content_category: "Marketing Consent",
+                  value: 1,
+                  currency: "CZK",
+                })
+
+                // Форсуємо створення cookies через додаткові виклики
+                window.fbq("trackCustom", "ConsentGranted", {
+                  consent_type: "marketing",
+                  timestamp: new Date().toISOString(),
+                })
+
+                setIsInitialized(true)
+                setIsBlocked(false)
+                initializationInProgressRef.current = false
+
+                console.log(`✅ Facebook Pixel initialized successfully with ID: ${pixelId}`)
+
+                // Перевіряємо створення cookies через 1 секунду
+                setTimeout(() => {
+                  const fbpCookie = document.cookie.split(";").find((cookie) => cookie.trim().startsWith("_fbp="))
+                  const fbcCookie = document.cookie.split(";").find((cookie) => cookie.trim().startsWith("_fbc="))
+
+                  console.log("Facebook cookies status:", {
+                    _fbp: fbpCookie ? "Created" : "Not found",
+                    _fbc: fbcCookie ? "Created" : "Not found",
+                  })
+
+                  if (!fbpCookie) {
+                    console.warn("Facebook _fbp cookie not created, forcing additional events...")
+                    // Додаткові спроби створення cookies
+                    window.fbq("track", "Lead")
+                    window.fbq("trackCustom", "ForceCookieCreation")
+                  }
+                }, 1000)
+              }
+            } catch (error) {
+              console.warn("Facebook Pixel initialization error:", error)
+              setIsBlocked(true)
+              initializationInProgressRef.current = false
+            }
+          }, 100)
+        }
+
+        s = b.getElementsByTagName(e)[0]
+        s.parentNode.insertBefore(t, s)
+      })(window, document, "script", "https://connect.facebook.net/en_US/fbevents.js")
+    } catch (error) {
+      console.warn("Facebook Pixel setup error:", error)
+      setIsBlocked(true)
+      initializationInProgressRef.current = false
+    }
+  }
+
+  // Основна логіка: перевірка налаштувань та реакція на зміни
+  useEffect(() => {
+    const consentChanged = previousConsentRef.current !== null && previousConsentRef.current !== consent
+    const isFirstLoad = previousConsentRef.current === null
+
+    previousConsentRef.current = consent
+
+    if (consent && pixelId) {
+      // Якщо згода є і це перша загрузка або зміна з false на true
+      if (isFirstLoad || consentChanged) {
+        console.log(
+          isFirstLoad
+            ? "Initial consent granted - loading Facebook Pixel"
+            : "Consent changed to granted - forcing Facebook Pixel activation",
+        )
+
+        // Скидаємо стани
+        setIsInitialized(false)
+        setIsBlocked(false)
+        initializationInProgressRef.current = false
+
+        // Ініціалізуємо з невеликою затримкою для стабільності
+        setTimeout(() => {
+          initializeFacebookPixel()
+        }, 100)
+      }
+    } else if (!consent && consentChanged) {
+      // Згода відкликана - очищуємо все
+      console.log("Consent revoked - clearing Facebook Pixel")
+      clearFacebookPixel()
+      setIsInitialized(false)
+      setIsBlocked(false)
+      initializationInProgressRef.current = false
+    }
+  }, [consent, pixelId])
+
+  // Cleanup при unmount
+  useEffect(() => {
+    return () => {
+      if (!consent) {
+        clearFacebookPixel()
       }
     }
   }, [consent])
 
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current)
-      }
-    }
-  }, [])
-
-  // Show status in development
+  // Логування статусу в development режимі
   useEffect(() => {
     if (process.env.NODE_ENV === "development" && consent && pixelId) {
       if (isBlocked) {
-        console.warn(`🚫 Facebook Pixel (${pixelId}) is blocked by ad blocker or privacy extension`)
-      } else if (isLoaded && isInitialized) {
-        console.log(`✅ Facebook Pixel (${pixelId}) loaded and initialized successfully`)
-      } else if (isLoaded) {
-        console.log(`📡 Facebook Pixel (${pixelId}) script loaded, waiting for initialization`)
+        console.warn(`🚫 Facebook Pixel (${pixelId}) is blocked`)
+      } else if (isInitialized) {
+        console.log(`✅ Facebook Pixel (${pixelId}) is active and tracking`)
+      } else {
+        console.log(`⏳ Facebook Pixel (${pixelId}) is loading...`)
       }
     }
-  }, [isBlocked, isLoaded, isInitialized, consent, pixelId])
+  }, [isBlocked, isInitialized, consent, pixelId])
 
   if (!consent || !pixelId) {
     return null
@@ -260,14 +235,13 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
       </noscript>
 
       {/* Development status indicator */}
-      {process.env.NODE_ENV === "development" && consent && (
+      {process.env.NODE_ENV === "development" && (
         <div
           style={{ display: "none" }}
-          data-fb-pixel-status={isBlocked ? "blocked" : isLoaded && isInitialized ? "loaded" : "loading"}
+          data-fb-pixel-status={isBlocked ? "blocked" : isInitialized ? "active" : "loading"}
           data-fb-pixel-id={pixelId}
         >
-          Facebook Pixel Status:{" "}
-          {isBlocked ? "Blocked" : isLoaded && isInitialized ? "Loaded & Initialized" : "Loading"}
+          Facebook Pixel: {isBlocked ? "Blocked" : isInitialized ? "Active" : "Loading"}
         </div>
       )}
     </>

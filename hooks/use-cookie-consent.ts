@@ -18,7 +18,7 @@ export function useCookieConsent() {
     consentDate: null,
   })
 
-  // Function for aggressive cookie clearing with forced update
+  // Функція для агресивного очищення cookies
   const forceClearCookies = (category: "analytics" | "marketing") => {
     if (typeof document === "undefined") return
 
@@ -47,14 +47,13 @@ export function useCookieConsent() {
     const domains = ["", window.location.hostname, "." + window.location.hostname, ".devicehelp.cz", "devicehelp.cz"]
     const paths = ["/", "/admin", "/auth", ""]
 
-    // Multiple clearing attempts with different parameters
+    // Очищення cookies з різними параметрами
     cookiesToClear.forEach((cookieName) => {
       domains.forEach((domain) => {
         paths.forEach((path) => {
           const expireDate = "Thu, 01 Jan 1970 00:00:00 UTC"
           const maxAgeZero = "max-age=0"
 
-          // Different clearing combinations
           const clearVariants = [
             `${cookieName}=; expires=${expireDate}; path=${path}`,
             `${cookieName}=; ${maxAgeZero}; path=${path}`,
@@ -79,17 +78,15 @@ export function useCookieConsent() {
       })
     })
 
-    // Clear storage
+    // Очищення localStorage та sessionStorage для analytics
     if (category === "analytics") {
       try {
-        // localStorage
         Object.keys(localStorage).forEach((key) => {
           if (key.startsWith("_ga") || key.startsWith("gtag") || key.includes("google")) {
             localStorage.removeItem(key)
           }
         })
 
-        // sessionStorage
         Object.keys(sessionStorage).forEach((key) => {
           if (key.startsWith("_ga") || key.startsWith("gtag") || key.includes("google")) {
             sessionStorage.removeItem(key)
@@ -100,49 +97,40 @@ export function useCookieConsent() {
       }
     }
 
-    // Update gtag consent
+    // Оновлення gtag consent для analytics
     if (typeof window !== "undefined" && window.gtag && category === "analytics") {
       window.gtag("consent", "update", {
         analytics_storage: "denied",
       })
     }
-
-    // Force update through creating hidden iframe
-    const iframe = document.createElement("iframe")
-    iframe.style.display = "none"
-    iframe.src = "about:blank"
-    document.body.appendChild(iframe)
-    setTimeout(() => {
-      document.body.removeChild(iframe)
-    }, 100)
   }
 
-  // Function to force GA cookies creation and activation
+  // Функція для форсованої активації Google Analytics
   const forceActivateAnalytics = () => {
     if (typeof window === "undefined") return
 
     const gaId = "G-WZ0WCHZ3XT"
 
-    // Completely clear previous GA resources
+    // Очищення попередніх GA ресурсів
     const existingScripts = document.querySelectorAll(`script[src*="googletagmanager.com"]`)
     existingScripts.forEach((script) => script.remove())
 
-    // Clear global variables
+    // Очищення глобальних змінних
     delete window.gtag
     delete window.dataLayer
 
-    // Create new dataLayer
+    // Створення нового dataLayer
     window.dataLayer = []
 
-    // Create gtag function
+    // Створення gtag функції
     window.gtag = function gtag() {
       window.dataLayer.push(arguments)
     }
 
-    // Set time
+    // Встановлення часу
     window.gtag("js", new Date())
 
-    // Set consent as granted
+    // Встановлення згоди як надану
     window.gtag("consent", "default", {
       analytics_storage: "granted",
       ad_storage: "denied",
@@ -151,13 +139,13 @@ export function useCookieConsent() {
       security_storage: "granted",
     })
 
-    // Create new script
+    // Створення нового скрипта
     const script = document.createElement("script")
     script.async = true
     script.src = `https://www.googletagmanager.com/gtag/js?id=${gaId}&t=${Date.now()}`
 
     script.onload = () => {
-      // Configure GA4
+      // Конфігурація GA4
       window.gtag("config", gaId, {
         send_page_view: true,
         page_title: document.title,
@@ -167,7 +155,7 @@ export function useCookieConsent() {
         cookie_flags: "SameSite=Lax",
       })
 
-      // Send events for activation
+      // Відправка подій для активації
       setTimeout(() => {
         window.gtag("event", "page_view", {
           page_title: document.title,
@@ -183,7 +171,6 @@ export function useCookieConsent() {
           transport_type: "beacon",
         })
 
-        // Force cookie creation through direct GA call
         window.gtag("event", "user_engagement", {
           engagement_time_msec: 1,
           send_to: gaId,
@@ -197,17 +184,9 @@ export function useCookieConsent() {
     }
 
     document.head.appendChild(script)
-
-    // Additionally force cookie creation through iframe
-    const iframe = document.createElement("iframe")
-    iframe.style.display = "none"
-    iframe.src = `https://www.google-analytics.com/analytics.js?t=${Date.now()}`
-    document.body.appendChild(iframe)
-    setTimeout(() => {
-      document.body.removeChild(iframe)
-    }, 1000)
   }
 
+  // Завантаження збережених налаштувань при ініціалізації
   useEffect(() => {
     const stored = localStorage.getItem(COOKIE_CONSENT_KEY)
     if (stored) {
@@ -235,6 +214,7 @@ export function useCookieConsent() {
     }
   }, [])
 
+  // Збереження згоди та обробка змін
   const saveConsent = (consent: CookieConsent, previousConsent?: CookieConsent) => {
     const consentData = {
       consent,
@@ -242,9 +222,9 @@ export function useCookieConsent() {
     }
     localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(consentData))
 
-    // Handle consent changes
+    // Обробка змін згоди
     if (previousConsent) {
-      // Clear when consent is revoked
+      // Очищення при відкликанні згоди
       if (previousConsent.analytics && !consent.analytics) {
         forceClearCookies("analytics")
       }
@@ -260,15 +240,14 @@ export function useCookieConsent() {
       consentDate: consentData.consentDate,
     })
 
-    // Activation when consent is granted
+    // Активація при наданні згоди
     if (consent.analytics && (!previousConsent || !previousConsent.analytics)) {
       setTimeout(() => {
         forceActivateAnalytics()
       }, 200)
     }
 
-    // Facebook Pixel activation is now handled entirely by the FacebookPixel component
-    // No duplicate initialization here
+    // Facebook Pixel активація обробляється компонентом FacebookPixel
   }
 
   const acceptAll = () => {
