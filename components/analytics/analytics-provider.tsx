@@ -1,74 +1,108 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { GoogleAnalytics } from "./google-analytics"
-import { GoogleTagManager } from "./google-tag-manager"
-import { FacebookPixel } from "./facebook-pixel"
-import { useCookieConsent } from "@/hooks/use-cookie-consent"
+import type React from "react"
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
+import { useRouter } from "next/router"
 
-interface AnalyticsSettings {
-  google_analytics_id: string
-  google_tag_manager_id: string
-  facebook_pixel_id: string
-  cookie_banner_enabled: boolean
-  analytics_enabled: boolean
-  marketing_enabled: boolean
+interface AnalyticsProviderProps {
+  children: ReactNode
+  analyticsId: string
 }
 
-export function AnalyticsProvider() {
-  const [settings, setSettings] = useState<AnalyticsSettings | null>(null)
-  const [isLoaded, setIsLoaded] = useState(false)
-  const { consent, hasInteracted } = useCookieConsent()
+interface AnalyticsContextType {
+  trackEvent: (eventName: string, eventParams?: { [key: string]: any }) => void
+  trackPageView: (path: string) => void
+}
+
+const AnalyticsContext = createContext<AnalyticsContextType | undefined>(undefined)
+
+const useAnalytics = () => {
+  const context = useContext(AnalyticsContext)
+  if (!context) {
+    throw new Error("useAnalytics must be used within an AnalyticsProvider")
+  }
+  return context
+}
+
+const AnalyticsProvider: React.FC<AnalyticsProviderProps> = ({ children, analyticsId }) => {
+  const router = useRouter()
+  const [isInitialized, setIsInitialized] = useState(false)
 
   useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        const response = await fetch("/api/admin/cookie-settings")
+    if (!analyticsId) {
+      console.error("Analytics ID is missing. Tracking will be disabled.")
+      return
+    }
 
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+    const loadAnalytics = async () => {
+      try {
+        // Dynamically import the analytics library
+        const analytics = (await import("analytics")).default
+
+        // Initialize the analytics instance
+        const instance = analytics({
+          app: "nextjs-ecommerce", // Replace with your app name
+          plugins: [], // Add any plugins you need
+        })
+
+        // Load Google Analytics plugin if analyticsId is provided
+        if (analyticsId) {
+          const googleAnalytics = (await import("@analytics/google-analytics")).default
+          instance.use(
+            googleAnalytics({
+              measurementIds: [analyticsId],
+            }),
+          )
         }
 
-        const data = await response.json()
-        setSettings(data)
-      } catch (error) {
-        setSettings({
-          google_analytics_id: "",
-          google_tag_manager_id: "",
-          facebook_pixel_id: "",
-          cookie_banner_enabled: true,
-          analytics_enabled: true,
-          marketing_enabled: true,
-        })
-      } finally {
-        setIsLoaded(true)
+        // Set the initialized state
+        setIsInitialized(true)
+
+        // Track the initial page view
+        trackPageView(router.asPath)
+
+        // Subscribe to router events to track page views on navigation
+        router.events.on("routeChangeComplete", trackPageView)
+
+        // Clean up the event listener on unmount
+        return () => {
+          router.events.off("routeChangeComplete", trackPageView)
+        }
+      } catch (error: any) {
+        console.error("Failed to initialize analytics:", error)
       }
     }
 
-    fetchSettings()
-  }, [])
+    loadAnalytics()
+  }, [analyticsId, router])
 
-  if (!isLoaded) {
-    return null
+  const trackEvent = (eventName: string, eventParams?: { [key: string]: any }) => {
+    if (!isInitialized) {
+      console.error("Analytics is not initialized. Event tracking is disabled.")
+      return
+    }
+
+    try {
+      window.analytics.track(eventName, eventParams)
+    } catch (error: any) {
+      console.error("Error tracking event:", error)
+    }
   }
 
-  if (!settings) {
-    return null
+  const trackPageView = (path: string) => {
+    if (!isInitialized) {
+      console.error("Analytics is not initialized. Page view tracking is disabled.")
+      return
+    }
+
+    try {
+      window.analytics.page(path)
+    } catch (error: any) {
+      console.error("Error tracking page view:", error)
+    }
   }
 
-  return (
-    <>
-      {settings.google_analytics_id && (
-        <GoogleAnalytics gaId={settings.google_analytics_id} consent={consent.analytics} />
-      )}
-
-      {settings.google_tag_manager_id && consent.analytics && (
-        <GoogleTagManager gtmId={settings.google_tag_manager_id} consent={consent.analytics} />
-      )}
-
-      {settings.facebook_pixel_id && consent.marketing && (
-        <FacebookPixel pixelId={settings.facebook_pixel_id} consent={consent.marketing} />
-      )}
-    </>
-  )
+  return <AnalyticsContext.Provider value={{ trackEvent, trackPageView }}>{children}</AnalyticsContext.Provider>
 }
+
+export { AnalyticsProvider, useAnalytics }

@@ -1,48 +1,59 @@
 "use client"
 
+import type React from "react"
 import { useEffect } from "react"
+import { useRouter } from "next/router"
 import Script from "next/script"
 
 interface GoogleTagManagerProps {
-  gtmId?: string
+  gtmId: string
 }
 
-export function GoogleTagManager({ gtmId }: GoogleTagManagerProps) {
+const GoogleTagManager: React.FC<GoogleTagManagerProps> = ({ gtmId }) => {
+  const router = useRouter()
+
   useEffect(() => {
-    if (gtmId && typeof window !== "undefined") {
-      // Disable debug logging for GTM
-      const originalConsoleLog = console.log
-      const originalConsoleInfo = console.info
+    if (!gtmId) {
+      console.error("GTM ID is missing. Google Tag Manager will not be initialized.")
+      return
+    }
 
-      // Filter out ECOMMERCE and processor logs
-      console.log = (...args) => {
-        const message = args.join(" ")
-        if (!message.includes("[ECOMMERCE]") && !message.includes("processor.js")) {
-          originalConsoleLog.apply(console, args)
-        }
+    // Function to push the event to the data layer
+    const pushToDataLayer = (dataLayer: any) => {
+      if (typeof window !== "undefined" && window.dataLayer) {
+        window.dataLayer.push(dataLayer)
+      } else {
+        console.error("dataLayer is not available.")
       }
+    }
 
-      console.info = (...args) => {
-        const message = args.join(" ")
-        if (!message.includes("[ECOMMERCE]") && !message.includes("processor.js")) {
-          originalConsoleInfo.apply(console, args)
-        }
-      }
-
-      // Initialize GTM dataLayer
-      window.dataLayer = window.dataLayer || []
-      window.dataLayer.push({
-        "gtm.start": new Date().getTime(),
-        event: "gtm.js",
+    // Function to handle page view events
+    const handleRouteChange = (url: string) => {
+      pushToDataLayer({
+        event: "pageview",
+        page: url,
       })
     }
-  }, [gtmId])
 
-  if (!gtmId) return null
+    // Subscribe to route changes
+    router.events.on("routeChangeComplete", handleRouteChange)
+
+    // Initial page view event
+    handleRouteChange(router.asPath)
+
+    // Clean up subscription
+    return () => {
+      router.events.off("routeChangeComplete", handleRouteChange)
+    }
+  }, [router.events, router.asPath, gtmId])
+
+  if (!gtmId) {
+    return null
+  }
 
   return (
     <>
-      <Script id="google-tag-manager" strategy="afterInteractive">
+      <Script id="gtm-script" strategy="afterInteractive">
         {`
           (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
           new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
@@ -57,14 +68,10 @@ export function GoogleTagManager({ gtmId }: GoogleTagManagerProps) {
           height="0"
           width="0"
           style={{ display: "none", visibility: "hidden" }}
-        />
+        ></iframe>
       </noscript>
     </>
   )
 }
 
-declare global {
-  interface Window {
-    dataLayer: any[]
-  }
-}
+export default GoogleTagManager

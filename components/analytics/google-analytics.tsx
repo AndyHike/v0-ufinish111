@@ -1,72 +1,42 @@
 "use client"
 
+import type React from "react"
 import { useEffect } from "react"
-import Script from "next/script"
+import ReactGA from "react-ga4"
 
 interface GoogleAnalyticsProps {
-  measurementId?: string
+  trackingId: string
 }
 
-export function GoogleAnalytics({ measurementId }: GoogleAnalyticsProps) {
+const GoogleAnalytics: React.FC<GoogleAnalyticsProps> = ({ trackingId }) => {
   useEffect(() => {
-    if (measurementId && typeof window !== "undefined") {
-      // Disable console logging for GA
-      const originalConsoleLog = console.log
-      const originalConsoleInfo = console.info
-
-      // Override console methods to filter out ECOMMERCE logs
-      console.log = (...args) => {
-        const message = args.join(" ")
-        if (!message.includes("[ECOMMERCE]")) {
-          originalConsoleLog.apply(console, args)
-        }
-      }
-
-      console.info = (...args) => {
-        const message = args.join(" ")
-        if (!message.includes("[ECOMMERCE]")) {
-          originalConsoleInfo.apply(console, args)
-        }
-      }
-
-      // Configure gtag
-      window.gtag =
-        window.gtag ||
-        (() => {
-          ;(window.dataLayer = window.dataLayer || []).push(arguments)
-        })
-
-      window.gtag("js", new Date())
-      window.gtag("config", measurementId, {
-        debug_mode: false,
-        send_page_view: false,
-      })
+    if (!trackingId) {
+      console.error("Google Analytics tracking ID is missing. Ensure TRACKING_ID is set in your environment variables.")
+      return
     }
-  }, [measurementId])
 
-  if (!measurementId) return null
+    try {
+      ReactGA.initialize(trackingId)
+    } catch (error) {
+      console.error("Error initializing Google Analytics:", error)
+      return
+    }
 
-  return (
-    <>
-      <Script src={`https://www.googletagmanager.com/gtag/js?id=${measurementId}`} strategy="afterInteractive" />
-      <Script id="google-analytics" strategy="afterInteractive">
-        {`
-          window.dataLayer = window.dataLayer || [];
-          function gtag(){dataLayer.push(arguments);}
-          gtag('js', new Date());
-          gtag('config', '${measurementId}', {
-            debug_mode: false,
-            send_page_view: false
-          });
-        `}
-      </Script>
-    </>
-  )
+    ReactGA.send({ hitType: "pageview", page: window.location.pathname, title: document.title })
+
+    const handleRouteChange = () => {
+      ReactGA.send({ hitType: "pageview", page: window.location.pathname, title: document.title })
+    }
+
+    // Subscribe to route changes (example using window.addEventListener - adapt to your routing library)
+    window.addEventListener("popstate", handleRouteChange)
+
+    return () => {
+      window.removeEventListener("popstate", handleRouteChange)
+    }
+  }, [trackingId])
+
+  return null
 }
 
-declare global {
-  interface Window {
-    gtag: (...args: any[]) => void
-    dataLayer: any[]
-  }
-}
+export default GoogleAnalytics

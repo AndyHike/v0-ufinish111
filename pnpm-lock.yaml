@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@analytics/google-analytics':
+        specifier: latest
+        version: 1.1.0
       '@auth/core':
         specifier: latest
         version: 0.40.0(nodemailer@7.0.3)
@@ -113,6 +116,9 @@ importers:
       '@supabase/supabase-js':
         specifier: latest
         version: 2.50.2
+      analytics:
+        specifier: latest
+        version: 0.8.16(@types/dlv@1.1.5)
       autoprefixer:
         specifier: ^10.4.20
         version: 10.4.20(postcss@8.5.4)
@@ -179,6 +185,9 @@ importers:
       react-dom:
         specifier: ^19
         version: 19.0.0(react@19.0.0)
+      react-ga4:
+        specifier: latest
+        version: 2.1.0
       react-hook-form:
         specifier: latest
         version: 7.59.0(react@19.0.0)
@@ -234,6 +243,30 @@ packages:
   '@alloc/quick-lru@5.2.0':
     resolution: {integrity: sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw==}
     engines: {node: '>=10'}
+
+  '@analytics/cookie-utils@0.2.12':
+    resolution: {integrity: sha512-2h/yuIu3kmu+ZJlKmlT6GoRvUEY2k1BbQBezEv5kGhnn9KpmzPz715Y3GmM2i+m7Y0QmBdVUoA260dQZkofs2A==}
+
+  '@analytics/core@0.12.17':
+    resolution: {integrity: sha512-GMxRm5Dp3Wam/w5NNvqNKMO6zWecozbVv21Kn4WhftCx6OjJI7zMlVtiLpjGjxa0RRZfVG80YhupF0Qh9XL2gw==}
+
+  '@analytics/global-storage-utils@0.1.7':
+    resolution: {integrity: sha512-V+spzGLZYm4biZT4uefaylm80SrLXf8WOTv9hCgA46cLcyxx3LD4GCpssp1lj+RcWLl/uXJQBRO4Mnn/o1x6Gw==}
+
+  '@analytics/google-analytics@1.1.0':
+    resolution: {integrity: sha512-i8uGyELMtwEUAf3GNWNLNBzhRvReDn1RUxvMdMhjUA7+GNGxPOM4kkzFfv3giQXKNxTEjfsh75kqNcscbJsuaA==}
+
+  '@analytics/localstorage-utils@0.1.10':
+    resolution: {integrity: sha512-uJS+Jp1yLG5VFCgA5T82ZODYBS0xuDQx0NtAZrgbqt9j51BX3TcgmOez5LVkrUNu/lpbxjCLq35I4TKj78VmOQ==}
+
+  '@analytics/session-storage-utils@0.0.7':
+    resolution: {integrity: sha512-PSv40UxG96HVcjY15e3zOqU2n8IqXnH8XvTkg1X43uXNTKVSebiI2kUjA3Q7ESFbw5DPwcLbJhV7GforpuBLDw==}
+
+  '@analytics/storage-utils@0.4.2':
+    resolution: {integrity: sha512-AXObwyVQw9h2uJh1t2hUgabtVxzYpW+7uKVbdHQK80vr3Td5rrmCxrCxarh7HUuAgSDZ0bZWqmYxVgmwKceaLg==}
+
+  '@analytics/type-utils@0.6.2':
+    resolution: {integrity: sha512-TD+xbmsBLyYy/IxFimW/YL/9L2IEnM7/EoV9Aeh56U64Ify8o27HJcKjo38XY9Tcn0uOq1AX3thkKgvtWvwFQg==}
 
   '@auth/core@0.40.0':
     resolution: {integrity: sha512-n53uJE0RH5SqZ7N1xZoMKekbHfQgjd0sAEyUbE+IYJnmuQkbvuZnXItCU7d+i7Fj8VGOgqvNO7Mw4YfBTlZeQw==}
@@ -1223,6 +1256,9 @@ packages:
   '@types/d3-timer@3.0.2':
     resolution: {integrity: sha512-Ps3T8E8dZDam6fUyNiMkekK3XUsaUEik+idO9/YjPtfj2qruF8tFBXS7XhtE4iIXBLxhmLjP3SXpLhVf21I9Lw==}
 
+  '@types/dlv@1.1.5':
+    resolution: {integrity: sha512-JHOWNfiWepAhfwlSw17kiWrWrk6od2dEQgHltJw9AS0JPFoLZJBge5+Dnil2NfdjAvJ/+vGSX60/BRW20PpUXw==}
+
   '@types/node@22.0.0':
     resolution: {integrity: sha512-VT7KSYudcPOzP5Q0wfbowyNLaVR8QWUdw+088uFWwfvpY6uCWaXpqV6ieLAu9WBcnTa7H4Z5RLK8I5t2FuOcqw==}
 
@@ -1240,6 +1276,14 @@ packages:
 
   '@types/ws@8.18.1':
     resolution: {integrity: sha512-ThVF6DCVhA8kUGy+aazFQ4kXQ7E1Ty7A3ypFOe0IcJV8O/M511G99AW24irKrW56Wt44yG9+ij8FaqoBGkuBXg==}
+
+  analytics-utils@1.0.14:
+    resolution: {integrity: sha512-9v0kPd8v0GuBvfQcg5BO48AElaEAr9IXMAfJWXYMAhrD3QprgozEIUgMp/de0vS136PUOBB+10XQH9eBgBmfMw==}
+    peerDependencies:
+      '@types/dlv': ^1.0.0
+
+  analytics@0.8.16:
+    resolution: {integrity: sha512-LEFQ47G9V1zVp9WIh2xhnbmSFEJq+WEzSv6voJ5uba88lefiIIYeG2nq87gFu83ocz1qtb9u7XgeaKKVBbbgWA==}
 
   ansi-regex@5.0.1:
     resolution: {integrity: sha512-quJQXlTSUGL2LH9SUXo8VwsY4soanhgo6LNSm84E1LBcE8s3O0wpdiRzyR9z/ZZJMlMWv37qOOb9pdJlMUEKFQ==}
@@ -1891,6 +1935,9 @@ packages:
     peerDependencies:
       react: ^19.0.0
 
+  react-ga4@2.1.0:
+    resolution: {integrity: sha512-ZKS7PGNFqqMd3PJ6+C2Jtz/o1iU9ggiy8Y8nUeksgVuvNISbmrQtJiZNvC/TjDsqD0QlU5Wkgs7i+w9+OjHhhQ==}
+
   react-hook-form@7.59.0:
     resolution: {integrity: sha512-kmkek2/8grqarTJExFNjy+RXDIP8yM+QTl3QL6m6Q8b2bih4ltmiXxH7T9n+yXNK477xPh5yZT/6vD8sYGzJTA==}
     engines: {node: '>=18.0.0'}
@@ -2226,6 +2273,42 @@ packages:
 snapshots:
 
   '@alloc/quick-lru@5.2.0': {}
+
+  '@analytics/cookie-utils@0.2.12':
+    dependencies:
+      '@analytics/global-storage-utils': 0.1.7
+
+  '@analytics/core@0.12.17(@types/dlv@1.1.5)':
+    dependencies:
+      '@analytics/global-storage-utils': 0.1.7
+      '@analytics/type-utils': 0.6.2
+      analytics-utils: 1.0.14(@types/dlv@1.1.5)
+    transitivePeerDependencies:
+      - '@types/dlv'
+
+  '@analytics/global-storage-utils@0.1.7':
+    dependencies:
+      '@analytics/type-utils': 0.6.2
+
+  '@analytics/google-analytics@1.1.0': {}
+
+  '@analytics/localstorage-utils@0.1.10':
+    dependencies:
+      '@analytics/global-storage-utils': 0.1.7
+
+  '@analytics/session-storage-utils@0.0.7':
+    dependencies:
+      '@analytics/global-storage-utils': 0.1.7
+
+  '@analytics/storage-utils@0.4.2':
+    dependencies:
+      '@analytics/cookie-utils': 0.2.12
+      '@analytics/global-storage-utils': 0.1.7
+      '@analytics/localstorage-utils': 0.1.10
+      '@analytics/session-storage-utils': 0.0.7
+      '@analytics/type-utils': 0.6.2
+
+  '@analytics/type-utils@0.6.2': {}
 
   '@auth/core@0.40.0(nodemailer@7.0.3)':
     dependencies:
@@ -3240,6 +3323,8 @@ snapshots:
 
   '@types/d3-timer@3.0.2': {}
 
+  '@types/dlv@1.1.5': {}
+
   '@types/node@22.0.0':
     dependencies:
       undici-types: 6.11.1
@@ -3259,6 +3344,19 @@ snapshots:
   '@types/ws@8.18.1':
     dependencies:
       '@types/node': 22.0.0
+
+  analytics-utils@1.0.14(@types/dlv@1.1.5):
+    dependencies:
+      '@analytics/type-utils': 0.6.2
+      '@types/dlv': 1.1.5
+      dlv: 1.1.3
+
+  analytics@0.8.16(@types/dlv@1.1.5):
+    dependencies:
+      '@analytics/core': 0.12.17(@types/dlv@1.1.5)
+      '@analytics/storage-utils': 0.4.2
+    transitivePeerDependencies:
+      - '@types/dlv'
 
   ansi-regex@5.0.1: {}
 
@@ -3838,6 +3936,8 @@ snapshots:
     dependencies:
       react: 19.0.0
       scheduler: 0.25.0
+
+  react-ga4@2.1.0: {}
 
   react-hook-form@7.59.0(react@19.0.0):
     dependencies:
