@@ -117,97 +117,6 @@ export function useCookieConsent() {
     }, 100)
   }
 
-  // Function to force activate Facebook Pixel immediately after consent
-  const forceActivateFacebookPixel = (pixelId: string) => {
-    if (typeof window === "undefined" || !pixelId) return
-
-    console.log(`Force activating Facebook Pixel: ${pixelId}`)
-
-    // Clear existing Facebook Pixel if any
-    delete window.fbq
-    delete window._fbq
-
-    // Remove existing Facebook scripts
-    const existingScripts = document.querySelectorAll(`script[src*="fbevents.js"]`)
-    existingScripts.forEach((script) => script.remove())
-
-    try {
-      // Initialize Facebook Pixel with the exact code and immediate activation
-      !((f: any, b: any, e: any, v: any, n: any, t: any, s: any) => {
-        if (f.fbq) return
-        n = f.fbq = (...args: any[]) => {
-          n.callMethod ? n.callMethod.apply(n, args) : n.queue.push(args)
-        }
-        if (!f._fbq) f._fbq = n
-        n.push = n
-        n.loaded = !0
-        n.version = "2.0"
-        n.queue = []
-        t = b.createElement(e)
-        t.async = !0
-        t.src = v
-
-        // Add comprehensive error handling
-        t.onerror = () => {
-          console.warn("Facebook Pixel script blocked or failed to load during force activation")
-          // Create a dummy fbq function to prevent errors
-          if (!f.fbq) {
-            f.fbq = (...args: any[]) => {
-              console.log("Facebook Pixel call (blocked):", args)
-            }
-          }
-        }
-
-        t.onload = () => {
-          console.log("Facebook Pixel script loaded successfully via force activation")
-
-          // Initialize immediately after script loads
-          setTimeout(() => {
-            try {
-              if (window.fbq) {
-                window.fbq("init", pixelId)
-                window.fbq("track", "PageView")
-
-                // Force additional events to ensure cookie creation
-                window.fbq("track", "ViewContent", {
-                  content_name: "Consent Granted",
-                  content_category: "User Interaction",
-                })
-
-                console.log(`Facebook Pixel force activated and tracking initiated with ID: ${pixelId}`)
-              }
-            } catch (error) {
-              console.warn("Facebook Pixel force activation error:", error)
-            }
-          }, 100)
-        }
-
-        s = b.getElementsByTagName(e)[0]
-        s.parentNode.insertBefore(t, s)
-      })(window, document, "script", "https://connect.facebook.net/en_US/fbevents.js")
-
-      // Additional immediate initialization attempt (in case script loads very fast)
-      setTimeout(() => {
-        try {
-          if (window.fbq) {
-            window.fbq("init", pixelId)
-            window.fbq("track", "PageView")
-            window.fbq("track", "ViewContent", {
-              content_name: "Consent Granted Immediate",
-              content_category: "User Interaction",
-            })
-            console.log(`Facebook Pixel immediate initialization completed for ID: ${pixelId}`)
-          }
-        } catch (error) {
-          // This is expected if script hasn't loaded yet
-          console.log("Facebook Pixel immediate initialization pending script load")
-        }
-      }, 50)
-    } catch (error) {
-      console.warn("Facebook Pixel force activation setup error:", error)
-    }
-  }
-
   // Function to force GA cookies creation and activation
   const forceActivateAnalytics = () => {
     if (typeof window === "undefined") return
@@ -358,31 +267,8 @@ export function useCookieConsent() {
       }, 200)
     }
 
-    // Force activate Facebook Pixel when marketing consent is granted
-    if (consent.marketing && (!previousConsent || !previousConsent.marketing)) {
-      setTimeout(async () => {
-        try {
-          // Get Facebook Pixel ID from settings
-          const response = await fetch("/api/admin/cookie-settings")
-          if (response.ok) {
-            const settings = await response.json()
-            if (settings.facebook_pixel_id) {
-              forceActivateFacebookPixel(settings.facebook_pixel_id)
-            } else {
-              // Fallback to hardcoded ID if settings fail
-              forceActivateFacebookPixel("1823195131746594")
-            }
-          } else {
-            // Fallback to hardcoded ID if settings fail
-            forceActivateFacebookPixel("1823195131746594")
-          }
-        } catch (error) {
-          console.warn("Could not activate Facebook Pixel:", error)
-          // Fallback to hardcoded ID
-          forceActivateFacebookPixel("1823195131746594")
-        }
-      }, 200)
-    }
+    // Facebook Pixel activation is now handled entirely by the FacebookPixel component
+    // No duplicate initialization here
   }
 
   const acceptAll = () => {

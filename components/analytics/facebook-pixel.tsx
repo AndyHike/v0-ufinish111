@@ -20,126 +20,144 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
   const [isInitialized, setIsInitialized] = useState(false)
   const initializationRef = useRef(false)
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const previousConsentRef = useRef<boolean>(false)
 
-  // Initialize Facebook Pixel only once when consent is granted
+  // Initialize Facebook Pixel when consent is granted
   useEffect(() => {
-    if (consent && pixelId && !initializationRef.current) {
-      initializationRef.current = true
-      console.log(`Facebook Pixel component initializing with ID: ${pixelId}`)
+    const consentChanged = previousConsentRef.current !== consent
+    previousConsentRef.current = consent
 
-      if (typeof window !== "undefined") {
-        // Check if fbq already exists (might be created by force activation)
-        if (window.fbq && window._fbq) {
-          console.log("Facebook Pixel already exists (likely from force activation), verifying initialization")
+    if (consent && pixelId && (!initializationRef.current || consentChanged)) {
+      // Reset states if consent just changed from false to true
+      if (consentChanged && consent) {
+        initializationRef.current = false
+        setIsInitialized(false)
+        setIsLoaded(false)
+        setIsBlocked(false)
+      }
+
+      if (!initializationRef.current) {
+        initializationRef.current = true
+        console.log(`Facebook Pixel initializing with ID: ${pixelId}`)
+
+        if (typeof window !== "undefined") {
+          // Clear any existing Facebook Pixel setup completely
+          delete window.fbq
+          delete window._fbq
+
+          // Remove existing Facebook scripts
+          const existingScripts = document.querySelectorAll(`script[src*="fbevents.js"]`)
+          existingScripts.forEach((script) => script.remove())
+
           try {
-            // Ensure it's properly initialized
-            window.fbq("init", pixelId)
-            window.fbq("track", "PageView")
-            setIsLoaded(true)
-            setIsInitialized(true)
-            console.log("Facebook Pixel verified and tracking PageView")
-            return
-          } catch (error) {
-            console.warn("Error with existing fbq, reinitializing:", error)
-          }
-        }
-
-        // Clear any existing Facebook Pixel setup
-        delete window.fbq
-        delete window._fbq
-
-        // Remove existing Facebook scripts
-        const existingScripts = document.querySelectorAll(`script[src*="fbevents.js"]`)
-        existingScripts.forEach((script) => script.remove())
-
-        try {
-          // Set timeout for fallback check
-          timeoutRef.current = setTimeout(() => {
-            if (!isLoaded && !isBlocked) {
-              console.warn("Facebook Pixel script didn't load within 5 seconds - may be blocked")
-              setIsBlocked(true)
-            }
-          }, 5000)
-
-          // Use the exact Facebook Pixel code provided with error handling
-          !((f: any, b: any, e: any, v: any, n: any, t: any, s: any) => {
-            if (f.fbq) return
-            n = f.fbq = (...args: any[]) => {
-              n.callMethod ? n.callMethod.apply(n, args) : n.queue.push(args)
-            }
-            if (!f._fbq) f._fbq = n
-            n.push = n
-            n.loaded = !0
-            n.version = "2.0"
-            n.queue = []
-            t = b.createElement(e)
-            t.async = !0
-            t.src = v
-
-            // Add error handling for script loading
-            t.onerror = () => {
-              console.warn("Facebook Pixel script blocked by ad blocker or failed to load")
-              setIsBlocked(true)
-
-              // Clear timeout since we got an error
-              if (timeoutRef.current) {
-                clearTimeout(timeoutRef.current)
-                timeoutRef.current = null
+            // Set timeout for fallback check
+            timeoutRef.current = setTimeout(() => {
+              if (!isLoaded && !isBlocked) {
+                console.warn("Facebook Pixel script didn't load within 5 seconds - may be blocked")
+                setIsBlocked(true)
               }
+            }, 5000)
 
-              // Create a dummy fbq function to prevent errors
-              if (!f.fbq) {
-                f.fbq = (...args: any[]) => {
-                  console.log("Facebook Pixel call (blocked):", args)
+            // Use the exact Facebook Pixel code provided with immediate activation
+            !((f: any, b: any, e: any, v: any, n: any, t: any, s: any) => {
+              if (f.fbq) return
+              n = f.fbq = (...args: any[]) => {
+                n.callMethod ? n.callMethod.apply(n, args) : n.queue.push(args)
+              }
+              if (!f._fbq) f._fbq = n
+              n.push = n
+              n.loaded = !0
+              n.version = "2.0"
+              n.queue = []
+              t = b.createElement(e)
+              t.async = !0
+              t.src = v
+
+              // Add error handling for script loading
+              t.onerror = () => {
+                console.warn("Facebook Pixel script blocked by ad blocker or failed to load")
+                setIsBlocked(true)
+
+                // Clear timeout since we got an error
+                if (timeoutRef.current) {
+                  clearTimeout(timeoutRef.current)
+                  timeoutRef.current = null
                 }
-              }
-            }
 
-            t.onload = () => {
-              console.log("Facebook Pixel script loaded successfully")
-              setIsLoaded(true)
-              setIsBlocked(false)
-
-              // Clear timeout since script loaded successfully
-              if (timeoutRef.current) {
-                clearTimeout(timeoutRef.current)
-                timeoutRef.current = null
-              }
-
-              // Initialize pixel after script loads with enhanced tracking
-              setTimeout(() => {
-                try {
-                  if (window.fbq && !isInitialized) {
-                    window.fbq("init", pixelId)
-                    window.fbq("track", "PageView")
-
-                    // Add additional tracking to ensure cookie creation
-                    window.fbq("track", "ViewContent", {
-                      content_name: "Initial Page Load",
-                      content_category: "Website Navigation",
-                    })
-
-                    setIsInitialized(true)
-                    console.log(`Facebook Pixel initialized successfully with enhanced tracking for ID: ${pixelId}`)
+                // Create a dummy fbq function to prevent errors
+                if (!f.fbq) {
+                  f.fbq = (...args: any[]) => {
+                    console.log("Facebook Pixel call (blocked):", args)
                   }
-                } catch (error) {
-                  console.warn("Facebook Pixel initialization error:", error)
-                  setIsBlocked(true)
                 }
-              }, 100)
+              }
+
+              t.onload = () => {
+                console.log("Facebook Pixel script loaded successfully")
+                setIsLoaded(true)
+                setIsBlocked(false)
+
+                // Clear timeout since script loaded successfully
+                if (timeoutRef.current) {
+                  clearTimeout(timeoutRef.current)
+                  timeoutRef.current = null
+                }
+
+                // Initialize pixel immediately after script loads
+                setTimeout(() => {
+                  try {
+                    if (window.fbq && !isInitialized) {
+                      // Initialize only once
+                      window.fbq("init", pixelId)
+                      window.fbq("track", "PageView")
+
+                      // Add additional tracking to ensure cookie creation
+                      window.fbq("track", "ViewContent", {
+                        content_name: "Consent Granted",
+                        content_category: "User Interaction",
+                      })
+
+                      setIsInitialized(true)
+                      console.log(`Facebook Pixel initialized successfully with ID: ${pixelId}`)
+                    }
+                  } catch (error) {
+                    console.warn("Facebook Pixel initialization error:", error)
+                    setIsBlocked(true)
+                  }
+                }, 100)
+              }
+
+              s = b.getElementsByTagName(e)[0]
+              s.parentNode.insertBefore(t, s)
+            })(window, document, "script", "https://connect.facebook.net/en_US/fbevents.js")
+
+            // Immediate initialization attempt (for very fast loading)
+            setTimeout(() => {
+              try {
+                if (window.fbq && !isInitialized) {
+                  window.fbq("init", pixelId)
+                  window.fbq("track", "PageView")
+                  window.fbq("track", "ViewContent", {
+                    content_name: "Immediate Consent",
+                    content_category: "User Interaction",
+                  })
+                  setIsInitialized(true)
+                  console.log(`Facebook Pixel immediate initialization completed for ID: ${pixelId}`)
+                }
+              } catch (error) {
+                // This is expected if script hasn't loaded yet
+                console.log("Facebook Pixel immediate initialization pending script load")
+              }
+            }, 50)
+          } catch (error) {
+            console.warn("Facebook Pixel setup error:", error)
+            setIsBlocked(true)
+
+            // Clear timeout on error
+            if (timeoutRef.current) {
+              clearTimeout(timeoutRef.current)
+              timeoutRef.current = null
             }
-
-            s = b.getElementsByTagName(e)[0]
-            s.parentNode.insertBefore(t, s)
-          })(window, document, "script", "https://connect.facebook.net/en_US/fbevents.js")
-        } catch (error) {
-          console.warn("Facebook Pixel setup error:", error)
-          setIsBlocked(true)
-
-          // Clear timeout on error
-          if (timeoutRef.current) {
-            clearTimeout(timeoutRef.current)
-            timeoutRef.current = null
           }
         }
       }
