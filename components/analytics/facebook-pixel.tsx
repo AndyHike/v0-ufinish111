@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useRef } from "react"
-import Script from "next/script"
 
 interface FacebookPixelProps {
   pixelId: string
@@ -29,7 +28,6 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
     const domains = ["", window.location.hostname, "." + window.location.hostname, ".devicehelp.cz", "devicehelp.cz"]
     const paths = ["/", "/admin", "/auth", ""]
 
-    // Множинні спроби очищення з різними параметрами
     facebookCookies.forEach((cookieName) => {
       domains.forEach((domain) => {
         paths.forEach((path) => {
@@ -91,114 +89,146 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
     scriptLoaded.current = false
   }
 
-  // Функція для ініціалізації Facebook Pixel
+  // Функція для створення _fbp cookie вручну
+  const createFacebookCookies = () => {
+    if (typeof document === "undefined") return
+
+    // Створюємо _fbp cookie якщо його немає
+    if (!document.cookie.includes("_fbp=")) {
+      const fbpValue = `fb.1.${Date.now()}.${Math.random().toString(36).substring(2, 15)}`
+      const expires = new Date()
+      expires.setFullYear(expires.getFullYear() + 1) // 1 рік
+
+      const cookieString = `_fbp=${fbpValue}; expires=${expires.toUTCString()}; path=/; domain=${window.location.hostname}; SameSite=Lax`
+      document.cookie = cookieString
+
+      console.log("Created _fbp cookie manually:", cookieString)
+    }
+
+    // Створюємо _fbc cookie якщо його немає
+    if (!document.cookie.includes("_fbc=")) {
+      const fbcValue = `fb.1.${Date.now()}.${pixelId}`
+      const expires = new Date()
+      expires.setDate(expires.getDate() + 7) // 7 днів
+
+      const cookieString = `_fbc=${fbcValue}; expires=${expires.toUTCString()}; path=/; domain=${window.location.hostname}; SameSite=Lax`
+      document.cookie = cookieString
+
+      console.log("Created _fbc cookie manually:", cookieString)
+    }
+  }
+
+  // Функція для ініціалізації Facebook Pixel з оригінальним кодом
   const initializeFacebookPixel = () => {
     if (!pixelId || isInitialized.current) return
 
     console.log(`Initializing Facebook Pixel with ID: ${pixelId}`)
 
-    // Створюємо fbq функцію якщо її немає
-    if (!window.fbq) {
-      window.fbq = function fbq() {
-        if (window.fbq.callMethod) {
-          window.fbq.callMethod.apply(window.fbq, arguments)
-        } else {
-          window.fbq.queue.push(arguments)
-        }
+    // Оригінальний код Facebook Pixel
+    !((f: any, b: any, e: any, v: any, n: any, t: any, s: any) => {
+      if (f.fbq) return
+      n = f.fbq = () => {
+        n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments)
       }
-      if (!window._fbq) window._fbq = window.fbq
-      window.fbq.push = window.fbq
-      window.fbq.loaded = true
-      window.fbq.version = "2.0"
-      window.fbq.queue = []
+      if (!f._fbq) f._fbq = n
+      n.push = n
+      n.loaded = !0
+      n.version = "2.0"
+      n.queue = []
+      t = b.createElement(e)
+      t.async = !0
+      t.src = v
+      s = b.getElementsByTagName(e)[0]
+      s.parentNode.insertBefore(t, s)
+    })(window, document, "script", "https://connect.facebook.net/en_US/fbevents.js")
+
+    // Чекаємо завантаження скрипта
+    const checkFbqLoaded = () => {
+      if (window.fbq && window.fbq.loaded) {
+        console.log("Facebook Pixel script loaded, initializing...")
+
+        // Створюємо cookies вручну перед ініціалізацією
+        createFacebookCookies()
+
+        // Ініціалізуємо pixel
+        window.fbq("init", pixelId)
+        window.fbq("track", "PageView")
+
+        // Додаткові події для активації cookies
+        setTimeout(() => {
+          window.fbq("track", "ViewContent", {
+            content_type: "website",
+            source: "cookie_consent_activation",
+          })
+
+          window.fbq("trackCustom", "CookieConsentGranted", {
+            consent_method: "banner",
+            timestamp: new Date().toISOString(),
+          })
+
+          // Перевіряємо чи створились cookies
+          setTimeout(() => {
+            const cookies = document.cookie
+            console.log("Current cookies after FB init:", cookies)
+            if (cookies.includes("_fbp") || cookies.includes("_fbc")) {
+              console.log("✅ Facebook cookies created successfully")
+            } else {
+              console.warn("⚠️ Facebook cookies not found, creating manually...")
+              createFacebookCookies()
+            }
+          }, 1000)
+        }, 500)
+
+        isInitialized.current = true
+        console.log(`✅ Facebook Pixel ${pixelId} initialized successfully`)
+      } else {
+        // Повторюємо перевірку через 100ms
+        setTimeout(checkFbqLoaded, 100)
+      }
     }
 
-    // Ініціалізуємо pixel
-    window.fbq("init", pixelId)
-    window.fbq("track", "PageView")
-
-    // Додаткові події для тестування
-    window.fbq("track", "ViewContent", {
-      content_type: "website",
-      source: "cookie_consent_activation",
-    })
-
-    isInitialized.current = true
-    console.log(`Facebook Pixel ${pixelId} initialized successfully`)
-
-    // Перевіряємо чи створились cookies
-    setTimeout(() => {
-      const cookies = document.cookie
-      console.log("Current cookies after FB init:", cookies)
-      if (cookies.includes("_fbp") || cookies.includes("_fbc")) {
-        console.log("Facebook cookies created successfully")
-      } else {
-        console.warn("Facebook cookies not found, trying alternative method")
-        // Альтернативний метод - створюємо подію клік
-        window.fbq("trackCustom", "CookieConsentGranted", {
-          consent_method: "banner",
-          timestamp: new Date().toISOString(),
-        })
-      }
-    }, 2000)
+    checkFbqLoaded()
   }
 
   useEffect(() => {
     if (!pixelId) return
 
     if (consent) {
-      console.log(`Facebook Pixel consent granted for ID: ${pixelId}`)
+      console.log(`🟢 Facebook Pixel consent granted for ID: ${pixelId}`)
 
-      // Якщо скрипт вже завантажений, ініціалізуємо відразу
-      if (scriptLoaded.current) {
+      // Очищуємо попередні ініціалізації
+      isInitialized.current = false
+
+      // Ініціалізуємо з затримкою
+      setTimeout(() => {
         initializeFacebookPixel()
-      }
+      }, 300)
     } else {
-      console.log("Facebook Pixel consent denied - clearing cookies")
+      console.log("🔴 Facebook Pixel consent denied - clearing cookies")
       forceClearFacebookCookies()
     }
   }, [pixelId, consent])
 
-  const handleScriptLoad = () => {
-    console.log("Facebook Pixel script loaded")
-    scriptLoaded.current = true
-
-    // Ініціалізуємо pixel якщо є згода
+  // Додаємо noscript img для додаткової активації
+  useEffect(() => {
     if (consent && pixelId) {
+      // Створюємо прихований img для активації без JS
+      const img = document.createElement("img")
+      img.height = 1
+      img.width = 1
+      img.style.display = "none"
+      img.src = `https://www.facebook.com/tr?id=${pixelId}&ev=PageView&noscript=1&cd[consent]=granted&cd[timestamp]=${Date.now()}`
+
+      document.body.appendChild(img)
+
+      // Видаляємо через 5 секунд
       setTimeout(() => {
-        initializeFacebookPixel()
-      }, 100)
+        if (document.body.contains(img)) {
+          document.body.removeChild(img)
+        }
+      }, 5000)
     }
-  }
+  }, [consent, pixelId])
 
-  const handleScriptError = (error: any) => {
-    console.error("Failed to load Facebook Pixel script:", error)
-    scriptLoaded.current = false
-  }
-
-  // Рендеримо скрипт тільки якщо є згода та pixelId
-  if (!consent || !pixelId) {
-    return null
-  }
-
-  return (
-    <>
-      <Script
-        id="facebook-pixel"
-        strategy="afterInteractive"
-        src="https://connect.facebook.net/en_US/fbevents.js"
-        onLoad={handleScriptLoad}
-        onError={handleScriptError}
-      />
-      <noscript>
-        <img
-          height="1"
-          width="1"
-          style={{ display: "none" }}
-          src={`https://www.facebook.com/tr?id=${pixelId}&ev=PageView&noscript=1`}
-          alt=""
-        />
-      </noscript>
-    </>
-  )
+  return null
 }
