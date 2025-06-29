@@ -18,6 +18,7 @@ interface AnalyticsSettings {
 export function AnalyticsProvider() {
   const [settings, setSettings] = useState<AnalyticsSettings | null>(null)
   const [isLoaded, setIsLoaded] = useState(false)
+  const [settingsError, setSettingsError] = useState<string | null>(null)
   const { consent, hasInteracted } = useCookieConsent()
 
   useEffect(() => {
@@ -25,20 +26,27 @@ export function AnalyticsProvider() {
       try {
         const response = await fetch("/api/admin/cookie-settings")
 
-        if (response.ok) {
-          const data = await response.json()
-          setSettings(data)
-          console.log("Analytics settings loaded successfully")
-        } else {
-          throw new Error("Failed to fetch settings")
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`)
         }
+
+        const data = await response.json()
+        setSettings(data)
+        setSettingsError(null)
+        console.log("📊 Analytics settings loaded:", {
+          ga_id: data.google_analytics_id ? "✅ Set" : "❌ Not set",
+          gtm_id: data.google_tag_manager_id ? "✅ Set" : "❌ Not set",
+          fb_pixel_id: data.facebook_pixel_id ? "✅ Set" : "❌ Not set",
+        })
       } catch (error) {
-        console.warn("Using fallback settings:", error)
-        // Fallback з вашим Facebook Pixel ID
+        console.warn("⚠️ Failed to fetch analytics settings:", error)
+        setSettingsError(error instanceof Error ? error.message : "Unknown error")
+
+        // Set default settings with your Facebook Pixel ID
         setSettings({
           google_analytics_id: "",
           google_tag_manager_id: "",
-          facebook_pixel_id: "1823195131746594",
+          facebook_pixel_id: "1823195131746594", // Your Facebook Pixel ID
           cookie_banner_enabled: true,
           analytics_enabled: true,
           marketing_enabled: true,
@@ -51,18 +59,45 @@ export function AnalyticsProvider() {
     fetchSettings()
   }, [])
 
-  // Логування для дебагу
+  // Log consent changes for debugging in real-time
   useEffect(() => {
-    if (hasInteracted) {
-      console.log("Analytics Provider - Consent Status:", {
-        analytics: consent.analytics,
-        marketing: consent.marketing,
-        fbPixelId: settings?.facebook_pixel_id || "Not loaded",
+    if (hasInteracted && process.env.NODE_ENV === "development") {
+      console.log("🔄 Analytics consent status changed:", {
+        analytics: consent.analytics ? "✅ Granted" : "❌ Denied",
+        marketing: consent.marketing ? "✅ Granted" : "❌ Denied",
+        settings: settings
+          ? {
+              ga_id: settings.google_analytics_id ? "✅ Set" : "❌ Not set",
+              gtm_id: settings.google_tag_manager_id ? "✅ Set" : "❌ Not set",
+              fb_pixel_id: settings.facebook_pixel_id ? "✅ Set" : "❌ Not set",
+            }
+          : "⏳ Loading...",
+        settingsError: settingsError || "None",
       })
     }
-  }, [consent, hasInteracted, settings])
+  }, [consent, hasInteracted, settings, settingsError])
 
-  if (!isLoaded || !settings) {
+  // Log when analytics services are being loaded in real-time
+  useEffect(() => {
+    if (isLoaded && settings && process.env.NODE_ENV === "development") {
+      const services = []
+      if (settings.google_analytics_id && consent.analytics) services.push("Google Analytics")
+      if (settings.google_tag_manager_id && consent.analytics) services.push("Google Tag Manager")
+      if (settings.facebook_pixel_id && consent.marketing) services.push("Facebook Pixel")
+
+      if (services.length > 0) {
+        console.log(`🚀 Loading analytics services in real-time: ${services.join(", ")}`)
+      } else {
+        console.log("⏸️ No analytics services to load (consent not granted or IDs not set)")
+      }
+    }
+  }, [isLoaded, settings, consent])
+
+  if (!isLoaded) {
+    return null
+  }
+
+  if (!settings) {
     return null
   }
 

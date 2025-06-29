@@ -18,7 +18,161 @@ export function useCookieConsent() {
     consentDate: null,
   })
 
-  // Простіше очищення cookies
+  // Function to force GA cookies creation and activation
+  const forceActivateAnalytics = () => {
+    if (typeof window === "undefined") return
+
+    console.log("🚀 Force activating Google Analytics...")
+
+    const gaId = "G-WZ0WCHZ3XT"
+
+    // Completely clear previous GA resources
+    const existingScripts = document.querySelectorAll(`script[src*="googletagmanager.com"]`)
+    existingScripts.forEach((script) => script.remove())
+
+    // Clear global variables
+    delete window.gtag
+    delete window.dataLayer
+
+    // Create new dataLayer
+    window.dataLayer = []
+
+    // Create gtag function
+    window.gtag = function gtag() {
+      window.dataLayer.push(arguments)
+    }
+
+    // Set time
+    window.gtag("js", new Date())
+
+    // Set consent as granted
+    window.gtag("consent", "default", {
+      analytics_storage: "granted",
+      ad_storage: "denied",
+      functionality_storage: "granted",
+      personalization_storage: "granted",
+      security_storage: "granted",
+    })
+
+    // Create new script
+    const script = document.createElement("script")
+    script.async = true
+    script.src = `https://www.googletagmanager.com/gtag/js?id=${gaId}&t=${Date.now()}`
+
+    script.onload = () => {
+      // Configure GA4
+      window.gtag("config", gaId, {
+        send_page_view: true,
+        page_title: document.title,
+        page_location: window.location.href,
+        transport_type: "beacon",
+        cookie_domain: window.location.hostname,
+        cookie_flags: "SameSite=Lax",
+      })
+
+      // Send events for activation
+      setTimeout(() => {
+        window.gtag("event", "page_view", {
+          page_title: document.title,
+          page_location: window.location.href,
+          send_to: gaId,
+          transport_type: "beacon",
+        })
+
+        window.gtag("event", "analytics_force_activated", {
+          event_category: "consent",
+          event_label: "force_activation_without_reload",
+          send_to: gaId,
+          transport_type: "beacon",
+        })
+
+        // Force cookie creation through direct GA call
+        window.gtag("event", "user_engagement", {
+          engagement_time_msec: 1,
+          send_to: gaId,
+          transport_type: "beacon",
+        })
+
+        console.log("✅ Google Analytics force activation completed")
+      }, 500)
+    }
+
+    script.onerror = () => {
+      console.warn("Google Analytics script failed to load")
+    }
+
+    document.head.appendChild(script)
+
+    // Additionally force cookie creation through iframe
+    const iframe = document.createElement("iframe")
+    iframe.style.display = "none"
+    iframe.src = `https://www.google-analytics.com/analytics.js?t=${Date.now()}`
+    document.body.appendChild(iframe)
+    setTimeout(() => {
+      document.body.removeChild(iframe)
+    }, 1000)
+  }
+
+  useEffect(() => {
+    const stored = localStorage.getItem(COOKIE_CONSENT_KEY)
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored)
+        const consentDate = new Date(parsed.consentDate)
+        const now = new Date()
+        const daysDiff = (now.getTime() - consentDate.getTime()) / (1000 * 3600 * 24)
+
+        if (daysDiff < CONSENT_EXPIRY_DAYS) {
+          setState({
+            consent: parsed.consent,
+            showBanner: false,
+            hasInteracted: true,
+            consentDate: parsed.consentDate,
+          })
+        } else {
+          setState((prev) => ({ ...prev, showBanner: true }))
+        }
+      } catch (error) {
+        setState((prev) => ({ ...prev, showBanner: true }))
+      }
+    } else {
+      setState((prev) => ({ ...prev, showBanner: true }))
+    }
+  }, [])
+
+  const saveConsent = (consent: CookieConsent, previousConsent?: CookieConsent) => {
+    const consentData = {
+      consent,
+      consentDate: new Date().toISOString(),
+    }
+    localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(consentData))
+
+    // Простіше очищення cookies при відкликанні згоди
+    if (previousConsent) {
+      if (previousConsent.analytics && !consent.analytics) {
+        clearCookies("analytics")
+      }
+      if (previousConsent.marketing && !consent.marketing) {
+        clearCookies("marketing")
+      }
+    }
+
+    setState({
+      consent,
+      showBanner: false,
+      hasInteracted: true,
+      consentDate: consentData.consentDate,
+    })
+
+    // Простіша активація GA
+    if (consent.analytics && (!previousConsent || !previousConsent.analytics)) {
+      setTimeout(activateGA, 100)
+    }
+
+    console.log("Consent saved:", consent)
+  }
+
+  // Додайте цю просту функцію очищення cookies:
   const clearCookies = (category: "analytics" | "marketing") => {
     if (typeof document === "undefined") return
 
@@ -33,7 +187,7 @@ export function useCookieConsent() {
     console.log(`Cleared ${category} cookies`)
   }
 
-  // Простіша активація GA
+  // Додайте цю просту функцію активації GA:
   const activateGA = () => {
     if (typeof window === "undefined") return
 
@@ -67,66 +221,8 @@ export function useCookieConsent() {
     document.head.appendChild(script)
   }
 
-  useEffect(() => {
-    const stored = localStorage.getItem(COOKIE_CONSENT_KEY)
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored)
-        const consentDate = new Date(parsed.consentDate)
-        const now = new Date()
-        const daysDiff = (now.getTime() - consentDate.getTime()) / (1000 * 3600 * 24)
-
-        if (daysDiff < CONSENT_EXPIRY_DAYS) {
-          setState({
-            consent: parsed.consent,
-            showBanner: false,
-            hasInteracted: true,
-            consentDate: parsed.consentDate,
-          })
-        } else {
-          setState((prev) => ({ ...prev, showBanner: true }))
-        }
-      } catch {
-        setState((prev) => ({ ...prev, showBanner: true }))
-      }
-    } else {
-      setState((prev) => ({ ...prev, showBanner: true }))
-    }
-  }, [])
-
-  const saveConsent = (consent: CookieConsent, previousConsent?: CookieConsent) => {
-    const consentData = {
-      consent,
-      consentDate: new Date().toISOString(),
-    }
-    localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(consentData))
-
-    // Обробляємо зміни
-    if (previousConsent) {
-      if (previousConsent.analytics && !consent.analytics) {
-        clearCookies("analytics")
-      }
-      if (previousConsent.marketing && !consent.marketing) {
-        clearCookies("marketing")
-      }
-    }
-
-    setState({
-      consent,
-      showBanner: false,
-      hasInteracted: true,
-      consentDate: consentData.consentDate,
-    })
-
-    // Активуємо сервіси
-    if (consent.analytics && (!previousConsent || !previousConsent.analytics)) {
-      setTimeout(activateGA, 100)
-    }
-
-    console.log("Consent saved:", consent)
-  }
-
   const acceptAll = () => {
+    console.log("🎯 Accept All clicked")
     const previousConsent = state.consent
     saveConsent(
       {
@@ -139,6 +235,7 @@ export function useCookieConsent() {
   }
 
   const acceptNecessary = () => {
+    console.log("🎯 Accept Necessary clicked")
     const previousConsent = state.consent
     saveConsent(
       {
@@ -161,6 +258,7 @@ export function useCookieConsent() {
   }
 
   const saveCurrentSettings = () => {
+    console.log("💾 Save Current Settings clicked")
     const previousConsent = { ...state.consent }
     saveConsent(state.consent, previousConsent)
   }
