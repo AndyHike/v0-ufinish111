@@ -59,23 +59,35 @@ export function useCookieConsent() {
       consentDate: consentData.consentDate,
     })
 
-    // Не відправляємо автоматично події до GA - це буде зроблено в компоненті GoogleAnalytics
+    // Додаємо невелику затримку для того, щоб React встиг оновити стан
+    setTimeout(() => {
+      // Тригеримо подію для оновлення аналітики
+      window.dispatchEvent(
+        new CustomEvent("cookieConsentChanged", {
+          detail: { consent },
+        }),
+      )
+
+      console.log("Cookie consent saved:", consent)
+    }, 50)
   }
 
   const acceptAll = () => {
-    saveConsent({
+    const newConsent = {
       necessary: true,
       analytics: true,
       marketing: true,
-    })
+    }
+    saveConsent(newConsent)
   }
 
   const acceptNecessary = () => {
-    saveConsent({
+    const newConsent = {
       necessary: true,
       analytics: false,
       marketing: false,
-    })
+    }
+    saveConsent(newConsent)
   }
 
   const updateCategory = (category: keyof CookieConsent, value: boolean) => {
@@ -109,6 +121,21 @@ export function useCookieConsent() {
       hasInteracted: false,
       consentDate: null,
     })
+
+    // Тригеримо подію для оновлення аналітики
+    setTimeout(() => {
+      window.dispatchEvent(
+        new CustomEvent("cookieConsentChanged", {
+          detail: {
+            consent: {
+              necessary: true,
+              analytics: false,
+              marketing: false,
+            },
+          },
+        }),
+      )
+    }, 50)
   }
 
   return {
