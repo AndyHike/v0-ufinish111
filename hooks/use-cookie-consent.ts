@@ -109,6 +109,85 @@ export function useCookieConsent() {
     }, 100)
   }
 
+  // Функція для миттєвої активації аналітики
+  const activateAnalyticsImmediately = () => {
+    if (typeof window === "undefined") return
+
+    // Створюємо або перезавантажуємо Google Analytics скрипт
+    const gaId = "G-WZ0WCHZ3XT" // Ваш GA ID
+
+    // Видаляємо старий скрипт якщо існує
+    const existingScript = document.querySelector(`script[src*="gtag/js?id=${gaId}"]`)
+    if (existingScript) {
+      existingScript.remove()
+    }
+
+    // Очищуємо dataLayer
+    window.dataLayer = []
+
+    // Створюємо новий скрипт
+    const script = document.createElement("script")
+    script.async = true
+    script.src = `https://www.googletagmanager.com/gtag/js?id=${gaId}`
+
+    script.onload = () => {
+      // Ініціалізуємо gtag
+      window.gtag = function gtag() {
+        window.dataLayer.push(arguments)
+      }
+
+      window.gtag("js", new Date())
+
+      // Встановлюємо consent як granted
+      window.gtag("consent", "default", {
+        analytics_storage: "granted",
+        ad_storage: "denied",
+        functionality_storage: "granted",
+        personalization_storage: "granted",
+        security_storage: "granted",
+      })
+
+      // Конфігуруємо GA4
+      window.gtag("config", gaId, {
+        send_page_view: true,
+        page_title: document.title,
+        page_location: window.location.href,
+        transport_type: "beacon",
+      })
+
+      // Відправляємо початкові події
+      setTimeout(() => {
+        window.gtag("event", "page_view", {
+          page_title: document.title,
+          page_location: window.location.href,
+          send_to: gaId,
+          transport_type: "beacon",
+        })
+
+        window.gtag("event", "analytics_activated_immediate", {
+          event_category: "consent",
+          event_label: "immediate_activation_without_reload",
+          send_to: gaId,
+          transport_type: "beacon",
+        })
+
+        window.gtag("event", "user_engagement", {
+          engagement_time_msec: 1000,
+          send_to: gaId,
+          transport_type: "beacon",
+        })
+
+        console.log("Google Analytics activated immediately without page reload")
+      }, 500)
+    }
+
+    script.onerror = () => {
+      console.warn("Failed to load Google Analytics script")
+    }
+
+    document.head.appendChild(script)
+  }
+
   useEffect(() => {
     const stored = localStorage.getItem(COOKIE_CONSENT_KEY)
     if (stored) {
@@ -160,41 +239,42 @@ export function useCookieConsent() {
       consentDate: consentData.consentDate,
     })
 
-    // Активація аналітики при згоді
-    if (consent.analytics && typeof window !== "undefined") {
-      setTimeout(() => {
-        if (window.gtag) {
-          window.gtag("consent", "update", {
-            analytics_storage: "granted",
-          })
+    // Миттєва активація аналітики при згоді
+    if (consent.analytics) {
+      // Якщо раніше не було згоди, або якщо це нова згода
+      if (!previousConsent?.analytics) {
+        activateAnalyticsImmediately()
+      } else if (typeof window !== "undefined" && window.gtag) {
+        // Якщо gtag вже існує, просто оновлюємо consent
+        window.gtag("consent", "update", {
+          analytics_storage: "granted",
+        })
 
-          window.gtag("event", "page_view", {
-            page_title: document.title,
-            page_location: window.location.href,
-            transport_type: "beacon",
-          })
+        window.gtag("event", "page_view", {
+          page_title: document.title,
+          page_location: window.location.href,
+          transport_type: "beacon",
+        })
 
-          window.gtag("event", "consent_granted_immediate", {
-            event_category: "consent",
-            event_label: "user_accepted_analytics",
-            transport_type: "beacon",
-          })
-
-          window.gtag("event", "user_engagement", {
-            engagement_time_msec: 1000,
-            transport_type: "beacon",
-          })
-        }
-      }, 100)
+        window.gtag("event", "consent_granted_immediate", {
+          event_category: "consent",
+          event_label: "user_accepted_analytics",
+          transport_type: "beacon",
+        })
+      }
     }
   }
 
   const acceptAll = () => {
-    saveConsent({
-      necessary: true,
-      analytics: true,
-      marketing: true,
-    })
+    const previousConsent = state.consent
+    saveConsent(
+      {
+        necessary: true,
+        analytics: true,
+        marketing: true,
+      },
+      previousConsent,
+    )
   }
 
   const acceptNecessary = () => {

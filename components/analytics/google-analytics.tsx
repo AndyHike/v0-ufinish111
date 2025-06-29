@@ -19,9 +19,9 @@ export function GoogleAnalytics({ gaId, consent }: GoogleAnalyticsProps) {
   const gaInitializedRef = useRef(false)
   const consentProcessedRef = useRef(false)
 
-  // Функція для ініціалізації GA тільки з consent
+  // Функція для повної ініціалізації GA
   const initializeGA = () => {
-    if (typeof window === "undefined" || !gaId || !consent) return
+    if (typeof window === "undefined" || !gaId) return
 
     // Ініціалізуємо dataLayer
     window.dataLayer = window.dataLayer || []
@@ -34,7 +34,7 @@ export function GoogleAnalytics({ gaId, consent }: GoogleAnalyticsProps) {
     // Встановлюємо час
     window.gtag("js", new Date())
 
-    // Налаштовуємо consent - тільки якщо є згода
+    // Налаштовуємо consent
     window.gtag("consent", "default", {
       analytics_storage: consent ? "granted" : "denied",
       ad_storage: "denied",
@@ -43,7 +43,7 @@ export function GoogleAnalytics({ gaId, consent }: GoogleAnalyticsProps) {
       security_storage: "granted",
     })
 
-    // Конфігуруємо GA4 тільки якщо є згода
+    // Конфігуруємо GA4 якщо є згода
     if (consent) {
       window.gtag("config", gaId, {
         send_page_view: true,
@@ -56,16 +56,25 @@ export function GoogleAnalytics({ gaId, consent }: GoogleAnalyticsProps) {
     gaInitializedRef.current = true
   }
 
-  // Функція для активації аналітики після згоди
+  // Функція для активації аналітики
   const activateAnalytics = () => {
-    if (typeof window === "undefined" || !window.gtag || !gaId) return
+    if (typeof window === "undefined" || !gaId) return
+
+    // Якщо gtag не існує, створюємо його
+    if (!window.gtag) {
+      window.dataLayer = window.dataLayer || []
+      window.gtag = function gtag() {
+        window.dataLayer.push(arguments)
+      }
+      window.gtag("js", new Date())
+    }
 
     // Оновлюємо consent
     window.gtag("consent", "update", {
       analytics_storage: "granted",
     })
 
-    // Конфігуруємо GA4 якщо ще не було зконфігуровано
+    // Конфігуруємо GA4
     window.gtag("config", gaId, {
       send_page_view: true,
       page_title: document.title,
@@ -73,35 +82,35 @@ export function GoogleAnalytics({ gaId, consent }: GoogleAnalyticsProps) {
       transport_type: "beacon",
     })
 
-    // Відправляємо page_view одразу
-    window.gtag("event", "page_view", {
-      page_title: document.title,
-      page_location: window.location.href,
-      send_to: gaId,
-      transport_type: "beacon",
-    })
+    // Відправляємо події
+    setTimeout(() => {
+      window.gtag("event", "page_view", {
+        page_title: document.title,
+        page_location: window.location.href,
+        send_to: gaId,
+        transport_type: "beacon",
+      })
 
-    // Відправляємо подію про активацію
-    window.gtag("event", "analytics_activated", {
-      event_category: "consent",
-      event_label: "immediate_activation",
-      send_to: gaId,
-      transport_type: "beacon",
-    })
+      window.gtag("event", "analytics_activated", {
+        event_category: "consent",
+        event_label: "immediate_activation",
+        send_to: gaId,
+        transport_type: "beacon",
+      })
 
-    // Відправляємо додаткову подію для впевненості
-    window.gtag("event", "user_engagement", {
-      engagement_time_msec: 1000,
-      send_to: gaId,
-      transport_type: "beacon",
-    })
+      window.gtag("event", "user_engagement", {
+        engagement_time_msec: 1000,
+        send_to: gaId,
+        transport_type: "beacon",
+      })
+    }, 200)
 
     consentProcessedRef.current = true
   }
 
-  // Завантаження скрипта тільки якщо є згода
+  // Завантаження скрипта
   useEffect(() => {
-    if (!gaId || typeof window === "undefined" || !consent) return
+    if (!gaId || typeof window === "undefined") return
 
     const loadScript = async () => {
       // Перевіряємо чи скрипт вже існує
@@ -109,6 +118,9 @@ export function GoogleAnalytics({ gaId, consent }: GoogleAnalyticsProps) {
       if (existingScript || scriptLoadedRef.current) {
         if (!gaInitializedRef.current) {
           initializeGA()
+        }
+        if (consent && !consentProcessedRef.current) {
+          activateAnalytics()
         }
         return
       }
@@ -128,16 +140,21 @@ export function GoogleAnalytics({ gaId, consent }: GoogleAnalyticsProps) {
           if (consent && !consentProcessedRef.current) {
             setTimeout(() => {
               activateAnalytics()
-            }, 500)
+            }, 300)
           }
         }, 100)
+      }
+
+      script.onerror = () => {
+        console.warn("Failed to load Google Analytics script")
+        scriptLoadedRef.current = false
       }
 
       document.head.appendChild(script)
     }
 
     loadScript()
-  }, [gaId, consent]) // Додаємо consent до залежностей
+  }, [gaId])
 
   // Реагування на зміну consent
   useEffect(() => {
@@ -174,22 +191,25 @@ export function GoogleAnalytics({ gaId, consent }: GoogleAnalyticsProps) {
       return
     }
 
-    if (gaInitializedRef.current && scriptLoadedRef.current) {
-      // GA вже готовий, активуємо одразу
-      activateAnalytics()
-    } else if (consent) {
-      // Чекаємо поки GA буде готовий
-      const checkGA = setInterval(() => {
-        if (gaInitializedRef.current && scriptLoadedRef.current && typeof window !== "undefined" && window.gtag) {
-          clearInterval(checkGA)
-          activateAnalytics()
-        }
-      }, 100)
+    // Якщо consent = true
+    if (consent && !consentProcessedRef.current) {
+      if (scriptLoadedRef.current) {
+        // Скрипт вже завантажений, активуємо одразу
+        activateAnalytics()
+      } else {
+        // Скрипт ще не завантажений, чекаємо
+        const checkScript = setInterval(() => {
+          if (scriptLoadedRef.current) {
+            clearInterval(checkScript)
+            activateAnalytics()
+          }
+        }, 100)
 
-      // Очищуємо інтервал через 10 секунд якщо щось пішло не так
-      setTimeout(() => {
-        clearInterval(checkGA)
-      }, 10000)
+        // Очищуємо інтервал через 10 секунд
+        setTimeout(() => {
+          clearInterval(checkScript)
+        }, 10000)
+      }
     }
   }, [consent, gaId])
 
