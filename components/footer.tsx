@@ -1,16 +1,21 @@
 "use client"
-
 import { useTranslations } from "next-intl"
 import Link from "next/link"
 import { useParams } from "next/navigation"
-import { Mail, Phone, MapPin } from "lucide-react"
+import { Mail, Phone, MapPin, Settings } from "lucide-react"
 import { useSiteSettings } from "@/hooks/use-site-settings"
+import { useCookieConsentContext } from "@/contexts/cookie-consent-context"
 
 export function Footer() {
   const t = useTranslations("Footer")
   const params = useParams()
   const locale = params.locale as string
   const { settings } = useSiteSettings()
+  const { setShowBanner } = useCookieConsentContext()
+
+  const handleCookieSettings = () => {
+    setShowBanner(true)
+  }
 
   return (
     <footer className="bg-gray-50 border-t border-gray-200">
@@ -55,6 +60,15 @@ export function Footer() {
                 <Link href={`/${locale}/privacy`} className="text-sm text-gray-500 hover:text-gray-900">
                   {t("privacy")}
                 </Link>
+              </li>
+              <li>
+                <button
+                  onClick={handleCookieSettings}
+                  className="text-sm text-gray-500 hover:text-gray-900 flex items-center gap-1"
+                >
+                  <Settings className="h-3 w-3" />
+                  Налаштування cookies
+                </button>
               </li>
             </ul>
           </div>

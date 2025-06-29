@@ -18,6 +18,50 @@ export function useCookieConsent() {
     consentDate: null,
   })
 
+  // Функція для очищення cookies
+  const clearCookiesByCategory = (category: "analytics" | "marketing") => {
+    if (typeof document === "undefined") return
+
+    let cookiesToClear: string[] = []
+
+    if (category === "analytics") {
+      cookiesToClear = [
+        "_ga",
+        "_ga_WZ0WCHZ3XT",
+        "_gid",
+        "_gat",
+        "_gat_gtag_G_WZ0WCHZ3XT",
+        "__utma",
+        "__utmb",
+        "__utmc",
+        "__utmt",
+        "__utmz",
+        "_gcl_au",
+      ]
+    } else if (category === "marketing") {
+      cookiesToClear = ["_fbp", "_fbc", "fr", "_gcl_aw", "_gcl_dc", "_gcl_gb", "_gcl_gf", "_gcl_ha"]
+    }
+
+    const domains = ["", window.location.hostname, "." + window.location.hostname]
+    const paths = ["/", "/admin", "/auth"]
+
+    cookiesToClear.forEach((cookieName) => {
+      domains.forEach((domain) => {
+        paths.forEach((path) => {
+          const expireDate = "Thu, 01 Jan 1970 00:00:00 UTC"
+          if (domain) {
+            document.cookie = `${cookieName}=; expires=${expireDate}; path=${path}; domain=${domain}; SameSite=Lax`
+            document.cookie = `${cookieName}=; expires=${expireDate}; path=${path}; domain=${domain}; SameSite=None; Secure`
+          }
+          document.cookie = `${cookieName}=; expires=${expireDate}; path=${path}; SameSite=Lax`
+          document.cookie = `${cookieName}=; expires=${expireDate}; path=${path}; SameSite=None; Secure`
+        })
+      })
+    })
+
+    console.log(`${category} cookies cleared:`, cookiesToClear)
+  }
+
   useEffect(() => {
     const stored = localStorage.getItem(COOKIE_CONSENT_KEY)
     if (stored) {
@@ -45,12 +89,22 @@ export function useCookieConsent() {
     }
   }, [])
 
-  const saveConsent = (consent: CookieConsent) => {
+  const saveConsent = (consent: CookieConsent, previousConsent?: CookieConsent) => {
     const consentData = {
       consent,
       consentDate: new Date().toISOString(),
     }
     localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(consentData))
+
+    // Очищуємо cookies для категорій, які були відключені
+    if (previousConsent) {
+      if (previousConsent.analytics && !consent.analytics) {
+        clearCookiesByCategory("analytics")
+      }
+      if (previousConsent.marketing && !consent.marketing) {
+        clearCookiesByCategory("marketing")
+      }
+    }
 
     setState({
       consent,
@@ -96,11 +150,15 @@ export function useCookieConsent() {
   }
 
   const acceptNecessary = () => {
-    saveConsent({
-      necessary: true,
-      analytics: false,
-      marketing: false,
-    })
+    const previousConsent = state.consent
+    saveConsent(
+      {
+        necessary: true,
+        analytics: false,
+        marketing: false,
+      },
+      previousConsent,
+    )
   }
 
   const updateCategory = (category: keyof CookieConsent, value: boolean) => {
@@ -114,7 +172,8 @@ export function useCookieConsent() {
   }
 
   const saveCurrentSettings = () => {
-    saveConsent(state.consent)
+    const previousConsent = { ...state.consent }
+    saveConsent(state.consent, previousConsent)
   }
 
   const setShowBanner = (show: boolean) => {
