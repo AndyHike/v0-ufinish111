@@ -37,27 +37,72 @@ export function useCookieConsent() {
         "__utmt",
         "__utmz",
         "_gcl_au",
+        "AMP_TOKEN",
+        "_gac_gb_",
       ]
     } else if (category === "marketing") {
       cookiesToClear = ["_fbp", "_fbc", "fr", "_gcl_aw", "_gcl_dc", "_gcl_gb", "_gcl_gf", "_gcl_ha"]
     }
 
-    const domains = ["", window.location.hostname, "." + window.location.hostname]
+    const domains = ["", window.location.hostname, "." + window.location.hostname, ".devicehelp.cz", "devicehelp.cz"]
     const paths = ["/", "/admin", "/auth"]
 
+    // Очищуємо cookies
     cookiesToClear.forEach((cookieName) => {
       domains.forEach((domain) => {
         paths.forEach((path) => {
           const expireDate = "Thu, 01 Jan 1970 00:00:00 UTC"
+
+          // Різні варіанти очищення
           if (domain) {
             document.cookie = `${cookieName}=; expires=${expireDate}; path=${path}; domain=${domain}; SameSite=Lax`
             document.cookie = `${cookieName}=; expires=${expireDate}; path=${path}; domain=${domain}; SameSite=None; Secure`
+            document.cookie = `${cookieName}=; expires=${expireDate}; path=${path}; domain=${domain}`
           }
           document.cookie = `${cookieName}=; expires=${expireDate}; path=${path}; SameSite=Lax`
           document.cookie = `${cookieName}=; expires=${expireDate}; path=${path}; SameSite=None; Secure`
+          document.cookie = `${cookieName}=; expires=${expireDate}; path=${path}`
+
+          // Додаткове очищення з max-age
+          if (domain) {
+            document.cookie = `${cookieName}=; max-age=0; path=${path}; domain=${domain}`
+          }
+          document.cookie = `${cookieName}=; max-age=0; path=${path}`
         })
       })
     })
+
+    // Додатково очищуємо localStorage та sessionStorage для GA
+    if (category === "analytics") {
+      try {
+        const keysToRemove = []
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i)
+          if (key && (key.startsWith("_ga") || key.startsWith("gtag") || key.includes("google"))) {
+            keysToRemove.push(key)
+          }
+        }
+        keysToRemove.forEach((key) => localStorage.removeItem(key))
+
+        const sessionKeysToRemove = []
+        for (let i = 0; i < sessionStorage.length; i++) {
+          const key = sessionStorage.key(i)
+          if (key && (key.startsWith("_ga") || key.startsWith("gtag") || key.includes("google"))) {
+            sessionKeysToRemove.push(key)
+          }
+        }
+        sessionKeysToRemove.forEach((key) => sessionStorage.removeItem(key))
+      } catch (error) {
+        console.warn("Could not clear storage:", error)
+      }
+    }
+
+    // Оновлюємо consent в gtag якщо він існує
+    if (typeof window !== "undefined" && window.gtag && category === "analytics") {
+      window.gtag("consent", "update", {
+        analytics_storage: "denied",
+      })
+    }
 
     console.log(`${category} cookies cleared:`, cookiesToClear)
   }
@@ -100,6 +145,13 @@ export function useCookieConsent() {
     if (previousConsent) {
       if (previousConsent.analytics && !consent.analytics) {
         clearCookiesByCategory("analytics")
+
+        // Додатково оновлюємо gtag consent
+        if (typeof window !== "undefined" && window.gtag) {
+          window.gtag("consent", "update", {
+            analytics_storage: "denied",
+          })
+        }
       }
       if (previousConsent.marketing && !consent.marketing) {
         clearCookiesByCategory("marketing")

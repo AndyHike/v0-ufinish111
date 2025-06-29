@@ -19,9 +19,9 @@ export function GoogleAnalytics({ gaId, consent }: GoogleAnalyticsProps) {
   const gaInitializedRef = useRef(false)
   const consentProcessedRef = useRef(false)
 
-  // Функція для ініціалізації GA
+  // Функція для ініціалізації GA тільки з consent
   const initializeGA = () => {
-    if (typeof window === "undefined" || !gaId) return
+    if (typeof window === "undefined" || !gaId || !consent) return
 
     // Ініціалізуємо dataLayer
     window.dataLayer = window.dataLayer || []
@@ -34,7 +34,7 @@ export function GoogleAnalytics({ gaId, consent }: GoogleAnalyticsProps) {
     // Встановлюємо час
     window.gtag("js", new Date())
 
-    // Налаштовуємо consent
+    // Налаштовуємо consent - тільки якщо є згода
     window.gtag("consent", "default", {
       analytics_storage: consent ? "granted" : "denied",
       ad_storage: "denied",
@@ -43,13 +43,15 @@ export function GoogleAnalytics({ gaId, consent }: GoogleAnalyticsProps) {
       security_storage: "granted",
     })
 
-    // Конфігуруємо GA4
-    window.gtag("config", gaId, {
-      send_page_view: true,
-      page_title: document.title,
-      page_location: window.location.href,
-      transport_type: "beacon",
-    })
+    // Конфігуруємо GA4 тільки якщо є згода
+    if (consent) {
+      window.gtag("config", gaId, {
+        send_page_view: true,
+        page_title: document.title,
+        page_location: window.location.href,
+        transport_type: "beacon",
+      })
+    }
 
     gaInitializedRef.current = true
   }
@@ -61,6 +63,14 @@ export function GoogleAnalytics({ gaId, consent }: GoogleAnalyticsProps) {
     // Оновлюємо consent
     window.gtag("consent", "update", {
       analytics_storage: "granted",
+    })
+
+    // Конфігуруємо GA4 якщо ще не було зконфігуровано
+    window.gtag("config", gaId, {
+      send_page_view: true,
+      page_title: document.title,
+      page_location: window.location.href,
+      transport_type: "beacon",
     })
 
     // Відправляємо page_view одразу
@@ -89,9 +99,9 @@ export function GoogleAnalytics({ gaId, consent }: GoogleAnalyticsProps) {
     consentProcessedRef.current = true
   }
 
-  // Завантаження скрипта
+  // Завантаження скрипта тільки якщо є згода
   useEffect(() => {
-    if (!gaId || typeof window === "undefined") return
+    if (!gaId || typeof window === "undefined" || !consent) return
 
     const loadScript = async () => {
       // Перевіряємо чи скрипт вже існує
@@ -127,16 +137,19 @@ export function GoogleAnalytics({ gaId, consent }: GoogleAnalyticsProps) {
     }
 
     loadScript()
-  }, [gaId])
+  }, [gaId, consent]) // Додаємо consent до залежностей
 
   // Реагування на зміну consent
   useEffect(() => {
-    if (!consent || consentProcessedRef.current) return
+    if (!consent) {
+      consentProcessedRef.current = false
+      return
+    }
 
     if (gaInitializedRef.current && scriptLoadedRef.current) {
       // GA вже готовий, активуємо одразу
       activateAnalytics()
-    } else {
+    } else if (consent) {
       // Чекаємо поки GA буде готовий
       const checkGA = setInterval(() => {
         if (gaInitializedRef.current && scriptLoadedRef.current && typeof window !== "undefined" && window.gtag) {
