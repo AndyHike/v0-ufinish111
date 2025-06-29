@@ -172,7 +172,7 @@ export function CookieSettingsManager() {
             <Input
               id="facebook_pixel_id"
               type={showIds ? "text" : "password"}
-              placeholder="1234567890123456"
+              placeholder="1823195131746594"
               value={settings.facebook_pixel_id}
               onChange={(e) => updateSetting("facebook_pixel_id", e.target.value)}
             />

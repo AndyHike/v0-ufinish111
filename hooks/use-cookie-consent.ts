@@ -18,7 +18,7 @@ export function useCookieConsent() {
     consentDate: null,
   })
 
-  // Функція для агресивного очищення cookies з форсованим оновленням
+  // Function for aggressive cookie clearing with forced update
   const forceClearCookies = (category: "analytics" | "marketing") => {
     if (typeof document === "undefined") return
 
@@ -47,14 +47,14 @@ export function useCookieConsent() {
     const domains = ["", window.location.hostname, "." + window.location.hostname, ".devicehelp.cz", "devicehelp.cz"]
     const paths = ["/", "/admin", "/auth", ""]
 
-    // Множинні спроби очищення з різними параметрами
+    // Multiple clearing attempts with different parameters
     cookiesToClear.forEach((cookieName) => {
       domains.forEach((domain) => {
         paths.forEach((path) => {
           const expireDate = "Thu, 01 Jan 1970 00:00:00 UTC"
           const maxAgeZero = "max-age=0"
 
-          // Різні комбінації очищення
+          // Different clearing combinations
           const clearVariants = [
             `${cookieName}=; expires=${expireDate}; path=${path}`,
             `${cookieName}=; ${maxAgeZero}; path=${path}`,
@@ -79,7 +79,7 @@ export function useCookieConsent() {
       })
     })
 
-    // Очищення storage
+    // Clear storage
     if (category === "analytics") {
       try {
         // localStorage
@@ -100,14 +100,14 @@ export function useCookieConsent() {
       }
     }
 
-    // Оновлення gtag consent
+    // Update gtag consent
     if (typeof window !== "undefined" && window.gtag && category === "analytics") {
       window.gtag("consent", "update", {
         analytics_storage: "denied",
       })
     }
 
-    // Форсоване оновлення через створення прихованого iframe
+    // Force update through creating hidden iframe
     const iframe = document.createElement("iframe")
     iframe.style.display = "none"
     iframe.src = "about:blank"
@@ -117,32 +117,69 @@ export function useCookieConsent() {
     }, 100)
   }
 
-  // Функція для форсованого створення GA cookies та активації
+  // Function to force activate Facebook Pixel
+  const forceActivateFacebookPixel = (pixelId: string) => {
+    if (typeof window === "undefined" || !pixelId) return
+
+    // Clear existing Facebook Pixel if any
+    delete window.fbq
+    delete window._fbq
+
+    // Remove existing Facebook scripts
+    const existingScripts = document.querySelectorAll(`script[src*="fbevents.js"]`)
+    existingScripts.forEach((script) => script.remove())
+
+    // Initialize Facebook Pixel with the exact code
+    !((f: any, b: any, e: any, v: any, n: any, t: any, s: any) => {
+      if (f.fbq) return
+      n = f.fbq = () => {
+        n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments)
+      }
+      if (!f._fbq) f._fbq = n
+      n.push = n
+      n.loaded = !0
+      n.version = "2.0"
+      n.queue = []
+      t = b.createElement(e)
+      t.async = !0
+      t.src = v
+      s = b.getElementsByTagName(e)[0]
+      s.parentNode.insertBefore(t, s)
+    })(window, document, "script", "https://connect.facebook.net/en_US/fbevents.js")
+
+    // Initialize and track
+    window.fbq("init", pixelId)
+    window.fbq("track", "PageView")
+
+    console.log(`Facebook Pixel force activated with ID: ${pixelId}`)
+  }
+
+  // Function to force GA cookies creation and activation
   const forceActivateAnalytics = () => {
     if (typeof window === "undefined") return
 
     const gaId = "G-WZ0WCHZ3XT"
 
-    // Повністю очищуємо попередні GA ресурси
+    // Completely clear previous GA resources
     const existingScripts = document.querySelectorAll(`script[src*="googletagmanager.com"]`)
     existingScripts.forEach((script) => script.remove())
 
-    // Очищуємо глобальні змінні
+    // Clear global variables
     delete window.gtag
     delete window.dataLayer
 
-    // Створюємо новий dataLayer
+    // Create new dataLayer
     window.dataLayer = []
 
-    // Створюємо gtag функцію
+    // Create gtag function
     window.gtag = function gtag() {
       window.dataLayer.push(arguments)
     }
 
-    // Встановлюємо час
+    // Set time
     window.gtag("js", new Date())
 
-    // Встановлюємо consent як granted
+    // Set consent as granted
     window.gtag("consent", "default", {
       analytics_storage: "granted",
       ad_storage: "denied",
@@ -151,13 +188,13 @@ export function useCookieConsent() {
       security_storage: "granted",
     })
 
-    // Створюємо новий скрипт
+    // Create new script
     const script = document.createElement("script")
     script.async = true
     script.src = `https://www.googletagmanager.com/gtag/js?id=${gaId}&t=${Date.now()}`
 
     script.onload = () => {
-      // Конфігуруємо GA4
+      // Configure GA4
       window.gtag("config", gaId, {
         send_page_view: true,
         page_title: document.title,
@@ -167,7 +204,7 @@ export function useCookieConsent() {
         cookie_flags: "SameSite=Lax",
       })
 
-      // Відправляємо події для активації
+      // Send events for activation
       setTimeout(() => {
         window.gtag("event", "page_view", {
           page_title: document.title,
@@ -183,7 +220,7 @@ export function useCookieConsent() {
           transport_type: "beacon",
         })
 
-        // Форсоване створення cookies через прямий виклик GA
+        // Force cookie creation through direct GA call
         window.gtag("event", "user_engagement", {
           engagement_time_msec: 1,
           send_to: gaId,
@@ -194,7 +231,7 @@ export function useCookieConsent() {
 
     document.head.appendChild(script)
 
-    // Додатково форсуємо створення cookies через iframe
+    // Additionally force cookie creation through iframe
     const iframe = document.createElement("iframe")
     iframe.style.display = "none"
     iframe.src = `https://www.google-analytics.com/analytics.js?t=${Date.now()}`
@@ -238,9 +275,9 @@ export function useCookieConsent() {
     }
     localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(consentData))
 
-    // Обробка змін згоди
+    // Handle consent changes
     if (previousConsent) {
-      // Очищення при відкликанні згоди
+      // Clear when consent is revoked
       if (previousConsent.analytics && !consent.analytics) {
         forceClearCookies("analytics")
       }
@@ -256,10 +293,28 @@ export function useCookieConsent() {
       consentDate: consentData.consentDate,
     })
 
-    // Активація при наданні згоди
+    // Activation when consent is granted
     if (consent.analytics && (!previousConsent || !previousConsent.analytics)) {
       setTimeout(() => {
         forceActivateAnalytics()
+      }, 200)
+    }
+
+    // Activate Facebook Pixel when marketing consent is granted
+    if (consent.marketing && (!previousConsent || !previousConsent.marketing)) {
+      setTimeout(async () => {
+        try {
+          // Get Facebook Pixel ID from settings
+          const response = await fetch("/api/admin/cookie-settings")
+          if (response.ok) {
+            const settings = await response.json()
+            if (settings.facebook_pixel_id) {
+              forceActivateFacebookPixel(settings.facebook_pixel_id)
+            }
+          }
+        } catch (error) {
+          console.warn("Could not activate Facebook Pixel:", error)
+        }
       }, 200)
     }
   }
