@@ -22,8 +22,6 @@ export function useCookieConsent() {
   const forceClearCookies = (category: "analytics" | "marketing") => {
     if (typeof document === "undefined") return
 
-    console.log(`🧹 Force clearing ${category} cookies...`)
-
     let cookiesToClear: string[] = []
 
     if (category === "analytics") {
@@ -117,15 +115,11 @@ export function useCookieConsent() {
     setTimeout(() => {
       document.body.removeChild(iframe)
     }, 100)
-
-    console.log(`✅ ${category} cookies clearing completed`)
   }
 
   // Function to force GA cookies creation and activation
   const forceActivateAnalytics = () => {
     if (typeof window === "undefined") return
-
-    console.log("🚀 Force activating Google Analytics...")
 
     const gaId = "G-WZ0WCHZ3XT"
 
@@ -195,8 +189,6 @@ export function useCookieConsent() {
           send_to: gaId,
           transport_type: "beacon",
         })
-
-        console.log("✅ Google Analytics force activation completed")
       }, 500)
     }
 
@@ -244,28 +236,23 @@ export function useCookieConsent() {
   }, [])
 
   const saveConsent = (consent: CookieConsent, previousConsent?: CookieConsent) => {
-    console.log("💾 Saving consent:", { consent, previousConsent })
-
     const consentData = {
       consent,
       consentDate: new Date().toISOString(),
     }
     localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(consentData))
 
-    // Handle consent changes in real-time
+    // Handle consent changes
     if (previousConsent) {
       // Clear when consent is revoked
       if (previousConsent.analytics && !consent.analytics) {
-        console.log("❌ Analytics consent revoked - clearing immediately")
         forceClearCookies("analytics")
       }
       if (previousConsent.marketing && !consent.marketing) {
-        console.log("❌ Marketing consent revoked - clearing immediately")
         forceClearCookies("marketing")
       }
     }
 
-    // Update state immediately
     setState({
       consent,
       showBanner: false,
@@ -273,24 +260,18 @@ export function useCookieConsent() {
       consentDate: consentData.consentDate,
     })
 
-    // Activation when consent is granted - immediate activation
+    // Activation when consent is granted
     if (consent.analytics && (!previousConsent || !previousConsent.analytics)) {
-      console.log("✅ Analytics consent granted - activating immediately")
-      // Immediate activation without delay
-      forceActivateAnalytics()
+      setTimeout(() => {
+        forceActivateAnalytics()
+      }, 200)
     }
 
-    // Facebook Pixel activation is handled by the FacebookPixel component
-    // It will react to the consent state change immediately
-    if (consent.marketing && (!previousConsent || !previousConsent.marketing)) {
-      console.log("✅ Marketing consent granted - Facebook Pixel will activate immediately")
-    }
-
-    console.log("✅ Consent save completed")
+    // Facebook Pixel activation is now handled entirely by the FacebookPixel component
+    // No duplicate initialization here
   }
 
   const acceptAll = () => {
-    console.log("🎯 Accept All clicked")
     const previousConsent = state.consent
     saveConsent(
       {
@@ -303,7 +284,6 @@ export function useCookieConsent() {
   }
 
   const acceptNecessary = () => {
-    console.log("🎯 Accept Necessary clicked")
     const previousConsent = state.consent
     saveConsent(
       {
@@ -326,7 +306,6 @@ export function useCookieConsent() {
   }
 
   const saveCurrentSettings = () => {
-    console.log("💾 Save Current Settings clicked")
     const previousConsent = { ...state.consent }
     saveConsent(state.consent, previousConsent)
   }

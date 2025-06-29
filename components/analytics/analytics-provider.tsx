@@ -33,13 +33,13 @@ export function AnalyticsProvider() {
         const data = await response.json()
         setSettings(data)
         setSettingsError(null)
-        console.log("📊 Analytics settings loaded:", {
-          ga_id: data.google_analytics_id ? "✅ Set" : "❌ Not set",
-          gtm_id: data.google_tag_manager_id ? "✅ Set" : "❌ Not set",
-          fb_pixel_id: data.facebook_pixel_id ? "✅ Set" : "❌ Not set",
+        console.log("Analytics settings loaded:", {
+          ga_id: data.google_analytics_id ? "Set" : "Not set",
+          gtm_id: data.google_tag_manager_id ? "Set" : "Not set",
+          fb_pixel_id: data.facebook_pixel_id ? "Set" : "Not set",
         })
       } catch (error) {
-        console.warn("⚠️ Failed to fetch analytics settings:", error)
+        console.warn("Failed to fetch analytics settings:", error)
         setSettingsError(error instanceof Error ? error.message : "Unknown error")
 
         // Set default settings with your Facebook Pixel ID
@@ -59,25 +59,25 @@ export function AnalyticsProvider() {
     fetchSettings()
   }, [])
 
-  // Log consent changes for debugging in real-time
+  // Log consent changes for debugging
   useEffect(() => {
     if (hasInteracted && process.env.NODE_ENV === "development") {
-      console.log("🔄 Analytics consent status changed:", {
-        analytics: consent.analytics ? "✅ Granted" : "❌ Denied",
-        marketing: consent.marketing ? "✅ Granted" : "❌ Denied",
+      console.log("Analytics consent status:", {
+        analytics: consent.analytics,
+        marketing: consent.marketing,
         settings: settings
           ? {
-              ga_id: settings.google_analytics_id ? "✅ Set" : "❌ Not set",
-              gtm_id: settings.google_tag_manager_id ? "✅ Set" : "❌ Not set",
-              fb_pixel_id: settings.facebook_pixel_id ? "✅ Set" : "❌ Not set",
+              ga_id: settings.google_analytics_id ? "Set" : "Not set",
+              gtm_id: settings.google_tag_manager_id ? "Set" : "Not set",
+              fb_pixel_id: settings.facebook_pixel_id ? "Set" : "Not set",
             }
-          : "⏳ Loading...",
-        settingsError: settingsError || "None",
+          : "Loading...",
+        settingsError,
       })
     }
   }, [consent, hasInteracted, settings, settingsError])
 
-  // Log when analytics services are being loaded in real-time
+  // Log when analytics services are being loaded
   useEffect(() => {
     if (isLoaded && settings && process.env.NODE_ENV === "development") {
       const services = []
@@ -86,9 +86,7 @@ export function AnalyticsProvider() {
       if (settings.facebook_pixel_id && consent.marketing) services.push("Facebook Pixel")
 
       if (services.length > 0) {
-        console.log(`🚀 Loading analytics services in real-time: ${services.join(", ")}`)
-      } else {
-        console.log("⏸️ No analytics services to load (consent not granted or IDs not set)")
+        console.log(`Loading analytics services: ${services.join(", ")}`)
       }
     }
   }, [isLoaded, settings, consent])
