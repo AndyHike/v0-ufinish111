@@ -6,7 +6,6 @@ import Link from "next/link"
 import { useParams } from "next/navigation"
 import { Mail, Phone, MapPin, Settings } from "lucide-react"
 import { useSiteSettings } from "@/hooks/use-site-settings"
-import { useCookieConsentContext } from "@/contexts/cookie-consent-context"
 import { CookieSettingsModal } from "./cookie-settings-modal"
 
 export function Footer() {
@@ -14,12 +13,7 @@ export function Footer() {
   const params = useParams()
   const locale = params.locale as string
   const { settings } = useSiteSettings()
-  const { setShowBanner } = useCookieConsentContext()
   const [showCookieSettings, setShowCookieSettings] = useState(false)
-
-  const handleCookieSettings = () => {
-    setShowCookieSettings(true)
-  }
 
   return (
     <>
@@ -68,11 +62,11 @@ export function Footer() {
                 </li>
                 <li>
                   <button
-                    onClick={handleCookieSettings}
+                    onClick={() => setShowCookieSettings(true)}
                     className="text-sm text-gray-500 hover:text-gray-900 flex items-center gap-1"
                   >
                     <Settings className="h-3 w-3" />
-                    Налаштування cookies
+                    {t("cookieSettings")}
                   </button>
                 </li>
               </ul>

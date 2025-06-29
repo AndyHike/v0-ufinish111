@@ -25,7 +25,8 @@
     "terms": "Terms and Conditions",
     "privacy": "Privacy Policy",
     "tagline": "Professional mobile device repair with quality guarantee",
-    "company": "Company"
+    "company": "Company",
+    "cookieSettings": "Cookie Settings"
   },
   "UserNav": {
     "login": "Login",
@@ -506,8 +507,8 @@
     "csvParseError": "Error parsing CSV file",
     "csvMissingColumns": "CSV file is missing required columns",
     "exportServices": "Export Services",
-    "exportServicesDescription": "Export all services and prices in CSV format",
     "exportModels": "Export Models",
+    "exportServicesDescription": "Export all services and prices in CSV format",
     "exportModelsDescription": "Export all phone models in CSV format",
     "exportServicesCSV": "Export Services (CSV)",
     "exportModelsCSV": "Export Models (CSV)",

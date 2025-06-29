@@ -18,6 +18,38 @@ export function useCookieConsent() {
     consentDate: null,
   })
 
+  // Функція для очищення всіх GA cookies
+  const clearGACookies = () => {
+    if (typeof document === "undefined") return
+
+    // Список всіх можливих GA cookies
+    const gaCookies = [
+      "_ga",
+      "_ga_" + (process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || "").replace("G-", ""),
+      "_gid",
+      "_gat",
+      "_gat_gtag_" + (process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || "").replace("G-", ""),
+      "__utma",
+      "__utmb",
+      "__utmc",
+      "__utmt",
+      "__utmz",
+    ]
+
+    // Видаляємо cookies для всіх доменів
+    const domains = [window.location.hostname, "." + window.location.hostname, ".devicehelp.cz", "devicehelp.cz"]
+
+    gaCookies.forEach((cookieName) => {
+      domains.forEach((domain) => {
+        // Видаляємо cookie
+        document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${domain};`
+        document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`
+      })
+    })
+
+    console.log("GA cookies cleared")
+  }
+
   useEffect(() => {
     const stored = localStorage.getItem(COOKIE_CONSENT_KEY)
     if (stored) {
@@ -35,12 +67,17 @@ export function useCookieConsent() {
             consentDate: parsed.consentDate,
           })
         } else {
+          // Згода застаріла - очищуємо cookies
+          clearGACookies()
           setState((prev) => ({ ...prev, showBanner: true }))
         }
       } catch (error) {
+        clearGACookies()
         setState((prev) => ({ ...prev, showBanner: true }))
       }
     } else {
+      // Немає збереженої згоди - очищуємо cookies
+      clearGACookies()
       setState((prev) => ({ ...prev, showBanner: true }))
     }
   }, [])
@@ -52,6 +89,11 @@ export function useCookieConsent() {
     }
     localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(consentData))
 
+    // Якщо аналітика відключена - очищуємо cookies
+    if (!consent.analytics) {
+      clearGACookies()
+    }
+
     setState({
       consent,
       showBanner: false,
@@ -59,17 +101,7 @@ export function useCookieConsent() {
       consentDate: consentData.consentDate,
     })
 
-    // Додаємо невелику затримку для того, щоб React встиг оновити стан
-    setTimeout(() => {
-      // Тригеримо подію для оновлення аналітики
-      window.dispatchEvent(
-        new CustomEvent("cookieConsentChanged", {
-          detail: { consent },
-        }),
-      )
-
-      console.log("Cookie consent saved:", consent)
-    }, 50)
+    console.log("Cookie consent saved:", consent)
   }
 
   const acceptAll = () => {
@@ -110,7 +142,12 @@ export function useCookieConsent() {
 
   // Функція для скидання всіх налаштувань cookies
   const resetConsent = () => {
+    // Очищуємо всі GA cookies
+    clearGACookies()
+
+    // Видаляємо збережені налаштування
     localStorage.removeItem(COOKIE_CONSENT_KEY)
+
     setState({
       consent: {
         necessary: true,
@@ -122,20 +159,7 @@ export function useCookieConsent() {
       consentDate: null,
     })
 
-    // Тригеримо подію для оновлення аналітики
-    setTimeout(() => {
-      window.dispatchEvent(
-        new CustomEvent("cookieConsentChanged", {
-          detail: {
-            consent: {
-              necessary: true,
-              analytics: false,
-              marketing: false,
-            },
-          },
-        }),
-      )
-    }, 50)
+    console.log("Cookie consent reset and GA cookies cleared")
   }
 
   return {

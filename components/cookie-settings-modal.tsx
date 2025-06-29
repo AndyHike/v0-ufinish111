@@ -29,23 +29,24 @@ export function CookieSettingsModal({ open, onOpenChange }: CookieSettingsModalP
   }, [consent, open])
 
   const handleSave = () => {
+    console.log("Saving cookie settings:", localConsent)
+
     // Оновлюємо кожну категорію окремо
     Object.entries(localConsent).forEach(([category, value]) => {
       updateCategory(category as keyof typeof consent, value)
     })
 
-    // Зберігаємо налаштування
+    // Зберігаємо налаштування з невеликою затримкою
     setTimeout(() => {
       saveCurrentSettings()
       onOpenChange(false)
-      console.log("Cookie settings saved:", localConsent)
     }, 100)
   }
 
   const handleReset = () => {
+    console.log("Resetting all cookie settings")
     resetConsent()
     onOpenChange(false)
-    console.log("Cookie settings reset")
   }
 
   const handleLocalUpdate = (category: keyof typeof consent, value: boolean) => {

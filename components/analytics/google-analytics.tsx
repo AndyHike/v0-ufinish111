@@ -18,9 +18,29 @@ export function GoogleAnalytics({ gaId, consent }: GoogleAnalyticsProps) {
   const scriptLoadedRef = useRef(false)
   const gaInitializedRef = useRef(false)
 
-  // Функція для ініціалізації GA
-  const initializeGA = () => {
-    if (typeof window === "undefined" || !gaId) return
+  // Функція для повного видалення GA скрипта
+  const removeGAScript = () => {
+    const scripts = document.querySelectorAll(`script[src*="gtag/js?id=${gaId}"]`)
+    scripts.forEach((script) => script.remove())
+
+    // Очищуємо dataLayer
+    if (typeof window !== "undefined") {
+      window.dataLayer = []
+      delete window.gtag
+    }
+
+    scriptLoadedRef.current = false
+    gaInitializedRef.current = false
+  }
+
+  // Функція для завантаження та ініціалізації GA
+  const loadAndInitializeGA = () => {
+    if (!gaId || typeof window === "undefined" || !consent) return
+
+    // Перевіряємо чи скрипт вже завантажений
+    if (scriptLoadedRef.current && gaInitializedRef.current) {
+      return
+    }
 
     // Ініціалізуємо dataLayer
     window.dataLayer = window.dataLayer || []
@@ -33,105 +53,71 @@ export function GoogleAnalytics({ gaId, consent }: GoogleAnalyticsProps) {
     // Встановлюємо час
     window.gtag("js", new Date())
 
-    // Налаштовуємо consent - за замовчуванням denied
+    // Налаштовуємо consent - дозволяємо тільки якщо є згода
     window.gtag("consent", "default", {
-      analytics_storage: consent ? "granted" : "denied",
+      analytics_storage: "granted",
       ad_storage: "denied",
       functionality_storage: "granted",
       personalization_storage: "granted",
       security_storage: "granted",
     })
 
-    // Конфігуруємо GA4 - завжди, але з правильним consent
-    window.gtag("config", gaId, {
-      send_page_view: consent, // відправляємо page_view тільки якщо є згода
-      page_title: document.title,
-      page_location: window.location.href,
-      transport_type: "beacon",
-    })
+    // Завантажуємо скрипт
+    const script = document.createElement("script")
+    script.async = true
+    script.src = `https://www.googletagmanager.com/gtag/js?id=${gaId}`
 
-    gaInitializedRef.current = true
-  }
+    script.onload = () => {
+      scriptLoadedRef.current = true
 
-  // Функція для активації аналітики після згоди
-  const activateAnalytics = () => {
-    if (typeof window === "undefined" || !window.gtag || !gaId) return
+      // Конфігуруємо GA4 після завантаження
+      setTimeout(() => {
+        if (window.gtag && consent) {
+          window.gtag("config", gaId, {
+            send_page_view: true,
+            page_title: document.title,
+            page_location: window.location.href,
+            transport_type: "beacon",
+          })
 
-    // Оновлюємо consent
-    window.gtag("consent", "update", {
-      analytics_storage: "granted",
-    })
+          // Відправляємо подію про активацію
+          window.gtag("event", "analytics_activated", {
+            event_category: "consent",
+            event_label: "immediate_activation",
+            send_to: gaId,
+            transport_type: "beacon",
+          })
 
-    // Відправляємо page_view одразу
-    window.gtag("event", "page_view", {
-      page_title: document.title,
-      page_location: window.location.href,
-      send_to: gaId,
-      transport_type: "beacon",
-    })
-
-    // Відправляємо подію про активацію
-    window.gtag("event", "consent_granted", {
-      event_category: "consent",
-      event_label: "analytics_activated",
-      send_to: gaId,
-      transport_type: "beacon",
-    })
-
-    console.log("Google Analytics activated immediately")
-  }
-
-  // Функція для деактивації аналітики
-  const deactivateAnalytics = () => {
-    if (typeof window === "undefined" || !window.gtag) return
-
-    window.gtag("consent", "update", {
-      analytics_storage: "denied",
-    })
-
-    console.log("Google Analytics deactivated")
-  }
-
-  // Завантаження скрипта - завжди завантажуємо
-  useEffect(() => {
-    if (!gaId || typeof window === "undefined") return
-
-    const loadScript = async () => {
-      // Перевіряємо чи скрипт вже існує
-      const existingScript = document.querySelector(`script[src*="gtag/js?id=${gaId}"]`)
-      if (existingScript || scriptLoadedRef.current) {
-        if (!gaInitializedRef.current) {
-          initializeGA()
+          gaInitializedRef.current = true
+          console.log("Google Analytics loaded and activated immediately")
         }
-        return
-      }
-
-      const script = document.createElement("script")
-      script.async = true
-      script.src = `https://www.googletagmanager.com/gtag/js?id=${gaId}`
-
-      script.onload = () => {
-        scriptLoadedRef.current = true
-        // Ініціалізуємо GA після завантаження скрипта
-        setTimeout(() => {
-          initializeGA()
-        }, 100)
-      }
-
-      document.head.appendChild(script)
+      }, 100)
     }
 
-    loadScript()
-  }, [gaId])
+    script.onerror = () => {
+      console.error("Failed to load Google Analytics script")
+      scriptLoadedRef.current = false
+    }
 
-  // Реагування на зміну consent
+    document.head.appendChild(script)
+  }
+
+  // Ефект для керування GA на основі consent
   useEffect(() => {
-    if (!gaInitializedRef.current || !scriptLoadedRef.current) return
-
     if (consent) {
-      activateAnalytics()
+      // Якщо є згода - завантажуємо GA
+      loadAndInitializeGA()
     } else {
-      deactivateAnalytics()
+      // Якщо немає згоди - видаляємо GA повністю
+      removeGAScript()
+      console.log("Google Analytics removed - no consent")
+    }
+
+    // Cleanup при unmount
+    return () => {
+      if (!consent) {
+        removeGAScript()
+      }
     }
   }, [consent, gaId])
 
@@ -148,9 +134,8 @@ export const trackEvent = (action: string, category: string, label?: string, val
       transport_type: "beacon",
     })
     return true
-  } else {
-    return false
   }
+  return false
 }
 
 export const trackPageView = (url?: string, title?: string) => {
@@ -161,7 +146,6 @@ export const trackPageView = (url?: string, title?: string) => {
       transport_type: "beacon",
     })
     return true
-  } else {
-    return false
   }
+  return false
 }

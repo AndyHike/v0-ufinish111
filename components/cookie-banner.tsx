@@ -14,13 +14,13 @@ export function CookieBanner() {
   if (!showBanner) return null
 
   const handleAcceptAll = () => {
+    console.log("User clicked Accept All")
     acceptAll()
-    console.log("User accepted all cookies")
   }
 
   const handleAcceptNecessary = () => {
+    console.log("User clicked Accept Necessary")
     acceptNecessary()
-    console.log("User accepted only necessary cookies")
   }
 
   const handleShowSettings = () => {
