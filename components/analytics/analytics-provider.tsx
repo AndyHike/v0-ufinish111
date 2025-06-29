@@ -33,6 +33,11 @@ export function AnalyticsProvider() {
         const data = await response.json()
         setSettings(data)
         setSettingsError(null)
+        console.log("Analytics settings loaded:", {
+          ga_id: data.google_analytics_id ? "Set" : "Not set",
+          gtm_id: data.google_tag_manager_id ? "Set" : "Not set",
+          fb_pixel_id: data.facebook_pixel_id ? "Set" : "Not set",
+        })
       } catch (error) {
         console.warn("Failed to fetch analytics settings:", error)
         setSettingsError(error instanceof Error ? error.message : "Unknown error")
