@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS service_faqs (
 CREATE TABLE IF NOT EXISTS service_faq_translations (
     id SERIAL PRIMARY KEY,
     service_faq_id INTEGER NOT NULL REFERENCES service_faqs(id) ON DELETE CASCADE,
-    locale VARCHAR(10) NOT NULL,
+    locale VARCHAR(5) NOT NULL,
     question TEXT NOT NULL,
     answer TEXT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -25,7 +25,7 @@ CREATE INDEX IF NOT EXISTS idx_service_faqs_position ON service_faqs(position);
 CREATE INDEX IF NOT EXISTS idx_service_faq_translations_faq_id ON service_faq_translations(service_faq_id);
 CREATE INDEX IF NOT EXISTS idx_service_faq_translations_locale ON service_faq_translations(locale);
 
--- Функція для оновлення updated_at
+-- Тригер для оновлення updated_at
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -34,6 +34,5 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
--- Тригери для автоматичного оновлення updated_at
 CREATE TRIGGER update_service_faqs_updated_at BEFORE UPDATE ON service_faqs FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_service_faq_translations_updated_at BEFORE UPDATE ON service_faq_translations FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

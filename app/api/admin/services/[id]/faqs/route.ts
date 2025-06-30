@@ -38,7 +38,6 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     const supabase = createServerClient()
     const serviceId = params.id
     const body = await request.json()
-
     const { position, translations } = body
 
     // Створюємо FAQ

@@ -235,7 +235,7 @@ export default async function ServicePage({ params, searchParams }: Props) {
 
           {/* Збалансований двоколонковий макет */}
           <div className="grid lg:grid-cols-2 gap-8 mb-12">
-            {/* Ліва колонка - вертикальний простір для головного фото */}
+            {/* Ліва колонка - вертикальний простір з правильним масштабуванням фото */}
             <div className="space-y-4">
               <div className="aspect-[3/4] bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl overflow-hidden">
                 {service.image_url ? (

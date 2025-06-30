@@ -148,8 +148,6 @@ export default async function ModelPage({ params }: Props) {
                   <img
                     src={formatImageUrl(model.image_url) || "/placeholder.svg?height=80&width=80&query=phone"}
                     alt={model.name}
-                    width={80}
-                    height={80}
                     className="h-full w-full object-contain p-2"
                   />
                 </div>
@@ -162,8 +160,6 @@ export default async function ModelPage({ params }: Props) {
                     <img
                       src={formatImageUrl(model.brands.logo_url) || "/placeholder.svg"}
                       alt={model.brands.name}
-                      width={16}
-                      height={16}
                       className="h-4 w-4 object-contain"
                     />
                   )}
@@ -175,7 +171,7 @@ export default async function ModelPage({ params }: Props) {
             </div>
           </div>
 
-          {/* Services Grid - компактні картки з горизонтальним простором для фото */}
+          {/* Services Grid - компактні картки з правильним масштабуванням фото */}
           <div>
             <h2 className="text-2xl font-bold text-gray-900 mb-6">Доступні послуги</h2>
 
@@ -188,8 +184,8 @@ export default async function ModelPage({ params }: Props) {
                     className="group block"
                   >
                     <div className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg hover:border-blue-300 transition-all duration-300 group-hover:-translate-y-1">
-                      {/* Service Image - горизонтальний простір, компактна висота */}
-                      <div className="aspect-[16/9] bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+                      {/* Service Image - горизонтальний простір з правильним масштабуванням */}
+                      <div className="aspect-[16/9] bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
                         {service.image_url ? (
                           <img
                             src={formatImageUrl(service.image_url) || "/placeholder.svg"}
@@ -197,11 +193,13 @@ export default async function ModelPage({ params }: Props) {
                             className="w-full h-full object-cover"
                           />
                         ) : (
-                          <div className="text-center p-3">
-                            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-2">
-                              <div className="w-5 h-5 bg-blue-600 rounded-sm"></div>
+                          <div className="w-full h-full flex items-center justify-center">
+                            <div className="text-center p-3">
+                              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                                <div className="w-5 h-5 bg-blue-600 rounded-sm"></div>
+                              </div>
+                              <p className="text-gray-500 font-medium text-sm">{service.name}</p>
                             </div>
-                            <p className="text-gray-500 font-medium text-sm">{service.name}</p>
                           </div>
                         )}
                       </div>
