@@ -224,53 +224,53 @@ export default async function ServicePage({ params, searchParams }: Props) {
 
     return (
       <div className="min-h-screen bg-white">
-        <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
           {/* Breadcrumb */}
-          <nav className="mb-8 text-sm text-gray-500">
+          <nav className="mb-6 text-sm text-gray-500">
             <Link href={backUrl} className="hover:text-blue-600 transition-colors flex items-center gap-2">
               <ArrowLeft className="h-4 w-4" />
               {backText}
             </Link>
           </nav>
 
-          {/* Two Column Layout */}
-          <div className="grid lg:grid-cols-2 gap-12 mb-16">
-            {/* Left Column - Visual Zone */}
-            <div className="space-y-6">
-              <div className="aspect-square bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl overflow-hidden">
+          {/* Компактний двоколонковий макет */}
+          <div className="grid lg:grid-cols-2 gap-8 mb-12">
+            {/* Ліва колонка - компактніше зображення */}
+            <div className="space-y-4">
+              <div className="aspect-[4/3] bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl overflow-hidden">
                 {service.image_url ? (
                   <img
                     src={formatImageUrl(service.image_url) || "/placeholder.svg"}
                     alt={translation.name}
-                    width={600}
-                    height={600}
+                    width={500}
+                    height={375}
                     className="w-full h-full object-cover"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
                     <div className="text-center">
-                      <div className="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <div className="w-12 h-12 bg-blue-600 rounded-lg"></div>
+                      <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <div className="w-8 h-8 bg-blue-600 rounded-lg"></div>
                       </div>
-                      <h3 className="text-xl font-semibold text-gray-700">{translation.name}</h3>
+                      <h3 className="text-lg font-semibold text-gray-700">{translation.name}</h3>
                     </div>
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Right Column - Decision Zone */}
-            <div className="space-y-8">
+            {/* Права колонка - зменшені відступи */}
+            <div className="space-y-5">
               <div>
-                <h1 className="text-4xl font-bold text-gray-900 mb-4">{translation.name}</h1>
-                <p className="text-xl text-gray-600 leading-relaxed">
+                <h1 className="text-3xl font-bold text-gray-900 mb-3">{translation.name}</h1>
+                <p className="text-lg text-gray-600 leading-relaxed">
                   {translation.detailed_description || translation.description}
                 </p>
               </div>
 
-              {/* Price */}
+              {/* Ціна - компактніше */}
               <div>
-                <div className="text-4xl font-bold text-gray-900 mb-2">
+                <div className="text-3xl font-bold text-gray-900 mb-1">
                   {modelServicePrice
                     ? formatCurrency(modelServicePrice)
                     : minPrice && maxPrice
@@ -280,84 +280,84 @@ export default async function ServicePage({ params, searchParams }: Props) {
                       : "За запитом"}
                 </div>
                 {sourceModel && (
-                  <p className="text-gray-600">
+                  <p className="text-gray-600 text-sm">
                     для {sourceModel.brands?.name} {sourceModel.name}
                   </p>
                 )}
               </div>
 
-              {/* CTA Buttons */}
-              <div className="space-y-4">
-                <Button size="lg" className="w-full bg-blue-600 hover:bg-blue-700 text-lg py-4" asChild>
+              {/* CTA Buttons - компактніше */}
+              <div className="space-y-3">
+                <Button size="lg" className="w-full bg-blue-600 hover:bg-blue-700 py-3" asChild>
                   <Link
                     href={`/${locale}/contact?service=${encodeURIComponent(translation.name)}${sourceModel ? `&model=${encodeURIComponent(sourceModel.name)}` : ""}`}
                   >
-                    <Phone className="h-5 w-5 mr-3" />
+                    <Phone className="h-4 w-4 mr-2" />
                     Замовити послугу
                   </Link>
                 </Button>
                 <Button
                   size="lg"
                   variant="outline"
-                  className="w-full border-gray-300 hover:bg-gray-50 text-lg py-4 bg-transparent"
+                  className="w-full border-gray-300 hover:bg-gray-50 py-3 bg-transparent"
                   asChild
                 >
                   <Link href={`/${locale}/contact`}>
-                    <MessageCircle className="h-5 w-5 mr-3" />
+                    <MessageCircle className="h-4 w-4 mr-2" />
                     Задати питання
                   </Link>
                 </Button>
               </div>
 
-              {/* Key Benefits */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
-                  <Clock className="h-6 w-6 text-blue-600" />
+              {/* Компактні переваги */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
+                  <Clock className="h-5 w-5 text-blue-600" />
                   <div>
-                    <div className="font-semibold text-gray-900">Час виконання</div>
-                    <div className="text-sm text-gray-600">від {service.duration_hours} години</div>
+                    <div className="font-semibold text-gray-900 text-sm">Час виконання</div>
+                    <div className="text-xs text-gray-600">від {service.duration_hours} години</div>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
-                  <Shield className="h-6 w-6 text-green-600" />
+                <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
+                  <Shield className="h-5 w-5 text-green-600" />
                   <div>
-                    <div className="font-semibold text-gray-900">Гарантія</div>
-                    <div className="text-sm text-gray-600">{service.warranty_months} місяців</div>
+                    <div className="font-semibold text-gray-900 text-sm">Гарантія</div>
+                    <div className="text-xs text-gray-600">{service.warranty_months} місяців</div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Full Width Content Sections */}
-          <div className="space-y-16">
-            {/* What's Included */}
+          {/* Повноширинні секції - зменшені відступи */}
+          <div className="space-y-10">
+            {/* Що входить - вертикальний список замість сітки */}
             {whatIncludedList.length > 0 && (
               <section>
-                <h2 className="text-3xl font-bold text-gray-900 mb-8">Що входить у послугу</h2>
-                <div className="grid md:grid-cols-2 gap-4">
+                <h2 className="text-2xl font-bold text-gray-900 mb-5">Що входить у послугу</h2>
+                <div className="space-y-3">
                   {whatIncludedList.map((item, index) => (
-                    <div key={index} className="flex items-start gap-3 p-4 bg-gray-50 rounded-xl">
-                      <CheckCircle className="h-6 w-6 text-green-600 mt-0.5 flex-shrink-0" />
-                      <span className="text-gray-700 font-medium">{item}</span>
+                    <div key={index} className="flex items-start gap-3">
+                      <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                      <span className="text-gray-700">{item}</span>
                     </div>
                   ))}
                 </div>
               </section>
             )}
 
-            {/* FAQ Section */}
+            {/* FAQ Section - компактніше */}
             {faqs.length > 0 && (
               <section>
-                <h2 className="text-3xl font-bold text-gray-900 mb-8">Часті питання</h2>
-                <div className="space-y-4 max-w-4xl">
+                <h2 className="text-2xl font-bold text-gray-900 mb-5">Часті питання</h2>
+                <div className="space-y-3 max-w-4xl">
                   {faqs.map((faq) => (
                     <Collapsible key={faq.id}>
-                      <CollapsibleTrigger className="flex w-full items-center justify-between p-6 text-left bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors">
-                        <span className="font-semibold text-gray-900 text-lg">{faq.translation.question}</span>
-                        <ChevronDown className="h-5 w-5 text-gray-500 transition-transform ui-open:rotate-180" />
+                      <CollapsibleTrigger className="flex w-full items-center justify-between p-4 text-left bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors">
+                        <span className="font-semibold text-gray-900">{faq.translation.question}</span>
+                        <ChevronDown className="h-4 w-4 text-gray-500 transition-transform ui-open:rotate-180" />
                       </CollapsibleTrigger>
-                      <CollapsibleContent className="px-6 pb-6">
+                      <CollapsibleContent className="px-4 pb-4">
                         <p className="text-gray-600 leading-relaxed">{faq.translation.answer}</p>
                       </CollapsibleContent>
                     </Collapsible>
@@ -366,41 +366,41 @@ export default async function ServicePage({ params, searchParams }: Props) {
               </section>
             )}
 
-            {/* Customer Reviews */}
+            {/* Відгуки клієнтів - компактніше */}
             <section>
-              <h2 className="text-3xl font-bold text-gray-900 mb-8">Відгуки клієнтів</h2>
-              <div className="grid md:grid-cols-3 gap-6">
+              <h2 className="text-2xl font-bold text-gray-900 mb-5">Відгуки клієнтів</h2>
+              <div className="grid md:grid-cols-3 gap-4">
                 {testimonials.map((testimonial) => (
-                  <div key={testimonial.id} className="bg-gray-50 p-6 rounded-xl">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                        <User className="h-5 w-5 text-blue-600" />
+                  <div key={testimonial.id} className="bg-gray-50 p-4 rounded-lg">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                        <User className="h-4 w-4 text-blue-600" />
                       </div>
                       <div>
-                        <div className="font-semibold text-gray-900">{testimonial.name}</div>
-                        <div className="text-sm text-gray-500">{testimonial.date}</div>
+                        <div className="font-semibold text-gray-900 text-sm">{testimonial.name}</div>
+                        <div className="text-xs text-gray-500">{testimonial.date}</div>
                       </div>
                     </div>
-                    <p className="text-gray-700 leading-relaxed">"{testimonial.text}"</p>
+                    <p className="text-gray-700 text-sm leading-relaxed">"{testimonial.text}"</p>
                   </div>
                 ))}
               </div>
             </section>
 
-            {/* Final CTA */}
-            <section className="bg-blue-600 rounded-2xl p-12 text-center text-white">
-              <h2 className="text-3xl font-bold mb-4">Залишилися питання?</h2>
-              <p className="text-blue-100 text-lg mb-8 max-w-2xl mx-auto">
+            {/* Final CTA - компактніше */}
+            <section className="bg-blue-600 rounded-xl p-8 text-center text-white">
+              <h2 className="text-2xl font-bold mb-3">Залишилися питання?</h2>
+              <p className="text-blue-100 mb-6 max-w-xl mx-auto">
                 Наші експерти готові відповісти на всі ваші питання та надати професійну консультацію
               </p>
               <Button
                 size="lg"
                 variant="outline"
-                className="bg-white text-blue-600 hover:bg-gray-50 border-white text-lg px-8 py-4"
+                className="bg-white text-blue-600 hover:bg-gray-50 border-white px-6 py-3"
                 asChild
               >
                 <Link href={`/${locale}/contact`}>
-                  <MessageCircle className="h-5 w-5 mr-3" />
+                  <MessageCircle className="h-4 w-4 mr-2" />
                   Зв'язатися з нами
                 </Link>
               </Button>
