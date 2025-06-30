@@ -5,7 +5,19 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { CheckCircle, XCircle, AlertCircle, TestTube, Eye, Zap, RefreshCw, Navigation, Play } from "lucide-react"
+import {
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  TestTube,
+  Eye,
+  Zap,
+  RefreshCw,
+  Navigation,
+  Play,
+  Wifi,
+  WifiOff,
+} from "lucide-react"
 
 declare global {
   interface Window {
@@ -19,6 +31,7 @@ export function FacebookPixelTest() {
   const [isLoading, setIsLoading] = useState(false)
   const [eventLog, setEventLog] = useState<string[]>([])
   const [pixelStatus, setPixelStatus] = useState<string>("Unknown")
+  const [serverConnection, setServerConnection] = useState<boolean | null>(null)
 
   // Слухаємо події ініціалізації Facebook Pixel
   useEffect(() => {
@@ -26,6 +39,7 @@ export function FacebookPixelTest() {
       console.log("🎉 Facebook Pixel initialized event received:", event.detail)
       setEventLog((prev) => [...prev, `🎉 Facebook Pixel initialized: ${event.detail.pixelId}`])
       setPixelStatus("Initialized")
+      setServerConnection(event.detail.serverConnected || false)
     }
 
     const handleConsentChanged = (event: CustomEvent) => {
@@ -43,7 +57,50 @@ export function FacebookPixelTest() {
     }
   }, [])
 
-  const runPixelTest = () => {
+  // Функція для тестування з'єднання з Facebook
+  const testFacebookConnection = async () => {
+    setEventLog((prev) => [...prev, `🔗 Testing connection to Facebook servers...`])
+
+    try {
+      const img = new Image()
+      const pixelId = "1823195131746594"
+
+      const connectionPromise = new Promise<boolean>((resolve) => {
+        const timeout = setTimeout(() => {
+          resolve(false)
+        }, 5000)
+
+        img.onload = () => {
+          clearTimeout(timeout)
+          resolve(true)
+        }
+
+        img.onerror = () => {
+          clearTimeout(timeout)
+          resolve(false)
+        }
+      })
+
+      img.src = `https://www.facebook.com/tr?id=${pixelId}&ev=PageView&noscript=1&t=${Date.now()}`
+
+      const connected = await connectionPromise
+      setServerConnection(connected)
+
+      if (connected) {
+        setEventLog((prev) => [...prev, `✅ Facebook servers reachable`])
+      } else {
+        setEventLog((prev) => [...prev, `❌ Cannot reach Facebook servers`])
+      }
+
+      return connected
+    } catch (error) {
+      setEventLog((prev) => [...prev, `❌ Connection test failed: ${error}`])
+      setServerConnection(false)
+      return false
+    }
+  }
+
+  const runPixelTest = async () => {
     setIsLoading(true)
 
     const results = {
@@ -52,6 +109,7 @@ export function FacebookPixelTest() {
       cookiesPresent: false,
       eventsWorking: false,
       navigationTracking: false,
+      serverConnection: false,
       pixelId: "",
       cookies: [],
       allCookies: "",
@@ -62,6 +120,9 @@ export function FacebookPixelTest() {
     }
 
     try {
+      // Тестуємо з'єднання з Facebook
+      results.serverConnection = await testFacebookConnection()
+
       // Перевіряємо глобальний флаг
       results.globalFlag = !!window.FB_PIXEL_INITIALIZED
 
@@ -83,6 +144,7 @@ export function FacebookPixelTest() {
           currentUrl: window.location.href,
           pageTitle: document.title,
           globalFlag: window.FB_PIXEL_INITIALIZED,
+          serverConnection: results.serverConnection,
         }
       }
 
@@ -109,20 +171,35 @@ export function FacebookPixelTest() {
         try {
           const testEventId = Math.random().toString(36).substring(7)
 
-          // Основна тестова подія
+          // Основна тестова подія з додатковими параметрами
           window.fbq("trackCustom", "AdminPixelTest", {
             test_timestamp: new Date().toISOString(),
             test_source: "admin_panel",
             test_id: testEventId,
             page_url: window.location.href,
+            server_connected: results.serverConnection,
           })
 
-          // Тестуємо PageView
-          window.fbq("track", "PageView")
+          // Тестуємо PageView з параметрами
+          window.fbq("track", "PageView", {
+            source: "admin_test",
+            page_url: window.location.href,
+            timestamp: Date.now(),
+          })
 
-          // Тестуємо ViewContent
+          // Тестуємо ViewContent з параметрами
           window.fbq("track", "ViewContent", {
             content_type: "website",
+            source: "admin_test",
+            value: 1,
+            currency: "CZK",
+          })
+
+          // Тестуємо Purchase подію
+          window.fbq("track", "Purchase", {
+            value: 1,
+            currency: "CZK",
+            content_type: "test",
             source: "admin_test",
           })
 
@@ -132,9 +209,15 @@ export function FacebookPixelTest() {
           setEventLog((prev) => [
             ...prev,
             `✅ Sent AdminPixelTest event (ID: ${testEventId})`,
-            `✅ Sent PageView event`,
-            `✅ Sent ViewContent event`,
+            `✅ Sent PageView event with parameters`,
+            `✅ Sent ViewContent event with value`,
+            `✅ Sent Purchase test event`,
           ])
+
+          // Додатково відправляємо через noscript метод
+          const img = new Image()
+          img.src = `https://www.facebook.com/tr?id=1823195131746594&ev=Purchase&noscript=1&cd[test]=admin_panel&cd[timestamp]=${Date.now()}`
+          setEventLog((prev) => [...prev, `📡 Sent noscript backup event`])
         } catch (error) {
           results.errors.push(`Event tracking error: ${error}`)
           setEventLog((prev) => [...prev, `❌ Error sending events: ${error}`])
@@ -157,6 +240,15 @@ export function FacebookPixelTest() {
 
       if (!results.globalFlag) {
         results.errors.push("Global initialization flag not set - pixel may not be properly initialized")
+      }
+
+      if (!results.serverConnection) {
+        results.errors.push("Cannot connect to Facebook servers - events may not be delivered")
+        results.errors.push("This could be due to:")
+        results.errors.push("- Ad blockers blocking Facebook domains")
+        results.errors.push("- Network connectivity issues")
+        results.errors.push("- Corporate firewall blocking Facebook")
+        results.errors.push("- DNS issues")
       }
     } catch (error) {
       results.errors.push(`General error: ${error}`)
@@ -205,6 +297,7 @@ export function FacebookPixelTest() {
         test_page: currentPage,
         timestamp: new Date().toISOString(),
         test_source: "admin_navigation_test",
+        server_connected: serverConnection,
       })
 
       setEventLog((prev) => [...prev, `🧭 Sent navigation test event for page: ${currentPage}`])
@@ -232,6 +325,11 @@ export function FacebookPixelTest() {
     return <Badge variant={status ? "default" : "destructive"}>{status ? trueText : falseText}</Badge>
   }
 
+  const getConnectionIcon = () => {
+    if (serverConnection === null) return <AlertCircle className="h-4 w-4 text-gray-500" />
+    return serverConnection ? <Wifi className="h-4 w-4 text-green-500" /> : <WifiOff className="h-4 w-4 text-red-500" />
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -242,9 +340,13 @@ export function FacebookPixelTest() {
         <CardDescription>
           Test if Facebook Pixel is working correctly and debug issues
           <br />
-          <Badge variant="outline" className="mt-1">
-            Status: {pixelStatus}
-          </Badge>
+          <div className="flex gap-2 mt-2">
+            <Badge variant="outline">Status: {pixelStatus}</Badge>
+            <Badge variant={serverConnection ? "default" : "destructive"} className="flex items-center gap-1">
+              {getConnectionIcon()}
+              {serverConnection === null ? "Unknown" : serverConnection ? "Connected" : "Disconnected"}
+            </Badge>
+          </div>
         </CardDescription>
       </CardHeader>
 
@@ -259,9 +361,14 @@ export function FacebookPixelTest() {
             ) : (
               <>
                 <Zap className="mr-2 h-4 w-4" />
-                Run Pixel Test
+                Run Full Test
               </>
             )}
+          </Button>
+
+          <Button onClick={testFacebookConnection} variant="outline" disabled={isLoading}>
+            <Wifi className="mr-2 h-4 w-4" />
+            Test Connection
           </Button>
 
           <Button onClick={forceCreateCookies} variant="outline" disabled={isLoading}>
@@ -278,10 +385,8 @@ export function FacebookPixelTest() {
             <Play className="mr-2 h-4 w-4" />
             Manual Test
           </Button>
-        </div>
 
-        <div className="flex gap-2">
-          <Button onClick={clearEventLog} variant="outline" size="sm" className="flex-1 bg-transparent">
+          <Button onClick={clearEventLog} variant="outline" disabled={isLoading}>
             Clear Log
           </Button>
         </div>
@@ -290,7 +395,7 @@ export function FacebookPixelTest() {
           <div className="space-y-2">
             <h4 className="text-sm font-medium">Real-time Event Log:</h4>
             <div className="max-h-40 overflow-y-auto space-y-1 border rounded p-2">
-              {eventLog.slice(-10).map((log, index) => (
+              {eventLog.slice(-15).map((log, index) => (
                 <div key={index} className="text-xs font-mono bg-muted p-1 rounded">
                   {new Date().toLocaleTimeString()} - {log}
                 </div>
@@ -307,6 +412,14 @@ export function FacebookPixelTest() {
               <h3 className="font-medium">Test Results</h3>
 
               <div className="grid gap-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {getConnectionIcon()}
+                    <span>Facebook Server Connection</span>
+                  </div>
+                  {getStatusBadge(testResults.serverConnection, "Connected", "Disconnected")}
+                </div>
+
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     {getStatusIcon(testResults.globalFlag)}
@@ -411,6 +524,7 @@ export function FacebookPixelTest() {
                       <li>Look for events from devicehelp.cz</li>
                       <li>Events should appear within 1-2 minutes</li>
                       <li>Navigate between pages to test page tracking</li>
+                      <li>Check for Purchase, PageView, and ViewContent events</li>
                     </ol>
                   </div>
                 </div>
