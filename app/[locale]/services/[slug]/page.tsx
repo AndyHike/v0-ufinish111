@@ -87,9 +87,16 @@ export default async function ServicePage({ params, searchParams }: Props) {
       .select(`
         id,
         position,
+        warranty_months,
+        duration_hours,
+        image_url,
+        slug,
         services_translations(
           name,
           description,
+          detailed_description,
+          what_included,
+          benefits,
           locale
         )
       `)
@@ -103,9 +110,16 @@ export default async function ServicePage({ params, searchParams }: Props) {
         .select(`
           id,
           position,
+          warranty_months,
+          duration_hours,
+          image_url,
+          slug,
           services_translations(
             name,
             description,
+            detailed_description,
+            what_included,
+            benefits,
             locale
           )
         `)
@@ -198,6 +212,10 @@ export default async function ServicePage({ params, searchParams }: Props) {
       ? `${commonT("backTo") || "Назад до"} ${sourceModel.name}`
       : commonT("backToHome") || "На головну"
 
+    // Парсимо списки з тексту
+    const whatIncludedList = translation.what_included?.split("\n").filter((item) => item.trim()) || []
+    const benefitsList = translation.benefits?.split("\n").filter((item) => item.trim()) || []
+
     return (
       <div className="min-h-screen bg-white">
         <div className="container px-4 py-8 md:px-6">
@@ -212,25 +230,26 @@ export default async function ServicePage({ params, searchParams }: Props) {
             </nav>
 
             <div className="grid gap-8 lg:grid-cols-2">
-              {/* Ліва колонка - Зображення та основна інформація */}
+              {/* Ліва колонка - Зображення */}
               <div className="space-y-6">
-                {/* Зображення послуги */}
+                {/* Основне зображення послуги */}
                 <div className="aspect-square overflow-hidden rounded-lg bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="mx-auto mb-4 flex h-24 w-24 items-center justify-center rounded-full bg-white shadow-lg">
-                      <Wrench className="h-12 w-12 text-blue-600" />
+                  {service.image_url ? (
+                    <img
+                      src={formatImageUrl(service.image_url) || "/placeholder.svg"}
+                      alt={translation.name}
+                      width={400}
+                      height={400}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="text-center">
+                      <div className="mx-auto mb-4 flex h-24 w-24 items-center justify-center rounded-full bg-white shadow-lg">
+                        <Wrench className="h-12 w-12 text-blue-600" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-slate-700">{translation.name}</h3>
                     </div>
-                    <h3 className="text-lg font-semibold text-slate-700">{translation.name}</h3>
-                  </div>
-                </div>
-
-                {/* Галерея (заглушка для майбутнього) */}
-                <div className="grid grid-cols-4 gap-2">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="aspect-square rounded-lg bg-slate-100 flex items-center justify-center">
-                      <Wrench className="h-6 w-6 text-slate-400" />
-                    </div>
-                  ))}
+                  )}
                 </div>
               </div>
 
@@ -304,11 +323,11 @@ export default async function ServicePage({ params, searchParams }: Props) {
                     <div className="space-y-3">
                       <div className="flex items-center gap-3">
                         <CheckCircle className="h-5 w-5 text-green-600" />
-                        <span className="text-sm">Гарантія на роботу</span>
+                        <span className="text-sm">Гарантія {service.warranty_months} місяців</span>
                       </div>
                       <div className="flex items-center gap-3">
                         <Clock className="h-5 w-5 text-blue-600" />
-                        <span className="text-sm">Швидке виконання</span>
+                        <span className="text-sm">Виконання за {service.duration_hours} год</span>
                       </div>
                       <div className="flex items-center gap-3">
                         <Shield className="h-5 w-5 text-purple-600" />
@@ -348,33 +367,43 @@ export default async function ServicePage({ params, searchParams }: Props) {
               <div className="lg:col-span-2">
                 <h2 className="text-2xl font-bold mb-6">Опис послуги</h2>
                 <div className="prose max-w-none">
-                  <p className="text-muted-foreground leading-relaxed mb-4">{translation.description}</p>
+                  <p className="text-muted-foreground leading-relaxed mb-6">
+                    {translation.detailed_description || translation.description}
+                  </p>
 
-                  <h3 className="text-lg font-semibold mb-3">Що входить у послугу:</h3>
-                  <ul className="space-y-2 mb-6">
-                    <li className="flex items-start gap-2">
-                      <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                      <span>Діагностика пристрою</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                      <span>Виконання ремонтних робіт</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                      <span>Тестування після ремонту</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                      <span>Гарантія на виконані роботи</span>
-                    </li>
-                  </ul>
+                  {whatIncludedList.length > 0 && (
+                    <>
+                      <h3 className="text-lg font-semibold mb-3">Що входить у послугу:</h3>
+                      <ul className="space-y-2 mb-6">
+                        {whatIncludedList.map((item, index) => (
+                          <li key={index} className="flex items-start gap-2">
+                            <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
 
                   <h3 className="text-lg font-semibold mb-3">Терміни виконання:</h3>
                   <p className="text-muted-foreground mb-6">
-                    Зазвичай ремонт займає від 30 хвилин до 2 годин, залежно від складності роботи та наявності
-                    запчастин.
+                    Зазвичай ремонт займає {service.duration_hours} {service.duration_hours === 1 ? "годину" : "години"}
+                    , залежно від складності роботи та наявності запчастин.
                   </p>
+
+                  {benefitsList.length > 0 && (
+                    <>
+                      <h3 className="text-lg font-semibold mb-3">Наші переваги:</h3>
+                      <ul className="space-y-2 mb-6">
+                        {benefitsList.map((benefit, index) => (
+                          <li key={index} className="flex items-start gap-2">
+                            <Star className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+                            <span>{benefit}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
                 </div>
               </div>
 
