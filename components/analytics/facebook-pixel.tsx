@@ -14,6 +14,9 @@ declare global {
     _fbq: any
     FB_PIXEL_INITIALIZED: boolean
     testFacebookPixel: () => void
+    trackServiceClick: (serviceName: string, modelName: string, price: number) => void
+    trackContactSubmission: (formData: any) => void
+    trackContactClick: (method: string, location: string) => void
   }
 }
 
@@ -325,8 +328,89 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
     }
   }
 
+  // Функція для отримання даних про поточну сторінку
+  const getPageData = async (pathname: string) => {
+    try {
+      // Визначаємо тип сторінки та ID з URL
+      if (pathname.includes("/models/")) {
+        const modelSlug = pathname.split("/models/")[1]?.split("?")[0]
+        if (modelSlug) {
+          const response = await fetch(`/api/models/${modelSlug}`)
+          if (response.ok) {
+            const data = await response.json()
+            return {
+              type: "model",
+              data: {
+                id: data.id,
+                name: data.name,
+                brand: data.brand?.name,
+                series: data.series?.name,
+                price: data.averagePrice || 0,
+              },
+            }
+          }
+        }
+      } else if (pathname.includes("/brands/")) {
+        const brandSlug = pathname.split("/brands/")[1]?.split("?")[0]
+        if (brandSlug) {
+          const response = await fetch(`/api/brands/${brandSlug}`)
+          if (response.ok) {
+            const data = await response.json()
+            return {
+              type: "brand",
+              data: {
+                id: data.id,
+                name: data.name,
+                modelsCount: data.modelsCount || 0,
+              },
+            }
+          }
+        }
+      } else if (pathname.includes("/series/")) {
+        const seriesSlug = pathname.split("/series/")[1]?.split("?")[0]
+        if (seriesSlug) {
+          const response = await fetch(`/api/series/${seriesSlug}`)
+          if (response.ok) {
+            const data = await response.json()
+            return {
+              type: "series",
+              data: {
+                id: data.id,
+                name: data.name,
+                brand: data.brand?.name,
+                modelsCount: data.modelsCount || 0,
+              },
+            }
+          }
+        }
+      } else if (pathname.includes("/contact")) {
+        return {
+          type: "contact",
+          data: {
+            page_type: "contact_page",
+          },
+        }
+      }
+
+      return {
+        type: "page",
+        data: {
+          page_type: "general",
+        },
+      }
+    } catch (error) {
+      console.warn("Failed to get page data:", error)
+      return {
+        type: "page",
+        data: {
+          page_type: "general",
+        },
+      }
+    }
+  }
+
   // Функція для відстеження переходів по сторінках
-  const trackPageView = () => {
+  const trackPageView = async () => {
     if (!window.fbq || !window.fbq.callMethod || !isInitialized) {
       console.log("⚠️ Cannot track page view - pixel not properly initialized")
       return
@@ -334,59 +418,84 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
 
     console.log(`📊 Tracking page view: ${pathname}`)
 
-    // Основна подія PageView з повними параметрами
+    // Отримуємо дані про поточну сторінку
+    const pageData = await getPageData(pathname)
+
+    // Основна подія PageView
     window.fbq("track", "PageView", {
       page_url: window.location.href,
       page_title: document.title,
       referrer: document.referrer || "",
       timestamp: Date.now(),
+      page_type: pageData.type,
     })
 
     // Специфічні події залежно від типу сторінки
-    if (pathname.includes("/contact")) {
-      window.fbq("track", "Contact", {
-        content_category: "contact_page",
-        page_url: window.location.href,
-      })
-    } else if (pathname.includes("/models/")) {
-      const modelName = pathname.split("/models/")[1] || "unknown"
-      window.fbq("track", "ViewContent", {
-        content_type: "product",
-        content_category: "device_model",
-        content_name: modelName,
-        value: 0.01,
-        currency: "CZK",
-        page_url: window.location.href,
-      })
-    } else if (pathname.includes("/brands/")) {
-      const brandName = pathname.split("/brands/")[1] || "unknown"
-      window.fbq("track", "ViewContent", {
-        content_type: "category",
-        content_category: "device_brand",
-        content_name: brandName,
-        value: 0.01,
-        currency: "CZK",
-        page_url: window.location.href,
-      })
-    } else if (pathname.includes("/series/")) {
-      const seriesName = pathname.split("/series/")[1] || "unknown"
-      window.fbq("track", "ViewContent", {
-        content_type: "category",
-        content_category: "device_series",
-        content_name: seriesName,
-        value: 0.01,
-        currency: "CZK",
-        page_url: window.location.href,
-      })
+    switch (pageData.type) {
+      case "model":
+        window.fbq("track", "ViewContent", {
+          content_type: "product",
+          content_category: "device_model",
+          content_name: pageData.data.name,
+          content_ids: [pageData.data.id],
+          value: pageData.data.price,
+          currency: "CZK",
+          custom_data: {
+            brand: pageData.data.brand,
+            series: pageData.data.series,
+            model_name: pageData.data.name,
+          },
+        })
+        break
+
+      case "brand":
+        window.fbq("track", "ViewContent", {
+          content_type: "product_catalog",
+          content_category: "device_brand",
+          content_name: pageData.data.name,
+          content_ids: [pageData.data.id],
+          value: 0.01,
+          currency: "CZK",
+          custom_data: {
+            brand: pageData.data.name,
+            models_count: pageData.data.modelsCount,
+          },
+        })
+        break
+
+      case "series":
+        window.fbq("track", "ViewContent", {
+          content_type: "product_group",
+          content_category: "device_series",
+          content_name: pageData.data.name,
+          content_ids: [pageData.data.id],
+          value: 0.01,
+          currency: "CZK",
+          custom_data: {
+            brand: pageData.data.brand,
+            series: pageData.data.name,
+            models_count: pageData.data.modelsCount,
+          },
+        })
+        break
+
+      case "contact":
+        window.fbq("track", "Contact", {
+          content_category: "contact_page",
+          page_url: window.location.href,
+        })
+        break
     }
 
-    // Кастомна подія навігації
+    // Кастомна подія навігації з детальними даними
     window.fbq("trackCustom", "PageNavigation", {
       from_page: previousPathname.current,
       to_page: pathname,
       page_title: document.title,
+      page_type: pageData.type,
       timestamp: new Date().toISOString(),
       session_id: `session_${Date.now()}`,
+      page_data: pageData.data,
     })
 
     // Додатково через noscript для надійності
@@ -394,7 +503,7 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
     navImg.height = 1
     navImg.width = 1
     navImg.style.display = "none"
-    navImg.src = `https://www.facebook.com/tr?id=${pixelId}&ev=PageView&noscript=1&cd[page]=${encodeURIComponent(pathname)}&cd[timestamp]=${Date.now()}&cd[title]=${encodeURIComponent(document.title)}`
+    navImg.src = `https://www.facebook.com/tr?id=${pixelId}&ev=PageView&noscript=1&cd[page]=${encodeURIComponent(pathname)}&cd[timestamp]=${Date.now()}&cd[title]=${encodeURIComponent(document.title)}&cd[type]=${pageData.type}`
 
     document.body.appendChild(navImg)
 
@@ -404,6 +513,60 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
       }
     }, 5000)
   }
+
+  // Глобальні функції для відстеження конверсій (можна викликати з будь-якої сторінки)
+  useEffect(() => {
+    if (typeof window !== "undefined" && isInitialized) {
+      // Функція для відстеження кліків на послуги
+      window.trackServiceClick = (serviceName: string, modelName: string, price: number) => {
+        if (window.fbq && window.fbq.callMethod) {
+          window.fbq("track", "AddToCart", {
+            content_name: serviceName,
+            content_category: "repair_service",
+            content_type: "service",
+            value: price,
+            currency: "CZK",
+            custom_data: {
+              service_name: serviceName,
+              model_name: modelName,
+              action: "service_click",
+            },
+          })
+        }
+      }
+
+      // Функція для відстеження відправки форми контактів
+      window.trackContactSubmission = (formData: any) => {
+        if (window.fbq && window.fbq.callMethod) {
+          window.fbq("track", "Lead", {
+            content_name: "Contact Form Submission",
+            content_category: "contact_inquiry",
+            value: 100,
+            currency: "CZK",
+            custom_data: {
+              form_type: "contact",
+              predicted_ltv: 2000,
+              ...formData,
+            },
+          })
+        }
+      }
+
+      // Функція для відстеження кліків на контакти
+      window.trackContactClick = (method: string, location: string) => {
+        if (window.fbq && window.fbq.callMethod) {
+          window.fbq("track", "Contact", {
+            contact_method: method,
+            content_category: `${method}_contact`,
+            custom_data: {
+              contact_location: location,
+              contact_method: method,
+            },
+          })
+        }
+      }
+    }
+  }, [isInitialized])
 
   // Основний ефект для обробки згоди
   useEffect(() => {
