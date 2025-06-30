@@ -224,20 +224,20 @@ export default async function ServicePage({ params, searchParams }: Props) {
 
     return (
       <div className="min-h-screen bg-white">
-        <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
           {/* Breadcrumb */}
-          <nav className="mb-6 text-sm text-gray-500">
+          <nav className="mb-4 text-sm text-gray-500">
             <Link href={backUrl} className="hover:text-blue-600 transition-colors flex items-center gap-2">
               <ArrowLeft className="h-4 w-4" />
               {backText}
             </Link>
           </nav>
 
-          {/* Збалансований двоколонковий макет */}
-          <div className="grid lg:grid-cols-2 gap-8 mb-12">
-            {/* Ліва колонка - компактне фото з правильним масштабуванням */}
-            <div className="space-y-4">
-              <div className="aspect-[4/3] bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl overflow-hidden max-h-80">
+          {/* Компактний двоколонковий макет */}
+          <div className="grid lg:grid-cols-5 gap-6 mb-8">
+            {/* Ліва колонка - збільшене фото (2 колонки з 5) */}
+            <div className="lg:col-span-2">
+              <div className="aspect-[5/4] bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl overflow-hidden">
                 {service.image_url ? (
                   <img
                     src={formatImageUrl(service.image_url) || "/placeholder.svg"}
@@ -257,18 +257,18 @@ export default async function ServicePage({ params, searchParams }: Props) {
               </div>
             </div>
 
-            {/* Права колонка - збалансована з лівою */}
-            <div className="space-y-5">
+            {/* Права колонка - основна інформація (3 колонки з 5) */}
+            <div className="lg:col-span-3 space-y-4">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-3">{translation.name}</h1>
-                <p className="text-lg text-gray-600 leading-relaxed">
+                <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">{translation.name}</h1>
+                <p className="text-gray-600 leading-relaxed">
                   {translation.detailed_description || translation.description}
                 </p>
               </div>
 
               {/* Ціна */}
               <div>
-                <div className="text-3xl font-bold text-gray-900 mb-1">
+                <div className="text-2xl lg:text-3xl font-bold text-gray-900 mb-1">
                   {modelServicePrice
                     ? formatCurrency(modelServicePrice)
                     : minPrice && maxPrice
@@ -284,9 +284,27 @@ export default async function ServicePage({ params, searchParams }: Props) {
                 )}
               </div>
 
+              {/* Компактні переваги */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
+                  <Clock className="h-5 w-5 text-blue-600 flex-shrink-0" />
+                  <div>
+                    <div className="font-semibold text-gray-900 text-sm">Час виконання</div>
+                    <div className="text-xs text-gray-600">від {service.duration_hours} години</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
+                  <Shield className="h-5 w-5 text-green-600 flex-shrink-0" />
+                  <div>
+                    <div className="font-semibold text-gray-900 text-sm">Гарантія</div>
+                    <div className="text-xs text-gray-600">{service.warranty_months} місяців</div>
+                  </div>
+                </div>
+              </div>
+
               {/* CTA Buttons */}
-              <div className="space-y-3">
-                <Button size="lg" className="w-full bg-blue-600 hover:bg-blue-700 py-3" asChild>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Button size="lg" className="bg-blue-600 hover:bg-blue-700 py-3" asChild>
                   <Link
                     href={`/${locale}/contact?service=${encodeURIComponent(translation.name)}${sourceModel ? `&model=${encodeURIComponent(sourceModel.name)}` : ""}`}
                   >
@@ -297,7 +315,7 @@ export default async function ServicePage({ params, searchParams }: Props) {
                 <Button
                   size="lg"
                   variant="outline"
-                  className="w-full border-gray-300 hover:bg-gray-50 py-3 bg-transparent"
+                  className="border-gray-300 hover:bg-gray-50 py-3 bg-transparent"
                   asChild
                 >
                   <Link href={`/${locale}/contact`}>
@@ -307,28 +325,10 @@ export default async function ServicePage({ params, searchParams }: Props) {
                 </Button>
               </div>
 
-              {/* Компактні переваги */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
-                  <Clock className="h-5 w-5 text-blue-600" />
-                  <div>
-                    <div className="font-semibold text-gray-900 text-sm">Час виконання</div>
-                    <div className="text-xs text-gray-600">від {service.duration_hours} години</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
-                  <Shield className="h-5 w-5 text-green-600" />
-                  <div>
-                    <div className="font-semibold text-gray-900 text-sm">Гарантія</div>
-                    <div className="text-xs text-gray-600">{service.warranty_months} місяців</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Що входить у послугу - перенесено в праву колонку */}
+              {/* Що входить у послугу */}
               {whatIncludedList.length > 0 && (
                 <div className="pt-2">
-                  <h3 className="text-lg font-bold text-gray-900 mb-4">Що входить у послугу</h3>
+                  <h3 className="text-lg font-bold text-gray-900 mb-3">Що входить у послугу</h3>
                   <div className="space-y-2">
                     {whatIncludedList.map((item, index) => (
                       <div key={index} className="flex items-start gap-2">
@@ -342,21 +342,23 @@ export default async function ServicePage({ params, searchParams }: Props) {
             </div>
           </div>
 
-          {/* Повноширинні секції - зменшені відступи */}
-          <div className="space-y-10">
+          {/* Компактні повноширинні секції */}
+          <div className="space-y-8">
             {/* FAQ Section */}
             {faqs.length > 0 && (
               <section>
-                <h2 className="text-2xl font-bold text-gray-900 mb-5">Часті питання</h2>
+                <h2 className="text-xl lg:text-2xl font-bold text-gray-900 mb-4">Часті питання</h2>
                 <div className="space-y-3 max-w-4xl">
                   {faqs.map((faq) => (
                     <Collapsible key={faq.id}>
                       <CollapsibleTrigger className="flex w-full items-center justify-between p-4 text-left bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors">
-                        <span className="font-semibold text-gray-900">{faq.translation.question}</span>
-                        <ChevronDown className="h-4 w-4 text-gray-500 transition-transform ui-open:rotate-180" />
+                        <span className="font-semibold text-gray-900 text-sm lg:text-base">
+                          {faq.translation.question}
+                        </span>
+                        <ChevronDown className="h-4 w-4 text-gray-500 transition-transform ui-open:rotate-180 flex-shrink-0 ml-2" />
                       </CollapsibleTrigger>
                       <CollapsibleContent className="px-4 pb-4">
-                        <p className="text-gray-600 leading-relaxed">{faq.translation.answer}</p>
+                        <p className="text-gray-600 leading-relaxed text-sm lg:text-base">{faq.translation.answer}</p>
                       </CollapsibleContent>
                     </Collapsible>
                   ))}
@@ -366,16 +368,16 @@ export default async function ServicePage({ params, searchParams }: Props) {
 
             {/* Відгуки клієнтів */}
             <section>
-              <h2 className="text-2xl font-bold text-gray-900 mb-5">Відгуки клієнтів</h2>
-              <div className="grid md:grid-cols-3 gap-4">
+              <h2 className="text-xl lg:text-2xl font-bold text-gray-900 mb-4">Відгуки клієнтів</h2>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {testimonials.map((testimonial) => (
                   <div key={testimonial.id} className="bg-gray-50 p-4 rounded-lg">
                     <div className="flex items-center gap-2 mb-3">
-                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
                         <User className="h-4 w-4 text-blue-600" />
                       </div>
-                      <div>
-                        <div className="font-semibold text-gray-900 text-sm">{testimonial.name}</div>
+                      <div className="min-w-0">
+                        <div className="font-semibold text-gray-900 text-sm truncate">{testimonial.name}</div>
                         <div className="text-xs text-gray-500">{testimonial.date}</div>
                       </div>
                     </div>
@@ -386,9 +388,9 @@ export default async function ServicePage({ params, searchParams }: Props) {
             </section>
 
             {/* Final CTA */}
-            <section className="bg-blue-600 rounded-xl p-8 text-center text-white">
-              <h2 className="text-2xl font-bold mb-3">Залишилися питання?</h2>
-              <p className="text-blue-100 mb-6 max-w-xl mx-auto">
+            <section className="bg-blue-600 rounded-xl p-6 lg:p-8 text-center text-white">
+              <h2 className="text-xl lg:text-2xl font-bold mb-2">Залишилися питання?</h2>
+              <p className="text-blue-100 mb-4 lg:mb-6 max-w-xl mx-auto text-sm lg:text-base">
                 Наші експерти готові відповісти на всі ваші питання та надати професійну консультацію
               </p>
               <Button
