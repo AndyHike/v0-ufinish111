@@ -12,8 +12,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Edit, Plus, Trash2, Save, X } from "lucide-react"
+import { Edit, Plus, Trash2, Save, X, HelpCircle } from "lucide-react"
 import { toast } from "sonner"
+import { ServiceFaqManager } from "./service-faq-manager"
 
 interface ServiceTranslation {
   locale: string
@@ -21,7 +22,6 @@ interface ServiceTranslation {
   description: string
   detailed_description?: string
   what_included?: string
-  benefits?: string
 }
 
 interface Service {
@@ -39,6 +39,7 @@ export function ServicesManagement() {
   const [loading, setLoading] = useState(true)
   const [editingService, setEditingService] = useState<Service | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [managingFaqsFor, setManagingFaqsFor] = useState<string | null>(null)
 
   const locales = [
     { code: "uk", name: "Українська" },
@@ -125,7 +126,6 @@ export function ServicesManagement() {
             description: translation?.description || "",
             detailed_description: translation?.detailed_description || "",
             what_included: translation?.what_included || "",
-            benefits: translation?.benefits || "",
           }
           return acc
         },
@@ -266,7 +266,7 @@ export function ServicesManagement() {
               </div>
 
               <div>
-                <Label htmlFor={`included-${locale.code}`}>Що входить</Label>
+                <Label htmlFor={`included-${locale.code}`}>Що входить (кожен пункт з нового рядка)</Label>
                 <Textarea
                   id={`included-${locale.code}`}
                   value={formData.translations[locale.code]?.what_included || ""}
@@ -283,27 +283,7 @@ export function ServicesManagement() {
                     })
                   }
                   rows={3}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor={`benefits-${locale.code}`}>Переваги</Label>
-                <Textarea
-                  id={`benefits-${locale.code}`}
-                  value={formData.translations[locale.code]?.benefits || ""}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      translations: {
-                        ...formData.translations,
-                        [locale.code]: {
-                          ...formData.translations[locale.code],
-                          benefits: e.target.value,
-                        },
-                      },
-                    })
-                  }
-                  rows={3}
+                  placeholder="Діагностика пристрою&#10;Виконання ремонтних робіт&#10;Тестування після ремонту"
                 />
               </div>
             </TabsContent>
@@ -326,6 +306,24 @@ export function ServicesManagement() {
 
   if (loading) {
     return <div className="p-6">Завантаження...</div>
+  }
+
+  // Якщо управляємо FAQ
+  if (managingFaqsFor) {
+    const service = services.find((s) => s.id === managingFaqsFor)
+    const serviceName = service?.services_translations?.find((t) => t.locale === "uk")?.name || "Невідома послуга"
+
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Button variant="outline" onClick={() => setManagingFaqsFor(null)}>
+            ← Назад до послуг
+          </Button>
+          <h2 className="text-2xl font-bold">FAQ для: {serviceName}</h2>
+        </div>
+        <ServiceFaqManager serviceId={managingFaqsFor} />
+      </div>
+    )
   }
 
   return (
@@ -384,6 +382,9 @@ export function ServicesManagement() {
                         }}
                       >
                         <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => setManagingFaqsFor(service.id)}>
+                        <HelpCircle className="h-4 w-4" />
                       </Button>
                       <Button size="sm" variant="destructive" onClick={() => handleDeleteService(service.id)}>
                         <Trash2 className="h-4 w-4" />

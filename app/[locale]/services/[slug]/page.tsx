@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { Phone, MessageCircle, Clock, Shield, Star, CheckCircle, Wrench } from "lucide-react"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+import { Phone, MessageCircle, Clock, Shield, Star, CheckCircle, Wrench, HelpCircle } from "lucide-react"
 import { formatCurrency } from "@/lib/format-currency"
 import { formatImageUrl } from "@/utils/image-url"
 
@@ -96,7 +97,6 @@ export default async function ServicePage({ params, searchParams }: Props) {
           description,
           detailed_description,
           what_included,
-          benefits,
           locale
         )
       `)
@@ -119,7 +119,6 @@ export default async function ServicePage({ params, searchParams }: Props) {
             description,
             detailed_description,
             what_included,
-            benefits,
             locale
           )
         `)
@@ -140,6 +139,29 @@ export default async function ServicePage({ params, searchParams }: Props) {
     if (!translation) {
       notFound()
     }
+
+    // Отримуємо FAQ для послуги
+    const { data: faqsData } = await supabase
+      .from("service_faqs")
+      .select(`
+        id,
+        position,
+        service_faq_translations(
+          question,
+          answer,
+          locale
+        )
+      `)
+      .eq("service_id", service.id)
+      .order("position")
+
+    const faqs =
+      faqsData
+        ?.map((faq) => ({
+          ...faq,
+          translation: faq.service_faq_translations?.find((t: any) => t.locale === locale),
+        }))
+        .filter((faq) => faq.translation) || []
 
     // Отримуємо дані моделі, якщо передано modelSlug
     let sourceModel = null
@@ -177,34 +199,12 @@ export default async function ServicePage({ params, searchParams }: Props) {
       }
     }
 
-    // Отримуємо статистику по послузі
-    const { data: modelServices } = await supabase
-      .from("model_services")
-      .select(`
-        id,
-        price,
-        model_id,
-        models(
-          id,
-          name,
-          slug,
-          image_url,
-          brands(
-            id,
-            name,
-            slug,
-            logo_url
-          )
-        )
-      `)
-      .eq("service_id", service.id)
+    // Отримуємо ціни для статистики
+    const { data: modelServices } = await supabase.from("model_services").select("price").eq("service_id", service.id)
 
-    // Статистика
-    const totalModels = modelServices?.length || 0
     const prices = modelServices?.map((ms) => ms.price).filter((p) => p !== null) || []
     const minPrice = prices.length > 0 ? Math.min(...prices) : null
     const maxPrice = prices.length > 0 ? Math.max(...prices) : null
-    const avgPrice = prices.length > 0 ? Math.round(prices.reduce((a, b) => a + b, 0) / prices.length) : null
 
     // Визначаємо URL для кнопки "Назад"
     const backUrl = sourceModel ? `/${locale}/models/${sourceModel.slug}` : `/${locale}`
@@ -214,232 +214,176 @@ export default async function ServicePage({ params, searchParams }: Props) {
 
     // Парсимо списки з тексту
     const whatIncludedList = translation.what_included?.split("\n").filter((item) => item.trim()) || []
-    const benefitsList = translation.benefits?.split("\n").filter((item) => item.trim()) || []
 
     return (
       <div className="min-h-screen bg-white">
         <div className="container px-4 py-8 md:px-6">
           <div className="mx-auto max-w-6xl">
             {/* Breadcrumb */}
-            <nav className="mb-6 text-sm text-muted-foreground">
-              <Link href={backUrl} className="hover:text-primary">
+            <nav className="mb-8 text-sm text-muted-foreground">
+              <Link href={backUrl} className="hover:text-primary transition-colors">
                 {backText}
               </Link>
               <span className="mx-2">/</span>
               <span className="text-foreground">{translation.name}</span>
             </nav>
 
-            <div className="grid gap-8 lg:grid-cols-2">
+            {/* Hero Section */}
+            <div className="grid gap-12 lg:grid-cols-2 mb-16">
               {/* Ліва колонка - Зображення */}
               <div className="space-y-6">
-                {/* Основне зображення послуги */}
-                <div className="aspect-square overflow-hidden rounded-lg bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+                <div className="aspect-square overflow-hidden rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center shadow-lg">
                   {service.image_url ? (
                     <img
                       src={formatImageUrl(service.image_url) || "/placeholder.svg"}
                       alt={translation.name}
-                      width={400}
-                      height={400}
+                      width={500}
+                      height={500}
                       className="h-full w-full object-cover"
                     />
                   ) : (
                     <div className="text-center">
-                      <div className="mx-auto mb-4 flex h-24 w-24 items-center justify-center rounded-full bg-white shadow-lg">
-                        <Wrench className="h-12 w-12 text-blue-600" />
+                      <div className="mx-auto mb-6 flex h-32 w-32 items-center justify-center rounded-full bg-white shadow-xl">
+                        <Wrench className="h-16 w-16 text-blue-600" />
                       </div>
-                      <h3 className="text-lg font-semibold text-slate-700">{translation.name}</h3>
+                      <h3 className="text-xl font-semibold text-slate-700">{translation.name}</h3>
                     </div>
                   )}
                 </div>
               </div>
 
               {/* Права колонка - Деталі та замовлення */}
-              <div className="space-y-6">
-                {/* Заголовок та ціна */}
+              <div className="space-y-8">
+                {/* Заголовок та рейтинг */}
                 <div>
-                  <div className="mb-2 flex items-center gap-2">
-                    <Badge variant="secondary">Послуга</Badge>
+                  <div className="mb-4 flex items-center gap-3">
+                    <Badge variant="secondary" className="text-sm">
+                      Послуга
+                    </Badge>
                     <div className="flex items-center gap-1">
                       <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                       <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                       <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                       <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                       <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                      <span className="text-sm text-muted-foreground ml-1">(4.9)</span>
+                      <span className="text-sm text-muted-foreground ml-2">(4.9)</span>
                     </div>
                   </div>
-                  <h1 className="text-3xl font-bold text-slate-900 mb-4">{translation.name}</h1>
+                  <h1 className="text-4xl font-bold text-slate-900 mb-6 leading-tight">{translation.name}</h1>
 
                   {/* Ціна */}
-                  <div className="mb-6">
+                  <div className="mb-8">
                     {modelServicePrice ? (
                       <div>
-                        <div className="text-3xl font-bold text-slate-900">{formatCurrency(modelServicePrice)}</div>
+                        <div className="text-4xl font-bold text-slate-900 mb-2">
+                          {formatCurrency(modelServicePrice)}
+                        </div>
                         {sourceModel && (
-                          <div className="text-sm text-muted-foreground">
+                          <div className="text-muted-foreground">
                             для {sourceModel.brands?.name} {sourceModel.name}
                           </div>
                         )}
                       </div>
                     ) : minPrice && maxPrice ? (
                       <div>
-                        <div className="text-3xl font-bold text-slate-900">
+                        <div className="text-4xl font-bold text-slate-900 mb-2">
                           {minPrice === maxPrice
                             ? formatCurrency(minPrice)
                             : `${formatCurrency(minPrice)} - ${formatCurrency(maxPrice)}`}
                         </div>
-                        <div className="text-sm text-muted-foreground">залежно від моделі пристрою</div>
+                        <div className="text-muted-foreground">залежно від моделі пристрою</div>
                       </div>
                     ) : (
                       <div>
-                        <div className="text-3xl font-bold text-slate-900">За запитом</div>
-                        <div className="text-sm text-muted-foreground">ціна залежить від складності роботи</div>
+                        <div className="text-4xl font-bold text-slate-900 mb-2">За запитом</div>
+                        <div className="text-muted-foreground">ціна залежить від складності роботи</div>
                       </div>
                     )}
                   </div>
                 </div>
 
                 {/* Кнопки дій */}
-                <div className="space-y-3">
-                  <Button size="lg" className="w-full" asChild>
+                <div className="space-y-4">
+                  <Button size="lg" className="w-full h-14 text-lg" asChild>
                     <Link
                       href={`/${locale}/contact?service=${encodeURIComponent(translation.name)}${sourceModel ? `&model=${encodeURIComponent(sourceModel.name)}` : ""}`}
                     >
-                      <Phone className="h-5 w-5 mr-2" />
+                      <Phone className="h-5 w-5 mr-3" />
                       Замовити послугу
                     </Link>
                   </Button>
-                  <Button size="lg" variant="outline" className="w-full bg-transparent" asChild>
+                  <Button size="lg" variant="outline" className="w-full h-14 text-lg bg-transparent" asChild>
                     <Link href={`/${locale}/contact`}>
-                      <MessageCircle className="h-5 w-5 mr-2" />
+                      <MessageCircle className="h-5 w-5 mr-3" />
                       Задати питання
                     </Link>
                   </Button>
                 </div>
 
                 {/* Переваги */}
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-3">
-                        <CheckCircle className="h-5 w-5 text-green-600" />
-                        <span className="text-sm">Гарантія {service.warranty_months} місяців</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <Clock className="h-5 w-5 text-blue-600" />
-                        <span className="text-sm">Виконання за {service.duration_hours} год</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <Shield className="h-5 w-5 text-purple-600" />
-                        <span className="text-sm">Оригінальні запчастини</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <Star className="h-5 w-5 text-yellow-600" />
-                        <span className="text-sm">Досвідчені майстри</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Статистика */}
-                <Card>
-                  <CardContent className="p-4">
-                    <h3 className="font-semibold mb-3">Статистика послуги</h3>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <div className="font-semibold text-lg">{totalModels}</div>
-                        <div className="text-muted-foreground">підтримуваних моделей</div>
-                      </div>
-                      <div>
-                        <div className="font-semibold text-lg">{avgPrice ? formatCurrency(avgPrice) : "—"}</div>
-                        <div className="text-muted-foreground">середня ціна</div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-
-            <Separator className="my-12" />
-
-            {/* Опис послуги */}
-            <div className="grid gap-8 lg:grid-cols-3">
-              <div className="lg:col-span-2">
-                <h2 className="text-2xl font-bold mb-6">Опис послуги</h2>
-                <div className="prose max-w-none">
-                  <p className="text-muted-foreground leading-relaxed mb-6">
-                    {translation.detailed_description || translation.description}
-                  </p>
-
-                  {whatIncludedList.length > 0 && (
-                    <>
-                      <h3 className="text-lg font-semibold mb-3">Що входить у послугу:</h3>
-                      <ul className="space-y-2 mb-6">
-                        {whatIncludedList.map((item, index) => (
-                          <li key={index} className="flex items-start gap-2">
-                            <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                            <span>{item}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </>
-                  )}
-
-                  <h3 className="text-lg font-semibold mb-3">Терміни виконання:</h3>
-                  <p className="text-muted-foreground mb-6">
-                    Зазвичай ремонт займає {service.duration_hours} {service.duration_hours === 1 ? "годину" : "години"}
-                    , залежно від складності роботи та наявності запчастин.
-                  </p>
-
-                  {benefitsList.length > 0 && (
-                    <>
-                      <h3 className="text-lg font-semibold mb-3">Наші переваги:</h3>
-                      <ul className="space-y-2 mb-6">
-                        {benefitsList.map((benefit, index) => (
-                          <li key={index} className="flex items-start gap-2">
-                            <Star className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
-                            <span>{benefit}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {/* Бічна панель */}
-              <div className="space-y-6">
-                <Card>
+                <Card className="border-2">
                   <CardContent className="p-6">
-                    <h3 className="font-semibold mb-4">Потрібна консультація?</h3>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Наші експерти готові відповісти на всі ваші питання
-                    </p>
-                    <Button variant="outline" className="w-full bg-transparent" asChild>
-                      <Link href={`/${locale}/contact`}>Зв'язатися з нами</Link>
-                    </Button>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100">
+                          <Shield className="h-5 w-5 text-green-600" />
+                        </div>
+                        <div>
+                          <div className="font-semibold text-sm">Гарантія</div>
+                          <div className="text-sm text-muted-foreground">{service.warranty_months} місяців</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100">
+                          <Clock className="h-5 w-5 text-blue-600" />
+                        </div>
+                        <div>
+                          <div className="font-semibold text-sm">Виконання</div>
+                          <div className="text-sm text-muted-foreground">{service.duration_hours} год</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-100">
+                          <CheckCircle className="h-5 w-5 text-purple-600" />
+                        </div>
+                        <div>
+                          <div className="font-semibold text-sm">Запчастини</div>
+                          <div className="text-sm text-muted-foreground">Оригінальні</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-yellow-100">
+                          <Star className="h-5 w-5 text-yellow-600" />
+                        </div>
+                        <div>
+                          <div className="font-semibold text-sm">Майстри</div>
+                          <div className="text-sm text-muted-foreground">Досвідчені</div>
+                        </div>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
 
+                {/* Інформація про пристрій */}
                 {sourceModel && (
                   <Card>
                     <CardContent className="p-6">
                       <h3 className="font-semibold mb-4">Ваш пристрій</h3>
-                      <div className="flex items-center gap-3">
-                        <div className="relative h-12 w-12 overflow-hidden rounded-lg bg-slate-100">
+                      <div className="flex items-center gap-4">
+                        <div className="relative h-16 w-16 overflow-hidden rounded-xl bg-slate-100">
                           <img
                             src={
-                              formatImageUrl(sourceModel.image_url) || "/placeholder.svg?height=48&width=48&query=phone"
+                              formatImageUrl(sourceModel.image_url) || "/placeholder.svg?height=64&width=64&query=phone"
                             }
                             alt={sourceModel.name}
-                            width={48}
-                            height={48}
-                            className="h-full w-full object-contain p-1"
+                            width={64}
+                            height={64}
+                            className="h-full w-full object-contain p-2"
                           />
                         </div>
                         <div>
-                          <div className="font-medium">{sourceModel.name}</div>
-                          <div className="text-sm text-muted-foreground">{sourceModel.brands?.name}</div>
+                          <div className="font-semibold text-lg">{sourceModel.name}</div>
+                          <div className="text-muted-foreground">{sourceModel.brands?.name}</div>
                         </div>
                       </div>
                     </CardContent>
@@ -447,6 +391,119 @@ export default async function ServicePage({ params, searchParams }: Props) {
                 )}
               </div>
             </div>
+
+            <Separator className="my-16" />
+
+            {/* Опис послуги */}
+            <section className="mb-16">
+              <div className="grid gap-12 lg:grid-cols-3">
+                <div className="lg:col-span-2">
+                  <h2 className="text-3xl font-bold mb-8">Опис послуги</h2>
+                  <div className="prose max-w-none">
+                    <p className="text-lg text-muted-foreground leading-relaxed mb-8">
+                      {translation.detailed_description || translation.description}
+                    </p>
+
+                    {whatIncludedList.length > 0 && (
+                      <>
+                        <h3 className="text-xl font-semibold mb-6">Що входить у послугу:</h3>
+                        <div className="grid gap-4 mb-8">
+                          {whatIncludedList.map((item, index) => (
+                            <div key={index} className="flex items-start gap-3 p-4 bg-green-50 rounded-lg">
+                              <CheckCircle className="h-6 w-6 text-green-600 mt-0.5 flex-shrink-0" />
+                              <span className="text-slate-700">{item}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+
+                    <h3 className="text-xl font-semibold mb-6">Терміни виконання:</h3>
+                    <div className="p-6 bg-blue-50 rounded-lg mb-8">
+                      <div className="flex items-center gap-3">
+                        <Clock className="h-6 w-6 text-blue-600" />
+                        <div>
+                          <div className="font-semibold text-slate-900">
+                            Зазвичай ремонт займає {service.duration_hours}{" "}
+                            {service.duration_hours === 1 ? "годину" : "години"}
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            залежно від складності роботи та наявності запчастин
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* FAQ Section */}
+            {faqs.length > 0 && (
+              <>
+                <Separator className="my-16" />
+                <section className="mb-16">
+                  <div className="text-center mb-12">
+                    <div className="flex items-center justify-center gap-3 mb-4">
+                      <HelpCircle className="h-8 w-8 text-blue-600" />
+                      <h2 className="text-3xl font-bold">Часті питання</h2>
+                    </div>
+                    <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                      Відповіді на найпоширеніші питання про цю послугу
+                    </p>
+                  </div>
+
+                  <div className="max-w-4xl mx-auto">
+                    <Accordion type="single" collapsible className="space-y-4">
+                      {faqs.map((faq, index) => (
+                        <AccordionItem
+                          key={faq.id}
+                          value={`item-${index}`}
+                          className="border rounded-lg px-6 bg-white shadow-sm"
+                        >
+                          <AccordionTrigger className="text-left hover:no-underline py-6">
+                            <span className="font-semibold text-lg">{faq.translation.question}</span>
+                          </AccordionTrigger>
+                          <AccordionContent className="pb-6">
+                            <div className="text-muted-foreground leading-relaxed">{faq.translation.answer}</div>
+                          </AccordionContent>
+                        </AccordionItem>
+                      ))}
+                    </Accordion>
+                  </div>
+                </section>
+              </>
+            )}
+
+            {/* Фінальний блок консультації */}
+            <Separator className="my-16" />
+            <section className="text-center py-16">
+              <div className="max-w-2xl mx-auto">
+                <div className="mb-8">
+                  <div className="flex items-center justify-center gap-3 mb-6">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-100">
+                      <MessageCircle className="h-8 w-8 text-blue-600" />
+                    </div>
+                  </div>
+                  <h2 className="text-3xl font-bold mb-4">Залишилися питання?</h2>
+                  <p className="text-lg text-muted-foreground mb-8">
+                    Наші експерти готові відповісти на всі ваші питання та надати професійну консультацію
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  <Button size="lg" className="h-14 px-8 text-lg" asChild>
+                    <Link href={`/${locale}/contact`}>
+                      <Phone className="h-5 w-5 mr-3" />
+                      Зв'язатися з нами
+                    </Link>
+                  </Button>
+                  <div className="text-sm text-muted-foreground">
+                    Або зателефонуйте нам: <span className="font-semibold">+380 XX XXX XX XX</span>
+                  </div>
+                </div>
+              </div>
+            </section>
           </div>
         </div>
       </div>
