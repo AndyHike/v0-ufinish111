@@ -4,7 +4,7 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import { createServerClient } from "@/utils/supabase/server"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, ExternalLink } from "lucide-react"
 import { formatCurrency } from "@/lib/format-currency"
 import { formatImageUrl } from "@/utils/image-url"
 
@@ -106,6 +106,8 @@ export default async function ModelPage({ params }: Props) {
       service_id, 
       services(
         id, 
+        slug,
+        icon,
         position,
         services_translations(
           name,
@@ -136,6 +138,8 @@ export default async function ModelPage({ params }: Props) {
         price: modelService.price,
         service: {
           id: modelService.services.id,
+          slug: modelService.services.slug,
+          icon: modelService.services.icon,
           position: modelService.services.position,
           name: translations[0]?.name || "",
           description: translations[0]?.description || "",
@@ -202,32 +206,72 @@ export default async function ModelPage({ params }: Props) {
         <h2 className="mb-6 text-2xl font-bold">{t("availableServices") || "Доступні послуги"}</h2>
 
         {transformedModelServices && transformedModelServices.length > 0 ? (
-          <div className="grid gap-4">
+          <div className="grid gap-6">
             {transformedModelServices.map((modelService) => (
-              <div key={modelService.id} className="flex flex-col rounded-lg border p-6 shadow-sm">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h3 className="text-xl font-medium">{modelService.service.name}</h3>
-                    <p className="mt-2 text-muted-foreground">{modelService.service.description}</p>
+              <div
+                key={modelService.id}
+                className="group rounded-lg border p-6 shadow-sm hover:shadow-md transition-all duration-200"
+              >
+                <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+                  <div className="flex-1">
+                    <div className="flex items-start gap-3 mb-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+                        <span className="text-sm font-medium">{modelService.service.icon || "🔧"}</span>
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-xl font-semibold mb-1">{modelService.service.name}</h3>
+                        <p className="text-muted-foreground text-sm leading-relaxed">
+                          {modelService.service.description}
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-xl font-bold">
-                    {modelService.price !== null ? formatCurrency(modelService.price) : t("priceOnRequest")}
+
+                  <div className="flex flex-col sm:flex-row lg:flex-col xl:flex-row items-start lg:items-end xl:items-center gap-3 lg:text-right">
+                    <div className="text-right">
+                      <div className="text-2xl font-bold text-primary">
+                        {modelService.price !== null ? formatCurrency(modelService.price) : t("priceOnRequest")}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {commonT("priceForThisModel") || "За цю модель"}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                      {/* Кнопка для перегляду деталей послуги */}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        asChild
+                        className="group-hover:border-primary/50 bg-transparent"
+                      >
+                        <Link href={`/${locale}/services/${modelService.service.slug || modelService.service.id}`}>
+                          <ExternalLink className="h-4 w-4 mr-2" />
+                          {commonT("serviceDetails") || "Детальніше"}
+                        </Link>
+                      </Button>
+
+                      {/* Кнопка для замовлення */}
+                      <Button size="sm" asChild>
+                        <Link
+                          href={`/${locale}/contact?service=${encodeURIComponent(modelService.service.name)}&model=${encodeURIComponent(model.name)}`}
+                        >
+                          {commonT("requestService") || "Замовити"}
+                        </Link>
+                      </Button>
+                    </div>
                   </div>
-                </div>
-                <div className="mt-4 flex justify-end">
-                  <Button variant="outline" asChild>
-                    <Link
-                      href={`/${locale}/contact?service=${encodeURIComponent(modelService.service.name)}&model=${encodeURIComponent(model.name)}`}
-                    >
-                      {commonT("requestService") || "Замовити послугу"}
-                    </Link>
-                  </Button>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <p>{t("noServicesAvailable") || "Послуги недоступні"}</p>
+          <div className="text-center py-12">
+            <p className="text-muted-foreground text-lg">{t("noServicesAvailable") || "Послуги недоступні"}</p>
+            <Button variant="outline" asChild className="mt-4 bg-transparent">
+              <Link href={`/${locale}/contact`}>{commonT("contactUs") || "Зв'яжіться з нами"}</Link>
+            </Button>
+          </div>
         )}
       </div>
     </div>
