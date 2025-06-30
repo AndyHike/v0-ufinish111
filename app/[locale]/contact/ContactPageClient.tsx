@@ -11,6 +11,32 @@ import { useToast } from "@/components/ui/use-toast"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Phone, Mail, MapPin, Clock, CheckCircle } from "lucide-react"
 
+// Facebook Pixel tracking functions
+const trackContactClick = (method: string) => {
+  if (typeof window !== "undefined" && window.fbq) {
+    window.fbq("track", "Contact", {
+      contact_method: method,
+      content_category: `${method}_contact`,
+      page_type: "contact_page",
+      source: "contact_page",
+    })
+  }
+}
+
+const trackFormSubmission = () => {
+  if (typeof window !== "undefined" && window.fbq) {
+    window.fbq("track", "Lead", {
+      content_name: "Contact Form Submission",
+      content_category: "contact_inquiry",
+      value: 100,
+      currency: "CZK",
+      form_type: "contact",
+      page_type: "contact_page",
+      predicted_ltv: 2000,
+    })
+  }
+}
+
 export default function ContactPageClient() {
   const t = useTranslations("Contact")
   const { toast } = useToast()
@@ -57,6 +83,9 @@ export default function ContactPageClient() {
       // Встановлюємо стан успіху
       setIsSuccess(true)
 
+      // Track successful form submission
+      trackFormSubmission()
+
       // Очищаємо форму
       e.currentTarget.reset()
     } catch (error) {
@@ -88,7 +117,11 @@ export default function ContactPageClient() {
                   <Phone className="mt-1 h-5 w-5 text-primary" />
                   <div>
                     <h3 className="font-semibold">{t("phone")}</h3>
-                    <a href="tel:+420775848259" className="text-sm text-muted-foreground hover:text-primary">
+                    <a
+                      href="tel:+420775848259"
+                      className="text-sm text-muted-foreground hover:text-primary"
+                      onClick={() => trackContactClick("phone")}
+                    >
                       +420 775 848 259
                     </a>
                   </div>
@@ -102,7 +135,11 @@ export default function ContactPageClient() {
                   <Mail className="mt-1 h-5 w-5 text-primary" />
                   <div>
                     <h3 className="font-semibold">{t("email")}</h3>
-                    <a href="mailto:info@devicehelp.cz" className="text-sm text-muted-foreground hover:text-primary">
+                    <a
+                      href="mailto:info@devicehelp.cz"
+                      className="text-sm text-muted-foreground hover:text-primary"
+                      onClick={() => trackContactClick("email")}
+                    >
                       info@devicehelp.cz
                     </a>
                   </div>
