@@ -1,52 +1,91 @@
-import { NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase"
+import { type NextRequest, NextResponse } from "next/server"
+import { createServerClient } from "@/utils/supabase/server"
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
-    const url = new URL(request.url)
-    const locale = url.searchParams.get("locale") || "uk"
+    const supabase = createServerClient()
 
-    console.log(`[GET] /api/admin/services - Fetching services for locale: ${locale}`)
-
-    const supabase = createClient()
-
-    // Fetch services with translations
-    const { data, error } = await supabase
+    const { data: services, error } = await supabase
       .from("services")
       .select(`
-        id, 
+        id,
+        slug,
         position,
+        warranty_months,
+        duration_hours,
+        image_url,
         services_translations(
+          id,
           name,
           description,
+          detailed_description,
+          what_included,
+          benefits,
           locale
         )
       `)
-      .order("position", { ascending: true })
+      .order("position")
 
     if (error) {
-      console.error("[GET] /api/admin/services - Error fetching services:", error)
-      return NextResponse.json({ error: "Failed to fetch services", details: error }, { status: 500 })
+      console.error("Error fetching services:", error)
+      return NextResponse.json({ error: "Failed to fetch services" }, { status: 500 })
     }
 
-    console.log(`[GET] /api/admin/services - Found ${data.length} services`)
-
-    // Filter translations for the requested locale
-    const transformedData = data.map((service) => {
-      const translations = service.services_translations.filter((translation: any) => translation.locale === locale)
-
-      return {
-        id: service.id,
-        position: service.position,
-        name: translations[0]?.name || "",
-        description: translations[0]?.description || "",
-      }
-    })
-
-    console.log(`[GET] /api/admin/services - Transformed ${transformedData.length} services for locale ${locale}`)
-    return NextResponse.json(transformedData)
+    return NextResponse.json({ services })
   } catch (error) {
-    console.error("[GET] /api/admin/services - Unexpected error:", error)
-    return NextResponse.json({ error: "Failed to fetch services", details: error }, { status: 500 })
+    console.error("Error in GET /api/admin/services:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const supabase = createServerClient()
+    const body = await request.json()
+
+    const { slug, position, warranty_months, duration_hours, image_url, translations } = body
+
+    // Створюємо послугу
+    const { data: service, error: serviceError } = await supabase
+      .from("services")
+      .insert({
+        slug,
+        position,
+        warranty_months,
+        duration_hours,
+        image_url,
+      })
+      .select()
+      .single()
+
+    if (serviceError) {
+      console.error("Error creating service:", serviceError)
+      return NextResponse.json({ error: "Failed to create service" }, { status: 500 })
+    }
+
+    // Створюємо переклади
+    const translationInserts = Object.entries(translations).map(([locale, translation]: [string, any]) => ({
+      service_id: service.id,
+      locale,
+      name: translation.name,
+      description: translation.description,
+      detailed_description: translation.detailed_description,
+      what_included: translation.what_included,
+      benefits: translation.benefits,
+    }))
+
+    const { error: translationsError } = await supabase.from("services_translations").insert(translationInserts)
+
+    if (translationsError) {
+      console.error("Error creating translations:", translationsError)
+      // Видаляємо створену послугу якщо переклади не створилися
+      await supabase.from("services").delete().eq("id", service.id)
+      return NextResponse.json({ error: "Failed to create translations" }, { status: 500 })
+    }
+
+    return NextResponse.json({ service })
+  } catch (error) {
+    console.error("Error in POST /api/admin/services:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

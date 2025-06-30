@@ -1,76 +1,78 @@
-import { NextResponse } from "next/server"
+import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/utils/supabase/server"
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const supabase = createServerClient()
-    const { id } = params
-
-    const { data: service, error } = await supabase
-      .from("services")
-      .select(`
-        *,
-        services_translations(*)
-      `)
-      .eq("id", id)
-      .single()
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 })
-    }
-
-    return NextResponse.json(service)
-  } catch (error) {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
-  }
-}
-
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
-  try {
-    const supabase = createServerClient()
-    const { id } = params
     const body = await request.json()
+    const { id } = params
 
-    const { warranty_months, duration_hours, image_url, slug, translations } = body
+    const { slug, position, warranty_months, duration_hours, image_url, translations } = body
 
-    // Оновлюємо основну таблицю services
+    // Оновлюємо послугу
     const { error: serviceError } = await supabase
       .from("services")
       .update({
+        slug,
+        position,
         warranty_months,
         duration_hours,
         image_url,
-        slug,
       })
       .eq("id", id)
 
     if (serviceError) {
-      return NextResponse.json({ error: serviceError.message }, { status: 400 })
+      console.error("Error updating service:", serviceError)
+      return NextResponse.json({ error: "Failed to update service" }, { status: 500 })
     }
 
-    // Оновлюємо переклади
-    if (translations && Array.isArray(translations)) {
-      for (const translation of translations) {
-        const { locale, name, description, detailed_description, what_included, benefits } = translation
+    // Видаляємо старі переклади
+    await supabase.from("services_translations").delete().eq("service_id", id)
 
-        const { error: translationError } = await supabase.from("services_translations").upsert({
-          service_id: id,
-          locale,
-          name,
-          description,
-          detailed_description,
-          what_included,
-          benefits,
-        })
+    // Створюємо нові переклади
+    const translationInserts = Object.entries(translations).map(([locale, translation]: [string, any]) => ({
+      service_id: id,
+      locale,
+      name: translation.name,
+      description: translation.description,
+      detailed_description: translation.detailed_description,
+      what_included: translation.what_included,
+      benefits: translation.benefits,
+    }))
 
-        if (translationError) {
-          return NextResponse.json({ error: translationError.message }, { status: 400 })
-        }
-      }
+    const { error: translationsError } = await supabase.from("services_translations").insert(translationInserts)
+
+    if (translationsError) {
+      console.error("Error updating translations:", translationsError)
+      return NextResponse.json({ error: "Failed to update translations" }, { status: 500 })
     }
 
     return NextResponse.json({ success: true })
   } catch (error) {
+    console.error("Error in PUT /api/admin/services/[id]:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  }
+}
+
+export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+  try {
+    const supabase = createServerClient()
+    const { id } = params
+
+    // Видаляємо переклади
+    await supabase.from("services_translations").delete().eq("service_id", id)
+
+    // Видаляємо послугу
+    const { error } = await supabase.from("services").delete().eq("id", id)
+
+    if (error) {
+      console.error("Error deleting service:", error)
+      return NextResponse.json({ error: "Failed to delete service" }, { status: 500 })
+    }
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error("Error in DELETE /api/admin/services/[id]:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

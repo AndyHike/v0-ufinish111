@@ -1,138 +1,132 @@
 "use client"
 
-import { useTranslations } from "next-intl"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useParams } from "next/navigation"
 import { cn } from "@/lib/utils"
 import {
-  BarChart3,
-  Box,
-  CircleDollarSign,
-  Smartphone,
-  Tag,
+  LayoutDashboard,
+  Package,
   Users,
   Settings,
-  Layers,
-  Repeat,
-  FileSpreadsheet,
-  Wrench,
-  Database,
-  AlertCircle,
   MessageSquare,
+  BarChart3,
+  Smartphone,
+  Tag,
+  FileText,
+  Wrench,
+  Layers,
+  Upload,
+  FolderSyncIcon as Sync,
+  Shield,
 } from "lucide-react"
 
+const sidebarItems = [
+  {
+    title: "Панель управління",
+    href: "/admin",
+    icon: LayoutDashboard,
+  },
+  {
+    title: "Бренди",
+    href: "/admin/brands",
+    icon: Smartphone,
+  },
+  {
+    title: "Серії",
+    href: "/admin/series",
+    icon: Layers,
+  },
+  {
+    title: "Моделі",
+    href: "/admin/models",
+    icon: Package,
+  },
+  {
+    title: "Послуги",
+    href: "/admin/services",
+    icon: Wrench,
+  },
+  {
+    title: "Описи",
+    href: "/admin/descriptions",
+    icon: FileText,
+  },
+  {
+    title: "Знижки",
+    href: "/admin/discounts",
+    icon: Tag,
+  },
+  {
+    title: "Статуси замовлень",
+    href: "/admin/order-statuses",
+    icon: Shield,
+  },
+  {
+    title: "Користувачі",
+    href: "/admin/users",
+    icon: Users,
+  },
+  {
+    title: "Повідомлення",
+    href: "/admin/contact-messages",
+    icon: MessageSquare,
+  },
+  {
+    title: "Масовий імпорт",
+    href: "/admin/bulk-import",
+    icon: Upload,
+  },
+  {
+    title: "Масові послуги",
+    href: "/admin/bulk-services",
+    icon: Upload,
+  },
+  {
+    title: "Синхронізація",
+    href: "/admin/sync",
+    icon: Sync,
+  },
+  {
+    title: "Банер",
+    href: "/admin/banner",
+    icon: BarChart3,
+  },
+  {
+    title: "Налаштування",
+    href: "/admin/settings",
+    icon: Settings,
+  },
+]
+
 export function AdminSidebar() {
-  const t = useTranslations("Admin")
   const pathname = usePathname()
-
-  const isActive = (path: string) => {
-    return pathname?.startsWith(path)
-  }
-
-  const navItems = [
-    {
-      title: t("dashboard"),
-      href: "/admin",
-      icon: BarChart3,
-      active: pathname === "/admin",
-    },
-    {
-      title: t("brands"),
-      href: "/admin/brands",
-      icon: Tag,
-      active: isActive("/admin/brands"),
-    },
-    {
-      title: t("series") || "Series",
-      href: "/admin/series",
-      icon: Layers,
-      active: isActive("/admin/series"),
-    },
-    {
-      title: t("models"),
-      href: "/admin/models",
-      icon: Smartphone,
-      active: isActive("/admin/models"),
-    },
-    {
-      title: t("descriptions"),
-      href: "/admin/descriptions",
-      icon: Box,
-      active: isActive("/admin/descriptions"),
-    },
-    {
-      title: t("discounts"),
-      href: "/admin/discounts",
-      icon: CircleDollarSign,
-      active: isActive("/admin/discounts"),
-    },
-    {
-      title: t("orderStatuses") || "Order Statuses",
-      href: "/admin/order-statuses",
-      icon: Wrench,
-      active: isActive("/admin/order-statuses"),
-    },
-    {
-      title: t("users"),
-      href: "/admin/users",
-      icon: Users,
-      active: isActive("/admin/users"),
-    },
-    {
-      title: t("bulkServices") || "Bulk Services",
-      href: "/admin/bulk-services",
-      icon: FileSpreadsheet,
-      active: isActive("/admin/bulk-services"),
-    },
-    {
-      title: t("sync") || "Sync",
-      href: "/admin/sync",
-      icon: Repeat,
-      active: isActive("/admin/sync"),
-    },
-    {
-      title: t("infoBanner") || "Info Banner",
-      href: "/admin/banner",
-      icon: AlertCircle,
-      active: isActive("/admin/banner"),
-    },
-    {
-      title: t("contactMessages") || "Messages",
-      href: "/admin/contact-messages",
-      icon: MessageSquare,
-      active: isActive("/admin/contact-messages"),
-    },
-    {
-      title: t("settings"),
-      href: "/admin/settings",
-      icon: Settings,
-      active: isActive("/admin/settings"),
-    },
-    {
-      title: t("bulkImport"),
-      href: `/admin/bulk-import`,
-      icon: Database,
-      active: isActive("/admin/bulk-import"),
-    },
-  ]
+  const params = useParams()
+  const locale = params.locale as string
 
   return (
-    <nav className="grid items-start px-2 py-4 lg:px-4">
-      {navItems.map((item) => (
-        <Link
-          key={item.href}
-          href={item.href}
-          className={cn(
-            "flex items-center gap-3 rounded-lg px-3 py-2 transition-all",
-            item.active
-              ? "bg-accent text-accent-foreground"
-              : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
-          )}
-        >
-          <item.icon className="h-4 w-4" />
-          <span>{item.title}</span>
-        </Link>
-      ))}
-    </nav>
+    <div className="flex h-full w-64 flex-col bg-gray-900 text-white">
+      <div className="flex h-16 items-center justify-center border-b border-gray-800">
+        <h1 className="text-xl font-bold">Адмін панель</h1>
+      </div>
+      <nav className="flex-1 space-y-1 p-4">
+        {sidebarItems.map((item) => {
+          const href = `/${locale}${item.href}`
+          const isActive = pathname === href
+          return (
+            <Link
+              key={item.href}
+              href={href}
+              className={cn(
+                "flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                isActive ? "bg-gray-800 text-white" : "text-gray-300 hover:bg-gray-800 hover:text-white",
+              )}
+            >
+              <item.icon className="mr-3 h-5 w-5" />
+              {item.title}
+            </Link>
+          )
+        })}
+      </nav>
+    </div>
   )
 }

@@ -1,7 +1,7 @@
 -- Додаємо нові поля до таблиці services
 ALTER TABLE services 
-ADD COLUMN IF NOT EXISTS warranty_months INTEGER DEFAULT 12,
-ADD COLUMN IF NOT EXISTS duration_hours DECIMAL(3,1) DEFAULT 1.0,
+ADD COLUMN IF NOT EXISTS warranty_months INTEGER DEFAULT 6,
+ADD COLUMN IF NOT EXISTS duration_hours INTEGER DEFAULT 2,
 ADD COLUMN IF NOT EXISTS image_url TEXT,
 ADD COLUMN IF NOT EXISTS slug TEXT UNIQUE;
 
@@ -14,11 +14,27 @@ ADD COLUMN IF NOT EXISTS benefits TEXT;
 -- Створюємо індекси для покращення продуктивності
 CREATE INDEX IF NOT EXISTS idx_services_slug ON services(slug);
 CREATE INDEX IF NOT EXISTS idx_services_translations_locale ON services_translations(locale);
+CREATE INDEX IF NOT EXISTS idx_services_warranty ON services(warranty_months);
+CREATE INDEX IF NOT EXISTS idx_services_duration ON services(duration_hours);
 
 -- Генеруємо slug для існуючих послуг (якщо потрібно)
 UPDATE services 
 SET slug = LOWER(REPLACE(REPLACE(id::text, ' ', '-'), '_', '-'))
 WHERE slug IS NULL;
+
+-- Оновлюємо існуючі записи з дефолтними значеннями
+UPDATE services 
+SET warranty_months = 6 
+WHERE warranty_months IS NULL;
+
+UPDATE services 
+SET duration_hours = 2 
+WHERE duration_hours IS NULL;
+
+-- Додаємо обмеження
+ALTER TABLE services 
+ADD CONSTRAINT check_warranty_positive CHECK (warranty_months > 0),
+ADD CONSTRAINT check_duration_positive CHECK (duration_hours > 0);
 
 -- Додаємо приклади детального опису для тестування
 UPDATE services_translations 
@@ -39,3 +55,5 @@ SET
     WHEN locale = 'cs' THEN 'Rychlé provedení\nOriginální díly\nZkušení mistři\nZáruka kvality'
   END
 WHERE detailed_description IS NULL;
+
+COMMIT;
