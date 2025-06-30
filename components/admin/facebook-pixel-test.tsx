@@ -1,16 +1,47 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { CheckCircle, XCircle, AlertCircle, TestTube, Eye, Zap, RefreshCw, Navigation } from "lucide-react"
+import { CheckCircle, XCircle, AlertCircle, TestTube, Eye, Zap, RefreshCw, Navigation, Play } from "lucide-react"
+
+declare global {
+  interface Window {
+    testFacebookPixel: () => void
+    FB_PIXEL_INITIALIZED: boolean
+  }
+}
 
 export function FacebookPixelTest() {
   const [testResults, setTestResults] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [eventLog, setEventLog] = useState<string[]>([])
+  const [pixelStatus, setPixelStatus] = useState<string>("Unknown")
+
+  // Слухаємо події ініціалізації Facebook Pixel
+  useEffect(() => {
+    const handlePixelInitialized = (event: CustomEvent) => {
+      console.log("🎉 Facebook Pixel initialized event received:", event.detail)
+      setEventLog((prev) => [...prev, `🎉 Facebook Pixel initialized: ${event.detail.pixelId}`])
+      setPixelStatus("Initialized")
+    }
+
+    const handleConsentChanged = (event: CustomEvent) => {
+      console.log("🔄 Cookie consent changed:", event.detail)
+      setEventLog((prev) => [...prev, `🔄 Consent changed - Marketing: ${event.detail.consent.marketing}`])
+      setPixelStatus(event.detail.consent.marketing ? "Consent Granted" : "Consent Denied")
+    }
+
+    window.addEventListener("facebookPixelInitialized", handlePixelInitialized as EventListener)
+    window.addEventListener("cookieConsentChanged", handleConsentChanged as EventListener)
+
+    return () => {
+      window.removeEventListener("facebookPixelInitialized", handlePixelInitialized as EventListener)
+      window.removeEventListener("cookieConsentChanged", handleConsentChanged as EventListener)
+    }
+  }, [])
 
   const runPixelTest = () => {
     setIsLoading(true)
@@ -25,11 +56,15 @@ export function FacebookPixelTest() {
       cookies: [],
       allCookies: "",
       fbqFunction: false,
+      globalFlag: false,
       errors: [],
       debugInfo: {},
     }
 
     try {
+      // Перевіряємо глобальний флаг
+      results.globalFlag = !!window.FB_PIXEL_INITIALIZED
+
       // Перевіряємо чи завантажений fbq
       if (typeof window !== "undefined" && window.fbq) {
         results.pixelLoaded = true
@@ -47,6 +82,7 @@ export function FacebookPixelTest() {
           fbqLoaded: window.fbq.loaded || false,
           currentUrl: window.location.href,
           pageTitle: document.title,
+          globalFlag: window.FB_PIXEL_INITIALIZED,
         }
       }
 
@@ -118,6 +154,10 @@ export function FacebookPixelTest() {
       if (!results.pixelInitialized && results.pixelLoaded) {
         results.errors.push("Pixel script loaded but not initialized - check consent flow")
       }
+
+      if (!results.globalFlag) {
+        results.errors.push("Global initialization flag not set - pixel may not be properly initialized")
+      }
     } catch (error) {
       results.errors.push(`General error: ${error}`)
     }
@@ -171,6 +211,15 @@ export function FacebookPixelTest() {
     }
   }
 
+  const runManualTest = () => {
+    if (window.testFacebookPixel) {
+      window.testFacebookPixel()
+      setEventLog((prev) => [...prev, `🧪 Ran manual test function`])
+    } else {
+      setEventLog((prev) => [...prev, `❌ Manual test function not available`])
+    }
+  }
+
   const clearEventLog = () => {
     setEventLog([])
   }
@@ -190,7 +239,13 @@ export function FacebookPixelTest() {
           <TestTube className="h-5 w-5" />
           Facebook Pixel Test & Debug
         </CardTitle>
-        <CardDescription>Test if Facebook Pixel is working correctly and debug issues</CardDescription>
+        <CardDescription>
+          Test if Facebook Pixel is working correctly and debug issues
+          <br />
+          <Badge variant="outline" className="mt-1">
+            Status: {pixelStatus}
+          </Badge>
+        </CardDescription>
       </CardHeader>
 
       <CardContent className="space-y-4">
@@ -219,18 +274,25 @@ export function FacebookPixelTest() {
             Test Navigation
           </Button>
 
-          <Button onClick={clearEventLog} variant="outline" size="sm">
+          <Button onClick={runManualTest} variant="outline" disabled={isLoading}>
+            <Play className="mr-2 h-4 w-4" />
+            Manual Test
+          </Button>
+        </div>
+
+        <div className="flex gap-2">
+          <Button onClick={clearEventLog} variant="outline" size="sm" className="flex-1 bg-transparent">
             Clear Log
           </Button>
         </div>
 
         {eventLog.length > 0 && (
           <div className="space-y-2">
-            <h4 className="text-sm font-medium">Event Log:</h4>
-            <div className="max-h-32 overflow-y-auto space-y-1">
-              {eventLog.map((log, index) => (
+            <h4 className="text-sm font-medium">Real-time Event Log:</h4>
+            <div className="max-h-40 overflow-y-auto space-y-1 border rounded p-2">
+              {eventLog.slice(-10).map((log, index) => (
                 <div key={index} className="text-xs font-mono bg-muted p-1 rounded">
-                  {log}
+                  {new Date().toLocaleTimeString()} - {log}
                 </div>
               ))}
             </div>
@@ -245,6 +307,14 @@ export function FacebookPixelTest() {
               <h3 className="font-medium">Test Results</h3>
 
               <div className="grid gap-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {getStatusIcon(testResults.globalFlag)}
+                    <span>Global Initialization Flag</span>
+                  </div>
+                  {getStatusBadge(testResults.globalFlag, "Set", "Not Set")}
+                </div>
+
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     {getStatusIcon(testResults.fbqFunction)}

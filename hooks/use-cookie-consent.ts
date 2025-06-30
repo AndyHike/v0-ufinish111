@@ -133,6 +133,7 @@ export function useCookieConsent() {
         if (typeof window !== "undefined") {
           delete window.fbq
           delete window._fbq
+          window.FB_PIXEL_INITIALIZED = false
         }
       } catch (error) {
         console.warn("Could not clear Facebook storage:", error)
@@ -277,17 +278,22 @@ export function useCookieConsent() {
     }
     localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(consentData))
 
+    console.log("🔄 Saving consent:", { consent, previousConsent })
+
     // Обробка змін згоди
     if (previousConsent) {
       // Очищення при відкликанні згоди
       if (previousConsent.analytics && !consent.analytics) {
+        console.log("🧹 Clearing analytics cookies")
         forceClearCookies("analytics")
       }
       if (previousConsent.marketing && !consent.marketing) {
+        console.log("🧹 Clearing marketing cookies")
         forceClearCookies("marketing")
       }
     }
 
+    // Оновлюємо стан
     setState({
       consent,
       showBanner: false,
@@ -297,14 +303,23 @@ export function useCookieConsent() {
 
     // Активація при наданні згоди
     if (consent.analytics && (!previousConsent || !previousConsent.analytics)) {
+      console.log("🚀 Activating analytics")
       setTimeout(() => {
         forceActivateAnalytics()
       }, 200)
     }
+
+    // Диспатчимо кастомну подію для повідомлення компонентів про зміну згоди
+    window.dispatchEvent(
+      new CustomEvent("cookieConsentChanged", {
+        detail: { consent, previousConsent, timestamp: Date.now() },
+      }),
+    )
   }
 
   const acceptAll = () => {
     const previousConsent = state.consent
+    console.log("✅ Accepting all cookies")
     saveConsent(
       {
         necessary: true,
@@ -317,6 +332,7 @@ export function useCookieConsent() {
 
   const acceptNecessary = () => {
     const previousConsent = state.consent
+    console.log("⚠️ Accepting only necessary cookies")
     saveConsent(
       {
         necessary: true,
@@ -328,6 +344,7 @@ export function useCookieConsent() {
   }
 
   const updateCategory = (category: keyof CookieConsent, value: boolean) => {
+    console.log(`🔄 Updating category ${category} to ${value}`)
     setState((prev) => ({
       ...prev,
       consent: {
@@ -339,6 +356,7 @@ export function useCookieConsent() {
 
   const saveCurrentSettings = () => {
     const previousConsent = { ...state.consent }
+    console.log("💾 Saving current settings")
     saveConsent(state.consent, previousConsent)
   }
 
