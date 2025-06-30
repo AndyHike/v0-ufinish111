@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import { getTranslations } from "next-intl/server"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { createClient } from "@/lib/supabase/server"
+import { createServerClient } from "@/utils/supabase/server"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
 import { formatCurrency } from "@/lib/format-currency"
@@ -18,7 +18,7 @@ type Props = {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug, locale } = params
 
-  const supabase = createClient()
+  const supabase = createServerClient()
 
   // Спочатку спробуємо знайти за слагом
   let { data: model } = await supabase.from("models").select("*, brands(name)").eq("slug", slug).single()
@@ -71,7 +71,7 @@ export default async function ModelPage({ params }: Props) {
   const t = await getTranslations({ locale, namespace: "Models" })
   const commonT = await getTranslations({ locale, namespace: "Common" })
 
-  const supabase = createClient()
+  const supabase = createServerClient()
 
   // Спочатку спробуємо знайти за слагом
   let { data: model, error: modelError } = await supabase
@@ -106,7 +106,6 @@ export default async function ModelPage({ params }: Props) {
       service_id, 
       services(
         id, 
-        slug,
         position,
         services_translations(
           name,
@@ -137,7 +136,6 @@ export default async function ModelPage({ params }: Props) {
         price: modelService.price,
         service: {
           id: modelService.services.id,
-          slug: modelService.services.slug,
           position: modelService.services.position,
           name: translations[0]?.name || "",
           description: translations[0]?.description || "",
@@ -208,24 +206,16 @@ export default async function ModelPage({ params }: Props) {
             {transformedModelServices.map((modelService) => (
               <div key={modelService.id} className="flex flex-col rounded-lg border p-6 shadow-sm">
                 <div className="flex items-start justify-between">
-                  <div className="flex-1">
+                  <div>
                     <h3 className="text-xl font-medium">{modelService.service.name}</h3>
                     <p className="mt-2 text-muted-foreground">{modelService.service.description}</p>
                   </div>
-                  <div className="text-xl font-bold ml-4">
+                  <div className="text-xl font-bold">
                     {modelService.price !== null ? formatCurrency(modelService.price) : t("priceOnRequest")}
                   </div>
                 </div>
-                <div className="mt-4 flex flex-col sm:flex-row gap-3 justify-end">
-                  {/* Кнопка для перегляду деталей послуги */}
+                <div className="mt-4 flex justify-end">
                   <Button variant="outline" asChild>
-                    <Link href={`/${locale}/services/${modelService.service.slug || modelService.service.id}`}>
-                      Детальніше про послугу
-                    </Link>
-                  </Button>
-
-                  {/* Кнопка для замовлення */}
-                  <Button asChild>
                     <Link
                       href={`/${locale}/contact?service=${encodeURIComponent(modelService.service.name)}&model=${encodeURIComponent(model.name)}`}
                     >
