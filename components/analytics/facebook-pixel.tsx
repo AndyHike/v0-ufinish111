@@ -149,47 +149,8 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
     }, 200)
   }
 
-  // Функція для завантаження Facebook Pixel скрипта
-  const loadFacebookPixelScript = () => {
-    return new Promise<void>((resolve, reject) => {
-      if (scriptLoadedRef.current) {
-        console.log("📥 Facebook Pixel script already loaded")
-        resolve()
-        return
-      }
-
-      console.log("📥 Loading Facebook Pixel script...")
-
-      // Видаляємо існуючі скрипти
-      const existingScripts = document.querySelectorAll('script[src*="fbevents.js"]')
-      existingScripts.forEach((script) => script.remove())
-
-      const script = document.createElement("script")
-      script.async = true
-      script.defer = true
-      script.src = "https://connect.facebook.net/en_US/fbevents.js"
-      script.id = "facebook-pixel-script"
-      script.crossOrigin = "anonymous"
-
-      script.onload = () => {
-        console.log("✅ Facebook Pixel script loaded successfully")
-        scriptLoadedRef.current = true
-        resolve()
-      }
-
-      script.onerror = (error) => {
-        console.error("❌ Failed to load Facebook Pixel script:", error)
-        scriptLoadedRef.current = false
-        reject(error)
-      }
-
-      // Додаємо скрипт до head
-      document.head.appendChild(script)
-    })
-  }
-
-  // Основна функція ініціалізації Facebook Pixel
-  const initializeFacebookPixel = async () => {
+  // Основна функція ініціалізації Facebook Pixel - ВИПРАВЛЕНА
+  const initializeFacebookPixel = () => {
     if (!pixelId || isInitialized || initializationAttempted.current) {
       console.log("🔄 Facebook Pixel initialization skipped - already in progress or completed")
       return
@@ -199,163 +160,175 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
     initializationAttempted.current = true
 
     try {
-      // Крок 1: Створюємо cookies ПЕРЕД завантаженням скрипта
+      // Крок 1: Створюємо cookies ПЕРЕД ініціалізацією
       createOptimizedFacebookCookies()
 
-      // Крок 2: Ініціалізуємо fbq функцію
-      if (!window.fbq) {
-        console.log("🔧 Initializing fbq function...")
+      // Крок 2: Ініціалізуємо fbq функцію ПРАВИЛЬНО
+      console.log("🔧 Initializing fbq function...")
 
-        window.fbq = function fbq() {
-          if (window.fbq.callMethod) {
-            window.fbq.callMethod.apply(window.fbq, arguments)
+      // Створюємо базову fbq функцію
+      window.fbq = function fbq() {
+        if (window.fbq.callMethod) {
+          window.fbq.callMethod.apply(window.fbq, arguments)
+        } else {
+          window.fbq.queue.push(arguments)
+        }
+      }
+
+      // Встановлюємо необхідні властивості
+      window.fbq.push = window.fbq
+      window.fbq.loaded = true
+      window.fbq.version = "2.0"
+      window.fbq.queue = []
+
+      // Важливо: НЕ встановлюємо callMethod тут - це зробить скрипт
+      if (!window._fbq) window._fbq = window.fbq
+
+      // Крок 3: Завантажуємо скрипт Facebook
+      console.log("📥 Loading Facebook Pixel script...")
+
+      // Видаляємо існуючі скрипти
+      const existingScripts = document.querySelectorAll('script[src*="fbevents.js"]')
+      existingScripts.forEach((script) => script.remove())
+
+      const script = document.createElement("script")
+      script.async = true
+      script.src = "https://connect.facebook.net/en_US/fbevents.js"
+      script.id = "facebook-pixel-script"
+
+      script.onload = () => {
+        console.log("✅ Facebook Pixel script loaded successfully")
+        scriptLoadedRef.current = true
+
+        // Крок 4: Чекаємо поки callMethod стане доступним
+        const waitForCallMethod = (attempts = 0) => {
+          if (window.fbq && window.fbq.callMethod) {
+            console.log("🎯 fbq.callMethod is ready, initializing pixel...")
+
+            try {
+              // Крок 5: Ініціалізуємо pixel
+              window.fbq("init", pixelId, {
+                external_id: `user_${Date.now()}`,
+                agent: "plnextjs",
+              })
+
+              // Крок 6: Відправляємо початкові події
+              console.log("📊 Sending initial PageView...")
+              window.fbq("track", "PageView", {
+                source: "dynamic_initialization",
+                page_url: window.location.href,
+                page_title: document.title,
+                referrer: document.referrer || "",
+                timestamp: Date.now(),
+              })
+
+              // Затримка перед додатковими подіями
+              setTimeout(() => {
+                console.log("📊 Sending activation events...")
+
+                window.fbq("track", "ViewContent", {
+                  content_type: "website",
+                  source: "dynamic_initialization",
+                  value: 0.01,
+                  currency: "CZK",
+                  content_name: document.title,
+                  content_category: "website",
+                })
+
+                window.fbq("trackCustom", "CookieConsentGranted", {
+                  consent_method: "banner",
+                  timestamp: new Date().toISOString(),
+                  pixel_id: pixelId,
+                  page_url: window.location.href,
+                })
+
+                console.log("📊 All activation events sent")
+              }, 1000)
+
+              // Крок 7: Додатково через noscript метод
+              const noscriptImg = new Image()
+              noscriptImg.height = 1
+              noscriptImg.width = 1
+              noscriptImg.style.display = "none"
+              noscriptImg.src = `https://www.facebook.com/tr?id=${pixelId}&ev=PageView&noscript=1&cd[source]=dynamic_init&cd[timestamp]=${Date.now()}&cd[url]=${encodeURIComponent(window.location.href)}`
+
+              noscriptImg.onload = () => {
+                console.log("📡 Noscript image loaded successfully")
+              }
+
+              noscriptImg.onerror = () => {
+                console.warn("⚠️ Noscript image failed to load")
+              }
+
+              document.body.appendChild(noscriptImg)
+
+              // Видаляємо noscript img через 10 секунд
+              setTimeout(() => {
+                if (document.body.contains(noscriptImg)) {
+                  document.body.removeChild(noscriptImg)
+                }
+              }, 10000)
+
+              // Крок 8: Встановлюємо флаги успішної ініціалізації
+              setIsInitialized(true)
+              window.FB_PIXEL_INITIALIZED = true
+
+              console.log(`✅ Facebook Pixel ${pixelId} initialized successfully`)
+
+              // Крок 9: Диспатчимо подію про успішну ініціалізацію
+              window.dispatchEvent(
+                new CustomEvent("facebookPixelInitialized", {
+                  detail: {
+                    pixelId,
+                    timestamp: Date.now(),
+                    cookies: document.cookie,
+                    url: window.location.href,
+                  },
+                }),
+              )
+            } catch (error) {
+              console.error("❌ Error during pixel initialization:", error)
+              initializationAttempted.current = false
+            }
+          } else if (attempts < 50) {
+            // Чекаємо ще 100мс (максимум 5 секунд)
+            setTimeout(() => waitForCallMethod(attempts + 1), 100)
           } else {
-            window.fbq.queue.push(arguments)
+            console.error("❌ fbq.callMethod not available after 5 seconds")
+            initializationAttempted.current = false
+
+            // Повторна спроба через 3 секунди
+            setTimeout(() => {
+              if (consent && !isInitialized) {
+                console.log("🔄 Retrying Facebook Pixel initialization...")
+                initializationAttempted.current = false
+                initializeFacebookPixel()
+              }
+            }, 3000)
           }
         }
 
-        window.fbq.push = window.fbq
-        window.fbq.loaded = true
-        window.fbq.version = "2.0"
-        window.fbq.queue = []
-        window.fbq.callMethod = null
-
-        if (!window._fbq) window._fbq = window.fbq
+        // Починаємо чекати callMethod
+        waitForCallMethod()
       }
 
-      // Крок 3: Завантажуємо скрипт
-      await loadFacebookPixelScript()
-
-      // Крок 4: Чекаємо повного завантаження
-      let attempts = 0
-      const maxAttempts = 30
-      while ((!window.fbq || !window.fbq.callMethod) && attempts < maxAttempts) {
-        await new Promise((resolve) => setTimeout(resolve, 100))
-        attempts++
+      script.onerror = (error) => {
+        console.error("❌ Failed to load Facebook Pixel script:", error)
+        scriptLoadedRef.current = false
+        initializationAttempted.current = false
       }
 
-      if (!window.fbq || !window.fbq.callMethod) {
-        throw new Error("Facebook Pixel script not properly loaded after waiting")
-      }
-
-      // Крок 5: Ініціалізуємо pixel з правильними параметрами
-      console.log("🎯 Initializing Facebook Pixel...")
-
-      window.fbq("init", pixelId, {
-        external_id: `user_${Date.now()}`,
-        agent: "plnextjs",
-        autoConfig: true,
-        debug: false,
-      })
-
-      // Крок 6: Відправляємо початкові події з затримками
-      console.log("📊 Sending initial PageView event...")
-
-      window.fbq("track", "PageView", {
-        source: "dynamic_initialization",
-        page_url: window.location.href,
-        page_title: document.title,
-        referrer: document.referrer || "",
-        timestamp: Date.now(),
-      })
-
-      // Чекаємо 1 секунду перед додатковими подіями
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      // Відправляємо ViewContent для активації
-      console.log("📊 Sending ViewContent activation event...")
-      window.fbq("track", "ViewContent", {
-        content_type: "website",
-        source: "dynamic_initialization",
-        value: 0.01,
-        currency: "CZK",
-        content_name: document.title,
-        content_category: "website",
-      })
-
-      // Чекаємо ще 500мс
-      await new Promise((resolve) => setTimeout(resolve, 500))
-
-      // Відправляємо кастомну подію про згоду
-      console.log("📊 Sending consent event...")
-      window.fbq("trackCustom", "CookieConsentGranted", {
-        consent_method: "banner",
-        timestamp: new Date().toISOString(),
-        pixel_id: pixelId,
-        page_url: window.location.href,
-      })
-
-      // Крок 7: Додатково відправляємо через noscript метод
-      const noscriptImg = new Image()
-      noscriptImg.height = 1
-      noscriptImg.width = 1
-      noscriptImg.style.display = "none"
-      noscriptImg.src = `https://www.facebook.com/tr?id=${pixelId}&ev=PageView&noscript=1&cd[source]=dynamic_init&cd[timestamp]=${Date.now()}&cd[url]=${encodeURIComponent(window.location.href)}`
-
-      noscriptImg.onload = () => {
-        console.log("📡 Noscript image loaded successfully")
-      }
-
-      noscriptImg.onerror = () => {
-        console.warn("⚠️ Noscript image failed to load")
-      }
-
-      document.body.appendChild(noscriptImg)
-
-      // Видаляємо noscript img через 10 секунд
-      setTimeout(() => {
-        if (document.body.contains(noscriptImg)) {
-          document.body.removeChild(noscriptImg)
-        }
-      }, 10000)
-
-      // Крок 8: Встановлюємо флаги успішної ініціалізації
-      setIsInitialized(true)
-      window.FB_PIXEL_INITIALIZED = true
-
-      console.log(`✅ Facebook Pixel ${pixelId} initialized successfully`)
-
-      // Крок 9: Диспатчимо подію про успішну ініціалізацію
-      window.dispatchEvent(
-        new CustomEvent("facebookPixelInitialized", {
-          detail: {
-            pixelId,
-            timestamp: Date.now(),
-            cookies: document.cookie,
-            url: window.location.href,
-          },
-        }),
-      )
-
-      // Крок 10: Додаткова перевірка через 2 секунди
-      setTimeout(() => {
-        const cookieCheck = document.cookie
-        console.log("🔍 Final cookie verification:", cookieCheck)
-
-        if (!cookieCheck.includes("_fbp") || !cookieCheck.includes("_fbc")) {
-          console.warn("⚠️ Cookies missing after initialization, recreating...")
-          createOptimizedFacebookCookies()
-        }
-      }, 2000)
+      document.head.appendChild(script)
     } catch (error) {
       console.error("❌ Facebook Pixel initialization failed:", error)
       initializationAttempted.current = false
-
-      // Повторна спроба через 3 секунди
-      setTimeout(() => {
-        if (consent && !isInitialized) {
-          console.log("🔄 Retrying Facebook Pixel initialization...")
-          initializationAttempted.current = false
-          initializeFacebookPixel()
-        }
-      }, 3000)
     }
   }
 
   // Функція для відстеження переходів по сторінках
   const trackPageView = () => {
-    if (!window.fbq || !isInitialized) {
-      console.log("⚠️ Cannot track page view - pixel not initialized")
+    if (!window.fbq || !window.fbq.callMethod || !isInitialized) {
+      console.log("⚠️ Cannot track page view - pixel not properly initialized")
       return
     }
 
