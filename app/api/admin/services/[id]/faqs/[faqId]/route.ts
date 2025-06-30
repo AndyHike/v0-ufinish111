@@ -4,35 +4,39 @@ import { createServerClient } from "@/utils/supabase/server"
 export async function PUT(request: NextRequest, { params }: { params: { id: string; faqId: string } }) {
   try {
     const supabase = createServerClient()
-    const { faqId } = params
+    const faqId = params.faqId
     const body = await request.json()
 
     const { position, translations } = body
 
     // Оновлюємо FAQ
-    const { error: faqError } = await supabase.from("service_faqs").update({ position }).eq("id", faqId)
+    const { error: faqError } = await supabase
+      .from("service_faqs")
+      .update({
+        position: position || 0,
+      })
+      .eq("id", faqId)
 
     if (faqError) {
       console.error("Error updating FAQ:", faqError)
       return NextResponse.json({ error: "Failed to update FAQ" }, { status: 500 })
     }
 
-    // Видаляємо старі переклади
-    await supabase.from("service_faq_translations").delete().eq("faq_id", faqId)
+    // Оновлюємо переклади
+    if (translations && Array.isArray(translations)) {
+      for (const translation of translations) {
+        const { error: translationError } = await supabase.from("service_faq_translations").upsert({
+          service_faq_id: faqId,
+          locale: translation.locale,
+          question: translation.question,
+          answer: translation.answer,
+        })
 
-    // Створюємо нові переклади
-    const translationInserts = Object.entries(translations).map(([locale, data]: [string, any]) => ({
-      faq_id: faqId,
-      locale,
-      question: data.question,
-      answer: data.answer,
-    }))
-
-    const { error: translationsError } = await supabase.from("service_faq_translations").insert(translationInserts)
-
-    if (translationsError) {
-      console.error("Error updating FAQ translations:", translationsError)
-      return NextResponse.json({ error: "Failed to update FAQ translations" }, { status: 500 })
+        if (translationError) {
+          console.error("Error updating FAQ translation:", translationError)
+          return NextResponse.json({ error: "Failed to update FAQ translation" }, { status: 500 })
+        }
+      }
     }
 
     return NextResponse.json({ success: true })
@@ -45,7 +49,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 export async function DELETE(request: NextRequest, { params }: { params: { id: string; faqId: string } }) {
   try {
     const supabase = createServerClient()
-    const { faqId } = params
+    const faqId = params.faqId
 
     const { error } = await supabase.from("service_faqs").delete().eq("id", faqId)
 

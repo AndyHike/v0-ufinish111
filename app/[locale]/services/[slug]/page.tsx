@@ -220,24 +220,24 @@ export default async function ServicePage({ params, searchParams }: Props) {
             </nav>
 
             {/* Hero Section - Компактний */}
-            <div className="grid gap-8 lg:grid-cols-2 mb-12">
+            <div className="grid gap-8 lg:grid-cols-2 mb-10">
               {/* Ліва колонка - Зображення */}
               <div className="flex justify-center lg:justify-start">
-                <div className="w-80 h-80 overflow-hidden rounded-xl bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center shadow-md">
+                <div className="w-64 h-64 overflow-hidden rounded-xl bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center shadow-sm">
                   {service.image_url ? (
                     <img
                       src={formatImageUrl(service.image_url) || "/placeholder.svg"}
                       alt={translation.name}
-                      width={320}
-                      height={320}
+                      width={256}
+                      height={256}
                       className="h-full w-full object-cover"
                     />
                   ) : (
                     <div className="text-center">
-                      <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-white shadow-lg">
-                        <Wrench className="h-10 w-10 text-blue-600" />
+                      <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-md">
+                        <Wrench className="h-8 w-8 text-blue-600" />
                       </div>
-                      <h3 className="text-lg font-semibold text-slate-700">{translation.name}</h3>
+                      <h3 className="text-sm font-semibold text-slate-700">{translation.name}</h3>
                     </div>
                   )}
                 </div>
@@ -246,27 +246,27 @@ export default async function ServicePage({ params, searchParams }: Props) {
               {/* Права колонка - Деталі */}
               <div className="space-y-6">
                 <div>
-                  <div className="mb-3 flex items-center gap-2">
+                  <div className="mb-2 flex items-center gap-2">
                     <Badge variant="secondary">Послуга</Badge>
                     <div className="flex items-center gap-1">
                       <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                       <span className="text-sm text-muted-foreground">4.9</span>
                     </div>
                   </div>
-                  <h1 className="text-3xl font-bold text-slate-900 mb-4">{translation.name}</h1>
+                  <h1 className="text-2xl font-bold text-slate-900 mb-3">{translation.name}</h1>
 
                   {/* Ціна */}
-                  <div className="mb-6">
+                  <div className="mb-4">
                     {modelServicePrice ? (
-                      <div className="text-3xl font-bold text-slate-900">{formatCurrency(modelServicePrice)}</div>
+                      <div className="text-2xl font-bold text-slate-900">{formatCurrency(modelServicePrice)}</div>
                     ) : minPrice && maxPrice ? (
-                      <div className="text-3xl font-bold text-slate-900">
+                      <div className="text-2xl font-bold text-slate-900">
                         {minPrice === maxPrice
                           ? formatCurrency(minPrice)
                           : `${formatCurrency(minPrice)} - ${formatCurrency(maxPrice)}`}
                       </div>
                     ) : (
-                      <div className="text-3xl font-bold text-slate-900">За запитом</div>
+                      <div className="text-2xl font-bold text-slate-900">За запитом</div>
                     )}
                   </div>
                 </div>
@@ -292,14 +292,14 @@ export default async function ServicePage({ params, searchParams }: Props) {
                 {/* Переваги - Компактні */}
                 <div className="grid grid-cols-2 gap-3">
                   <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg">
-                    <Shield className="h-5 w-5 text-green-600" />
+                    <Shield className="h-4 w-4 text-green-600" />
                     <div>
                       <div className="font-medium text-sm">Гарантія</div>
                       <div className="text-xs text-muted-foreground">{service.warranty_months} міс</div>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
-                    <Clock className="h-5 w-5 text-blue-600" />
+                    <Clock className="h-4 w-4 text-blue-600" />
                     <div>
                       <div className="font-medium text-sm">Виконання</div>
                       <div className="text-xs text-muted-foreground">{service.duration_hours} год</div>
@@ -311,21 +311,21 @@ export default async function ServicePage({ params, searchParams }: Props) {
 
             {/* FAQ Section - Вище та розгорнуті */}
             {faqs.length > 0 && (
-              <section className="mb-12">
-                <div className="text-center mb-8">
-                  <div className="flex items-center justify-center gap-2 mb-3">
-                    <HelpCircle className="h-6 w-6 text-blue-600" />
-                    <h2 className="text-2xl font-bold">Часті питання</h2>
+              <section className="mb-10">
+                <div className="text-center mb-6">
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <HelpCircle className="h-5 w-5 text-blue-600" />
+                    <h2 className="text-xl font-bold">Часті питання</h2>
                   </div>
-                  <p className="text-muted-foreground">Відповіді на найпоширеніші питання про цю послугу</p>
+                  <p className="text-sm text-muted-foreground">Відповіді на найпоширеніші питання</p>
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {faqs.map((faq) => (
                     <Card key={faq.id} className="border-l-4 border-l-blue-500">
-                      <CardContent className="p-6">
-                        <h3 className="font-semibold text-lg mb-3 text-slate-900">{faq.translation.question}</h3>
-                        <p className="text-muted-foreground leading-relaxed">{faq.translation.answer}</p>
+                      <CardContent className="p-4">
+                        <h3 className="font-semibold mb-2 text-slate-900">{faq.translation.question}</h3>
+                        <p className="text-sm text-muted-foreground leading-relaxed">{faq.translation.answer}</p>
                       </CardContent>
                     </Card>
                   ))}
@@ -333,24 +333,24 @@ export default async function ServicePage({ params, searchParams }: Props) {
               </section>
             )}
 
-            <Separator className="my-12" />
+            <Separator className="my-8" />
 
             {/* Опис послуги - Компактний */}
-            <section className="mb-12">
-              <h2 className="text-2xl font-bold mb-6">Опис послуги</h2>
+            <section className="mb-8">
+              <h2 className="text-xl font-bold mb-4">Опис послуги</h2>
               <div className="prose max-w-none">
-                <p className="text-muted-foreground leading-relaxed mb-6">
+                <p className="text-muted-foreground leading-relaxed mb-4">
                   {translation.detailed_description || translation.description}
                 </p>
 
                 {whatIncludedList.length > 0 && (
                   <>
-                    <h3 className="text-lg font-semibold mb-4">Що входить у послугу:</h3>
-                    <div className="grid gap-3 mb-6">
+                    <h3 className="text-lg font-semibold mb-3">Що входить у послугу:</h3>
+                    <div className="grid gap-2 mb-4">
                       {whatIncludedList.map((item, index) => (
-                        <div key={index} className="flex items-start gap-3 p-3 bg-green-50 rounded-lg">
-                          <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                          <span className="text-slate-700">{item}</span>
+                        <div key={index} className="flex items-start gap-2 p-3 bg-green-50 rounded-lg">
+                          <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                          <span className="text-sm text-slate-700">{item}</span>
                         </div>
                       ))}
                     </div>
@@ -360,16 +360,18 @@ export default async function ServicePage({ params, searchParams }: Props) {
             </section>
 
             {/* Фінальний блок консультації - Компактний */}
-            <section className="text-center py-12 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl">
-              <div className="max-w-xl mx-auto">
-                <div className="flex items-center justify-center gap-2 mb-4">
-                  <MessageCircle className="h-8 w-8 text-blue-600" />
-                  <h2 className="text-2xl font-bold">Залишилися питання?</h2>
+            <section className="text-center py-8 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl">
+              <div className="max-w-md mx-auto">
+                <div className="flex items-center justify-center gap-2 mb-3">
+                  <MessageCircle className="h-6 w-6 text-blue-600" />
+                  <h2 className="text-lg font-bold">Залишилися питання?</h2>
                 </div>
-                <p className="text-muted-foreground mb-6">Наші експерти готові відповісти на всі ваші питання</p>
-                <Button size="lg" asChild>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Наші експерти готові відповісти на всі ваші питання
+                </p>
+                <Button asChild>
                   <Link href={`/${locale}/contact`}>
-                    <Phone className="h-5 w-5 mr-2" />
+                    <Phone className="h-4 w-4 mr-2" />
                     Зв'язатися з нами
                   </Link>
                 </Button>

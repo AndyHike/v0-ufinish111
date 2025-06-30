@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Edit, Plus, Trash2, Save, X } from "lucide-react"
+import { Edit, Plus, Trash2, Save, X, HelpCircle } from "lucide-react"
 import { toast } from "sonner"
 
 interface FaqTranslation {
@@ -221,7 +221,10 @@ export function ServiceFaqManager({ serviceId }: ServiceFaqManagerProps) {
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle>FAQ для послуги</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <HelpCircle className="h-5 w-5" />
+            FAQ для послуги
+          </CardTitle>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button onClick={() => setEditingFaq(null)}>
@@ -229,7 +232,7 @@ export function ServiceFaqManager({ serviceId }: ServiceFaqManagerProps) {
                 Додати FAQ
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>{editingFaq ? "Редагувати FAQ" : "Додати FAQ"}</DialogTitle>
               </DialogHeader>
@@ -239,12 +242,18 @@ export function ServiceFaqManager({ serviceId }: ServiceFaqManagerProps) {
         </div>
       </CardHeader>
       <CardContent>
-        {faqs.length > 0 ? (
+        {faqs.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <HelpCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p>Поки що немає FAQ для цієї послуги</p>
+          </div>
+        ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Питання (UA)</TableHead>
                 <TableHead>Позиція</TableHead>
+                <TableHead>Питання (UK)</TableHead>
+                <TableHead>Відповідь (UK)</TableHead>
                 <TableHead>Дії</TableHead>
               </TableRow>
             </TableHeader>
@@ -253,10 +262,9 @@ export function ServiceFaqManager({ serviceId }: ServiceFaqManagerProps) {
                 const ukTranslation = faq.service_faq_translations?.find((t) => t.locale === "uk")
                 return (
                   <TableRow key={faq.id}>
-                    <TableCell className="max-w-md">
-                      <div className="truncate">{ukTranslation?.question || "Без питання"}</div>
-                    </TableCell>
                     <TableCell>{faq.position}</TableCell>
+                    <TableCell className="max-w-xs truncate">{ukTranslation?.question || "Без питання"}</TableCell>
+                    <TableCell className="max-w-xs truncate">{ukTranslation?.answer || "Без відповіді"}</TableCell>
                     <TableCell>
                       <div className="flex gap-2">
                         <Button
@@ -279,10 +287,6 @@ export function ServiceFaqManager({ serviceId }: ServiceFaqManagerProps) {
               })}
             </TableBody>
           </Table>
-        ) : (
-          <div className="text-center py-8 text-muted-foreground">
-            <p>FAQ для цієї послуги ще не додані</p>
-          </div>
         )}
       </CardContent>
     </Card>
