@@ -4,7 +4,7 @@ import { createServerClient } from "@/utils/supabase/server"
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const supabase = createServerClient()
-    const { id: serviceId } = params
+    const serviceId = params.id
 
     const { data: faqs, error } = await supabase
       .from("service_faqs")
@@ -12,10 +12,9 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         id,
         position,
         service_faq_translations(
-          id,
-          locale,
           question,
-          answer
+          answer,
+          locale
         )
       `)
       .eq("service_id", serviceId)
@@ -36,7 +35,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const supabase = createServerClient()
-    const { id: serviceId } = params
+    const serviceId = params.id
     const body = await request.json()
 
     const { position, translations } = body
@@ -46,7 +45,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       .from("service_faqs")
       .insert({
         service_id: serviceId,
-        position,
+        position: position || 0,
       })
       .select()
       .single()
@@ -57,18 +56,18 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     }
 
     // Створюємо переклади
-    const translationInserts = Object.entries(translations).map(([locale, translation]: [string, any]) => ({
+    const translationInserts = Object.entries(translations).map(([locale, data]: [string, any]) => ({
       faq_id: faq.id,
       locale,
-      question: translation.question,
-      answer: translation.answer,
+      question: data.question,
+      answer: data.answer,
     }))
 
     const { error: translationsError } = await supabase.from("service_faq_translations").insert(translationInserts)
 
     if (translationsError) {
       console.error("Error creating FAQ translations:", translationsError)
-      // Видаляємо створений FAQ якщо переклади не створилися
+      // Видаляємо FAQ якщо переклади не створилися
       await supabase.from("service_faqs").delete().eq("id", faq.id)
       return NextResponse.json({ error: "Failed to create FAQ translations" }, { status: 500 })
     }

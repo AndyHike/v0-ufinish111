@@ -21,11 +21,11 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     await supabase.from("service_faq_translations").delete().eq("faq_id", faqId)
 
     // Створюємо нові переклади
-    const translationInserts = Object.entries(translations).map(([locale, translation]: [string, any]) => ({
+    const translationInserts = Object.entries(translations).map(([locale, data]: [string, any]) => ({
       faq_id: faqId,
       locale,
-      question: translation.question,
-      answer: translation.answer,
+      question: data.question,
+      answer: data.answer,
     }))
 
     const { error: translationsError } = await supabase.from("service_faq_translations").insert(translationInserts)
@@ -47,10 +47,6 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     const supabase = createServerClient()
     const { faqId } = params
 
-    // Видаляємо переклади
-    await supabase.from("service_faq_translations").delete().eq("faq_id", faqId)
-
-    // Видаляємо FAQ
     const { error } = await supabase.from("service_faqs").delete().eq("id", faqId)
 
     if (error) {
