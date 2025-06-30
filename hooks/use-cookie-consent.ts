@@ -6,6 +6,12 @@ import type { CookieConsent, CookieConsentState } from "@/types/cookie-consent"
 const COOKIE_CONSENT_KEY = "cookie-consent"
 const CONSENT_EXPIRY_DAYS = 365
 
+declare global {
+  interface Window {
+    FB_PIXEL_INITIALIZED: boolean
+  }
+}
+
 export function useCookieConsent() {
   const [state, setState] = useState<CookieConsentState>({
     consent: {
@@ -293,7 +299,7 @@ export function useCookieConsent() {
       }
     }
 
-    // Оновлюємо стан
+    // Оновлюємо стан ПЕРЕД диспатчем події
     setState({
       consent,
       showBanner: false,
@@ -310,11 +316,15 @@ export function useCookieConsent() {
     }
 
     // Диспатчимо кастомну подію для повідомлення компонентів про зміну згоди
-    window.dispatchEvent(
-      new CustomEvent("cookieConsentChanged", {
-        detail: { consent, previousConsent, timestamp: Date.now() },
-      }),
-    )
+    // Робимо це з затримкою, щоб стан встиг оновитися
+    setTimeout(() => {
+      console.log("📡 Dispatching cookieConsentChanged event")
+      window.dispatchEvent(
+        new CustomEvent("cookieConsentChanged", {
+          detail: { consent, previousConsent, timestamp: Date.now() },
+        }),
+      )
+    }, 50)
   }
 
   const acceptAll = () => {

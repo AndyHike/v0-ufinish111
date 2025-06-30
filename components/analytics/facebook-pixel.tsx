@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import { usePathname } from "next/navigation"
 
 interface FacebookPixelProps {
@@ -13,15 +13,17 @@ declare global {
     fbq: (...args: any[]) => void
     _fbq: any
     FB_PIXEL_INITIALIZED: boolean
+    testFacebookPixel: () => void
   }
 }
 
 export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
-  const isInitialized = useRef(false)
-  const scriptLoaded = useRef(false)
+  const [isInitialized, setIsInitialized] = useState(false)
+  const [scriptLoaded, setScriptLoaded] = useState(false)
   const pathname = usePathname()
   const previousPathname = useRef(pathname)
   const consentRef = useRef(consent)
+  const initializationAttempted = useRef(false)
 
   // Функція для агресивного очищення Facebook cookies
   const forceClearFacebookCookies = () => {
@@ -91,8 +93,9 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
     const existingScripts = document.querySelectorAll('script[src*="fbevents.js"]')
     existingScripts.forEach((script) => script.remove())
 
-    isInitialized.current = false
-    scriptLoaded.current = false
+    setIsInitialized(false)
+    setScriptLoaded(false)
+    initializationAttempted.current = false
   }
 
   // Функція для створення _fbp cookie вручну
@@ -129,7 +132,7 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
   // Функція для динамічного завантаження Facebook Pixel скрипта
   const loadFacebookPixelScript = () => {
     return new Promise<void>((resolve, reject) => {
-      if (scriptLoaded.current) {
+      if (scriptLoaded) {
         console.log("📥 Facebook Pixel script already loaded")
         resolve()
         return
@@ -149,13 +152,13 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
 
       script.onload = () => {
         console.log("✅ Facebook Pixel script loaded successfully")
-        scriptLoaded.current = true
+        setScriptLoaded(true)
         resolve()
       }
 
       script.onerror = (error) => {
         console.error("❌ Failed to load Facebook Pixel script:", error)
-        scriptLoaded.current = false
+        setScriptLoaded(false)
         reject(error)
       }
 
@@ -165,12 +168,13 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
 
   // Функція для ініціалізації Facebook Pixel
   const initializeFacebookPixel = async () => {
-    if (!pixelId || isInitialized.current || window.FB_PIXEL_INITIALIZED) {
+    if (!pixelId || isInitialized || window.FB_PIXEL_INITIALIZED) {
       console.log("🔄 Facebook Pixel already initialized or missing pixelId")
       return
     }
 
     console.log(`🚀 Initializing Facebook Pixel with ID: ${pixelId}`)
+    initializationAttempted.current = true
 
     try {
       // Завантажуємо скрипт динамічно
@@ -234,7 +238,7 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
         }, 1000)
       }, 500)
 
-      isInitialized.current = true
+      setIsInitialized(true)
       window.FB_PIXEL_INITIALIZED = true
       console.log(`✅ Facebook Pixel ${pixelId} initialized successfully`)
 
@@ -246,12 +250,13 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
       )
     } catch (error) {
       console.error("❌ Failed to initialize Facebook Pixel:", error)
+      initializationAttempted.current = false
     }
   }
 
   // Функція для відстеження переходів по сторінках
   const trackPageView = () => {
-    if (!window.fbq || !isInitialized.current) {
+    if (!window.fbq || !isInitialized) {
       console.log("⚠️ Cannot track page view - pixel not initialized")
       return
     }
@@ -295,7 +300,7 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
 
   // Ефект для ініціалізації при зміні згоди
   useEffect(() => {
-    console.log(`🔄 Consent changed: ${consentRef.current} -> ${consent}, pixelId: ${pixelId}`)
+    console.log(`🔄 Consent effect triggered: ${consentRef.current} -> ${consent}, pixelId: ${pixelId}`)
 
     if (!pixelId) {
       console.log("⚠️ No pixelId provided")
@@ -312,12 +317,16 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
       // Якщо згода змінилась з false на true, очищуємо попередні ініціалізації
       if (consentChanged) {
         console.log("🔄 Consent changed to granted - reinitializing...")
-        isInitialized.current = false
+        setIsInitialized(false)
         window.FB_PIXEL_INITIALIZED = false
+        initializationAttempted.current = false
       }
 
-      // Ініціалізуємо негайно
-      initializeFacebookPixel()
+      // Ініціалізуємо негайно якщо ще не спробували
+      if (!initializationAttempted.current) {
+        console.log("🚀 Starting immediate initialization...")
+        initializeFacebookPixel()
+      }
     } else {
       console.log("🔴 Facebook Pixel consent denied - clearing cookies")
       forceClearFacebookCookies()
@@ -326,7 +335,7 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
 
   // Ефект для відстеження переходів по сторінках
   useEffect(() => {
-    if (consent && isInitialized.current && pathname !== previousPathname.current) {
+    if (consent && isInitialized && pathname !== previousPathname.current) {
       console.log(`🔄 Page changed from ${previousPathname.current} to ${pathname}`)
 
       // Невелика затримка для завантаження сторінки
@@ -336,11 +345,11 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
 
       previousPathname.current = pathname
     }
-  }, [pathname, consent])
+  }, [pathname, consent, isInitialized])
 
   // Ефект для додаткової активації через noscript img
   useEffect(() => {
-    if (consent && pixelId && isInitialized.current) {
+    if (consent && pixelId && isInitialized) {
       // Створюємо прихований img для активації без JS
       const img = document.createElement("img")
       img.height = 1
@@ -357,7 +366,7 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
         }
       }, 5000)
     }
-  }, [consent, pixelId, pathname, isInitialized.current])
+  }, [consent, pixelId, pathname, isInitialized])
 
   // Додаємо глобальну функцію для тестування
   useEffect(() => {
@@ -366,9 +375,11 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
         console.log("🧪 Testing Facebook Pixel...")
         console.log("Consent:", consent)
         console.log("Pixel ID:", pixelId)
-        console.log("Initialized:", isInitialized.current)
-        console.log("Script loaded:", scriptLoaded.current)
+        console.log("Initialized:", isInitialized)
+        console.log("Script loaded:", scriptLoaded)
         console.log("fbq available:", !!window.fbq)
+        console.log("Global flag:", window.FB_PIXEL_INITIALIZED)
+        console.log("Initialization attempted:", initializationAttempted.current)
         console.log("Cookies:", document.cookie)
 
         if (window.fbq) {
@@ -382,7 +393,30 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
         }
       }
     }
-  }, [consent, pixelId])
+  }, [consent, pixelId, isInitialized, scriptLoaded])
+
+  // Слухаємо події зміни згоди
+  useEffect(() => {
+    const handleConsentChange = (event: CustomEvent) => {
+      console.log("🔄 Received consent change event:", event.detail)
+
+      if (event.detail.consent.marketing && !consent) {
+        console.log("🚀 Marketing consent granted via event - forcing initialization")
+        // Форсуємо ініціалізацію при отриманні події про згоду
+        setTimeout(() => {
+          if (!isInitialized && !initializationAttempted.current) {
+            initializeFacebookPixel()
+          }
+        }, 100)
+      }
+    }
+
+    window.addEventListener("cookieConsentChanged", handleConsentChange as EventListener)
+
+    return () => {
+      window.removeEventListener("cookieConsentChanged", handleConsentChange as EventListener)
+    }
+  }, [consent, isInitialized])
 
   return null
 }
