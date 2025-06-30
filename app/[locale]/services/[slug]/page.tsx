@@ -1,61 +1,82 @@
+import { notFound } from "next/navigation"
 import type { Metadata } from "next"
-import { getTranslations } from "next-intl/server"
-import { ServicePageClient } from "./service-page-client"
+import { createClient } from "@/lib/supabase"
+import { formatCurrency } from "@/lib/format-currency"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Separator } from "@/components/ui/separator"
 
-type Props = {
-  params: {
-    locale: string
-    slug: string
+type PageProps = { params: { locale: string; slug: string } }
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const supabase = createClient()
+  const { data } = await supabase
+    .from("services")
+    .select("services_translations(name,description)")
+    .eq("slug", params.slug)
+    .single()
+
+  return {
+    title: data?.services_translations?.name ?? "Service",
+    description: data?.services_translations?.description ?? "",
   }
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug, locale } = params
+export default async function ServicePage({ params }: PageProps) {
+  const supabase = createClient()
 
-  try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/services/${slug}?locale=${locale}`)
+  const { data: service } = await supabase
+    .from("services")
+    .select(
+      `
+      id,
+      price,
+      warranty,
+      icon_url,
+      services_translations(name,description)
+    `,
+    )
+    .eq("slug", params.slug)
+    .single()
 
-    if (!response.ok) {
-      return {
-        title: "Service not found | DeviceHelp",
-        description: "The requested service could not be found.",
-      }
-    }
+  if (!service) return notFound()
 
-    const service = await response.json()
+  return (
+    <main className="container max-w-4xl space-y-8 py-10">
+      <header className="flex items-center gap-4">
+        {service.icon_url && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={service.icon_url || "/placeholder.svg"}
+            alt=""
+            width={64}
+            height={64}
+            className="h-16 w-16 shrink-0 rounded-lg bg-muted object-contain"
+          />
+        )}
+        <h1 className="text-3xl font-bold">{service.services_translations?.name}</h1>
+      </header>
 
-    const titlePatterns = {
-      cs: `${service.name} - Oprava telefonů | DeviceHelp`,
-      en: `${service.name} - Phone Repair | DeviceHelp`,
-      uk: `${service.name} - Ремонт телефонів | DeviceHelp`,
-    }
+      <section className="prose max-w-none">
+        <p>{service.services_translations?.description}</p>
+      </section>
 
-    const descriptionPatterns = {
-      cs: `Profesionální ${service.name.toLowerCase()} pro mobilní telefony. Rychlé a kvalitní služby s garancí. Od ${service.stats.minPrice} Kč.`,
-      en: `Professional ${service.name.toLowerCase()} for mobile phones. Fast and quality services with warranty. From ${service.stats.minPrice} CZK.`,
-      uk: `Професійний ${service.name.toLowerCase()} для мобільних телефонів. Швидкі та якісні послуги з гарантією. Від ${service.stats.minPrice} грн.`,
-    }
+      <Separator />
 
-    return {
-      title: titlePatterns[locale as keyof typeof titlePatterns] || titlePatterns.en,
-      description: descriptionPatterns[locale as keyof typeof descriptionPatterns] || descriptionPatterns.en,
-      openGraph: {
-        title: service.name,
-        description: service.description,
-        type: "website",
-      },
-    }
-  } catch (error) {
-    return {
-      title: "Service | DeviceHelp",
-      description: "Professional phone repair services",
-    }
-  }
-}
+      <section className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <h2 className="mb-2 text-lg font-semibold">Ціна</h2>
+          <p className="text-2xl font-bold">{formatCurrency(service.price, params.locale)}</p>
+        </div>
+        <div>
+          <h2 className="mb-2 text-lg font-semibold">Гарантія</h2>
+          <Badge variant="secondary">{service.warranty} місяців</Badge>
+        </div>
+      </section>
 
-export default async function ServicePage({ params }: Props) {
-  const { slug, locale } = params
-  const t = await getTranslations({ locale, namespace: "Services" })
-
-  return <ServicePageClient slug={slug} locale={locale} />
+      <Button size="lg" className="w-full sm:w-auto">
+        Замовити послугу
+      </Button>
+    </main>
+  )
 }
