@@ -88,7 +88,9 @@ export default function ContactPageClient() {
                   <Phone className="mt-1 h-5 w-5 text-primary" />
                   <div>
                     <h3 className="font-semibold">{t("phone")}</h3>
-                    <p className="text-sm text-muted-foreground">+420 775 848 259</p>
+                    <a href="tel:+420775848259" className="text-sm text-muted-foreground hover:text-primary">
+                      +420 775 848 259
+                    </a>
                   </div>
                 </div>
               </CardContent>
@@ -100,7 +102,9 @@ export default function ContactPageClient() {
                   <Mail className="mt-1 h-5 w-5 text-primary" />
                   <div>
                     <h3 className="font-semibold">{t("email")}</h3>
-                    <p className="text-sm text-muted-foreground">info@devicehelp.cz</p>
+                    <a href="mailto:info@devicehelp.cz" className="text-sm text-muted-foreground hover:text-primary">
+                      info@devicehelp.cz
+                    </a>
                   </div>
                 </div>
               </CardContent>
@@ -112,7 +116,14 @@ export default function ContactPageClient() {
                   <MapPin className="mt-1 h-5 w-5 text-primary" />
                   <div>
                     <h3 className="font-semibold">{t("address")}</h3>
-                    <p className="text-sm text-muted-foreground">{t("addressDetails")}</p>
+                    <a
+                      href="https://maps.google.com/?q=Bělohorská+209/133,+169+00+Praha+6-Břevnov"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-muted-foreground hover:text-primary"
+                    >
+                      {t("addressDetails")}
+                    </a>
                   </div>
                 </div>
               </CardContent>
