@@ -12,7 +12,6 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         id,
         position,
         service_faq_translations(
-          id,
           locale,
           question,
           answer
@@ -26,9 +25,9 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       return NextResponse.json({ error: "Failed to fetch FAQs" }, { status: 500 })
     }
 
-    return NextResponse.json(faqs)
+    return NextResponse.json({ faqs })
   } catch (error) {
-    console.error("Error in GET /api/admin/services/[id]/faqs:", error)
+    console.error("Error in FAQ GET:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
@@ -38,7 +37,6 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     const supabase = createServerClient()
     const serviceId = params.id
     const body = await request.json()
-
     const { position, translations } = body
 
     // Створюємо FAQ
@@ -57,27 +55,25 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     }
 
     // Створюємо переклади
-    if (translations && Array.isArray(translations)) {
-      const translationInserts = translations.map((translation: any) => ({
-        service_faq_id: faq.id,
-        locale: translation.locale,
-        question: translation.question,
-        answer: translation.answer,
-      }))
+    const translationData = Object.entries(translations).map(([locale, data]: [string, any]) => ({
+      faq_id: faq.id,
+      locale,
+      question: data.question,
+      answer: data.answer,
+    }))
 
-      const { error: translationError } = await supabase.from("service_faq_translations").insert(translationInserts)
+    const { error: translationError } = await supabase.from("service_faq_translations").insert(translationData)
 
-      if (translationError) {
-        console.error("Error creating FAQ translations:", translationError)
-        // Видаляємо FAQ якщо переклади не створилися
-        await supabase.from("service_faqs").delete().eq("id", faq.id)
-        return NextResponse.json({ error: "Failed to create FAQ translations" }, { status: 500 })
-      }
+    if (translationError) {
+      console.error("Error creating FAQ translations:", translationError)
+      // Видаляємо FAQ якщо переклади не створилися
+      await supabase.from("service_faqs").delete().eq("id", faq.id)
+      return NextResponse.json({ error: "Failed to create FAQ translations" }, { status: 500 })
     }
 
     return NextResponse.json({ success: true, faq })
   } catch (error) {
-    console.error("Error in POST /api/admin/services/[id]/faqs:", error)
+    console.error("Error in FAQ POST:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
