@@ -1,13 +1,12 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import Link from "next/link"
-import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
-import { Phone, Mail, MapPin, Clock, Shield, Users, ArrowRight, Star, TrendingUp, ArrowLeft } from "lucide-react"
+import { ArrowLeft, Phone, Clock, Shield, Star, CheckCircle } from "lucide-react"
+import { Smartphone, Battery, Wifi, Droplet, Brush, Wrench } from "lucide-react"
 import { formatCurrency } from "@/lib/format-currency"
 import { formatImageUrl } from "@/utils/image-url"
 
@@ -19,323 +18,261 @@ interface ServicePageClientProps {
   }
 }
 
+// Icon mapping
+const iconMap = {
+  smartphone: Smartphone,
+  battery: Battery,
+  wifi: Wifi,
+  droplet: Droplet,
+  brush: Brush,
+  wrench: Wrench,
+}
+
 export function ServicePageClient({ service, locale, translations }: ServicePageClientProps) {
-  const [selectedBrand, setSelectedBrand] = useState<string>("")
-  const [filteredModels, setFilteredModels] = useState(service.models || [])
+  const [isLoading, setIsLoading] = useState(false)
 
-  // Отримуємо локалізований опис послуги
-  const serviceDescription = service.services_translations?.[0] || {}
-  const serviceName = serviceDescription.name || service.name || ""
-  const serviceDesc = serviceDescription.description || service.description || ""
+  const serviceName = service.services_translations[0]?.name || service.name || ""
+  const serviceDescription = service.services_translations[0]?.description || service.description || ""
+  const IconComponent = iconMap[service.icon as keyof typeof iconMap] || Wrench
 
-  // Отримуємо унікальні бренди
-  const brands = Array.from(
-    new Set(service.models?.map((model: any) => model.models?.brands?.name).filter(Boolean)),
-  ).sort()
-
-  // Фільтруємо моделі за брендом
-  useEffect(() => {
-    if (selectedBrand) {
-      setFilteredModels(service.models?.filter((model: any) => model.models?.brands?.name === selectedBrand) || [])
-    } else {
-      setFilteredModels(service.models || [])
-    }
-  }, [selectedBrand, service.models])
-
-  // Функція для відстеження кліків на послуги
-  const trackServiceInteraction = (action: string, modelName?: string) => {
+  const handleContactClick = () => {
     if (typeof window !== "undefined" && window.fbq) {
-      window.fbq("trackCustom", "ServiceInteraction", {
+      window.fbq("trackCustom", "ServiceContactClick", {
         service_name: serviceName,
-        action: action,
-        model_name: modelName || "",
-        page_url: window.location.href,
+        service_id: service.id,
         timestamp: new Date().toISOString(),
       })
     }
   }
 
-  const handleContactClick = (method: string) => {
-    trackServiceInteraction("contact_click", method)
-  }
-
-  const handleModelClick = (modelName: string) => {
-    trackServiceInteraction("model_click", modelName)
-  }
-
-  const handleRequestService = () => {
-    trackServiceInteraction("request_service")
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Hero Section */}
-      <div className="bg-white border-b">
-        <div className="container mx-auto px-4 py-6 md:py-12">
-          <div className="max-w-4xl mx-auto">
-            {/* Back button */}
-            <Link
-              href={`/${locale}/services`}
-              className="mb-6 inline-flex items-center gap-2 rounded-md bg-slate-50 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-primary"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Назад до послуг
-            </Link>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      <div className="container px-4 py-6 md:py-12">
+        <div className="mx-auto max-w-6xl">
+          {/* Back button */}
+          <Link
+            href={`/${locale}/services`}
+            className="mb-6 inline-flex items-center gap-2 rounded-md bg-white px-3 py-2 text-sm font-medium text-muted-foreground shadow-sm hover:text-primary hover:shadow-md transition-all"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            {translations.backToServices || "Назад до послуг"}
+          </Link>
 
-            <div className="text-center mb-8">
-              <h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-4">{serviceName}</h1>
-              <p className="text-base md:text-lg text-gray-600 max-w-2xl mx-auto">{serviceDesc}</p>
-            </div>
-
-            {/* Service Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-              <Card className="text-center">
-                <CardContent className="p-4">
-                  <div className="text-lg md:text-2xl font-bold text-primary">
-                    {formatCurrency(service.stats.minPrice)}
+          {/* Hero Section */}
+          <div className="mb-8 md:mb-12">
+            <Card className="border-0 bg-white shadow-lg">
+              <CardContent className="p-6 md:p-8">
+                <div className="flex flex-col items-center gap-6 text-center md:flex-row md:text-left">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 md:h-20 md:w-20">
+                    <IconComponent className="h-8 w-8 text-primary md:h-10 md:w-10" />
                   </div>
-                  <div className="text-xs md:text-sm text-gray-600">від</div>
-                </CardContent>
-              </Card>
-
-              <Card className="text-center">
-                <CardContent className="p-4">
-                  <div className="text-lg md:text-2xl font-bold text-primary">
-                    {formatCurrency(service.stats.avgPrice)}
+                  <div className="flex-1">
+                    <h1 className="text-2xl font-bold tracking-tight md:text-4xl lg:text-5xl">{serviceName}</h1>
+                    <p className="mt-3 text-base text-muted-foreground md:text-lg lg:text-xl">{serviceDescription}</p>
+                    <div className="mt-4 flex flex-wrap justify-center gap-2 md:justify-start">
+                      <Badge variant="secondary" className="gap-1">
+                        <Shield className="h-3 w-3" />
+                        {translations.warranty || "Гарантія"}
+                      </Badge>
+                      <Badge variant="secondary" className="gap-1">
+                        <Clock className="h-3 w-3" />
+                        {translations.fastService || "Швидко"}
+                      </Badge>
+                      <Badge variant="secondary" className="gap-1">
+                        <Star className="h-3 w-3" />
+                        {translations.professional || "Професійно"}
+                      </Badge>
+                    </div>
                   </div>
-                  <div className="text-xs md:text-sm text-gray-600">середня</div>
-                </CardContent>
-              </Card>
-
-              <Card className="text-center">
-                <CardContent className="p-4">
-                  <div className="text-lg md:text-2xl font-bold text-primary">{service.stats.modelsCount}</div>
-                  <div className="text-xs md:text-sm text-gray-600">моделей</div>
-                </CardContent>
-              </Card>
-
-              <Card className="text-center">
-                <CardContent className="p-4">
-                  <div className="text-lg md:text-2xl font-bold text-primary">
-                    <Clock className="h-5 w-5 md:h-6 md:w-6 mx-auto" />
+                  <div className="flex flex-col gap-3 md:flex-row">
+                    <Button size="lg" asChild className="w-full md:w-auto" onClick={handleContactClick}>
+                      <Link href={`/${locale}/contact?service=${encodeURIComponent(serviceName)}`}>
+                        <Phone className="mr-2 h-4 w-4" />
+                        {translations.contact || "Зв'язатися"}
+                      </Link>
+                    </Button>
                   </div>
-                  <div className="text-xs md:text-sm text-gray-600">30-60 хв</div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* CTA Button */}
-            <div className="text-center">
-              <Button size="lg" className="w-full md:w-auto" onClick={handleRequestService} asChild>
-                <Link href={`/${locale}/contact?service=${encodeURIComponent(serviceName)}`}>
-                  Замовити послугу
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
-            </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
-        </div>
-      </div>
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Service Details */}
+          <div className="grid gap-6 md:gap-8 lg:grid-cols-3">
             {/* Main Content */}
-            <div className="lg:col-span-2 space-y-8">
-              {/* Why Choose Us */}
-              <Card>
+            <div className="lg:col-span-2">
+              <Card className="mb-6 border-0 bg-white shadow-lg md:mb-8">
                 <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Star className="mr-2 h-5 w-5 text-primary" />
-                    Чому обирають нас
+                  <CardTitle className="text-xl md:text-2xl">
+                    {translations.serviceDetails || "Деталі послуги"}
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="text-center">
-                      <Shield className="h-8 w-8 text-primary mx-auto mb-2" />
-                      <h3 className="font-semibold mb-1">Гарантія якості</h3>
-                      <p className="text-sm text-gray-600">6 місяців гарантії</p>
-                    </div>
-                    <div className="text-center">
-                      <Clock className="h-8 w-8 text-primary mx-auto mb-2" />
-                      <h3 className="font-semibold mb-1">Швидкий сервіс</h3>
-                      <p className="text-sm text-gray-600">Швидкий ремонт</p>
-                    </div>
-                    <div className="text-center">
-                      <Users className="h-8 w-8 text-primary mx-auto mb-2" />
-                      <h3 className="font-semibold mb-1">Досвідчені техніки</h3>
-                      <p className="text-sm text-gray-600">Професійні майстри</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Supported Models */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    <span className="flex items-center">
-                      <TrendingUp className="mr-2 h-5 w-5 text-primary" />
-                      Доступно для ({filteredModels.length} моделей)
-                    </span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {/* Brand Filter */}
-                  {brands.length > 1 && (
-                    <div className="mb-6">
-                      <div className="flex flex-wrap gap-2">
-                        <Button
-                          variant={selectedBrand === "" ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => setSelectedBrand("")}
-                        >
-                          Всі бренди
-                        </Button>
-                        {brands.map((brand) => (
-                          <Button
-                            key={brand}
-                            variant={selectedBrand === brand ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => setSelectedBrand(brand as string)}
-                          >
-                            {brand}
-                          </Button>
-                        ))}
+                <CardContent className="space-y-4">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="flex items-start gap-3">
+                      <CheckCircle className="mt-1 h-5 w-5 text-green-600" />
+                      <div>
+                        <h4 className="font-medium">{translations.qualityParts || "Якісні деталі"}</h4>
+                        <p className="text-sm text-muted-foreground">
+                          {translations.qualityPartsDesc || "Використовуємо тільки оригінальні та сертифіковані деталі"}
+                        </p>
                       </div>
                     </div>
-                  )}
-
-                  {/* Models Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {filteredModels.slice(0, 8).map((modelService: any) => {
-                      const model = modelService.models
-                      if (!model) return null
-
-                      return (
-                        <Link
-                          key={model.id}
-                          href={`/${locale}/models/${model.slug || model.id}`}
-                          className="block group"
-                          onClick={() => handleModelClick(model.name)}
-                        >
-                          <Card className="h-full hover:shadow-md transition-shadow">
-                            <CardContent className="p-4">
-                              <div className="flex items-center space-x-3">
-                                <div className="flex-shrink-0">
-                                  <Image
-                                    src={formatImageUrl(model.image_url) || "/placeholder.svg?height=40&width=40"}
-                                    alt={model.name}
-                                    width={40}
-                                    height={40}
-                                    className="rounded-lg object-cover"
-                                  />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center justify-between">
-                                    <div>
-                                      <p className="text-sm font-medium text-gray-900 truncate">{model.name}</p>
-                                      <p className="text-xs text-gray-500">{model.brands?.name}</p>
-                                    </div>
-                                    <Badge variant="secondary" className="ml-2">
-                                      {formatCurrency(modelService.price)}
-                                    </Badge>
-                                  </div>
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        </Link>
-                      )
-                    })}
-                  </div>
-
-                  {filteredModels.length > 8 && (
-                    <div className="text-center mt-6">
-                      <Button variant="outline">Переглянути всі моделі ({filteredModels.length - 8} більше)</Button>
+                    <div className="flex items-start gap-3">
+                      <CheckCircle className="mt-1 h-5 w-5 text-green-600" />
+                      <div>
+                        <h4 className="font-medium">{translations.fastRepair || "Швидкий ремонт"}</h4>
+                        <p className="text-sm text-muted-foreground">
+                          {translations.fastRepairDesc || "Більшість ремонтів виконуємо протягом 1-2 годин"}
+                        </p>
+                      </div>
                     </div>
-                  )}
+                    <div className="flex items-start gap-3">
+                      <CheckCircle className="mt-1 h-5 w-5 text-green-600" />
+                      <div>
+                        <h4 className="font-medium">{translations.warranty || "Гарантія"}</h4>
+                        <p className="text-sm text-muted-foreground">
+                          {translations.warrantyDesc || "Надаємо гарантію на всі види ремонту"}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <CheckCircle className="mt-1 h-5 w-5 text-green-600" />
+                      <div>
+                        <h4 className="font-medium">{translations.experience || "Досвід"}</h4>
+                        <p className="text-sm text-muted-foreground">
+                          {translations.experienceDesc || "Багаторічний досвід роботи з різними моделями"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
+
+              {/* Related Models */}
+              {service.models && service.models.length > 0 && (
+                <Card className="border-0 bg-white shadow-lg">
+                  <CardHeader>
+                    <CardTitle className="text-xl md:text-2xl">
+                      {translations.availableForModels || "Доступно для моделей"}
+                    </CardTitle>
+                    <CardDescription>
+                      {translations.availableForModelsDesc || "Ця послуга доступна для наступних моделей пристроїв"}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                      {service.models.slice(0, 6).map((modelService: any) => (
+                        <Link
+                          key={modelService.models.id}
+                          href={`/${locale}/models/${modelService.models.slug || modelService.models.id}`}
+                          className="group rounded-lg border p-4 transition-all hover:border-primary hover:shadow-md"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="relative h-12 w-12 overflow-hidden rounded-lg bg-slate-100">
+                              <img
+                                src={
+                                  formatImageUrl(modelService.models.image_url) ||
+                                  "/placeholder.svg?height=48&width=48&query=phone"
+                                }
+                                alt={modelService.models.name}
+                                className="h-full w-full object-contain"
+                              />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm group-hover:text-primary transition-colors truncate">
+                                {modelService.models.name}
+                              </p>
+                              <p className="text-xs text-muted-foreground truncate">
+                                {modelService.models.brands?.name}
+                              </p>
+                              {modelService.price && (
+                                <p className="text-sm font-medium text-primary">
+                                  від {formatCurrency(modelService.price)}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
 
             {/* Sidebar */}
             <div className="space-y-6">
               {/* Contact Card */}
-              <Card className="sticky top-4">
+              <Card className="border-0 bg-white shadow-lg">
                 <CardHeader>
-                  <CardTitle className="text-lg">Потрібна допомога?</CardTitle>
+                  <CardTitle className="text-lg">{translations.needHelp || "Потрібна допомога?"}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <Button className="w-full" onClick={() => handleContactClick("phone")} asChild>
-                    <a href="tel:+420123456789">
-                      <Phone className="mr-2 h-4 w-4" />
-                      +420 123 456 789
-                    </a>
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    className="w-full bg-transparent"
-                    onClick={() => handleContactClick("email")}
-                    asChild
-                  >
-                    <a href="mailto:info@devicehelp.cz">
-                      <Mail className="mr-2 h-4 w-4" />
-                      info@devicehelp.cz
-                    </a>
-                  </Button>
-
-                  <Separator />
-
-                  <div className="space-y-2 text-sm text-gray-600">
-                    <div className="flex items-center">
-                      <MapPin className="mr-2 h-4 w-4" />
-                      Praha, Česká republika
-                    </div>
-                    <div className="flex items-center">
-                      <Clock className="mr-2 h-4 w-4" />
-                      Пн-Пт: 9:00-18:00
-                    </div>
-                  </div>
-
-                  <Separator />
-
-                  <Button
-                    variant="outline"
-                    className="w-full bg-transparent"
-                    onClick={() => handleContactClick("contact_form")}
-                    asChild
-                  >
+                  <p className="text-sm text-muted-foreground">
+                    {translations.contactDescription ||
+                      "Зв'яжіться з нами для отримання консультації або запису на ремонт"}
+                  </p>
+                  <Button className="w-full" asChild onClick={handleContactClick}>
                     <Link href={`/${locale}/contact?service=${encodeURIComponent(serviceName)}`}>
-                      Написати повідомлення
+                      <Phone className="mr-2 h-4 w-4" />
+                      {translations.contact || "Зв'язатися"}
                     </Link>
                   </Button>
                 </CardContent>
               </Card>
 
-              {/* Service Info */}
-              <Card>
+              {/* Process Card */}
+              <Card className="border-0 bg-white shadow-lg">
                 <CardHeader>
-                  <CardTitle className="text-lg">Інформація про послугу</CardTitle>
+                  <CardTitle className="text-lg">{translations.repairProcess || "Процес ремонту"}</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Час виконання:</span>
-                    <span className="font-medium">30-60 хв</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Гарантія:</span>
-                    <span className="font-medium">6 місяців</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Підтримуваних моделей:</span>
-                    <span className="font-medium">{service.stats.modelsCount}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Ціна від:</span>
-                    <span className="font-medium text-primary">{formatCurrency(service.stats.minPrice)}</span>
+                <CardContent className="space-y-4">
+                  <div className="space-y-3">
+                    <div className="flex gap-3">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">
+                        1
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">{translations.step1 || "Діагностика"}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {translations.step1Desc || "Безкоштовна діагностика пристрою"}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-3">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">
+                        2
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">{translations.step2 || "Узгодження"}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {translations.step2Desc || "Узгодження вартості та термінів"}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-3">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">
+                        3
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">{translations.step3 || "Ремонт"}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {translations.step3Desc || "Професійний ремонт пристрою"}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-3">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">
+                        4
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">{translations.step4 || "Тестування"}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {translations.step4Desc || "Перевірка якості ремонту"}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>

@@ -1,171 +1,161 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, ArrowRight, Smartphone, Battery, Wifi, Shield, Droplet, Brush } from "lucide-react"
+import { Smartphone, Battery, Wifi, Shield, Droplet, Brush, Wrench } from "lucide-react"
 import { formatCurrency } from "@/lib/format-currency"
 
 interface ServicesPageClientProps {
-  services: any[]
   locale: string
   translations: {
     [key: string]: string
   }
 }
 
-export function ServicesPageClient({ services, locale, translations }: ServicesPageClientProps) {
-  const [searchTerm, setSearchTerm] = useState("")
-  const [sortBy, setSortBy] = useState("popular")
-
-  // Icon mapping
-  const iconMap = {
-    smartphone: Smartphone,
-    battery: Battery,
-    wifi: Wifi,
-    shield: Shield,
-    droplet: Droplet,
-    brush: Brush,
+interface Service {
+  id: string
+  slug?: string
+  name: string
+  description: string
+  icon: string
+  stats?: {
+    minPrice: number
+    modelsCount: number
   }
+}
 
-  // Фільтрація та сортування послуг
-  const filteredAndSortedServices = useMemo(() => {
-    const filtered = services.filter((service) => {
-      const serviceName =
-        service.service_descriptions?.find((desc: any) => desc.language === locale)?.name || service.name || ""
+// Icon mapping
+const iconMap = {
+  smartphone: Smartphone,
+  battery: Battery,
+  wifi: Wifi,
+  shield: Shield,
+  droplet: Droplet,
+  brush: Brush,
+  wrench: Wrench,
+}
 
-      return serviceName.toLowerCase().includes(searchTerm.toLowerCase())
-    })
+export function ServicesPageClient({ locale, translations }: ServicesPageClientProps) {
+  const [services, setServices] = useState<Service[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
-    // Сортування
-    switch (sortBy) {
-      case "priceAsc":
-        return filtered.sort((a, b) => (a.stats?.minPrice || 0) - (b.stats?.minPrice || 0))
-      case "priceDesc":
-        return filtered.sort((a, b) => (b.stats?.minPrice || 0) - (a.stats?.minPrice || 0))
-      case "newest":
-        return filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-      case "popular":
-      default:
-        return filtered.sort((a, b) => (b.stats?.modelsCount || 0) - (a.stats?.modelsCount || 0))
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        const response = await fetch(`/api/services?locale=${locale}`)
+        if (response.ok) {
+          const data = await response.json()
+          setServices(data)
+        }
+      } catch (error) {
+        console.error("Error fetching services:", error)
+      } finally {
+        setIsLoading(false)
+      }
     }
-  }, [services, searchTerm, sortBy, locale])
+
+    fetchServices()
+  }, [locale])
 
   const handleServiceClick = (serviceName: string) => {
     if (typeof window !== "undefined" && window.fbq) {
-      window.fbq("trackCustom", "ServicePageView", {
+      window.fbq("trackCustom", "ServiceClick", {
         service_name: serviceName,
-        source: "services_listing",
+        source: "services_page",
         timestamp: new Date().toISOString(),
       })
     }
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b">
-        <div className="container mx-auto px-4 py-8 md:py-12">
-          <div className="max-w-4xl mx-auto text-center">
-            <h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-4">{translations.title}</h1>
-            <p className="text-base md:text-lg text-gray-600 mb-8">{translations.subtitle}</p>
-
-            {/* Search and Filter */}
-            <div className="flex flex-col md:flex-row gap-4 max-w-2xl mx-auto">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  placeholder={translations.searchPlaceholder}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-full md:w-48">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="popular">{translations.popular}</SelectItem>
-                  <SelectItem value="newest">{translations.newest}</SelectItem>
-                  <SelectItem value="priceAsc">{translations.priceAsc}</SelectItem>
-                  <SelectItem value="priceDesc">{translations.priceDesc}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+    <div className="container px-4 py-12 md:px-6 md:py-24">
+      <div className="mx-auto max-w-6xl">
+        <div className="mb-12 text-center">
+          <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
+            {translations.title || "Наші послуги"}
+          </h1>
+          <p className="mt-4 text-muted-foreground md:text-xl">
+            {translations.subtitle || "Професійний ремонт мобільних пристроїв"}
+          </p>
         </div>
-      </div>
 
-      {/* Services Grid */}
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-6xl mx-auto">
-          {filteredAndSortedServices.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-gray-500 text-lg">{translations.noServicesFound}</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredAndSortedServices.map((service) => {
-                const serviceDescription =
-                  service.service_descriptions?.find((desc: any) => desc.language === locale) ||
-                  service.service_descriptions?.[0] ||
-                  {}
+        {isLoading ? (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {Array(6)
+              .fill(0)
+              .map((_, index) => (
+                <Card key={index} className="animate-pulse">
+                  <CardHeader>
+                    <div className="h-8 w-8 rounded-full bg-gray-200 mb-2"></div>
+                    <div className="h-6 w-2/3 bg-gray-200 rounded"></div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-4 w-full bg-gray-200 rounded mb-2"></div>
+                    <div className="h-4 w-3/4 bg-gray-200 rounded"></div>
+                  </CardContent>
+                </Card>
+              ))}
+          </div>
+        ) : (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {services.map((service) => {
+              const Icon = iconMap[service.icon as keyof typeof iconMap] || Wrench
+              const serviceUrl = service.slug
+                ? `/${locale}/services/${service.slug}`
+                : `/${locale}/services/${service.id}`
 
-                const serviceName = serviceDescription.name || service.name
-                const serviceDesc = serviceDescription.description || service.description
-                const Icon = iconMap[service.icon as keyof typeof iconMap] || Smartphone
+              return (
+                <Link
+                  key={service.id}
+                  href={serviceUrl}
+                  className="group"
+                  onClick={() => handleServiceClick(service.name)}
+                >
+                  <Card className="h-full transition-all duration-200 hover:shadow-lg group-hover:border-primary">
+                    <CardHeader>
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+                          <Icon className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-lg group-hover:text-primary transition-colors">
+                            {service.name}
+                          </CardTitle>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <CardDescription className="mb-4">{service.description}</CardDescription>
 
-                return (
-                  <Link
-                    key={service.id}
-                    href={`/${locale}/services/${service.slug || service.id}`}
-                    className="block group"
-                    onClick={() => handleServiceClick(serviceName)}
-                  >
-                    <Card className="h-full hover:shadow-lg transition-all duration-200 group-hover:scale-[1.02]">
-                      <CardHeader className="pb-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="p-2 bg-primary/10 rounded-lg">
-                            <Icon className="h-6 w-6 text-primary" />
-                          </div>
-                          {service.stats?.modelsCount > 0 && (
+                      {service.stats && (
+                        <div className="flex gap-2">
+                          {service.stats.minPrice > 0 && (
                             <Badge variant="secondary">
-                              {service.stats.modelsCount} {translations.models}
+                              {translations.from || "від"} {formatCurrency(service.stats.minPrice)}
+                            </Badge>
+                          )}
+                          {service.stats.modelsCount > 0 && (
+                            <Badge variant="outline">
+                              {service.stats.modelsCount} {translations.modelsSupported || "моделей"}
                             </Badge>
                           )}
                         </div>
-                        <CardTitle className="text-lg group-hover:text-primary transition-colors">
-                          {serviceName}
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="pt-0">
-                        <p className="text-gray-600 text-sm mb-4 line-clamp-2">{serviceDesc}</p>
+                      )}
 
-                        <div className="flex items-center justify-between">
-                          <div className="text-sm text-gray-500">
-                            {service.stats?.minPrice > 0 && (
-                              <span className="font-medium text-primary">
-                                {translations.from} {formatCurrency(service.stats.minPrice)}
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex items-center text-primary text-sm font-medium group-hover:translate-x-1 transition-transform">
-                            {translations.learnMore}
-                            <ArrowRight className="ml-1 h-3 w-3" />
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </Link>
-                )
-              })}
-            </div>
-          )}
-        </div>
+                      <div className="mt-4">
+                        <span className="text-sm text-primary font-medium group-hover:underline">
+                          {translations.learnMore || "Дізнатися більше"} →
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              )
+            })}
+          </div>
+        )}
       </div>
     </div>
   )
