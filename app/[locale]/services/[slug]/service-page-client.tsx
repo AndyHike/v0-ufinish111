@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { Phone, Mail, MapPin, Clock, Shield, Users, CheckCircle, ArrowRight, Star, TrendingUp } from "lucide-react"
+import { Phone, Mail, MapPin, Clock, Shield, Users, ArrowRight, Star, TrendingUp, ArrowLeft } from "lucide-react"
 import { formatCurrency } from "@/lib/format-currency"
+import { formatImageUrl } from "@/utils/image-url"
 
 interface ServicePageClientProps {
   service: any
@@ -23,14 +24,9 @@ export function ServicePageClient({ service, locale, translations }: ServicePage
   const [filteredModels, setFilteredModels] = useState(service.models || [])
 
   // Отримуємо локалізований опис послуги
-  const serviceDescription =
-    service.service_descriptions?.find((desc: any) => desc.language === locale) ||
-    service.service_descriptions?.[0] ||
-    {}
-
-  const serviceName = serviceDescription.name || service.name
-  const serviceDesc = serviceDescription.description || service.description
-  const processSteps = serviceDescription.process_steps || []
+  const serviceDescription = service.services_translations?.[0] || {}
+  const serviceName = serviceDescription.name || service.name || ""
+  const serviceDesc = serviceDescription.description || service.description || ""
 
   // Отримуємо унікальні бренди
   const brands = Array.from(
@@ -61,9 +57,6 @@ export function ServicePageClient({ service, locale, translations }: ServicePage
 
   const handleContactClick = (method: string) => {
     trackServiceInteraction("contact_click", method)
-    if (typeof window !== "undefined" && window.trackContactClick) {
-      window.trackContactClick(method, "service_page")
-    }
   }
 
   const handleModelClick = (modelName: string) => {
@@ -72,9 +65,6 @@ export function ServicePageClient({ service, locale, translations }: ServicePage
 
   const handleRequestService = () => {
     trackServiceInteraction("request_service")
-    if (typeof window !== "undefined" && window.trackServiceRequest) {
-      window.trackServiceRequest(serviceName)
-    }
   }
 
   return (
@@ -83,6 +73,15 @@ export function ServicePageClient({ service, locale, translations }: ServicePage
       <div className="bg-white border-b">
         <div className="container mx-auto px-4 py-6 md:py-12">
           <div className="max-w-4xl mx-auto">
+            {/* Back button */}
+            <Link
+              href={`/${locale}/services`}
+              className="mb-6 inline-flex items-center gap-2 rounded-md bg-slate-50 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-primary"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Назад до послуг
+            </Link>
+
             <div className="text-center mb-8">
               <h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-4">{serviceName}</h1>
               <p className="text-base md:text-lg text-gray-600 max-w-2xl mx-auto">{serviceDesc}</p>
@@ -95,7 +94,7 @@ export function ServicePageClient({ service, locale, translations }: ServicePage
                   <div className="text-lg md:text-2xl font-bold text-primary">
                     {formatCurrency(service.stats.minPrice)}
                   </div>
-                  <div className="text-xs md:text-sm text-gray-600">{translations.from}</div>
+                  <div className="text-xs md:text-sm text-gray-600">від</div>
                 </CardContent>
               </Card>
 
@@ -104,14 +103,14 @@ export function ServicePageClient({ service, locale, translations }: ServicePage
                   <div className="text-lg md:text-2xl font-bold text-primary">
                     {formatCurrency(service.stats.avgPrice)}
                   </div>
-                  <div className="text-xs md:text-sm text-gray-600">{translations.average}</div>
+                  <div className="text-xs md:text-sm text-gray-600">середня</div>
                 </CardContent>
               </Card>
 
               <Card className="text-center">
                 <CardContent className="p-4">
                   <div className="text-lg md:text-2xl font-bold text-primary">{service.stats.modelsCount}</div>
-                  <div className="text-xs md:text-sm text-gray-600">{translations.models}</div>
+                  <div className="text-xs md:text-sm text-gray-600">моделей</div>
                 </CardContent>
               </Card>
 
@@ -120,16 +119,18 @@ export function ServicePageClient({ service, locale, translations }: ServicePage
                   <div className="text-lg md:text-2xl font-bold text-primary">
                     <Clock className="h-5 w-5 md:h-6 md:w-6 mx-auto" />
                   </div>
-                  <div className="text-xs md:text-sm text-gray-600">30-60 min</div>
+                  <div className="text-xs md:text-sm text-gray-600">30-60 хв</div>
                 </CardContent>
               </Card>
             </div>
 
             {/* CTA Button */}
             <div className="text-center">
-              <Button size="lg" className="w-full md:w-auto" onClick={handleRequestService}>
-                {translations.requestService}
-                <ArrowRight className="ml-2 h-4 w-4" />
+              <Button size="lg" className="w-full md:w-auto" onClick={handleRequestService} asChild>
+                <Link href={`/${locale}/contact?service=${encodeURIComponent(serviceName)}`}>
+                  Замовити послугу
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
               </Button>
             </div>
           </div>
@@ -141,54 +142,30 @@ export function ServicePageClient({ service, locale, translations }: ServicePage
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Main Content */}
             <div className="lg:col-span-2 space-y-8">
-              {/* Process Steps */}
-              {processSteps.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <CheckCircle className="mr-2 h-5 w-5 text-primary" />
-                      {translations.serviceProcess}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {processSteps.map((step: string, index: number) => (
-                        <div key={index} className="flex items-start">
-                          <div className="flex-shrink-0 w-6 h-6 bg-primary text-white rounded-full flex items-center justify-center text-sm font-medium mr-3 mt-0.5">
-                            {index + 1}
-                          </div>
-                          <p className="text-gray-700">{step}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
               {/* Why Choose Us */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center">
                     <Star className="mr-2 h-5 w-5 text-primary" />
-                    {translations.whyChooseUs}
+                    Чому обирають нас
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="text-center">
                       <Shield className="h-8 w-8 text-primary mx-auto mb-2" />
-                      <h3 className="font-semibold mb-1">{translations.qualityGuarantee}</h3>
+                      <h3 className="font-semibold mb-1">Гарантія якості</h3>
                       <p className="text-sm text-gray-600">6 місяців гарантії</p>
                     </div>
                     <div className="text-center">
                       <Clock className="h-8 w-8 text-primary mx-auto mb-2" />
-                      <h3 className="font-semibold mb-1">{translations.fastService}</h3>
+                      <h3 className="font-semibold mb-1">Швидкий сервіс</h3>
                       <p className="text-sm text-gray-600">Швидкий ремонт</p>
                     </div>
                     <div className="text-center">
                       <Users className="h-8 w-8 text-primary mx-auto mb-2" />
-                      <h3 className="font-semibold mb-1">{translations.expertTechnicians}</h3>
-                      <p className="text-sm text-gray-600">Досвідчені майстри</p>
+                      <h3 className="font-semibold mb-1">Досвідчені техніки</h3>
+                      <p className="text-sm text-gray-600">Професійні майстри</p>
                     </div>
                   </div>
                 </CardContent>
@@ -200,7 +177,7 @@ export function ServicePageClient({ service, locale, translations }: ServicePage
                   <CardTitle className="flex items-center justify-between">
                     <span className="flex items-center">
                       <TrendingUp className="mr-2 h-5 w-5 text-primary" />
-                      {translations.availableFor} ({filteredModels.length} {translations.models})
+                      Доступно для ({filteredModels.length} моделей)
                     </span>
                   </CardTitle>
                 </CardHeader>
@@ -239,7 +216,7 @@ export function ServicePageClient({ service, locale, translations }: ServicePage
                       return (
                         <Link
                           key={model.id}
-                          href={`/${locale}/models/${model.slug}`}
+                          href={`/${locale}/models/${model.slug || model.id}`}
                           className="block group"
                           onClick={() => handleModelClick(model.name)}
                         >
@@ -248,7 +225,7 @@ export function ServicePageClient({ service, locale, translations }: ServicePage
                               <div className="flex items-center space-x-3">
                                 <div className="flex-shrink-0">
                                   <Image
-                                    src={model.image_url || "/placeholder.svg?height=40&width=40"}
+                                    src={formatImageUrl(model.image_url) || "/placeholder.svg?height=40&width=40"}
                                     alt={model.name}
                                     width={40}
                                     height={40}
@@ -276,9 +253,7 @@ export function ServicePageClient({ service, locale, translations }: ServicePage
 
                   {filteredModels.length > 8 && (
                     <div className="text-center mt-6">
-                      <Button variant="outline">
-                        {translations.viewAllModels} ({filteredModels.length - 8} більше)
-                      </Button>
+                      <Button variant="outline">Переглянути всі моделі ({filteredModels.length - 8} більше)</Button>
                     </div>
                   )}
                 </CardContent>
@@ -290,7 +265,7 @@ export function ServicePageClient({ service, locale, translations }: ServicePage
               {/* Contact Card */}
               <Card className="sticky top-4">
                 <CardHeader>
-                  <CardTitle className="text-lg">{translations.contact}</CardTitle>
+                  <CardTitle className="text-lg">Потрібна допомога?</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <Button className="w-full" onClick={() => handleContactClick("phone")} asChild>

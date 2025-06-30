@@ -5,88 +5,91 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
   try {
     const supabase = createClient()
     const { slug } = params
+    const { searchParams } = new URL(request.url)
+    const locale = searchParams.get("locale") || "uk"
 
-    // Отримуємо послугу за slug або ID
-    const { data: service, error } = await supabase
+    // Try to find service by slug first, then by ID
+    let { data: service, error } = await supabase
       .from("services")
       .select(`
-        *,
-        service_descriptions (
-          language,
+        id,
+        slug,
+        icon,
+        position,
+        services_translations!inner(
           name,
           description,
-          process_steps
+          locale
         )
       `)
-      .or(`slug.eq.${slug},id.eq.${slug}`)
+      .eq("services_translations.locale", locale)
+      .eq("slug", slug)
       .single()
 
-    if (error) {
-      console.error("Error fetching service:", error)
+    if (!service) {
+      const { data, error: idError } = await supabase
+        .from("services")
+        .select(`
+          id,
+          slug,
+          icon,
+          position,
+          services_translations!inner(
+            name,
+            description,
+            locale
+          )
+        `)
+        .eq("services_translations.locale", locale)
+        .eq("id", slug)
+        .single()
+
+      service = data
+      error = idError
+    }
+
+    if (error || !service) {
       return NextResponse.json({ error: "Service not found" }, { status: 404 })
     }
 
-    // Отримуємо моделі, які підтримують цю послугу
-    const { data: models, error: modelsError } = await supabase
+    // Get models that support this service
+    const { data: modelServices } = await supabase
       .from("model_services")
       .select(`
+        id,
         price,
-        models (
+        models(
           id,
           name,
           slug,
           image_url,
-          brands (
+          brands(
             id,
             name,
-            slug
-          ),
-          series (
-            id,
-            name,
-            slug
+            slug,
+            logo_url
           )
         )
       `)
       .eq("service_id", service.id)
       .order("price", { ascending: true })
 
-    if (modelsError) {
-      console.error("Error fetching models:", modelsError)
-    }
-
-    // Отримуємо статистику послуги
-    const { data: stats, error: statsError } = await supabase
-      .from("model_services")
-      .select("price")
-      .eq("service_id", service.id)
-
-    let serviceStats = {
-      minPrice: 0,
-      maxPrice: 0,
-      avgPrice: 0,
-      modelsCount: 0,
-    }
-
-    if (!statsError && stats && stats.length > 0) {
-      const prices = stats.map((s) => s.price).filter((p) => p > 0)
-      if (prices.length > 0) {
-        serviceStats = {
-          minPrice: Math.min(...prices),
-          maxPrice: Math.max(...prices),
-          avgPrice: Math.round(prices.reduce((a, b) => a + b, 0) / prices.length),
-          modelsCount: prices.length,
-        }
-      }
+    // Calculate stats
+    const prices = modelServices?.map((ms) => ms.price).filter((p) => p !== null) || []
+    const stats = {
+      minPrice: prices.length > 0 ? Math.min(...prices) : 0,
+      maxPrice: prices.length > 0 ? Math.max(...prices) : 0,
+      avgPrice: prices.length > 0 ? Math.round(prices.reduce((a, b) => a + b, 0) / prices.length) : 0,
+      modelsCount: modelServices?.length || 0,
     }
 
     return NextResponse.json({
       ...service,
-      models: models || [],
-      stats: serviceStats,
+      models: modelServices || [],
+      stats,
     })
   } catch (error) {
-    console.error("Error in service API:", error)
+    console.error("Error fetching service:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

@@ -1,28 +1,32 @@
-import { createClient as createSupabaseClient, type SupabaseClient } from "@supabase/supabase-js"
+import { createServerClient, type CookieOptions } from "@supabase/ssr"
+import { cookies } from "next/headers"
 
-/**
- * Повертає singleton-клієнт Supabase для серверного оточення.
- * Використовує змінні оточення SUPABASE_URL та SUPABASE_SERVICE_ROLE_KEY,
- * які вже присутні у Vercel.
- */
-let supabase: SupabaseClient | undefined
+export function createClient() {
+  const cookieStore = cookies()
 
-export function createClient(): SupabaseClient {
-  if (!supabase) {
-    const url = process.env.SUPABASE_URL
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-    if (!url || !serviceKey) {
-      throw new Error("SUPABASE_URL або SUPABASE_SERVICE_ROLE_KEY не задані у змінних оточення.")
-    }
-
-    supabase = createSupabaseClient(url, serviceKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
+  return createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+    cookies: {
+      get(name: string) {
+        return cookieStore.get(name)?.value
       },
-    })
-  }
-
-  return supabase
+      set(name: string, value: string, options: CookieOptions) {
+        try {
+          cookieStore.set({ name, value, ...options })
+        } catch (error) {
+          // The `set` method was called from a Server Component.
+          // This can be ignored if you have middleware refreshing
+          // user sessions.
+        }
+      },
+      remove(name: string, options: CookieOptions) {
+        try {
+          cookieStore.set({ name, value: "", ...options })
+        } catch (error) {
+          // The `delete` method was called from a Server Component.
+          // This can be ignored if you have middleware refreshing
+          // user sessions.
+        }
+      },
+    },
+  })
 }
