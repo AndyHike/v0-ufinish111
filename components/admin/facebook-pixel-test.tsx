@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { CheckCircle, XCircle, AlertCircle, TestTube, Eye, Zap, RefreshCw, Navigation, Play } from "lucide-react"
+import { CheckCircle, XCircle, AlertCircle, TestTube, Eye, Zap, Navigation, Play, Cookie } from "lucide-react"
 
 declare global {
   interface Window {
@@ -50,10 +50,14 @@ export function FacebookPixelTest() {
       pixelLoaded: false,
       pixelInitialized: false,
       cookiesPresent: false,
+      fbpCookie: false,
+      fbcCookie: false,
       eventsWorking: false,
       pixelId: "",
       cookies: [],
+      allCookies: "",
       fbqFunction: false,
+      fbqLoaded: false,
       globalFlag: false,
       errors: [],
       debugInfo: {},
@@ -67,6 +71,7 @@ export function FacebookPixelTest() {
       if (typeof window !== "undefined" && window.fbq) {
         results.pixelLoaded = true
         results.fbqFunction = typeof window.fbq === "function"
+        results.fbqLoaded = !!window.fbq.loaded
 
         // Перевіряємо чи ініціалізований
         if (window.fbq.loaded) {
@@ -78,18 +83,28 @@ export function FacebookPixelTest() {
           fbqVersion: window.fbq.version || "unknown",
           fbqQueue: window.fbq.queue ? window.fbq.queue.length : 0,
           fbqLoaded: window.fbq.loaded || false,
+          fbqCallMethod: !!window.fbq.callMethod,
           currentUrl: window.location.href,
           pageTitle: document.title,
           globalFlag: window.FB_PIXEL_INITIALIZED,
         }
       }
 
-      // Перевіряємо cookies
+      // Детальна перевірка cookies
       if (typeof document !== "undefined") {
+        results.allCookies = document.cookie
         const cookies = document.cookie.split(";")
+
+        // Перевіряємо кожен тип cookie окремо
+        results.fbpCookie = document.cookie.includes("_fbp=")
+        results.fbcCookie = document.cookie.includes("_fbc=")
+
         const fbCookies = cookies.filter(
           (cookie) =>
-            cookie.trim().startsWith("_fbp=") || cookie.trim().startsWith("_fbc=") || cookie.trim().startsWith("fr="),
+            cookie.trim().startsWith("_fbp=") ||
+            cookie.trim().startsWith("_fbc=") ||
+            cookie.trim().startsWith("fr=") ||
+            cookie.includes("facebook"),
         )
 
         if (fbCookies.length > 0) {
@@ -103,16 +118,31 @@ export function FacebookPixelTest() {
         try {
           const testEventId = Math.random().toString(36).substring(7)
 
+          // Відправляємо різні типи подій
           window.fbq("trackCustom", "AdminPixelTest", {
             test_timestamp: new Date().toISOString(),
             test_source: "admin_panel",
             test_id: testEventId,
+            page_url: window.location.href,
           })
 
-          window.fbq("track", "PageView")
+          window.fbq("track", "PageView", {
+            source: "admin_test",
+            page_url: window.location.href,
+          })
+
           window.fbq("track", "ViewContent", {
             content_type: "website",
             source: "admin_test",
+            value: 1,
+            currency: "CZK",
+          })
+
+          // Тестуємо Purchase подію
+          window.fbq("track", "Purchase", {
+            value: 1,
+            currency: "CZK",
+            content_type: "test",
           })
 
           results.eventsWorking = true
@@ -122,24 +152,43 @@ export function FacebookPixelTest() {
             `✅ Sent AdminPixelTest event (ID: ${testEventId})`,
             `✅ Sent PageView event`,
             `✅ Sent ViewContent event`,
+            `✅ Sent Purchase event`,
           ])
+
+          // Додатково через noscript
+          const img = new Image()
+          img.src = `https://www.facebook.com/tr?id=1823195131746594&ev=Purchase&noscript=1&cd[test]=admin&cd[test_id]=${testEventId}&cd[timestamp]=${Date.now()}`
+          document.body.appendChild(img)
+          setEventLog((prev) => [...prev, `📡 Sent noscript backup event`])
         } catch (error) {
           results.errors.push(`Event tracking error: ${error}`)
           setEventLog((prev) => [...prev, `❌ Error sending events: ${error}`])
         }
       }
 
-      // Діагностика
-      if (!results.cookiesPresent) {
-        results.errors.push("Facebook cookies not found")
+      // Діагностика проблем
+      if (!results.fbpCookie) {
+        results.errors.push("_fbp cookie not found - this is required for Facebook tracking")
+      }
+
+      if (!results.fbcCookie) {
+        results.errors.push("_fbc cookie not found - this helps with attribution")
       }
 
       if (!results.pixelInitialized && results.pixelLoaded) {
-        results.errors.push("Pixel script loaded but not initialized")
+        results.errors.push("Pixel script loaded but not initialized - check consent flow")
       }
 
       if (!results.globalFlag) {
-        results.errors.push("Global initialization flag not set")
+        results.errors.push("Global initialization flag not set - pixel may not be properly initialized")
+      }
+
+      if (!results.fbqLoaded) {
+        results.errors.push("fbq.loaded flag is false - script may not be fully loaded")
+      }
+
+      if (results.cookiesPresent && results.pixelInitialized && !results.eventsWorking) {
+        results.errors.push("Pixel initialized and cookies present but events not working")
       }
     } catch (error) {
       results.errors.push(`General error: ${error}`)
@@ -158,21 +207,33 @@ export function FacebookPixelTest() {
 
     // Створюємо _fbp cookie
     const fbpValue = `fb.1.${Date.now()}.${Math.random().toString(36).substring(2, 15)}`
-    const expires = new Date()
-    expires.setFullYear(expires.getFullYear() + 1)
+    const fbpExpires = new Date()
+    fbpExpires.setFullYear(fbpExpires.getFullYear() + 1)
 
-    document.cookie = `_fbp=${fbpValue}; expires=${expires.toUTCString()}; path=/; SameSite=Lax`
+    const fbpCookie = `_fbp=${fbpValue}; expires=${fbpExpires.toUTCString()}; path=/; domain=${window.location.hostname}; SameSite=Lax`
+    document.cookie = fbpCookie
 
     // Створюємо _fbc cookie
     const fbcValue = `fb.1.${Date.now()}.${pixelId}`
     const fbcExpires = new Date()
     fbcExpires.setDate(fbcExpires.getDate() + 7)
 
-    document.cookie = `_fbc=${fbcValue}; expires=${fbcExpires.toUTCString()}; path=/; SameSite=Lax`
+    const fbcCookie = `_fbc=${fbcValue}; expires=${fbcExpires.toUTCString()}; path=/; domain=${window.location.hostname}; SameSite=Lax`
+    document.cookie = fbcCookie
 
-    setEventLog((prev) => [...prev, `🍪 Force created _fbp cookie`, `🍪 Force created _fbc cookie`])
+    console.log("Force created Facebook cookies:", { fbpCookie, fbcCookie })
+    setEventLog((prev) => [
+      ...prev,
+      `🍪 Force created _fbp cookie: ${fbpValue}`,
+      `🍪 Force created _fbc cookie: ${fbcValue}`,
+    ])
 
-    setTimeout(() => runPixelTest(), 500)
+    // Перевіряємо через 500мс
+    setTimeout(() => {
+      const currentCookies = document.cookie
+      setEventLog((prev) => [...prev, `🔍 Current cookies: ${currentCookies}`])
+      runPixelTest()
+    }, 500)
   }
 
   const testNavigation = () => {
@@ -183,6 +244,7 @@ export function FacebookPixelTest() {
       window.fbq("trackCustom", "NavigationTest", {
         test_page: currentPage,
         timestamp: new Date().toISOString(),
+        test_source: "admin_navigation_test",
       })
 
       setEventLog((prev) => [...prev, `🧭 Sent navigation test event for page: ${currentPage}`])
@@ -243,7 +305,7 @@ export function FacebookPixelTest() {
           </Button>
 
           <Button onClick={forceCreateCookies} variant="outline" disabled={isLoading}>
-            <RefreshCw className="mr-2 h-4 w-4" />
+            <Cookie className="mr-2 h-4 w-4" />
             Force Create Cookies
           </Button>
 
@@ -266,7 +328,7 @@ export function FacebookPixelTest() {
           <div className="space-y-2">
             <h4 className="text-sm font-medium">Real-time Event Log:</h4>
             <div className="max-h-40 overflow-y-auto space-y-1 border rounded p-2">
-              {eventLog.slice(-10).map((log, index) => (
+              {eventLog.slice(-15).map((log, index) => (
                 <div key={index} className="text-xs font-mono bg-muted p-1 rounded">
                   {new Date().toLocaleTimeString()} - {log}
                 </div>
@@ -301,10 +363,10 @@ export function FacebookPixelTest() {
 
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    {getStatusIcon(testResults.pixelLoaded)}
-                    <span>Facebook Pixel Script Loaded</span>
+                    {getStatusIcon(testResults.fbqLoaded)}
+                    <span>fbq Script Loaded</span>
                   </div>
-                  {getStatusBadge(testResults.pixelLoaded, "Loaded", "Not Loaded")}
+                  {getStatusBadge(testResults.fbqLoaded, "Loaded", "Not Loaded")}
                 </div>
 
                 <div className="flex items-center justify-between">
@@ -317,10 +379,18 @@ export function FacebookPixelTest() {
 
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    {getStatusIcon(testResults.cookiesPresent)}
-                    <span>Facebook Cookies Present</span>
+                    {getStatusIcon(testResults.fbpCookie)}
+                    <span>_fbp Cookie Present</span>
                   </div>
-                  {getStatusBadge(testResults.cookiesPresent, "Present", "Missing")}
+                  {getStatusBadge(testResults.fbpCookie, "Present", "Missing")}
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {getStatusIcon(testResults.fbcCookie)}
+                    <span>_fbc Cookie Present</span>
+                  </div>
+                  {getStatusBadge(testResults.fbcCookie, "Present", "Missing")}
                 </div>
 
                 <div className="flex items-center justify-between">
@@ -354,6 +424,15 @@ export function FacebookPixelTest() {
                 </div>
               )}
 
+              {testResults.allCookies && (
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium">All Cookies:</h4>
+                  <div className="text-xs font-mono bg-gray-50 p-2 rounded border max-h-20 overflow-y-auto">
+                    {testResults.allCookies || "No cookies found"}
+                  </div>
+                </div>
+              )}
+
               {testResults.errors.length > 0 && (
                 <div className="space-y-2">
                   <h4 className="text-sm font-medium text-red-600">Issues Found:</h4>
@@ -378,6 +457,7 @@ export function FacebookPixelTest() {
                       <li>Check "Test Events" tab</li>
                       <li>Look for events from devicehelp.cz</li>
                       <li>Events should appear within 1-2 minutes</li>
+                      <li>Check for Purchase, PageView, and ViewContent events</li>
                     </ol>
                   </div>
                 </div>

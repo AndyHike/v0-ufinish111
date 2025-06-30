@@ -62,6 +62,47 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
     initializationAttempted.current = false
   }
 
+  // Функція для створення Facebook cookies вручну
+  const createFacebookCookies = () => {
+    if (typeof document === "undefined") return
+
+    console.log("🍪 Creating Facebook cookies manually...")
+
+    // Створюємо _fbp cookie
+    const fbpValue = `fb.1.${Date.now()}.${Math.random().toString(36).substring(2, 15)}`
+    const fbpExpires = new Date()
+    fbpExpires.setFullYear(fbpExpires.getFullYear() + 1)
+
+    const fbpCookie = `_fbp=${fbpValue}; expires=${fbpExpires.toUTCString()}; path=/; domain=${window.location.hostname}; SameSite=Lax`
+    document.cookie = fbpCookie
+    console.log("🍪 Created _fbp cookie:", fbpCookie)
+
+    // Створюємо _fbc cookie
+    const fbcValue = `fb.1.${Date.now()}.${pixelId}`
+    const fbcExpires = new Date()
+    fbcExpires.setDate(fbcExpires.getDate() + 7)
+
+    const fbcCookie = `_fbc=${fbcValue}; expires=${fbcExpires.toUTCString()}; path=/; domain=${window.location.hostname}; SameSite=Lax`
+    document.cookie = fbcCookie
+    console.log("🍪 Created _fbc cookie:", fbcCookie)
+
+    // Перевіряємо чи створились cookies
+    setTimeout(() => {
+      const currentCookies = document.cookie
+      console.log("🍪 Current cookies after creation:", currentCookies)
+
+      if (!currentCookies.includes("_fbp")) {
+        console.warn("⚠️ _fbp cookie not found, trying alternative method")
+        document.cookie = `_fbp=${fbpValue}; path=/; SameSite=Lax`
+      }
+
+      if (!currentCookies.includes("_fbc")) {
+        console.warn("⚠️ _fbc cookie not found, trying alternative method")
+        document.cookie = `_fbc=${fbcValue}; path=/; SameSite=Lax`
+      }
+    }, 100)
+  }
+
   // Функція для ініціалізації Facebook Pixel
   const initializeFacebookPixel = () => {
     if (!pixelId || isInitialized || initializationAttempted.current) {
@@ -73,9 +114,14 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
     initializationAttempted.current = true
 
     try {
-      // 1. Створюємо fbq функцію якщо її немає
+      // 1. Створюємо cookies ПЕРЕД ініціалізацією
+      createFacebookCookies()
+
+      // 2. Ініціалізуємо fbq функцію
       if (!window.fbq) {
         console.log("🔧 Creating fbq function...")
+
+        // Створюємо функцію fbq
         window.fbq = function fbq() {
           if (window.fbq.callMethod) {
             window.fbq.callMethod.apply(window.fbq, arguments)
@@ -83,55 +129,89 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
             window.fbq.queue.push(arguments)
           }
         }
+
+        // Налаштовуємо властивості
         window.fbq.push = window.fbq
         window.fbq.loaded = true
         window.fbq.version = "2.0"
         window.fbq.queue = []
+        window.fbq.callMethod = null
+
         if (!window._fbq) window._fbq = window.fbq
       }
 
-      // 2. Завантажуємо скрипт
+      // 3. Завантажуємо скрипт
       console.log("📥 Loading Facebook Pixel script...")
       const script = document.createElement("script")
       script.async = true
       script.src = "https://connect.facebook.net/en_US/fbevents.js"
+      script.id = "facebook-pixel-script"
 
       script.onload = () => {
-        console.log("✅ Facebook Pixel script loaded")
+        console.log("✅ Facebook Pixel script loaded successfully")
 
-        // 3. Ініціалізуємо pixel
-        console.log("🎯 Initializing pixel...")
-        window.fbq("init", pixelId)
-
-        // 4. Відправляємо PageView
-        console.log("📊 Sending PageView...")
-        window.fbq("track", "PageView")
-
-        // 5. Відправляємо додаткові події
+        // Чекаємо, поки скрипт повністю ініціалізується
         setTimeout(() => {
-          window.fbq("track", "ViewContent", {
-            content_type: "website",
-            source: "dynamic_initialization",
-          })
+          try {
+            // 4. Ініціалізуємо pixel з додатковими параметрами
+            console.log("🎯 Initializing pixel with advanced options...")
 
-          window.fbq("trackCustom", "CookieConsentGranted", {
-            consent_method: "banner",
-            timestamp: new Date().toISOString(),
-          })
+            window.fbq("init", pixelId, {
+              external_id: `user_${Date.now()}`,
+              agent: "plnextjs",
+            })
 
-          console.log("📊 Additional events sent")
-        }, 1000)
+            // 5. Відправляємо початкові події
+            console.log("📊 Sending initial PageView...")
+            window.fbq("track", "PageView", {
+              source: "dynamic_initialization",
+              page_url: window.location.href,
+              page_title: document.title,
+            })
 
-        setIsInitialized(true)
-        window.FB_PIXEL_INITIALIZED = true
-        console.log(`✅ Facebook Pixel ${pixelId} initialized successfully`)
+            // 6. Відправляємо додаткові події для активації
+            setTimeout(() => {
+              console.log("📊 Sending activation events...")
 
-        // Диспатчимо подію
-        window.dispatchEvent(
-          new CustomEvent("facebookPixelInitialized", {
-            detail: { pixelId, timestamp: Date.now() },
-          }),
-        )
+              window.fbq("track", "ViewContent", {
+                content_type: "website",
+                source: "dynamic_initialization",
+                value: 0.01,
+                currency: "CZK",
+              })
+
+              window.fbq("trackCustom", "CookieConsentGranted", {
+                consent_method: "banner",
+                timestamp: new Date().toISOString(),
+                pixel_id: pixelId,
+              })
+
+              // Відправляємо через noscript метод для надійності
+              const img = new Image()
+              img.height = 1
+              img.width = 1
+              img.style.display = "none"
+              img.src = `https://www.facebook.com/tr?id=${pixelId}&ev=PageView&noscript=1&cd[source]=dynamic&cd[timestamp]=${Date.now()}`
+              document.body.appendChild(img)
+
+              console.log("📊 All activation events sent")
+            }, 1000)
+
+            setIsInitialized(true)
+            window.FB_PIXEL_INITIALIZED = true
+            console.log(`✅ Facebook Pixel ${pixelId} initialized successfully`)
+
+            // Диспатчимо подію
+            window.dispatchEvent(
+              new CustomEvent("facebookPixelInitialized", {
+                detail: { pixelId, timestamp: Date.now() },
+              }),
+            )
+          } catch (error) {
+            console.error("❌ Error during pixel initialization:", error)
+            initializationAttempted.current = false
+          }
+        }, 500)
       }
 
       script.onerror = (error) => {
@@ -154,20 +234,32 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
     }
 
     console.log(`📊 Tracking page view: ${pathname}`)
-    window.fbq("track", "PageView")
+
+    // Основна подія PageView
+    window.fbq("track", "PageView", {
+      page_url: window.location.href,
+      page_title: document.title,
+      referrer: document.referrer,
+    })
 
     // Додаткові події залежно від типу сторінки
     if (pathname.includes("/contact")) {
-      window.fbq("track", "Contact")
+      window.fbq("track", "Contact", {
+        content_category: "contact_page",
+      })
     } else if (pathname.includes("/models/")) {
       window.fbq("track", "ViewContent", {
         content_type: "product",
         content_category: "device_model",
+        value: 0.01,
+        currency: "CZK",
       })
     } else if (pathname.includes("/brands/")) {
       window.fbq("track", "ViewContent", {
         content_type: "category",
         content_category: "device_brand",
+        value: 0.01,
+        currency: "CZK",
       })
     }
 
@@ -177,6 +269,21 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
       to_page: pathname,
       timestamp: new Date().toISOString(),
     })
+
+    // Додатково відправляємо через noscript
+    const img = new Image()
+    img.height = 1
+    img.width = 1
+    img.style.display = "none"
+    img.src = `https://www.facebook.com/tr?id=${pixelId}&ev=PageView&noscript=1&cd[page]=${encodeURIComponent(pathname)}&cd[timestamp]=${Date.now()}`
+    document.body.appendChild(img)
+
+    // Видаляємо img через 5 секунд
+    setTimeout(() => {
+      if (document.body.contains(img)) {
+        document.body.removeChild(img)
+      }
+    }, 5000)
   }
 
   // Основний ефект для обробки згоди
@@ -194,10 +301,13 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
     if (consent) {
       console.log(`🟢 Facebook Pixel consent granted for ID: ${pixelId}`)
 
-      // Якщо згода змінилась на true, ініціалізуємо
+      // Якщо згода змінилась на true або ще не ініціалізовано
       if (consentChanged || !isInitialized) {
         console.log("🚀 Starting initialization...")
-        initializeFacebookPixel()
+        // Невелика затримка для стабільності
+        setTimeout(() => {
+          initializeFacebookPixel()
+        }, 200)
       }
     } else {
       console.log("🔴 Facebook Pixel consent denied - clearing")
@@ -211,7 +321,7 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
       console.log(`🔄 Page changed: ${previousPathname.current} -> ${pathname}`)
       setTimeout(() => {
         trackPageView()
-      }, 100)
+      }, 200)
       previousPathname.current = pathname
     }
   }, [pathname, consent, isInitialized])
@@ -225,15 +335,45 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
         console.log("Pixel ID:", pixelId)
         console.log("Initialized:", isInitialized)
         console.log("fbq available:", !!window.fbq)
+        console.log("fbq loaded:", window.fbq?.loaded)
         console.log("Global flag:", window.FB_PIXEL_INITIALIZED)
-        console.log("Cookies:", document.cookie)
+        console.log("Current cookies:", document.cookie)
 
         if (window.fbq) {
+          const testId = Math.random().toString(36).substring(7)
+
+          // Відправляємо різні типи подій для тестування
           window.fbq("trackCustom", "ManualTest", {
             timestamp: new Date().toISOString(),
             source: "manual_test",
+            test_id: testId,
           })
-          console.log("✅ Test event sent")
+
+          window.fbq("track", "Purchase", {
+            value: 1,
+            currency: "CZK",
+            content_type: "test",
+            source: "manual_test",
+          })
+
+          window.fbq("track", "ViewContent", {
+            content_type: "test",
+            value: 1,
+            currency: "CZK",
+          })
+
+          console.log(`✅ Test events sent with ID: ${testId}`)
+
+          // Додатково через noscript
+          const img = new Image()
+          img.src = `https://www.facebook.com/tr?id=${pixelId}&ev=Purchase&noscript=1&cd[test]=manual&cd[test_id]=${testId}&cd[timestamp]=${Date.now()}`
+          document.body.appendChild(img)
+
+          setTimeout(() => {
+            if (document.body.contains(img)) {
+              document.body.removeChild(img)
+            }
+          }, 5000)
         } else {
           console.log("❌ fbq not available")
         }
