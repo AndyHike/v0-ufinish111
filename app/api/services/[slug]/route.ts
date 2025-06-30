@@ -1,72 +1,92 @@
-import { NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase"
+import { type NextRequest, NextResponse } from "next/server"
+import { createClient } from "@/lib/supabase/server"
 
-export async function GET(request: Request, { params }: { params: { slug: string } }) {
+export async function GET(request: NextRequest, { params }: { params: { slug: string } }) {
   try {
-    const url = new URL(request.url)
-    const locale = url.searchParams.get("locale") || "uk"
+    const supabase = createClient()
     const { slug } = params
 
-    const supabase = createClient()
-
-    // Try to find by slug first, then by ID
-    let { data: service, error } = await supabase
+    // Отримуємо послугу за slug або ID
+    const { data: service, error } = await supabase
       .from("services")
       .select(`
-        id, 
-        position,
-        slug,
-        icon,
-        services_translations!inner(
+        *,
+        service_descriptions (
+          language,
           name,
           description,
-          locale
+          process_steps
         )
       `)
-      .eq("services_translations.locale", locale)
-      .eq("slug", slug)
+      .or(`slug.eq.${slug},id.eq.${slug}`)
       .single()
 
-    // If not found by slug, try by ID
-    if (!service) {
-      const { data, error: idError } = await supabase
-        .from("services")
-        .select(`
-          id, 
-          position,
-          slug,
-          icon,
-          services_translations!inner(
-            name,
-            description,
-            locale
-          )
-        `)
-        .eq("services_translations.locale", locale)
-        .eq("id", slug)
-        .single()
-
-      service = data
-      error = idError
-    }
-
-    if (error || !service) {
+    if (error) {
+      console.error("Error fetching service:", error)
       return NextResponse.json({ error: "Service not found" }, { status: 404 })
     }
 
-    // Transform the data
-    const transformedService = {
-      id: service.id,
-      position: service.position,
-      slug: service.slug,
-      icon: service.icon,
-      name: service.services_translations[0]?.name || "",
-      description: service.services_translations[0]?.description || "",
+    // Отримуємо моделі, які підтримують цю послугу
+    const { data: models, error: modelsError } = await supabase
+      .from("model_services")
+      .select(`
+        price,
+        models (
+          id,
+          name,
+          slug,
+          image_url,
+          brands (
+            id,
+            name,
+            slug
+          ),
+          series (
+            id,
+            name,
+            slug
+          )
+        )
+      `)
+      .eq("service_id", service.id)
+      .order("price", { ascending: true })
+
+    if (modelsError) {
+      console.error("Error fetching models:", modelsError)
     }
 
-    return NextResponse.json(transformedService)
+    // Отримуємо статистику послуги
+    const { data: stats, error: statsError } = await supabase
+      .from("model_services")
+      .select("price")
+      .eq("service_id", service.id)
+
+    let serviceStats = {
+      minPrice: 0,
+      maxPrice: 0,
+      avgPrice: 0,
+      modelsCount: 0,
+    }
+
+    if (!statsError && stats && stats.length > 0) {
+      const prices = stats.map((s) => s.price).filter((p) => p > 0)
+      if (prices.length > 0) {
+        serviceStats = {
+          minPrice: Math.min(...prices),
+          maxPrice: Math.max(...prices),
+          avgPrice: Math.round(prices.reduce((a, b) => a + b, 0) / prices.length),
+          modelsCount: prices.length,
+        }
+      }
+    }
+
+    return NextResponse.json({
+      ...service,
+      models: models || [],
+      stats: serviceStats,
+    })
   } catch (error) {
-    console.error("Error fetching service:", error)
-    return NextResponse.json({ error: "Failed to fetch service" }, { status: 500 })
+    console.error("Error in service API:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

@@ -14,6 +14,10 @@ interface Service {
   name: string
   description: string
   icon: string
+  stats?: {
+    minPrice: number
+    modelsCount: number
+  }
 }
 
 export function ServicesSection() {
@@ -98,6 +102,16 @@ export function ServicesSection() {
     fetchServices()
   }, [locale])
 
+  const handleServiceClick = (serviceName: string) => {
+    if (typeof window !== "undefined" && window.fbq) {
+      window.fbq("trackCustom", "ServiceClick", {
+        service_name: serviceName,
+        source: "homepage_services_section",
+        timestamp: new Date().toISOString(),
+      })
+    }
+  }
+
   const displayServices = isLoading ? fallbackServices : services
 
   return (
@@ -127,17 +141,27 @@ export function ServicesSection() {
                 ? `/${locale}/services/${service.slug}`
                 : `/${locale}/services/${service.id}`
 
+              // Get localized service data
+              const serviceDescription =
+                service.service_descriptions?.find((desc: any) => desc.language === locale) ||
+                service.service_descriptions?.[0] ||
+                {}
+
+              const serviceName = serviceDescription.name || service.name
+              const serviceDesc = serviceDescription.description || service.description
+
               return (
                 <Link
                   href={serviceUrl}
                   key={service.id}
                   className="bg-white rounded-lg p-3 shadow-sm hover:shadow transition-all duration-200 flex flex-col h-[100px] group"
+                  onClick={() => handleServiceClick(serviceName)}
                 >
                   <div className="mb-1 flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary">
                     <Icon className="h-3 w-3" />
                   </div>
-                  <h3 className="font-medium text-xs mb-1 line-clamp-1">{service.name}</h3>
-                  <p className="text-muted-foreground text-[10px] line-clamp-2">{service.description}</p>
+                  <h3 className="font-medium text-xs mb-1 line-clamp-1">{serviceName}</h3>
+                  <p className="text-muted-foreground text-[10px] line-clamp-2">{serviceDesc}</p>
                 </Link>
               )
             })}
@@ -161,17 +185,27 @@ export function ServicesSection() {
                 ? `/${locale}/services/${service.slug}`
                 : `/${locale}/services/${service.id}`
 
+              // Get localized service data
+              const serviceDescription =
+                service.service_descriptions?.find((desc: any) => desc.language === locale) ||
+                service.service_descriptions?.[0] ||
+                {}
+
+              const serviceName = serviceDescription.name || service.name
+              const serviceDesc = serviceDescription.description || service.description
+
               return (
                 <Link
                   href={serviceUrl}
                   key={service.id}
                   className="bg-white rounded-lg p-4 shadow-sm hover:shadow transition-all duration-200 flex flex-col h-[160px] group"
+                  onClick={() => handleServiceClick(serviceName)}
                 >
                   <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
                     <Icon className="h-4 w-4" />
                   </div>
-                  <h3 className="font-medium text-base mb-1">{service.name}</h3>
-                  <p className="text-muted-foreground text-sm line-clamp-2">{service.description}</p>
+                  <h3 className="font-medium text-base mb-1">{serviceName}</h3>
+                  <p className="text-muted-foreground text-sm line-clamp-2">{serviceDesc}</p>
                   <div className="mt-auto pt-2">
                     <span className="text-xs text-primary font-medium group-hover:underline">{t("learnMore")} →</span>
                   </div>

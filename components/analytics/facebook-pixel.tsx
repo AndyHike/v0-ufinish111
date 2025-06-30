@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { usePathname, useSearchParams } from "next/navigation"
+import { usePathname } from "next/navigation"
 
 interface FacebookPixelProps {
   pixelId: string
@@ -17,14 +17,12 @@ declare global {
     trackServiceClick: (serviceName: string, modelName: string, price: number) => void
     trackContactSubmission: (formData: any) => void
     trackContactClick: (method: string, location: string) => void
-    trackServiceRequest: (serviceName: string, modelName?: string) => void
   }
 }
 
 export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
   const [isInitialized, setIsInitialized] = useState(false)
   const pathname = usePathname()
-  const searchParams = useSearchParams()
   const previousPathname = useRef(pathname)
   const consentRef = useRef(consent)
   const initializationAttempted = useRef(false)
@@ -482,24 +480,9 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
         break
 
       case "contact":
-        window.fbq("track", "Contact")
-
-        // Check if there's a service parameter
-        const serviceParam = searchParams.get("service")
-        if (serviceParam) {
-          window.fbq("track", "InitiateCheckout", {
-            content_type: "service",
-            content_name: serviceParam,
-            content_category: "Services",
-          })
-        }
-        break
-
-      case "":
-        // Homepage
-        window.fbq("track", "ViewContent", {
-          content_type: "website",
-          content_category: "Homepage",
+        window.fbq("track", "Contact", {
+          content_category: "contact_page",
+          page_url: window.location.href,
         })
         break
     }
@@ -579,18 +562,6 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
               contact_location: location,
               contact_method: method,
             },
-          })
-        }
-      }
-
-      // Service request tracking
-      window.trackServiceRequest = (serviceName: string, modelName?: string) => {
-        if (window.fbq && window.fbq.callMethod) {
-          window.fbq("track", "InitiateCheckout", {
-            content_type: "service",
-            content_name: serviceName,
-            content_category: "Services",
-            custom_parameter_1: modelName || "",
           })
         }
       }
