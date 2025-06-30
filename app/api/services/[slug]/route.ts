@@ -1,26 +1,77 @@
 import { NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase" // серверний singleton
+import { createServerClient } from "@/utils/supabase/server"
 
-export async function GET(_req: Request, { params }: { params: { slug: string } }) {
-  const supabase = createClient()
-  const { data: service, error } = await supabase
-    .from("services")
-    .select(
-      `
-      id,
-      slug,
-      price,
-      warranty,
-      icon_url,
-      services_translations!inner(name,description)
-    `,
-    )
-    .eq("slug", params.slug)
-    .single()
+export async function GET(request: Request, { params }: { params: { slug: string } }) {
+  try {
+    const supabase = createServerClient()
+    const { slug } = params
 
-  if (error || !service) {
-    return NextResponse.json({ message: "Not found" }, { status: 404 })
+    // Спочатку спробуємо знайти за slug
+    let { data: service, error } = await supabase
+      .from("services")
+      .select(`
+        id,
+        position,
+        services_translations(
+          name,
+          description,
+          locale
+        )
+      `)
+      .eq("slug", slug)
+      .single()
+
+    // Якщо не знайдено за slug, спробуємо за ID
+    if (!service) {
+      const { data, error: idError } = await supabase
+        .from("services")
+        .select(`
+          id,
+          position,
+          services_translations(
+            name,
+            description,
+            locale
+          )
+        `)
+        .eq("id", slug)
+        .single()
+
+      service = data
+      error = idError
+    }
+
+    if (error || !service) {
+      return NextResponse.json({ error: "Service not found" }, { status: 404 })
+    }
+
+    // Отримуємо всі моделі, які підтримують цю послугу
+    const { data: modelServices } = await supabase
+      .from("model_services")
+      .select(`
+        id,
+        price,
+        model_id,
+        models(
+          id,
+          name,
+          slug,
+          image_url,
+          brands(
+            id,
+            name,
+            logo_url
+          )
+        )
+      `)
+      .eq("service_id", service.id)
+
+    return NextResponse.json({
+      service,
+      modelServices: modelServices || [],
+    })
+  } catch (error) {
+    console.error("Error in services API:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
-
-  return NextResponse.json(service)
 }
