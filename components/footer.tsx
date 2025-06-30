@@ -42,11 +42,6 @@ export function Footer() {
             <h3 className="font-medium mb-3">{t("company")}</h3>
             <ul className="space-y-2">
               <li>
-                <Link href={`/${locale}/about`} className="text-sm text-gray-500 hover:text-gray-900">
-                  {t("about")}
-                </Link>
-              </li>
-              <li>
                 <Link href={`/${locale}/contact`} className="text-sm text-gray-500 hover:text-gray-900">
                   {t("contact")}
                 </Link>
@@ -77,11 +72,15 @@ export function Footer() {
             <ul className="space-y-2">
               <li className="flex items-center gap-2">
                 <Phone className="h-4 w-4 text-gray-500" />
-                <span className="text-sm text-gray-500">+420775848259</span>
+                <a href="tel:+420775848259" className="text-sm text-gray-500 hover:text-gray-900">
+                  +420775848259
+                </a>
               </li>
               <li className="flex items-center gap-2">
                 <Mail className="h-4 w-4 text-gray-500" />
-                <span className="text-sm text-gray-500">info@devicehelp.cz</span>
+                <a href="mailto:info@devicehelp.cz" className="text-sm text-gray-500 hover:text-gray-900">
+                  info@devicehelp.cz
+                </a>
               </li>
               <li className="flex items-center gap-2">
                 <MapPin className="h-4 w-4 text-gray-500" />

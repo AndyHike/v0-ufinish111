@@ -67,7 +67,9 @@ export function ContactSection() {
                 <Phone className="h-4 w-4 text-primary" />
               </div>
               <div>
-                <p className="text-sm font-medium">+420775848259</p>
+                <a href="tel:+420775848259" className="text-sm font-medium hover:text-primary">
+                  +420775848259
+                </a>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -75,7 +77,9 @@ export function ContactSection() {
                 <Mail className="h-4 w-4 text-primary" />
               </div>
               <div>
-                <p className="text-sm font-medium">info@devicehelp.cz</p>
+                <a href="mailto:info@devicehelp.cz" className="text-sm font-medium hover:text-primary">
+                  info@devicehelp.cz
+                </a>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -321,7 +325,9 @@ export function ContactSection() {
                   </div>
                   <div>
                     <h3 className="font-medium text-gray-900 text-sm md:text-base">{t("phone")}</h3>
-                    <p className="text-gray-600 text-sm md:text-base">+420775848259</p>
+                    <a href="tel:+420775848259" className="text-gray-600 text-sm md:text-base hover:text-primary">
+                      +420775848259
+                    </a>
                   </div>
                 </div>
 
@@ -331,7 +337,12 @@ export function ContactSection() {
                   </div>
                   <div>
                     <h3 className="font-medium text-gray-900 text-sm md:text-base">{t("email")}</h3>
-                    <p className="text-gray-600 text-sm md:text-base">info@devicehelp.cz</p>
+                    <a
+                      href="mailto:info@devicehelp.cz"
+                      className="text-gray-600 text-sm md:text-base hover:text-primary"
+                    >
+                      info@devicehelp.cz
+                    </a>
                   </div>
                 </div>
 
