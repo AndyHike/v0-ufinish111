@@ -175,12 +175,12 @@ export default async function ModelPage({ params }: Props) {
             </div>
           </div>
 
-          {/* Services Grid - компактніші картки */}
+          {/* Services Grid - компактні картки з горизонтальним простором для фото */}
           <div>
             <h2 className="text-2xl font-bold text-gray-900 mb-6">Доступні послуги</h2>
 
             {servicesWithTranslations.length > 0 ? (
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {servicesWithTranslations.map((service) => (
                   <Link
                     key={service.id}
@@ -188,20 +188,18 @@ export default async function ModelPage({ params }: Props) {
                     className="group block"
                   >
                     <div className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg hover:border-blue-300 transition-all duration-300 group-hover:-translate-y-1">
-                      {/* Service Image - компактніше */}
-                      <div className="aspect-[4/3] bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+                      {/* Service Image - горизонтальний простір, компактна висота */}
+                      <div className="aspect-[16/9] bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
                         {service.image_url ? (
                           <img
                             src={formatImageUrl(service.image_url) || "/placeholder.svg"}
                             alt={service.name}
-                            width={240}
-                            height={180}
                             className="w-full h-full object-cover"
                           />
                         ) : (
-                          <div className="text-center p-4">
-                            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                              <div className="w-6 h-6 bg-blue-600 rounded-sm"></div>
+                          <div className="text-center p-3">
+                            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                              <div className="w-5 h-5 bg-blue-600 rounded-sm"></div>
                             </div>
                             <p className="text-gray-500 font-medium text-sm">{service.name}</p>
                           </div>

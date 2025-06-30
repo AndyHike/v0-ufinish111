@@ -10,6 +10,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       .from("service_faqs")
       .select(`
         id,
+        service_id,
         position,
         service_faq_translations(
           id,
@@ -23,10 +24,10 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
     if (error) {
       console.error("Error fetching FAQ:", error)
-      return NextResponse.json({ error: "Failed to fetch FAQ" }, { status: 500 })
+      return NextResponse.json({ error: "FAQ not found" }, { status: 404 })
     }
 
-    return NextResponse.json(faq)
+    return NextResponse.json({ faq })
   } catch (error) {
     console.error("Error in FAQ GET:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
@@ -53,7 +54,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     if (translations && Array.isArray(translations)) {
       for (const translation of translations) {
         const { error: translationError } = await supabase.from("service_faq_translations").upsert({
-          faq_id: faqId,
+          service_faq_id: faqId,
           locale: translation.locale,
           question: translation.question,
           answer: translation.answer,

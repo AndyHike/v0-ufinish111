@@ -233,17 +233,15 @@ export default async function ServicePage({ params, searchParams }: Props) {
             </Link>
           </nav>
 
-          {/* Компактний двоколонковий макет */}
+          {/* Збалансований двоколонковий макет */}
           <div className="grid lg:grid-cols-2 gap-8 mb-12">
-            {/* Ліва колонка - компактніше зображення */}
+            {/* Ліва колонка - вертикальний простір для головного фото */}
             <div className="space-y-4">
-              <div className="aspect-[4/3] bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl overflow-hidden">
+              <div className="aspect-[3/4] bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl overflow-hidden">
                 {service.image_url ? (
                   <img
                     src={formatImageUrl(service.image_url) || "/placeholder.svg"}
                     alt={translation.name}
-                    width={500}
-                    height={375}
                     className="w-full h-full object-cover"
                   />
                 ) : (
@@ -259,7 +257,7 @@ export default async function ServicePage({ params, searchParams }: Props) {
               </div>
             </div>
 
-            {/* Права колонка - зменшені відступи */}
+            {/* Права колонка - збалансована з лівою */}
             <div className="space-y-5">
               <div>
                 <h1 className="text-3xl font-bold text-gray-900 mb-3">{translation.name}</h1>
@@ -268,7 +266,7 @@ export default async function ServicePage({ params, searchParams }: Props) {
                 </p>
               </div>
 
-              {/* Ціна - компактніше */}
+              {/* Ціна */}
               <div>
                 <div className="text-3xl font-bold text-gray-900 mb-1">
                   {modelServicePrice
@@ -286,7 +284,7 @@ export default async function ServicePage({ params, searchParams }: Props) {
                 )}
               </div>
 
-              {/* CTA Buttons - компактніше */}
+              {/* CTA Buttons */}
               <div className="space-y-3">
                 <Button size="lg" className="w-full bg-blue-600 hover:bg-blue-700 py-3" asChild>
                   <Link
@@ -326,27 +324,27 @@ export default async function ServicePage({ params, searchParams }: Props) {
                   </div>
                 </div>
               </div>
+
+              {/* Що входить у послугу - перенесено в праву колонку */}
+              {whatIncludedList.length > 0 && (
+                <div className="pt-2">
+                  <h3 className="text-lg font-bold text-gray-900 mb-4">Що входить у послугу</h3>
+                  <div className="space-y-2">
+                    {whatIncludedList.map((item, index) => (
+                      <div key={index} className="flex items-start gap-2">
+                        <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                        <span className="text-gray-700 text-sm">{item}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Повноширинні секції - зменшені відступи */}
           <div className="space-y-10">
-            {/* Що входить - вертикальний список замість сітки */}
-            {whatIncludedList.length > 0 && (
-              <section>
-                <h2 className="text-2xl font-bold text-gray-900 mb-5">Що входить у послугу</h2>
-                <div className="space-y-3">
-                  {whatIncludedList.map((item, index) => (
-                    <div key={index} className="flex items-start gap-3">
-                      <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                      <span className="text-gray-700">{item}</span>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {/* FAQ Section - компактніше */}
+            {/* FAQ Section */}
             {faqs.length > 0 && (
               <section>
                 <h2 className="text-2xl font-bold text-gray-900 mb-5">Часті питання</h2>
@@ -366,7 +364,7 @@ export default async function ServicePage({ params, searchParams }: Props) {
               </section>
             )}
 
-            {/* Відгуки клієнтів - компактніше */}
+            {/* Відгуки клієнтів */}
             <section>
               <h2 className="text-2xl font-bold text-gray-900 mb-5">Відгуки клієнтів</h2>
               <div className="grid md:grid-cols-3 gap-4">
@@ -387,7 +385,7 @@ export default async function ServicePage({ params, searchParams }: Props) {
               </div>
             </section>
 
-            {/* Final CTA - компактніше */}
+            {/* Final CTA */}
             <section className="bg-blue-600 rounded-xl p-8 text-center text-white">
               <h2 className="text-2xl font-bold mb-3">Залишилися питання?</h2>
               <p className="text-blue-100 mb-6 max-w-xl mx-auto">

@@ -26,7 +26,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       return NextResponse.json({ error: "Failed to fetch FAQs" }, { status: 500 })
     }
 
-    return NextResponse.json(faqs)
+    return NextResponse.json({ faqs })
   } catch (error) {
     console.error("Error in FAQ GET:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     // Створюємо переклади
     if (translations && Array.isArray(translations)) {
       const translationInserts = translations.map((translation: any) => ({
-        faq_id: faq.id,
+        service_faq_id: faq.id,
         locale: translation.locale,
         question: translation.question,
         answer: translation.answer,
@@ -69,13 +69,13 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
 
       if (translationError) {
         console.error("Error creating FAQ translations:", translationError)
-        // Видаляємо FAQ якщо переклади не створилися
+        // Видаляємо створений FAQ якщо переклади не вдалося створити
         await supabase.from("service_faqs").delete().eq("id", faq.id)
         return NextResponse.json({ error: "Failed to create FAQ translations" }, { status: 500 })
       }
     }
 
-    return NextResponse.json({ success: true, faq })
+    return NextResponse.json({ faq }, { status: 201 })
   } catch (error) {
     console.error("Error in FAQ POST:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
