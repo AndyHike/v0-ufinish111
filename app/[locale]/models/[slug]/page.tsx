@@ -1,10 +1,12 @@
+import { notFound } from "next/navigation"
 import type { Metadata } from "next"
 import { getTranslations } from "next-intl/server"
 import Link from "next/link"
-import { notFound } from "next/navigation"
 import { createServerClient } from "@/utils/supabase/server"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, ExternalLink, Wrench } from "lucide-react"
+import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { ArrowLeft, Wrench, Phone, Clock, Shield } from "lucide-react"
 import { formatCurrency } from "@/lib/format-currency"
 import { formatImageUrl } from "@/utils/image-url"
 
@@ -17,52 +19,32 @@ type Props = {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug, locale } = params
-
   const supabase = createServerClient()
 
-  // Спочатку спробуємо знайти за слагом
-  let { data: model } = await supabase.from("models").select("*, brands(name)").eq("slug", slug).single()
+  const { data: model } = await supabase
+    .from("models")
+    .select(`
+      id,
+      name,
+      image_url,
+      brands(name)
+    `)
+    .eq("slug", slug)
+    .single()
 
-  // Якщо не знайдено за слагом, спробуємо знайти за ID
   if (!model) {
-    const { data } = await supabase.from("models").select("*, brands(name)").eq("id", slug).single()
-    model = data
-  }
-
-  if (!model) {
-    const titlePatterns = {
-      cs: "Model nenalezen | DeviceHelp",
-      en: "Model not found | DeviceHelp",
-      uk: "Модель не знайдено | DeviceHelp",
-    }
-
-    const descriptionPatterns = {
-      cs: "Požadovaný model zařízení nebyl nalezen.",
-      en: "The requested device model could not be found.",
-      uk: "Запитувану модель пристрою не вдалося знайти.",
-    }
-
     return {
-      title: titlePatterns[locale as keyof typeof titlePatterns] || titlePatterns.en,
-      description: descriptionPatterns[locale as keyof typeof descriptionPatterns] || descriptionPatterns.en,
+      title: "Model not found | DeviceHelp",
+      description: "The requested model could not be found.",
     }
   }
 
-  const titlePatterns = {
-    cs: `Oprava ${model.name} ${model.brands?.name} | DeviceHelp`,
-    en: `${model.name} ${model.brands?.name} repair | DeviceHelp`,
-    uk: `Ремонт ${model.name} ${model.brands?.name} | DeviceHelp`,
-  }
-
-  const descriptionPatterns = {
-    cs: `Profesionální oprava ${model.name} od ${model.brands?.name}. Rychlé a kvalitní služby s garancí. Rezervujte si termín online.`,
-    en: `Professional ${model.name} repair from ${model.brands?.name}. Fast and quality services with warranty. Book your appointment online.`,
-    uk: `Професійний ремонт ${model.name} від ${model.brands?.name}. Швидкі та якісні послуги з гарантією. Забронюйте зустріч онлайн.`,
-  }
+  const brandName = model.brands?.name || ""
+  const modelName = model.name || ""
 
   return {
-    title: titlePatterns[locale as keyof typeof titlePatterns] || titlePatterns.en,
-    description: descriptionPatterns[locale as keyof typeof descriptionPatterns] || descriptionPatterns.en,
+    title: `${brandName} ${modelName} - Ремонт та послуги | DeviceHelp`,
+    description: `Професійний ремонт ${brandName} ${modelName}. Швидко, якісно, з гарантією. Замовляйте онлайн!`,
   }
 }
 
@@ -74,41 +56,40 @@ export default async function ModelPage({ params }: Props) {
   const supabase = createServerClient()
 
   try {
-    // Спочатку спробуємо знайти за слагом
-    let { data: model, error: modelError } = await supabase
+    // Отримуємо дані моделі
+    const { data: model, error: modelError } = await supabase
       .from("models")
-      .select("*, brands(id, name, slug, logo_url), series(id, name, slug)")
+      .select(`
+        id,
+        name,
+        slug,
+        image_url,
+        brands(
+          id,
+          name,
+          slug,
+          logo_url
+        )
+      `)
       .eq("slug", slug)
       .single()
 
-    // Якщо не знайдено за слагом, спробуємо знайти за ID
-    if (!model) {
-      const { data, error } = await supabase
-        .from("models")
-        .select("*, brands(id, name, slug, logo_url), series(id, name, slug)")
-        .eq("id", slug)
-        .single()
-
-      model = data
-      modelError = error
-    }
-
     if (modelError || !model) {
-      console.error("Model not found:", modelError)
+      console.error("Error fetching model:", modelError)
       notFound()
     }
 
-    // Fetch services for this model with translations - використовуємо існуючу структуру
-    const { data: modelServices, error: modelServicesError } = await supabase
+    // Отримуємо послуги для цієї моделі
+    const { data: modelServices, error: servicesError } = await supabase
       .from("model_services")
       .select(`
-        id, 
-        price, 
-        model_id, 
-        service_id, 
+        id,
+        price,
+        service_id,
         services(
-          id, 
+          id,
           position,
+          slug,
           services_translations(
             name,
             description,
@@ -117,175 +98,196 @@ export default async function ModelPage({ params }: Props) {
         )
       `)
       .eq("model_id", model.id)
-      .order("services(position)", { ascending: true })
+      .order("services(position)")
 
-    if (modelServicesError) {
-      console.error("Error fetching model services:", modelServicesError)
+    if (servicesError) {
+      console.error("Error fetching services:", servicesError)
     }
 
-    // Transform model services data
-    const transformedModelServices = modelServices
-      ?.map((modelService) => {
-        // Filter translations for the requested locale
-        const translations =
-          modelService.services?.services_translations?.filter((translation: any) => translation.locale === locale) ||
-          []
+    // Фільтруємо послуги з перекладами для поточної локалі
+    const servicesWithTranslations =
+      modelServices
+        ?.map((ms) => {
+          const service = ms.services
+          if (!service) return null
 
-        if (translations.length === 0) {
-          return null
-        }
+          const translation = service.services_translations?.find((t: any) => t.locale === locale)
+          if (!translation) return null
 
-        return {
-          id: modelService.id,
-          model_id: modelService.model_id,
-          service_id: modelService.service_id,
-          price: modelService.price,
-          service: {
-            id: modelService.services?.id,
-            position: modelService.services?.position,
-            name: translations[0]?.name || "",
-            description: translations[0]?.description || "",
-          },
-        }
-      })
-      .filter(Boolean) // Remove null items
-
-    // Визначаємо куди повертатися: до серії або до бренду
-    const backUrl = model.series
-      ? `/${locale}/series/${model.series.slug || model.series.id}`
-      : `/${locale}/brands/${model.brands?.slug || model.brand_id}`
-
-    const backText = model.series
-      ? t("backToSeries", { series: model.series.name }) || `До серії ${model.series.name}`
-      : t("backToBrand", { brand: model.brands?.name }) || `До ${model.brands?.name}`
+          return {
+            ...ms,
+            service: {
+              ...service,
+              translation,
+            },
+          }
+        })
+        .filter(Boolean) || []
 
     return (
-      <div className="container px-4 py-12 md:px-6 md:py-24">
-        <div className="mx-auto max-w-5xl">
-          {/* Кнопка повернення */}
-          <Link
-            href={backUrl}
-            className="mb-8 inline-flex items-center gap-2 rounded-md bg-slate-50 px-3 py-1 text-sm font-medium text-muted-foreground hover:text-primary"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            {backText}
-          </Link>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white">
+        <div className="container px-4 py-8 md:px-6">
+          <div className="mx-auto max-w-4xl">
+            {/* Кнопка повернення */}
+            <Link
+              href={`/${locale}/brands/${model.brands?.slug || model.brands?.id}`}
+              className="mb-6 inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-sm hover:bg-slate-50 hover:text-slate-900 transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              {commonT("backTo") || "Назад до"} {model.brands?.name}
+            </Link>
 
-          <div className="mb-12 flex flex-col items-center gap-6 md:flex-row">
-            <div className="relative h-40 w-40 overflow-hidden rounded-lg">
-              <img
-                src={formatImageUrl(model.image_url) || "/placeholder.svg?height=160&width=160&query=phone+model"}
-                alt={model.name}
-                width={160}
-                height={160}
-                className="h-full w-full object-contain"
-                style={{ display: "block" }}
-              />
-            </div>
-            <div>
-              <div className="mb-2 flex items-center gap-2">
-                {model.brands?.logo_url && (
-                  <div className="relative h-6 w-6 overflow-hidden rounded-full">
-                    <img
-                      src={formatImageUrl(model.brands.logo_url) || "/placeholder.svg"}
-                      alt={model.brands.name}
-                      width={24}
-                      height={24}
-                      className="h-full w-full object-contain"
-                      style={{ display: "block" }}
-                    />
-                  </div>
-                )}
-                <span className="text-sm text-muted-foreground">{model.brands?.name}</span>
-              </div>
-              <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">{model.name}</h1>
-              <p className="mt-2 max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                {t("modelPageDescription", { model: model.name, brand: model.brands?.name })}
-              </p>
-            </div>
-          </div>
-
-          <h2 className="mb-6 text-2xl font-bold">{t("availableServices") || "Доступні послуги"}</h2>
-
-          {transformedModelServices && transformedModelServices.length > 0 ? (
-            <div className="grid gap-6">
-              {transformedModelServices.map((modelService) => (
-                <div
-                  key={modelService.id}
-                  className="group rounded-lg border p-6 shadow-sm hover:shadow-md transition-all duration-200"
-                >
-                  <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-start gap-3 mb-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
-                          <Wrench className="h-5 w-5" />
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="text-xl font-semibold mb-1">{modelService.service.name}</h3>
-                          <p className="text-muted-foreground text-sm leading-relaxed">
-                            {modelService.service.description}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row lg:flex-col xl:flex-row items-start lg:items-end xl:items-center gap-3 lg:text-right">
-                      <div className="text-right">
-                        <div className="text-2xl font-bold text-primary">
-                          {modelService.price !== null ? formatCurrency(modelService.price) : t("priceOnRequest")}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {commonT("priceForThisModel") || "За цю модель"}
-                        </div>
-                      </div>
-
-                      <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                        {/* Кнопка для перегляду деталей послуги */}
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          asChild
-                          className="group-hover:border-primary/50 bg-transparent"
-                        >
-                          <Link href={`/${locale}/services/${modelService.service.id}`}>
-                            <ExternalLink className="h-4 w-4 mr-2" />
-                            {commonT("serviceDetails") || "Детальніше"}
-                          </Link>
-                        </Button>
-
-                        {/* Кнопка для замовлення */}
-                        <Button size="sm" asChild>
-                          <Link
-                            href={`/${locale}/contact?service=${encodeURIComponent(modelService.service.name)}&model=${encodeURIComponent(model.name)}`}
-                          >
-                            {commonT("requestService") || "Замовити"}
-                          </Link>
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
+            {/* Заголовок моделі */}
+            <div className="mb-8">
+              <div className="flex items-start gap-6 mb-6">
+                <div className="relative h-24 w-24 overflow-hidden rounded-2xl bg-white shadow-lg flex-shrink-0">
+                  <img
+                    src={formatImageUrl(model.image_url) || "/placeholder.svg?height=96&width=96&query=phone"}
+                    alt={model.name}
+                    width={96}
+                    height={96}
+                    className="h-full w-full object-contain p-2"
+                  />
                 </div>
-              ))}
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    {model.brands?.logo_url && (
+                      <div className="relative h-8 w-8 overflow-hidden rounded-full bg-white shadow-sm">
+                        <img
+                          src={formatImageUrl(model.brands.logo_url) || "/placeholder.svg"}
+                          alt={model.brands.name}
+                          width={32}
+                          height={32}
+                          className="h-full w-full object-contain p-1"
+                        />
+                      </div>
+                    )}
+                    <Badge variant="secondary" className="text-xs">
+                      {model.brands?.name}
+                    </Badge>
+                  </div>
+                  <h1 className="text-3xl font-bold text-slate-900 mb-2">{model.name}</h1>
+                  <p className="text-slate-600">{t("availableServices") || "Доступні послуги для вашого пристрою"}</p>
+                </div>
+              </div>
             </div>
-          ) : (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground text-lg">{t("noServicesAvailable") || "Послуги недоступні"}</p>
-              <Button variant="outline" asChild className="mt-4 bg-transparent">
-                <Link href={`/${locale}/contact`}>{commonT("contactUs") || "Зв'яжіться з нами"}</Link>
-              </Button>
+
+            {/* Список послуг */}
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold text-slate-900 mb-4">{t("repairServices") || "Послуги ремонту"}</h2>
+
+              {servicesWithTranslations.length === 0 ? (
+                <Card className="shadow-sm border-slate-200">
+                  <CardContent className="p-8 text-center">
+                    <div className="flex justify-center mb-4">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+                        <Wrench className="h-6 w-6" />
+                      </div>
+                    </div>
+                    <h3 className="text-lg font-semibold text-slate-900 mb-2">
+                      {t("noServicesAvailable") || "Послуги недоступні"}
+                    </h3>
+                    <p className="text-slate-600 mb-4">
+                      {t("noServicesDescription") || "На даний момент для цієї моделі немає доступних послуг."}
+                    </p>
+                    <Button asChild>
+                      <Link href={`/${locale}/contact`}>{commonT("contactUs") || "Зв'язатися з нами"}</Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="grid gap-4">
+                  {servicesWithTranslations.map((modelService: any) => (
+                    <Card
+                      key={modelService.id}
+                      className="shadow-sm border-slate-200 hover:shadow-md transition-shadow"
+                    >
+                      <CardContent className="p-6">
+                        <div className="flex items-start gap-4">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white flex-shrink-0">
+                            <Wrench className="h-6 w-6" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-lg font-semibold text-slate-900 mb-1">
+                              {modelService.service.translation.name}
+                            </h3>
+                            <p className="text-slate-600 text-sm mb-3 line-clamp-2">
+                              {modelService.service.translation.description}
+                            </p>
+                            <div className="flex items-center gap-4 text-sm text-slate-500">
+                              <div className="flex items-center gap-1">
+                                <Clock className="h-4 w-4" />
+                                <span>{t("fastService") || "Швидко"}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Shield className="h-4 w-4" />
+                                <span>{t("warranty") || "Гарантія"}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <div className="text-2xl font-bold text-slate-900 mb-2">
+                              {modelService.price
+                                ? formatCurrency(modelService.price)
+                                : t("priceOnRequest") || "За запитом"}
+                            </div>
+                            <div className="flex flex-col sm:flex-row gap-2">
+                              <Button size="sm" variant="outline" asChild>
+                                <Link
+                                  href={`/${locale}/services/${modelService.services?.slug || modelService.services?.id}?model=${model.slug}`}
+                                >
+                                  {commonT("learnMore") || "Детальніше"}
+                                </Link>
+                              </Button>
+                              <Button size="sm" asChild>
+                                <Link
+                                  href={`/${locale}/contact?service=${encodeURIComponent(modelService.service.translation.name)}&model=${encodeURIComponent(model.name)}`}
+                                >
+                                  <Phone className="h-4 w-4 mr-1" />
+                                  {commonT("order") || "Замовити"}
+                                </Link>
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
+
+            {/* CTA секція */}
+            <Card className="mt-8 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 shadow-sm">
+              <CardContent className="p-6 text-center">
+                <h3 className="text-lg font-semibold text-slate-900 mb-2">{t("needHelp") || "Потрібна допомога?"}</h3>
+                <p className="text-slate-600 mb-4">
+                  {t("contactDescription") || "Наші експерти готові допомогти вам з будь-якими питаннями"}
+                </p>
+                <Button asChild>
+                  <Link href={`/${locale}/contact?model=${encodeURIComponent(model.name)}`}>
+                    <Phone className="h-4 w-4 mr-2" />
+                    {commonT("contactUs") || "Зв'язатися з нами"}
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     )
   } catch (error) {
-    console.error("Unexpected error in ModelPage:", error)
+    console.error("Error in ModelPage:", error)
     return (
       <div className="container px-4 py-12">
-        <div className="mx-auto max-w-5xl">
-          <h1 className="text-2xl font-bold text-red-600">Помилка завантаження</h1>
-          <p className="text-muted-foreground">Не вдалося завантажити дані моделі. Спробуйте пізніше.</p>
-          <pre className="mt-4 p-4 bg-gray-100 rounded text-sm overflow-auto">{JSON.stringify(error, null, 2)}</pre>
+        <div className="mx-auto max-w-4xl">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-red-600 mb-2">Помилка завантаження</h1>
+            <p className="text-slate-600">Не вдалося завантажити дані моделі. Спробуйте пізніше.</p>
+            <Button asChild className="mt-4">
+              <Link href={`/${locale}`}>На головну</Link>
+            </Button>
+          </div>
         </div>
       </div>
     )
