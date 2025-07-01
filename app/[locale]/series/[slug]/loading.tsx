@@ -1,8 +1,8 @@
-import { ArrowLeft } from "lucide-react"
 import { ModelCardSkeleton, PageHeaderSkeleton } from "@/components/ui/skeleton-card"
 import { Skeleton } from "@/components/ui/skeleton"
+import { ArrowLeft } from "lucide-react"
 
-export default function SeriesLoading() {
+export default function SeriesPageLoading() {
   return (
     <div className="container px-4 py-12 md:px-6 md:py-24">
       <div className="mx-auto max-w-6xl">
@@ -17,10 +17,7 @@ export default function SeriesLoading() {
 
         {/* Розділ моделей */}
         <div>
-          <div className="mb-6 border-b pb-2">
-            <Skeleton className="h-8 w-40" />
-          </div>
-
+          <Skeleton className="h-8 w-40 mb-6" />
           <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
             {Array.from({ length: 8 }).map((_, i) => (
               <ModelCardSkeleton key={i} />

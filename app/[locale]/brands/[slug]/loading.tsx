@@ -1,8 +1,8 @@
-import { ArrowLeft } from "lucide-react"
-import { ModelCardSkeleton, SeriesCardSkeleton, PageHeaderSkeleton } from "@/components/ui/skeleton-card"
+import { SeriesCardSkeleton, ModelCardSkeleton, PageHeaderSkeleton } from "@/components/ui/skeleton-card"
 import { Skeleton } from "@/components/ui/skeleton"
+import { ArrowLeft } from "lucide-react"
 
-export default function BrandLoading() {
+export default function BrandPageLoading() {
   return (
     <div className="container px-4 py-12 md:px-6 md:py-24">
       <div className="mx-auto max-w-6xl">
@@ -17,10 +17,7 @@ export default function BrandLoading() {
 
         {/* Розділ серій */}
         <div className="mb-12">
-          <div className="mb-8 inline-block border-b-2 border-primary pb-2">
-            <Skeleton className="h-8 w-40" />
-          </div>
-
+          <Skeleton className="h-8 w-48 mb-8" />
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
               <SeriesCardSkeleton key={i} />
@@ -30,10 +27,7 @@ export default function BrandLoading() {
 
         {/* Розділ моделей */}
         <div>
-          <div className="mb-6 inline-block border-b-2 border-primary pb-2">
-            <Skeleton className="h-8 w-32" />
-          </div>
-
+          <Skeleton className="h-8 w-40 mb-6" />
           <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
             {Array.from({ length: 10 }).map((_, i) => (
               <ModelCardSkeleton key={i} />

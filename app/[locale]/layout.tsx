@@ -12,7 +12,6 @@ import { AnalyticsProvider } from "@/components/analytics/analytics-provider"
 import { Suspense } from "react"
 import { SessionProvider } from "@/components/providers/session-provider"
 import "@/app/globals.css"
-import { NavigationProgress } from "@/components/navigation-progress"
 
 export async function generateMetadata({
   params: { locale },
@@ -74,7 +73,6 @@ export default async function LocaleLayout({
 
   return (
     <NextIntlClientProvider locale={locale} messages={messages}>
-      <NavigationProgress />
       <SessionProvider>
         <CookieConsentProvider>
           <div className="flex min-h-screen flex-col">

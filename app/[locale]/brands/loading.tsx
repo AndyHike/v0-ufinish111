@@ -1,12 +1,12 @@
-import { ArrowLeft } from "lucide-react"
 import { BrandCardSkeleton } from "@/components/ui/skeleton-card"
 import { Skeleton } from "@/components/ui/skeleton"
+import { ArrowLeft } from "lucide-react"
 
 export default function BrandsLoading() {
   return (
     <div className="container px-4 py-12 md:px-6 md:py-24">
       <div className="mx-auto max-w-6xl">
-        {/* Кнопка повернення на головну */}
+        {/* Кнопка повернення */}
         <div className="mb-8 inline-flex items-center gap-2 rounded-md bg-slate-50 px-3 py-1 text-sm font-medium text-muted-foreground">
           <ArrowLeft className="h-4 w-4" />
           <Skeleton className="h-4 w-20" />
