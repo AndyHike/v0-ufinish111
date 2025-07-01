@@ -32,7 +32,7 @@
     "company": "Компанія"
   },
   "UserNav": {
-    "login": "війти",
+    "login": "��війти",
     "profile": "Профіль",
     "orders": "Замовлення",
     "adminDashboard": "Панель адміністратора",
@@ -64,7 +64,7 @@
   },
   "Services": {
     "title": "Наші послуги",
-    "subtitle": "Професійний ремонт ��обільних пристроїв з гарантією якості та швидким обслуговуванням",
+    "subtitle": "Професійний ремонт мобільних пристроїв з гарантією якості та швидким обслуговуванням",
     "requestService": "Замовити послугу",
     "allServicesButton": "Всі послуги",
     "service1": {
@@ -146,45 +146,7 @@
       "estimatedTime": "1-2 дні",
       "priceRange": "від 1000 Kč",
       "warranty": "1 місяць"
-    },
-    "priceRange": "Діапазон цін",
-    "priceOnRequest": "За запитом",
-    "avgPrice": "Середня",
-    "supportedModels": "Підтримувані моделі",
-    "modelsAvailable": "моделей доступно",
-    "supportedBrands": "Підтримувані бренди",
-    "brandsAvailable": "брендів доступно",
-    "serviceType": "Тип послуги",
-    "repairService": "Ремонт",
-    "professionalService": "Професійна послуга",
-    "filterByBrand": "Фільтрувати за брендом",
-    "allBrands": "Всі бренди",
-    "noModelsFound": "Моделі не знайдено",
-    "needThisService": "Потрібна ця послуга?",
-    "contactUsForService": "Зв'яжіться з нами для отримання професійної послуги з гарантією якості.",
-    "forModel": "для {brand} {model}",
-    "executionTime": "Час виконання",
-    "fromHours": "від {hours} години",
-    "warranty": "Гарантія",
-    "months": "{count} місяців",
-    "orderService": "Замовити послугу",
-    "askQuestion": "Задати питання",
-    "whatIncluded": "Що входить у послугу",
-    "frequentQuestions": "Часті питання",
-    "clientReviews": "Відгуки клієнтів",
-    "haveQuestions": "Залишилися питання?",
-    "expertsReady": "Наші експерти готові відповісти на всі ваші питання та надати професійну консультацію",
-    "loadingError": "Помилка завантаження",
-    "loadingErrorDescription": "Не вдалося завантажити дані послуги. Спробуйте пізніше.",
-    "testimonial1Name": "Олександр К.",
-    "testimonial1Text": "Швидко та якісно замінили екран. Дуже задоволений результатом!",
-    "testimonial1Date": "2 тижні тому",
-    "testimonial2Name": "Марія В.",
-    "testimonial2Text": "Професійний підхід, чесні ціни. Рекомендую!",
-    "testimonial2Date": "1 місяць тому",
-    "testimonial3Name": "Дмитро П.",
-    "testimonial3Text": "Відмінний сервіс, телефон працює як новий.",
-    "testimonial3Date": "3 тижні тому"
+    }
   },
   "ServicesSection": {
     "title": "Наші послуги",
@@ -224,8 +186,8 @@
     "noBrands": "Немає доступних брендів"
   },
   "Brands": {
-    "backToBrands": "До всіх брендів",
-    "backToHome": "На головну",
+    "backToBrands":"До всіх брендів",
+    "backToHome":"На головну",
     "title": "Бренди, які ми обслуговуємо",
     "subtitle": "Ми спеціалізуємося на ремонті всіх основних брендів смартфонів",
     "loading": "Завантаження брендів...",
@@ -259,7 +221,7 @@
     "seriesNotFoundDesc": "Запитана серія не знайдена."
   },
   "Models": {
-    "backToSeries": "До всіх моделей",
+    "backToSeries":"До всіх моделей",
     "repairServices": "Послуги з ремонту",
     "modelNotFound": "Модель не знайдено",
     "modelNotFoundDesc": "Запитувана модель не знайдена.",
@@ -529,7 +491,7 @@
     "imageUploadError": "Не вдалося завантажити зображення",
     "invalidFileType": "Недійсний тип файлу. Будь ласка, завантажте зображення.",
     "fileTooLarge": "Файл занадто великий. Максимальний розмір - 2МБ.",
-    "order": "Замовити",
+    "order": "Порядок",
     "brandReorderedSuccess": "Порядок брендів успішно оновлено",
     "brandReorderedError": "Не вдалося оновити порядок брендів",
     "reorderModels": "Змінити порядок",
@@ -796,11 +758,7 @@
       "completed": "Виданий",
       "cancelled": "Скасований",
       "dokončeno": "Завершено"
-    },
-    "home": "Головна",
-    "contactUs": "Зв'яжіться з нами",
-    "order": "Замовити",
-    "browseServices": "Переглянути послуги"
+    }
   },
   "cookies": {
     "banner": {

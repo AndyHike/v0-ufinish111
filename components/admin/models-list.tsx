@@ -1,10 +1,9 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Skeleton } from "@/components/ui/skeleton"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,13 +18,6 @@ import Link from "next/link"
 
 export function ModelsList() {
   const [searchQuery, setSearchQuery] = useState("")
-  const [loading, setLoading] = useState(true)
-
-  // Simulate loading
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 2000)
-    return () => clearTimeout(timer)
-  }, [])
 
   // In a real app, this would fetch data from an API
   const models = [
@@ -81,58 +73,6 @@ export function ModelsList() {
       model.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       model.brand.toLowerCase().includes(searchQuery.toLowerCase()),
   )
-
-  if (loading) {
-    return (
-      <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <Skeleton className="h-10 flex-1" />
-        </div>
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Модель</TableHead>
-                <TableHead>Бренд</TableHead>
-                <TableHead>Рік випуску</TableHead>
-                <TableHead>Дата створення</TableHead>
-                <TableHead className="w-[50px]"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {Array(5)
-                .fill(0)
-                .map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Skeleton className="h-8 w-8 rounded-md" />
-                        <Skeleton className="h-4 w-24" />
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Skeleton className="h-5 w-5 rounded-full" />
-                        <Skeleton className="h-4 w-16" />
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-4 w-12" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-4 w-20" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-8 w-8 rounded-md" />
-                    </TableCell>
-                  </TableRow>
-                ))}
-            </TableBody>
-          </Table>
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div>

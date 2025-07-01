@@ -1,7 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { getTranslations } from "next-intl/server"
 import { createServerClient } from "@/utils/supabase/server"
 import { Button } from "@/components/ui/button"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
@@ -71,9 +70,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function ServicePage({ params, searchParams }: Props) {
   const { slug, locale } = params
   const { model: modelSlug } = searchParams
-
-  const t = await getTranslations("Services")
-  const commonT = await getTranslations("Common")
 
   const supabase = createServerClient()
 
@@ -200,9 +196,31 @@ export default async function ServicePage({ params, searchParams }: Props) {
     const maxPrice = prices.length > 0 ? Math.max(...prices) : null
 
     const backUrl = sourceModel ? `/${locale}/models/${sourceModel.slug}` : `/${locale}`
-    const backText = sourceModel ? `${sourceModel.brands?.name} ${sourceModel.name}` : commonT("home")
+    const backText = sourceModel ? `${sourceModel.brands?.name} ${sourceModel.name}` : "Головна"
 
     const whatIncludedList = translation.what_included?.split("\n").filter((item) => item.trim()) || []
+
+    // Фейкові відгуки для демонстрації
+    const testimonials = [
+      {
+        id: 1,
+        name: "Олександр К.",
+        text: "Швидко та якісно замінили екран. Дуже задоволений результатом!",
+        date: "2 тижні тому",
+      },
+      {
+        id: 2,
+        name: "Марія В.",
+        text: "Професійний підхід, чесні ціни. Рекомендую!",
+        date: "1 місяць тому",
+      },
+      {
+        id: 3,
+        name: "Дмитро П.",
+        text: "Відмінний сервіс, телефон працює як новий.",
+        date: "3 тижні тому",
+      },
+    ]
 
     return (
       <div className="min-h-screen bg-white">
@@ -257,11 +275,11 @@ export default async function ServicePage({ params, searchParams }: Props) {
                       ? minPrice === maxPrice
                         ? formatCurrency(minPrice)
                         : `${formatCurrency(minPrice)} - ${formatCurrency(maxPrice)}`
-                      : t("priceOnRequest")}
+                      : "За запитом"}
                 </div>
                 {sourceModel && (
                   <p className="text-gray-600 text-sm">
-                    {t("forModel", { brand: sourceModel.brands?.name, model: sourceModel.name })}
+                    для {sourceModel.brands?.name} {sourceModel.name}
                   </p>
                 )}
               </div>
@@ -271,21 +289,15 @@ export default async function ServicePage({ params, searchParams }: Props) {
                 <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
                   <Clock className="h-5 w-5 text-blue-600 flex-shrink-0" />
                   <div>
-                    <div className="font-semibold text-gray-900 text-sm">{t("executionTime")}</div>
-                    <div className="text-xs text-gray-600">
-                      {service.duration_hours ? t("fromHours", { hours: service.duration_hours }) : t("contactForTime")}
-                    </div>
+                    <div className="font-semibold text-gray-900 text-sm">Час виконання</div>
+                    <div className="text-xs text-gray-600">від {service.duration_hours} години</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
                   <Shield className="h-5 w-5 text-green-600 flex-shrink-0" />
                   <div>
-                    <div className="font-semibold text-gray-900 text-sm">{t("warranty")}</div>
-                    <div className="text-xs text-gray-600">
-                      {service.warranty_months
-                        ? t("months", { count: service.warranty_months })
-                        : t("contactForWarranty")}
-                    </div>
+                    <div className="font-semibold text-gray-900 text-sm">Гарантія</div>
+                    <div className="text-xs text-gray-600">{service.warranty_months} місяців</div>
                   </div>
                 </div>
               </div>
@@ -297,7 +309,7 @@ export default async function ServicePage({ params, searchParams }: Props) {
                     href={`/${locale}/contact?service=${encodeURIComponent(translation.name)}${sourceModel ? `&model=${encodeURIComponent(sourceModel.name)}` : ""}`}
                   >
                     <Phone className="h-4 w-4 mr-2" />
-                    {t("orderService")}
+                    Замовити послугу
                   </Link>
                 </Button>
                 <Button
@@ -308,7 +320,7 @@ export default async function ServicePage({ params, searchParams }: Props) {
                 >
                   <Link href={`/${locale}/contact`}>
                     <MessageCircle className="h-4 w-4 mr-2" />
-                    {t("askQuestion")}
+                    Задати питання
                   </Link>
                 </Button>
               </div>
@@ -316,7 +328,7 @@ export default async function ServicePage({ params, searchParams }: Props) {
               {/* Що входить у послугу */}
               {whatIncludedList.length > 0 && (
                 <div className="pt-2">
-                  <h3 className="text-lg font-bold text-gray-900 mb-3">{t("whatIncluded")}</h3>
+                  <h3 className="text-lg font-bold text-gray-900 mb-3">Що входить у послугу</h3>
                   <div className="space-y-2">
                     {whatIncludedList.map((item, index) => (
                       <div key={index} className="flex items-start gap-2">
@@ -335,7 +347,7 @@ export default async function ServicePage({ params, searchParams }: Props) {
             {/* FAQ Section */}
             {faqs.length > 0 && (
               <section>
-                <h2 className="text-xl lg:text-2xl font-bold text-gray-900 mb-4">{t("frequentQuestions")}</h2>
+                <h2 className="text-xl lg:text-2xl font-bold text-gray-900 mb-4">Часті питання</h2>
                 <div className="space-y-3 max-w-4xl">
                   {faqs.map((faq) => (
                     <Collapsible key={faq.id}>
@@ -356,20 +368,20 @@ export default async function ServicePage({ params, searchParams }: Props) {
 
             {/* Відгуки клієнтів */}
             <section>
-              <h2 className="text-xl lg:text-2xl font-bold text-gray-900 mb-4">{t("clientReviews")}</h2>
+              <h2 className="text-xl lg:text-2xl font-bold text-gray-900 mb-4">Відгуки клієнтів</h2>
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="bg-gray-50 p-4 rounded-lg">
+                {testimonials.map((testimonial) => (
+                  <div key={testimonial.id} className="bg-gray-50 p-4 rounded-lg">
                     <div className="flex items-center gap-2 mb-3">
                       <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
                         <User className="h-4 w-4 text-blue-600" />
                       </div>
                       <div className="min-w-0">
-                        <div className="font-semibold text-gray-900 text-sm truncate">{t(`testimonial${i}Name`)}</div>
-                        <div className="text-xs text-gray-500">{t(`testimonial${i}Date`)}</div>
+                        <div className="font-semibold text-gray-900 text-sm truncate">{testimonial.name}</div>
+                        <div className="text-xs text-gray-500">{testimonial.date}</div>
                       </div>
                     </div>
-                    <p className="text-gray-700 text-sm leading-relaxed">"{t(`testimonial${i}Text`)}"</p>
+                    <p className="text-gray-700 text-sm leading-relaxed">"{testimonial.text}"</p>
                   </div>
                 ))}
               </div>
@@ -377,8 +389,10 @@ export default async function ServicePage({ params, searchParams }: Props) {
 
             {/* Final CTA */}
             <section className="bg-blue-600 rounded-xl p-6 lg:p-8 text-center text-white">
-              <h2 className="text-xl lg:text-2xl font-bold mb-2">{t("haveQuestions")}</h2>
-              <p className="text-blue-100 mb-4 lg:mb-6 max-w-xl mx-auto text-sm lg:text-base">{t("expertsReady")}</p>
+              <h2 className="text-xl lg:text-2xl font-bold mb-2">Залишилися питання?</h2>
+              <p className="text-blue-100 mb-4 lg:mb-6 max-w-xl mx-auto text-sm lg:text-base">
+                Наші експерти готові відповісти на всі ваші питання та надати професійну консультацію
+              </p>
               <Button
                 size="lg"
                 variant="outline"
@@ -387,7 +401,7 @@ export default async function ServicePage({ params, searchParams }: Props) {
               >
                 <Link href={`/${locale}/contact`}>
                   <MessageCircle className="h-4 w-4 mr-2" />
-                  {commonT("contactUs")}
+                  Зв'язатися з нами
                 </Link>
               </Button>
             </section>
@@ -400,13 +414,13 @@ export default async function ServicePage({ params, searchParams }: Props) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-600 mb-2">{t("loadingError")}</h1>
-          <p className="text-gray-600 mb-6">{t("loadingErrorDescription")}</p>
+          <h1 className="text-2xl font-bold text-red-600 mb-2">Помилка завантаження</h1>
+          <p className="text-gray-600 mb-6">Не вдалося завантажити дані послуги. Спробуйте пізніше.</p>
           <Link
             href={`/${locale}`}
             className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
           >
-            {commonT("home")}
+            На головну
           </Link>
         </div>
       </div>

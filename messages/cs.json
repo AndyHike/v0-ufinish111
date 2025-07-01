@@ -212,36 +212,7 @@
       "estimatedTime": "1-2 dny",
       "priceRange": "od 1000 Kč",
       "warranty": "1 měsíc"
-    },
-    "priceRange": "Cenové rozpětí",
-    "priceOnRequest": "Cena na vyžádání",
-    "avgPrice": "Průměr",
-    "supportedModels": "Podporované modely",
-    "modelsAvailable": "modelů k dispozici",
-    "supportedBrands": "Podporované značky",
-    "brandsAvailable": "značek k dispozici",
-    "serviceType": "Typ služby",
-    "repairService": "Oprava",
-    "professionalService": "Profesionální služba",
-    "filterByBrand": "Filtrovat podle značky",
-    "allBrands": "Všechny značky",
-    "noModelsFound": "Žádné modely nenalezeny",
-    "needThisService": "Potřebujete tuto službu?",
-    "contactUsForService": "Kontaktujte nás pro profesionální službu se zárukou kvality.",
-    "forModel": "pro {brand} {model}",
-    "executionTime": "Doba provedení",
-    "fromHours": "od {hours} hodin",
-    "warranty": "Záruka",
-    "months": "{count} měsíců",
-    "orderService": "Objednat službu",
-    "askQuestion": "Položit otázku",
-    "whatIncluded": "Co je zahrnuto",
-    "frequentQuestions": "Časté otázky",
-    "clientReviews": "Recenze klientů",
-    "haveQuestions": "Máte otázky?",
-    "expertsReady": "Naši experti jsou připraveni odpovědět na všechny vaše otázky a poskytnout profesionální konzultaci",
-    "loadingError": "Chyba načítání",
-    "loadingErrorDescription": "Nepodařilo se načíst data služby. Zkuste to prosím později."
+    }
   },
   "BrandsSection": {
     "title": "Značky, které servisujeme",
@@ -251,8 +222,8 @@
     "noBrands": "Žádné značky k dispozici"
   },
   "Brands": {
-    "backToBrands": "Zpět na značky",
-    "backToHome": "Zpět na hlavní stránku",
+    "backToBrands":"Zpět na značky",
+    "backToHome":"Zpět na hlavní stránku",
     "title": "Značky, které servisujeme",
     "subtitle": "Specializujeme se na opravy všech hlavních značek smartphonů",
     "loading": "Načítání značek...",
@@ -275,7 +246,7 @@
     "pageDescription": "Vyberte značku vašeho telefonu pro zobrazení dostupných modelů a cen oprav"
   },
   "Models": {
-    "backToSeries": "Zpět na modely ",
+    "backToSeries":"Zpět na modely ",
     "repairServices": "Opravárenské služby",
     "modelNotFound": "Model nenalezen",
     "modelNotFoundDesc": "Požadovaný model nebyl nalezen.",
@@ -298,19 +269,16 @@
     "title": "Recenze zákazníků",
     "subtitle": "Zjistěte, co říkají naši zákazníci o našich službách.",
     "testimonial1": {
-      "name": "Alexander K.",
-      "content": "Rychlá a kvalitní výměna obrazovky. Velmi spokojen s výsledkem!",
-      "date": "před 2 týdny"
+      "name": "Jan Novák",
+      "content": "Velmi spokojen s kvalitou opravy. Můj iPhone funguje jako nový po výměně displeje."
     },
     "testimonial2": {
-      "name": "Marie V.",
-      "content": "Profesionální přístup, férové ceny. Doporučuji!",
-      "date": "před měsícem"
+      "name": "Marie Svobodová",
+      "content": "Rychlý a profesionální servis. Vyměnili baterii za 30 minut a teď můj telefon vydrží celý den."
     },
     "testimonial3": {
-      "name": "Dmitrij P.",
-      "content": "Vynikající služba, telefon funguje jako nový.",
-      "date": "před 3 týdny"
+      "name": "Petr Dvořák",
+      "content": "Vynikající služby za rozumnou cenu. Doporučuji všem, kteří mají problémy s telefonem."
     },
     "testimonial4": {
       "name": "Lucie Nováková",
@@ -682,11 +650,19 @@
     "premiumDescription": "Komplexní opravy s prodlouženou zárukou a prioritním servisem"
   },
   "Common": {
-    "home": "Domů",
+    "requestService": "Objednat službu",
+    "backToHome": "Na hlavní stránku",
+    "learnMore": "Zjistit více",
     "contactUs": "Kontaktujte nás",
-    "order": "Objednat",
-    "backToHome": "Zpět domů",
-    "browseServices": "Procházet služby"
+    "viewAll": "Zobrazit vše",
+    "orderStatuses": {
+      "new": "Nový",
+      "in progress": "Zpracování",
+      "ready": "Připraveno",
+      "completed": "Dokončeno",
+      "cancelled": "Zrušeno",
+      "dokončeno": "Dokončeno"
+    }
   },
   "Profile": {
     "userProfile": "Profil uživatele",
