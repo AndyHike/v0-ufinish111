@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server"
 import { cookies } from "next/headers"
 import { createClient } from "@/lib/supabase"
-import remonline from "@/lib/api/remonline"
 
 export async function GET(request: Request) {
   try {
@@ -37,107 +36,78 @@ export async function GET(request: Request) {
 
     const user = session.users
 
-    // If user doesn't have remonline_id, we can't fetch orders
-    if (!user.remonline_id) {
-      return NextResponse.json({
-        success: true,
-        orders: [],
-        message: "No RemOnline ID found for user",
-      })
+    console.log(`Fetching orders for user ${user.id} with remonline_id ${user.remonline_id}`)
+
+    // Get orders from our database for this specific user
+    const { data: orders, error: ordersError } = await supabase
+      .from("repair_orders")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+
+    if (ordersError) {
+      console.error("Error fetching orders from database:", ordersError)
+      return NextResponse.json({ error: "Failed to fetch orders" }, { status: 500 })
     }
 
-    try {
-      // Authenticate with RemOnline
-      const authResult = await remonline.auth()
-      if (!authResult.success) {
-        console.error("Failed to authenticate with RemOnline:", authResult.message)
-        return NextResponse.json({
-          success: true,
-          orders: [],
-          message: "Failed to connect to RemOnline",
-        })
-      }
+    console.log(`Found ${orders?.length || 0} orders for user ${user.id}`)
 
-      // Get orders from RemOnline for this client
-      const ordersResult = await remonline.getOrdersByClientId(user.remonline_id)
+    // Transform orders to match frontend format
+    const transformedOrders = (orders || []).map((order: any) => ({
+      id: order.remonline_id?.toString() || order.id.toString(), // Using existing column name
+      reference_number: order.reference_number || order.remonline_id?.toString() || order.id.toString(),
+      device_brand: order.device_brand || "Unknown",
+      device_model: order.device_model || "Unknown",
+      service_type: order.service_type || "Repair",
+      status: order.status_id || "unknown",
+      statusName: order.status_name || "Unknown",
+      statusColor: getStatusColorFromHex(order.status_color) || "bg-gray-100 text-gray-800",
+      price: order.price,
+      created_at: order.created_at,
+      statusHistory: [], // We'll implement this separately if needed
+    }))
 
-      if (!ordersResult.success) {
-        console.error("Failed to fetch orders from RemOnline:", ordersResult.message)
-        return NextResponse.json({
-          success: true,
-          orders: [],
-          message: "Failed to fetch orders from RemOnline",
-        })
-      }
-
-      // Get order statuses for mapping
-      const statusesResult = await remonline.getOrderStatuses()
-      const statusMap = new Map()
-
-      if (statusesResult.success && statusesResult.statuses) {
-        statusesResult.statuses.forEach((status: any) => {
-          statusMap.set(status.id.toString(), {
-            name: status.title || status.name,
-            color: getStatusColor(status.title || status.name),
-          })
-        })
-      }
-
-      // Transform orders to match our frontend format
-      const transformedOrders = (ordersResult.orders || []).map((order: any) => {
-        const statusInfo = statusMap.get(order.status_id?.toString()) || {
-          name: order.status_title || "Unknown",
-          color: "bg-gray-100 text-gray-800",
-        }
-
-        return {
-          id: order.id.toString(),
-          reference_number: order.number || order.id.toString(),
-          device_brand: order.device_brand || order.brand || "Unknown",
-          device_model: order.device_model || order.model || "Unknown",
-          service_type: order.service_type || order.work_type || "Repair",
-          status: order.status_id?.toString() || "unknown",
-          statusName: statusInfo.name,
-          statusColor: statusInfo.color,
-          price: order.total_price || order.price || null,
-          created_at: order.created_at || new Date().toISOString(),
-          statusHistory: [], // We'll need to implement this separately if needed
-        }
-      })
-
-      return NextResponse.json({
-        success: true,
-        orders: transformedOrders,
-      })
-    } catch (remonlineError) {
-      console.error("RemOnline API error:", remonlineError)
-      return NextResponse.json({
-        success: true,
-        orders: [],
-        message: "Error connecting to RemOnline",
-      })
-    }
+    return NextResponse.json({
+      success: true,
+      orders: transformedOrders,
+    })
   } catch (error) {
     console.error("Error in repair orders API:", error)
     return NextResponse.json({ error: "An unexpected error occurred" }, { status: 500 })
   }
 }
 
-// Helper function to determine status color based on status name
-function getStatusColor(statusName: string): string {
-  const statusLower = statusName.toLowerCase()
-
-  if (statusLower.includes("новий") || statusLower.includes("new")) {
-    return "bg-blue-100 text-blue-800"
-  } else if (statusLower.includes("в роботі") || statusLower.includes("в работе") || statusLower.includes("process")) {
-    return "bg-amber-100 text-amber-800"
-  } else if (statusLower.includes("готов") || statusLower.includes("ready") || statusLower.includes("completed")) {
-    return "bg-green-100 text-green-800"
-  } else if (statusLower.includes("видан") || statusLower.includes("delivered")) {
-    return "bg-purple-100 text-purple-800"
-  } else if (statusLower.includes("скасован") || statusLower.includes("cancelled")) {
-    return "bg-red-100 text-red-800"
-  } else {
+// Helper function to convert hex color to Tailwind classes
+function getStatusColorFromHex(hexColor: string): string {
+  if (!hexColor || hexColor === "#gray") {
     return "bg-gray-100 text-gray-800"
+  }
+
+  // Convert hex to RGB to determine if it's light or dark
+  const hex = hexColor.replace("#", "")
+  const r = Number.parseInt(hex.substr(0, 2), 16)
+  const g = Number.parseInt(hex.substr(2, 2), 16)
+  const b = Number.parseInt(hex.substr(4, 2), 16)
+
+  // Calculate brightness
+  const brightness = (r * 299 + g * 587 + b * 114) / 1000
+
+  // Determine color based on hex value ranges
+  if (hex.toLowerCase().includes("1e79c7") || hex.toLowerCase().includes("blue")) {
+    return "bg-blue-100 text-blue-800"
+  } else if (hex.toLowerCase().includes("orange") || hex.toLowerCase().includes("ffa500")) {
+    return "bg-amber-100 text-amber-800"
+  } else if (hex.toLowerCase().includes("green") || hex.toLowerCase().includes("00ff00")) {
+    return "bg-green-100 text-green-800"
+  } else if (hex.toLowerCase().includes("purple") || hex.toLowerCase().includes("800080")) {
+    return "bg-purple-100 text-purple-800"
+  } else if (hex.toLowerCase().includes("red") || hex.toLowerCase().includes("ff0000")) {
+    return "bg-red-100 text-red-800"
+  } else if (brightness > 128) {
+    // Light color
+    return "bg-gray-100 text-gray-800"
+  } else {
+    // Dark color
+    return "bg-gray-800 text-gray-100"
   }
 }

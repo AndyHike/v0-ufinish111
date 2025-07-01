@@ -8,16 +8,6 @@ import { clearUserSessionsByUserId } from "@/app/actions/session"
 // This is the secret key that RemOnline will use to authenticate the webhook
 const WEBHOOK_SECRET = process.env.REMONLINE_WEBHOOK_SECRET || "your-webhook-secret"
 
-// Define a schema for the RemOnline client data
-const remonlineClientSchema = z.object({
-  id: z.number(),
-  first_name: z.string().optional(),
-  last_name: z.string().optional(),
-  email: z.string().email().optional(),
-  phone: z.string().optional(),
-  address: z.string().optional(),
-})
-
 // Define a schema for the RemOnline webhook payload
 const remonlineWebhookSchema = z.object({
   id: z.string(),
@@ -27,6 +17,34 @@ const remonlineWebhookSchema = z.object({
     object_id: z.number(),
     object_type: z.string(),
   }),
+  metadata: z
+    .object({
+      order: z
+        .object({
+          id: z.number(),
+          name: z.string(),
+          type: z.number().optional(),
+        })
+        .optional(),
+      client: z
+        .object({
+          id: z.number(),
+          fullname: z.string(),
+        })
+        .optional(),
+      status: z
+        .object({
+          id: z.number(),
+        })
+        .optional(),
+      asset: z
+        .object({
+          id: z.number(),
+          name: z.string(),
+        })
+        .optional(),
+    })
+    .optional(),
   employee: z.object({
     id: z.number(),
     full_name: z.string(),
@@ -39,7 +57,7 @@ export async function POST(request: NextRequest) {
     // Clone request for logging
     const clonedRequest = request.clone()
     const payload = await clonedRequest.json()
-    console.log("RemOnline webhook received:", payload)
+    console.log("RemOnline webhook received:", JSON.stringify(payload, null, 2))
 
     // Validate the webhook payload against the schema
     const parsedPayload = remonlineWebhookSchema.safeParse(payload)
@@ -52,42 +70,20 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const originalRequest = parsedPayload.data
-    console.log("RemOnline webhook data:", originalRequest)
+    const webhookData = parsedPayload.data
+    console.log("Parsed webhook data:", webhookData)
 
     // Check the event type
-    const eventType = originalRequest.event_name || ""
+    const eventType = webhookData.event_name || ""
+
+    if (eventType === "Order.Created" || eventType === "Order.Updated") {
+      await handleOrderEvent(webhookData)
+      return NextResponse.json({ success: true })
+    }
 
     if (eventType === "Client.Created" || eventType === "Client.Updated") {
-      const clientId = originalRequest.context.object_id
-
-      // Fetch complete client details from RemOnline API using new method
-      const clientDetails = await remonline.getClientById(clientId)
-
-      if (!clientDetails.success) {
-        console.error("Failed to fetch client details from RemOnline:", clientDetails.message)
-        return NextResponse.json(
-          { error: "Failed to fetch client details from RemOnline", details: clientDetails.message },
-          { status: 500 },
-        )
-      }
-
-      // Check if clientDetails.client exists before parsing
-      if (!clientDetails.client) {
-        console.error("Client details are undefined, skipping processing")
-        return NextResponse.json({ success: true, message: "Client details are undefined, skipping processing" })
-      }
-
-      // Validate client data against the schema
-      const clientData = remonlineClientSchema.safeParse(clientDetails.client)
-
-      if (!clientData.success) {
-        console.error("Invalid client data:", clientData.error)
-        console.error("Client Data that failed validation:", clientDetails.client)
-        return NextResponse.json({ error: "Invalid client data", details: clientData.error.errors }, { status: 400 })
-      }
-
-      await handleClientEvent(clientData.data)
+      const clientId = webhookData.context.object_id
+      await handleClientEvent(clientId)
       return NextResponse.json({ success: true })
     }
 
@@ -106,15 +102,135 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function handleClientEvent(clientData: any) {
-  const supabase = createClient()
-
-  if (!clientData.email) {
-    console.error("Client from RemOnline has no email, cannot create or update user")
-    return
-  }
-
+async function handleOrderEvent(webhookData: any) {
   try {
+    const orderId = webhookData.context.object_id
+    const clientId = webhookData.metadata?.client?.id
+
+    console.log(`Processing order event for order ${orderId}, client ${clientId}`)
+
+    if (!clientId) {
+      console.error("No client ID found in webhook metadata")
+      return
+    }
+
+    const supabase = createClient()
+
+    // Find user by remonline_id
+    const { data: user, error: userError } = await supabase
+      .from("users")
+      .select("id, email, first_name, last_name")
+      .eq("remonline_id", clientId)
+      .single()
+
+    if (userError || !user) {
+      console.log(`No user found with remonline_id ${clientId}`)
+      return
+    }
+
+    console.log(`Found user ${user.id} for remonline client ${clientId}`)
+
+    // Get full order details from RemOnline API
+    const orderResult = await remonline.getOrderById(orderId)
+
+    if (!orderResult.success || !orderResult.order) {
+      console.error("Failed to fetch order details from RemOnline:", orderResult.message)
+      return
+    }
+
+    const orderData = orderResult.order
+    console.log("Full order data:", JSON.stringify(orderData, null, 2))
+
+    // Extract order information
+    const orderInfo = {
+      remonline_id: orderId, // Using existing column name
+      user_id: user.id,
+      reference_number: orderData.name || orderData.number || orderId.toString(),
+      device_brand: orderData.asset?.brand || "Unknown",
+      device_model: orderData.asset?.model || orderData.asset?.title || "Unknown",
+      service_type: orderData.work_description || orderData.description || "Repair",
+      status_id: orderData.status?.id?.toString() || "unknown",
+      status_name: orderData.status?.name || "Unknown",
+      status_color: orderData.status?.color || "#gray",
+      price: orderData.total_price || orderData.price || null,
+      created_at: orderData.created_at || new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }
+
+    console.log("Processed order info:", orderInfo)
+
+    // Check if order already exists in our database
+    const { data: existingOrder } = await supabase
+      .from("repair_orders")
+      .select("id")
+      .eq("remonline_id", orderId) // Using existing column name
+      .single()
+
+    if (existingOrder) {
+      // Update existing order
+      const { error: updateError } = await supabase
+        .from("repair_orders")
+        .update({
+          reference_number: orderInfo.reference_number,
+          device_brand: orderInfo.device_brand,
+          device_model: orderInfo.device_model,
+          service_type: orderInfo.service_type,
+          status_id: orderInfo.status_id,
+          status_name: orderInfo.status_name,
+          status_color: orderInfo.status_color,
+          price: orderInfo.price,
+          updated_at: orderInfo.updated_at,
+        })
+        .eq("remonline_id", orderId) // Using existing column name
+
+      if (updateError) {
+        console.error("Error updating order:", updateError)
+      } else {
+        console.log(`Order ${orderId} updated successfully`)
+      }
+    } else {
+      // Create new order
+      const { error: insertError } = await supabase.from("repair_orders").insert(orderInfo)
+
+      if (insertError) {
+        console.error("Error creating order:", insertError)
+      } else {
+        console.log(`Order ${orderId} created successfully`)
+      }
+    }
+  } catch (error) {
+    console.error("Error in handleOrderEvent:", error)
+  }
+}
+
+async function handleClientEvent(clientId: number) {
+  try {
+    console.log(`Processing client event for client ${clientId}`)
+
+    // Fetch complete client details from RemOnline API
+    const clientDetails = await remonline.getClientById(clientId)
+
+    if (!clientDetails.success) {
+      console.error("Failed to fetch client details from RemOnline:", clientDetails.message)
+      return
+    }
+
+    // Check if clientDetails.client exists before parsing
+    if (!clientDetails.client) {
+      console.error("Client details are undefined, skipping processing")
+      return
+    }
+
+    const clientData = clientDetails.client
+    console.log("Client data:", JSON.stringify(clientData, null, 2))
+
+    if (!clientData.email) {
+      console.error("Client from RemOnline has no email, cannot create or update user")
+      return
+    }
+
+    const supabase = createClient()
+
     // Check if user exists
     const { data: existingUser, error: selectError } = await supabase
       .from("users")
