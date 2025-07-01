@@ -6,7 +6,6 @@ import remonline from "@/lib/api/remonline"
 import { clearUserSessionsByUserId } from "@/app/actions/session"
 
 // This is the secret key that RemOnline will use to authenticate the webhook
-// You should set this in your environment variables and configure it in RemOnline
 const WEBHOOK_SECRET = process.env.REMONLINE_WEBHOOK_SECRET || "your-webhook-secret"
 
 // Define a schema for the RemOnline client data
@@ -37,7 +36,7 @@ const remonlineWebhookSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    // Зберегти оригінальний запит для логування
+    // Clone request for logging
     const clonedRequest = request.clone()
     const payload = await clonedRequest.json()
     console.log("RemOnline webhook received:", payload)
@@ -53,15 +52,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verify the webhook signature if RemOnline provides one
-    const signature = request.headers.get("x-remonline-signature")
-
-    // If you have a signature verification mechanism, implement it here
-    // if (!verifySignature(signature, await request.text(), WEBHOOK_SECRET)) {
-    //   return NextResponse.json({ error: "Invalid signature" }, { status: 401 })
-    // }
-
-    // Отримуємо оригінальні дані
     const originalRequest = parsedPayload.data
     console.log("RemOnline webhook data:", originalRequest)
 
@@ -71,8 +61,8 @@ export async function POST(request: NextRequest) {
     if (eventType === "Client.Created" || eventType === "Client.Updated") {
       const clientId = originalRequest.context.object_id
 
-      // Fetch complete client details from RemOnline API
-      const clientDetails = await fetchClientDetailsFromRemonline(clientId)
+      // Fetch complete client details from RemOnline API using new method
+      const clientDetails = await remonline.getClientById(clientId)
 
       if (!clientDetails.success) {
         console.error("Failed to fetch client details from RemOnline:", clientDetails.message)
@@ -102,7 +92,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Handle other event types as needed
-
     return NextResponse.json({ success: true, message: "Webhook received but no action taken" })
   } catch (error) {
     console.error("Error processing RemOnline webhook:", error)
@@ -114,68 +103,6 @@ export async function POST(request: NextRequest) {
       },
       { status: 500 },
     )
-  }
-}
-
-async function fetchClientDetailsFromRemonline(clientId: number) {
-  try {
-    // Authenticate with RemOnline API using our updated client
-    const authResult = await remonline.auth()
-    if (!authResult.success) {
-      console.error("Failed to authenticate with RemOnline API:", authResult.message)
-      return {
-        success: false,
-        message: "Failed to connect to RemOnline. Will retry later.",
-      }
-    }
-
-    console.log(`Fetching client details for ID: ${clientId}`)
-
-    // Use the token from our authenticated client
-    const url = `https://api.remonline.app/clients/${clientId}?token=${authResult.token}`
-    console.log("Request URL:", url)
-
-    const response = await fetch(url, {
-      method: "GET",
-      headers: { accept: "application/json" },
-    })
-
-    console.log(`Response status: ${response.status}`)
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error(`Failed to fetch client details with status ${response.status}: ${errorText}`)
-      return {
-        success: false,
-        message: `Failed to fetch client details with status ${response.status}`,
-        details: errorText,
-      }
-    }
-
-    const responseText = await response.text()
-    console.log("Response text length:", responseText.length)
-
-    let data
-    try {
-      data = JSON.parse(responseText)
-      console.log("Client details response:", data)
-    } catch (e) {
-      console.error("Failed to parse response as JSON:", responseText)
-      return {
-        success: false,
-        message: "Failed to parse client details response",
-        details: e instanceof Error ? e.message : String(e),
-      }
-    }
-
-    return { success: true, client: data }
-  } catch (error) {
-    console.error("Error fetching client details from RemOnline:", error)
-    return {
-      success: false,
-      message: "Failed to fetch client details from RemOnline API",
-      details: error instanceof Error ? error.message : String(error),
-    }
   }
 }
 
@@ -212,7 +139,6 @@ async function handleClientEvent(clientData: any) {
   }
 }
 
-// Змінюємо функцію createNewUser, щоб додавати email в обидві таблиці
 async function createNewUser(supabase: any, clientData: any) {
   try {
     // Extract client data
@@ -250,7 +176,6 @@ async function createNewUser(supabase: any, clientData: any) {
     console.log("Supabase insert user data:", {
       email: email,
       name: `${firstName} ${lastName}`.trim(),
-      password_hash: passwordHash,
       role: "user",
       remonline_id: clientData.id,
       email_verified: true,
@@ -269,8 +194,8 @@ async function createNewUser(supabase: any, clientData: any) {
       first_name: firstName,
       last_name: lastName,
       phone,
-      email, // Обов'язково додаємо email в profiles
-      address, // Додаємо address в profiles
+      email, // Add email to profiles
+      address, // Add address to profiles
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }
@@ -281,7 +206,7 @@ async function createNewUser(supabase: any, clientData: any) {
 
     if (profileError) {
       console.error("Error creating profile:", profileError)
-      // Якщо не вдалося створити профіль, видаляємо користувача для збереження цілісності даних
+      // If profile creation fails, delete the user to maintain data integrity
       await supabase.from("users").delete().eq("id", newUser.id)
       console.error("Deleted user due to profile creation failure")
       return
@@ -293,7 +218,6 @@ async function createNewUser(supabase: any, clientData: any) {
   }
 }
 
-// Змінюємо функцію updateExistingUser, щоб оновлювати email в обох таблицях
 async function updateExistingUser(supabase: any, userId: string, clientData: any) {
   try {
     // Extract client data
@@ -312,11 +236,11 @@ async function updateExistingUser(supabase: any, userId: string, clientData: any
     const { error: userError } = await supabase
       .from("users")
       .update({
-        email, // Оновлюємо email в users
+        email, // Update email in users
         first_name: firstName,
         last_name: lastName,
         name: `${firstName} ${lastName}`.trim(),
-        remonline_id: clientData.id, // Оновлюємо remonline_id
+        remonline_id: clientData.id, // Update remonline_id
       })
       .eq("id", userId)
 
@@ -338,8 +262,8 @@ async function updateExistingUser(supabase: any, userId: string, clientData: any
         first_name: firstName,
         last_name: lastName,
         phone,
-        email, // Обов'язково оновлюємо email в profiles
-        address, // Оновлюємо address в profiles
+        email, // Update email in profiles
+        address, // Update address in profiles
         updated_at: new Date().toISOString(),
       })
       .eq("id", userId)

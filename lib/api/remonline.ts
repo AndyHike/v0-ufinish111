@@ -1,92 +1,75 @@
 // This is a wrapper for the Remonline API
 class RemonlineClient {
-  private token: string | null = null
   private baseUrl = "https://api.remonline.app"
-  private tokenExpiry: number | null = null
+  private apiKey: string | null = null
 
-  // Authenticate with the Remonline API using the API key
-  async auth() {
+  constructor() {
+    // Get API key from environment variable
+    this.apiKey = process.env.REMONLINE_API_KEY || process.env.REMONLINE_API_TOKEN || null
+
+    if (!this.apiKey) {
+      console.error("Neither REMONLINE_API_KEY nor REMONLINE_API_TOKEN environment variables are set")
+    } else {
+      console.log("RemOnline API client initialized with key:", this.apiKey.substring(0, 8) + "...")
+    }
+  }
+
+  // Get the authorization headers for API requests
+  private getAuthHeaders() {
+    if (!this.apiKey) {
+      throw new Error("API key is not configured")
+    }
+
+    return {
+      Authorization: `Bearer ${this.apiKey}`,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    }
+  }
+
+  // Test the API connection
+  async testConnection() {
     try {
-      console.log("Authenticating with Remonline API...")
+      console.log("Testing RemOnline API connection...")
 
-      // Check if we have a valid token that hasn't expired
-      if (this.token && this.tokenExpiry && Date.now() < this.tokenExpiry) {
-        console.log("Using existing valid token")
-        return { success: true, token: this.token }
-      }
-
-      // Get API key from environment variable
-      // Try both possible environment variable names
-      const apiKey = process.env.REMONLINE_API_KEY || process.env.REMONLINE_API_TOKEN
-      if (!apiKey) {
-        console.error("Neither REMONLINE_API_KEY nor REMONLINE_API_TOKEN environment variables are set")
+      if (!this.apiKey) {
         return {
           success: false,
-          message: "API key environment variables are not set",
+          message: "API key is not configured",
         }
       }
 
-      // Trim the API key to remove any whitespace
-      const trimmedApiKey = apiKey.trim()
-
-      console.log("Requesting new token using API key")
-      console.log("API key length:", trimmedApiKey.length)
-      console.log("API key first 5 chars:", trimmedApiKey.substring(0, 5) + "...")
-
-      // Request a new token - using the format that we know works from testing
-      const response = await fetch(`${this.baseUrl}/token/new`, {
-        method: "POST",
-        headers: {
-          accept: "application/json",
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({ api_key: trimmedApiKey }),
+      // Try to fetch a small amount of data to test the connection
+      const response = await fetch(`${this.baseUrl}/clients?limit=1`, {
+        method: "GET",
+        headers: this.getAuthHeaders(),
       })
 
-      const responseText = await response.text()
-
-      let data
-      try {
-        data = JSON.parse(responseText)
-        console.log("Response data:", { ...data, token: data.token ? `${data.token.substring(0, 10)}...` : undefined })
-      } catch (e) {
-        console.error("Failed to parse response as JSON:", responseText)
-        return {
-          success: false,
-          message: `Failed to parse response: ${responseText}`,
-        }
-      }
+      console.log("Test connection response status:", response.status)
 
       if (!response.ok) {
-        console.error(`Token request failed with status ${response.status}:`, data)
+        const errorText = await response.text()
+        console.error(`API test failed with status ${response.status}:`, errorText)
         return {
           success: false,
-          message: `Failed to get token: ${response.status}`,
-          details: data,
+          message: `API test failed with status ${response.status}`,
+          details: errorText,
         }
       }
 
-      if (!data.success || !data.token) {
-        console.error("Failed to get token from response:", data)
-        return {
-          success: false,
-          message: "Invalid response from token endpoint",
-          details: data,
-        }
+      const data = await response.json()
+      console.log("API test successful, received data structure:", Object.keys(data))
+
+      return {
+        success: true,
+        message: "API connection successful",
+        data,
       }
-
-      console.log("Successfully obtained new token")
-      this.token = data.token
-
-      // Set token expiry (tokens typically last 24 hours, but we'll set it to 23 hours to be safe)
-      this.tokenExpiry = Date.now() + 23 * 60 * 60 * 1000
-
-      return { success: true, token: this.token }
     } catch (error) {
-      console.error("Remonline auth error:", error)
+      console.error("RemOnline API test error:", error)
       return {
         success: false,
-        message: "Failed to authenticate with Remonline API",
+        message: "Failed to test API connection",
         details: error instanceof Error ? error.message : String(error),
       }
     }
@@ -95,13 +78,12 @@ class RemonlineClient {
   // Get clients with optional query parameters
   async getClients(params = {}) {
     try {
-      // Ensure we have a valid token
-      const authResult = await this.auth()
-      if (!authResult.success) {
+      console.log("Fetching clients from RemOnline API...")
+
+      if (!this.apiKey) {
         return {
           success: false,
-          message: "Authentication failed",
-          details: authResult,
+          message: "API key is not configured",
         }
       }
 
@@ -111,19 +93,19 @@ class RemonlineClient {
         queryParams.append(key, String(value))
       })
 
-      let url = `${this.baseUrl}/clients/?token=${this.token}`
+      let url = `${this.baseUrl}/clients`
       if (queryParams.toString()) {
-        url += `&${queryParams.toString()}`
+        url += `?${queryParams.toString()}`
       }
 
       console.log("Fetching clients from:", url)
 
       const response = await fetch(url, {
         method: "GET",
-        headers: {
-          accept: "application/json",
-        },
+        headers: this.getAuthHeaders(),
       })
+
+      console.log("Response status:", response.status)
 
       if (!response.ok) {
         const errorText = await response.text()
@@ -136,14 +118,64 @@ class RemonlineClient {
       }
 
       const data = await response.json()
-      console.log("Clients response:", data)
+      console.log("Clients response structure:", {
+        hasData: !!data.data,
+        dataLength: data.data?.length || 0,
+        totalCount: data.count || 0,
+      })
 
       return { success: true, data }
     } catch (error) {
-      console.error("Remonline getClients error:", error)
+      console.error("RemOnline getClients error:", error)
       return {
         success: false,
-        message: "Failed to fetch clients from Remonline API",
+        message: "Failed to fetch clients from RemOnline API",
+        details: error instanceof Error ? error.message : String(error),
+      }
+    }
+  }
+
+  // Get client by ID
+  async getClientById(clientId: number) {
+    try {
+      console.log(`Fetching client with ID: ${clientId}`)
+
+      if (!this.apiKey) {
+        return {
+          success: false,
+          message: "API key is not configured",
+        }
+      }
+
+      const url = `${this.baseUrl}/clients/${clientId}`
+      console.log("Request URL:", url)
+
+      const response = await fetch(url, {
+        method: "GET",
+        headers: this.getAuthHeaders(),
+      })
+
+      console.log(`Response status: ${response.status}`)
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error(`Failed to fetch client details with status ${response.status}: ${errorText}`)
+        return {
+          success: false,
+          message: `Failed to fetch client details with status ${response.status}`,
+          details: errorText,
+        }
+      }
+
+      const data = await response.json()
+      console.log("Client details fetched successfully")
+
+      return { success: true, client: data }
+    } catch (error) {
+      console.error("RemOnline getClientById error:", error)
+      return {
+        success: false,
+        message: "Failed to fetch client details from RemOnline API",
         details: error instanceof Error ? error.message : String(error),
       }
     }
@@ -161,7 +193,7 @@ class RemonlineClient {
         // Find the client with the exact email match
         const client = response.data.data.find((c: any) => c.email && c.email.toLowerCase() === email.toLowerCase())
 
-        console.log("Client found by email:", client || "None")
+        console.log("Client found by email:", client ? "Found" : "Not found")
 
         return {
           success: true,
@@ -177,7 +209,7 @@ class RemonlineClient {
         details: response,
       }
     } catch (error) {
-      console.error("Remonline getClientByEmail error:", error)
+      console.error("RemOnline getClientByEmail error:", error)
       return {
         success: false,
         exists: false,
@@ -208,7 +240,7 @@ class RemonlineClient {
           return clientPhones.some((p) => p.includes(normalizedPhone) || normalizedPhone.includes(p))
         })
 
-        console.log("Client found by phone:", client || "None")
+        console.log("Client found by phone:", client ? "Found" : "Not found")
 
         return {
           success: true,
@@ -224,7 +256,7 @@ class RemonlineClient {
         details: response,
       }
     } catch (error) {
-      console.error("Remonline getClientByPhone error:", error)
+      console.error("RemOnline getClientByPhone error:", error)
       return {
         success: false,
         exists: false,
@@ -243,17 +275,14 @@ class RemonlineClient {
     address?: string
   }) {
     try {
-      // Ensure we have a valid token
-      const authResult = await this.auth()
-      if (!authResult.success) {
+      console.log("Creating client with data:", { ...clientData, phone: clientData.phone?.length || 0 })
+
+      if (!this.apiKey) {
         return {
           success: false,
-          message: "Authentication failed",
-          details: authResult,
+          message: "API key is not configured",
         }
       }
-
-      console.log("Creating client with data:", clientData)
 
       // Ensure phone is an array
       const dataToSend = {
@@ -261,34 +290,22 @@ class RemonlineClient {
         phone: Array.isArray(clientData.phone) ? clientData.phone : clientData.phone ? [clientData.phone] : [],
       }
 
-      // Log the exact request we're sending
-      console.log("POST URL:", `${this.baseUrl}/clients/?token=${this.token}`)
-      console.log("Request headers:", {
-        accept: "application/json",
-        "content-type": "application/json",
-      })
-      console.log("Request body:", JSON.stringify(dataToSend))
+      console.log("POST URL:", `${this.baseUrl}/clients`)
 
-      const response = await fetch(`${this.baseUrl}/clients/?token=${this.token}`, {
+      const response = await fetch(`${this.baseUrl}/clients`, {
         method: "POST",
-        headers: {
-          accept: "application/json",
-          "content-type": "application/json",
-        },
+        headers: this.getAuthHeaders(),
         body: JSON.stringify(dataToSend),
       })
 
-      // Log the response status
       console.log("Response status:", response.status)
-      console.log("Response headers:", Object.fromEntries(response.headers.entries()))
 
       const responseText = await response.text()
-      console.log("Response text:", responseText)
+      console.log("Response text length:", responseText.length)
 
       let data
       try {
         data = JSON.parse(responseText)
-        console.log("Parsed response data:", data)
       } catch (e) {
         console.error("Failed to parse response as JSON:", responseText)
         return {
@@ -307,22 +324,13 @@ class RemonlineClient {
         }
       }
 
-      if (!data.success) {
-        console.error("Failed to create client:", data)
-        return {
-          success: false,
-          message: data.message || "Failed to create client",
-          details: data,
-        }
-      }
-
-      console.log("Client created successfully:", data.data)
-      return { success: true, client: data.data }
+      console.log("Client created successfully")
+      return { success: true, client: data }
     } catch (error) {
-      console.error("Remonline createClient error:", error)
+      console.error("RemOnline createClient error:", error)
       return {
         success: false,
-        message: "Failed to create client in Remonline API",
+        message: "Failed to create client in RemOnline API",
         details: error instanceof Error ? error.message : String(error),
       }
     }
@@ -331,26 +339,21 @@ class RemonlineClient {
   // Get order by ID
   async getOrderById(orderId: number) {
     try {
-      // Ensure we have a valid token
-      const authResult = await this.auth()
-      if (!authResult.success) {
+      console.log(`Fetching order with ID: ${orderId}`)
+
+      if (!this.apiKey) {
         return {
           success: false,
-          message: "Authentication failed",
-          details: authResult,
+          message: "API key is not configured",
         }
       }
 
-      console.log(`Fetching order with ID: ${orderId}`)
-
-      const url = `${this.baseUrl}/orders/${orderId}?token=${this.token}`
+      const url = `${this.baseUrl}/orders/${orderId}`
       console.log("Request URL:", url)
 
       const response = await fetch(url, {
         method: "GET",
-        headers: {
-          accept: "application/json",
-        },
+        headers: this.getAuthHeaders(),
       })
 
       if (!response.ok) {
@@ -364,14 +367,14 @@ class RemonlineClient {
       }
 
       const data = await response.json()
-      console.log("Order response:", data)
+      console.log("Order fetched successfully")
 
       return { success: true, order: data }
     } catch (error) {
-      console.error("Remonline getOrderById error:", error)
+      console.error("RemOnline getOrderById error:", error)
       return {
         success: false,
-        message: "Failed to fetch order from Remonline API",
+        message: "Failed to fetch order from RemOnline API",
         details: error instanceof Error ? error.message : String(error),
       }
     }
@@ -380,17 +383,14 @@ class RemonlineClient {
   // Get orders for a client
   async getOrdersByClientId(clientId: number, params = {}) {
     try {
-      // Ensure we have a valid token
-      const authResult = await this.auth()
-      if (!authResult.success) {
+      console.log(`Fetching orders for client ID: ${clientId}`)
+
+      if (!this.apiKey) {
         return {
           success: false,
-          message: "Authentication failed",
-          details: authResult,
+          message: "API key is not configured",
         }
       }
-
-      console.log(`Fetching orders for client ID: ${clientId}`)
 
       // Build query string from params
       const queryParams = new URLSearchParams({ client_id: String(clientId) })
@@ -398,14 +398,12 @@ class RemonlineClient {
         queryParams.append(key, String(value))
       })
 
-      const url = `${this.baseUrl}/orders/?token=${this.token}&${queryParams.toString()}`
+      const url = `${this.baseUrl}/orders?${queryParams.toString()}`
       console.log("Request URL:", url)
 
       const response = await fetch(url, {
         method: "GET",
-        headers: {
-          accept: "application/json",
-        },
+        headers: this.getAuthHeaders(),
       })
 
       if (!response.ok) {
@@ -419,22 +417,100 @@ class RemonlineClient {
       }
 
       const data = await response.json()
-      console.log("Orders response:", data)
+      console.log("Orders fetched successfully, count:", data.data?.length || 0)
 
       return { success: true, data }
     } catch (error) {
-      console.error("Remonline getOrdersByClientId error:", error)
+      console.error("RemOnline getOrdersByClientId error:", error)
       return {
         success: false,
-        message: "Failed to fetch orders from Remonline API",
+        message: "Failed to fetch orders from RemOnline API",
         details: error instanceof Error ? error.message : String(error),
       }
+    }
+  }
+
+  // Get tasks (new endpoint example)
+  async getTasks(params = {}) {
+    try {
+      console.log("Fetching tasks from RemOnline API...")
+
+      if (!this.apiKey) {
+        return {
+          success: false,
+          message: "API key is not configured",
+        }
+      }
+
+      // Build query string from params
+      const queryParams = new URLSearchParams()
+      Object.entries(params).forEach(([key, value]) => {
+        queryParams.append(key, String(value))
+      })
+
+      let url = `${this.baseUrl}/tasks`
+      if (queryParams.toString()) {
+        url += `?${queryParams.toString()}`
+      }
+
+      console.log("Fetching tasks from:", url)
+
+      const response = await fetch(url, {
+        method: "GET",
+        headers: this.getAuthHeaders(),
+      })
+
+      console.log("Response status:", response.status)
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error(`Failed to fetch tasks with status ${response.status}: ${errorText}`)
+        return {
+          success: false,
+          message: `Failed to fetch tasks with status ${response.status}`,
+          details: errorText,
+        }
+      }
+
+      const data = await response.json()
+      console.log("Tasks response structure:", {
+        hasData: !!data.data,
+        dataLength: data.data?.length || 0,
+        totalCount: data.count || 0,
+      })
+
+      return { success: true, data }
+    } catch (error) {
+      console.error("RemOnline getTasks error:", error)
+      return {
+        success: false,
+        message: "Failed to fetch tasks from RemOnline API",
+        details: error instanceof Error ? error.message : String(error),
+      }
+    }
+  }
+
+  // Legacy auth method - kept for backward compatibility but now just returns the API key
+  async auth() {
+    console.log("Legacy auth method called - returning API key directly")
+
+    if (!this.apiKey) {
+      return {
+        success: false,
+        message: "API key is not configured",
+      }
+    }
+
+    return {
+      success: true,
+      token: this.apiKey,
+      message: "Using Bearer token authentication",
     }
   }
 }
 
 // Create a singleton instance
-console.log("Initializing Remonline client")
+console.log("Initializing RemOnline client with new Bearer token authentication")
 const remonline = new RemonlineClient()
 
 export default remonline

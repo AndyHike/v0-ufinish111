@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/utils/supabase/server"
 import { z } from "zod"
 import { formatPhone } from "@/utils/format-phone"
+import remonline from "@/lib/api/remonline"
 
 // Schema for client search
 const SearchSchema = z.object({
@@ -12,75 +13,74 @@ const SearchSchema = z.object({
   limit: z.number().default(50),
 })
 
-const REMONLINE_API_URL = "https://api.remonline.app"
-
-// Function to get authentication token
-async function getRemonlineToken() {
-  const response = await fetch(`${REMONLINE_API_URL}/token/new`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      api_key: process.env.REMONLINE_API_TOKEN,
-    }),
-  })
-
-  if (!response.ok) {
-    throw new Error(`Failed to get token: ${response.statusText}`)
-  }
-
-  const data = await response.json()
-  return data.token
-}
-
 export async function POST(request: NextRequest) {
   try {
     const supabase = createClient()
     const body = await request.json()
     const searchParams = SearchSchema.parse(body)
 
-    // Get token
-    const token = await getRemonlineToken()
+    console.log("Starting RemOnline sync with params:", searchParams)
 
-    // Build search query
-    const searchQuery = new URLSearchParams()
-    searchQuery.append("token", token)
+    // Test API connection first
+    const connectionTest = await remonline.testConnection()
+    if (!connectionTest.success) {
+      console.error("RemOnline API connection test failed:", connectionTest.message)
+      return NextResponse.json(
+        {
+          error: "Failed to connect to RemOnline API",
+          details: connectionTest.message,
+        },
+        { status: 500 },
+      )
+    }
+
+    console.log("RemOnline API connection successful")
+
+    // Build search parameters
+    const apiParams: any = {
+      page: searchParams.page,
+      limit: searchParams.limit,
+    }
 
     if (searchParams.term) {
-      searchQuery.append("query", searchParams.term)
+      apiParams.query = searchParams.term
     }
 
     if (searchParams.email) {
-      searchQuery.append("email", searchParams.email)
+      apiParams.email = searchParams.email
     }
 
     if (searchParams.phone) {
-      searchQuery.append("phone", searchParams.phone)
+      apiParams.phone = searchParams.phone
     }
 
-    searchQuery.append("page", searchParams.page.toString())
-    searchQuery.append("limit", searchParams.limit.toString())
+    // Fetch clients from RemOnline using new API
+    const clientsResponse = await remonline.getClients(apiParams)
 
-    // Fetch clients from Remonline
-    const response = await fetch(`${REMONLINE_API_URL}/clients?${searchQuery.toString()}`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    })
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch clients: ${response.statusText}`)
+    if (!clientsResponse.success) {
+      console.error("Failed to fetch clients from RemOnline:", clientsResponse.message)
+      return NextResponse.json(
+        {
+          error: "Failed to fetch clients from RemOnline",
+          details: clientsResponse.message,
+        },
+        { status: 500 },
+      )
     }
 
-    const clientsData = await response.json()
+    const clientsData = clientsResponse.data
+
+    console.log(`Fetched ${clientsData.data?.length || 0} clients from RemOnline`)
 
     // Process clients and sync to database
-    for (const client of clientsData.data) {
-      if (!client.email && !client.phone) continue
+    let processedCount = 0
+    for (const client of clientsData.data || []) {
+      if (!client.email && !client.phone) {
+        console.log(`Skipping client ${client.id} - no email or phone`)
+        continue
+      }
 
-      const formattedPhone = client.phone ? formatPhone(client.phone) : null
+      const formattedPhone = client.phone && client.phone.length > 0 ? formatPhone(client.phone[0]) : null
 
       // Check if user exists
       let existingUser = null
@@ -129,29 +129,38 @@ export async function POST(request: NextRequest) {
           updated_at: new Date().toISOString(),
         }
 
-        if (client.name) profileUpdate.name = client.name
+        if (client.first_name || client.last_name) {
+          profileUpdate.first_name = client.first_name || ""
+          profileUpdate.last_name = client.last_name || ""
+        }
         if (formattedPhone) profileUpdate.phone = formattedPhone
         if (client.address) profileUpdate.address = client.address
+        if (client.email) profileUpdate.email = client.email.toLowerCase()
 
         await supabase.from("profiles").update(profileUpdate).eq("id", userId)
+
+        console.log(`Updated existing user ${userId} for RemOnline client ${client.id}`)
       } else {
-        // Create new user with transaction to ensure both tables are updated
-        // Змінюємо функцію для створення нового користувача, щоб додавати email в обидві таблиці
         // Create new user
         const userData = {
           email: client.email || `${formattedPhone?.replace(/\D/g, "")}@placeholder.com`,
-          name: client.name || "Customer",
+          first_name: client.first_name || "",
+          last_name: client.last_name || "",
+          name: `${client.first_name || ""} ${client.last_name || ""}`.trim() || "Customer",
           phone: formattedPhone,
           address: client.address,
-          id: client.id,
+          remonline_id: client.id,
         }
 
         const { data: newUser, error: userError } = await supabase
           .from("users")
           .insert({
             email: userData.email.toLowerCase(),
+            first_name: userData.first_name,
+            last_name: userData.last_name,
+            name: userData.name,
             role: "customer",
-            remonline_id: userData.id,
+            remonline_id: userData.remonline_id,
           })
           .select("id")
           .single()
@@ -164,9 +173,10 @@ export async function POST(request: NextRequest) {
         // Create profile with email
         const { error: profileError } = await supabase.from("profiles").insert({
           id: newUser.id,
-          name: userData.name,
+          first_name: userData.first_name,
+          last_name: userData.last_name,
           phone: userData.phone,
-          email: userData.email.toLowerCase(), // Додаємо email в profiles
+          email: userData.email.toLowerCase(), // Add email to profiles
           address: userData.address || null,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
@@ -174,25 +184,29 @@ export async function POST(request: NextRequest) {
 
         if (profileError) {
           console.error("Failed to create profile:", profileError)
-          // Видаляємо користувача, якщо не вдалося створити профіль
+          // Delete user if profile creation failed
           await supabase.from("users").delete().eq("id", newUser.id)
           console.error(`Failed to create profile for "${userData.email}": ${profileError.message}`)
           continue
         }
+
+        console.log(`Created new user ${newUser.id} for RemOnline client ${client.id}`)
       }
+
+      processedCount++
     }
 
     return NextResponse.json({
       success: true,
       message: "Sync completed successfully",
-      total: clientsData.count,
-      processed: clientsData.data.length,
+      total: clientsData.count || 0,
+      processed: processedCount,
     })
   } catch (error) {
     console.error("Sync error:", error)
     return NextResponse.json(
       {
-        error: "Failed to sync with Remonline",
+        error: "Failed to sync with RemOnline",
         details: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 },
