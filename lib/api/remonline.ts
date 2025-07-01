@@ -1,7 +1,11 @@
-// This is a wrapper for the Remonline API
+// RemOnline API Client - Updated for new Bearer token authentication
 class RemonlineClient {
   private baseUrl = "https://api.remonline.app"
   private apiKey: string | null = null
+  private requestCount = 0
+  private lastRequestTime = 0
+  private readonly RATE_LIMIT = 3 // 3 requests per second
+  private readonly RATE_LIMIT_WINDOW = 1000 // 1 second in milliseconds
 
   constructor() {
     // Get API key from environment variable
@@ -10,8 +14,34 @@ class RemonlineClient {
     if (!this.apiKey) {
       console.error("Neither REMONLINE_API_KEY nor REMONLINE_API_TOKEN environment variables are set")
     } else {
-      console.log("RemOnline API client initialized with key:", this.apiKey.substring(0, 8) + "...")
+      console.log("RemOnline API client initialized with Bearer token authentication")
+      console.log("API key length:", this.apiKey.length)
+      console.log("API key preview:", this.apiKey.substring(0, 8) + "...")
     }
+  }
+
+  // Rate limiting helper
+  private async enforceRateLimit() {
+    const now = Date.now()
+
+    // Reset counter if more than 1 second has passed
+    if (now - this.lastRequestTime >= this.RATE_LIMIT_WINDOW) {
+      this.requestCount = 0
+      this.lastRequestTime = now
+    }
+
+    // If we've hit the rate limit, wait
+    if (this.requestCount >= this.RATE_LIMIT) {
+      const waitTime = this.RATE_LIMIT_WINDOW - (now - this.lastRequestTime)
+      if (waitTime > 0) {
+        console.log(`Rate limit reached, waiting ${waitTime}ms...`)
+        await new Promise((resolve) => setTimeout(resolve, waitTime))
+        this.requestCount = 0
+        this.lastRequestTime = Date.now()
+      }
+    }
+
+    this.requestCount++
   }
 
   // Get the authorization headers for API requests
@@ -22,9 +52,31 @@ class RemonlineClient {
 
     return {
       Authorization: `Bearer ${this.apiKey}`,
-      "Content-Type": "application/json",
       Accept: "application/json",
+      "Content-Type": "application/json",
     }
+  }
+
+  // Make authenticated request with rate limiting
+  private async makeRequest(url: string, options: RequestInit = {}) {
+    await this.enforceRateLimit()
+
+    const fullUrl = url.startsWith("http") ? url : `${this.baseUrl}${url}`
+
+    console.log(`Making request to: ${fullUrl}`)
+    console.log(`Method: ${options.method || "GET"}`)
+
+    const response = await fetch(fullUrl, {
+      ...options,
+      headers: {
+        ...this.getAuthHeaders(),
+        ...options.headers,
+      },
+    })
+
+    console.log(`Response status: ${response.status}`)
+
+    return response
   }
 
   // Test the API connection
@@ -39,13 +91,8 @@ class RemonlineClient {
         }
       }
 
-      // Try to fetch a small amount of data to test the connection
-      const response = await fetch(`${this.baseUrl}/clients?limit=1`, {
-        method: "GET",
-        headers: this.getAuthHeaders(),
-      })
-
-      console.log("Test connection response status:", response.status)
+      // Try to fetch order statuses as a simple test
+      const response = await this.makeRequest("/statuses/orders")
 
       if (!response.ok) {
         const errorText = await response.text()
@@ -58,7 +105,7 @@ class RemonlineClient {
       }
 
       const data = await response.json()
-      console.log("API test successful, received data structure:", Object.keys(data))
+      console.log("API test successful, received order statuses:", data.data?.length || 0)
 
       return {
         success: true,
@@ -75,37 +122,75 @@ class RemonlineClient {
     }
   }
 
-  // Get clients with optional query parameters
-  async getClients(params = {}) {
+  // Get order statuses
+  async getOrderStatuses() {
     try {
-      console.log("Fetching clients from RemOnline API...")
+      console.log("Fetching order statuses...")
 
-      if (!this.apiKey) {
+      const response = await this.makeRequest("/statuses/orders")
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error(`Failed to fetch order statuses with status ${response.status}: ${errorText}`)
         return {
           success: false,
-          message: "API key is not configured",
+          message: `Failed to fetch order statuses with status ${response.status}`,
+          details: errorText,
         }
       }
 
+      const data = await response.json()
+      console.log("Order statuses fetched successfully:", data.data?.length || 0)
+
+      return { success: true, data }
+    } catch (error) {
+      console.error("RemOnline getOrderStatuses error:", error)
+      return {
+        success: false,
+        message: "Failed to fetch order statuses from RemOnline API",
+        details: error instanceof Error ? error.message : String(error),
+      }
+    }
+  }
+
+  // Get clients with pagination and optional query parameters
+  async getClients(
+    params: {
+      page?: number
+      limit?: number
+      query?: string
+      email?: string
+      phone?: string
+    } = {},
+  ) {
+    try {
+      console.log("Fetching clients from RemOnline API...")
+
       // Build query string from params
       const queryParams = new URLSearchParams()
-      Object.entries(params).forEach(([key, value]) => {
-        queryParams.append(key, String(value))
-      })
 
-      let url = `${this.baseUrl}/clients`
-      if (queryParams.toString()) {
-        url += `?${queryParams.toString()}`
+      // Set default pagination
+      queryParams.append("page", String(params.page || 1))
+
+      // RemOnline API returns up to 50 entries per page by default
+      if (params.limit && params.limit <= 50) {
+        queryParams.append("limit", String(params.limit))
       }
 
-      console.log("Fetching clients from:", url)
+      if (params.query) {
+        queryParams.append("query", params.query)
+      }
 
-      const response = await fetch(url, {
-        method: "GET",
-        headers: this.getAuthHeaders(),
-      })
+      if (params.email) {
+        queryParams.append("email", params.email)
+      }
 
-      console.log("Response status:", response.status)
+      if (params.phone) {
+        queryParams.append("phone", params.phone)
+      }
+
+      const url = `/clients?${queryParams.toString()}`
+      const response = await this.makeRequest(url)
 
       if (!response.ok) {
         const errorText = await response.text()
@@ -118,10 +203,11 @@ class RemonlineClient {
       }
 
       const data = await response.json()
-      console.log("Clients response structure:", {
+      console.log("Clients response:", {
         hasData: !!data.data,
         dataLength: data.data?.length || 0,
         totalCount: data.count || 0,
+        currentPage: params.page || 1,
       })
 
       return { success: true, data }
@@ -140,22 +226,7 @@ class RemonlineClient {
     try {
       console.log(`Fetching client with ID: ${clientId}`)
 
-      if (!this.apiKey) {
-        return {
-          success: false,
-          message: "API key is not configured",
-        }
-      }
-
-      const url = `${this.baseUrl}/clients/${clientId}`
-      console.log("Request URL:", url)
-
-      const response = await fetch(url, {
-        method: "GET",
-        headers: this.getAuthHeaders(),
-      })
-
-      console.log(`Response status: ${response.status}`)
+      const response = await this.makeRequest(`/clients/${clientId}`)
 
       if (!response.ok) {
         const errorText = await response.text()
@@ -275,14 +346,10 @@ class RemonlineClient {
     address?: string
   }) {
     try {
-      console.log("Creating client with data:", { ...clientData, phone: clientData.phone?.length || 0 })
-
-      if (!this.apiKey) {
-        return {
-          success: false,
-          message: "API key is not configured",
-        }
-      }
+      console.log("Creating client with data:", {
+        ...clientData,
+        phone: clientData.phone?.length || 0,
+      })
 
       // Ensure phone is an array
       const dataToSend = {
@@ -290,15 +357,10 @@ class RemonlineClient {
         phone: Array.isArray(clientData.phone) ? clientData.phone : clientData.phone ? [clientData.phone] : [],
       }
 
-      console.log("POST URL:", `${this.baseUrl}/clients`)
-
-      const response = await fetch(`${this.baseUrl}/clients`, {
+      const response = await this.makeRequest("/clients", {
         method: "POST",
-        headers: this.getAuthHeaders(),
         body: JSON.stringify(dataToSend),
       })
-
-      console.log("Response status:", response.status)
 
       const responseText = await response.text()
       console.log("Response text length:", responseText.length)
@@ -336,25 +398,79 @@ class RemonlineClient {
     }
   }
 
+  // Get orders with pagination and optional filters
+  async getOrders(
+    params: {
+      page?: number
+      limit?: number
+      client_id?: number
+      status_id?: number
+      created_from?: string
+      created_to?: string
+    } = {},
+  ) {
+    try {
+      console.log("Fetching orders from RemOnline API...")
+
+      // Build query string from params
+      const queryParams = new URLSearchParams()
+
+      // Set default pagination
+      queryParams.append("page", String(params.page || 1))
+
+      if (params.limit && params.limit <= 50) {
+        queryParams.append("limit", String(params.limit))
+      }
+
+      if (params.client_id) {
+        queryParams.append("client_id", String(params.client_id))
+      }
+
+      if (params.status_id) {
+        queryParams.append("status_id", String(params.status_id))
+      }
+
+      if (params.created_from) {
+        queryParams.append("created_from", params.created_from)
+      }
+
+      if (params.created_to) {
+        queryParams.append("created_to", params.created_to)
+      }
+
+      const url = `/orders?${queryParams.toString()}`
+      const response = await this.makeRequest(url)
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error(`Failed to fetch orders with status ${response.status}: ${errorText}`)
+        return {
+          success: false,
+          message: `Failed to fetch orders with status ${response.status}`,
+          details: errorText,
+        }
+      }
+
+      const data = await response.json()
+      console.log("Orders fetched successfully, count:", data.data?.length || 0)
+
+      return { success: true, data }
+    } catch (error) {
+      console.error("RemOnline getOrders error:", error)
+      return {
+        success: false,
+        message: "Failed to fetch orders from RemOnline API",
+        details: error instanceof Error ? error.message : String(error),
+      }
+    }
+  }
+
   // Get order by ID
   async getOrderById(orderId: number) {
     try {
       console.log(`Fetching order with ID: ${orderId}`)
 
-      if (!this.apiKey) {
-        return {
-          success: false,
-          message: "API key is not configured",
-        }
-      }
-
-      const url = `${this.baseUrl}/orders/${orderId}`
-      console.log("Request URL:", url)
-
-      const response = await fetch(url, {
-        method: "GET",
-        headers: this.getAuthHeaders(),
-      })
+      const response = await this.makeRequest(`/orders/${orderId}`)
 
       if (!response.ok) {
         const errorText = await response.text()
@@ -380,46 +496,22 @@ class RemonlineClient {
     }
   }
 
-  // Get orders for a client
-  async getOrdersByClientId(clientId: number, params = {}) {
+  // Get orders for a specific client
+  async getOrdersByClientId(
+    clientId: number,
+    params: {
+      page?: number
+      limit?: number
+      status_id?: number
+    } = {},
+  ) {
     try {
       console.log(`Fetching orders for client ID: ${clientId}`)
 
-      if (!this.apiKey) {
-        return {
-          success: false,
-          message: "API key is not configured",
-        }
-      }
-
-      // Build query string from params
-      const queryParams = new URLSearchParams({ client_id: String(clientId) })
-      Object.entries(params).forEach(([key, value]) => {
-        queryParams.append(key, String(value))
+      return await this.getOrders({
+        ...params,
+        client_id: clientId,
       })
-
-      const url = `${this.baseUrl}/orders?${queryParams.toString()}`
-      console.log("Request URL:", url)
-
-      const response = await fetch(url, {
-        method: "GET",
-        headers: this.getAuthHeaders(),
-      })
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error(`Failed to fetch orders with status ${response.status}: ${errorText}`)
-        return {
-          success: false,
-          message: `Failed to fetch orders with status ${response.status}`,
-          details: errorText,
-        }
-      }
-
-      const data = await response.json()
-      console.log("Orders fetched successfully, count:", data.data?.length || 0)
-
-      return { success: true, data }
     } catch (error) {
       console.error("RemOnline getOrdersByClientId error:", error)
       return {
@@ -430,37 +522,38 @@ class RemonlineClient {
     }
   }
 
-  // Get tasks (new endpoint example)
-  async getTasks(params = {}) {
+  // Get tasks with pagination and optional filters
+  async getTasks(
+    params: {
+      page?: number
+      limit?: number
+      order_id?: number
+      status_id?: number
+    } = {},
+  ) {
     try {
       console.log("Fetching tasks from RemOnline API...")
 
-      if (!this.apiKey) {
-        return {
-          success: false,
-          message: "API key is not configured",
-        }
-      }
-
       // Build query string from params
       const queryParams = new URLSearchParams()
-      Object.entries(params).forEach(([key, value]) => {
-        queryParams.append(key, String(value))
-      })
 
-      let url = `${this.baseUrl}/tasks`
-      if (queryParams.toString()) {
-        url += `?${queryParams.toString()}`
+      // Set default pagination
+      queryParams.append("page", String(params.page || 1))
+
+      if (params.limit && params.limit <= 50) {
+        queryParams.append("limit", String(params.limit))
       }
 
-      console.log("Fetching tasks from:", url)
+      if (params.order_id) {
+        queryParams.append("order_id", String(params.order_id))
+      }
 
-      const response = await fetch(url, {
-        method: "GET",
-        headers: this.getAuthHeaders(),
-      })
+      if (params.status_id) {
+        queryParams.append("status_id", String(params.status_id))
+      }
 
-      console.log("Response status:", response.status)
+      const url = `/tasks?${queryParams.toString()}`
+      const response = await this.makeRequest(url)
 
       if (!response.ok) {
         const errorText = await response.text()
@@ -473,7 +566,7 @@ class RemonlineClient {
       }
 
       const data = await response.json()
-      console.log("Tasks response structure:", {
+      console.log("Tasks response:", {
         hasData: !!data.data,
         dataLength: data.data?.length || 0,
         totalCount: data.count || 0,
@@ -490,9 +583,60 @@ class RemonlineClient {
     }
   }
 
-  // Legacy auth method - kept for backward compatibility but now just returns the API key
+  // Get inventory items
+  async getInventory(
+    params: {
+      page?: number
+      limit?: number
+      query?: string
+    } = {},
+  ) {
+    try {
+      console.log("Fetching inventory from RemOnline API...")
+
+      // Build query string from params
+      const queryParams = new URLSearchParams()
+
+      queryParams.append("page", String(params.page || 1))
+
+      if (params.limit && params.limit <= 50) {
+        queryParams.append("limit", String(params.limit))
+      }
+
+      if (params.query) {
+        queryParams.append("query", params.query)
+      }
+
+      const url = `/inventory?${queryParams.toString()}`
+      const response = await this.makeRequest(url)
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error(`Failed to fetch inventory with status ${response.status}: ${errorText}`)
+        return {
+          success: false,
+          message: `Failed to fetch inventory with status ${response.status}`,
+          details: errorText,
+        }
+      }
+
+      const data = await response.json()
+      console.log("Inventory fetched successfully, count:", data.data?.length || 0)
+
+      return { success: true, data }
+    } catch (error) {
+      console.error("RemOnline getInventory error:", error)
+      return {
+        success: false,
+        message: "Failed to fetch inventory from RemOnline API",
+        details: error instanceof Error ? error.message : String(error),
+      }
+    }
+  }
+
+  // Legacy auth method - kept for backward compatibility
   async auth() {
-    console.log("Legacy auth method called - returning API key directly")
+    console.log("Legacy auth method called - using Bearer token authentication")
 
     if (!this.apiKey) {
       return {
@@ -510,7 +654,7 @@ class RemonlineClient {
 }
 
 // Create a singleton instance
-console.log("Initializing RemOnline client with new Bearer token authentication")
+console.log("Initializing RemOnline client with Bearer token authentication")
 const remonline = new RemonlineClient()
 
 export default remonline
