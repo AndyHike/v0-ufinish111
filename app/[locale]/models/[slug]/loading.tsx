@@ -1,32 +1,29 @@
+import { ArrowLeft } from "lucide-react"
+import { ServiceCardSkeleton, PageHeaderSkeleton } from "@/components/ui/skeleton-card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { SkeletonServiceCard } from "@/components/ui/skeleton-card"
 
 export default function ModelLoading() {
   return (
     <div className="container px-4 py-12 md:px-6 md:py-24">
       <div className="mx-auto max-w-4xl">
-        {/* Back button skeleton */}
-        <div className="mb-8">
-          <Skeleton className="h-8 w-40" />
+        {/* Кнопка повернення */}
+        <div className="mb-8 inline-flex items-center gap-2 rounded-md bg-slate-50 px-3 py-1 text-sm font-medium text-muted-foreground">
+          <ArrowLeft className="h-4 w-4" />
+          <Skeleton className="h-4 w-24" />
         </div>
 
-        {/* Model header skeleton */}
-        <div className="mb-12 rounded-xl bg-white p-8 shadow-sm">
-          <div className="flex flex-col items-center gap-6 md:flex-row">
-            <Skeleton className="h-32 w-32 rounded-xl" />
-            <div className="flex-1">
-              <Skeleton className="h-10 w-64 mb-3" />
-              <Skeleton className="h-5 w-full max-w-2xl" />
-            </div>
-          </div>
-        </div>
+        {/* Заголовок моделі */}
+        <PageHeaderSkeleton />
 
-        {/* Services section skeleton */}
+        {/* Розділ послуг */}
         <div>
-          <Skeleton className="h-8 w-48 mb-8" />
+          <div className="mb-6 border-b pb-2">
+            <Skeleton className="h-8 w-48" />
+          </div>
+
           <div className="space-y-4">
             {Array.from({ length: 6 }).map((_, i) => (
-              <SkeletonServiceCard key={i} />
+              <ServiceCardSkeleton key={i} />
             ))}
           </div>
         </div>
