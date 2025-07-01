@@ -1,9 +1,9 @@
 import type { Metadata } from "next"
 import { getTranslations } from "next-intl/server"
 import Link from "next/link"
+import { createServerClient } from "@/utils/supabase/server"
 import { ArrowLeft } from "lucide-react"
 import { formatImageUrl } from "@/utils/image-url"
-import { createCachedSupabaseClient } from "@/lib/cache/supabase-cache"
 
 type Props = {
   params: {
@@ -36,9 +36,16 @@ export default async function BrandsPage({ params }: Props) {
   const { locale } = params
   const t = await getTranslations({ locale, namespace: "Brands" })
 
-  // Використовуємо кешований клієнт замість звичайного
-  const cachedSupabase = createCachedSupabaseClient()
-  const brands = await cachedSupabase.getBrands()
+  const supabase = createServerClient()
+
+  const { data: brands, error } = await supabase
+    .from("brands")
+    .select("id, name, slug, logo_url, position")
+    .order("position", { ascending: true })
+
+  if (error) {
+    console.error("Error fetching brands:", error)
+  }
 
   return (
     <div className="container px-4 py-12 md:px-6 md:py-24">
