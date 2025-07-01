@@ -1,59 +1,63 @@
 import { Suspense } from "react"
-import { getCurrentUser } from "@/lib/auth/session"
-import { redirect } from "next/navigation"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Skeleton } from "@/components/ui/skeleton"
-import { RemOnlineTest } from "@/components/admin/remonline-test"
+import { WebhookMonitor } from "@/components/admin/webhook-monitor"
 import { WebhookTester } from "@/components/admin/webhook-tester"
 import { RemOnlineApiTester } from "@/components/admin/remonline-api-tester"
-import { WebhookMonitor } from "@/components/admin/webhook-monitor"
+import { Activity, TestTube, Settings } from "lucide-react"
 
-export default async function AdminIntegrationsPage() {
-  const user = await getCurrentUser()
-
-  if (!user || user.role !== "admin") {
-    redirect("/auth/signin")
-  }
-
+export default function IntegrationsPage() {
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Integrations & Testing</h1>
-        <p className="text-muted-foreground">
-          Test and debug your RemOnline API integration and webhook functionality.
-        </p>
+    <div className="container mx-auto py-6">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold">RemOnline Integration</h1>
+        <p className="text-muted-foreground">Monitor webhooks, test API endpoints, and manage RemOnline integration</p>
       </div>
 
-      <Tabs defaultValue="webhook-monitor" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="webhook-monitor">Webhook Monitor</TabsTrigger>
-          <TabsTrigger value="api-test">API Testing</TabsTrigger>
-          <TabsTrigger value="webhook-test">Webhook Testing</TabsTrigger>
-          <TabsTrigger value="connection-test">Connection Test</TabsTrigger>
+      <Tabs defaultValue="monitor" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="monitor" className="flex items-center gap-2">
+            <Activity className="h-4 w-4" />
+            Webhook Monitor
+          </TabsTrigger>
+          <TabsTrigger value="test-webhook" className="flex items-center gap-2">
+            <TestTube className="h-4 w-4" />
+            Test Webhooks
+          </TabsTrigger>
+          <TabsTrigger value="test-api" className="flex items-center gap-2">
+            <Settings className="h-4 w-4" />
+            Test API
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="webhook-monitor" className="space-y-6">
-          <Suspense fallback={<Skeleton className="h-96" />}>
+        <TabsContent value="monitor">
+          <Suspense fallback={<div>Loading webhook monitor...</div>}>
             <WebhookMonitor />
           </Suspense>
         </TabsContent>
 
-        <TabsContent value="api-test" className="space-y-6">
-          <Suspense fallback={<Skeleton className="h-96" />}>
-            <RemOnlineApiTester />
-          </Suspense>
+        <TabsContent value="test-webhook">
+          <Card>
+            <CardHeader>
+              <CardTitle>Webhook Testing</CardTitle>
+              <CardDescription>Test webhook endpoints and simulate RemOnline webhook events</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <WebhookTester />
+            </CardContent>
+          </Card>
         </TabsContent>
 
-        <TabsContent value="webhook-test" className="space-y-6">
-          <Suspense fallback={<Skeleton className="h-96" />}>
-            <WebhookTester />
-          </Suspense>
-        </TabsContent>
-
-        <TabsContent value="connection-test" className="space-y-6">
-          <Suspense fallback={<Skeleton className="h-48" />}>
-            <RemOnlineTest />
-          </Suspense>
+        <TabsContent value="test-api">
+          <Card>
+            <CardHeader>
+              <CardTitle>RemOnline API Testing</CardTitle>
+              <CardDescription>Test RemOnline API endpoints by entering order IDs, client IDs, etc.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <RemOnlineApiTester />
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
