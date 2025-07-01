@@ -1,4 +1,3 @@
-// Оновлюємо компонент для адаптивного дизайну
 "use client"
 
 import React from "react"
@@ -10,7 +9,6 @@ import {
   RefreshCw,
   Calendar,
   Smartphone,
-  PenToolIcon as Tool,
   Tag,
   Clock,
   ChevronDown,
@@ -19,6 +17,9 @@ import {
   CheckCircle2,
   Loader2,
   Info,
+  Shield,
+  DollarSign,
+  Package,
 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -26,6 +27,15 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { useMediaQuery } from "@/hooks/use-media-query"
+
+type OrderItem = {
+  id: number
+  service_name: string
+  quantity: number
+  price: number
+  warranty_period?: number
+  warranty_units?: string
+}
 
 type OrderStatusHistory = {
   id: string
@@ -52,6 +62,7 @@ type RepairOrder = {
   statusColor: string
   price: number | null
   created_at: string
+  items: OrderItem[]
   statusHistory?: OrderStatusHistory[]
 }
 
@@ -118,6 +129,34 @@ function getStatusIcon(statusName: string) {
   } else {
     return <AlertCircle className="h-4 w-4" />
   }
+}
+
+function formatWarranty(period: number | undefined, units: string | undefined, locale: string): string {
+  if (!period || !units) return "Без гарантії"
+
+  const unitTranslations: Record<string, Record<string, string>> = {
+    uk: {
+      days: period === 1 ? "день" : period < 5 ? "дні" : "днів",
+      weeks: period === 1 ? "тиждень" : period < 5 ? "тижні" : "тижнів",
+      months: period === 1 ? "місяць" : period < 5 ? "місяці" : "місяців",
+      years: period === 1 ? "рік" : period < 5 ? "роки" : "років",
+    },
+    en: {
+      days: period === 1 ? "day" : "days",
+      weeks: period === 1 ? "week" : "weeks",
+      months: period === 1 ? "month" : "months",
+      years: period === 1 ? "year" : "years",
+    },
+    cs: {
+      days: period === 1 ? "den" : period < 5 ? "dny" : "dnů",
+      weeks: period === 1 ? "týden" : period < 5 ? "týdny" : "týdnů",
+      months: period === 1 ? "měsíc" : period < 5 ? "měsíce" : "měsíců",
+      years: period === 1 ? "rok" : period < 5 ? "roky" : "let",
+    },
+  }
+
+  const unit = unitTranslations[locale]?.[units] || units
+  return `${period} ${unit}`
 }
 
 export function UserOrders() {
@@ -284,6 +323,13 @@ export function UserOrders() {
     }
   }
 
+  function formatCurrency(amount: number) {
+    return new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency: locale === "cs" ? "CZK" : "UAH",
+    }).format(amount)
+  }
+
   // Якщо ми на сервері або ще не на клієнті, показуємо скелетон
   if (!isClient) {
     return (
@@ -297,6 +343,8 @@ export function UserOrders() {
   // Компонент деталей замовлення для мобільної версії
   const OrderDetailsModal = () => {
     if (!selectedOrder) return null
+
+    const totalPrice = selectedOrder.items.reduce((sum, item) => sum + item.price * item.quantity, 0)
 
     return (
       <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
@@ -320,8 +368,6 @@ export function UserOrders() {
                 <div>
                   {selectedOrder.device_brand} {selectedOrder.device_model}
                 </div>
-                <div className="text-muted-foreground">{t("service")}:</div>
-                <div>{selectedOrder.service_type}</div>
                 <div className="text-muted-foreground">{t("currentStatus")}:</div>
                 <div>
                   <Badge
@@ -334,10 +380,48 @@ export function UserOrders() {
                     <span>{selectedOrder.statusName}</span>
                   </Badge>
                 </div>
-                <div className="text-muted-foreground">{t("price")}:</div>
-                <div>{selectedOrder.price ? `${selectedOrder.price} ${t("currency")}` : t("notSpecified")}</div>
               </div>
             </div>
+
+            {/* Services/Items */}
+            {selectedOrder.items && selectedOrder.items.length > 0 && (
+              <div className="space-y-2 mt-4">
+                <h4 className="text-sm font-medium flex items-center gap-2">
+                  <Package className="h-4 w-4" />
+                  Послуги
+                </h4>
+                <div className="space-y-3">
+                  {selectedOrder.items.map((item, index) => (
+                    <div key={item.id || index} className="bg-muted/30 rounded-lg p-3">
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="font-medium text-sm">{item.service_name}</div>
+                        <div className="text-sm font-medium">{formatCurrency(item.price * item.quantity)}</div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <Tag className="h-3 w-3" />
+                          Кількість: {item.quantity}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <DollarSign className="h-3 w-3" />
+                          Ціна: {formatCurrency(item.price)}
+                        </div>
+                        {item.warranty_period && (
+                          <div className="col-span-2 flex items-center gap-1">
+                            <Shield className="h-3 w-3" />
+                            Гарантія: {formatWarranty(item.warranty_period, item.warranty_units, locale)}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  <div className="border-t pt-2 flex justify-between items-center font-medium">
+                    <span>Загальна сума:</span>
+                    <span>{formatCurrency(totalPrice)}</span>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {selectedOrder.statusHistory && selectedOrder.statusHistory.length > 0 && (
               <div className="space-y-2 mt-4">
@@ -460,54 +544,60 @@ export function UserOrders() {
               </div>
             ) : (
               <div className="divide-y">
-                {filteredOrders.map((order) => (
-                  <div
-                    key={order.id}
-                    className="p-3 hover:bg-muted/20 transition-colors"
-                    onClick={() => openOrderDetails(order)}
-                  >
-                    <div className="flex justify-between items-start mb-2">
-                      <div className="font-medium">{order.reference_number}</div>
-                      <Badge
-                        className={cn(
-                          "font-medium text-xs py-1 px-2 rounded-full flex items-center gap-1",
-                          getStatusColorClass(order.statusColor),
+                {filteredOrders.map((order) => {
+                  const totalPrice = order.items.reduce((sum, item) => sum + item.price * item.quantity, 0)
+
+                  return (
+                    <div
+                      key={order.id}
+                      className="p-3 hover:bg-muted/20 transition-colors"
+                      onClick={() => openOrderDetails(order)}
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="font-medium">{order.reference_number}</div>
+                        <Badge
+                          className={cn(
+                            "font-medium text-xs py-1 px-2 rounded-full flex items-center gap-1",
+                            getStatusColorClass(order.statusColor),
+                          )}
+                        >
+                          {getStatusIcon(order.statusName)}
+                          <span>{order.statusName}</span>
+                        </Badge>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-sm">
+                        <div className="flex items-center text-muted-foreground">
+                          <Calendar className="h-3.5 w-3.5 mr-1.5" />
+                          {formatDate(order.created_at)}
+                        </div>
+                        <div className="flex items-center text-muted-foreground">
+                          <Tag className="h-3.5 w-3.5 mr-1.5" />
+                          {totalPrice > 0 ? formatCurrency(totalPrice) : "-"}
+                        </div>
+                        <div className="flex items-center col-span-2">
+                          <Smartphone className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+                          <span>
+                            {order.device_brand} {order.device_model}
+                          </span>
+                        </div>
+                        {order.items.length > 0 && (
+                          <div className="flex items-center col-span-2">
+                            <Package className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+                            <span>{order.items.length} послуг</span>
+                          </div>
                         )}
-                      >
-                        {getStatusIcon(order.statusName)}
-                        <span>{order.statusName}</span>
-                      </Badge>
-                    </div>
+                      </div>
 
-                    <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-sm">
-                      <div className="flex items-center text-muted-foreground">
-                        <Calendar className="h-3.5 w-3.5 mr-1.5" />
-                        {formatDate(order.created_at)}
-                      </div>
-                      <div className="flex items-center text-muted-foreground">
-                        <Tag className="h-3.5 w-3.5 mr-1.5" />
-                        {order.price ? `${order.price} ${t("currency")}` : "-"}
-                      </div>
-                      <div className="flex items-center col-span-2">
-                        <Smartphone className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
-                        <span>
-                          {order.device_brand} {order.device_model}
-                        </span>
-                      </div>
-                      <div className="flex items-center col-span-2">
-                        <Tool className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
-                        <span>{order.service_type}</span>
+                      <div className="flex justify-end mt-2">
+                        <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-muted-foreground">
+                          <Info className="h-3.5 w-3.5 mr-1" />
+                          {t("showDetails")}
+                        </Button>
                       </div>
                     </div>
-
-                    <div className="flex justify-end mt-2">
-                      <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-muted-foreground">
-                        <Info className="h-3.5 w-3.5 mr-1" />
-                        {t("showDetails")}
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </CardContent>
@@ -612,9 +702,7 @@ export function UserOrders() {
                       <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">
                         {t("deviceColumn")}
                       </th>
-                      <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">
-                        {t("serviceColumn")}
-                      </th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">Послуги</th>
                       <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">
                         {t("statusColumn")}
                       </th>
@@ -627,99 +715,146 @@ export function UserOrders() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredOrders.map((order) => (
-                      <React.Fragment key={order.id}>
-                        <tr
-                          className={cn(
-                            "border-b hover:bg-muted/20 transition-colors",
-                            expandedOrder === order.id && "bg-muted/10",
-                          )}
-                        >
-                          <td className="py-3 px-4 text-sm font-medium">{order.reference_number}</td>
-                          <td className="py-3 px-4 text-sm">
-                            <div className="flex items-center">
-                              <Calendar className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
-                              {formatDate(order.created_at)}
-                            </div>
-                          </td>
-                          <td className="py-3 px-4 text-sm">
-                            <div className="flex items-center">
-                              <Smartphone className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
-                              {order.device_brand} {order.device_model}
-                            </div>
-                          </td>
-                          <td className="py-3 px-4 text-sm">
-                            <div className="flex items-center">
-                              <Tool className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
-                              {order.service_type}
-                            </div>
-                          </td>
-                          <td className="py-3 px-4">
-                            <Badge
-                              className={cn(
-                                "font-medium text-xs py-1 px-2.5 rounded-full flex items-center gap-1.5",
-                                getStatusColorClass(order.statusColor),
-                              )}
-                            >
-                              {getStatusIcon(order.statusName)}
-                              <span>{order.statusName}</span>
-                            </Badge>
-                          </td>
-                          <td className="py-3 px-4 text-sm">
-                            <div className="flex items-center">
-                              <Tag className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
-                              {order.price ? `${order.price} ${t("currency")}` : "-"}
-                            </div>
-                          </td>
-                          <td className="py-3 px-4 text-center">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 w-8 p-0 rounded-full"
-                              onClick={(e) => toggleOrderDetails(order.id, e)}
-                            >
-                              {expandedOrder === order.id ? (
-                                <ChevronUp className="h-4 w-4" />
-                              ) : (
-                                <ChevronDown className="h-4 w-4" />
-                              )}
-                              <span className="sr-only">{t("showDetails")}</span>
-                            </Button>
-                          </td>
-                        </tr>
-                        {expandedOrder === order.id && (
-                          <tr className="bg-muted/5">
-                            <td colSpan={7} className="py-4 px-6">
-                              <div className="space-y-4">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                  <div className="space-y-2">
-                                    <h4 className="text-sm font-medium">{t("orderDetails")}</h4>
-                                    <div className="grid grid-cols-2 gap-2 text-sm">
-                                      <div className="text-muted-foreground">{t("orderId")}:</div>
-                                      <div>{order.reference_number}</div>
-                                      <div className="text-muted-foreground">{t("creationDate")}:</div>
-                                      <div>{formatDateTime(order.created_at)}</div>
-                                      <div className="text-muted-foreground">{t("device")}:</div>
-                                      <div>
-                                        {order.device_brand} {order.device_model}
+                    {filteredOrders.map((order) => {
+                      const totalPrice = order.items.reduce((sum, item) => sum + item.price * item.quantity, 0)
+
+                      return (
+                        <React.Fragment key={order.id}>
+                          <tr
+                            className={cn(
+                              "border-b hover:bg-muted/20 transition-colors",
+                              expandedOrder === order.id && "bg-muted/10",
+                            )}
+                          >
+                            <td className="py-3 px-4 text-sm font-medium">{order.reference_number}</td>
+                            <td className="py-3 px-4 text-sm">
+                              <div className="flex items-center">
+                                <Calendar className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+                                {formatDate(order.created_at)}
+                              </div>
+                            </td>
+                            <td className="py-3 px-4 text-sm">
+                              <div className="flex items-center">
+                                <Smartphone className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+                                {order.device_brand} {order.device_model}
+                              </div>
+                            </td>
+                            <td className="py-3 px-4 text-sm">
+                              <div className="flex items-center">
+                                <Package className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+                                {order.items.length > 0 ? `${order.items.length} послуг` : order.service_type}
+                              </div>
+                            </td>
+                            <td className="py-3 px-4">
+                              <Badge
+                                className={cn(
+                                  "font-medium text-xs py-1 px-2.5 rounded-full flex items-center gap-1.5",
+                                  getStatusColorClass(order.statusColor),
+                                )}
+                              >
+                                {getStatusIcon(order.statusName)}
+                                <span>{order.statusName}</span>
+                              </Badge>
+                            </td>
+                            <td className="py-3 px-4 text-sm">
+                              <div className="flex items-center">
+                                <Tag className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+                                {totalPrice > 0
+                                  ? formatCurrency(totalPrice)
+                                  : order.price
+                                    ? formatCurrency(order.price)
+                                    : "-"}
+                              </div>
+                            </td>
+                            <td className="py-3 px-4 text-center">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0 rounded-full"
+                                onClick={(e) => toggleOrderDetails(order.id, e)}
+                              >
+                                {expandedOrder === order.id ? (
+                                  <ChevronUp className="h-4 w-4" />
+                                ) : (
+                                  <ChevronDown className="h-4 w-4" />
+                                )}
+                                <span className="sr-only">{t("showDetails")}</span>
+                              </Button>
+                            </td>
+                          </tr>
+                          {expandedOrder === order.id && (
+                            <tr className="bg-muted/5">
+                              <td colSpan={7} className="py-4 px-6">
+                                <div className="space-y-4">
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                      <h4 className="text-sm font-medium">{t("orderDetails")}</h4>
+                                      <div className="grid grid-cols-2 gap-2 text-sm">
+                                        <div className="text-muted-foreground">{t("orderId")}:</div>
+                                        <div>{order.reference_number}</div>
+                                        <div className="text-muted-foreground">{t("creationDate")}:</div>
+                                        <div>{formatDateTime(order.created_at)}</div>
+                                        <div className="text-muted-foreground">{t("device")}:</div>
+                                        <div>
+                                          {order.device_brand} {order.device_model}
+                                        </div>
+                                        <div className="text-muted-foreground">{t("currentStatus")}:</div>
+                                        <div>
+                                          <Badge
+                                            className={cn(
+                                              "font-medium text-xs py-1 px-2.5 rounded-full flex items-center gap-1.5",
+                                              getStatusColorClass(order.statusColor),
+                                            )}
+                                          >
+                                            {getStatusIcon(order.statusName)}
+                                            <span>{order.statusName}</span>
+                                          </Badge>
+                                        </div>
                                       </div>
-                                      <div className="text-muted-foreground">{t("service")}:</div>
-                                      <div>{order.service_type}</div>
-                                      <div className="text-muted-foreground">{t("currentStatus")}:</div>
-                                      <div>
-                                        <Badge
-                                          className={cn(
-                                            "font-medium text-xs py-1 px-2.5 rounded-full flex items-center gap-1.5",
-                                            getStatusColorClass(order.statusColor),
-                                          )}
-                                        >
-                                          {getStatusIcon(order.statusName)}
-                                          <span>{order.statusName}</span>
-                                        </Badge>
-                                      </div>
-                                      <div className="text-muted-foreground">{t("price")}:</div>
-                                      <div>{order.price ? `${order.price} ${t("currency")}` : t("notSpecified")}</div>
                                     </div>
+
+                                    {/* Services/Items */}
+                                    {order.items && order.items.length > 0 && (
+                                      <div className="space-y-2">
+                                        <h4 className="text-sm font-medium flex items-center gap-2">
+                                          <Package className="h-4 w-4" />
+                                          Послуги
+                                        </h4>
+                                        <div className="space-y-2 max-h-48 overflow-y-auto">
+                                          {order.items.map((item, index) => (
+                                            <div key={item.id || index} className="bg-muted/30 rounded-lg p-3">
+                                              <div className="flex justify-between items-start mb-2">
+                                                <div className="font-medium text-sm">{item.service_name}</div>
+                                                <div className="text-sm font-medium">
+                                                  {formatCurrency(item.price * item.quantity)}
+                                                </div>
+                                              </div>
+                                              <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                                                <div className="flex items-center gap-1">
+                                                  <Tag className="h-3 w-3" />
+                                                  Кількість: {item.quantity}
+                                                </div>
+                                                <div className="flex items-center gap-1">
+                                                  <DollarSign className="h-3 w-3" />
+                                                  Ціна: {formatCurrency(item.price)}
+                                                </div>
+                                                {item.warranty_period && (
+                                                  <div className="col-span-2 flex items-center gap-1">
+                                                    <Shield className="h-3 w-3" />
+                                                    Гарантія:{" "}
+                                                    {formatWarranty(item.warranty_period, item.warranty_units, locale)}
+                                                  </div>
+                                                )}
+                                              </div>
+                                            </div>
+                                          ))}
+                                          <div className="border-t pt-2 flex justify-between items-center font-medium">
+                                            <span>Загальна сума:</span>
+                                            <span>{formatCurrency(totalPrice)}</span>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )}
                                   </div>
 
                                   {order.statusHistory && order.statusHistory.length > 0 && (
@@ -755,12 +890,12 @@ export function UserOrders() {
                                     </div>
                                   )}
                                 </div>
-                              </div>
-                            </td>
-                          </tr>
-                        )}
-                      </React.Fragment>
-                    ))}
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
+                      )
+                    })}
                   </tbody>
                 </table>
               </div>

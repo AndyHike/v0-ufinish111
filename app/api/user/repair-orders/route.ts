@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { cookies } from "next/headers"
 import { createClient } from "@/lib/supabase"
+import { getStatusByRemOnlineId } from "@/lib/order-status-utils"
 
 export async function GET(request: Request) {
   try {
@@ -52,18 +53,63 @@ export async function GET(request: Request) {
 
     console.log(`Found ${orders?.length || 0} orders for user ${user.id}`)
 
+    // Get order items for each order
+    const ordersWithItems = await Promise.all(
+      (orders || []).map(async (order: any) => {
+        // Get order items
+        const { data: items, error: itemsError } = await supabase
+          .from("repair_order_items")
+          .select("*")
+          .eq("remonline_order_id", order.remonline_id)
+          .order("created_at", { ascending: true })
+
+        if (itemsError) {
+          console.error(`Error fetching items for order ${order.remonline_id}:`, itemsError)
+        }
+
+        // Get updated status information from our system
+        let statusInfo = {
+          name: order.status_name || "Unknown",
+          color: order.status_color || "bg-gray-100 text-gray-800",
+        }
+
+        if (order.status_id && order.status_id !== "unknown") {
+          try {
+            statusInfo = await getStatusByRemOnlineId(Number.parseInt(order.status_id), "uk", true)
+          } catch (error) {
+            console.error(`Error getting status for order ${order.remonline_id}:`, error)
+          }
+        }
+
+        return {
+          ...order,
+          items: items || [],
+          statusName: statusInfo.name,
+          statusColor: statusInfo.color,
+        }
+      }),
+    )
+
     // Transform orders to match frontend format
-    const transformedOrders = (orders || []).map((order: any) => ({
-      id: order.remonline_id?.toString() || order.id.toString(), // Using existing column name
+    const transformedOrders = ordersWithItems.map((order: any) => ({
+      id: order.remonline_id?.toString() || order.id.toString(),
       reference_number: order.reference_number || order.remonline_id?.toString() || order.id.toString(),
       device_brand: order.device_brand || "Unknown",
       device_model: order.device_model || "Unknown",
       service_type: order.service_type || "Repair",
       status: order.status_id || "unknown",
-      statusName: order.status_name || "Unknown",
-      statusColor: getStatusColorFromHex(order.status_color) || "bg-gray-100 text-gray-800",
+      statusName: order.statusName,
+      statusColor: order.statusColor,
       price: order.price,
       created_at: order.created_at,
+      items: order.items.map((item: any) => ({
+        id: item.remonline_item_id,
+        service_name: item.service_name,
+        quantity: item.quantity,
+        price: item.price,
+        warranty_period: item.warranty_period,
+        warranty_units: item.warranty_units,
+      })),
       statusHistory: [], // We'll implement this separately if needed
     }))
 
@@ -74,40 +120,5 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error("Error in repair orders API:", error)
     return NextResponse.json({ error: "An unexpected error occurred" }, { status: 500 })
-  }
-}
-
-// Helper function to convert hex color to Tailwind classes
-function getStatusColorFromHex(hexColor: string): string {
-  if (!hexColor || hexColor === "#gray") {
-    return "bg-gray-100 text-gray-800"
-  }
-
-  // Convert hex to RGB to determine if it's light or dark
-  const hex = hexColor.replace("#", "")
-  const r = Number.parseInt(hex.substr(0, 2), 16)
-  const g = Number.parseInt(hex.substr(2, 2), 16)
-  const b = Number.parseInt(hex.substr(4, 2), 16)
-
-  // Calculate brightness
-  const brightness = (r * 299 + g * 587 + b * 114) / 1000
-
-  // Determine color based on hex value ranges
-  if (hex.toLowerCase().includes("1e79c7") || hex.toLowerCase().includes("blue")) {
-    return "bg-blue-100 text-blue-800"
-  } else if (hex.toLowerCase().includes("orange") || hex.toLowerCase().includes("ffa500")) {
-    return "bg-amber-100 text-amber-800"
-  } else if (hex.toLowerCase().includes("green") || hex.toLowerCase().includes("00ff00")) {
-    return "bg-green-100 text-green-800"
-  } else if (hex.toLowerCase().includes("purple") || hex.toLowerCase().includes("800080")) {
-    return "bg-purple-100 text-purple-800"
-  } else if (hex.toLowerCase().includes("red") || hex.toLowerCase().includes("ff0000")) {
-    return "bg-red-100 text-red-800"
-  } else if (brightness > 128) {
-    // Light color
-    return "bg-gray-100 text-gray-800"
-  } else {
-    // Dark color
-    return "bg-gray-800 text-gray-100"
   }
 }

@@ -1,9 +1,9 @@
 // Environment variables
-const REMONLINE_API_TOKEN = process.env.REMONLINE_API_TOKEN
 const REMONLINE_API_KEY = process.env.REMONLINE_API_KEY
 
-if (!REMONLINE_API_TOKEN || !REMONLINE_API_KEY) {
-  console.warn("RemOnline API credentials not found in environment variables")
+if (!REMONLINE_API_KEY) {
+  console.error("❌ RemOnline API key not found in environment variables")
+  console.error("Expected: REMONLINE_API_KEY")
 }
 
 // Base URL for RemOnline API
@@ -19,7 +19,6 @@ interface RemOnlineResponse<T = any> {
 
 interface AuthResponse {
   success: boolean
-  token?: string
   message?: string
 }
 
@@ -39,6 +38,7 @@ interface OrdersResponse {
   success: boolean
   orders?: any[]
   message?: string
+  total?: number
 }
 
 interface StatusesResponse {
@@ -47,64 +47,121 @@ interface StatusesResponse {
   message?: string
 }
 
-class RemOnlineAPI {
-  private authToken: string | null = null
-  private tokenExpiry: Date | null = null
+class RemonlineClient {
+  private apiKey: string
+  private baseUrl: string
+  private requestCount = 0
+  private lastRequestTime = 0
+  private readonly RATE_LIMIT = 3 // 3 requests per second
+  private readonly RATE_LIMIT_WINDOW = 1000 // 1 second in milliseconds
 
   constructor() {
-    // Initialize with environment variables if available
+    this.apiKey = process.env.REMONLINE_API_KEY || ""
+    this.baseUrl = "https://api.remonline.app"
+
+    if (!this.apiKey) {
+      console.error("❌ RemOnline API key not found in environment variables")
+      console.error("Expected: REMONLINE_API_KEY")
+    } else {
+      console.log("✅ RemOnline API client initialized")
+      console.log(`🔑 API key length: ${this.apiKey.length}`)
+      console.log(
+        `🔑 API key preview: ${this.apiKey.substring(0, 8)}...${this.apiKey.substring(this.apiKey.length - 4)}`,
+      )
+    }
   }
 
-  /**
-   * Authenticate with RemOnline API
-   */
-  async auth(): Promise<AuthResponse> {
+  // Rate limiting helper
+  private async enforceRateLimit() {
+    const now = Date.now()
+
+    // Reset counter if more than 1 second has passed
+    if (now - this.lastRequestTime >= this.RATE_LIMIT_WINDOW) {
+      this.requestCount = 0
+      this.lastRequestTime = now
+    }
+
+    // If we've hit the rate limit, wait
+    if (this.requestCount >= this.RATE_LIMIT) {
+      const waitTime = this.RATE_LIMIT_WINDOW - (now - this.lastRequestTime)
+      if (waitTime > 0) {
+        console.log(`⏳ Rate limit reached, waiting ${waitTime}ms...`)
+        await new Promise((resolve) => setTimeout(resolve, waitTime))
+        this.requestCount = 0
+        this.lastRequestTime = Date.now()
+      }
+    }
+
+    this.requestCount++
+    console.log(`📊 Request count: ${this.requestCount}/${this.RATE_LIMIT}`)
+  }
+
+  private async makeRequest(endpoint: string, options: RequestInit = {}): Promise<any> {
+    await this.enforceRateLimit()
+
+    const url = `${this.baseUrl}${endpoint}`
+
+    const defaultHeaders = {
+      accept: "application/json",
+      authorization: `Bearer ${this.apiKey}`,
+    }
+
+    const config: RequestInit = {
+      ...options,
+      headers: {
+        ...defaultHeaders,
+        ...options.headers,
+      },
+    }
+
+    console.log(`🌐 Making request to: ${url}`)
+    console.log(`📋 Request method: ${config.method || "GET"}`)
+
     try {
-      // Check if we have a valid token
-      if (this.authToken && this.tokenExpiry && new Date() < this.tokenExpiry) {
-        return { success: true, token: this.authToken }
-      }
-
-      if (!REMONLINE_API_TOKEN || !REMONLINE_API_KEY) {
-        return {
-          success: false,
-          message: "RemOnline API credentials not configured",
-        }
-      }
-
-      const response = await fetch(`${BASE_URL}/auth`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          api_token: REMONLINE_API_TOKEN,
-          api_key: REMONLINE_API_KEY,
-        }),
-      })
-
-      if (!response.ok) {
-        return {
-          success: false,
-          message: `Authentication failed: ${response.status} ${response.statusText}`,
-        }
-      }
-
+      const response = await fetch(url, config)
       const data = await response.json()
 
-      if (data.token) {
-        this.authToken = data.token
-        // Set token expiry to 1 hour from now (adjust based on RemOnline's token lifetime)
-        this.tokenExpiry = new Date(Date.now() + 60 * 60 * 1000)
-        return { success: true, token: data.token }
+      console.log(`📨 Response status: ${response.status}`)
+
+      if (!response.ok) {
+        console.error(`❌ Request failed:`, data)
+        return {
+          success: false,
+          message: `Request failed with status ${response.status}`,
+          details: data,
+        }
+      }
+
+      console.log(`✅ Request successful, data keys:`, Object.keys(data))
+      return {
+        success: true,
+        data,
+      }
+    } catch (error) {
+      console.error(`❌ Request failed:`, error)
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "Unknown error",
+      }
+    }
+  }
+
+  async auth(): Promise<{ success: boolean; message?: string }> {
+    try {
+      const result = await this.makeRequest("/orders")
+
+      if (result.success) {
+        return {
+          success: true,
+          message: "Authentication successful",
+        }
       }
 
       return {
         success: false,
-        message: "No token received from authentication",
+        message: result.message || "Authentication failed",
       }
     } catch (error) {
-      console.error("RemOnline auth error:", error)
       return {
         success: false,
         message: error instanceof Error ? error.message : "Authentication failed",
@@ -112,139 +169,31 @@ class RemOnlineAPI {
     }
   }
 
-  /**
-   * Make authenticated request to RemOnline API
-   */
-  private async makeRequest(endpoint: string, options: RequestInit = {}): Promise<Response> {
-    const authResult = await this.auth()
-    if (!authResult.success) {
-      throw new Error(authResult.message || "Authentication failed")
-    }
-
-    const response = await fetch(`${BASE_URL}${endpoint}`, {
-      ...options,
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${this.authToken}`,
-        ...options.headers,
-      },
-    })
-
-    return response
-  }
-
-  /**
-   * Test API connection
-   */
-  async testConnection(): Promise<RemOnlineResponse> {
+  async getOrders(
+    page = 1,
+    limit = 50,
+  ): Promise<{
+    success: boolean
+    orders?: any[]
+    message?: string
+    total?: number
+  }> {
     try {
-      const authResult = await this.auth()
-      if (!authResult.success) {
-        return {
-          success: false,
-          message: authResult.message || "Authentication failed",
-        }
-      }
+      const result = await this.makeRequest(`/orders?page=${page}&limit=${limit}`)
 
-      // Try to fetch a simple endpoint to test the connection
-      const response = await this.makeRequest("/clients?limit=1")
-
-      if (response.ok) {
+      if (result.success) {
         return {
           success: true,
-          message: "Connection successful",
+          orders: result.data.data || result.data,
+          total: result.data.total || result.data.length,
         }
       }
 
       return {
         success: false,
-        message: `Connection test failed: ${response.status} ${response.statusText}`,
+        message: result.message || "Failed to fetch orders",
       }
     } catch (error) {
-      return {
-        success: false,
-        message: error instanceof Error ? error.message : "Connection test failed",
-      }
-    }
-  }
-
-  /**
-   * Get client by ID
-   */
-  async getClientById(clientId: number): Promise<ClientResponse> {
-    try {
-      const response = await this.makeRequest(`/clients/${clientId}`)
-
-      if (!response.ok) {
-        return {
-          success: false,
-          message: `Failed to fetch client: ${response.status} ${response.statusText}`,
-        }
-      }
-
-      const data = await response.json()
-      return {
-        success: true,
-        client: data,
-      }
-    } catch (error) {
-      console.error("Error fetching client:", error)
-      return {
-        success: false,
-        message: error instanceof Error ? error.message : "Failed to fetch client",
-      }
-    }
-  }
-
-  /**
-   * Get order by ID
-   */
-  async getOrderById(orderId: number): Promise<OrderResponse> {
-    try {
-      const response = await this.makeRequest(`/orders/${orderId}`)
-
-      if (!response.ok) {
-        return {
-          success: false,
-          message: `Failed to fetch order: ${response.status} ${response.statusText}`,
-        }
-      }
-
-      const data = await response.json()
-      return {
-        success: true,
-        order: data,
-      }
-    } catch (error) {
-      console.error("Error fetching order:", error)
-      return {
-        success: false,
-        message: error instanceof Error ? error.message : "Failed to fetch order",
-      }
-    }
-  }
-
-  /**
-   * Get orders by client ID
-   */
-  async getOrdersByClientId(clientId: number): Promise<OrdersResponse> {
-    try {
-      const response = await this.makeRequest(`/orders?client_id=${clientId}`)
-
-      if (!response.ok) {
-        return {
-          success: false,
-          message: `Failed to fetch orders: ${response.status} ${response.statusText}`,
-        }
-      }
-
-      const data = await response.json()
-      return {
-        success: true,
-        orders: Array.isArray(data) ? data : data.orders || [],
-      }
-    } catch (error) {
-      console.error("Error fetching orders:", error)
       return {
         success: false,
         message: error instanceof Error ? error.message : "Failed to fetch orders",
@@ -252,66 +201,246 @@ class RemOnlineAPI {
     }
   }
 
-  /**
-   * Get all order statuses
-   */
-  async getOrderStatuses(): Promise<StatusesResponse> {
+  async getOrdersByClientId(
+    clientId: number,
+    page = 1,
+    limit = 50,
+  ): Promise<{
+    success: boolean
+    orders?: any[]
+    message?: string
+    total?: number
+  }> {
     try {
-      const response = await this.makeRequest("/order-statuses")
+      console.log(`📋 Fetching orders for client ID: ${clientId}`)
+      const result = await this.makeRequest(`/orders?client_id=${clientId}&page=${page}&limit=${limit}`)
 
-      if (!response.ok) {
+      if (result.success) {
+        const orders = result.data.data || result.data
+        console.log(`📋 Found ${orders.length} orders for client ${clientId}`)
+
+        // Log first order structure for debugging
+        if (orders.length > 0) {
+          console.log("📋 Sample order structure:", JSON.stringify(orders[0], null, 2))
+        }
+
         return {
-          success: false,
-          message: `Failed to fetch order statuses: ${response.status} ${response.statusText}`,
+          success: true,
+          orders: orders,
+          total: result.data.total || orders.length,
         }
       }
 
-      const data = await response.json()
-      return {
-        success: true,
-        statuses: Array.isArray(data) ? data : data.statuses || [],
-      }
-    } catch (error) {
-      console.error("Error fetching order statuses:", error)
       return {
         success: false,
-        message: error instanceof Error ? error.message : "Failed to fetch order statuses",
+        message: result.message || "Failed to fetch orders",
+      }
+    } catch (error) {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "Failed to fetch orders",
       }
     }
   }
 
-  /**
-   * Create a new client
-   */
+  async getOrderById(orderId: number): Promise<{
+    success: boolean
+    order?: any
+    message?: string
+  }> {
+    try {
+      console.log(`📋 Fetching order details for ID: ${orderId}`)
+      const result = await this.makeRequest(`/orders/${orderId}`)
+
+      if (result.success) {
+        console.log("📋 Order details:", JSON.stringify(result.data, null, 2))
+        return {
+          success: true,
+          order: result.data,
+        }
+      }
+
+      return {
+        success: false,
+        message: result.message || "Failed to fetch order",
+      }
+    } catch (error) {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "Failed to fetch order",
+      }
+    }
+  }
+
+  async getOrderItems(orderId: number): Promise<{
+    success: boolean
+    items?: any[]
+    message?: string
+  }> {
+    try {
+      console.log(`📋 Fetching order items for order ID: ${orderId}`)
+      const result = await this.makeRequest(`/orders/${orderId}/items`)
+
+      if (result.success) {
+        const items = Array.isArray(result.data) ? result.data : result.data.items || []
+        console.log(`📋 Found ${items.length} items for order ${orderId}`)
+        console.log("📋 Sample item structure:", JSON.stringify(items[0] || {}, null, 2))
+
+        return {
+          success: true,
+          items: items,
+        }
+      }
+
+      return {
+        success: false,
+        message: result.message || "Failed to fetch order items",
+      }
+    } catch (error) {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "Failed to fetch order items",
+      }
+    }
+  }
+
+  async getClients(
+    page = 1,
+    limit = 50,
+  ): Promise<{
+    success: boolean
+    clients?: any[]
+    message?: string
+    total?: number
+  }> {
+    try {
+      const result = await this.makeRequest(`/clients/?page=${page}&limit=${limit}`)
+
+      if (result.success) {
+        return {
+          success: true,
+          clients: result.data.data || result.data,
+          total: result.data.total || result.data.length,
+        }
+      }
+
+      return {
+        success: false,
+        message: result.message || "Failed to fetch clients",
+      }
+    } catch (error) {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "Failed to fetch clients",
+      }
+    }
+  }
+
+  async getClientById(clientId: number): Promise<{
+    success: boolean
+    client?: any
+    message?: string
+  }> {
+    try {
+      const result = await this.makeRequest(`/clients/${clientId}`)
+
+      if (result.success) {
+        return {
+          success: true,
+          client: result.data,
+        }
+      }
+
+      return {
+        success: false,
+        message: result.message || "Failed to fetch client",
+      }
+    } catch (error) {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "Failed to fetch client",
+      }
+    }
+  }
+
+  async getClientByEmail(email: string): Promise<{
+    success: boolean
+    exists: boolean
+    client?: any
+    message?: string
+  }> {
+    try {
+      const result = await this.makeRequest(`/clients/?email=${encodeURIComponent(email)}`)
+
+      if (result.success) {
+        const clients = result.data.data || result.data
+        const client = Array.isArray(clients) ? clients.find((c: any) => c.email === email) : null
+
+        return {
+          success: true,
+          exists: !!client,
+          client: client || null,
+        }
+      }
+
+      return {
+        success: false,
+        exists: false,
+        message: result.message || "Failed to search client",
+      }
+    } catch (error) {
+      return {
+        success: false,
+        exists: false,
+        message: error instanceof Error ? error.message : "Failed to search client",
+      }
+    }
+  }
+
   async createClient(clientData: {
     first_name: string
     last_name: string
     email: string
-    phone?: string
+    phone?: string[]
     address?: string
-  }): Promise<RemOnlineResponse> {
+  }): Promise<{
+    success: boolean
+    client?: any
+    message?: string
+  }> {
     try {
-      const response = await this.makeRequest("/clients", {
+      const body = {
+        first_name: clientData.first_name,
+        last_name: clientData.last_name,
+        email: clientData.email,
+        address: clientData.address || "",
+      }
+
+      // Add phone if provided
+      if (clientData.phone && clientData.phone.length > 0) {
+        body.phone = clientData.phone[0]
+      }
+
+      const result = await this.makeRequest("/clients/", {
         method: "POST",
-        body: JSON.stringify(clientData),
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify(body),
       })
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
+      if (result.success) {
         return {
-          success: false,
-          message: `Failed to create client: ${response.status} ${response.statusText}`,
-          error: errorData.message || errorData.error,
+          success: true,
+          client: result.data,
         }
       }
 
-      const data = await response.json()
       return {
-        success: true,
-        data,
+        success: false,
+        message: result.message || "Failed to create client",
       }
     } catch (error) {
-      console.error("Error creating client:", error)
       return {
         success: false,
         message: error instanceof Error ? error.message : "Failed to create client",
@@ -319,77 +448,67 @@ class RemOnlineAPI {
     }
   }
 
-  /**
-   * Update an existing client
-   */
-  async updateClient(
-    clientId: number,
-    clientData: {
-      first_name?: string
-      last_name?: string
-      email?: string
-      phone?: string
-      address?: string
-    },
-  ): Promise<RemOnlineResponse> {
+  async getOrderStatuses(): Promise<{
+    success: boolean
+    statuses?: any[]
+    message?: string
+  }> {
     try {
-      const response = await this.makeRequest(`/clients/${clientId}`, {
-        method: "PUT",
-        body: JSON.stringify(clientData),
-      })
+      const result = await this.makeRequest("/statuses/orders")
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
+      if (result.success) {
+        const statuses = result.data.data || result.data
+        console.log("📋 Order statuses:", JSON.stringify(statuses, null, 2))
+
         return {
-          success: false,
-          message: `Failed to update client: ${response.status} ${response.statusText}`,
-          error: errorData.message || errorData.error,
+          success: true,
+          statuses: statuses,
         }
       }
 
-      const data = await response.json()
-      return {
-        success: true,
-        data,
-      }
-    } catch (error) {
-      console.error("Error updating client:", error)
       return {
         success: false,
-        message: error instanceof Error ? error.message : "Failed to update client",
+        message: result.message || "Failed to fetch order statuses",
+      }
+    } catch (error) {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "Failed to fetch order statuses",
       }
     }
   }
 
-  /**
-   * Search clients
-   */
-  async searchClients(query: string, limit = 10): Promise<RemOnlineResponse> {
-    try {
-      const response = await this.makeRequest(`/clients?search=${encodeURIComponent(query)}&limit=${limit}`)
+  async testConnection(): Promise<{
+    success: boolean
+    message?: string
+    workingEndpoint?: string
+  }> {
+    const endpoints = ["/orders", "/clients/", "/statuses/orders"]
 
-      if (!response.ok) {
-        return {
-          success: false,
-          message: `Failed to search clients: ${response.status} ${response.statusText}`,
+    for (const endpoint of endpoints) {
+      try {
+        const result = await this.makeRequest(endpoint)
+        if (result.success) {
+          return {
+            success: true,
+            message: `API connection successful via ${endpoint} endpoint`,
+            workingEndpoint: endpoint,
+          }
         }
+      } catch (error) {
+        continue
       }
+    }
 
-      const data = await response.json()
-      return {
-        success: true,
-        data: Array.isArray(data) ? data : data.clients || [],
-      }
-    } catch (error) {
-      console.error("Error searching clients:", error)
-      return {
-        success: false,
-        message: error instanceof Error ? error.message : "Failed to search clients",
-      }
+    return {
+      success: false,
+      message: "Failed to connect to RemOnline API",
     }
   }
 }
 
-// Export singleton instance
-const remonline = new RemOnlineAPI()
+// Create a singleton instance
+console.log("🚀 Initializing RemOnline client with Bearer token authentication")
+const remonline = new RemonlineClient()
+
 export default remonline

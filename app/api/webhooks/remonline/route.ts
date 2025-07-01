@@ -4,6 +4,7 @@ import { hash } from "@/lib/auth/utils"
 import { z } from "zod"
 import remonline from "@/lib/api/remonline"
 import { clearUserSessionsByUserId } from "@/app/actions/session"
+import { getStatusByRemOnlineId } from "@/lib/order-status-utils"
 
 // This is the secret key that RemOnline will use to authenticate the webhook
 const WEBHOOK_SECRET = process.env.REMONLINE_WEBHOOK_SECRET || "your-webhook-secret"
@@ -141,18 +142,39 @@ async function handleOrderEvent(webhookData: any) {
     const orderData = orderResult.order
     console.log("Full order data:", JSON.stringify(orderData, null, 2))
 
-    // Extract order information
+    // Get order items (services) from RemOnline API
+    const itemsResult = await remonline.getOrderItems(orderId)
+    let orderItems = []
+    let totalPrice = 0
+
+    if (itemsResult.success && itemsResult.items) {
+      orderItems = itemsResult.items
+      totalPrice = orderItems.reduce((sum: number, item: any) => {
+        return sum + Number.parseFloat(item.price || 0)
+      }, 0)
+    }
+
+    // Get status information from our database
+    const statusInfo = await getStatusByRemOnlineId(orderData.status?.id || 0, "uk", true)
+
+    // Extract order information with correct brand/model order
+    const deviceBrand = orderData.asset?.brand || "Unknown"
+    const deviceModel = orderData.asset?.model || orderData.asset?.title || "Unknown"
+
+    // Get service names from items
+    const serviceNames = orderItems.map((item: any) => item.entity?.title || "Service").join(", ")
+
     const orderInfo = {
-      remonline_id: orderId, // Using existing column name
+      remonline_id: orderId,
       user_id: user.id,
       reference_number: orderData.name || orderData.number || orderId.toString(),
-      device_brand: orderData.asset?.brand || "Unknown",
-      device_model: orderData.asset?.model || orderData.asset?.title || "Unknown",
-      service_type: orderData.work_description || orderData.description || "Repair",
+      device_brand: deviceBrand,
+      device_model: deviceModel,
+      service_type: serviceNames || orderData.work_description || orderData.description || "Repair",
       status_id: orderData.status?.id?.toString() || "unknown",
-      status_name: orderData.status?.name || "Unknown",
-      status_color: orderData.status?.color || "#gray",
-      price: orderData.total_price || orderData.price || null,
+      status_name: statusInfo.name,
+      status_color: statusInfo.color,
+      price: totalPrice > 0 ? totalPrice : orderData.total_price || orderData.price || null,
       created_at: orderData.created_at || new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }
@@ -163,7 +185,7 @@ async function handleOrderEvent(webhookData: any) {
     const { data: existingOrder } = await supabase
       .from("repair_orders")
       .select("id")
-      .eq("remonline_id", orderId) // Using existing column name
+      .eq("remonline_id", orderId)
       .single()
 
     if (existingOrder) {
@@ -181,7 +203,7 @@ async function handleOrderEvent(webhookData: any) {
           price: orderInfo.price,
           updated_at: orderInfo.updated_at,
         })
-        .eq("remonline_id", orderId) // Using existing column name
+        .eq("remonline_id", orderId)
 
       if (updateError) {
         console.error("Error updating order:", updateError)
@@ -198,8 +220,42 @@ async function handleOrderEvent(webhookData: any) {
         console.log(`Order ${orderId} created successfully`)
       }
     }
+
+    // Store order items separately if needed
+    if (orderItems.length > 0) {
+      await storeOrderItems(supabase, orderId, orderItems)
+    }
   } catch (error) {
     console.error("Error in handleOrderEvent:", error)
+  }
+}
+
+async function storeOrderItems(supabase: any, orderId: number, items: any[]) {
+  try {
+    // First, delete existing items for this order
+    await supabase.from("repair_order_items").delete().eq("remonline_order_id", orderId)
+
+    // Insert new items
+    const itemsToInsert = items.map((item: any) => ({
+      remonline_order_id: orderId,
+      remonline_item_id: item.id,
+      service_name: item.entity?.title || "Service",
+      quantity: Number.parseFloat(item.quantity || 1),
+      price: Number.parseFloat(item.price || 0),
+      warranty_period: item.warranty?.period || null,
+      warranty_units: item.warranty?.period_units || null,
+      created_at: new Date().toISOString(),
+    }))
+
+    const { error } = await supabase.from("repair_order_items").insert(itemsToInsert)
+
+    if (error) {
+      console.error("Error storing order items:", error)
+    } else {
+      console.log(`Stored ${itemsToInsert.length} items for order ${orderId}`)
+    }
+  } catch (error) {
+    console.error("Error in storeOrderItems:", error)
   }
 }
 
