@@ -18,16 +18,36 @@ interface WebhookTestResult {
 export function WebhookTester() {
   const [isLoading, setIsLoading] = useState(false)
   const [webhookData, setWebhookData] = useState(`{
-  "event": "Order.Created",
+  "id": "webhook_${Date.now()}",
+  "created_at": "${new Date().toISOString()}",
+  "event_name": "Order.Created",
   "context": {
-    "object_id": 12345
+    "object_id": 12345,
+    "object_type": "order"
   },
   "metadata": {
+    "order": {
+      "id": 12345,
+      "name": "Repair iPhone 13",
+      "type": 1
+    },
     "client": {
-      "id": 67890
+      "id": 67890,
+      "fullname": "John Doe"
+    },
+    "status": {
+      "id": 1
+    },
+    "asset": {
+      "id": 98765,
+      "name": "iPhone 13"
     }
   },
-  "timestamp": "${new Date().toISOString()}"
+  "employee": {
+    "id": 1,
+    "full_name": "Admin User",
+    "email": "admin@devicehelp.cz"
+  }
 }`)
   const [testResult, setTestResult] = useState<WebhookTestResult | null>(null)
 
@@ -35,46 +55,91 @@ export function WebhookTester() {
     orderCreated: {
       name: "Order Created",
       data: `{
-  "event": "Order.Created",
+  "id": "webhook_${Date.now()}",
+  "created_at": "${new Date().toISOString()}",
+  "event_name": "Order.Created",
   "context": {
-    "object_id": 12345
+    "object_id": 12345,
+    "object_type": "order"
   },
   "metadata": {
+    "order": {
+      "id": 12345,
+      "name": "Repair iPhone 13",
+      "type": 1
+    },
     "client": {
-      "id": 67890
+      "id": 67890,
+      "fullname": "John Doe"
     }
   },
-  "timestamp": "${new Date().toISOString()}"
+  "employee": {
+    "id": 1,
+    "full_name": "Admin User",
+    "email": "admin@devicehelp.cz"
+  }
 }`,
     },
     orderUpdated: {
       name: "Order Updated",
       data: `{
-  "event": "Order.Updated",
+  "id": "webhook_${Date.now()}",
+  "created_at": "${new Date().toISOString()}",
+  "event_name": "Order.Updated",
   "context": {
-    "object_id": 12345
+    "object_id": 12345,
+    "object_type": "order"
   },
   "metadata": {
+    "order": {
+      "id": 12345,
+      "name": "Repair iPhone 13",
+      "type": 1
+    },
     "client": {
-      "id": 67890
+      "id": 67890,
+      "fullname": "John Doe"
+    },
+    "status": {
+      "id": 2
     }
   },
-  "timestamp": "${new Date().toISOString()}"
+  "employee": {
+    "id": 1,
+    "full_name": "Admin User",
+    "email": "admin@devicehelp.cz"
+  }
 }`,
     },
     orderCompleted: {
       name: "Order Completed",
       data: `{
-  "event": "Order.Completed",
+  "id": "webhook_${Date.now()}",
+  "created_at": "${new Date().toISOString()}",
+  "event_name": "Order.Completed",
   "context": {
-    "object_id": 12345
+    "object_id": 12345,
+    "object_type": "order"
   },
   "metadata": {
+    "order": {
+      "id": 12345,
+      "name": "Repair iPhone 13",
+      "type": 1
+    },
     "client": {
-      "id": 67890
+      "id": 67890,
+      "fullname": "John Doe"
+    },
+    "status": {
+      "id": 3
     }
   },
-  "timestamp": "${new Date().toISOString()}"
+  "employee": {
+    "id": 1,
+    "full_name": "Admin User",
+    "email": "admin@devicehelp.cz"
+  }
 }`,
     },
   }
@@ -87,20 +152,35 @@ export function WebhookTester() {
       const parsedData = JSON.parse(webhookData)
       console.log("🧪 Testing webhook with data:", parsedData)
 
-      const response = await fetch("/api/admin/test-webhook", {
+      // Send directly to the webhook endpoint
+      const response = await fetch("/api/webhooks/remonline", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "x-remonline-signature": "test-signature", // Test signature
         },
-        body: JSON.stringify({ webhookData: parsedData }),
+        body: JSON.stringify(parsedData),
       })
 
-      const data = await response.json()
-      console.log("🧪 Webhook test response:", data)
+      const responseText = await response.text()
+      let responseData
 
-      setTestResult(data)
+      try {
+        responseData = JSON.parse(responseText)
+      } catch {
+        responseData = { message: responseText }
+      }
 
-      if (data.success) {
+      console.log("🧪 Webhook test response:", responseData)
+
+      setTestResult({
+        success: response.ok,
+        status: response.status,
+        response: JSON.stringify(responseData, null, 2),
+        message: responseData.message || `HTTP ${response.status} ${response.statusText}`,
+      })
+
+      if (response.ok) {
         toast.success("Webhook test completed successfully")
       } else {
         toast.error("Webhook test failed")
@@ -134,6 +214,9 @@ export function WebhookTester() {
     setTestResult(null)
     toast.success("Reset to default webhook data")
   }
+
+  // Get the correct webhook URL
+  const webhookUrl = "https://devicehelp.cz/api/webhooks/remonline"
 
   return (
     <div className="space-y-6">
@@ -238,10 +321,13 @@ export function WebhookTester() {
           {/* Webhook URL Info */}
           <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
             <div className="text-sm text-blue-800">
-              <strong>Webhook URL:</strong> {process.env.NEXT_PUBLIC_APP_URL || "https://yourdomain.com"}
-              /api/webhooks/remonline
+              <strong>Webhook URL:</strong> {webhookUrl}
             </div>
             <div className="text-xs text-blue-600 mt-1">Configure this URL in your RemOnline webhook settings</div>
+            <Button variant="outline" size="sm" onClick={() => copyToClipboard(webhookUrl)} className="text-xs mt-2">
+              <Copy className="h-3 w-3 mr-1" />
+              Copy URL
+            </Button>
           </div>
         </CardContent>
       </Card>
