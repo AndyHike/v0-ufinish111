@@ -150,14 +150,14 @@ async function handleOrderEvent(webhookData: any) {
     if (itemsResult.success && itemsResult.items) {
       orderItems = itemsResult.items
       totalPrice = orderItems.reduce((sum: number, item: any) => {
-        return sum + Number.parseFloat(item.price || 0)
+        return sum + Number.parseFloat(item.price || 0) * Number.parseFloat(item.quantity || 1)
       }, 0)
     }
 
     // Get status information from our database
     const statusInfo = await getStatusByRemOnlineId(orderData.status?.id || 0, "uk", true)
 
-    // Extract order information with correct brand/model order
+    // Extract order information with CORRECT brand/model order (Brand first, then Model)
     const deviceBrand = orderData.asset?.brand || "Unknown"
     const deviceModel = orderData.asset?.model || orderData.asset?.title || "Unknown"
 
@@ -168,8 +168,8 @@ async function handleOrderEvent(webhookData: any) {
       remonline_id: orderId,
       user_id: user.id,
       reference_number: orderData.name || orderData.number || orderId.toString(),
-      device_brand: deviceBrand,
-      device_model: deviceModel,
+      device_brand: deviceBrand, // Brand first
+      device_model: deviceModel, // Model second
       service_type: serviceNames || orderData.work_description || orderData.description || "Repair",
       status_id: orderData.status?.id?.toString() || "unknown",
       status_name: statusInfo.name,
@@ -221,7 +221,7 @@ async function handleOrderEvent(webhookData: any) {
       }
     }
 
-    // Store order items separately if needed
+    // Store order items separately
     if (orderItems.length > 0) {
       await storeOrderItems(supabase, orderId, orderItems)
     }
@@ -232,8 +232,14 @@ async function handleOrderEvent(webhookData: any) {
 
 async function storeOrderItems(supabase: any, orderId: number, items: any[]) {
   try {
+    console.log(`Storing ${items.length} items for order ${orderId}`)
+
     // First, delete existing items for this order
-    await supabase.from("repair_order_items").delete().eq("remonline_order_id", orderId)
+    const { error: deleteError } = await supabase.from("repair_order_items").delete().eq("remonline_order_id", orderId)
+
+    if (deleteError) {
+      console.error("Error deleting existing order items:", deleteError)
+    }
 
     // Insert new items
     const itemsToInsert = items.map((item: any) => ({
@@ -247,12 +253,14 @@ async function storeOrderItems(supabase: any, orderId: number, items: any[]) {
       created_at: new Date().toISOString(),
     }))
 
+    console.log("Items to insert:", JSON.stringify(itemsToInsert, null, 2))
+
     const { error } = await supabase.from("repair_order_items").insert(itemsToInsert)
 
     if (error) {
       console.error("Error storing order items:", error)
     } else {
-      console.log(`Stored ${itemsToInsert.length} items for order ${orderId}`)
+      console.log(`Successfully stored ${itemsToInsert.length} items for order ${orderId}`)
     }
   } catch (error) {
     console.error("Error in storeOrderItems:", error)

@@ -56,6 +56,8 @@ export async function GET(request: Request) {
     // Get order items for each order
     const ordersWithItems = await Promise.all(
       (orders || []).map(async (order: any) => {
+        console.log(`Fetching items for order ${order.remonline_id}`)
+
         // Get order items
         const { data: items, error: itemsError } = await supabase
           .from("repair_order_items")
@@ -65,17 +67,20 @@ export async function GET(request: Request) {
 
         if (itemsError) {
           console.error(`Error fetching items for order ${order.remonline_id}:`, itemsError)
+        } else {
+          console.log(`Found ${items?.length || 0} items for order ${order.remonline_id}`)
         }
 
         // Get updated status information from our system
         let statusInfo = {
-          name: order.status_name || "Unknown",
+          name: order.status_name || "Невідомо",
           color: order.status_color || "bg-gray-100 text-gray-800",
         }
 
         if (order.status_id && order.status_id !== "unknown") {
           try {
             statusInfo = await getStatusByRemOnlineId(Number.parseInt(order.status_id), "uk", true)
+            console.log(`Status for order ${order.remonline_id}:`, statusInfo)
           } catch (error) {
             console.error(`Error getting status for order ${order.remonline_id}:`, error)
           }
@@ -112,6 +117,9 @@ export async function GET(request: Request) {
       })),
       statusHistory: [], // We'll implement this separately if needed
     }))
+
+    console.log(`Returning ${transformedOrders.length} transformed orders`)
+    console.log("Sample transformed order:", JSON.stringify(transformedOrders[0] || {}, null, 2))
 
     return NextResponse.json({
       success: true,
