@@ -192,21 +192,23 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
 
         {/* Компактні повноширинні секції */}
         <div className="space-y-8">
-          {/* FAQ Section */}
+          {/* FAQ Section - Повернув розділ частих питань */}
           {faqs.length > 0 && (
-            <section>
-              <h2 className="text-xl lg:text-2xl font-bold text-gray-900 mb-4">{t("frequentQuestions")}</h2>
-              <div className="space-y-3 max-w-4xl">
+            <section className="bg-gray-50 rounded-xl p-6 lg:p-8">
+              <h2 className="text-xl lg:text-2xl font-bold text-gray-900 mb-6 text-center">{t("frequentQuestions")}</h2>
+              <div className="space-y-4 max-w-4xl mx-auto">
                 {faqs.map((faq) => (
                   <Collapsible key={faq.id}>
-                    <CollapsibleTrigger className="flex w-full items-center justify-between p-4 text-left bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors">
-                      <span className="font-semibold text-gray-900 text-sm lg:text-base">
+                    <CollapsibleTrigger className="flex w-full items-center justify-between p-4 text-left bg-white hover:bg-gray-50 rounded-lg transition-colors border border-gray-200">
+                      <span className="font-semibold text-gray-900 text-sm lg:text-base pr-4">
                         {faq.translation.question}
                       </span>
-                      <ChevronDown className="h-4 w-4 text-gray-500 transition-transform ui-open:rotate-180 flex-shrink-0 ml-2" />
+                      <ChevronDown className="h-5 w-5 text-gray-500 transition-transform ui-open:rotate-180 flex-shrink-0" />
                     </CollapsibleTrigger>
-                    <CollapsibleContent className="px-4 pb-4">
-                      <p className="text-gray-600 leading-relaxed text-sm lg:text-base">{faq.translation.answer}</p>
+                    <CollapsibleContent className="px-4 pb-4 bg-white rounded-b-lg border-x border-b border-gray-200 -mt-1">
+                      <div className="pt-2 border-t border-gray-100">
+                        <p className="text-gray-600 leading-relaxed text-sm lg:text-base">{faq.translation.answer}</p>
+                      </div>
                     </CollapsibleContent>
                   </Collapsible>
                 ))}

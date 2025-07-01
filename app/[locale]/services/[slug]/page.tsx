@@ -1,7 +1,7 @@
-import { createServerClient } from "@/utils/supabase/server"
-import { notFound } from "next/navigation"
-import ServicePageClient from "./service-page-client"
 import type { Metadata } from "next"
+import { notFound } from "next/navigation"
+import { createServerClient } from "@/utils/supabase/server"
+import ServicePageClient from "./service-page-client"
 
 type Props = {
   params: {
@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug, locale } = params
   const supabase = createServerClient()
 
-  let { data: service } = await supabase
+  const { data: service } = await supabase
     .from("services")
     .select(`
       id,
@@ -31,22 +31,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     .single()
 
   if (!service) {
-    const { data } = await supabase
-      .from("services")
-      .select(`
-        id,
-        services_translations(
-          name,
-          description,
-          locale
-        )
-      `)
-      .eq("id", slug)
-      .single()
-    service = data
-  }
-
-  if (!service) {
     return {
       title: "Service not found | DeviceHelp",
       description: "The requested service could not be found.",
@@ -58,7 +42,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   return {
     title: `${serviceName} | DeviceHelp`,
-    description: translation?.description || `Professional ${serviceName} service with warranty.`,
+    description: translation?.description || `Professional ${serviceName} service`,
   }
 }
 
@@ -69,7 +53,8 @@ export default async function ServicePage({ params, searchParams }: Props) {
   const supabase = createServerClient()
 
   try {
-    let { data: service, error } = await supabase
+    // Get service data
+    const { data: service, error: serviceError } = await supabase
       .from("services")
       .select(`
         id,
@@ -89,43 +74,17 @@ export default async function ServicePage({ params, searchParams }: Props) {
       .eq("slug", slug)
       .single()
 
-    if (!service) {
-      const { data, error: idError } = await supabase
-        .from("services")
-        .select(`
-          id,
-          position,
-          warranty_months,
-          duration_hours,
-          image_url,
-          slug,
-          services_translations(
-            name,
-            description,
-            detailed_description,
-            what_included,
-            locale
-          )
-        `)
-        .eq("id", slug)
-        .single()
-
-      service = data
-      error = idError
-    }
-
-    if (error || !service) {
+    if (serviceError || !service) {
       notFound()
     }
 
     const translation = service.services_translations?.find((t: any) => t.locale === locale)
-
     if (!translation) {
       notFound()
     }
 
-    // Отримуємо FAQ для послуги
-    const { data: faqsData } = await supabase
+    // Get FAQs
+    const { data: faqs } = await supabase
       .from("service_faqs")
       .select(`
         id,
@@ -139,20 +98,28 @@ export default async function ServicePage({ params, searchParams }: Props) {
       .eq("service_id", service.id)
       .order("position")
 
-    const faqs =
-      faqsData
-        ?.map((faq) => ({
-          ...faq,
-          translation: faq.service_faq_translations?.find((t: any) => t.locale === locale),
-        }))
-        .filter((faq) => faq.translation)
-        .slice(0, 3) || []
+    const faqsWithTranslations =
+      faqs
+        ?.map((faq) => {
+          const faqTranslation = faq.service_faq_translations?.find((t: any) => t.locale === locale)
+          if (!faqTranslation) return null
+          return {
+            id: faq.id,
+            position: faq.position,
+            translation: {
+              question: faqTranslation.question,
+              answer: faqTranslation.answer,
+            },
+          }
+        })
+        .filter(Boolean) || []
 
-    // Отримуємо дані моделі, якщо передано modelSlug
+    // Get source model if specified
     let sourceModel = null
     let modelServicePrice = null
+
     if (modelSlug) {
-      const { data: modelData } = await supabase
+      const { data: model } = await supabase
         .from("models")
         .select(`
           id,
@@ -169,31 +136,55 @@ export default async function ServicePage({ params, searchParams }: Props) {
         .eq("slug", modelSlug)
         .single()
 
-      sourceModel = modelData
+      if (model) {
+        sourceModel = model
 
-      if (sourceModel) {
-        const { data: modelServiceData } = await supabase
+        // Get specific price for this model-service combination
+        const { data: modelService } = await supabase
           .from("model_services")
           .select("price")
-          .eq("model_id", sourceModel.id)
+          .eq("model_id", model.id)
           .eq("service_id", service.id)
           .single()
 
-        modelServicePrice = modelServiceData?.price
+        if (modelService) {
+          modelServicePrice = modelService.price
+        }
       }
     }
 
-    // Отримуємо ціни для статистики
-    const { data: modelServices } = await supabase.from("model_services").select("price").eq("service_id", service.id)
+    // Get price range for this service across all models
+    const { data: priceRange } = await supabase
+      .from("model_services")
+      .select("price")
+      .eq("service_id", service.id)
+      .not("price", "is", null)
 
-    const prices = modelServices?.map((ms) => ms.price).filter((p) => p !== null) || []
-    const minPrice = prices.length > 0 ? Math.min(...prices) : null
-    const maxPrice = prices.length > 0 ? Math.max(...prices) : null
+    let minPrice = null
+    let maxPrice = null
+
+    if (priceRange && priceRange.length > 0) {
+      const prices = priceRange.map((p) => p.price).filter(Boolean)
+      if (prices.length > 0) {
+        minPrice = Math.min(...prices)
+        maxPrice = Math.max(...prices)
+      }
+    }
 
     const serviceData = {
-      ...service,
-      translation,
-      faqs,
+      id: service.id,
+      position: service.position,
+      warranty_months: service.warranty_months,
+      duration_hours: service.duration_hours,
+      image_url: service.image_url,
+      slug: service.slug,
+      translation: {
+        name: translation.name,
+        description: translation.description,
+        detailed_description: translation.detailed_description,
+        what_included: translation.what_included,
+      },
+      faqs: faqsWithTranslations,
       sourceModel,
       modelServicePrice,
       minPrice,

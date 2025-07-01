@@ -1,10 +1,7 @@
 import type { Metadata } from "next"
-import Link from "next/link"
 import { notFound } from "next/navigation"
 import { createServerClient } from "@/utils/supabase/server"
-import { Clock, Shield, ArrowRight } from "lucide-react"
-import { formatCurrency } from "@/lib/format-currency"
-import { formatImageUrl } from "@/utils/image-url"
+import ModelPageClient from "./model-page-client"
 
 type Props = {
   params: {
@@ -119,162 +116,19 @@ export default async function ModelPage({ params }: Props) {
         })
         .filter(Boolean) || []
 
-    return (
-      <div className="min-h-screen bg-white">
-        <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
-          {/* Breadcrumb */}
-          <nav className="mb-6 text-sm text-gray-500">
-            <Link href={`/${locale}/brands/${model.brands?.slug}`} className="hover:text-blue-600 transition-colors">
-              {model.brands?.name}
-            </Link>
-            {model.series && (
-              <>
-                <span className="mx-2">/</span>
-                <Link href={`/${locale}/series/${model.series.slug}`} className="hover:text-blue-600 transition-colors">
-                  {model.series.name}
-                </Link>
-              </>
-            )}
-            <span className="mx-2">/</span>
-            <span className="text-gray-900">{model.name}</span>
-          </nav>
+    const modelData = {
+      id: model.id,
+      name: model.name,
+      slug: model.slug,
+      image_url: model.image_url,
+      brands: model.brands,
+      series: model.series,
+      services: servicesWithTranslations,
+    }
 
-          {/* Компактний Hero блок - горизонтальний банер */}
-          <div className="bg-gray-50 rounded-2xl p-6 mb-8 border border-gray-100">
-            <div className="flex items-center gap-6">
-              {/* Зображення пристрою - зменшене */}
-              <div className="flex-shrink-0">
-                <div className="relative h-20 w-20 overflow-hidden rounded-xl bg-white shadow-sm">
-                  <img
-                    src={formatImageUrl(model.image_url) || "/placeholder.svg?height=80&width=80&query=phone"}
-                    alt={model.name}
-                    className="h-full w-full object-contain p-2"
-                  />
-                </div>
-              </div>
-
-              {/* Інформація про модель */}
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  {model.brands?.logo_url && (
-                    <img
-                      src={formatImageUrl(model.brands.logo_url) || "/placeholder.svg"}
-                      alt={model.brands.name}
-                      className="h-4 w-4 object-contain"
-                    />
-                  )}
-                  <span className="text-gray-600 font-medium">{model.brands?.name}</span>
-                </div>
-                <h1 className="text-2xl font-bold text-gray-900 mb-1">{model.name}</h1>
-                <p className="text-gray-600">Професійний ремонт від досвідчених майстрів</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Services Grid - компактні картки з правильним масштабуванням фото */}
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Доступні послуги</h2>
-
-            {servicesWithTranslations.length > 0 ? (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {servicesWithTranslations.map((service) => (
-                  <Link
-                    key={service.id}
-                    href={`/${locale}/services/${service.slug}?model=${model.slug}`}
-                    className="group block"
-                  >
-                    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg hover:border-blue-300 transition-all duration-300 group-hover:-translate-y-1">
-                      {/* Service Image - горизонтальний простір з правильним масштабуванням */}
-                      <div className="aspect-[16/9] bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
-                        {service.image_url ? (
-                          <img
-                            src={formatImageUrl(service.image_url) || "/placeholder.svg"}
-                            alt={service.name}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <div className="text-center p-3">
-                              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-2">
-                                <div className="w-5 h-5 bg-blue-600 rounded-sm"></div>
-                              </div>
-                              <p className="text-gray-500 font-medium text-sm">{service.name}</p>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Service Content - зменшені відступи */}
-                      <div className="p-4">
-                        <h3 className="text-lg font-bold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
-                          {service.name}
-                        </h3>
-
-                        {/* Key Benefits - компактніше */}
-                        <div className="mb-3 space-y-1">
-                          <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <Clock className="h-3 w-3 text-blue-600" />
-                            <span>від {service.duration_hours} год</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <Shield className="h-3 w-3 text-green-600" />
-                            <span>Гарантія {service.warranty_months} міс</span>
-                          </div>
-                        </div>
-
-                        {/* Price and CTA */}
-                        <div className="flex items-center justify-between">
-                          <div className="text-xl font-bold text-gray-900">
-                            {service.price ? formatCurrency(service.price) : "За запитом"}
-                          </div>
-                          <div className="flex items-center text-blue-600 font-semibold group-hover:text-blue-700">
-                            <span className="mr-1 text-sm">Детальніше</span>
-                            <ArrowRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <div className="max-w-md mx-auto">
-                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <div className="w-6 h-6 bg-gray-400 rounded-sm"></div>
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Послуги в розробці</h3>
-                  <p className="text-gray-600 mb-6">
-                    Послуги для цієї моделі ще не додані або знаходяться в процесі оновлення.
-                  </p>
-                  <Link
-                    href={`/${locale}/contact?model=${encodeURIComponent(model.name)}`}
-                    className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    Зв'язатися з нами
-                  </Link>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    )
+    return <ModelPageClient modelData={modelData} locale={locale} />
   } catch (error) {
     console.error("Error in ModelPage:", error)
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-600 mb-2">Помилка завантаження</h1>
-          <p className="text-gray-600 mb-6">Не вдалося завантажити дані моделі. Спробуйте пізніше.</p>
-          <Link
-            href={`/${locale}`}
-            className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            На головну
-          </Link>
-        </div>
-      </div>
-    )
+    notFound()
   }
 }
