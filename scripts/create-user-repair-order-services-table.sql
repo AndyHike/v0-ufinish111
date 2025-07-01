@@ -8,9 +8,9 @@ CREATE TABLE IF NOT EXISTS user_repair_order_services (
     price DECIMAL(10,2) NOT NULL DEFAULT 0,
     warranty_period INTEGER,
     warranty_units VARCHAR(50),
-    service_status VARCHAR(50) NOT NULL DEFAULT 'active',
-    service_status_name VARCHAR(255),
-    service_status_color VARCHAR(100),
+    service_status VARCHAR(100) DEFAULT 'active',
+    service_status_name VARCHAR(255) DEFAULT 'Активна',
+    service_status_color VARCHAR(255) DEFAULT 'bg-blue-100 text-blue-800',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -44,3 +44,7 @@ CREATE POLICY "System can update order services" ON user_repair_order_services
 -- Policy: System can delete services
 CREATE POLICY "System can delete order services" ON user_repair_order_services
     FOR DELETE USING (true);
+
+-- Policy: Service can manage order services
+CREATE POLICY "Service can manage order services" ON user_repair_order_services
+    FOR ALL USING (true);

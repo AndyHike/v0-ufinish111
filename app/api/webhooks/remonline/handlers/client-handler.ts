@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
-import remonline from "@/lib/api/remonline"
 import { ClientService } from "../services/client-service"
 
 export async function handleClientEvents(webhookData: any) {
   try {
     const eventType = webhookData.event_name
-    console.log(`Handling client event: ${eventType}`)
+    console.log(`👤 Handling client event: ${eventType}`)
 
     switch (eventType) {
       case "Client.Created":
@@ -16,11 +15,11 @@ export async function handleClientEvents(webhookData: any) {
       case "Client.Deleted":
         return await handleClientDeleted(webhookData)
       default:
-        console.log(`Unhandled client event: ${eventType}`)
+        console.log(`⚠️ Unhandled client event: ${eventType}`)
         return NextResponse.json({ success: true, message: "Client event received but no action taken" })
     }
   } catch (error) {
-    console.error("Error in handleClientEvents:", error)
+    console.error("💥 Error in handleClientEvents:", error)
     return NextResponse.json(
       {
         success: false,
@@ -35,33 +34,17 @@ export async function handleClientEvents(webhookData: any) {
 async function handleClientCreated(webhookData: any) {
   try {
     const clientId = webhookData.context.object_id
-    console.log(`Processing Client.Created for client ${clientId}`)
 
-    // Fetch complete client details from RemOnline API
-    const clientDetails = await remonline.getClientById(clientId)
-
-    if (!clientDetails.success || !clientDetails.client) {
-      console.error("Failed to fetch client details from RemOnline:", clientDetails.message)
-      return NextResponse.json({ success: false, error: "Failed to fetch client details" }, { status: 500 })
-    }
-
-    const clientData = clientDetails.client
-    console.log("Client data:", JSON.stringify(clientData, null, 2))
-
-    if (!clientData.email) {
-      console.error("Client from RemOnline has no email, cannot create user")
-      return NextResponse.json({ success: false, error: "Client has no email" }, { status: 400 })
-    }
+    console.log(`👤 Processing Client.Created for client ${clientId}`)
 
     const supabase = createClient()
     const clientService = new ClientService(supabase)
 
-    // Create new user from client data
-    await clientService.createUserFromClient(clientData)
+    await clientService.createClientFromRemOnline(clientId)
 
     return NextResponse.json({ success: true, message: "Client created successfully" })
   } catch (error) {
-    console.error("Error in handleClientCreated:", error)
+    console.error("💥 Error in handleClientCreated:", error)
     return NextResponse.json(
       {
         success: false,
@@ -76,32 +59,17 @@ async function handleClientCreated(webhookData: any) {
 async function handleClientUpdated(webhookData: any) {
   try {
     const clientId = webhookData.context.object_id
-    console.log(`Processing Client.Updated for client ${clientId}`)
 
-    // Fetch complete client details from RemOnline API
-    const clientDetails = await remonline.getClientById(clientId)
-
-    if (!clientDetails.success || !clientDetails.client) {
-      console.error("Failed to fetch client details from RemOnline:", clientDetails.message)
-      return NextResponse.json({ success: false, error: "Failed to fetch client details" }, { status: 500 })
-    }
-
-    const clientData = clientDetails.client
-
-    if (!clientData.email) {
-      console.error("Client from RemOnline has no email, cannot update user")
-      return NextResponse.json({ success: false, error: "Client has no email" }, { status: 400 })
-    }
+    console.log(`👤 Processing Client.Updated for client ${clientId}`)
 
     const supabase = createClient()
     const clientService = new ClientService(supabase)
 
-    // Update existing user from client data
-    await clientService.updateUserFromClient(clientData)
+    await clientService.updateClientFromRemOnline(clientId)
 
     return NextResponse.json({ success: true, message: "Client updated successfully" })
   } catch (error) {
-    console.error("Error in handleClientUpdated:", error)
+    console.error("💥 Error in handleClientUpdated:", error)
     return NextResponse.json(
       {
         success: false,
@@ -116,21 +84,21 @@ async function handleClientUpdated(webhookData: any) {
 async function handleClientDeleted(webhookData: any) {
   try {
     const clientId = webhookData.context.object_id
-    console.log(`Processing Client.Deleted for client ${clientId}`)
+
+    console.log(`👤 Processing Client.Deleted for client ${clientId}`)
 
     const supabase = createClient()
     const clientService = new ClientService(supabase)
 
-    // Handle client deletion (maybe just mark as deleted, don't actually delete user)
-    await clientService.handleClientDeletion(clientId)
+    await clientService.deleteClient(clientId)
 
-    return NextResponse.json({ success: true, message: "Client deletion handled successfully" })
+    return NextResponse.json({ success: true, message: "Client deleted successfully" })
   } catch (error) {
-    console.error("Error in handleClientDeleted:", error)
+    console.error("💥 Error in handleClientDeleted:", error)
     return NextResponse.json(
       {
         success: false,
-        error: "Failed to handle client deletion",
+        error: "Failed to delete client",
         details: error instanceof Error ? error.message : String(error),
       },
       { status: 500 },

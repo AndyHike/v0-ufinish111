@@ -3,8 +3,9 @@ import { z } from "zod"
 import { handleOrderEvents } from "./handlers/order-handler"
 import { handleClientEvents } from "./handlers/client-handler"
 
-// This is the secret key that RemOnline will use to authenticate the webhook
-const WEBHOOK_SECRET = process.env.REMONLINE_WEBHOOK_SECRET || "your-webhook-secret"
+// Different secret keys for different webhook types
+const ORDER_WEBHOOK_SECRET = process.env.REMONLINE_ORDER_WEBHOOK_SECRET || "your-order-webhook-secret"
+const GENERAL_WEBHOOK_SECRET = process.env.REMONLINE_WEBHOOK_SECRET || "your-webhook-secret"
 
 // Define a schema for the RemOnline webhook payload
 const remonlineWebhookSchema = z.object({
@@ -55,13 +56,18 @@ export async function POST(request: NextRequest) {
     // Clone request for logging
     const clonedRequest = request.clone()
     const payload = await clonedRequest.json()
-    console.log("RemOnline webhook received:", JSON.stringify(payload, null, 2))
+
+    console.log("🔔 RemOnline webhook received:")
+    console.log("📋 Payload:", JSON.stringify(payload, null, 2))
+    console.log("🔑 Available secrets:")
+    console.log("   - ORDER_WEBHOOK_SECRET:", ORDER_WEBHOOK_SECRET ? "✅ Set" : "❌ Missing")
+    console.log("   - GENERAL_WEBHOOK_SECRET:", GENERAL_WEBHOOK_SECRET ? "✅ Set" : "❌ Missing")
 
     // Validate the webhook payload against the schema
     const parsedPayload = remonlineWebhookSchema.safeParse(payload)
 
     if (!parsedPayload.success) {
-      console.error("Invalid webhook payload:", parsedPayload.error)
+      console.error("❌ Invalid webhook payload:", parsedPayload.error)
       return NextResponse.json(
         { error: "Invalid webhook payload", details: parsedPayload.error.errors },
         { status: 400 },
@@ -71,22 +77,26 @@ export async function POST(request: NextRequest) {
     const webhookData = parsedPayload.data
     const eventType = webhookData.event_name || ""
 
-    console.log(`Processing event: ${eventType}`)
+    console.log(`🎯 Processing event: ${eventType}`)
+    console.log(`📊 Context:`, webhookData.context)
+    console.log(`📝 Metadata:`, webhookData.metadata)
 
     // Route events to appropriate handlers
     if (eventType.startsWith("Order.")) {
+      console.log("📦 Routing to order handler...")
       return await handleOrderEvents(webhookData)
     }
 
     if (eventType.startsWith("Client.")) {
+      console.log("👤 Routing to client handler...")
       return await handleClientEvents(webhookData)
     }
 
     // Handle other event types as needed
-    console.log(`Unhandled event type: ${eventType}`)
+    console.log(`⚠️ Unhandled event type: ${eventType}`)
     return NextResponse.json({ success: true, message: "Webhook received but no action taken" })
   } catch (error) {
-    console.error("Error processing RemOnline webhook:", error)
+    console.error("💥 Error processing RemOnline webhook:", error)
     return NextResponse.json(
       {
         success: false,

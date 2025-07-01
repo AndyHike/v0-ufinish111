@@ -10,9 +10,9 @@ CREATE TABLE IF NOT EXISTS user_repair_orders (
     device_brand VARCHAR(255),
     device_model VARCHAR(255),
     total_amount DECIMAL(10,2),
-    overall_status VARCHAR(50) NOT NULL,
+    overall_status VARCHAR(100) NOT NULL,
     overall_status_name VARCHAR(255),
-    overall_status_color VARCHAR(100),
+    overall_status_color VARCHAR(255),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -27,7 +27,7 @@ CREATE INDEX IF NOT EXISTS idx_user_repair_orders_status ON user_repair_orders(o
 ALTER TABLE user_repair_orders ENABLE ROW LEVEL SECURITY;
 
 -- Policy: Users can only see their own orders
-CREATE POLICY "Users can view own orders" ON user_repair_orders
+CREATE POLICY "Users can view their own repair orders" ON user_repair_orders
     FOR SELECT USING (auth.uid() = user_id);
 
 -- Policy: Users can insert their own orders (for webhook processing)
@@ -41,3 +41,7 @@ CREATE POLICY "System can update orders" ON user_repair_orders
 -- Policy: System can delete orders
 CREATE POLICY "System can delete orders" ON user_repair_orders
     FOR DELETE USING (true);
+
+-- Policy: Service can insert/update orders
+CREATE POLICY "Service can manage repair orders" ON user_repair_orders
+    FOR ALL USING (true);
