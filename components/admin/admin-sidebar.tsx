@@ -87,6 +87,11 @@ const sidebarItems = [
     icon: Sync,
   },
   {
+    title: "Інтеграції",
+    href: "/admin/integrations",
+    icon: BarChart3,
+  },
+  {
     title: "Банер",
     href: "/admin/banner",
     icon: BarChart3,
