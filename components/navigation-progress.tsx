@@ -1,36 +1,48 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { usePathname, useSearchParams } from "next/navigation"
+import { usePathname } from "next/navigation"
 
 export function NavigationProgress() {
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
   const [isLoading, setIsLoading] = useState(false)
+  const [progress, setProgress] = useState(0)
+  const pathname = usePathname()
 
   useEffect(() => {
-    const handleStart = () => setIsLoading(true)
-    const handleComplete = () => setIsLoading(false)
+    // Перевіряємо чи це повільна сторінка
+    const isSlowPage =
+      pathname.includes("/brands") ||
+      pathname.includes("/series") ||
+      pathname.includes("/models") ||
+      pathname.includes("/services")
 
-    // Симулюємо початок навігації
-    handleStart()
+    if (isSlowPage) {
+      setIsLoading(true)
+      setProgress(10)
 
-    // Симулюємо завершення навігації через короткий час
-    const timer = setTimeout(handleComplete, 100)
+      // Симулюємо прогрес завантаження
+      const timer1 = setTimeout(() => setProgress(30), 100)
+      const timer2 = setTimeout(() => setProgress(60), 300)
+      const timer3 = setTimeout(() => setProgress(90), 600)
+      const timer4 = setTimeout(() => {
+        setProgress(100)
+        setTimeout(() => setIsLoading(false), 200)
+      }, 1000)
 
-    return () => clearTimeout(timer)
-  }, [pathname, searchParams])
+      return () => {
+        clearTimeout(timer1)
+        clearTimeout(timer2)
+        clearTimeout(timer3)
+        clearTimeout(timer4)
+      }
+    }
+  }, [pathname])
 
   if (!isLoading) return null
 
   return (
     <div className="fixed top-0 left-0 right-0 z-50">
-      <div className="h-1 bg-blue-200">
-        <div
-          className="h-full bg-blue-600 transition-all duration-300 ease-out animate-pulse"
-          style={{ width: "30%" }}
-        />
-      </div>
+      <div className="h-1 bg-primary transition-all duration-300 ease-out" style={{ width: `${progress}%` }} />
     </div>
   )
 }

@@ -9,6 +9,7 @@ import { getMessages } from "@/lib/get-messages"
 import { CookieConsentProvider } from "@/contexts/cookie-consent-context"
 import { CookieBanner } from "@/components/cookie-banner"
 import { AnalyticsProvider } from "@/components/analytics/analytics-provider"
+import { NavigationProgress } from "@/components/navigation-progress"
 import { Suspense } from "react"
 import { SessionProvider } from "@/components/providers/session-provider"
 import "@/app/globals.css"
@@ -73,6 +74,7 @@ export default async function LocaleLayout({
 
   return (
     <NextIntlClientProvider locale={locale} messages={messages}>
+      <NavigationProgress />
       <SessionProvider>
         <CookieConsentProvider>
           <div className="flex min-h-screen flex-col">
