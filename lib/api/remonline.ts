@@ -251,61 +251,91 @@ class RemonlineClient {
     try {
       console.log("👥 Fetching clients from RemOnline API...")
 
-      // Build query string from params
-      const queryParams = new URLSearchParams()
+      // Try different client endpoints that might work
+      const clientEndpoints = [
+        "/clients/", // with trailing slash
+        "/clients", // without trailing slash
+        "/customers", // alternative endpoint name
+        "/customers/", // alternative with slash
+      ]
 
-      if (params.page) {
-        queryParams.append("page", String(params.page))
-      }
+      let lastError = null
 
-      if (params.limit) {
-        queryParams.append("limit", String(params.limit))
-      }
-
-      if (params.query) {
-        queryParams.append("query", params.query)
-      }
-
-      if (params.email) {
-        queryParams.append("email", params.email)
-      }
-
-      if (params.phone) {
-        queryParams.append("phone", params.phone)
-      }
-
-      const url = queryParams.toString() ? `/clients?${queryParams.toString()}` : "/clients"
-      console.log(`🔍 Query parameters: ${queryParams.toString()}`)
-
-      const response = await this.makeRequest(url)
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error(`❌ Failed to fetch clients with status ${response.status}:`, errorText)
-
-        let errorDetails
+      for (const endpoint of clientEndpoints) {
         try {
-          errorDetails = JSON.parse(errorText)
-        } catch {
-          errorDetails = errorText
-        }
+          console.log(`🧪 Trying clients endpoint: ${endpoint}`)
 
-        return {
-          success: false,
-          message: `Failed to fetch clients with status ${response.status}`,
-          details: errorDetails,
+          // Build query string from params
+          const queryParams = new URLSearchParams()
+
+          if (params.page) {
+            queryParams.append("page", String(params.page))
+          }
+
+          if (params.limit) {
+            queryParams.append("limit", String(params.limit))
+          }
+
+          if (params.query) {
+            queryParams.append("query", params.query)
+          }
+
+          if (params.email) {
+            queryParams.append("email", params.email)
+          }
+
+          if (params.phone) {
+            queryParams.append("phone", params.phone)
+          }
+
+          const url = queryParams.toString() ? `${endpoint}?${queryParams.toString()}` : endpoint
+          console.log(`🔍 Query parameters: ${queryParams.toString()}`)
+
+          const response = await this.makeRequest(url)
+
+          if (response.ok) {
+            const data = await response.json()
+            console.log(`✅ Clients response from ${endpoint}:`, {
+              hasData: !!data.data,
+              dataLength: data.data?.length || 0,
+              totalCount: data.count || 0,
+              currentPage: params.page || 1,
+            })
+
+            return { success: true, data, endpoint }
+          } else {
+            const errorText = await response.text()
+            console.log(`⚠️ ${endpoint} failed with status ${response.status}:`, errorText)
+
+            let errorDetails
+            try {
+              errorDetails = JSON.parse(errorText)
+            } catch {
+              errorDetails = errorText
+            }
+
+            lastError = {
+              endpoint,
+              status: response.status,
+              details: errorDetails,
+            }
+          }
+        } catch (error) {
+          console.log(`⚠️ ${endpoint} error:`, error)
+          lastError = {
+            endpoint,
+            error: error instanceof Error ? error.message : String(error),
+          }
         }
       }
 
-      const data = await response.json()
-      console.log("✅ Clients response:", {
-        hasData: !!data.data,
-        dataLength: data.data?.length || 0,
-        totalCount: data.count || 0,
-        currentPage: params.page || 1,
-      })
-
-      return { success: true, data }
+      // If we get here, all endpoints failed
+      console.error("❌ All client endpoints failed:", lastError)
+      return {
+        success: false,
+        message: "All client endpoints failed",
+        details: lastError,
+      }
     } catch (error) {
       console.error("❌ RemOnline getClients error:", error)
       return {
@@ -321,30 +351,29 @@ class RemonlineClient {
     try {
       console.log(`👤 Fetching client with ID: ${clientId}`)
 
-      const response = await this.makeRequest(`/clients/${clientId}`)
+      // Try different client endpoints
+      const clientEndpoints = ["/clients/", "/clients", "/customers/", "/customers"]
 
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error(`❌ Failed to fetch client details with status ${response.status}:`, errorText)
-
-        let errorDetails
+      for (const endpoint of clientEndpoints) {
         try {
-          errorDetails = JSON.parse(errorText)
-        } catch {
-          errorDetails = errorText
-        }
+          const response = await this.makeRequest(`${endpoint}${clientId}`)
 
-        return {
-          success: false,
-          message: `Failed to fetch client details with status ${response.status}`,
-          details: errorDetails,
+          if (response.ok) {
+            const data = await response.json()
+            console.log(`✅ Client details fetched successfully from ${endpoint}`)
+            return { success: true, client: data }
+          }
+        } catch (error) {
+          console.log(`⚠️ ${endpoint}${clientId} failed:`, error)
+          continue
         }
       }
 
-      const data = await response.json()
-      console.log("✅ Client details fetched successfully")
-
-      return { success: true, client: data }
+      return {
+        success: false,
+        message: "Failed to fetch client details from any endpoint",
+        details: "All client endpoints returned errors",
+      }
     } catch (error) {
       console.error("❌ RemOnline getClientById error:", error)
       return {
@@ -479,37 +508,47 @@ class RemonlineClient {
 
       console.log("📤 Sending client data:", dataToSend)
 
-      const response = await this.makeRequest("/clients/", {
-        method: "POST",
-        body: JSON.stringify(dataToSend),
-      })
+      // Try different client creation endpoints
+      const createEndpoints = ["/clients/", "/clients", "/customers/", "/customers"]
 
-      const responseText = await response.text()
-      console.log("📨 Response text length:", responseText.length)
+      for (const endpoint of createEndpoints) {
+        try {
+          console.log(`🧪 Trying create client endpoint: ${endpoint}`)
 
-      let data
-      try {
-        data = JSON.parse(responseText)
-      } catch (e) {
-        console.error("❌ Failed to parse response as JSON:", responseText)
-        return {
-          success: false,
-          message: `Failed to parse response: ${responseText}`,
-          details: e instanceof Error ? e.message : String(e),
+          const response = await this.makeRequest(endpoint, {
+            method: "POST",
+            body: JSON.stringify(dataToSend),
+          })
+
+          const responseText = await response.text()
+          console.log(`📨 Response from ${endpoint}, text length:`, responseText.length)
+
+          let data
+          try {
+            data = JSON.parse(responseText)
+          } catch (e) {
+            console.error(`❌ Failed to parse response as JSON from ${endpoint}:`, responseText)
+            continue
+          }
+
+          if (response.ok) {
+            console.log(`✅ Client created successfully via ${endpoint}`)
+            return { success: true, client: data, endpoint }
+          } else {
+            console.log(`⚠️ ${endpoint} failed with status ${response.status}:`, data)
+            continue
+          }
+        } catch (error) {
+          console.log(`⚠️ ${endpoint} error:`, error)
+          continue
         }
       }
 
-      if (!response.ok) {
-        console.error(`❌ Failed to create client with status ${response.status}:`, data)
-        return {
-          success: false,
-          message: `Failed to create client with status ${response.status}`,
-          details: data,
-        }
+      return {
+        success: false,
+        message: "Failed to create client via any endpoint",
+        details: "All create client endpoints failed",
       }
-
-      console.log("✅ Client created successfully")
-      return { success: true, client: data }
     } catch (error) {
       console.error("❌ RemOnline createClient error:", error)
       return {

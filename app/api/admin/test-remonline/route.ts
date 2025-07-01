@@ -26,13 +26,13 @@ export async function GET() {
       )
     }
 
-    // Test fetching clients (first page, limit 5)
+    // Test fetching clients (first page, limit 5) - this will try multiple endpoints
     const clientsTest = await remonline.getClients({ page: 1, limit: 5 })
 
     // Test fetching order statuses
     const statusesTest = await remonline.getOrderStatuses()
 
-    // Test creating a client (with test data)
+    // Test creating a client (with test data) - this will also try multiple endpoints
     const testClientData = {
       first_name: "Test",
       last_name: "Client",
@@ -51,7 +51,9 @@ export async function GET() {
           success: clientsTest.success,
           count: clientsTest.data?.data?.length || 0,
           total: clientsTest.data?.count || 0,
+          endpoint: (clientsTest as any).endpoint || "unknown",
           message: clientsTest.success ? "Clients fetched successfully" : clientsTest.message,
+          details: clientsTest.success ? null : clientsTest.details,
         },
         orderStatuses: {
           success: statusesTest.success,
@@ -62,6 +64,8 @@ export async function GET() {
           success: createClientTest.success,
           message: createClientTest.success ? "Test client created successfully" : createClientTest.message,
           clientId: createClientTest.success ? createClientTest.client?.id : null,
+          endpoint: (createClientTest as any).endpoint || "unknown",
+          details: createClientTest.success ? null : createClientTest.details,
         },
       },
     })

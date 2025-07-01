@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Loader2, CheckCircle, XCircle, TestTube, Info } from "lucide-react"
+import { Loader2, CheckCircle, XCircle, TestTube, Info, AlertTriangle } from "lucide-react"
 import { toast } from "sonner"
 
 interface TestResult {
@@ -25,6 +25,8 @@ interface TestResult {
       count: number
       total: number
       message: string
+      endpoint?: string
+      details?: any
     }
     orderStatuses: {
       success: boolean
@@ -35,6 +37,8 @@ interface TestResult {
       success: boolean
       message: string
       clientId?: number
+      endpoint?: string
+      details?: any
     }
   }
 }
@@ -93,22 +97,24 @@ export function RemOnlineTest() {
           RemOnline API Test
         </CardTitle>
         <CardDescription>
-          Test the connection and functionality of the RemOnline API integration using the correct request format
+          Test the connection and functionality of the RemOnline API integration. Now testing multiple endpoints to find
+          working ones.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
           <Info className="h-4 w-4 text-green-600" />
           <div className="text-sm text-green-800">
-            <strong>Updated:</strong> API client now uses the correct headers format: accept: application/json,
-            authorization: Bearer [token]
+            <strong>Updated:</strong> Now testing multiple client endpoints (/clients, /clients/, /customers,
+            /customers/) to find the working one.
           </div>
         </div>
 
-        <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-          <Info className="h-4 w-4 text-blue-600" />
-          <div className="text-sm text-blue-800">
-            <strong>Test includes:</strong> Connection test, fetch clients, fetch order statuses, and create test client
+        <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+          <AlertTriangle className="h-4 w-4 text-amber-600" />
+          <div className="text-sm text-amber-800">
+            <strong>Note:</strong> If clients endpoint returns 404, the system will try alternative endpoints and report
+            which one works.
           </div>
         </div>
 
@@ -169,6 +175,16 @@ export function RemOnlineTest() {
                       {testResult.tests.clients.success &&
                         ` (${testResult.tests.clients.count} of ${testResult.tests.clients.total} clients)`}
                     </div>
+                    {testResult.tests.clients.endpoint && (
+                      <div className="text-xs text-green-600 mt-1">
+                        Working endpoint: {testResult.tests.clients.endpoint}
+                      </div>
+                    )}
+                    {testResult.tests.clients.details && !testResult.tests.clients.success && (
+                      <div className="text-xs text-red-600 mt-1">
+                        Error: {JSON.stringify(testResult.tests.clients.details, null, 2)}
+                      </div>
+                    )}
                   </div>
                   <Badge variant={testResult.tests.clients.success ? "default" : "destructive"}>
                     {testResult.tests.clients.success ? "Success" : "Failed"}
@@ -197,6 +213,16 @@ export function RemOnlineTest() {
                       {testResult.tests.createClient.message}
                       {testResult.tests.createClient.clientId && ` (ID: ${testResult.tests.createClient.clientId})`}
                     </div>
+                    {testResult.tests.createClient.endpoint && (
+                      <div className="text-xs text-green-600 mt-1">
+                        Working endpoint: {testResult.tests.createClient.endpoint}
+                      </div>
+                    )}
+                    {testResult.tests.createClient.details && !testResult.tests.createClient.success && (
+                      <div className="text-xs text-red-600 mt-1">
+                        Error: {JSON.stringify(testResult.tests.createClient.details, null, 2)}
+                      </div>
+                    )}
                   </div>
                   <Badge variant={testResult.tests.createClient.success ? "default" : "destructive"}>
                     {testResult.tests.createClient.success ? "Success" : "Failed"}
@@ -228,11 +254,21 @@ export function RemOnlineTest() {
                     <li>
                       Make sure the API key has the necessary permissions (read/write access to clients, orders, etc.)
                     </li>
-                    <li>Ensure you're not exceeding the rate limit (3 requests/second)</li>
-                    <li>Check RemOnline API status and documentation for any recent changes</li>
-                    <li>Try regenerating your API key in RemOnline settings if the current one is old</li>
-                    <li>Verify that your RemOnline account is active and in good standing</li>
+                    <li>Some endpoints might not be available in your RemOnline plan</li>
+                    <li>Check RemOnline API documentation for endpoint availability</li>
+                    <li>Try regenerating your API key in RemOnline settings</li>
+                    <li>Contact RemOnline support if certain endpoints are not working</li>
                   </ul>
+                </div>
+              </div>
+            )}
+
+            {/* Success Information */}
+            {testResult.success && (
+              <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                <div className="text-sm text-green-800">
+                  <strong>Success!</strong> The API is working correctly. Working endpoints have been identified and
+                  will be used for future requests.
                 </div>
               </div>
             )}
