@@ -1,152 +1,64 @@
-"use client"
-
-import { useEffect } from "react"
-import { useTranslations } from "next-intl"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { CalendarDays, Mail, Phone, UserIcon, MapPin } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Separator } from "@/components/ui/separator"
+import { Shell } from "@/components/shell"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { UserOrderHistory } from "./user-order-history"
 
-interface UserProfileProps {
-  user: {
-    id?: string
-    name?: string | null
-    first_name?: string | null
-    last_name?: string | null
-    email?: string | null
-    image?: string | null
-    avatar_url?: string | null
-    phone?: string | null
-    address?: string | null
-    role?: string
-    created_at?: string
-  }
-  locale?: string
-}
-
-export function UserProfile({ user, locale = "uk" }: UserProfileProps) {
-  // Використовуємо переклади
-  const t = useTranslations("Profile")
-
-  // Debug log to see what user data we have
-  useEffect(() => {
-    console.log("User profile data in component:", user)
-  }, [user])
-
-  // Format date
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return t("notSpecified")
-    return new Date(dateString).toLocaleDateString(locale, {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    })
-  }
-
-  // Get full name from first_name and last_name, fallback to name
-  const fullName = [user?.first_name, user?.last_name].filter(Boolean).join(" ") || user?.name || t("notSpecified")
-
-  // Get avatar URL from either avatar_url or image
-  const avatarUrl =
-    user?.avatar_url ||
-    user?.image ||
-    `/placeholder.svg?height=100&width=100&query=${encodeURIComponent(fullName !== t("notSpecified") ? fullName : "User")}`
-
-  // Get initials for avatar
-  const getInitials = () => {
-    if (user?.first_name && user?.last_name) {
-      return `${user.first_name.charAt(0)}${user.last_name.charAt(0)}`.toUpperCase()
-    } else if (user?.name) {
-      return user.name
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase()
-    }
-    return "U"
-  }
-
+export function UserProfile() {
   return (
-    <Card className="w-full shadow-sm">
-      <CardHeader>
-        <div className="flex flex-col items-center space-y-3 sm:flex-row sm:space-y-0 sm:space-x-4">
-          <Avatar className="h-20 w-20">
-            <AvatarImage src={avatarUrl || "/placeholder.svg"} alt={fullName} />
-            <AvatarFallback>{getInitials()}</AvatarFallback>
-          </Avatar>
-          <div className="space-y-1 text-center sm:text-left">
-            <CardTitle className="text-2xl">{fullName}</CardTitle>
-            <CardDescription className="flex flex-col sm:flex-row sm:items-center sm:space-x-2">
-              <span className="flex items-center justify-center sm:justify-start">
-                <Mail className="mr-1 h-4 w-4" />
-                {user?.email || t("notSpecified")}
-              </span>
-              <span className="hidden sm:inline">•</span>
-              <span className="flex items-center justify-center sm:justify-start">
-                <Phone className="mr-1 h-4 w-4" />
-                {user?.phone || t("notSpecified")}
-              </span>
-            </CardDescription>
+    <Shell>
+      <Tabs defaultValue="profile" className="w-[400px]">
+        <TabsList>
+          <TabsTrigger value="profile">Profile</TabsTrigger>
+          <TabsTrigger value="orders">Orders</TabsTrigger>
+          <TabsTrigger value="billing">Billing</TabsTrigger>
+        </TabsList>
+        <TabsContent value="profile" className="space-y-6">
+          <div className="space-y-4">
+            <div className="flex items-center gap-4">
+              <Avatar>
+                <AvatarImage src="/examples/avatar-01.png" alt="Avatar" />
+                <AvatarFallback>OM</AvatarFallback>
+              </Avatar>
+              <div>
+                <h2 className="text-lg font-medium">Olivia Martin</h2>
+                <p className="text-sm text-muted-foreground">olivia.martin@email.com</p>
+              </div>
+            </div>
+            <Separator />
           </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="grid gap-6">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="space-y-4">
             <div className="space-y-2">
-              <h3 className="text-sm font-medium text-muted-foreground">{t("firstName")}</h3>
-              <div className="flex items-center space-x-2">
-                <UserIcon className="h-4 w-4 text-muted-foreground" />
-                <div className="rounded-md border px-3 py-2 w-full bg-muted/30">
-                  {user?.first_name || t("notSpecified")}
-                </div>
-              </div>
+              <Label htmlFor="name">Name</Label>
+              <Input id="name" defaultValue="Olivia Martin" />
             </div>
             <div className="space-y-2">
-              <h3 className="text-sm font-medium text-muted-foreground">{t("lastName")}</h3>
-              <div className="flex items-center space-x-2">
-                <UserIcon className="h-4 w-4 text-muted-foreground" />
-                <div className="rounded-md border px-3 py-2 w-full bg-muted/30">
-                  {user?.last_name || t("notSpecified")}
-                </div>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium text-muted-foreground">{t("email")}</h3>
-              <div className="flex items-center space-x-2">
-                <Mail className="h-4 w-4 text-muted-foreground" />
-                <div className="rounded-md border px-3 py-2 w-full bg-muted/30">{user?.email || t("notSpecified")}</div>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium text-muted-foreground">{t("phone")}</h3>
-              <div className="flex items-center space-x-2">
-                <Phone className="h-4 w-4 text-muted-foreground" />
-                <div className="rounded-md border px-3 py-2 w-full bg-muted/30">{user?.phone || t("notSpecified")}</div>
-              </div>
-            </div>
-            {user?.address && (
-              <div className="space-y-2 sm:col-span-2">
-                <h3 className="text-sm font-medium text-muted-foreground">{t("address")}</h3>
-                <div className="flex items-center space-x-2">
-                  <MapPin className="h-4 w-4 text-muted-foreground" />
-                  <div className="rounded-md border px-3 py-2 w-full bg-muted/30">{user?.address}</div>
-                </div>
-              </div>
-            )}
-            <div className="space-y-2 sm:col-span-2">
-              <h3 className="text-sm font-medium text-muted-foreground">{t("registrationDate")}</h3>
-              <div className="flex items-center space-x-2">
-                <CalendarDays className="h-4 w-4 text-muted-foreground" />
-                <div className="rounded-md border px-3 py-2 w-full bg-muted/30">{formatDate(user?.created_at)}</div>
-              </div>
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" defaultValue="olivia.martin@email.com" />
             </div>
           </div>
-          <div className="text-sm text-muted-foreground mt-4 text-center">
-            <p>{t("editingNotAvailable")}</p>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+          <Button>Update Profile</Button>
+        </TabsContent>
+        <TabsContent value="orders" className="space-y-6">
+          <UserOrderHistory />
+        </TabsContent>
+        <TabsContent value="billing" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Billing Information</CardTitle>
+              <CardDescription>Update your billing information here.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p>No billing information found.</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </Shell>
   )
 }
 
