@@ -1,124 +1,80 @@
-import { NextResponse } from "next/server"
-import { cookies } from "next/headers"
+import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
-import { getStatusByRemOnlineId } from "@/lib/order-status-utils"
+import { getSession } from "@/lib/auth/session"
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
-    const cookieStore = cookies()
-    const sessionId = cookieStore.get("session_id")?.value
-
-    if (!sessionId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    // Get the current user session
+    const session = await getSession()
+    if (!session || !session.user) {
+      return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 })
     }
 
+    const userId = session.user.id
     const supabase = createClient()
 
-    // Get user from session
-    const { data: session, error: sessionError } = await supabase
-      .from("sessions")
-      .select(`
-        user_id,
-        users!inner(
-          id,
-          email,
-          remonline_id,
-          first_name,
-          last_name
-        )
-      `)
-      .eq("id", sessionId)
-      .gt("expires_at", new Date().toISOString())
-      .single()
+    // Get URL parameters
+    const { searchParams } = new URL(request.url)
+    const locale = searchParams.get("locale") || "uk"
+    const forceRefresh = searchParams.get("forceRefresh") === "true"
 
-    if (sessionError || !session) {
-      return NextResponse.json({ error: "Invalid session" }, { status: 401 })
-    }
+    console.log(`Fetching repair orders for user ${userId}, locale: ${locale}, forceRefresh: ${forceRefresh}`)
 
-    const user = session.users
-
-    console.log(`Fetching orders for user ${user.id} with remonline_id ${user.remonline_id}`)
-
-    // Get orders from our database for this specific user
+    // Fetch repair orders with their services
     const { data: orders, error: ordersError } = await supabase
-      .from("repair_orders")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
+      .from("user_repair_orders")
+      .select(`
+        *,
+        services:user_repair_order_services(*)
+      `)
+      .eq("user_id", userId)
+      .order("creation_date", { ascending: false })
 
     if (ordersError) {
-      console.error("Error fetching orders from database:", ordersError)
-      return NextResponse.json({ error: "Failed to fetch orders" }, { status: 500 })
+      console.error("Error fetching repair orders:", ordersError)
+      return NextResponse.json({ success: false, message: "Failed to fetch repair orders" }, { status: 500 })
     }
 
-    console.log(`Found ${orders?.length || 0} orders for user ${user.id}`)
-
-    // Get order items for each order
-    const ordersWithItems = await Promise.all(
-      (orders || []).map(async (order: any) => {
-        // Get order items
-        const { data: items, error: itemsError } = await supabase
-          .from("repair_order_items")
-          .select("*")
-          .eq("remonline_order_id", order.remonline_id)
-          .order("created_at", { ascending: true })
-
-        if (itemsError) {
-          console.error(`Error fetching items for order ${order.remonline_id}:`, itemsError)
-        }
-
-        // Get updated status information from our system
-        let statusInfo = {
-          name: order.status_name || "Unknown",
-          color: order.status_color || "bg-gray-100 text-gray-800",
-        }
-
-        if (order.status_id && order.status_id !== "unknown") {
-          try {
-            statusInfo = await getStatusByRemOnlineId(Number.parseInt(order.status_id), "uk", true)
-          } catch (error) {
-            console.error(`Error getting status for order ${order.remonline_id}:`, error)
-          }
-        }
-
-        return {
-          ...order,
-          items: items || [],
-          statusName: statusInfo.name,
-          statusColor: statusInfo.color,
-        }
-      }),
-    )
-
-    // Transform orders to match frontend format
-    const transformedOrders = ordersWithItems.map((order: any) => ({
-      id: order.remonline_id?.toString() || order.id.toString(),
-      reference_number: order.reference_number || order.remonline_id?.toString() || order.id.toString(),
-      device_brand: order.device_brand || "Unknown",
-      device_model: order.device_model || "Unknown",
-      service_type: order.service_type || "Repair",
-      status: order.status_id || "unknown",
-      statusName: order.statusName,
-      statusColor: order.statusColor,
-      price: order.price,
-      created_at: order.created_at,
-      items: order.items.map((item: any) => ({
-        id: item.remonline_item_id,
-        service_name: item.service_name,
-        quantity: item.quantity,
-        price: item.price,
-        warranty_period: item.warranty_period,
-        warranty_units: item.warranty_units,
+    // Transform the data to match the frontend structure
+    const transformedOrders = orders.map((order) => ({
+      id: order.id,
+      document_id: order.document_id,
+      creation_date: order.creation_date,
+      device_serial_number: order.device_serial_number,
+      device_name: order.device_name,
+      device_brand: order.device_brand,
+      device_model: order.device_model,
+      total_amount: order.total_amount,
+      overall_status: order.overall_status,
+      overall_status_name: order.overall_status_name,
+      overall_status_color: order.overall_status_color,
+      services: order.services.map((service: any) => ({
+        id: service.id,
+        name: service.service_name,
+        price: service.price,
+        warranty_period: service.warranty_period,
+        warranty_units: service.warranty_units,
+        status: service.service_status,
+        status_name: service.service_status_name,
+        status_color: service.service_status_color,
       })),
-      statusHistory: [], // We'll implement this separately if needed
     }))
+
+    console.log(`Found ${transformedOrders.length} orders for user ${userId}`)
 
     return NextResponse.json({
       success: true,
       orders: transformedOrders,
     })
   } catch (error) {
-    console.error("Error in repair orders API:", error)
-    return NextResponse.json({ error: "An unexpected error occurred" }, { status: 500 })
+    console.error("Error in getUserRepairOrders API:", error)
+    return NextResponse.json(
+      {
+        success: false,
+        message: "An unexpected error occurred",
+        details: error instanceof Error ? error.message : String(error),
+      },
+      { status: 500 },
+    )
   }
 }

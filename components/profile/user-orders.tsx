@@ -55,115 +55,6 @@ type RepairOrder = {
   overall_status_color: string
 }
 
-// Mock дані для демонстрації
-const mockOrders: RepairOrder[] = [
-  {
-    id: "1",
-    document_id: "DOC-2024-001",
-    creation_date: "2024-01-15T10:30:00Z",
-    device_serial_number: "SN123456789",
-    device_name: "iPhone 14 Pro",
-    device_brand: "Apple",
-    device_model: "iPhone 14 Pro",
-    services: [
-      {
-        id: "s1",
-        name: "Заміна екрану",
-        price: 3500,
-        warranty_period: 6,
-        warranty_units: "months",
-        status: "completed",
-        status_name: "Завершено",
-        status_color: "bg-green-100 text-green-800",
-      },
-      {
-        id: "s2",
-        name: "Заміна батареї",
-        price: 1200,
-        warranty_period: 12,
-        warranty_units: "months",
-        status: "completed",
-        status_name: "Завершено",
-        status_color: "bg-green-100 text-green-800",
-      },
-    ],
-    total_amount: 4700,
-    overall_status: "completed",
-    overall_status_name: "Завершено",
-    overall_status_color: "bg-green-100 text-green-800",
-  },
-  {
-    id: "2",
-    document_id: "DOC-2024-002",
-    creation_date: "2024-01-20T14:15:00Z",
-    device_serial_number: "SN987654321",
-    device_name: "Samsung Galaxy S23",
-    device_brand: "Samsung",
-    device_model: "Galaxy S23",
-    services: [
-      {
-        id: "s3",
-        name: "Діагностика",
-        price: 300,
-        warranty_period: 0,
-        warranty_units: "days",
-        status: "completed",
-        status_name: "Завершено",
-        status_color: "bg-green-100 text-green-800",
-      },
-      {
-        id: "s4",
-        name: "Ремонт материнської плати",
-        price: 2800,
-        warranty_period: 3,
-        warranty_units: "months",
-        status: "in_progress",
-        status_name: "В роботі",
-        status_color: "bg-blue-100 text-blue-800",
-      },
-      {
-        id: "s5",
-        name: "Заміна роз'єму зарядки",
-        price: 800,
-        warranty_period: 6,
-        warranty_units: "months",
-        status: "pending",
-        status_name: "Очікує",
-        status_color: "bg-amber-100 text-amber-800",
-      },
-    ],
-    total_amount: 3900,
-    overall_status: "in_progress",
-    overall_status_name: "В роботі",
-    overall_status_color: "bg-blue-100 text-blue-800",
-  },
-  {
-    id: "3",
-    document_id: "DOC-2024-003",
-    creation_date: "2024-01-25T09:45:00Z",
-    device_serial_number: "SN456789123",
-    device_name: "MacBook Pro 13",
-    device_brand: "Apple",
-    device_model: "MacBook Pro 13",
-    services: [
-      {
-        id: "s6",
-        name: "Заміна клавіатури",
-        price: 4500,
-        warranty_period: 12,
-        warranty_units: "months",
-        status: "new",
-        status_name: "Нове",
-        status_color: "bg-gray-100 text-gray-800",
-      },
-    ],
-    total_amount: 4500,
-    overall_status: "new",
-    overall_status_name: "Нове",
-    overall_status_color: "bg-gray-100 text-gray-800",
-  },
-]
-
 function getStatusColorClass(statusColor: string): string {
   const colorMap: Record<string, string> = {
     "bg-green-100 text-green-800":
@@ -248,22 +139,49 @@ export function UserOrders() {
 
   useEffect(() => {
     if (isClient) {
-      // Симуляція завантаження даних
-      setTimeout(() => {
-        setOrders(mockOrders)
-        setFilteredOrders(mockOrders)
-        setLoading(false)
-      }, 1000)
+      fetchOrders()
     }
-  }, [isClient])
+  }, [isClient, locale])
+
+  async function fetchOrders(forceRefresh = false) {
+    if (!isClient) return
+
+    try {
+      if (forceRefresh) {
+        setRefreshing(true)
+      } else {
+        setLoading(true)
+      }
+
+      setError(null)
+
+      const response = await fetch(`/api/user/repair-orders?locale=${locale}&forceRefresh=${forceRefresh}`, {
+        headers: {
+          "Cache-Control": "no-cache",
+          Pragma: "no-cache",
+        },
+        cache: "no-store",
+      })
+
+      const data = await response.json()
+
+      if (data.success && data.orders) {
+        setOrders(data.orders)
+        setFilteredOrders(data.orders)
+      } else {
+        setError(data.message || "Помилка завантаження замовлень")
+      }
+    } catch (err) {
+      console.error("Error fetching repair orders:", err)
+      setError("Помилка завантаження замовлень")
+    } finally {
+      setLoading(false)
+      setRefreshing(false)
+    }
+  }
 
   function handleRefresh() {
-    setRefreshing(true)
-    setTimeout(() => {
-      setOrders(mockOrders)
-      setFilteredOrders(mockOrders)
-      setRefreshing(false)
-    }, 1000)
+    fetchOrders(true)
   }
 
   function toggleOrderDetails(orderId: string, e: React.MouseEvent) {
