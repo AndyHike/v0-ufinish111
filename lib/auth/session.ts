@@ -71,3 +71,6 @@ export async function getSession() {
   }
   return null
 }
+
+// Alias export for backwards-compatibility
+export { getCurrentUser as getUser }
