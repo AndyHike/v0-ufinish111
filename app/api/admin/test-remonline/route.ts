@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server"
-import { getSession } from "@/lib/auth/session"
+import { getCurrentUser } from "@/lib/auth/session"
 import remonline from "@/lib/api/remonline"
 
 export async function GET() {
   try {
     // Check if the user is an admin
-    const session = await getSession()
-    if (!session?.user || session.user.role !== "admin") {
+    const user = await getCurrentUser()
+    if (!user || user.role !== "admin") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
