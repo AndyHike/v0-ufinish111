@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react"
 import { usePathname } from "next/navigation"
-import { Progress } from "@/components/ui/progress"
 
 export function NavigationProgress() {
   const pathname = usePathname()
@@ -34,7 +33,7 @@ export function NavigationProgress() {
 
   return (
     <div className="fixed top-0 left-0 right-0 z-50">
-      <Progress value={progress} className="h-1 rounded-none" />
+      <div className="h-1 bg-blue-600 transition-all duration-300 ease-out" style={{ width: `${progress}%` }} />
     </div>
   )
 }
