@@ -82,7 +82,7 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
           className="mb-8 inline-flex items-center gap-2 rounded-md bg-slate-50 px-3 py-1 text-sm font-medium text-muted-foreground hover:text-primary"
         >
           <ArrowLeft className="h-4 w-4" />
-          {commonT("backToHome") || "На головну"}
+          {commonT("backToHome")}
         </Link>
 
         {/* Service Header */}
@@ -102,18 +102,18 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-sm font-medium">
                 <DollarSign className="h-4 w-4" />
-                {t("priceRange") || "Діапазон цін"}
+                {t("priceRange")}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
                 {serviceData.stats.minPrice > 0
                   ? `${formatCurrency(serviceData.stats.minPrice)} - ${formatCurrency(serviceData.stats.maxPrice)}`
-                  : t("priceOnRequest") || "За запитом"}
+                  : t("priceOnRequest")}
               </div>
               {serviceData.stats.avgPrice > 0 && (
                 <p className="text-xs text-muted-foreground">
-                  {t("avgPrice") || "Середня"}: {formatCurrency(serviceData.stats.avgPrice)}
+                  {t("avgPrice")}: {formatCurrency(serviceData.stats.avgPrice)}
                 </p>
               )}
             </CardContent>
@@ -123,12 +123,12 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-sm font-medium">
                 <Phone className="h-4 w-4" />
-                {t("supportedModels") || "Підтримувані моделі"}
+                {t("supportedModels")}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{serviceData.stats.modelsCount}</div>
-              <p className="text-xs text-muted-foreground">{t("modelsAvailable") || "моделей доступно"}</p>
+              <p className="text-xs text-muted-foreground">{t("modelsAvailable")}</p>
             </CardContent>
           </Card>
 
@@ -136,12 +136,12 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-sm font-medium">
                 <Users className="h-4 w-4" />
-                {t("supportedBrands") || "Підтримувані бренди"}
+                {t("supportedBrands")}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{serviceData.stats.brandsCount}</div>
-              <p className="text-xs text-muted-foreground">{t("brandsAvailable") || "брендів доступно"}</p>
+              <p className="text-xs text-muted-foreground">{t("brandsAvailable")}</p>
             </CardContent>
           </Card>
 
@@ -149,14 +149,14 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-sm font-medium">
                 <Wrench className="h-4 w-4" />
-                {t("serviceType") || "Тип послуги"}
+                {t("serviceType")}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <Badge variant="secondary" className="text-sm">
-                {t("repairService") || "Ремонт"}
+                {t("repairService")}
               </Badge>
-              <p className="text-xs text-muted-foreground mt-1">{t("professionalService") || "Професійна послуга"}</p>
+              <p className="text-xs text-muted-foreground mt-1">{t("professionalService")}</p>
             </CardContent>
           </Card>
         </div>
@@ -164,14 +164,14 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
         {/* Brand Filter */}
         {brands.length > 1 && (
           <div className="mb-8">
-            <h3 className="mb-4 text-lg font-semibold">{t("filterByBrand") || "Фільтрувати за брендом"}</h3>
+            <h3 className="mb-4 text-lg font-semibold">{t("filterByBrand")}</h3>
             <div className="flex flex-wrap gap-2">
               <Button
                 variant={selectedBrand === null ? "default" : "outline"}
                 size="sm"
                 onClick={() => setSelectedBrand(null)}
               >
-                {t("allBrands") || "Всі бренди"}
+                {t("allBrands")}
               </Button>
               {brands.map((brandName) => (
                 <Button
@@ -197,7 +197,7 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
 
         {/* Supported Models */}
         <div className="mb-12">
-          <h2 className="mb-6 text-2xl font-bold">{t("supportedModels") || "Підтримувані моделі"}</h2>
+          <h2 className="mb-6 text-2xl font-bold">{t("supportedModels")}</h2>
 
           {filteredModels.length > 0 ? (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -209,7 +209,8 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
                         <img
                           src={
                             formatImageUrl(modelService.model.image_url) ||
-                            "/placeholder.svg?height=48&width=48&query=phone"
+                            "/placeholder.svg?height=48&width=48&query=phone" ||
+                            "/placeholder.svg"
                           }
                           alt={modelService.model.name}
                           className="h-full w-full object-contain"
@@ -229,9 +230,7 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
                         <h3 className="font-medium text-sm mb-2 truncate">{modelService.model.name}</h3>
                         <div className="flex items-center justify-between">
                           <div className="text-lg font-bold text-primary">
-                            {modelService.price !== null
-                              ? formatCurrency(modelService.price)
-                              : t("priceOnRequest") || "За запитом"}
+                            {modelService.price !== null ? formatCurrency(modelService.price) : t("priceOnRequest")}
                           </div>
                           <div className="flex gap-1">
                             <Button size="sm" variant="outline" asChild>
@@ -243,7 +242,7 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
                               <Link
                                 href={`/${locale}/contact?service=${encodeURIComponent(serviceData.name)}&model=${encodeURIComponent(modelService.model.name)}`}
                               >
-                                {commonT("order") || "Замовити"}
+                                {commonT("order")}
                               </Link>
                             </Button>
                           </div>
@@ -256,7 +255,7 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
             </div>
           ) : (
             <div className="text-center py-12">
-              <p className="text-muted-foreground">{t("noModelsFound") || "Моделі не знайдено"}</p>
+              <p className="text-muted-foreground">{t("noModelsFound")}</p>
             </div>
           )}
         </div>
@@ -264,18 +263,16 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
         {/* Call to Action */}
         <Card className="bg-primary/5 border-primary/20">
           <CardContent className="p-8 text-center">
-            <h3 className="mb-4 text-xl font-bold">{t("needThisService") || "Потрібна ця послуга?"}</h3>
-            <p className="mb-6 text-muted-foreground">
-              {t("contactUsForService") || "Зв'яжіться з нами для отримання професійної послуги з гарантією якості."}
-            </p>
+            <h3 className="mb-4 text-xl font-bold">{t("needThisService")}</h3>
+            <p className="mb-6 text-muted-foreground">{t("contactUsForService")}</p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button size="lg" asChild>
                 <Link href={`/${locale}/contact?service=${encodeURIComponent(serviceData.name)}`}>
-                  {commonT("contactUs") || "Зв'язатися з нами"}
+                  {commonT("contactUs")}
                 </Link>
               </Button>
               <Button size="lg" variant="outline" asChild>
-                <Link href={`/${locale}`}>{commonT("browseServices") || "Переглянути послуги"}</Link>
+                <Link href={`/${locale}`}>{commonT("browseServices")}</Link>
               </Button>
             </div>
           </CardContent>

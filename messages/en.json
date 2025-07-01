@@ -152,8 +152,8 @@
     "noBrands": "No brands available"
   },
   "Brands": {
-    "backToBrands":"Back to all brands",
-    "backToHome":"Back to home",
+    "backToBrands": "Back to all brands",
+    "backToHome": "Back to home",
     "title": "Brands We Service",
     "subtitle": "We specialize in repairing all major smartphone brands",
     "loading": "Loading brands...",
@@ -184,7 +184,7 @@
     "seriesNotFoundDesc": "The requested series could not be found."
   },
   "Models": {
-    "backToSeries":"Back to models",
+    "backToSeries": "Back to models",
     "repairServices": "Repair Services",
     "modelNotFound": "Model Not Found",
     "modelNotFoundDesc": "The requested model could not be found.",
@@ -199,16 +199,19 @@
     "title": "Customer Testimonials",
     "subtitle": "See what our customers say about our services.",
     "testimonial1": {
-      "name": "John Smith",
-      "content": "Very satisfied with the quality of repair. My iPhone works like new after screen replacement."
+      "name": "Alexander K.",
+      "content": "Quick and quality screen replacement. Very satisfied with the result!",
+      "date": "2 weeks ago"
     },
     "testimonial2": {
-      "name": "Mary Johnson",
-      "content": "Fast and professional service. They replaced my battery in 30 minutes, and now my phone lasts all day."
+      "name": "Maria V.",
+      "content": "Professional approach, fair prices. Recommend!",
+      "date": "1 month ago"
     },
     "testimonial3": {
-      "name": "David Brown",
-      "content": "Excellent service at a reasonable price. Recommend to anyone having phone issues."
+      "name": "Dmitry P.",
+      "content": "Excellent service, phone works like new.",
+      "date": "3 weeks ago"
     },
     "testimonial4": {
       "name": "Sarah Wilson",
@@ -521,5 +524,52 @@
     "bulkImportDescription": "Import data from CSV files for bulk updates",
     "refresh": "Refresh",
     "refreshing": "Refreshing..."
+  },
+  "Common": {
+    "home": "Home",
+    "contactUs": "Contact Us",
+    "order": "Order",
+    "backToHome": "Back to Home",
+    "browseServices": "Browse Services"
+  },
+  "Services": {
+    "priceRange": "Price Range",
+    "priceOnRequest": "Price on Request",
+    "avgPrice": "Average",
+    "supportedModels": "Supported Models",
+    "modelsAvailable": "models available",
+    "supportedBrands": "Supported Brands",
+    "brandsAvailable": "brands available",
+    "serviceType": "Service Type",
+    "repairService": "Repair",
+    "professionalService": "Professional Service",
+    "filterByBrand": "Filter by Brand",
+    "allBrands": "All Brands",
+    "noModelsFound": "No models found",
+    "needThisService": "Need this service?",
+    "contactUsForService": "Contact us for professional service with quality guarantee.",
+    "forModel": "for {brand} {model}",
+    "executionTime": "Execution Time",
+    "fromHours": "from {hours} hours",
+    "warranty": "Warranty",
+    "months": "{count} months",
+    "orderService": "Order Service",
+    "askQuestion": "Ask Question",
+    "whatIncluded": "What's Included",
+    "frequentQuestions": "Frequent Questions",
+    "clientReviews": "Client Reviews",
+    "haveQuestions": "Have Questions?",
+    "expertsReady": "Our experts are ready to answer all your questions and provide professional consultation",
+    "loadingError": "Loading Error",
+    "loadingErrorDescription": "Failed to load service data. Please try again later.",
+    "testimonial1Name": "Alexander K.",
+    "testimonial1Text": "Quick and quality screen replacement. Very satisfied with the result!",
+    "testimonial1Date": "2 weeks ago",
+    "testimonial2Name": "Maria V.",
+    "testimonial2Text": "Professional approach, fair prices. Recommend!",
+    "testimonial2Date": "1 month ago",
+    "testimonial3Name": "Dmitry P.",
+    "testimonial3Text": "Excellent service, phone works like new.",
+    "testimonial3Date": "3 weeks ago"
   }
 }

@@ -1,9 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,6 +18,13 @@ import Image from "next/image"
 
 export function BrandsList() {
   const [searchQuery, setSearchQuery] = useState("")
+  const [loading, setLoading] = useState(true)
+
+  // Simulate loading
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 1000)
+    return () => clearTimeout(timer)
+  }, [])
 
   // In a real app, this would fetch data from an API
   const brands = [
@@ -58,6 +66,53 @@ export function BrandsList() {
   ]
 
   const filteredBrands = brands.filter((brand) => brand.name.toLowerCase().includes(searchQuery.toLowerCase()))
+
+  if (loading) {
+    return (
+      <div>
+        <div className="mb-4 flex items-center gap-2">
+          <div className="relative flex-1">
+            <Skeleton className="h-10 w-full" />
+          </div>
+        </div>
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Бренд</TableHead>
+                <TableHead>Кількість моделей</TableHead>
+                <TableHead>Дата створення</TableHead>
+                <TableHead className="w-[50px]"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {Array(5)
+                .fill(0)
+                .map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Skeleton className="h-8 w-8 rounded-md" />
+                        <Skeleton className="h-4 w-24" />
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-8" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-20" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-8 w-8" />
+                    </TableCell>
+                  </TableRow>
+                ))}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div>
