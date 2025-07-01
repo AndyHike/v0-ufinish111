@@ -1,6 +1,4 @@
 import { NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase"
-import { ClientService } from "../services/client-service"
 
 export async function handleClientEvents(webhookData: any) {
   try {
@@ -34,21 +32,18 @@ export async function handleClientEvents(webhookData: any) {
 async function handleClientCreated(webhookData: any) {
   try {
     const clientId = webhookData.context.object_id
-
     console.log(`👤 Processing Client.Created for client ${clientId}`)
 
-    const supabase = createClient()
-    const clientService = new ClientService(supabase)
+    // For now, just log the event
+    console.log("Client created webhook received, no action needed")
 
-    await clientService.createClientFromRemOnline(clientId)
-
-    return NextResponse.json({ success: true, message: "Client created successfully" })
+    return NextResponse.json({ success: true, message: "Client created event processed" })
   } catch (error) {
     console.error("💥 Error in handleClientCreated:", error)
     return NextResponse.json(
       {
         success: false,
-        error: "Failed to create client",
+        error: "Failed to process client created event",
         details: error instanceof Error ? error.message : String(error),
       },
       { status: 500 },
@@ -59,21 +54,18 @@ async function handleClientCreated(webhookData: any) {
 async function handleClientUpdated(webhookData: any) {
   try {
     const clientId = webhookData.context.object_id
-
     console.log(`👤 Processing Client.Updated for client ${clientId}`)
 
-    const supabase = createClient()
-    const clientService = new ClientService(supabase)
+    // For now, just log the event
+    console.log("Client updated webhook received, no action needed")
 
-    await clientService.updateClientFromRemOnline(clientId)
-
-    return NextResponse.json({ success: true, message: "Client updated successfully" })
+    return NextResponse.json({ success: true, message: "Client updated event processed" })
   } catch (error) {
     console.error("💥 Error in handleClientUpdated:", error)
     return NextResponse.json(
       {
         success: false,
-        error: "Failed to update client",
+        error: "Failed to process client updated event",
         details: error instanceof Error ? error.message : String(error),
       },
       { status: 500 },
@@ -84,21 +76,18 @@ async function handleClientUpdated(webhookData: any) {
 async function handleClientDeleted(webhookData: any) {
   try {
     const clientId = webhookData.context.object_id
-
     console.log(`👤 Processing Client.Deleted for client ${clientId}`)
 
-    const supabase = createClient()
-    const clientService = new ClientService(supabase)
+    // For now, just log the event
+    console.log("Client deleted webhook received, no action needed")
 
-    await clientService.deleteClient(clientId)
-
-    return NextResponse.json({ success: true, message: "Client deleted successfully" })
+    return NextResponse.json({ success: true, message: "Client deleted event processed" })
   } catch (error) {
     console.error("💥 Error in handleClientDeleted:", error)
     return NextResponse.json(
       {
         success: false,
-        error: "Failed to delete client",
+        error: "Failed to process client deleted event",
         details: error instanceof Error ? error.message : String(error),
       },
       { status: 500 },

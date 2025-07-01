@@ -4,13 +4,13 @@ CREATE TABLE IF NOT EXISTS user_repair_order_services (
     order_id UUID NOT NULL REFERENCES user_repair_orders(id) ON DELETE CASCADE,
     remonline_order_id INTEGER NOT NULL,
     remonline_service_id INTEGER,
-    service_name VARCHAR(255) NOT NULL,
-    price DECIMAL(10,2) NOT NULL DEFAULT 0,
+    service_name TEXT NOT NULL,
+    price DECIMAL(10,2) DEFAULT 0,
     warranty_period INTEGER,
-    warranty_units VARCHAR(50),
-    service_status VARCHAR(100) DEFAULT 'active',
-    service_status_name VARCHAR(255) DEFAULT 'Активна',
-    service_status_color VARCHAR(255) DEFAULT 'bg-blue-100 text-blue-800',
+    warranty_units TEXT,
+    service_status TEXT NOT NULL DEFAULT 'active',
+    service_status_name TEXT NOT NULL DEFAULT 'Активна',
+    service_status_color TEXT NOT NULL DEFAULT 'bg-blue-100 text-blue-800',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -19,12 +19,13 @@ CREATE TABLE IF NOT EXISTS user_repair_order_services (
 CREATE INDEX IF NOT EXISTS idx_user_repair_order_services_order_id ON user_repair_order_services(order_id);
 CREATE INDEX IF NOT EXISTS idx_user_repair_order_services_remonline_order_id ON user_repair_order_services(remonline_order_id);
 CREATE INDEX IF NOT EXISTS idx_user_repair_order_services_remonline_service_id ON user_repair_order_services(remonline_service_id);
+CREATE INDEX IF NOT EXISTS idx_user_repair_order_services_status ON user_repair_order_services(service_status);
 
--- Add RLS policies
+-- Enable Row Level Security
 ALTER TABLE user_repair_order_services ENABLE ROW LEVEL SECURITY;
 
--- Policy: Users can only see services for their own orders
-CREATE POLICY "Users can view own order services" ON user_repair_order_services
+-- Create RLS policies
+CREATE POLICY "Users can view services for their own orders" ON user_repair_order_services
     FOR SELECT USING (
         EXISTS (
             SELECT 1 FROM user_repair_orders 
@@ -33,18 +34,37 @@ CREATE POLICY "Users can view own order services" ON user_repair_order_services
         )
     );
 
--- Policy: System can insert services
-CREATE POLICY "System can insert order services" ON user_repair_order_services
-    FOR INSERT WITH CHECK (true);
+CREATE POLICY "Users can insert services for their own orders" ON user_repair_order_services
+    FOR INSERT WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM user_repair_orders 
+            WHERE user_repair_orders.id = user_repair_order_services.order_id 
+            AND user_repair_orders.user_id = auth.uid()
+        )
+    );
 
--- Policy: System can update services
-CREATE POLICY "System can update order services" ON user_repair_order_services
-    FOR UPDATE USING (true);
+CREATE POLICY "Users can update services for their own orders" ON user_repair_order_services
+    FOR UPDATE USING (
+        EXISTS (
+            SELECT 1 FROM user_repair_orders 
+            WHERE user_repair_orders.id = user_repair_order_services.order_id 
+            AND user_repair_orders.user_id = auth.uid()
+        )
+    );
 
--- Policy: System can delete services
-CREATE POLICY "System can delete order services" ON user_repair_order_services
-    FOR DELETE USING (true);
+-- Allow service role to manage all services (for webhooks)
+CREATE POLICY "Service role can manage all order services" ON user_repair_order_services
+    FOR ALL USING (auth.jwt() ->> 'role' = 'service_role');
 
--- Policy: Service can manage order services
-CREATE POLICY "Service can manage order services" ON user_repair_order_services
-    FOR ALL USING (true);
+-- Add comments
+COMMENT ON TABLE user_repair_order_services IS 'Stores services/items for repair orders from RemOnline';
+COMMENT ON COLUMN user_repair_order_services.order_id IS 'Reference to the parent repair order';
+COMMENT ON COLUMN user_repair_order_services.remonline_order_id IS 'RemOnline order ID for easier lookup';
+COMMENT ON COLUMN user_repair_order_services.remonline_service_id IS 'Service ID from RemOnline system';
+COMMENT ON COLUMN user_repair_order_services.service_name IS 'Name of the service performed';
+COMMENT ON COLUMN user_repair_order_services.price IS 'Price of the individual service';
+COMMENT ON COLUMN user_repair_order_services.warranty_period IS 'Warranty period number';
+COMMENT ON COLUMN user_repair_order_services.warranty_units IS 'Warranty period units (days, months, etc.)';
+COMMENT ON COLUMN user_repair_order_services.service_status IS 'Current status of the service';
+COMMENT ON COLUMN user_repair_order_services.service_status_name IS 'Human-readable service status name';
+COMMENT ON COLUMN user_repair_order_services.service_status_color IS 'CSS classes for service status badge color';
