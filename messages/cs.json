@@ -266,7 +266,7 @@
   "fromHours": "od {hours} hodin", 
   "contactForTime": "kontaktujte pro čas",
   "warranty": "Záruka",
-  "months": "{count} měsíců",
+  "warrantyMonths": "{count} měsíců",
   "contactForWarranty": "kontaktujte pro záruku",
   "orderService": "Objednat službu",
   "askQuestion": "Položit otázku",

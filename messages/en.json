@@ -206,7 +206,7 @@
   "fromHours": "from {hours} hours",
   "contactForTime": "contact for time", 
   "warranty": "Warranty",
-  "months": "{count} months",
+  "warrantyMonths": "{count} months",
   "contactForWarranty": "contact for warranty",
   "orderService": "Order Service",
   "askQuestion": "Ask Question", 
