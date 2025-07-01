@@ -204,28 +204,6 @@ export default async function ServicePage({ params, searchParams }: Props) {
 
     const whatIncludedList = translation.what_included?.split("\n").filter((item) => item.trim()) || []
 
-    // Фейкові відгуки для демонстрації
-    const testimonials = [
-      {
-        id: 1,
-        name: t("testimonial1Name"),
-        text: t("testimonial1Text"),
-        date: t("testimonial1Date"),
-      },
-      {
-        id: 2,
-        name: t("testimonial2Name"),
-        text: t("testimonial2Text"),
-        date: t("testimonial2Date"),
-      },
-      {
-        id: 3,
-        name: t("testimonial3Name"),
-        text: t("testimonial3Text"),
-        date: t("testimonial3Date"),
-      },
-    ]
-
     return (
       <div className="min-h-screen bg-white">
         <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
@@ -294,14 +272,20 @@ export default async function ServicePage({ params, searchParams }: Props) {
                   <Clock className="h-5 w-5 text-blue-600 flex-shrink-0" />
                   <div>
                     <div className="font-semibold text-gray-900 text-sm">{t("executionTime")}</div>
-                    <div className="text-xs text-gray-600">{t("fromHours", { hours: service.duration_hours })}</div>
+                    <div className="text-xs text-gray-600">
+                      {service.duration_hours ? t("fromHours", { hours: service.duration_hours }) : t("contactForTime")}
+                    </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
                   <Shield className="h-5 w-5 text-green-600 flex-shrink-0" />
                   <div>
                     <div className="font-semibold text-gray-900 text-sm">{t("warranty")}</div>
-                    <div className="text-xs text-gray-600">{t("months", { count: service.warranty_months })}</div>
+                    <div className="text-xs text-gray-600">
+                      {service.warranty_months
+                        ? t("months", { count: service.warranty_months })
+                        : t("contactForWarranty")}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -374,18 +358,18 @@ export default async function ServicePage({ params, searchParams }: Props) {
             <section>
               <h2 className="text-xl lg:text-2xl font-bold text-gray-900 mb-4">{t("clientReviews")}</h2>
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {testimonials.map((testimonial) => (
-                  <div key={testimonial.id} className="bg-gray-50 p-4 rounded-lg">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="bg-gray-50 p-4 rounded-lg">
                     <div className="flex items-center gap-2 mb-3">
                       <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
                         <User className="h-4 w-4 text-blue-600" />
                       </div>
                       <div className="min-w-0">
-                        <div className="font-semibold text-gray-900 text-sm truncate">{testimonial.name}</div>
-                        <div className="text-xs text-gray-500">{testimonial.date}</div>
+                        <div className="font-semibold text-gray-900 text-sm truncate">{t(`testimonial${i}Name`)}</div>
+                        <div className="text-xs text-gray-500">{t(`testimonial${i}Date`)}</div>
                       </div>
                     </div>
-                    <p className="text-gray-700 text-sm leading-relaxed">"{testimonial.text}"</p>
+                    <p className="text-gray-700 text-sm leading-relaxed">"{t(`testimonial${i}Text`)}"</p>
                   </div>
                 ))}
               </div>

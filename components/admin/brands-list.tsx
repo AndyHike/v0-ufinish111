@@ -22,7 +22,7 @@ export function BrandsList() {
 
   // Simulate loading
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 1000)
+    const timer = setTimeout(() => setLoading(false), 2000)
     return () => clearTimeout(timer)
   }, [])
 
@@ -69,11 +69,9 @@ export function BrandsList() {
 
   if (loading) {
     return (
-      <div>
-        <div className="mb-4 flex items-center gap-2">
-          <div className="relative flex-1">
-            <Skeleton className="h-10 w-full" />
-          </div>
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-10 flex-1" />
         </div>
         <div className="rounded-md border">
           <Table>
@@ -103,7 +101,7 @@ export function BrandsList() {
                       <Skeleton className="h-4 w-20" />
                     </TableCell>
                     <TableCell>
-                      <Skeleton className="h-8 w-8" />
+                      <Skeleton className="h-8 w-8 rounded-md" />
                     </TableCell>
                   </TableRow>
                 ))}

@@ -210,6 +210,7 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
                           src={
                             formatImageUrl(modelService.model.image_url) ||
                             "/placeholder.svg?height=48&width=48&query=phone" ||
+                            "/placeholder.svg" ||
                             "/placeholder.svg"
                           }
                           alt={modelService.model.name}
