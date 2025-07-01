@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Loader2, CheckCircle, XCircle, TestTube, AlertTriangle } from "lucide-react"
+import { Loader2, CheckCircle, XCircle, TestTube, Info } from "lucide-react"
 import { toast } from "sonner"
 
 interface TestResult {
@@ -16,6 +16,7 @@ interface TestResult {
     connection: {
       success: boolean
       message: string
+      endpoint?: string
       data?: any
       details?: any
     }
@@ -23,10 +24,17 @@ interface TestResult {
       success: boolean
       count: number
       total: number
+      message: string
     }
     orderStatuses: {
       success: boolean
       count: number
+      message: string
+    }
+    createClient: {
+      success: boolean
+      message: string
+      clientId?: number
     }
   }
 }
@@ -85,14 +93,22 @@ export function RemOnlineTest() {
           RemOnline API Test
         </CardTitle>
         <CardDescription>
-          Test the connection and functionality of the RemOnline API integration using Bearer token authentication
+          Test the connection and functionality of the RemOnline API integration using the correct request format
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+          <Info className="h-4 w-4 text-green-600" />
+          <div className="text-sm text-green-800">
+            <strong>Updated:</strong> API client now uses the correct headers format: accept: application/json,
+            authorization: Bearer [token]
+          </div>
+        </div>
+
         <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-          <AlertTriangle className="h-4 w-4 text-blue-600" />
+          <Info className="h-4 w-4 text-blue-600" />
           <div className="text-sm text-blue-800">
-            <strong>API Info:</strong> Using Bearer token authentication with rate limit of 3 requests/second
+            <strong>Test includes:</strong> Connection test, fetch clients, fetch order statuses, and create test client
           </div>
         </div>
 
@@ -128,6 +144,11 @@ export function RemOnlineTest() {
                   <div>
                     <div className="font-medium">API Connection</div>
                     <div className="text-sm text-muted-foreground">{testResult.tests.connection.message}</div>
+                    {testResult.tests.connection.endpoint && (
+                      <div className="text-xs text-green-600 mt-1">
+                        Working endpoint: {testResult.tests.connection.endpoint}
+                      </div>
+                    )}
                     {testResult.tests.connection.details && (
                       <div className="text-xs text-red-600 mt-1">
                         Details: {JSON.stringify(testResult.tests.connection.details, null, 2)}
@@ -144,9 +165,9 @@ export function RemOnlineTest() {
                   <div>
                     <div className="font-medium">Clients Endpoint</div>
                     <div className="text-sm text-muted-foreground">
-                      {testResult.tests.clients.success
-                        ? `Fetched ${testResult.tests.clients.count} clients (${testResult.tests.clients.total} total)`
-                        : "Failed to fetch clients"}
+                      {testResult.tests.clients.message}
+                      {testResult.tests.clients.success &&
+                        ` (${testResult.tests.clients.count} of ${testResult.tests.clients.total} clients)`}
                     </div>
                   </div>
                   <Badge variant={testResult.tests.clients.success ? "default" : "destructive"}>
@@ -159,13 +180,26 @@ export function RemOnlineTest() {
                   <div>
                     <div className="font-medium">Order Statuses</div>
                     <div className="text-sm text-muted-foreground">
-                      {testResult.tests.orderStatuses.success
-                        ? `Fetched ${testResult.tests.orderStatuses.count} order statuses`
-                        : "Failed to fetch order statuses"}
+                      {testResult.tests.orderStatuses.message}
+                      {testResult.tests.orderStatuses.success && ` (${testResult.tests.orderStatuses.count} statuses)`}
                     </div>
                   </div>
                   <Badge variant={testResult.tests.orderStatuses.success ? "default" : "destructive"}>
                     {testResult.tests.orderStatuses.success ? "Success" : "Failed"}
+                  </Badge>
+                </div>
+
+                {/* Create Client Test */}
+                <div className="flex items-center justify-between p-3 border rounded-lg">
+                  <div>
+                    <div className="font-medium">Create Client</div>
+                    <div className="text-sm text-muted-foreground">
+                      {testResult.tests.createClient.message}
+                      {testResult.tests.createClient.clientId && ` (ID: ${testResult.tests.createClient.clientId})`}
+                    </div>
+                  </div>
+                  <Badge variant={testResult.tests.createClient.success ? "default" : "destructive"}>
+                    {testResult.tests.createClient.success ? "Success" : "Failed"}
                   </Badge>
                 </div>
               </div>
@@ -191,9 +225,13 @@ export function RemOnlineTest() {
                   <ul className="mt-1 list-disc list-inside space-y-1">
                     <li>Check that REMONLINE_API_KEY environment variable is set correctly</li>
                     <li>Verify the API key is valid and active in your RemOnline account</li>
+                    <li>
+                      Make sure the API key has the necessary permissions (read/write access to clients, orders, etc.)
+                    </li>
                     <li>Ensure you're not exceeding the rate limit (3 requests/second)</li>
-                    <li>Check RemOnline API status at api.remonline.app</li>
-                    <li>Verify your RemOnline account has API access enabled</li>
+                    <li>Check RemOnline API status and documentation for any recent changes</li>
+                    <li>Try regenerating your API key in RemOnline settings if the current one is old</li>
+                    <li>Verify that your RemOnline account is active and in good standing</li>
                   </ul>
                 </div>
               </div>

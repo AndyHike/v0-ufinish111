@@ -1,4 +1,4 @@
-// RemOnline API Client - Updated for new Bearer token authentication
+// RemOnline API Client - Updated for new API version
 class RemonlineClient {
   private baseUrl = "https://api.remonline.app"
   private apiKey: string | null = null
@@ -55,9 +55,21 @@ class RemonlineClient {
     }
 
     return {
-      Authorization: `Bearer ${this.apiKey}`,
-      Accept: "application/json",
-      "Content-Type": "application/json",
+      accept: "application/json",
+      authorization: `Bearer ${this.apiKey}`,
+    }
+  }
+
+  // Get headers for POST requests
+  private getPostHeaders() {
+    if (!this.apiKey) {
+      throw new Error("API key is not configured")
+    }
+
+    return {
+      accept: "application/json",
+      "content-type": "application/json",
+      authorization: `Bearer ${this.apiKey}`,
     }
   }
 
@@ -69,28 +81,34 @@ class RemonlineClient {
 
     console.log(`🌐 Making ${options.method || "GET"} request to: ${fullUrl}`)
 
-    const headers = {
-      ...this.getAuthHeaders(),
-      ...options.headers,
-    }
+    // Use appropriate headers based on request method
+    const headers =
+      options.method === "POST" || options.method === "PUT" || options.method === "PATCH"
+        ? { ...this.getPostHeaders(), ...options.headers }
+        : { ...this.getAuthHeaders(), ...options.headers }
 
     console.log(`📋 Request headers:`, {
       ...headers,
-      Authorization: `Bearer ${this.apiKey?.substring(0, 8)}...${this.apiKey?.substring(this.apiKey.length - 4)}`,
+      authorization: `Bearer ${this.apiKey?.substring(0, 8)}...${this.apiKey?.substring(this.apiKey.length - 4)}`,
     })
 
-    const response = await fetch(fullUrl, {
-      ...options,
-      headers,
-    })
+    try {
+      const response = await fetch(fullUrl, {
+        ...options,
+        headers,
+      })
 
-    console.log(`📨 Response status: ${response.status} ${response.statusText}`)
-    console.log(`📨 Response headers:`, Object.fromEntries(response.headers.entries()))
+      console.log(`📨 Response status: ${response.status} ${response.statusText}`)
+      console.log(`📨 Response headers:`, Object.fromEntries(response.headers.entries()))
 
-    return response
+      return response
+    } catch (error) {
+      console.error(`❌ Network error making request to ${fullUrl}:`, error)
+      throw error
+    }
   }
 
-  // Test the API connection
+  // Test the API connection with orders endpoint
   async testConnection() {
     try {
       console.log("🧪 Testing RemOnline API connection...")
@@ -103,12 +121,23 @@ class RemonlineClient {
         }
       }
 
-      // Try to fetch order statuses as a simple test
-      const response = await this.makeRequest("/statuses/orders")
+      // Test with orders endpoint as in the working example
+      console.log("🧪 Testing orders endpoint...")
+      const response = await this.makeRequest("/orders")
 
-      if (!response.ok) {
+      if (response.ok) {
+        const data = await response.json()
+        console.log("✅ API test successful with orders endpoint")
+
+        return {
+          success: true,
+          message: "API connection successful via orders endpoint",
+          endpoint: "/orders",
+          data,
+        }
+      } else {
         const errorText = await response.text()
-        console.error(`❌ API test failed with status ${response.status}:`, errorText)
+        console.error(`❌ Orders endpoint failed with status ${response.status}:`, errorText)
 
         let errorDetails
         try {
@@ -123,15 +152,6 @@ class RemonlineClient {
           details: errorDetails,
         }
       }
-
-      const data = await response.json()
-      console.log("✅ API test successful, received order statuses:", data.data?.length || 0)
-
-      return {
-        success: true,
-        message: "API connection successful",
-        data,
-      }
     } catch (error) {
       console.error("❌ RemOnline API test error:", error)
       return {
@@ -142,16 +162,53 @@ class RemonlineClient {
     }
   }
 
-  // Get order statuses
-  async getOrderStatuses() {
+  // Get orders
+  async getOrders(
+    params: {
+      page?: number
+      limit?: number
+      client_id?: number
+      status_id?: number
+      created_from?: string
+      created_to?: string
+    } = {},
+  ) {
     try {
-      console.log("📋 Fetching order statuses...")
+      console.log("📋 Fetching orders from RemOnline API...")
 
-      const response = await this.makeRequest("/statuses/orders")
+      // Build query string from params
+      const queryParams = new URLSearchParams()
+
+      if (params.page) {
+        queryParams.append("page", String(params.page))
+      }
+
+      if (params.limit) {
+        queryParams.append("limit", String(params.limit))
+      }
+
+      if (params.client_id) {
+        queryParams.append("client_id", String(params.client_id))
+      }
+
+      if (params.status_id) {
+        queryParams.append("status_id", String(params.status_id))
+      }
+
+      if (params.created_from) {
+        queryParams.append("created_from", params.created_from)
+      }
+
+      if (params.created_to) {
+        queryParams.append("created_to", params.created_to)
+      }
+
+      const url = queryParams.toString() ? `/orders?${queryParams.toString()}` : "/orders"
+      const response = await this.makeRequest(url)
 
       if (!response.ok) {
         const errorText = await response.text()
-        console.error(`❌ Failed to fetch order statuses with status ${response.status}:`, errorText)
+        console.error(`❌ Failed to fetch orders with status ${response.status}:`, errorText)
 
         let errorDetails
         try {
@@ -162,20 +219,20 @@ class RemonlineClient {
 
         return {
           success: false,
-          message: `Failed to fetch order statuses with status ${response.status}`,
+          message: `Failed to fetch orders with status ${response.status}`,
           details: errorDetails,
         }
       }
 
       const data = await response.json()
-      console.log("✅ Order statuses fetched successfully:", data.data?.length || 0)
+      console.log("✅ Orders fetched successfully, count:", data.data?.length || 0)
 
       return { success: true, data }
     } catch (error) {
-      console.error("❌ RemOnline getOrderStatuses error:", error)
+      console.error("❌ RemOnline getOrders error:", error)
       return {
         success: false,
-        message: "Failed to fetch order statuses from RemOnline API",
+        message: "Failed to fetch orders from RemOnline API",
         details: error instanceof Error ? error.message : String(error),
       }
     }
@@ -197,11 +254,11 @@ class RemonlineClient {
       // Build query string from params
       const queryParams = new URLSearchParams()
 
-      // Set default pagination
-      queryParams.append("page", String(params.page || 1))
+      if (params.page) {
+        queryParams.append("page", String(params.page))
+      }
 
-      // RemOnline API returns up to 50 entries per page by default
-      if (params.limit && params.limit <= 50) {
+      if (params.limit) {
         queryParams.append("limit", String(params.limit))
       }
 
@@ -217,7 +274,7 @@ class RemonlineClient {
         queryParams.append("phone", params.phone)
       }
 
-      const url = `/clients?${queryParams.toString()}`
+      const url = queryParams.toString() ? `/clients?${queryParams.toString()}` : "/clients"
       console.log(`🔍 Query parameters: ${queryParams.toString()}`)
 
       const response = await this.makeRequest(url)
@@ -303,8 +360,8 @@ class RemonlineClient {
     try {
       console.log(`📧 Looking for client with email: ${email}`)
 
-      // Use the query parameter to search for the client
-      const response = await this.getClients({ query: email })
+      // Use the email parameter to search for the client
+      const response = await this.getClients({ email })
 
       if (response.success && response.data.data) {
         // Find the client with the exact email match
@@ -341,13 +398,13 @@ class RemonlineClient {
     try {
       console.log(`📱 Looking for client with phone: ${phone}`)
 
-      // Normalize phone number by removing non-digit characters
-      const normalizedPhone = phone.replace(/\D/g, "")
-
-      // Use the query parameter to search for the client
-      const response = await this.getClients({ query: normalizedPhone })
+      // Use the phone parameter to search for the client
+      const response = await this.getClients({ phone })
 
       if (response.success && response.data.data) {
+        // Normalize phone number by removing non-digit characters
+        const normalizedPhone = phone.replace(/\D/g, "")
+
         // Find the client with a matching phone number
         const client = response.data.data.find((c: any) => {
           if (!c.phone || !Array.isArray(c.phone)) return false
@@ -388,8 +445,10 @@ class RemonlineClient {
     first_name: string
     last_name: string
     email: string
-    phone?: string[]
     address?: string
+    phone?: string[]
+    notes?: string
+    discount?: number
   }) {
     try {
       console.log("➕ Creating client with data:", {
@@ -397,13 +456,30 @@ class RemonlineClient {
         phone: clientData.phone?.length || 0,
       })
 
-      // Ensure phone is an array
+      // Prepare the data exactly as in the working example
       const dataToSend = {
-        ...clientData,
-        phone: Array.isArray(clientData.phone) ? clientData.phone : clientData.phone ? [clientData.phone] : [],
+        first_name: clientData.first_name,
+        last_name: clientData.last_name,
+        email: clientData.email,
+        address: clientData.address || "",
       }
 
-      const response = await this.makeRequest("/clients", {
+      // Add optional fields if provided
+      if (clientData.phone && clientData.phone.length > 0) {
+        ;(dataToSend as any).phone = clientData.phone
+      }
+
+      if (clientData.notes) {
+        ;(dataToSend as any).notes = clientData.notes
+      }
+
+      if (clientData.discount !== undefined) {
+        ;(dataToSend as any).discount = clientData.discount
+      }
+
+      console.log("📤 Sending client data:", dataToSend)
+
+      const response = await this.makeRequest("/clients/", {
         method: "POST",
         body: JSON.stringify(dataToSend),
       })
@@ -439,81 +515,6 @@ class RemonlineClient {
       return {
         success: false,
         message: "Failed to create client in RemOnline API",
-        details: error instanceof Error ? error.message : String(error),
-      }
-    }
-  }
-
-  // Get orders with pagination and optional filters
-  async getOrders(
-    params: {
-      page?: number
-      limit?: number
-      client_id?: number
-      status_id?: number
-      created_from?: string
-      created_to?: string
-    } = {},
-  ) {
-    try {
-      console.log("📋 Fetching orders from RemOnline API...")
-
-      // Build query string from params
-      const queryParams = new URLSearchParams()
-
-      // Set default pagination
-      queryParams.append("page", String(params.page || 1))
-
-      if (params.limit && params.limit <= 50) {
-        queryParams.append("limit", String(params.limit))
-      }
-
-      if (params.client_id) {
-        queryParams.append("client_id", String(params.client_id))
-      }
-
-      if (params.status_id) {
-        queryParams.append("status_id", String(params.status_id))
-      }
-
-      if (params.created_from) {
-        queryParams.append("created_from", params.created_from)
-      }
-
-      if (params.created_to) {
-        queryParams.append("created_to", params.created_to)
-      }
-
-      const url = `/orders?${queryParams.toString()}`
-      const response = await this.makeRequest(url)
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error(`❌ Failed to fetch orders with status ${response.status}:`, errorText)
-
-        let errorDetails
-        try {
-          errorDetails = JSON.parse(errorText)
-        } catch {
-          errorDetails = errorText
-        }
-
-        return {
-          success: false,
-          message: `Failed to fetch orders with status ${response.status}`,
-          details: errorDetails,
-        }
-      }
-
-      const data = await response.json()
-      console.log("✅ Orders fetched successfully, count:", data.data?.length || 0)
-
-      return { success: true, data }
-    } catch (error) {
-      console.error("❌ RemOnline getOrders error:", error)
-      return {
-        success: false,
-        message: "Failed to fetch orders from RemOnline API",
         details: error instanceof Error ? error.message : String(error),
       }
     }
@@ -584,42 +585,16 @@ class RemonlineClient {
     }
   }
 
-  // Get tasks with pagination and optional filters
-  async getTasks(
-    params: {
-      page?: number
-      limit?: number
-      order_id?: number
-      status_id?: number
-    } = {},
-  ) {
+  // Get order statuses
+  async getOrderStatuses() {
     try {
-      console.log("📝 Fetching tasks from RemOnline API...")
+      console.log("📋 Fetching order statuses...")
 
-      // Build query string from params
-      const queryParams = new URLSearchParams()
-
-      // Set default pagination
-      queryParams.append("page", String(params.page || 1))
-
-      if (params.limit && params.limit <= 50) {
-        queryParams.append("limit", String(params.limit))
-      }
-
-      if (params.order_id) {
-        queryParams.append("order_id", String(params.order_id))
-      }
-
-      if (params.status_id) {
-        queryParams.append("status_id", String(params.status_id))
-      }
-
-      const url = `/tasks?${queryParams.toString()}`
-      const response = await this.makeRequest(url)
+      const response = await this.makeRequest("/statuses/orders")
 
       if (!response.ok) {
         const errorText = await response.text()
-        console.error(`❌ Failed to fetch tasks with status ${response.status}:`, errorText)
+        console.error(`❌ Failed to fetch order statuses with status ${response.status}:`, errorText)
 
         let errorDetails
         try {
@@ -630,83 +605,20 @@ class RemonlineClient {
 
         return {
           success: false,
-          message: `Failed to fetch tasks with status ${response.status}`,
+          message: `Failed to fetch order statuses with status ${response.status}`,
           details: errorDetails,
         }
       }
 
       const data = await response.json()
-      console.log("✅ Tasks response:", {
-        hasData: !!data.data,
-        dataLength: data.data?.length || 0,
-        totalCount: data.count || 0,
-      })
+      console.log("✅ Order statuses fetched successfully:", data.data?.length || 0)
 
       return { success: true, data }
     } catch (error) {
-      console.error("❌ RemOnline getTasks error:", error)
+      console.error("❌ RemOnline getOrderStatuses error:", error)
       return {
         success: false,
-        message: "Failed to fetch tasks from RemOnline API",
-        details: error instanceof Error ? error.message : String(error),
-      }
-    }
-  }
-
-  // Get inventory items
-  async getInventory(
-    params: {
-      page?: number
-      limit?: number
-      query?: string
-    } = {},
-  ) {
-    try {
-      console.log("📦 Fetching inventory from RemOnline API...")
-
-      // Build query string from params
-      const queryParams = new URLSearchParams()
-
-      queryParams.append("page", String(params.page || 1))
-
-      if (params.limit && params.limit <= 50) {
-        queryParams.append("limit", String(params.limit))
-      }
-
-      if (params.query) {
-        queryParams.append("query", params.query)
-      }
-
-      const url = `/inventory?${queryParams.toString()}`
-      const response = await this.makeRequest(url)
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error(`❌ Failed to fetch inventory with status ${response.status}:`, errorText)
-
-        let errorDetails
-        try {
-          errorDetails = JSON.parse(errorText)
-        } catch {
-          errorDetails = errorText
-        }
-
-        return {
-          success: false,
-          message: `Failed to fetch inventory with status ${response.status}`,
-          details: errorDetails,
-        }
-      }
-
-      const data = await response.json()
-      console.log("✅ Inventory fetched successfully, count:", data.data?.length || 0)
-
-      return { success: true, data }
-    } catch (error) {
-      console.error("❌ RemOnline getInventory error:", error)
-      return {
-        success: false,
-        message: "Failed to fetch inventory from RemOnline API",
+        message: "Failed to fetch order statuses from RemOnline API",
         details: error instanceof Error ? error.message : String(error),
       }
     }
