@@ -56,6 +56,24 @@
     "imageAlt": "Phone Repair",
     "repairMyDevice": "Repair My Device"
   },
+  "Services":{
+  "executionTime": "Execution Time",
+  "fromHours": "from {hours} hours",
+  "contactForTime": "contact for time",
+  "warranty": "Warranty",
+  "months": "{count} months",
+  "contactForWarranty": "contact for warranty",
+  "orderService": "Order Service",
+  "askQuestion": "Ask Question",
+  "whatIncluded": "What's Included",
+  "frequentQuestions": "Frequently Asked Questions",
+  "haveQuestions": "Have Questions?",
+  "expertsReady": "Our experts are ready to answer all your questions and provide professional consultation",
+  "priceOnRequest": "On Request",
+  "forModel": "for {brand} {model}",
+  "loadingError": "Loading Error",
+  "loadingErrorDescription": "Failed to load service data. Please try again later."
+  },
   "ServicesSection": {
     "title": "Our Services",
     "subtitle": "Professional mobile device repair with quality guarantee and fast service",
