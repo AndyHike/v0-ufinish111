@@ -169,6 +169,10 @@
     "allBrandsButton": "View All Brands",
     "noBrands": "No brands available"
   },
+  "Common": {
+    "contactUs": "Contact Us",
+    "details": "Learn More"
+},
   "Brands": {
     "backToBrands":"Back to all brands",
     "backToHome":"Back to home",
@@ -206,6 +210,7 @@
   "fromHours": "from {hours} hours",
   "contactForTime": "contact for time", 
   "warranty": "Warranty",
+  "professionalRepair": "Professional phone repair",
   "warrantyMonths": "{count} months",
   "contactForWarranty": "contact for warranty",
   "orderService": "Order Service",

@@ -266,6 +266,7 @@
   "fromHours": "od {hours} hodin", 
   "contactForTime": "kontaktujte pro čas",
   "warranty": "Záruka",
+  "professionalRepair": "Profesionální oprava telefonů",
   "warrantyMonths": "{count} měsíců",
   "contactForWarranty": "kontaktujte pro záruku",
   "orderService": "Objednat službu",
@@ -682,6 +683,8 @@
     "premiumDescription": "Komplexní opravy s prodlouženou zárukou a prioritním servisem"
   },
   "Common": {
+    "contactUs": "Kontaktujte nás",
+    "details": "Více informací",
     "requestService": "Objednat službu",
     "backToHome": "Na hlavní stránku",
     "learnMore": "Zjistit více",
