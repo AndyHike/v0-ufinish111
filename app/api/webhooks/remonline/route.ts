@@ -14,7 +14,7 @@ const remonlineClientSchema = z.object({
   first_name: z.string().optional(),
   last_name: z.string().optional(),
   email: z.string().email().optional(),
-  phone: z.array(z.string()).optional(),
+  phone: z.string().optional(),
   address: z.string().optional(),
 })
 
@@ -145,7 +145,7 @@ async function createNewUser(supabase: any, clientData: any) {
     const email = clientData.email?.toLowerCase()
     const firstName = clientData.first_name || ""
     const lastName = clientData.last_name || ""
-    const phone = clientData.phone && clientData.phone.length > 0 ? clientData.phone[0] : null
+    const phone = clientData.phone || null
     const address = clientData.address || null
 
     if (!email) {
@@ -224,7 +224,7 @@ async function updateExistingUser(supabase: any, userId: string, clientData: any
     const email = clientData.email?.toLowerCase()
     const firstName = clientData.first_name || ""
     const lastName = clientData.last_name || ""
-    const phone = clientData.phone && clientData.phone.length > 0 ? clientData.phone[0] : null
+    const phone = clientData.phone || null
     const address = clientData.address || ""
 
     if (!email) {
