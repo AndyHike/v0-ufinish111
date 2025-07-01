@@ -26,9 +26,6 @@ export async function GET() {
       )
     }
 
-    // Test fetching branches
-    const branchesTest = await remonline.getBranches()
-
     // Test fetching clients (first page, limit 5)
     const clientsTest = await remonline.getClients({ page: 1, limit: 5 })
 
@@ -40,21 +37,14 @@ export async function GET() {
       message: "RemOnline API is working correctly",
       tests: {
         connection: connectionTest,
-        branches: {
-          success: branchesTest.success,
-          count: branchesTest.data?.data?.length || 0,
-          message: branchesTest.success ? "Branches fetched successfully" : branchesTest.message,
-        },
         clients: {
           success: clientsTest.success,
           count: clientsTest.data?.data?.length || 0,
           total: clientsTest.data?.count || 0,
-          message: clientsTest.success ? "Clients fetched successfully" : clientsTest.message,
         },
         orderStatuses: {
           success: statusesTest.success,
           count: statusesTest.data?.data?.length || 0,
-          message: statusesTest.success ? "Order statuses fetched successfully" : statusesTest.message,
         },
       },
     })
