@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { RemOnlineTest } from "@/components/admin/remonline-test"
 import { WebhookTester } from "@/components/admin/webhook-tester"
 import { RemOnlineApiTester } from "@/components/admin/remonline-api-tester"
+import { WebhookMonitor } from "@/components/admin/webhook-monitor"
 
 export default async function AdminIntegrationsPage() {
   const user = await getCurrentUser()
@@ -23,12 +24,19 @@ export default async function AdminIntegrationsPage() {
         </p>
       </div>
 
-      <Tabs defaultValue="api-test" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+      <Tabs defaultValue="webhook-monitor" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="webhook-monitor">Webhook Monitor</TabsTrigger>
           <TabsTrigger value="api-test">API Testing</TabsTrigger>
           <TabsTrigger value="webhook-test">Webhook Testing</TabsTrigger>
           <TabsTrigger value="connection-test">Connection Test</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="webhook-monitor" className="space-y-6">
+          <Suspense fallback={<Skeleton className="h-96" />}>
+            <WebhookMonitor />
+          </Suspense>
+        </TabsContent>
 
         <TabsContent value="api-test" className="space-y-6">
           <Suspense fallback={<Skeleton className="h-96" />}>

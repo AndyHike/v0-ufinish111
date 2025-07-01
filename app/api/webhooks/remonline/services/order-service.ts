@@ -1,236 +1,184 @@
-import { getStatusByRemOnlineId } from "@/lib/order-status-utils"
+import remonline from "@/lib/api/remonline"
+import { createClient } from "@/lib/supabase/server"
 
 export class OrderService {
-  constructor(private supabase: any) {}
+  private supabase = createClient()
 
-  async createOrder(userId: string, remonlineOrderId: number, orderData: any, orderItems: any[]) {
-    try {
-      console.log(`💾 OrderService.createOrder called with:`)
-      console.log(`   - userId: ${userId}`)
-      console.log(`   - remonlineOrderId: ${remonlineOrderId}`)
-      console.log(`   - orderData keys: ${Object.keys(orderData)}`)
-      console.log(`   - orderItems count: ${orderItems.length}`)
-
-      // Calculate total price from items
-      const totalPrice = orderItems.reduce((sum: number, item: any) => {
-        const itemPrice = Number.parseFloat(item.price || 0)
-        const itemQuantity = Number.parseFloat(item.quantity || 1)
-        console.log(`   - Item: ${item.entity?.title || "Unknown"}, Price: ${itemPrice}, Qty: ${itemQuantity}`)
-        return sum + itemPrice * itemQuantity
-      }, 0)
-
-      console.log(`💰 Calculated total price: ${totalPrice}`)
-
-      // Get status information from our database
-      const statusId = orderData.status?.id || 0
-      console.log(`📊 Getting status info for status ID: ${statusId}`)
-      const statusInfo = await getStatusByRemOnlineId(statusId, "uk", true)
-      console.log(`📊 Status info:`, statusInfo)
-
-      // Extract order information according to specification
-      const deviceBrand = orderData.asset?.brand || "Unknown"
-      const deviceModel = orderData.asset?.model || "Unknown"
-      const deviceSerialNumber = orderData.asset?.uid || "N/A"
-      const documentId = orderData.id_label || orderData.name || remonlineOrderId.toString()
-
-      console.log(`📱 Device info:`)
-      console.log(`   - Brand: ${deviceBrand}`)
-      console.log(`   - Model: ${deviceModel}`)
-      console.log(`   - Serial: ${deviceSerialNumber}`)
-      console.log(`   - Document ID: ${documentId}`)
-
-      const orderInfo = {
-        remonline_order_id: remonlineOrderId,
-        user_id: userId,
-        document_id: documentId,
-        creation_date: orderData.created_at || new Date().toISOString(),
-        device_serial_number: deviceSerialNumber,
-        device_name: `${deviceBrand} ${deviceModel}`.trim(),
-        device_brand: deviceBrand,
-        device_model: deviceModel,
-        total_amount: totalPrice,
-        overall_status: statusId.toString(),
-        overall_status_name: statusInfo.name,
-        overall_status_color: statusInfo.color,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      }
-
-      console.log("💾 Creating order with data:", JSON.stringify(orderInfo, null, 2))
-
-      // Check if order already exists
-      const { data: existingOrder } = await this.supabase
-        .from("user_repair_orders")
-        .select("id")
-        .eq("remonline_order_id", remonlineOrderId)
-        .single()
-
-      if (existingOrder) {
-        console.log(`⚠️ Order ${remonlineOrderId} already exists, updating instead`)
-        return await this.updateOrder(userId, remonlineOrderId, orderData, orderItems)
-      }
-
-      // Create new order
-      const { data: newOrder, error: insertError } = await this.supabase
-        .from("user_repair_orders")
-        .insert(orderInfo)
-        .select("id")
-        .single()
-
-      if (insertError) {
-        console.error("❌ Error creating order:", insertError)
-        throw new Error(`Failed to create order: ${insertError.message}`)
-      }
-
-      console.log(`✅ Order ${remonlineOrderId} created successfully with ID: ${newOrder.id}`)
-
-      // Store order services/items
-      if (orderItems.length > 0) {
-        await this.storeOrderServices(newOrder.id, remonlineOrderId, orderItems)
-      }
-
-      return newOrder
-    } catch (error) {
-      console.error("💥 Error in createOrder:", error)
-      throw error
-    }
+  async handleOrderCreated(orderId: number, clientId?: number) {
+    console.log(`📦 Creating order ${orderId} for client ${clientId}`)
+    return await this.processOrder(orderId, clientId, "created")
   }
 
-  async updateOrder(userId: string, remonlineOrderId: number, orderData: any, orderItems: any[]) {
+  async handleOrderUpdated(orderId: number, clientId?: number) {
+    console.log(`📦 Updating order ${orderId} for client ${clientId}`)
+    return await this.processOrder(orderId, clientId, "updated")
+  }
+
+  async handleOrderCompleted(orderId: number, clientId?: number) {
+    console.log(`📦 Completing order ${orderId} for client ${clientId}`)
+    return await this.processOrder(orderId, clientId, "completed")
+  }
+
+  async handleOrderCancelled(orderId: number, clientId?: number) {
+    console.log(`📦 Cancelling order ${orderId} for client ${clientId}`)
+    return await this.processOrder(orderId, clientId, "cancelled")
+  }
+
+  private async processOrder(orderId: number, clientId?: number, action = "processed") {
     try {
-      console.log(`🔄 OrderService.updateOrder called for order ${remonlineOrderId}`)
-
-      // Calculate total price from items
-      const totalPrice = orderItems.reduce((sum: number, item: any) => {
-        return sum + Number.parseFloat(item.price || 0) * Number.parseFloat(item.quantity || 1)
-      }, 0)
-
-      // Get status information from our database
-      const statusInfo = await getStatusByRemOnlineId(orderData.status?.id || 0, "uk", true)
-
-      // Extract order information
-      const deviceBrand = orderData.asset?.brand || "Unknown"
-      const deviceModel = orderData.asset?.model || "Unknown"
-      const deviceSerialNumber = orderData.asset?.uid || "N/A"
-      const documentId = orderData.id_label || orderData.name || remonlineOrderId.toString()
-
-      const updateData = {
-        document_id: documentId,
-        creation_date: orderData.created_at || new Date().toISOString(),
-        device_serial_number: deviceSerialNumber,
-        device_name: `${deviceBrand} ${deviceModel}`.trim(),
-        device_brand: deviceBrand,
-        device_model: deviceModel,
-        total_amount: totalPrice,
-        overall_status: orderData.status?.id?.toString() || "unknown",
-        overall_status_name: statusInfo.name,
-        overall_status_color: statusInfo.color,
-        updated_at: new Date().toISOString(),
+      // Step 1: Find user by remonline_id
+      if (!clientId) {
+        console.error("❌ No client ID provided")
+        return { success: false, message: "No client ID provided" }
       }
 
-      console.log("🔄 Updating order with data:", updateData)
-
-      // Check if order exists
-      const { data: existingOrder } = await this.supabase
-        .from("user_repair_orders")
-        .select("id")
-        .eq("remonline_order_id", remonlineOrderId)
+      console.log(`🔍 Looking for user with remonline_id: ${clientId}`)
+      const { data: user, error: userError } = await this.supabase
+        .from("users")
+        .select("id, email, remonline_id")
+        .eq("remonline_id", clientId.toString())
         .single()
 
-      if (!existingOrder) {
-        console.log(`⚠️ Order ${remonlineOrderId} not found, creating new one`)
-        return await this.createOrder(userId, remonlineOrderId, orderData, orderItems)
+      if (userError || !user) {
+        console.error(`❌ User not found for remonline_id ${clientId}:`, userError)
+        return { success: false, message: `User not found for remonline_id ${clientId}` }
       }
 
-      // Update existing order
-      const { error: updateError } = await this.supabase
-        .from("user_repair_orders")
-        .update(updateData)
-        .eq("remonline_order_id", remonlineOrderId)
+      console.log(`✅ Found user: ${user.email} (ID: ${user.id})`)
 
-      if (updateError) {
-        console.error("❌ Error updating order:", updateError)
-        throw new Error(`Failed to update order: ${updateError.message}`)
+      // Step 2: Get order details from RemOnline
+      console.log(`📡 Fetching order ${orderId} from RemOnline...`)
+      const orderResult = await remonline.getOrderById(orderId)
+
+      if (!orderResult.success || !orderResult.order) {
+        console.error(`❌ Failed to fetch order ${orderId}:`, orderResult.message)
+        return { success: false, message: `Failed to fetch order: ${orderResult.message}` }
       }
 
-      console.log(`✅ Order ${remonlineOrderId} updated successfully`)
-
-      // Update order services/items
-      if (orderItems.length > 0) {
-        await this.storeOrderServices(existingOrder.id, remonlineOrderId, orderItems)
-      }
-
-      return existingOrder
-    } catch (error) {
-      console.error("💥 Error in updateOrder:", error)
-      throw error
-    }
-  }
-
-  async deleteOrder(remonlineOrderId: number) {
-    try {
-      console.log(`🗑️ Deleting order ${remonlineOrderId}`)
-
-      // First delete order services
-      await this.supabase.from("user_repair_order_services").delete().eq("remonline_order_id", remonlineOrderId)
-
-      // Then delete the order
-      const { error: deleteError } = await this.supabase
-        .from("user_repair_orders")
-        .delete()
-        .eq("remonline_order_id", remonlineOrderId)
-
-      if (deleteError) {
-        console.error("❌ Error deleting order:", deleteError)
-        throw new Error(`Failed to delete order: ${deleteError.message}`)
-      }
-
-      console.log(`✅ Order ${remonlineOrderId} deleted successfully`)
-    } catch (error) {
-      console.error("💥 Error in deleteOrder:", error)
-      throw error
-    }
-  }
-
-  private async storeOrderServices(orderDbId: string, remonlineOrderId: number, items: any[]) {
-    try {
-      console.log(`🛍️ Storing ${items.length} services for order ${remonlineOrderId}`)
-
-      // First, delete existing services for this order
-      await this.supabase.from("user_repair_order_services").delete().eq("order_id", orderDbId)
-
-      // Insert new services
-      const servicesToInsert = items.map((item: any) => {
-        const service = {
-          order_id: orderDbId,
-          remonline_order_id: remonlineOrderId,
-          remonline_service_id: item.entity?.id || item.id,
-          service_name: item.entity?.title || "Service",
-          price: Number.parseFloat(item.price || 0),
-          warranty_period: item.warranty?.period || null,
-          warranty_units: item.warranty?.period_units || null,
-          service_status: "active", // Default status, can be updated later
-          service_status_name: "Активна",
-          service_status_color: "bg-blue-100 text-blue-800",
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        }
-
-        console.log(`   - Service: ${service.service_name}, Price: ${service.price}`)
-        return service
+      const order = orderResult.order
+      console.log(`✅ Order fetched:`, {
+        id: order.id,
+        status: order.status,
+        total: order.total,
+        device: order.device_name,
       })
 
-      const { error } = await this.supabase.from("user_repair_order_services").insert(servicesToInsert)
+      // Step 3: Get order items/services
+      console.log(`📡 Fetching order items for order ${orderId}...`)
+      const itemsResult = await remonline.getOrderItems(orderId)
 
-      if (error) {
-        console.error("❌ Error storing order services:", error)
-        throw new Error(`Failed to store order services: ${error.message}`)
+      if (!itemsResult.success) {
+        console.error(`❌ Failed to fetch order items:`, itemsResult.message)
+        return { success: false, message: `Failed to fetch order items: ${itemsResult.message}` }
       }
 
-      console.log(`✅ Stored ${servicesToInsert.length} services for order ${remonlineOrderId}`)
+      const services = itemsResult.items || []
+      console.log(`✅ Found ${services.length} services for order`)
+
+      // Step 4: Check if order already exists
+      const { data: existingOrder } = await this.supabase
+        .from("user_repair_orders")
+        .select("id")
+        .eq("remonline_order_id", orderId.toString())
+        .eq("user_id", user.id)
+        .single()
+
+      let userOrderId: string
+
+      if (existingOrder) {
+        console.log(`📝 Updating existing order ${existingOrder.id}`)
+        // Update existing order
+        const { data: updatedOrder, error: updateError } = await this.supabase
+          .from("user_repair_orders")
+          .update({
+            status: order.status || "unknown",
+            total_amount: order.total || 0,
+            device_name: order.device_name || "",
+            device_serial: order.device_serial || "",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", existingOrder.id)
+          .select("id")
+          .single()
+
+        if (updateError) {
+          console.error(`❌ Failed to update order:`, updateError)
+          return { success: false, message: `Failed to update order: ${updateError.message}` }
+        }
+
+        userOrderId = existingOrder.id
+      } else {
+        console.log(`📝 Creating new order for user ${user.id}`)
+        // Create new order
+        const { data: newOrder, error: insertError } = await this.supabase
+          .from("user_repair_orders")
+          .insert([
+            {
+              user_id: user.id,
+              remonline_order_id: orderId.toString(),
+              status: order.status || "unknown",
+              total_amount: order.total || 0,
+              device_name: order.device_name || "",
+              device_serial: order.device_serial || "",
+              created_at: order.created_at || new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            },
+          ])
+          .select("id")
+          .single()
+
+        if (insertError) {
+          console.error(`❌ Failed to create order:`, insertError)
+          return { success: false, message: `Failed to create order: ${insertError.message}` }
+        }
+
+        userOrderId = newOrder.id
+      }
+
+      // Step 5: Update services
+      if (services.length > 0) {
+        console.log(`📝 Processing ${services.length} services...`)
+
+        // Delete existing services
+        await this.supabase.from("user_repair_order_services").delete().eq("order_id", userOrderId)
+
+        // Insert new services
+        const servicesToInsert = services.map((service: any) => ({
+          order_id: userOrderId,
+          service_name: service.name || "Unknown Service",
+          price: service.price || 0,
+          warranty_period: service.warranty_period || 0,
+          status: service.status || "pending",
+        }))
+
+        const { error: servicesError } = await this.supabase.from("user_repair_order_services").insert(servicesToInsert)
+
+        if (servicesError) {
+          console.error(`❌ Failed to insert services:`, servicesError)
+          return { success: false, message: `Failed to insert services: ${servicesError.message}` }
+        }
+
+        console.log(`✅ Inserted ${servicesToInsert.length} services`)
+      }
+
+      console.log(`🎉 Order ${orderId} ${action} successfully for user ${user.email}`)
+      return {
+        success: true,
+        message: `Order ${orderId} ${action} successfully`,
+        data: {
+          orderId: userOrderId,
+          remonlineOrderId: orderId,
+          userId: user.id,
+          servicesCount: services.length,
+        },
+      }
     } catch (error) {
-      console.error("💥 Error in storeOrderServices:", error)
-      throw error
+      console.error(`💥 Error processing order ${orderId}:`, error)
+      return {
+        success: false,
+        message: "Order processing failed",
+        error: error instanceof Error ? error.message : String(error),
+      }
     }
   }
 }

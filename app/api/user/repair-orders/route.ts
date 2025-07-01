@@ -1,41 +1,56 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { getUserRepairOrders } from "@/app/actions/repair-orders"
+import { NextResponse } from "next/server"
+import { getCurrentUser } from "@/lib/auth/session"
+import { createClient } from "@/lib/supabase/server"
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    console.log("🔍 GET /api/user/repair-orders called")
-
-    const result = await getUserRepairOrders()
-
-    console.log("📋 getUserRepairOrders result:", {
-      success: result.success,
-      ordersCount: result.orders?.length || 0,
-      message: result.message,
-    })
-
-    if (!result.success) {
-      console.error("❌ Failed to get user repair orders:", result.message)
-      return NextResponse.json(
-        {
-          success: false,
-          error: result.message || "Failed to fetch repair orders",
-          details: result.details,
-        },
-        { status: 500 },
-      )
+    const user = await getCurrentUser()
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    console.log("✅ Successfully fetched repair orders")
-    return NextResponse.json({
-      success: true,
-      orders: result.orders || [],
-    })
+    const supabase = createClient()
+
+    // Get user's repair orders with services
+    const { data: orders, error } = await supabase
+      .from("user_repair_orders")
+      .select(`
+        *,
+        user_repair_order_services (*)
+      `)
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+
+    if (error) {
+      console.error("Error fetching user repair orders:", error)
+      return NextResponse.json({ error: "Failed to fetch orders" }, { status: 500 })
+    }
+
+    // Transform the data to match the expected format
+    const transformedOrders =
+      orders?.map((order) => ({
+        id: order.id,
+        documentId: order.remonline_order_id,
+        createdAt: order.created_at,
+        deviceSerial: order.device_serial,
+        deviceName: order.device_name,
+        services:
+          order.user_repair_order_services?.map((service: any) => ({
+            name: service.service_name,
+            price: service.price,
+            warrantyPeriod: service.warranty_period,
+            status: service.status,
+          })) || [],
+        totalAmount: order.total_amount,
+        status: order.status,
+      })) || []
+
+    return NextResponse.json({ orders: transformedOrders })
   } catch (error) {
-    console.error("💥 Error in GET /api/user/repair-orders:", error)
+    console.error("User repair orders error:", error)
     return NextResponse.json(
       {
-        success: false,
-        error: "Internal server error",
+        error: "Failed to fetch repair orders",
         details: error instanceof Error ? error.message : String(error),
       },
       { status: 500 },

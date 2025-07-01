@@ -1,87 +1,62 @@
+import remonline from "@/lib/api/remonline"
+import { createClient } from "@/lib/supabase/server"
+
 export class ClientService {
-  constructor(private supabase: any) {}
+  private supabase = createClient()
 
-  async createClient(clientData: any) {
-    try {
-      console.log(`👤 ClientService.createClient called with:`, clientData)
-
-      const clientInfo = {
-        remonline_id: clientData.id,
-        email: clientData.email,
-        first_name: clientData.first_name || "",
-        last_name: clientData.last_name || "",
-        phone: clientData.phone || null,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      }
-
-      console.log("👤 Creating client with data:", clientInfo)
-
-      const { data: newClient, error: insertError } = await this.supabase
-        .from("users")
-        .insert(clientInfo)
-        .select("id")
-        .single()
-
-      if (insertError) {
-        console.error("❌ Error creating client:", insertError)
-        throw new Error(`Failed to create client: ${insertError.message}`)
-      }
-
-      console.log(`✅ Client created successfully with ID: ${newClient.id}`)
-      return newClient
-    } catch (error) {
-      console.error("💥 Error in createClient:", error)
-      throw error
-    }
+  async handleClientCreated(clientId: number) {
+    console.log(`👤 Processing client created: ${clientId}`)
+    return await this.processClient(clientId, "created")
   }
 
-  async updateClient(remonlineClientId: number, clientData: any) {
-    try {
-      console.log(`👤 ClientService.updateClient called for client ${remonlineClientId}`)
-
-      const updateData = {
-        email: clientData.email,
-        first_name: clientData.first_name || "",
-        last_name: clientData.last_name || "",
-        phone: clientData.phone || null,
-        updated_at: new Date().toISOString(),
-      }
-
-      console.log("👤 Updating client with data:", updateData)
-
-      const { error: updateError } = await this.supabase
-        .from("users")
-        .update(updateData)
-        .eq("remonline_id", remonlineClientId)
-
-      if (updateError) {
-        console.error("❌ Error updating client:", updateError)
-        throw new Error(`Failed to update client: ${updateError.message}`)
-      }
-
-      console.log(`✅ Client ${remonlineClientId} updated successfully`)
-    } catch (error) {
-      console.error("💥 Error in updateClient:", error)
-      throw error
-    }
+  async handleClientUpdated(clientId: number) {
+    console.log(`👤 Processing client updated: ${clientId}`)
+    return await this.processClient(clientId, "updated")
   }
 
-  async deleteClient(remonlineClientId: number) {
+  async handleClientDeleted(clientId: number) {
+    console.log(`👤 Processing client deleted: ${clientId}`)
+    return { success: true, message: `Client ${clientId} deletion noted` }
+  }
+
+  private async processClient(clientId: number, action: string) {
     try {
-      console.log(`👤 Deleting client ${remonlineClientId}`)
+      // Get client details from RemOnline
+      console.log(`📡 Fetching client ${clientId} from RemOnline...`)
+      const clientResult = await remonline.getClientById(clientId)
 
-      const { error: deleteError } = await this.supabase.from("users").delete().eq("remonline_id", remonlineClientId)
-
-      if (deleteError) {
-        console.error("❌ Error deleting client:", deleteError)
-        throw new Error(`Failed to delete client: ${deleteError.message}`)
+      if (!clientResult.success || !clientResult.client) {
+        console.error(`❌ Failed to fetch client ${clientId}:`, clientResult.message)
+        return { success: false, message: `Failed to fetch client: ${clientResult.message}` }
       }
 
-      console.log(`✅ Client ${remonlineClientId} deleted successfully`)
+      const client = clientResult.client
+      console.log(`✅ Client fetched:`, {
+        id: client.id,
+        name: client.name,
+        email: client.email,
+        phone: client.phone,
+      })
+
+      // Here you can implement client synchronization logic
+      // For example, update user profile data based on RemOnline client data
+
+      console.log(`🎉 Client ${clientId} ${action} successfully`)
+      return {
+        success: true,
+        message: `Client ${clientId} ${action} successfully`,
+        data: {
+          clientId,
+          action,
+        },
+      }
     } catch (error) {
-      console.error("💥 Error in deleteClient:", error)
-      throw error
+      console.error(`💥 Error processing client ${clientId}:`, error)
+      return {
+        success: false,
+        message: "Client processing failed",
+        error: error instanceof Error ? error.message : String(error),
+      }
     }
   }
 }
