@@ -146,7 +146,7 @@ export default function ModelPageClient({ modelData, locale }: Props) {
                         </div>
                         <div className="flex items-center gap-2 text-sm text-gray-600">
                           <Shield className="h-3 w-3 text-green-600" />
-                          <span>{t("warrantyMonths", { months: service.warranty_months || 3 })}</span>
+                          <span>{t("warrantyMonths", { count: service.warranty_months || 3 })}</span>
                         </div>
                       </div>
 
