@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Loader2, CheckCircle, XCircle, TestTube, AlertTriangle } from "lucide-react"
+import { Loader2, CheckCircle, XCircle, TestTube, AlertTriangle, Info } from "lucide-react"
 import { toast } from "sonner"
 
 interface TestResult {
@@ -16,17 +16,25 @@ interface TestResult {
     connection: {
       success: boolean
       message: string
+      endpoint?: string
       data?: any
       details?: any
+    }
+    branches: {
+      success: boolean
+      count: number
+      message: string
     }
     clients: {
       success: boolean
       count: number
       total: number
+      message: string
     }
     orderStatuses: {
       success: boolean
       count: number
+      message: string
     }
   }
 }
@@ -90,9 +98,18 @@ export function RemOnlineTest() {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-          <AlertTriangle className="h-4 w-4 text-blue-600" />
+          <Info className="h-4 w-4 text-blue-600" />
           <div className="text-sm text-blue-800">
-            <strong>API Info:</strong> Using Bearer token authentication with rate limit of 3 requests/second
+            <strong>API Info:</strong> Using Bearer token authentication with rate limit of 3 requests/second. Testing
+            multiple endpoints for compatibility.
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+          <AlertTriangle className="h-4 w-4 text-amber-600" />
+          <div className="text-sm text-amber-800">
+            <strong>Note:</strong> If you're getting "Invalid JSON payload" errors, make sure your API key is valid and
+            has the correct permissions.
           </div>
         </div>
 
@@ -128,6 +145,11 @@ export function RemOnlineTest() {
                   <div>
                     <div className="font-medium">API Connection</div>
                     <div className="text-sm text-muted-foreground">{testResult.tests.connection.message}</div>
+                    {testResult.tests.connection.endpoint && (
+                      <div className="text-xs text-green-600 mt-1">
+                        Working endpoint: {testResult.tests.connection.endpoint}
+                      </div>
+                    )}
                     {testResult.tests.connection.details && (
                       <div className="text-xs text-red-600 mt-1">
                         Details: {JSON.stringify(testResult.tests.connection.details, null, 2)}
@@ -139,14 +161,28 @@ export function RemOnlineTest() {
                   </Badge>
                 </div>
 
+                {/* Branches Test */}
+                <div className="flex items-center justify-between p-3 border rounded-lg">
+                  <div>
+                    <div className="font-medium">Branches Endpoint</div>
+                    <div className="text-sm text-muted-foreground">
+                      {testResult.tests.branches.message}
+                      {testResult.tests.branches.success && ` (${testResult.tests.branches.count} branches)`}
+                    </div>
+                  </div>
+                  <Badge variant={testResult.tests.branches.success ? "default" : "destructive"}>
+                    {testResult.tests.branches.success ? "Success" : "Failed"}
+                  </Badge>
+                </div>
+
                 {/* Clients Test */}
                 <div className="flex items-center justify-between p-3 border rounded-lg">
                   <div>
                     <div className="font-medium">Clients Endpoint</div>
                     <div className="text-sm text-muted-foreground">
-                      {testResult.tests.clients.success
-                        ? `Fetched ${testResult.tests.clients.count} clients (${testResult.tests.clients.total} total)`
-                        : "Failed to fetch clients"}
+                      {testResult.tests.clients.message}
+                      {testResult.tests.clients.success &&
+                        ` (${testResult.tests.clients.count} of ${testResult.tests.clients.total} clients)`}
                     </div>
                   </div>
                   <Badge variant={testResult.tests.clients.success ? "default" : "destructive"}>
@@ -159,9 +195,8 @@ export function RemOnlineTest() {
                   <div>
                     <div className="font-medium">Order Statuses</div>
                     <div className="text-sm text-muted-foreground">
-                      {testResult.tests.orderStatuses.success
-                        ? `Fetched ${testResult.tests.orderStatuses.count} order statuses`
-                        : "Failed to fetch order statuses"}
+                      {testResult.tests.orderStatuses.message}
+                      {testResult.tests.orderStatuses.success && ` (${testResult.tests.orderStatuses.count} statuses)`}
                     </div>
                   </div>
                   <Badge variant={testResult.tests.orderStatuses.success ? "default" : "destructive"}>
@@ -191,9 +226,10 @@ export function RemOnlineTest() {
                   <ul className="mt-1 list-disc list-inside space-y-1">
                     <li>Check that REMONLINE_API_KEY environment variable is set correctly</li>
                     <li>Verify the API key is valid and active in your RemOnline account</li>
+                    <li>Make sure the API key has the necessary permissions (read access to clients, orders, etc.)</li>
                     <li>Ensure you're not exceeding the rate limit (3 requests/second)</li>
-                    <li>Check RemOnline API status at api.remonline.app</li>
-                    <li>Verify your RemOnline account has API access enabled</li>
+                    <li>Check RemOnline API status and documentation for any recent changes</li>
+                    <li>Try regenerating your API key in RemOnline settings if the current one is old</li>
                   </ul>
                 </div>
               </div>

@@ -1,4 +1,4 @@
-// RemOnline API Client - Updated for new Bearer token authentication
+// RemOnline API Client - Updated for new API version
 class RemonlineClient {
   private baseUrl = "https://api.remonline.app"
   private apiKey: string | null = null
@@ -58,6 +58,7 @@ class RemonlineClient {
       Authorization: `Bearer ${this.apiKey}`,
       Accept: "application/json",
       "Content-Type": "application/json",
+      "User-Agent": "DeviceHelp-API-Client/1.0",
     }
   }
 
@@ -79,18 +80,23 @@ class RemonlineClient {
       Authorization: `Bearer ${this.apiKey?.substring(0, 8)}...${this.apiKey?.substring(this.apiKey.length - 4)}`,
     })
 
-    const response = await fetch(fullUrl, {
-      ...options,
-      headers,
-    })
+    try {
+      const response = await fetch(fullUrl, {
+        ...options,
+        headers,
+      })
 
-    console.log(`📨 Response status: ${response.status} ${response.statusText}`)
-    console.log(`📨 Response headers:`, Object.fromEntries(response.headers.entries()))
+      console.log(`📨 Response status: ${response.status} ${response.statusText}`)
+      console.log(`📨 Response headers:`, Object.fromEntries(response.headers.entries()))
 
-    return response
+      return response
+    } catch (error) {
+      console.error(`❌ Network error making request to ${fullUrl}:`, error)
+      throw error
+    }
   }
 
-  // Test the API connection
+  // Test the API connection with a simple endpoint
   async testConnection() {
     try {
       console.log("🧪 Testing RemOnline API connection...")
@@ -103,12 +109,83 @@ class RemonlineClient {
         }
       }
 
-      // Try to fetch order statuses as a simple test
-      const response = await this.makeRequest("/statuses/orders")
+      // Try different endpoints to test connection
+      const testEndpoints = [
+        { path: "/branches", name: "Branches" },
+        { path: "/statuses/orders", name: "Order Statuses" },
+        { path: "/clients", name: "Clients" },
+      ]
+
+      let lastError = null
+
+      for (const endpoint of testEndpoints) {
+        try {
+          console.log(`🧪 Testing endpoint: ${endpoint.name} (${endpoint.path})`)
+
+          const response = await this.makeRequest(endpoint.path)
+
+          if (response.ok) {
+            const data = await response.json()
+            console.log(`✅ API test successful with ${endpoint.name} endpoint`)
+
+            return {
+              success: true,
+              message: `API connection successful via ${endpoint.name} endpoint`,
+              endpoint: endpoint.path,
+              data,
+            }
+          } else {
+            const errorText = await response.text()
+            console.log(`⚠️ ${endpoint.name} endpoint failed with status ${response.status}:`, errorText)
+
+            let errorDetails
+            try {
+              errorDetails = JSON.parse(errorText)
+            } catch {
+              errorDetails = errorText
+            }
+
+            lastError = {
+              endpoint: endpoint.path,
+              status: response.status,
+              details: errorDetails,
+            }
+          }
+        } catch (error) {
+          console.log(`⚠️ ${endpoint.name} endpoint error:`, error)
+          lastError = {
+            endpoint: endpoint.path,
+            error: error instanceof Error ? error.message : String(error),
+          }
+        }
+      }
+
+      // If we get here, all endpoints failed
+      return {
+        success: false,
+        message: "All test endpoints failed",
+        details: lastError,
+      }
+    } catch (error) {
+      console.error("❌ RemOnline API test error:", error)
+      return {
+        success: false,
+        message: "Failed to test API connection",
+        details: error instanceof Error ? error.message : String(error),
+      }
+    }
+  }
+
+  // Get branches (company locations)
+  async getBranches() {
+    try {
+      console.log("🏢 Fetching branches...")
+
+      const response = await this.makeRequest("/branches")
 
       if (!response.ok) {
         const errorText = await response.text()
-        console.error(`❌ API test failed with status ${response.status}:`, errorText)
+        console.error(`❌ Failed to fetch branches with status ${response.status}:`, errorText)
 
         let errorDetails
         try {
@@ -119,24 +196,20 @@ class RemonlineClient {
 
         return {
           success: false,
-          message: `API test failed with status ${response.status}`,
+          message: `Failed to fetch branches with status ${response.status}`,
           details: errorDetails,
         }
       }
 
       const data = await response.json()
-      console.log("✅ API test successful, received order statuses:", data.data?.length || 0)
+      console.log("✅ Branches fetched successfully:", data.data?.length || 0)
 
-      return {
-        success: true,
-        message: "API connection successful",
-        data,
-      }
+      return { success: true, data }
     } catch (error) {
-      console.error("❌ RemOnline API test error:", error)
+      console.error("❌ RemOnline getBranches error:", error)
       return {
         success: false,
-        message: "Failed to test API connection",
+        message: "Failed to fetch branches from RemOnline API",
         details: error instanceof Error ? error.message : String(error),
       }
     }
@@ -189,6 +262,7 @@ class RemonlineClient {
       query?: string
       email?: string
       phone?: string
+      branch_ids?: number[]
     } = {},
   ) {
     try {
@@ -197,13 +271,13 @@ class RemonlineClient {
       // Build query string from params
       const queryParams = new URLSearchParams()
 
-      // Set default pagination
-      queryParams.append("page", String(params.page || 1))
+      // Set pagination - RemOnline uses offset-based pagination
+      const page = params.page || 1
+      const limit = Math.min(params.limit || 50, 100) // Max 100 per request
+      const offset = (page - 1) * limit
 
-      // RemOnline API returns up to 50 entries per page by default
-      if (params.limit && params.limit <= 50) {
-        queryParams.append("limit", String(params.limit))
-      }
+      queryParams.append("limit", String(limit))
+      queryParams.append("offset", String(offset))
 
       if (params.query) {
         queryParams.append("query", params.query)
@@ -215,6 +289,10 @@ class RemonlineClient {
 
       if (params.phone) {
         queryParams.append("phone", params.phone)
+      }
+
+      if (params.branch_ids && params.branch_ids.length > 0) {
+        queryParams.append("branch_ids", params.branch_ids.join(","))
       }
 
       const url = `/clients?${queryParams.toString()}`
@@ -245,7 +323,9 @@ class RemonlineClient {
         hasData: !!data.data,
         dataLength: data.data?.length || 0,
         totalCount: data.count || 0,
-        currentPage: params.page || 1,
+        currentPage: page,
+        limit,
+        offset,
       })
 
       return { success: true, data }
@@ -303,8 +383,8 @@ class RemonlineClient {
     try {
       console.log(`📧 Looking for client with email: ${email}`)
 
-      // Use the query parameter to search for the client
-      const response = await this.getClients({ query: email })
+      // Use the email parameter to search for the client
+      const response = await this.getClients({ email })
 
       if (response.success && response.data.data) {
         // Find the client with the exact email match
@@ -341,13 +421,13 @@ class RemonlineClient {
     try {
       console.log(`📱 Looking for client with phone: ${phone}`)
 
-      // Normalize phone number by removing non-digit characters
-      const normalizedPhone = phone.replace(/\D/g, "")
-
-      // Use the query parameter to search for the client
-      const response = await this.getClients({ query: normalizedPhone })
+      // Use the phone parameter to search for the client
+      const response = await this.getClients({ phone })
 
       if (response.success && response.data.data) {
+        // Normalize phone number by removing non-digit characters
+        const normalizedPhone = phone.replace(/\D/g, "")
+
         // Find the client with a matching phone number
         const client = response.data.data.find((c: any) => {
           if (!c.phone || !Array.isArray(c.phone)) return false
@@ -385,11 +465,15 @@ class RemonlineClient {
 
   // Create a new client
   async createClient(clientData: {
-    first_name: string
-    last_name: string
-    email: string
+    name: string
+    email?: string
     phone?: string[]
     address?: string
+    notes?: string
+    discount?: number
+    juridical?: boolean
+    manager_id?: number
+    custom_fields?: Record<string, any>
   }) {
     try {
       console.log("➕ Creating client with data:", {
@@ -397,11 +481,20 @@ class RemonlineClient {
         phone: clientData.phone?.length || 0,
       })
 
-      // Ensure phone is an array
+      // Prepare the data according to RemOnline API requirements
       const dataToSend = {
-        ...clientData,
+        name: clientData.name, // Required field
+        email: clientData.email || "",
         phone: Array.isArray(clientData.phone) ? clientData.phone : clientData.phone ? [clientData.phone] : [],
+        address: clientData.address || "",
+        notes: clientData.notes || "",
+        discount: clientData.discount || 0,
+        juridical: clientData.juridical || false,
+        manager_id: clientData.manager_id || null,
+        custom_fields: clientData.custom_fields || {},
       }
+
+      console.log("📤 Sending client data:", dataToSend)
 
       const response = await this.makeRequest("/clients", {
         method: "POST",
@@ -451,6 +544,7 @@ class RemonlineClient {
       limit?: number
       client_id?: number
       status_id?: number
+      branch_ids?: number[]
       created_from?: string
       created_to?: string
     } = {},
@@ -461,12 +555,13 @@ class RemonlineClient {
       // Build query string from params
       const queryParams = new URLSearchParams()
 
-      // Set default pagination
-      queryParams.append("page", String(params.page || 1))
+      // Set pagination - RemOnline uses offset-based pagination
+      const page = params.page || 1
+      const limit = Math.min(params.limit || 50, 100) // Max 100 per request
+      const offset = (page - 1) * limit
 
-      if (params.limit && params.limit <= 50) {
-        queryParams.append("limit", String(params.limit))
-      }
+      queryParams.append("limit", String(limit))
+      queryParams.append("offset", String(offset))
 
       if (params.client_id) {
         queryParams.append("client_id", String(params.client_id))
@@ -474,6 +569,10 @@ class RemonlineClient {
 
       if (params.status_id) {
         queryParams.append("status_id", String(params.status_id))
+      }
+
+      if (params.branch_ids && params.branch_ids.length > 0) {
+        queryParams.append("branch_ids", params.branch_ids.join(","))
       }
 
       if (params.created_from) {
@@ -565,6 +664,7 @@ class RemonlineClient {
       page?: number
       limit?: number
       status_id?: number
+      branch_ids?: number[]
     } = {},
   ) {
     try {
@@ -579,134 +679,6 @@ class RemonlineClient {
       return {
         success: false,
         message: "Failed to fetch orders from RemOnline API",
-        details: error instanceof Error ? error.message : String(error),
-      }
-    }
-  }
-
-  // Get tasks with pagination and optional filters
-  async getTasks(
-    params: {
-      page?: number
-      limit?: number
-      order_id?: number
-      status_id?: number
-    } = {},
-  ) {
-    try {
-      console.log("📝 Fetching tasks from RemOnline API...")
-
-      // Build query string from params
-      const queryParams = new URLSearchParams()
-
-      // Set default pagination
-      queryParams.append("page", String(params.page || 1))
-
-      if (params.limit && params.limit <= 50) {
-        queryParams.append("limit", String(params.limit))
-      }
-
-      if (params.order_id) {
-        queryParams.append("order_id", String(params.order_id))
-      }
-
-      if (params.status_id) {
-        queryParams.append("status_id", String(params.status_id))
-      }
-
-      const url = `/tasks?${queryParams.toString()}`
-      const response = await this.makeRequest(url)
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error(`❌ Failed to fetch tasks with status ${response.status}:`, errorText)
-
-        let errorDetails
-        try {
-          errorDetails = JSON.parse(errorText)
-        } catch {
-          errorDetails = errorText
-        }
-
-        return {
-          success: false,
-          message: `Failed to fetch tasks with status ${response.status}`,
-          details: errorDetails,
-        }
-      }
-
-      const data = await response.json()
-      console.log("✅ Tasks response:", {
-        hasData: !!data.data,
-        dataLength: data.data?.length || 0,
-        totalCount: data.count || 0,
-      })
-
-      return { success: true, data }
-    } catch (error) {
-      console.error("❌ RemOnline getTasks error:", error)
-      return {
-        success: false,
-        message: "Failed to fetch tasks from RemOnline API",
-        details: error instanceof Error ? error.message : String(error),
-      }
-    }
-  }
-
-  // Get inventory items
-  async getInventory(
-    params: {
-      page?: number
-      limit?: number
-      query?: string
-    } = {},
-  ) {
-    try {
-      console.log("📦 Fetching inventory from RemOnline API...")
-
-      // Build query string from params
-      const queryParams = new URLSearchParams()
-
-      queryParams.append("page", String(params.page || 1))
-
-      if (params.limit && params.limit <= 50) {
-        queryParams.append("limit", String(params.limit))
-      }
-
-      if (params.query) {
-        queryParams.append("query", params.query)
-      }
-
-      const url = `/inventory?${queryParams.toString()}`
-      const response = await this.makeRequest(url)
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error(`❌ Failed to fetch inventory with status ${response.status}:`, errorText)
-
-        let errorDetails
-        try {
-          errorDetails = JSON.parse(errorText)
-        } catch {
-          errorDetails = errorText
-        }
-
-        return {
-          success: false,
-          message: `Failed to fetch inventory with status ${response.status}`,
-          details: errorDetails,
-        }
-      }
-
-      const data = await response.json()
-      console.log("✅ Inventory fetched successfully, count:", data.data?.length || 0)
-
-      return { success: true, data }
-    } catch (error) {
-      console.error("❌ RemOnline getInventory error:", error)
-      return {
-        success: false,
-        message: "Failed to fetch inventory from RemOnline API",
         details: error instanceof Error ? error.message : String(error),
       }
     }
