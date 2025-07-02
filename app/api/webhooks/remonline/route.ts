@@ -18,6 +18,7 @@ const remonlineWebhookSchema = z.object({
   }),
   metadata: z
     .object({
+      // For Order.Created and Order.Updated
       order: z
         .object({
           id: z.number(),
@@ -40,6 +41,17 @@ const remonlineWebhookSchema = z.object({
         .object({
           id: z.number(),
           name: z.string(),
+        })
+        .optional(),
+      // For Order.Status.Changed
+      new: z
+        .object({
+          id: z.number(),
+        })
+        .optional(),
+      old: z
+        .object({
+          id: z.number(),
         })
         .optional(),
     })
@@ -78,6 +90,24 @@ export async function POST(request: NextRequest) {
 
     if (!parsedPayload.success) {
       console.error("❌ Invalid webhook payload:", parsedPayload.error)
+      console.error("❌ Validation errors:", JSON.stringify(parsedPayload.error.errors, null, 2))
+
+      // For Order.Status.Changed, let's try to process it anyway if it has the basic structure
+      if (payload.event_name === "Order.Status.Changed" && payload.context?.object_id && payload.metadata?.new?.id) {
+        console.log("⚠️ Validation failed but trying to process Order.Status.Changed anyway...")
+        const webhookData = payload
+        const eventType = webhookData.event_name || ""
+
+        console.log(`🎯 Processing event: ${eventType}`)
+        console.log(`📊 Context:`, webhookData.context)
+        console.log(`📝 Metadata:`, webhookData.metadata)
+
+        if (eventType.startsWith("Order.")) {
+          console.log("📦 Routing to order handler...")
+          return await handleOrderEvents(webhookData)
+        }
+      }
+
       return NextResponse.json(
         { error: "Invalid webhook payload", details: parsedPayload.error.errors },
         { status: 400 },
