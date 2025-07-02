@@ -1,19 +1,14 @@
-/**
- * Formats a number as currency (CZK)
- * @param value The value to format
- * @returns Formatted currency string
- */
-export function formatCurrency(value: number | string | null | undefined): string {
-  if (value === null || value === undefined || isNaN(Number(value))) return "0 Kč"
+export function formatCurrency(amount: number): string {
+  // Handle invalid numbers
+  if (isNaN(amount) || amount === null || amount === undefined) {
+    return "0,00 Kč"
+  }
 
-  const numValue = typeof value === "string" ? Number.parseFloat(value) : value
-
-  if (isNaN(numValue)) return "0 Kč"
-
+  // Format as Czech Koruna
   return new Intl.NumberFormat("cs-CZ", {
     style: "currency",
     currency: "CZK",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(numValue)
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount)
 }

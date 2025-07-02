@@ -15,6 +15,8 @@ export async function handleOrderEvents(webhookData: any) {
         return await handleOrderUpdated(webhookData)
       case "Order.Deleted":
         return await handleOrderDeleted(webhookData)
+      case "Order.Status.Changed":
+        return await handleOrderStatusChanged(webhookData)
       default:
         console.log(`⚠️ Unhandled order event: ${eventType}`)
         return NextResponse.json({ success: true, message: "Order event received but no action taken" })
@@ -193,6 +195,40 @@ async function handleOrderDeleted(webhookData: any) {
       {
         success: false,
         error: "Failed to delete order",
+        details: error instanceof Error ? error.message : String(error),
+      },
+      { status: 500 },
+    )
+  }
+}
+
+async function handleOrderStatusChanged(webhookData: any) {
+  try {
+    const orderId = webhookData.context.object_id
+    const newStatusId = webhookData.metadata?.status?.id
+
+    console.log(`🔄 Processing Order.Status.Changed for order ${orderId}`)
+    console.log(`📊 New status ID: ${newStatusId}`)
+
+    if (!newStatusId) {
+      console.error("❌ No status ID found in webhook metadata")
+      return NextResponse.json({ success: false, error: "No status ID found" }, { status: 400 })
+    }
+
+    const supabase = createClient()
+
+    // Use OrderService to update the order status
+    const orderService = new OrderService(supabase)
+    await orderService.updateOrderStatus(orderId, newStatusId)
+
+    console.log(`✅ Order ${orderId} status updated to ${newStatusId}`)
+    return NextResponse.json({ success: true, message: "Order status updated successfully" })
+  } catch (error) {
+    console.error("💥 Error in handleOrderStatusChanged:", error)
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Failed to update order status",
         details: error instanceof Error ? error.message : String(error),
       },
       { status: 500 },

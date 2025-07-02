@@ -16,9 +16,6 @@ interface Service {
   price: number
   warrantyPeriod: number | null
   warrantyUnits: string | null
-  status: string
-  statusName: string
-  statusColor: string
 }
 
 interface Order {
@@ -323,14 +320,6 @@ export function UserOrders() {
                         <div className="flex-1 space-y-1">
                           <div className="flex items-center gap-3">
                             <span className="font-medium">{service.name}</span>
-                            <Badge
-                              className={cn("text-xs font-medium", getStatusBadgeClass(service.statusColor))}
-                              style={
-                                service.statusColor.startsWith("#") ? { backgroundColor: service.statusColor } : {}
-                              }
-                            >
-                              {service.statusName}
-                            </Badge>
                           </div>
                           {(service.warrantyPeriod || service.warrantyUnits) && (
                             <div className="flex items-center gap-2 text-sm text-muted-foreground">

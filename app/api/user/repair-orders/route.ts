@@ -1,93 +1,106 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
-import { getCurrentUser } from "@/lib/auth/session"
-import { getStatusByRemOnlineId } from "@/lib/order-status-utils"
+import { getSession } from "@/lib/auth/session"
 
 export async function GET(request: NextRequest) {
   try {
     console.log("🔍 Fetching user repair orders...")
 
-    // Get current user
-    const user = await getCurrentUser()
-    if (!user) {
+    // Get current user session
+    const session = await getSession()
+    if (!session?.user?.id) {
       console.log("❌ No authenticated user found")
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
     }
 
-    console.log(`👤 Authenticated user: ${user.id} (${user.email})`)
+    const userId = session.user.id
+    console.log(`👤 Fetching orders for user: ${userId}`)
 
     const supabase = createClient()
 
-    // Get orders with their services
-    console.log("📋 Querying user_repair_orders table...")
+    // Fetch user's repair orders with services
     const { data: orders, error: ordersError } = await supabase
       .from("user_repair_orders")
-      .select(`
-        *,
-        services:user_repair_order_services(*)
-      `)
-      .eq("user_id", user.id)
+      .select(
+        `
+        id,
+        remonline_order_id,
+        document_id,
+        creation_date,
+        device_serial_number,
+        device_name,
+        device_brand,
+        device_model,
+        total_amount,
+        overall_status,
+        overall_status_name,
+        overall_status_color,
+        created_at,
+        updated_at
+      `,
+      )
+      .eq("user_id", userId)
       .order("creation_date", { ascending: false })
 
     if (ordersError) {
-      console.error("❌ Error fetching user orders:", ordersError)
-      return NextResponse.json({ error: "Failed to fetch orders" }, { status: 500 })
+      console.error("❌ Error fetching orders:", ordersError)
+      return NextResponse.json({ success: false, error: "Failed to fetch orders" }, { status: 500 })
     }
 
-    console.log(`📋 Found ${orders?.length || 0} orders for user ${user.id}`)
+    console.log(`📦 Found ${orders?.length || 0} orders`)
 
-    if (orders && orders.length > 0) {
-      console.log("📋 Sample order:", JSON.stringify(orders[0], null, 2))
-    }
-
-    // Transform data to match the expected format
-    const transformedOrders = await Promise.all(
+    // Fetch services for each order
+    const ordersWithServices = await Promise.all(
       (orders || []).map(async (order) => {
-        // Get overall order status from our status table
-        const overallStatusId = Number(order.overall_status)
-        const overallStatusInfo = await getStatusByRemOnlineId(overallStatusId, "uk", true)
+        const { data: services, error: servicesError } = await supabase
+          .from("user_repair_order_services")
+          .select(
+            `
+            id,
+            remonline_service_id,
+            service_name,
+            price,
+            warranty_period,
+            warranty_units,
+            created_at,
+            updated_at
+          `,
+          )
+          .eq("order_id", order.id)
+          .order("created_at", { ascending: true })
 
-        // Transform services with their statuses
-        const transformedServices = await Promise.all(
-          (order.services || []).map(async (service: any) => {
-            const serviceStatusId = Number(service.service_status)
-            const serviceStatusInfo = await getStatusByRemOnlineId(serviceStatusId, "uk", true)
-
-            return {
-              id: service.id,
-              name: service.service_name || service.name || "Невідома послуга",
-              price: Number(service.price) || 0,
-              warrantyPeriod: service.warranty_period,
-              warrantyUnits: service.warranty_units,
-              status: service.service_status || "1",
-              statusName: serviceStatusInfo.name,
-              statusColor: serviceStatusInfo.color,
-            }
-          }),
-        )
+        if (servicesError) {
+          console.error(`❌ Error fetching services for order ${order.id}:`, servicesError)
+        }
 
         return {
           id: order.id,
-          documentId: order.document_id || `ORD-${order.id}`,
-          creationDate: order.creation_date || order.created_at || new Date().toISOString(),
-          deviceSerialNumber: order.device_serial_number || order.device_serial || "Не вказано",
+          documentId: order.document_id || "Не вказано",
+          creationDate: order.creation_date || order.created_at,
+          deviceSerialNumber: order.device_serial_number || "Не вказано",
           deviceName: order.device_name || "Невідомий пристрій",
           deviceBrand: order.device_brand,
           deviceModel: order.device_model,
-          services: transformedServices,
           totalAmount: Number(order.total_amount) || 0,
-          overallStatus: order.overall_status || "1",
-          overallStatusName: overallStatusInfo.name,
-          overallStatusColor: overallStatusInfo.color,
+          overallStatus: order.overall_status || "unknown",
+          overallStatusName: order.overall_status_name || "Невідомий статус",
+          overallStatusColor: order.overall_status_color || "bg-gray-100 text-gray-800",
+          services: (services || []).map((service) => ({
+            id: service.id,
+            name: service.service_name || "Невідома послуга",
+            price: Number(service.price) || 0,
+            warrantyPeriod: service.warranty_period,
+            warrantyUnits: service.warranty_units,
+          })),
         }
       }),
     )
 
-    console.log(`✅ Returning ${transformedOrders.length} transformed orders with proper statuses`)
+    console.log(`✅ Successfully processed ${ordersWithServices.length} orders with services`)
 
     return NextResponse.json({
       success: true,
-      orders: transformedOrders,
+      orders: ordersWithServices,
     })
   } catch (error) {
     console.error("💥 Error in repair orders API:", error)

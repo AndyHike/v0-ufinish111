@@ -167,6 +167,41 @@ export class OrderService {
     }
   }
 
+  async updateOrderStatus(remonlineOrderId: number, newStatusId: number) {
+    try {
+      console.log(`🔄 OrderService.updateOrderStatus called for order ${remonlineOrderId}, status ${newStatusId}`)
+
+      // Get status information from our database
+      const statusInfo = await getStatusByRemOnlineId(newStatusId, "uk", true)
+      console.log(`📊 Status info for ID ${newStatusId}:`, statusInfo)
+
+      const updateData = {
+        overall_status: newStatusId.toString(),
+        overall_status_name: statusInfo.name,
+        overall_status_color: statusInfo.color,
+        updated_at: new Date().toISOString(),
+      }
+
+      console.log("🔄 Updating order status with data:", updateData)
+
+      // Update existing order
+      const { error: updateError } = await this.supabase
+        .from("user_repair_orders")
+        .update(updateData)
+        .eq("remonline_order_id", remonlineOrderId)
+
+      if (updateError) {
+        console.error("❌ Error updating order status:", updateError)
+        throw new Error(`Failed to update order status: ${updateError.message}`)
+      }
+
+      console.log(`✅ Order ${remonlineOrderId} status updated successfully to ${statusInfo.name}`)
+    } catch (error) {
+      console.error("💥 Error in updateOrderStatus:", error)
+      throw error
+    }
+  }
+
   async deleteOrder(remonlineOrderId: number) {
     try {
       console.log(`🗑️ Deleting order ${remonlineOrderId}`)
@@ -209,9 +244,6 @@ export class OrderService {
           price: Number.parseFloat(item.price || 0),
           warranty_period: item.warranty?.period || null,
           warranty_units: item.warranty?.period_units || null,
-          service_status: "active", // Default status, can be updated later
-          service_status_name: "Активна",
-          service_status_color: "bg-blue-100 text-blue-800",
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         }
