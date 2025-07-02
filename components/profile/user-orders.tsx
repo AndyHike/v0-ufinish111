@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { CalendarDays, Package, Search, Filter, Smartphone, DollarSign, Shield, RefreshCw } from "lucide-react"
 import { formatCurrency } from "@/lib/format-currency"
 import { cn } from "@/lib/utils"
+import { useTranslations } from "next-intl"
 
 interface Service {
   id: string
@@ -34,6 +35,7 @@ interface Order {
 }
 
 export function UserOrders() {
+  const t = useTranslations("orders")
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -50,17 +52,17 @@ export function UserOrders() {
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to fetch orders")
+        throw new Error(data.error || t("fetchError"))
       }
 
       if (data.success) {
         setOrders(data.orders || [])
       } else {
-        throw new Error(data.error || "Failed to fetch orders")
+        throw new Error(data.error || t("fetchError"))
       }
     } catch (err) {
       console.error("Error fetching orders:", err)
-      setError(err instanceof Error ? err.message : "Failed to fetch orders")
+      setError(err instanceof Error ? err.message : t("fetchError"))
     } finally {
       setLoading(false)
     }
@@ -100,7 +102,7 @@ export function UserOrders() {
     try {
       const date = new Date(dateString)
       if (isNaN(date.getTime())) {
-        return "Дата не вказана"
+        return t("dateNotSpecified")
       }
       return date.toLocaleDateString("uk-UA", {
         year: "numeric",
@@ -110,12 +112,12 @@ export function UserOrders() {
         minute: "2-digit",
       })
     } catch {
-      return "Дата не вказана"
+      return t("dateNotSpecified")
     }
   }
 
   const formatWarranty = (period: number | null, units: string | null) => {
-    if (!period || !units) return "Без гарантії"
+    if (!period || !units) return t("noWarranty")
     return `${period} ${units}`
   }
 
@@ -140,15 +142,15 @@ export function UserOrders() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-3xl font-bold tracking-tight">Історія замовлень</h2>
-            <p className="text-muted-foreground">Переглядайте статус ваших ремонтів</p>
+            <h2 className="text-3xl font-bold tracking-tight">{t("title")}</h2>
+            <p className="text-muted-foreground">{t("subtitle")}</p>
           </div>
         </div>
         <Card>
           <CardContent className="flex items-center justify-center py-12">
             <div className="text-center space-y-4">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-              <p className="text-muted-foreground">Завантаження замовлень...</p>
+              <p className="text-muted-foreground">{t("loading")}</p>
             </div>
           </CardContent>
         </Card>
@@ -161,12 +163,12 @@ export function UserOrders() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-3xl font-bold tracking-tight">Історія замовлень</h2>
-            <p className="text-muted-foreground">Переглядайте статус ваших ремонтів</p>
+            <h2 className="text-3xl font-bold tracking-tight">{t("title")}</h2>
+            <p className="text-muted-foreground">{t("subtitle")}</p>
           </div>
           <Button onClick={fetchOrders} variant="outline" className="flex items-center gap-2 bg-transparent">
             <RefreshCw className="h-4 w-4" />
-            Оновити
+            {t("refresh")}
           </Button>
         </div>
         <Card>
@@ -176,10 +178,10 @@ export function UserOrders() {
                 <Package className="h-8 w-8 text-destructive" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold">Помилка завантаження</h3>
+                <h3 className="text-lg font-semibold">{t("errorTitle")}</h3>
                 <p className="text-muted-foreground mb-4">{error}</p>
                 <Button onClick={fetchOrders} variant="outline">
-                  Спробувати знову
+                  {t("tryAgain")}
                 </Button>
               </div>
             </div>
@@ -193,14 +195,14 @@ export function UserOrders() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Історія замовлень</h2>
+          <h2 className="text-3xl font-bold tracking-tight">{t("title")}</h2>
           <p className="text-muted-foreground">
-            {orders.length === 0 ? "Поки що немає замовлень" : `Всього ${orders.length} замовлень`}
+            {orders.length === 0 ? t("noOrdersYet") : t("totalOrders", { count: orders.length })}
           </p>
         </div>
         <Button onClick={fetchOrders} variant="outline" className="flex items-center gap-2 bg-transparent">
           <RefreshCw className="h-4 w-4" />
-          Оновити
+          {t("refresh")}
         </Button>
       </div>
 
@@ -211,7 +213,7 @@ export function UserOrders() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
-                placeholder="Пошук за номером замовлення, пристроєм або послугою..."
+                placeholder={t("searchPlaceholder")}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -221,10 +223,10 @@ export function UserOrders() {
               <Filter className="h-4 w-4 text-muted-foreground" />
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Фільтр за статусом" />
+                  <SelectValue placeholder={t("filterByStatus")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Всі статуси</SelectItem>
+                  <SelectItem value="all">{t("allStatuses")}</SelectItem>
                   {uniqueStatuses.map((status) => {
                     const order = orders.find((o) => o.overallStatus === status)
                     return (
@@ -249,13 +251,9 @@ export function UserOrders() {
                 <Package className="h-8 w-8 text-muted-foreground" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold">
-                  {orders.length === 0 ? "Немає замовлень" : "Замовлення не знайдено"}
-                </h3>
+                <h3 className="text-lg font-semibold">{orders.length === 0 ? t("noOrders") : t("noOrdersFound")}</h3>
                 <p className="text-muted-foreground">
-                  {orders.length === 0
-                    ? "Коли ви зробите замовлення на ремонт, воно з'явиться тут."
-                    : "Спробуйте змінити критерії пошуку або фільтрування."}
+                  {orders.length === 0 ? t("noOrdersDescription") : t("noOrdersFoundDescription")}
                 </p>
               </div>
             </div>
@@ -269,7 +267,7 @@ export function UserOrders() {
                 <div className="flex items-start justify-between">
                   <div className="space-y-2">
                     <div className="flex items-center gap-3">
-                      <CardTitle className="text-xl">Замовлення #{order.documentId}</CardTitle>
+                      <CardTitle className="text-xl">{t("orderNumber", { number: order.documentId })}</CardTitle>
                       <Badge
                         className={cn("text-xs font-medium", getStatusBadgeClass(order.overallStatusColor))}
                         style={
@@ -291,16 +289,18 @@ export function UserOrders() {
                         {order.deviceModel && <span>• {order.deviceModel}</span>}
                       </div>
                     </div>
-                    {order.deviceSerialNumber && order.deviceSerialNumber !== "Не вказано" && (
+                    {order.deviceSerialNumber && order.deviceSerialNumber !== t("notSpecified") && (
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Package className="h-4 w-4" />
-                        <span>Серійний номер: {order.deviceSerialNumber}</span>
+                        <span>
+                          {t("serialNumber")}: {order.deviceSerialNumber}
+                        </span>
                       </div>
                     )}
                   </div>
                   <div className="text-right">
                     <div className="text-2xl font-bold text-primary">{formatCurrency(order.totalAmount)}</div>
-                    <div className="text-sm text-muted-foreground">Загальна сума</div>
+                    <div className="text-sm text-muted-foreground">{t("totalAmount")}</div>
                   </div>
                 </div>
               </CardHeader>
@@ -309,7 +309,7 @@ export function UserOrders() {
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
                     <DollarSign className="h-5 w-5 text-muted-foreground" />
-                    <h4 className="font-semibold">Послуги ({order.services.length})</h4>
+                    <h4 className="font-semibold">{t("services", { count: order.services.length })}</h4>
                   </div>
                   <div className="grid gap-3">
                     {order.services.map((service) => (
@@ -324,7 +324,9 @@ export function UserOrders() {
                           {(service.warrantyPeriod || service.warrantyUnits) && (
                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
                               <Shield className="h-3 w-3" />
-                              <span>Гарантія: {formatWarranty(service.warrantyPeriod, service.warrantyUnits)}</span>
+                              <span>
+                                {t("warranty")}: {formatWarranty(service.warrantyPeriod, service.warrantyUnits)}
+                              </span>
                             </div>
                           )}
                         </div>

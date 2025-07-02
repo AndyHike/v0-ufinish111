@@ -1,116 +1,79 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
-import { getSession } from "@/lib/auth/session"
+import { getStatusByRemOnlineId } from "@/lib/order-status-utils"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth"
 
 export async function GET(request: NextRequest) {
   try {
-    console.log("🔍 Fetching user repair orders...")
-
-    // Get current user session
-    const session = await getSession()
+    // Get user session
+    const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      console.log("❌ No authenticated user found")
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const userId = session.user.id
-    console.log(`👤 Fetching orders for user: ${userId}`)
-
+    // Get user locale
     const supabase = createClient()
+    const { data: userData } = await supabase.from("users").select("locale").eq("id", session.user.id).single()
 
-    // Fetch user's repair orders with services
-    const { data: orders, error: ordersError } = await supabase
+    const userLocale = userData?.locale || "uk"
+
+    // Fetch user's repair orders
+    const { data: orders, error } = await supabase
       .from("user_repair_orders")
-      .select(
-        `
-        id,
-        remonline_order_id,
-        document_id,
-        creation_date,
-        device_serial_number,
-        device_name,
-        device_brand,
-        device_model,
-        total_amount,
-        overall_status,
-        overall_status_name,
-        overall_status_color,
-        created_at,
-        updated_at
-      `,
-      )
-      .eq("user_id", userId)
-      .order("creation_date", { ascending: false })
+      .select(`
+        *,
+        user_repair_order_services (
+          id,
+          service_name,
+          price,
+          warranty_period,
+          warranty_units
+        )
+      `)
+      .eq("user_id", session.user.id)
+      .order("created_at", { ascending: false })
 
-    if (ordersError) {
-      console.error("❌ Error fetching orders:", ordersError)
-      return NextResponse.json({ success: false, error: "Failed to fetch orders" }, { status: 500 })
+    if (error) {
+      console.error("Error fetching repair orders:", error)
+      return NextResponse.json({ error: "Failed to fetch orders" }, { status: 500 })
     }
 
-    console.log(`📦 Found ${orders?.length || 0} orders`)
-
-    // Fetch services for each order
-    const ordersWithServices = await Promise.all(
+    // Transform orders data
+    const transformedOrders = await Promise.all(
       (orders || []).map(async (order) => {
-        const { data: services, error: servicesError } = await supabase
-          .from("user_repair_order_services")
-          .select(
-            `
-            id,
-            remonline_service_id,
-            service_name,
-            price,
-            warranty_period,
-            warranty_units,
-            created_at,
-            updated_at
-          `,
-          )
-          .eq("order_id", order.id)
-          .order("created_at", { ascending: true })
-
-        if (servicesError) {
-          console.error(`❌ Error fetching services for order ${order.id}:`, servicesError)
-        }
+        // Get status information with user's locale
+        const statusInfo = await getStatusByRemOnlineId(Number.parseInt(order.overall_status), userLocale)
 
         return {
           id: order.id,
-          documentId: order.document_id || "Не вказано",
+          documentId: order.document_id || "N/A",
           creationDate: order.creation_date || order.created_at,
-          deviceSerialNumber: order.device_serial_number || "Не вказано",
-          deviceName: order.device_name || "Невідомий пристрій",
+          deviceSerialNumber: order.device_serial_number || "Not specified",
+          deviceName: order.device_name || "Unknown device",
           deviceBrand: order.device_brand,
           deviceModel: order.device_model,
-          totalAmount: Number(order.total_amount) || 0,
-          overallStatus: order.overall_status || "unknown",
-          overallStatusName: order.overall_status_name || "Невідомий статус",
-          overallStatusColor: order.overall_status_color || "bg-gray-100 text-gray-800",
-          services: (services || []).map((service) => ({
+          services: (order.user_repair_order_services || []).map((service: any) => ({
             id: service.id,
-            name: service.service_name || "Невідома послуга",
-            price: Number(service.price) || 0,
+            name: service.service_name,
+            price: Number.parseFloat(service.price) || 0,
             warrantyPeriod: service.warranty_period,
             warrantyUnits: service.warranty_units,
           })),
+          totalAmount: Number.parseFloat(order.total_amount) || 0,
+          overallStatus: order.overall_status,
+          overallStatusName: statusInfo.name,
+          overallStatusColor: statusInfo.color,
         }
       }),
     )
 
-    console.log(`✅ Successfully processed ${ordersWithServices.length} orders with services`)
-
     return NextResponse.json({
       success: true,
-      orders: ordersWithServices,
+      orders: transformedOrders,
     })
   } catch (error) {
-    console.error("💥 Error in repair orders API:", error)
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Internal server error",
-        details: error instanceof Error ? error.message : String(error),
-      },
-      { status: 500 },
-    )
+    console.error("Error in repair orders API:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
