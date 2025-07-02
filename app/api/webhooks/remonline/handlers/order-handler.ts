@@ -205,23 +205,46 @@ async function handleOrderDeleted(webhookData: any) {
 async function handleOrderStatusChanged(webhookData: any) {
   try {
     const orderId = webhookData.context.object_id
-    const newStatusId = webhookData.metadata?.status?.id
+    const newStatusId = webhookData.metadata?.new?.id // Виправлено: статус в metadata.new.id
+    const oldStatusId = webhookData.metadata?.old?.id
 
     console.log(`🔄 Processing Order.Status.Changed for order ${orderId}`)
-    console.log(`📊 New status ID: ${newStatusId}`)
+    console.log(`📊 Status change: ${oldStatusId} → ${newStatusId}`)
+    console.log(`📋 Full webhook metadata:`, JSON.stringify(webhookData.metadata, null, 2))
 
     if (!newStatusId) {
-      console.error("❌ No status ID found in webhook metadata")
-      return NextResponse.json({ success: false, error: "No status ID found" }, { status: 400 })
+      console.error("❌ No new status ID found in webhook metadata")
+      console.error("❌ Expected path: metadata.new.id")
+      console.error("❌ Received metadata:", JSON.stringify(webhookData.metadata, null, 2))
+      return NextResponse.json({ success: false, error: "No new status ID found" }, { status: 400 })
     }
 
     const supabase = createClient()
 
+    // Find the order to get user's locale preference
+    const { data: order, error: orderError } = await supabase
+      .from("user_repair_orders")
+      .select(`
+        id,
+        user_id,
+        users!inner(locale)
+      `)
+      .eq("remonline_order_id", orderId)
+      .single()
+
+    let userLocale = "uk" // Default to Ukrainian
+    if (!orderError && order?.users?.locale) {
+      userLocale = order.users.locale
+      console.log(`👤 Using user locale: ${userLocale}`)
+    } else {
+      console.log(`⚠️ Could not get user locale, using default: ${userLocale}`)
+    }
+
     // Use OrderService to update the order status
     const orderService = new OrderService(supabase)
-    await orderService.updateOrderStatus(orderId, newStatusId)
+    await orderService.updateOrderStatus(orderId, newStatusId, userLocale)
 
-    console.log(`✅ Order ${orderId} status updated to ${newStatusId}`)
+    console.log(`✅ Order ${orderId} status updated from ${oldStatusId} to ${newStatusId}`)
     return NextResponse.json({ success: true, message: "Order status updated successfully" })
   } catch (error) {
     console.error("💥 Error in handleOrderStatusChanged:", error)

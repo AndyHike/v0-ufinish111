@@ -167,13 +167,15 @@ export class OrderService {
     }
   }
 
-  async updateOrderStatus(remonlineOrderId: number, newStatusId: number) {
+  async updateOrderStatus(remonlineOrderId: number, newStatusId: number, userLocale = "uk") {
     try {
-      console.log(`🔄 OrderService.updateOrderStatus called for order ${remonlineOrderId}, status ${newStatusId}`)
+      console.log(
+        `🔄 OrderService.updateOrderStatus called for order ${remonlineOrderId}, status ${newStatusId}, locale ${userLocale}`,
+      )
 
-      // Get status information from our database
-      const statusInfo = await getStatusByRemOnlineId(newStatusId, "uk", true)
-      console.log(`📊 Status info for ID ${newStatusId}:`, statusInfo)
+      // Get status information from our database with user's locale
+      const statusInfo = await getStatusByRemOnlineId(newStatusId, userLocale, true)
+      console.log(`📊 Status info for ID ${newStatusId} (${userLocale}):`, statusInfo)
 
       const updateData = {
         overall_status: newStatusId.toString(),
@@ -185,17 +187,26 @@ export class OrderService {
       console.log("🔄 Updating order status with data:", updateData)
 
       // Update existing order
-      const { error: updateError } = await this.supabase
+      const { data: updatedOrder, error: updateError } = await this.supabase
         .from("user_repair_orders")
         .update(updateData)
         .eq("remonline_order_id", remonlineOrderId)
+        .select("id, document_id")
 
       if (updateError) {
         console.error("❌ Error updating order status:", updateError)
         throw new Error(`Failed to update order status: ${updateError.message}`)
       }
 
-      console.log(`✅ Order ${remonlineOrderId} status updated successfully to ${statusInfo.name}`)
+      if (!updatedOrder || updatedOrder.length === 0) {
+        console.warn(`⚠️ No order found with remonline_order_id ${remonlineOrderId}`)
+        throw new Error(`Order ${remonlineOrderId} not found`)
+      }
+
+      console.log(
+        `✅ Order ${remonlineOrderId} (${updatedOrder[0].document_id}) status updated successfully to ${statusInfo.name}`,
+      )
+      return updatedOrder[0]
     } catch (error) {
       console.error("💥 Error in updateOrderStatus:", error)
       throw error
