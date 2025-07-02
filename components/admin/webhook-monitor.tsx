@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Activity,
   CheckCircle,
@@ -18,6 +19,9 @@ import {
   EyeOff,
   Zap,
   Database,
+  Code,
+  Globe,
+  Server,
 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -28,6 +32,10 @@ interface WebhookLog {
   message: string
   processing_time_ms: number
   webhook_data: any
+  display_payload: any
+  raw_body: string
+  headers: Record<string, string>
+  metadata: any
   created_at: string
 }
 
@@ -38,6 +46,7 @@ export function WebhookMonitor() {
   const [expandedLogs, setExpandedLogs] = useState<Set<number>>(new Set())
   const [lastFetchTime, setLastFetchTime] = useState<string>("")
   const [error, setError] = useState<string>("")
+  const [total, setTotal] = useState(0)
 
   const fetchLogs = async () => {
     try {
@@ -50,6 +59,7 @@ export function WebhookMonitor() {
       if (response.ok && data.success) {
         console.log(`✅ Fetched ${data.logs?.length || 0} logs`)
         setLogs(data.logs || [])
+        setTotal(data.total || 0)
         setLastFetchTime(new Date().toLocaleTimeString())
       } else {
         console.error("❌ Failed to fetch logs:", data.error)
@@ -66,6 +76,10 @@ export function WebhookMonitor() {
   }
 
   const clearLogs = async () => {
+    if (!confirm("Are you sure you want to clear all webhook logs?")) {
+      return
+    }
+
     try {
       const response = await fetch("/api/admin/webhook-logs", {
         method: "DELETE",
@@ -75,6 +89,7 @@ export function WebhookMonitor() {
 
       if (response.ok && data.success) {
         setLogs([])
+        setTotal(0)
         toast.success(data.message || "Webhook logs cleared")
       } else {
         toast.error(`Failed to clear logs: ${data.error}`)
@@ -123,6 +138,14 @@ export function WebhookMonitor() {
     return new Date(timestamp).toLocaleString()
   }
 
+  const formatJson = (obj: any) => {
+    try {
+      return JSON.stringify(obj, null, 2)
+    } catch {
+      return String(obj)
+    }
+  }
+
   useEffect(() => {
     fetchLogs()
   }, [])
@@ -130,7 +153,7 @@ export function WebhookMonitor() {
   useEffect(() => {
     if (!isAutoRefresh) return
 
-    const interval = setInterval(fetchLogs, 3000) // Every 3 seconds
+    const interval = setInterval(fetchLogs, 3000)
     return () => clearInterval(interval)
   }, [isAutoRefresh])
 
@@ -164,6 +187,7 @@ export function WebhookMonitor() {
               <p className={`text-sm ${error ? "text-red-700" : "text-green-700"}`}>
                 Last Update: {lastFetchTime || "Never"}
               </p>
+              <p className={`text-xs ${error ? "text-red-600" : "text-green-600"}`}>Total Records: {total}</p>
               <div className={`flex items-center gap-1 ${error ? "text-red-600" : "text-green-600"}`}>
                 {isAutoRefresh && !error && <RefreshCw className="h-3 w-3 animate-spin" />}
                 <span className="text-xs">{isAutoRefresh ? "Live" : "Paused"}</span>
@@ -282,7 +306,7 @@ export function WebhookMonitor() {
           </div>
         </CardHeader>
         <CardContent>
-          <ScrollArea className="h-[600px]">
+          <ScrollArea className="h-[700px]">
             {isLoading ? (
               <div className="flex items-center justify-center h-32">
                 <RefreshCw className="h-6 w-6 animate-spin" />
@@ -306,6 +330,8 @@ export function WebhookMonitor() {
                 <div className="mt-4 p-4 bg-blue-50 rounded-lg">
                   <p className="text-sm text-blue-800 font-medium">Endpoint URL:</p>
                   <p className="text-xs text-blue-600 font-mono">https://devicehelp.cz/api/webhooks/remonline</p>
+                  <p className="text-xs text-blue-600 mt-1">Method: POST</p>
+                  <p className="text-xs text-blue-600">Content-Type: application/json</p>
                 </div>
               </div>
             ) : (
@@ -334,12 +360,62 @@ export function WebhookMonitor() {
                     {expandedLogs.has(log.id) && (
                       <>
                         <Separator className="my-3" />
-                        <div>
-                          <p className="text-sm font-medium mb-2">Full Webhook Data:</p>
-                          <pre className="bg-muted p-3 rounded text-xs overflow-auto max-h-64 whitespace-pre-wrap">
-                            {JSON.stringify(log.webhook_data, null, 2)}
-                          </pre>
-                        </div>
+                        <Tabs defaultValue="payload" className="w-full">
+                          <TabsList className="grid w-full grid-cols-4">
+                            <TabsTrigger value="payload" className="flex items-center gap-1">
+                              <Code className="h-3 w-3" />
+                              Payload
+                            </TabsTrigger>
+                            <TabsTrigger value="headers" className="flex items-center gap-1">
+                              <Globe className="h-3 w-3" />
+                              Headers
+                            </TabsTrigger>
+                            <TabsTrigger value="raw" className="flex items-center gap-1">
+                              <Server className="h-3 w-3" />
+                              Raw Body
+                            </TabsTrigger>
+                            <TabsTrigger value="metadata" className="flex items-center gap-1">
+                              <Database className="h-3 w-3" />
+                              Metadata
+                            </TabsTrigger>
+                          </TabsList>
+
+                          <TabsContent value="payload" className="mt-4">
+                            <div>
+                              <p className="text-sm font-medium mb-2">Parsed Payload:</p>
+                              <pre className="bg-muted p-3 rounded text-xs overflow-auto max-h-64 whitespace-pre-wrap">
+                                {formatJson(log.display_payload)}
+                              </pre>
+                            </div>
+                          </TabsContent>
+
+                          <TabsContent value="headers" className="mt-4">
+                            <div>
+                              <p className="text-sm font-medium mb-2">HTTP Headers:</p>
+                              <pre className="bg-muted p-3 rounded text-xs overflow-auto max-h-64 whitespace-pre-wrap">
+                                {formatJson(log.headers)}
+                              </pre>
+                            </div>
+                          </TabsContent>
+
+                          <TabsContent value="raw" className="mt-4">
+                            <div>
+                              <p className="text-sm font-medium mb-2">Raw Request Body:</p>
+                              <pre className="bg-muted p-3 rounded text-xs overflow-auto max-h-64 whitespace-pre-wrap">
+                                {log.raw_body || "(empty)"}
+                              </pre>
+                            </div>
+                          </TabsContent>
+
+                          <TabsContent value="metadata" className="mt-4">
+                            <div>
+                              <p className="text-sm font-medium mb-2">Request Metadata:</p>
+                              <pre className="bg-muted p-3 rounded text-xs overflow-auto max-h-64 whitespace-pre-wrap">
+                                {formatJson(log.metadata)}
+                              </pre>
+                            </div>
+                          </TabsContent>
+                        </Tabs>
                       </>
                     )}
                   </div>
