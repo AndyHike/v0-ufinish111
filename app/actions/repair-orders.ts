@@ -5,27 +5,14 @@ import { getSession } from "@/lib/auth/session"
 
 export async function getUserRepairOrders() {
   try {
-    console.log("🔍 getUserRepairOrders called")
-
     // Get the current user session
     const session = await getSession()
     if (!session || !session.user) {
-      console.log("❌ No session or user found")
       return { success: false, message: "Unauthorized" }
     }
 
     const userId = session.user.id
-    console.log(`👤 Getting repair orders for user: ${userId}`)
-
     const supabase = createServerSupabaseClient()
-
-    // First, let's check if the tables exist and have data
-    const { data: ordersCheck, error: ordersCheckError } = await supabase
-      .from("user_repair_orders")
-      .select("count(*)")
-      .eq("user_id", userId)
-
-    console.log("📊 Orders check result:", { ordersCheck, ordersCheckError })
 
     // Fetch repair orders with their services
     const { data: orders, error } = await supabase
@@ -38,49 +25,38 @@ export async function getUserRepairOrders() {
       .order("creation_date", { ascending: false })
 
     if (error) {
-      console.error("❌ Error fetching repair orders:", error)
-      return {
-        success: false,
-        message: "Failed to fetch repair orders",
-        details: error.message,
-      }
-    }
-
-    console.log(`📋 Found ${orders?.length || 0} orders`)
-
-    if (orders && orders.length > 0) {
-      console.log("📋 Sample order structure:", JSON.stringify(orders[0], null, 2))
+      console.error("Error fetching repair orders:", error)
+      return { success: false, message: "Failed to fetch repair orders" }
     }
 
     // Transform the data to match the frontend structure
-    const transformedOrders = (orders || []).map((order) => ({
+    const transformedOrders = orders.map((order) => ({
       id: order.id,
-      documentId: order.document_id,
-      creationDate: order.creation_date,
-      deviceSerialNumber: order.device_serial_number,
-      deviceName: order.device_name,
-      deviceBrand: order.device_brand,
-      deviceModel: order.device_model,
-      totalAmount: order.total_amount,
-      overallStatus: order.overall_status,
-      overallStatusName: order.overall_status_name,
-      overallStatusColor: order.overall_status_color,
-      services: (order.services || []).map((service: any) => ({
+      document_id: order.document_id,
+      creation_date: order.creation_date,
+      device_serial_number: order.device_serial_number,
+      device_name: order.device_name,
+      device_brand: order.device_brand,
+      device_model: order.device_model,
+      total_amount: order.total_amount,
+      overall_status: order.overall_status,
+      overall_status_name: order.overall_status_name,
+      overall_status_color: order.overall_status_color,
+      services: order.services.map((service: any) => ({
         id: service.id,
         name: service.service_name,
         price: service.price,
-        warrantyPeriod: service.warranty_period,
-        warrantyUnits: service.warranty_units,
+        warranty_period: service.warranty_period,
+        warranty_units: service.warranty_units,
         status: service.service_status,
-        statusName: service.service_status_name,
-        statusColor: service.service_status_color,
+        status_name: service.service_status_name,
+        status_color: service.service_status_color,
       })),
     }))
 
-    console.log(`✅ Transformed ${transformedOrders.length} orders`)
     return { success: true, orders: transformedOrders }
   } catch (error) {
-    console.error("💥 Error in getUserRepairOrders:", error)
+    console.error("Error in getUserRepairOrders:", error)
     return {
       success: false,
       message: "An unexpected error occurred",

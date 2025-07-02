@@ -1,34 +1,47 @@
 -- Create user_repair_orders table
 CREATE TABLE IF NOT EXISTS user_repair_orders (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-    remonline_order_id TEXT NOT NULL,
-    status TEXT NOT NULL DEFAULT 'pending',
-    total_amount DECIMAL(10,2) DEFAULT 0,
-    device_name TEXT DEFAULT '',
-    device_serial TEXT DEFAULT '',
+    remonline_order_id INTEGER UNIQUE NOT NULL,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    document_id VARCHAR(255) NOT NULL,
+    creation_date TIMESTAMP WITH TIME ZONE NOT NULL,
+    device_serial_number VARCHAR(255),
+    device_name VARCHAR(255) NOT NULL,
+    device_brand VARCHAR(255),
+    device_model VARCHAR(255),
+    total_amount DECIMAL(10,2),
+    overall_status VARCHAR(100) NOT NULL,
+    overall_status_name VARCHAR(255),
+    overall_status_color VARCHAR(255),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    UNIQUE(user_id, remonline_order_id)
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Create indexes
+-- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_user_repair_orders_user_id ON user_repair_orders(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_repair_orders_remonline_id ON user_repair_orders(remonline_order_id);
-CREATE INDEX IF NOT EXISTS idx_user_repair_orders_created_at ON user_repair_orders(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_user_repair_orders_creation_date ON user_repair_orders(creation_date);
+CREATE INDEX IF NOT EXISTS idx_user_repair_orders_status ON user_repair_orders(overall_status);
 
--- Enable RLS
+-- Add RLS policies
 ALTER TABLE user_repair_orders ENABLE ROW LEVEL SECURITY;
 
--- Create policies
-CREATE POLICY "Users can view own orders" ON user_repair_orders
+-- Policy: Users can only see their own orders
+CREATE POLICY "Users can view their own repair orders" ON user_repair_orders
     FOR SELECT USING (auth.uid() = user_id);
 
-CREATE POLICY "Admin can view all orders" ON user_repair_orders
-    FOR ALL USING (
-        EXISTS (
-            SELECT 1 FROM auth.users 
-            WHERE auth.users.id = auth.uid() 
-            AND auth.users.raw_user_meta_data->>'role' = 'admin'
-        )
-    );
+-- Policy: Users can insert their own orders (for webhook processing)
+CREATE POLICY "System can insert orders" ON user_repair_orders
+    FOR INSERT WITH CHECK (true);
+
+-- Policy: System can update orders
+CREATE POLICY "System can update orders" ON user_repair_orders
+    FOR UPDATE USING (true);
+
+-- Policy: System can delete orders
+CREATE POLICY "System can delete orders" ON user_repair_orders
+    FOR DELETE USING (true);
+
+-- Policy: Service can insert/update orders
+CREATE POLICY "Service can manage repair orders" ON user_repair_orders
+    FOR ALL USING (true);

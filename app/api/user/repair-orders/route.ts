@@ -1,102 +1,77 @@
-import { NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
-import { getSession } from "@/lib/auth/session"
+import { type NextRequest, NextResponse } from "next/server"
+import { createClient } from "@/lib/supabase"
+import { getCurrentUser } from "@/lib/auth/session"
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    console.log("🔍 GET /api/user/repair-orders called")
+    console.log("🔍 Fetching user repair orders...")
 
-    // Get the current user session
-    const session = await getSession()
-    if (!session || !session.user) {
-      console.log("❌ No session or user found")
+    // Get current user
+    const user = await getCurrentUser()
+    if (!user) {
+      console.log("❌ No authenticated user found")
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const userId = session.user.id
-    console.log(`👤 Getting repair orders for user: ${userId}`)
+    console.log(`👤 Authenticated user: ${user.id} (${user.email})`)
 
     const supabase = createClient()
 
-    // Check if tables exist first
-    const { data: tableCheck, error: tableError } = await supabase.from("user_repair_orders").select("count").limit(1)
-
-    if (tableError) {
-      console.error("❌ Table check error:", tableError)
-      // If table doesn't exist, return empty array instead of error
-      if (tableError.code === "42P01") {
-        console.log("📋 Tables don't exist yet, returning empty orders")
-        return NextResponse.json({
-          success: true,
-          orders: [],
-        })
-      }
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Database error",
-          details: tableError.message,
-        },
-        { status: 500 },
-      )
-    }
-
-    // Fetch repair orders with their services
-    const { data: orders, error } = await supabase
+    // Get orders with their services
+    console.log("📋 Querying user_repair_orders table...")
+    const { data: orders, error: ordersError } = await supabase
       .from("user_repair_orders")
       .select(`
         *,
         services:user_repair_order_services(*)
       `)
-      .eq("user_id", userId)
+      .eq("user_id", user.id)
       .order("creation_date", { ascending: false })
 
-    if (error) {
-      console.error("❌ Error fetching repair orders:", error)
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Failed to fetch repair orders",
-          details: error.message,
-        },
-        { status: 500 },
-      )
+    if (ordersError) {
+      console.error("❌ Error fetching user orders:", ordersError)
+      return NextResponse.json({ error: "Failed to fetch orders" }, { status: 500 })
     }
 
-    console.log(`📋 Found ${orders?.length || 0} orders`)
+    console.log(`📋 Found ${orders?.length || 0} orders for user ${user.id}`)
 
-    // Transform the data to match the frontend structure
+    if (orders && orders.length > 0) {
+      console.log("📋 Sample order:", JSON.stringify(orders[0], null, 2))
+    }
+
+    // Transform data to match the expected format
     const transformedOrders = (orders || []).map((order) => ({
       id: order.id,
-      documentId: order.document_id,
-      creationDate: order.creation_date,
-      deviceSerialNumber: order.device_serial_number,
-      deviceName: order.device_name,
-      deviceBrand: order.device_brand,
-      deviceModel: order.device_model,
-      totalAmount: order.total_amount,
-      overallStatus: order.overall_status,
-      overallStatusName: order.overall_status_name,
-      overallStatusColor: order.overall_status_color,
+      document_id: order.document_id,
+      creation_date: order.creation_date,
+      device_serial_number: order.device_serial_number,
+      device_name: order.device_name,
+      device_brand: order.device_brand,
+      device_model: order.device_model,
       services: (order.services || []).map((service: any) => ({
         id: service.id,
         name: service.service_name,
         price: service.price,
-        warrantyPeriod: service.warranty_period,
-        warrantyUnits: service.warranty_units,
+        warranty_period: service.warranty_period,
+        warranty_units: service.warranty_units,
         status: service.service_status,
-        statusName: service.service_status_name,
-        statusColor: service.service_status_color,
+        status_name: service.service_status_name,
+        status_color: service.service_status_color,
       })),
+      total_amount: order.total_amount,
+      overall_status: order.overall_status,
+      overall_status_name: order.overall_status_name,
+      overall_status_color: order.overall_status_color,
     }))
 
-    console.log(`✅ Transformed ${transformedOrders.length} orders`)
+    console.log(`✅ Returning ${transformedOrders.length} transformed orders`)
+
     return NextResponse.json({
       success: true,
       orders: transformedOrders,
     })
   } catch (error) {
-    console.error("💥 Error in GET /api/user/repair-orders:", error)
+    console.error("💥 Error in repair orders API:", error)
     return NextResponse.json(
       {
         success: false,

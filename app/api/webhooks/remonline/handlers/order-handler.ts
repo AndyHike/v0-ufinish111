@@ -1,70 +1,26 @@
 import { NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { createClient } from "@/lib/supabase"
+import remonline from "@/lib/api/remonline"
+import { OrderService } from "../services/order-service"
 
-interface RemOnlineWebhookData {
-  id: string
-  created_at: string
-  event_name: string
-  context: {
-    object_id: number
-    object_type: string
-  }
-  metadata?: {
-    order?: {
-      id: number
-      name: string
-      type?: number
-    }
-    client?: {
-      id: number
-      fullname: string
-    }
-    status?: {
-      id: number
-    }
-    asset?: {
-      id: number
-      name: string
-    }
-  }
-  employee: {
-    id: number
-    full_name: string
-    email: string
-  }
-}
-
-export async function handleOrderEvents(webhookData: RemOnlineWebhookData) {
+export async function handleOrderEvents(webhookData: any) {
   try {
-    console.log(`🔄 Processing order event: ${webhookData.event_name}`)
-
-    const supabase = createClient()
     const eventType = webhookData.event_name
-    const orderId = webhookData.context.object_id
+    console.log(`📦 Handling order event: ${eventType}`)
 
-    // Handle different order events
     switch (eventType) {
       case "Order.Created":
-        return await handleOrderCreated(supabase, webhookData)
-
+        return await handleOrderCreated(webhookData)
       case "Order.Updated":
-        return await handleOrderUpdated(supabase, webhookData)
-
-      case "Order.StatusChanged":
-        return await handleOrderStatusChanged(supabase, webhookData)
-
+        return await handleOrderUpdated(webhookData)
       case "Order.Deleted":
-        return await handleOrderDeleted(supabase, webhookData)
-
+        return await handleOrderDeleted(webhookData)
       default:
         console.log(`⚠️ Unhandled order event: ${eventType}`)
-        return NextResponse.json({
-          success: true,
-          message: `Order event ${eventType} received but not processed`,
-        })
+        return NextResponse.json({ success: true, message: "Order event received but no action taken" })
     }
   } catch (error) {
-    console.error("💥 Error handling order event:", error)
+    console.error("💥 Error in handleOrderEvents:", error)
     return NextResponse.json(
       {
         success: false,
@@ -76,46 +32,170 @@ export async function handleOrderEvents(webhookData: RemOnlineWebhookData) {
   }
 }
 
-async function handleOrderCreated(supabase: any, webhookData: RemOnlineWebhookData) {
-  console.log("📝 Handling Order.Created event")
+async function handleOrderCreated(webhookData: any) {
+  try {
+    const orderId = webhookData.context.object_id
+    const clientId = webhookData.metadata?.client?.id
 
-  // Here you would typically:
-  // 1. Fetch full order details from RemOnline API
-  // 2. Store order in your database
-  // 3. Send notifications if needed
+    console.log(`📦 Processing Order.Created for order ${orderId}, client ${clientId}`)
 
-  return NextResponse.json({
-    success: true,
-    message: "Order created event processed",
-  })
+    if (!clientId) {
+      console.error("❌ No client ID found in webhook metadata")
+      return NextResponse.json({ success: false, error: "No client ID found" }, { status: 400 })
+    }
+
+    const supabase = createClient()
+
+    // Find user by remonline_id
+    console.log(`🔍 Looking for user with remonline_id: ${clientId}`)
+    const { data: user, error: userError } = await supabase
+      .from("users")
+      .select("id, email, first_name, last_name, remonline_id")
+      .eq("remonline_id", clientId)
+      .single()
+
+    if (userError || !user) {
+      console.log(`❌ No user found with remonline_id ${clientId}`)
+      console.log("User search error:", userError)
+
+      // Let's also try to find all users to debug
+      const { data: allUsers } = await supabase.from("users").select("id, email, remonline_id").limit(10)
+
+      console.log("📋 Sample users in database:", allUsers)
+
+      return NextResponse.json({ success: false, error: "User not found" }, { status: 404 })
+    }
+
+    console.log(`✅ Found user ${user.id} (${user.email}) for remonline client ${clientId}`)
+
+    // Get full order details from RemOnline API
+    console.log(`🌐 Fetching order details from RemOnline API for order ${orderId}`)
+    const orderResult = await remonline.getOrderById(orderId)
+
+    if (!orderResult.success || !orderResult.order) {
+      console.error("❌ Failed to fetch order details from RemOnline:", orderResult.message)
+      return NextResponse.json({ success: false, error: "Failed to fetch order details" }, { status: 500 })
+    }
+
+    const orderData = orderResult.order
+    console.log("📋 Full order data:", JSON.stringify(orderData, null, 2))
+
+    // Get order items (services) from RemOnline API
+    console.log(`🛍️ Fetching order items from RemOnline API for order ${orderId}`)
+    const itemsResult = await remonline.getOrderItems(orderId)
+    let orderItems = []
+
+    if (itemsResult.success && itemsResult.items) {
+      orderItems = itemsResult.items
+      console.log("📋 Order items:", JSON.stringify(orderItems, null, 2))
+    } else {
+      console.log("⚠️ No items found or failed to fetch items:", itemsResult.message)
+    }
+
+    // Use OrderService to create the order
+    console.log(`💾 Creating order in database...`)
+    const orderService = new OrderService(supabase)
+    const result = await orderService.createOrder(user.id, orderId, orderData, orderItems)
+
+    console.log(`✅ Order created successfully:`, result)
+    return NextResponse.json({ success: true, message: "Order created successfully" })
+  } catch (error) {
+    console.error("💥 Error in handleOrderCreated:", error)
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Failed to create order",
+        details: error instanceof Error ? error.message : String(error),
+      },
+      { status: 500 },
+    )
+  }
 }
 
-async function handleOrderUpdated(supabase: any, webhookData: RemOnlineWebhookData) {
-  console.log("📝 Handling Order.Updated event")
+async function handleOrderUpdated(webhookData: any) {
+  try {
+    const orderId = webhookData.context.object_id
+    const clientId = webhookData.metadata?.client?.id
 
-  // Handle order updates
-  return NextResponse.json({
-    success: true,
-    message: "Order updated event processed",
-  })
+    console.log(`📦 Processing Order.Updated for order ${orderId}, client ${clientId}`)
+
+    if (!clientId) {
+      console.error("❌ No client ID found in webhook metadata")
+      return NextResponse.json({ success: false, error: "No client ID found" }, { status: 400 })
+    }
+
+    const supabase = createClient()
+
+    // Find user by remonline_id
+    const { data: user, error: userError } = await supabase
+      .from("users")
+      .select("id, email, first_name, last_name")
+      .eq("remonline_id", clientId)
+      .single()
+
+    if (userError || !user) {
+      console.log(`❌ No user found with remonline_id ${clientId}`)
+      return NextResponse.json({ success: false, error: "User not found" }, { status: 404 })
+    }
+
+    // Get full order details from RemOnline API
+    const orderResult = await remonline.getOrderById(orderId)
+
+    if (!orderResult.success || !orderResult.order) {
+      console.error("❌ Failed to fetch order details from RemOnline:", orderResult.message)
+      return NextResponse.json({ success: false, error: "Failed to fetch order details" }, { status: 500 })
+    }
+
+    const orderData = orderResult.order
+
+    // Get order items (services) from RemOnline API
+    const itemsResult = await remonline.getOrderItems(orderId)
+    let orderItems = []
+
+    if (itemsResult.success && itemsResult.items) {
+      orderItems = itemsResult.items
+    }
+
+    // Use OrderService to update the order
+    const orderService = new OrderService(supabase)
+    await orderService.updateOrder(user.id, orderId, orderData, orderItems)
+
+    return NextResponse.json({ success: true, message: "Order updated successfully" })
+  } catch (error) {
+    console.error("💥 Error in handleOrderUpdated:", error)
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Failed to update order",
+        details: error instanceof Error ? error.message : String(error),
+      },
+      { status: 500 },
+    )
+  }
 }
 
-async function handleOrderStatusChanged(supabase: any, webhookData: RemOnlineWebhookData) {
-  console.log("📝 Handling Order.StatusChanged event")
+async function handleOrderDeleted(webhookData: any) {
+  try {
+    const orderId = webhookData.context.object_id
 
-  // Handle status changes
-  return NextResponse.json({
-    success: true,
-    message: "Order status changed event processed",
-  })
-}
+    console.log(`📦 Processing Order.Deleted for order ${orderId}`)
 
-async function handleOrderDeleted(supabase: any, webhookData: RemOnlineWebhookData) {
-  console.log("📝 Handling Order.Deleted event")
+    const supabase = createClient()
 
-  // Handle order deletion
-  return NextResponse.json({
-    success: true,
-    message: "Order deleted event processed",
-  })
+    // Use OrderService to delete the order
+    const orderService = new OrderService(supabase)
+    await orderService.deleteOrder(orderId)
+
+    return NextResponse.json({ success: true, message: "Order deleted successfully" })
+  } catch (error) {
+    console.error("💥 Error in handleOrderDeleted:", error)
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Failed to delete order",
+        details: error instanceof Error ? error.message : String(error),
+      },
+      { status: 500 },
+    )
+  }
 }
