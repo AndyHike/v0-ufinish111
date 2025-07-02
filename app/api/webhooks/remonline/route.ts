@@ -59,6 +59,16 @@ export async function POST(request: NextRequest) {
 
     console.log("🔔 RemOnline webhook received:")
     console.log("📋 Payload:", JSON.stringify(payload, null, 2))
+
+    // Спеціальне логування для Order.Status.Changed
+    if (payload.event_name === "Order.Status.Changed") {
+      console.log("🔄 SPECIAL LOG - Order.Status.Changed detected!")
+      console.log("📊 Order ID:", payload.context?.object_id)
+      console.log("📊 New Status ID:", payload.metadata?.new?.id)
+      console.log("📊 Old Status ID:", payload.metadata?.old?.id)
+      console.log("📊 Order Name:", payload.metadata?.order?.name)
+    }
+
     console.log("🔑 Available secrets:")
     console.log("   - ORDER_WEBHOOK_SECRET:", ORDER_WEBHOOK_SECRET ? "✅ Set" : "❌ Missing")
     console.log("   - GENERAL_WEBHOOK_SECRET:", GENERAL_WEBHOOK_SECRET ? "✅ Set" : "❌ Missing")

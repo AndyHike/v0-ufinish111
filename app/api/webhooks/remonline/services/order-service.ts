@@ -169,11 +169,14 @@ export class OrderService {
 
   async updateOrderStatus(remonlineOrderId: number, newStatusId: number, userLocale = "uk") {
     try {
-      console.log(
-        `🔄 OrderService.updateOrderStatus called for order ${remonlineOrderId}, status ${newStatusId}, locale ${userLocale}`,
-      )
+      console.log("🔄🔄🔄 ENTERING OrderService.updateOrderStatus 🔄🔄🔄")
+      console.log(`📊 Parameters:`)
+      console.log(`   - remonlineOrderId: ${remonlineOrderId}`)
+      console.log(`   - newStatusId: ${newStatusId}`)
+      console.log(`   - userLocale: ${userLocale}`)
 
       // Get status information from our database with user's locale
+      console.log(`🔍 Getting status info from database...`)
       const statusInfo = await getStatusByRemOnlineId(newStatusId, userLocale, true)
       console.log(`📊 Status info for ID ${newStatusId} (${userLocale}):`, statusInfo)
 
@@ -184,17 +187,34 @@ export class OrderService {
         updated_at: new Date().toISOString(),
       }
 
-      console.log("🔄 Updating order status with data:", updateData)
+      console.log("🔄 Preparing to update order with data:", updateData)
+
+      // First, let's check what's currently in the database
+      const { data: currentOrder, error: selectError } = await this.supabase
+        .from("user_repair_orders")
+        .select("id, document_id, overall_status, overall_status_name, overall_status_color")
+        .eq("remonline_order_id", remonlineOrderId)
+        .single()
+
+      if (selectError) {
+        console.error("❌ Error selecting current order:", selectError)
+        throw new Error(`Failed to find order: ${selectError.message}`)
+      }
+
+      console.log("📋 Current order data:", currentOrder)
 
       // Update existing order
+      console.log(`💾 Executing update query...`)
       const { data: updatedOrder, error: updateError } = await this.supabase
         .from("user_repair_orders")
         .update(updateData)
         .eq("remonline_order_id", remonlineOrderId)
-        .select("id, document_id")
+        .select("id, document_id, overall_status, overall_status_name, overall_status_color")
 
       if (updateError) {
         console.error("❌ Error updating order status:", updateError)
+        console.error("❌ Update data was:", updateData)
+        console.error("❌ RemOnline Order ID:", remonlineOrderId)
         throw new Error(`Failed to update order status: ${updateError.message}`)
       }
 
@@ -203,12 +223,18 @@ export class OrderService {
         throw new Error(`Order ${remonlineOrderId} not found`)
       }
 
-      console.log(
-        `✅ Order ${remonlineOrderId} (${updatedOrder[0].document_id}) status updated successfully to ${statusInfo.name}`,
-      )
+      console.log("✅ Update successful! Updated order data:", updatedOrder[0])
+      console.log(`✅ Order ${remonlineOrderId} (${updatedOrder[0].document_id}) status updated successfully`)
+      console.log(`✅ Status: ${currentOrder.overall_status} → ${updatedOrder[0].overall_status}`)
+      console.log(`✅ Status name: ${currentOrder.overall_status_name} → ${updatedOrder[0].overall_status_name}`)
+
       return updatedOrder[0]
     } catch (error) {
-      console.error("💥 Error in updateOrderStatus:", error)
+      console.error("💥💥💥 Error in updateOrderStatus:", error)
+      console.error("💥 Error details:", {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : "No stack trace",
+      })
       throw error
     }
   }

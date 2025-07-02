@@ -204,13 +204,15 @@ async function handleOrderDeleted(webhookData: any) {
 
 async function handleOrderStatusChanged(webhookData: any) {
   try {
+    console.log("🔄🔄🔄 ENTERING handleOrderStatusChanged 🔄🔄🔄")
+
     const orderId = webhookData.context.object_id
-    const newStatusId = webhookData.metadata?.new?.id // Виправлено: статус в metadata.new.id
+    const newStatusId = webhookData.metadata?.new?.id
     const oldStatusId = webhookData.metadata?.old?.id
 
     console.log(`🔄 Processing Order.Status.Changed for order ${orderId}`)
     console.log(`📊 Status change: ${oldStatusId} → ${newStatusId}`)
-    console.log(`📋 Full webhook metadata:`, JSON.stringify(webhookData.metadata, null, 2))
+    console.log(`📋 Full webhook data:`, JSON.stringify(webhookData, null, 2))
 
     if (!newStatusId) {
       console.error("❌ No new status ID found in webhook metadata")
@@ -220,34 +222,66 @@ async function handleOrderStatusChanged(webhookData: any) {
     }
 
     const supabase = createClient()
+    console.log("✅ Supabase client created")
 
-    // Find the order to get user's locale preference
-    const { data: order, error: orderError } = await supabase
+    // First, let's check if the order exists in our database
+    console.log(`🔍 Checking if order ${orderId} exists in database...`)
+    const { data: existingOrder, error: orderCheckError } = await supabase
       .from("user_repair_orders")
-      .select(`
-        id,
-        user_id,
-        users!inner(locale)
-      `)
+      .select("id, user_id, document_id, overall_status")
       .eq("remonline_order_id", orderId)
       .single()
 
+    if (orderCheckError) {
+      console.error("❌ Error checking for existing order:", orderCheckError)
+      console.error("❌ This might mean the order doesn't exist in our database yet")
+      return NextResponse.json({ success: false, error: "Order not found in database" }, { status: 404 })
+    }
+
+    if (!existingOrder) {
+      console.error(`❌ Order ${orderId} not found in our database`)
+      return NextResponse.json({ success: false, error: "Order not found" }, { status: 404 })
+    }
+
+    console.log(`✅ Found existing order:`, existingOrder)
+
+    // Get user's locale
+    const { data: user, error: userError } = await supabase
+      .from("users")
+      .select("locale")
+      .eq("id", existingOrder.user_id)
+      .single()
+
     let userLocale = "uk" // Default to Ukrainian
-    if (!orderError && order?.users?.locale) {
-      userLocale = order.users.locale
+    if (!userError && user?.locale) {
+      userLocale = user.locale
       console.log(`👤 Using user locale: ${userLocale}`)
     } else {
       console.log(`⚠️ Could not get user locale, using default: ${userLocale}`)
+      if (userError) {
+        console.log("User error:", userError)
+      }
     }
 
     // Use OrderService to update the order status
+    console.log(`🔄 Calling OrderService.updateOrderStatus...`)
     const orderService = new OrderService(supabase)
-    await orderService.updateOrderStatus(orderId, newStatusId, userLocale)
+    const result = await orderService.updateOrderStatus(orderId, newStatusId, userLocale)
 
     console.log(`✅ Order ${orderId} status updated from ${oldStatusId} to ${newStatusId}`)
-    return NextResponse.json({ success: true, message: "Order status updated successfully" })
+    console.log(`✅ Update result:`, result)
+
+    return NextResponse.json({
+      success: true,
+      message: "Order status updated successfully",
+      orderId: orderId,
+      oldStatus: oldStatusId,
+      newStatus: newStatusId,
+      result: result,
+    })
   } catch (error) {
-    console.error("💥 Error in handleOrderStatusChanged:", error)
+    console.error("💥💥💥 Error in handleOrderStatusChanged:", error)
+    console.error("💥 Error stack:", error instanceof Error ? error.stack : "No stack trace")
     return NextResponse.json(
       {
         success: false,
