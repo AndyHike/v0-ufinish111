@@ -1,80 +1,56 @@
 import { type NextRequest, NextResponse } from "next/server"
-import remonline from "@/lib/api/remonline"
 
-export async function GET(request: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    const endpoint = searchParams.get("endpoint")
-    const id = searchParams.get("id")
-    const clientId = searchParams.get("clientId")
+    const { endpoint, id } = await request.json()
 
-    console.log(`🧪 Testing RemOnline API endpoint: ${endpoint}`)
-
-    let result: any = { success: false, message: "Unknown endpoint" }
-
-    switch (endpoint) {
-      case "auth":
-        result = await remonline.auth()
-        break
-
-      case "connection":
-        result = await remonline.testConnection()
-        break
-
-      case "orders":
-        result = await remonline.getOrders(1, 10)
-        break
-
-      case "order":
-        if (!id) {
-          return NextResponse.json({ success: false, error: "Order ID is required" }, { status: 400 })
-        }
-        result = await remonline.getOrderById(Number.parseInt(id))
-        break
-
-      case "order-items":
-        if (!id) {
-          return NextResponse.json({ success: false, error: "Order ID is required" }, { status: 400 })
-        }
-        result = await remonline.getOrderItems(Number.parseInt(id))
-        break
-
-      case "orders-by-client":
-        if (!clientId) {
-          return NextResponse.json({ success: false, error: "Client ID is required" }, { status: 400 })
-        }
-        result = await remonline.getOrdersByClientId(Number.parseInt(clientId))
-        break
-
-      case "clients":
-        result = await remonline.getClients(1, 10)
-        break
-
-      case "client":
-        if (!id) {
-          return NextResponse.json({ success: false, error: "Client ID is required" }, { status: 400 })
-        }
-        result = await remonline.getClientById(Number.parseInt(id))
-        break
-
-      case "order-statuses":
-        result = await remonline.getOrderStatuses()
-        break
-
-      default:
-        return NextResponse.json({ success: false, error: "Unknown endpoint" }, { status: 400 })
+    if (!endpoint || !id) {
+      return NextResponse.json({ error: "Missing endpoint or id parameter" }, { status: 400 })
     }
 
-    console.log(`✅ API test result:`, result)
+    const apiKey = process.env.REMONLINE_API_KEY
+    const apiToken = process.env.REMONLINE_API_TOKEN
 
-    return NextResponse.json(result)
+    if (!apiKey) {
+      return NextResponse.json({ error: "RemOnline API key not configured" }, { status: 500 })
+    }
+
+    console.log(`🧪 Testing RemOnline API: ${endpoint}/${id}`)
+
+    // Construct the RemOnline API URL
+    const apiUrl = `https://api.remonline.app/token/${apiKey}/${endpoint}/${id}`
+
+    const response = await fetch(apiUrl, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "User-Agent": "DeviceHelp-Integration/1.0",
+        ...(apiToken && { Authorization: `Bearer ${apiToken}` }),
+      },
+    })
+
+    const data = await response.json()
+
+    console.log(`✅ RemOnline API response:`, {
+      status: response.status,
+      ok: response.ok,
+      dataKeys: Object.keys(data || {}),
+    })
+
+    return NextResponse.json({
+      success: response.ok,
+      status: response.status,
+      endpoint: `${endpoint}/${id}`,
+      data: data,
+      timestamp: new Date().toISOString(),
+    })
   } catch (error) {
-    console.error("💥 API test error:", error)
+    console.error("💥 RemOnline API test error:", error)
     return NextResponse.json(
       {
         success: false,
-        error: "API test failed",
-        details: error instanceof Error ? error.message : String(error),
+        error: error instanceof Error ? error.message : String(error),
+        timestamp: new Date().toISOString(),
       },
       { status: 500 },
     )

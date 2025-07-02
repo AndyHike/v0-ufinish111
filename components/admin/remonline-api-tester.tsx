@@ -7,55 +7,58 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { CheckCircle, XCircle, Clock, Search } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Search, Database, User, Package, CheckCircle, XCircle, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
-interface TestResult {
-  success: boolean
-  data?: any
-  error?: string
-  timestamp: string
-  endpoint?: string
-}
-
-export function RemonlineApiTester() {
+export function RemOnlineApiTester() {
   const [isLoading, setIsLoading] = useState(false)
-  const [testResult, setTestResult] = useState<TestResult | null>(null)
-  const [orderId, setOrderId] = useState("")
-  const [clientId, setClientId] = useState("")
+  const [testResult, setTestResult] = useState<any>(null)
+  const [entityType, setEntityType] = useState("orders")
+  const [entityId, setEntityId] = useState("")
 
-  const testApiCall = async (endpoint: string, params?: Record<string, string>) => {
+  const entityTypes = {
+    orders: { label: "Orders", icon: Package, endpoint: "orders" },
+    clients: { label: "Clients", icon: User, endpoint: "clients" },
+    branches: { label: "Branches", icon: Database, endpoint: "branches" },
+  }
+
+  const testApiCall = async () => {
+    if (!entityId.trim()) {
+      toast.error("Please enter an ID to test")
+      return
+    }
+
     setIsLoading(true)
     setTestResult(null)
 
     try {
-      const url = new URL(`/api/admin/test-remonline`, window.location.origin)
-      url.searchParams.set("endpoint", endpoint)
+      console.log(`🧪 Testing RemOnline API: ${entityType}/${entityId}`)
 
-      if (params) {
-        Object.entries(params).forEach(([key, value]) => {
-          if (value) url.searchParams.set(key, value)
-        })
-      }
+      const response = await fetch(`/api/admin/test-remonline`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          endpoint: entityTypes[entityType as keyof typeof entityTypes].endpoint,
+          id: entityId,
+        }),
+      })
 
-      console.log("🧪 Testing API call:", url.toString())
-
-      const response = await fetch(url.toString())
       const result = await response.json()
 
       setTestResult({
-        success: response.ok && result.success,
-        data: result.data,
-        error: result.error || result.message,
+        success: response.ok,
+        status: response.status,
+        data: result,
         timestamp: new Date().toISOString(),
-        endpoint,
       })
 
-      if (response.ok && result.success) {
-        toast.success("API test successful!")
+      if (response.ok) {
+        toast.success("API test completed successfully!")
       } else {
-        toast.error(`API test failed: ${result.error || result.message || "Unknown error"}`)
+        toast.error(`API test failed: ${result.error || "Unknown error"}`)
       }
     } catch (error) {
       console.error("API test error:", error)
@@ -63,7 +66,6 @@ export function RemonlineApiTester() {
         success: false,
         error: error instanceof Error ? error.message : String(error),
         timestamp: new Date().toISOString(),
-        endpoint,
       })
       toast.error("Failed to test API")
     } finally {
@@ -75,146 +77,113 @@ export function RemonlineApiTester() {
     return success ? <CheckCircle className="h-4 w-4 text-green-500" /> : <XCircle className="h-4 w-4 text-red-500" />
   }
 
+  const selectedEntity = entityTypes[entityType as keyof typeof entityTypes]
+  const IconComponent = selectedEntity.icon
+
   return (
     <div className="space-y-6">
+      {/* API Configuration */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Search className="h-5 w-5" />
+            <Database className="h-5 w-5" />
             RemOnline API Tester
           </CardTitle>
-          <CardDescription>Test various RemOnline API endpoints with specific IDs</CardDescription>
+          <CardDescription>Test your RemOnline API connection by fetching data with specific IDs</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="entity-type">Entity Type</Label>
+              <Select value={entityType} onValueChange={setEntityType}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(entityTypes).map(([key, entity]) => {
+                    const Icon = entity.icon
+                    return (
+                      <SelectItem key={key} value={key}>
+                        <div className="flex items-center gap-2">
+                          <Icon className="h-4 w-4" />
+                          {entity.label}
+                        </div>
+                      </SelectItem>
+                    )
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="entity-id">Entity ID</Label>
+              <Input
+                id="entity-id"
+                placeholder="Enter ID (e.g., 12345)"
+                value={entityId}
+                onChange={(e) => setEntityId(e.target.value)}
+                type="number"
+              />
+            </div>
+          </div>
+
+          <Button onClick={testApiCall} disabled={isLoading} className="w-full">
+            {isLoading ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Testing API...
+              </>
+            ) : (
+              <>
+                <Search className="h-4 w-4 mr-2" />
+                Test {selectedEntity.label} API
+              </>
+            )}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* API Examples */}
+      <Card>
+        <CardHeader>
+          <CardTitle>API Examples</CardTitle>
+          <CardDescription>Common RemOnline API endpoints you can test</CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="connection" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="connection">Connection</TabsTrigger>
-              <TabsTrigger value="orders">Orders</TabsTrigger>
-              <TabsTrigger value="clients">Clients</TabsTrigger>
-              <TabsTrigger value="statuses">Statuses</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="connection" className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Button
-                  onClick={() => testApiCall("auth")}
-                  disabled={isLoading}
-                  className="h-auto p-4 flex flex-col items-start"
-                >
-                  <div className="font-medium">Test Authentication</div>
-                  <div className="text-sm opacity-70">Verify API key and connection</div>
-                </Button>
-
-                <Button
-                  onClick={() => testApiCall("connection")}
-                  disabled={isLoading}
-                  className="h-auto p-4 flex flex-col items-start"
-                >
-                  <div className="font-medium">Test Connection</div>
-                  <div className="text-sm opacity-70">Check API availability</div>
-                </Button>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="p-4 border rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <Package className="h-4 w-4 text-blue-500" />
+                <span className="font-medium">Orders</span>
               </div>
-            </TabsContent>
+              <p className="text-sm text-muted-foreground mb-2">Fetch order details by order ID</p>
+              <Badge variant="outline" className="text-xs">
+                GET /orders/{"{id}"}
+              </Badge>
+            </div>
 
-            <TabsContent value="orders" className="space-y-4">
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="order-id">Order ID</Label>
-                  <Input
-                    id="order-id"
-                    placeholder="Enter order ID (e.g., 12345)"
-                    value={orderId}
-                    onChange={(e) => setOrderId(e.target.value)}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Button
-                    onClick={() => testApiCall("orders")}
-                    disabled={isLoading}
-                    className="h-auto p-4 flex flex-col items-start"
-                  >
-                    <div className="font-medium">Get All Orders</div>
-                    <div className="text-sm opacity-70">Fetch recent orders</div>
-                  </Button>
-
-                  <Button
-                    onClick={() => testApiCall("order", { id: orderId })}
-                    disabled={isLoading || !orderId}
-                    className="h-auto p-4 flex flex-col items-start"
-                  >
-                    <div className="font-medium">Get Order by ID</div>
-                    <div className="text-sm opacity-70">Fetch specific order details</div>
-                  </Button>
-
-                  <Button
-                    onClick={() => testApiCall("order-items", { id: orderId })}
-                    disabled={isLoading || !orderId}
-                    className="h-auto p-4 flex flex-col items-start"
-                  >
-                    <div className="font-medium">Get Order Items</div>
-                    <div className="text-sm opacity-70">Fetch order services/items</div>
-                  </Button>
-
-                  <Button
-                    onClick={() => testApiCall("orders-by-client", { clientId })}
-                    disabled={isLoading || !clientId}
-                    className="h-auto p-4 flex flex-col items-start"
-                  >
-                    <div className="font-medium">Orders by Client</div>
-                    <div className="text-sm opacity-70">Fetch orders for specific client</div>
-                  </Button>
-                </div>
+            <div className="p-4 border rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <User className="h-4 w-4 text-green-500" />
+                <span className="font-medium">Clients</span>
               </div>
-            </TabsContent>
+              <p className="text-sm text-muted-foreground mb-2">Fetch client information by client ID</p>
+              <Badge variant="outline" className="text-xs">
+                GET /clients/{"{id}"}
+              </Badge>
+            </div>
 
-            <TabsContent value="clients" className="space-y-4">
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="client-id">Client ID</Label>
-                  <Input
-                    id="client-id"
-                    placeholder="Enter client ID (e.g., 67890)"
-                    value={clientId}
-                    onChange={(e) => setClientId(e.target.value)}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Button
-                    onClick={() => testApiCall("clients")}
-                    disabled={isLoading}
-                    className="h-auto p-4 flex flex-col items-start"
-                  >
-                    <div className="font-medium">Get All Clients</div>
-                    <div className="text-sm opacity-70">Fetch recent clients</div>
-                  </Button>
-
-                  <Button
-                    onClick={() => testApiCall("client", { id: clientId })}
-                    disabled={isLoading || !clientId}
-                    className="h-auto p-4 flex flex-col items-start"
-                  >
-                    <div className="font-medium">Get Client by ID</div>
-                    <div className="text-sm opacity-70">Fetch specific client details</div>
-                  </Button>
-                </div>
+            <div className="p-4 border rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <Database className="h-4 w-4 text-purple-500" />
+                <span className="font-medium">Branches</span>
               </div>
-            </TabsContent>
-
-            <TabsContent value="statuses" className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Button
-                  onClick={() => testApiCall("order-statuses")}
-                  disabled={isLoading}
-                  className="h-auto p-4 flex flex-col items-start"
-                >
-                  <div className="font-medium">Get Order Statuses</div>
-                  <div className="text-sm opacity-70">Fetch all available order statuses</div>
-                </Button>
-              </div>
-            </TabsContent>
-          </Tabs>
+              <p className="text-sm text-muted-foreground mb-2">Fetch branch details by branch ID</p>
+              <Badge variant="outline" className="text-xs">
+                GET /branches/{"{id}"}
+              </Badge>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -229,37 +198,27 @@ export function RemonlineApiTester() {
                 {testResult.success ? "Success" : "Failed"}
               </Badge>
             </CardTitle>
-            <CardDescription className="flex items-center gap-2">
-              <Clock className="h-3 w-3" />
-              {new Date(testResult.timestamp).toLocaleString()}
-              {testResult.endpoint && (
-                <>
-                  <span>•</span>
-                  <code className="text-xs">{testResult.endpoint}</code>
-                </>
-              )}
-            </CardDescription>
+            <CardDescription>{new Date(testResult.timestamp).toLocaleString()}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {testResult.error && (
+              {testResult.status && (
                 <div>
-                  <Label>Error</Label>
-                  <div className="bg-destructive/10 text-destructive p-3 rounded text-sm">{testResult.error}</div>
+                  <Label>HTTP Status</Label>
+                  <Badge variant="outline" className="ml-2">
+                    {testResult.status}
+                  </Badge>
                 </div>
               )}
 
-              {testResult.data && (
-                <>
-                  <Separator />
-                  <div>
-                    <Label>Response Data</Label>
-                    <pre className="bg-muted p-3 rounded text-sm overflow-auto max-h-96">
-                      {JSON.stringify(testResult.data, null, 2)}
-                    </pre>
-                  </div>
-                </>
-              )}
+              <Separator />
+
+              <div>
+                <Label>API Response</Label>
+                <pre className="bg-muted p-3 rounded text-sm overflow-auto max-h-96 mt-2">
+                  {JSON.stringify(testResult.data || testResult.error, null, 2)}
+                </pre>
+              </div>
             </div>
           </CardContent>
         </Card>

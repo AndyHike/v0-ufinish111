@@ -6,9 +6,8 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
-import { Activity, CheckCircle, XCircle, AlertCircle, Clock, Trash2, RefreshCw, Eye, EyeOff } from "lucide-react"
+import { Activity, CheckCircle, XCircle, AlertCircle, Clock, Trash2, RefreshCw, Eye, EyeOff, Zap } from "lucide-react"
 import { toast } from "sonner"
-import { formatDistanceToNow } from "date-fns"
 
 interface WebhookLog {
   id: number
@@ -25,18 +24,25 @@ export function WebhookMonitor() {
   const [isLoading, setIsLoading] = useState(true)
   const [isAutoRefresh, setIsAutoRefresh] = useState(true)
   const [expandedLogs, setExpandedLogs] = useState<Set<number>>(new Set())
+  const [lastFetchTime, setLastFetchTime] = useState<string>("")
 
   const fetchLogs = async () => {
     try {
+      console.log("🔄 Fetching webhook logs...")
       const response = await fetch("/api/admin/webhook-logs?limit=100")
+      const data = await response.json()
+
       if (response.ok) {
-        const data = await response.json()
+        console.log(`✅ Fetched ${data.logs?.length || 0} logs`)
         setLogs(data.logs || [])
+        setLastFetchTime(new Date().toLocaleTimeString())
       } else {
-        console.error("Failed to fetch webhook logs")
+        console.error("❌ Failed to fetch logs:", data.error)
+        toast.error(`Failed to fetch logs: ${data.error}`)
       }
     } catch (error) {
-      console.error("Error fetching webhook logs:", error)
+      console.error("💥 Error fetching webhook logs:", error)
+      toast.error("Error fetching webhook logs")
     } finally {
       setIsLoading(false)
     }
@@ -52,7 +58,8 @@ export function WebhookMonitor() {
         setLogs([])
         toast.success("Webhook logs cleared")
       } else {
-        toast.error("Failed to clear logs")
+        const data = await response.json()
+        toast.error(`Failed to clear logs: ${data.error}`)
       }
     } catch (error) {
       console.error("Error clearing logs:", error)
@@ -94,6 +101,10 @@ export function WebhookMonitor() {
     return <Badge variant={variants[status as keyof typeof variants] || "secondary"}>{status}</Badge>
   }
 
+  const formatTime = (timestamp: string) => {
+    return new Date(timestamp).toLocaleString()
+  }
+
   useEffect(() => {
     fetchLogs()
   }, [])
@@ -101,7 +112,7 @@ export function WebhookMonitor() {
   useEffect(() => {
     if (!isAutoRefresh) return
 
-    const interval = setInterval(fetchLogs, 3000) // Refresh every 3 seconds
+    const interval = setInterval(fetchLogs, 2000) // Refresh every 2 seconds for better real-time feel
     return () => clearInterval(interval)
   }, [isAutoRefresh])
 
@@ -109,21 +120,56 @@ export function WebhookMonitor() {
     total: logs.length,
     success: logs.filter((log) => log.status === "success").length,
     failed: logs.filter((log) => log.status === "failed" || log.status === "error").length,
+    received: logs.filter((log) => log.status === "received").length,
     avgProcessingTime:
       logs.length > 0 ? Math.round(logs.reduce((sum, log) => sum + log.processing_time_ms, 0) / logs.length) : 0,
   }
 
   return (
     <div className="space-y-6">
+      {/* Connection Status */}
+      <Card className="border-blue-200 bg-blue-50">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Zap className="h-5 w-5 text-blue-600" />
+              <div>
+                <p className="font-medium text-blue-900">Webhook Endpoint Active</p>
+                <p className="text-sm text-blue-700">https://devicehelp.cz/api/webhooks/remonline</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-sm text-blue-700">Last Update: {lastFetchTime}</p>
+              <div className="flex items-center gap-1 text-blue-600">
+                {isAutoRefresh && <RefreshCw className="h-3 w-3 animate-spin" />}
+                <span className="text-xs">{isAutoRefresh ? "Live" : "Paused"}</span>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
               <Activity className="h-4 w-4 text-blue-500" />
               <div>
-                <p className="text-sm font-medium">Total Webhooks</p>
+                <p className="text-sm font-medium">Total</p>
                 <p className="text-2xl font-bold">{stats.total}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <Clock className="h-4 w-4 text-blue-500" />
+              <div>
+                <p className="text-sm font-medium">Received</p>
+                <p className="text-2xl font-bold text-blue-600">{stats.received}</p>
               </div>
             </div>
           </CardContent>
@@ -134,7 +180,7 @@ export function WebhookMonitor() {
             <div className="flex items-center space-x-2">
               <CheckCircle className="h-4 w-4 text-green-500" />
               <div>
-                <p className="text-sm font-medium">Successful</p>
+                <p className="text-sm font-medium">Success</p>
                 <p className="text-2xl font-bold text-green-600">{stats.success}</p>
               </div>
             </div>
@@ -173,27 +219,27 @@ export function WebhookMonitor() {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Activity className="h-5 w-5" />
-                Webhook Monitor
+                Real-time Webhook Monitor
                 {isAutoRefresh && (
-                  <Badge variant="outline" className="ml-2">
+                  <Badge variant="outline" className="ml-2 animate-pulse">
                     <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
-                    Live
+                    LIVE
                   </Badge>
                 )}
               </CardTitle>
-              <CardDescription>Real-time monitoring of RemOnline webhook events</CardDescription>
+              <CardDescription>All incoming webhooks are captured and displayed here in real-time</CardDescription>
             </div>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={() => setIsAutoRefresh(!isAutoRefresh)}>
                 {isAutoRefresh ? (
                   <>
                     <EyeOff className="h-4 w-4 mr-1" />
-                    Stop Live
+                    Pause
                   </>
                 ) : (
                   <>
                     <Eye className="h-4 w-4 mr-1" />
-                    Start Live
+                    Resume
                   </>
                 )}
               </Button>
@@ -218,21 +264,20 @@ export function WebhookMonitor() {
             ) : logs.length === 0 ? (
               <div className="text-center text-muted-foreground py-8">
                 <Activity className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>No webhook events yet</p>
-                <p className="text-sm">Webhook events will appear here in real-time</p>
+                <p className="text-lg font-medium">No webhooks received yet</p>
+                <p className="text-sm">Send a webhook to https://devicehelp.cz/api/webhooks/remonline</p>
+                <p className="text-xs mt-2 text-blue-600">All incoming requests will appear here automatically</p>
               </div>
             ) : (
               <div className="space-y-4">
                 {logs.map((log, index) => (
-                  <div key={log.id} className="border rounded-lg p-4">
+                  <div key={log.id} className="border rounded-lg p-4 hover:bg-muted/50 transition-colors">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center space-x-3">
                         {getStatusIcon(log.status)}
                         <div>
                           <p className="font-medium">{log.event_type}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}
-                          </p>
+                          <p className="text-sm text-muted-foreground">{formatTime(log.created_at)}</p>
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
@@ -250,8 +295,8 @@ export function WebhookMonitor() {
                       <>
                         <Separator className="my-3" />
                         <div>
-                          <p className="text-sm font-medium mb-2">Webhook Data:</p>
-                          <pre className="bg-muted p-3 rounded text-xs overflow-auto max-h-64">
+                          <p className="text-sm font-medium mb-2">Full Webhook Data:</p>
+                          <pre className="bg-muted p-3 rounded text-xs overflow-auto max-h-64 whitespace-pre-wrap">
                             {JSON.stringify(log.webhook_data, null, 2)}
                           </pre>
                         </div>
