@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { CalendarDays, Package, Search, Filter, Smartphone, DollarSign, Shield, RefreshCw } from "lucide-react"
 import { formatCurrency } from "@/lib/format-currency"
+import { cn } from "@/lib/utils"
 
 interface Service {
   id: string
@@ -121,18 +122,20 @@ export function UserOrders() {
     return `${period} ${units}`
   }
 
-  const getStatusVariant = (status: string) => {
-    const lowerStatus = status.toLowerCase()
-    if (lowerStatus.includes("completed") || lowerStatus.includes("done") || lowerStatus.includes("готово")) {
-      return "default"
+  // Helper function to convert status color to proper badge styling
+  const getStatusBadgeClass = (statusColor: string) => {
+    // If it's already a proper class string, use it
+    if (statusColor.includes("bg-") && statusColor.includes("text-")) {
+      return statusColor
     }
-    if (lowerStatus.includes("progress") || lowerStatus.includes("work") || lowerStatus.includes("виконується")) {
-      return "secondary"
+
+    // If it's a hex color, convert to appropriate badge style
+    if (statusColor.startsWith("#")) {
+      return `text-white`
     }
-    if (lowerStatus.includes("new") || lowerStatus.includes("pending") || lowerStatus.includes("новий")) {
-      return "outline"
-    }
-    return "outline"
+
+    // Default fallback
+    return "bg-gray-100 text-gray-800 border border-gray-200"
   }
 
   if (loading) {
@@ -270,7 +273,12 @@ export function UserOrders() {
                   <div className="space-y-2">
                     <div className="flex items-center gap-3">
                       <CardTitle className="text-xl">Замовлення #{order.documentId}</CardTitle>
-                      <Badge variant={getStatusVariant(order.overallStatus)} className="text-xs">
+                      <Badge
+                        className={cn("text-xs font-medium", getStatusBadgeClass(order.overallStatusColor))}
+                        style={
+                          order.overallStatusColor.startsWith("#") ? { backgroundColor: order.overallStatusColor } : {}
+                        }
+                      >
                         {order.overallStatusName}
                       </Badge>
                     </div>
@@ -315,7 +323,12 @@ export function UserOrders() {
                         <div className="flex-1 space-y-1">
                           <div className="flex items-center gap-3">
                             <span className="font-medium">{service.name}</span>
-                            <Badge variant="outline" className="text-xs">
+                            <Badge
+                              className={cn("text-xs font-medium", getStatusBadgeClass(service.statusColor))}
+                              style={
+                                service.statusColor.startsWith("#") ? { backgroundColor: service.statusColor } : {}
+                              }
+                            >
                               {service.statusName}
                             </Badge>
                           </div>

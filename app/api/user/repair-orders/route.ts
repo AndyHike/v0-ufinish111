@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
 import { getCurrentUser } from "@/lib/auth/session"
+import { getStatusByRemOnlineId } from "@/lib/order-status-utils"
 
 export async function GET(request: NextRequest) {
   try {
@@ -40,31 +41,49 @@ export async function GET(request: NextRequest) {
     }
 
     // Transform data to match the expected format
-    const transformedOrders = (orders || []).map((order) => ({
-      id: order.id,
-      documentId: order.document_id || `ORD-${order.id}`,
-      creationDate: order.creation_date || order.created_at || new Date().toISOString(),
-      deviceSerialNumber: order.device_serial_number || order.device_serial || "Не вказано",
-      deviceName: order.device_name || "Невідомий пристрій",
-      deviceBrand: order.device_brand,
-      deviceModel: order.device_model,
-      services: (order.services || []).map((service: any) => ({
-        id: service.id,
-        name: service.service_name || service.name || "Невідома послуга",
-        price: Number(service.price) || 0,
-        warrantyPeriod: service.warranty_period,
-        warrantyUnits: service.warranty_units,
-        status: service.service_status || service.status || "unknown",
-        statusName: service.service_status_name || service.status_name || "Невідомий статус",
-        statusColor: service.service_status_color || service.status_color || "bg-gray-100 text-gray-800",
-      })),
-      totalAmount: Number(order.total_amount) || 0,
-      overallStatus: order.overall_status || "unknown",
-      overallStatusName: order.overall_status_name || "Невідомий статус",
-      overallStatusColor: order.overall_status_color || "bg-gray-100 text-gray-800",
-    }))
+    const transformedOrders = await Promise.all(
+      (orders || []).map(async (order) => {
+        // Get overall order status from our status table
+        const overallStatusId = Number(order.overall_status)
+        const overallStatusInfo = await getStatusByRemOnlineId(overallStatusId, "uk", true)
 
-    console.log(`✅ Returning ${transformedOrders.length} transformed orders`)
+        // Transform services with their statuses
+        const transformedServices = await Promise.all(
+          (order.services || []).map(async (service: any) => {
+            const serviceStatusId = Number(service.service_status)
+            const serviceStatusInfo = await getStatusByRemOnlineId(serviceStatusId, "uk", true)
+
+            return {
+              id: service.id,
+              name: service.service_name || service.name || "Невідома послуга",
+              price: Number(service.price) || 0,
+              warrantyPeriod: service.warranty_period,
+              warrantyUnits: service.warranty_units,
+              status: service.service_status || "1",
+              statusName: serviceStatusInfo.name,
+              statusColor: serviceStatusInfo.color,
+            }
+          }),
+        )
+
+        return {
+          id: order.id,
+          documentId: order.document_id || `ORD-${order.id}`,
+          creationDate: order.creation_date || order.created_at || new Date().toISOString(),
+          deviceSerialNumber: order.device_serial_number || order.device_serial || "Не вказано",
+          deviceName: order.device_name || "Невідомий пристрій",
+          deviceBrand: order.device_brand,
+          deviceModel: order.device_model,
+          services: transformedServices,
+          totalAmount: Number(order.total_amount) || 0,
+          overallStatus: order.overall_status || "1",
+          overallStatusName: overallStatusInfo.name,
+          overallStatusColor: overallStatusInfo.color,
+        }
+      }),
+    )
+
+    console.log(`✅ Returning ${transformedOrders.length} transformed orders with proper statuses`)
 
     return NextResponse.json({
       success: true,
