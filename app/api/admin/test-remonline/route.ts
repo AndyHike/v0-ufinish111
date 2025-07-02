@@ -1,80 +1,79 @@
-import { NextResponse } from "next/server"
-import { getCurrentUser } from "@/lib/auth/session"
+import { type NextRequest, NextResponse } from "next/server"
 import remonline from "@/lib/api/remonline"
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    // Check if the user is an admin
-    const user = await getCurrentUser()
-    if (!user || user.role !== "admin") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    const { searchParams } = new URL(request.url)
+    const endpoint = searchParams.get("endpoint")
+    const id = searchParams.get("id")
+    const clientId = searchParams.get("clientId")
+
+    console.log(`🧪 Testing RemOnline API endpoint: ${endpoint}`)
+
+    let result: any = { success: false, message: "Unknown endpoint" }
+
+    switch (endpoint) {
+      case "auth":
+        result = await remonline.auth()
+        break
+
+      case "connection":
+        result = await remonline.testConnection()
+        break
+
+      case "orders":
+        result = await remonline.getOrders(1, 10)
+        break
+
+      case "order":
+        if (!id) {
+          return NextResponse.json({ success: false, error: "Order ID is required" }, { status: 400 })
+        }
+        result = await remonline.getOrderById(Number.parseInt(id))
+        break
+
+      case "order-items":
+        if (!id) {
+          return NextResponse.json({ success: false, error: "Order ID is required" }, { status: 400 })
+        }
+        result = await remonline.getOrderItems(Number.parseInt(id))
+        break
+
+      case "orders-by-client":
+        if (!clientId) {
+          return NextResponse.json({ success: false, error: "Client ID is required" }, { status: 400 })
+        }
+        result = await remonline.getOrdersByClientId(Number.parseInt(clientId))
+        break
+
+      case "clients":
+        result = await remonline.getClients(1, 10)
+        break
+
+      case "client":
+        if (!id) {
+          return NextResponse.json({ success: false, error: "Client ID is required" }, { status: 400 })
+        }
+        result = await remonline.getClientById(Number.parseInt(id))
+        break
+
+      case "order-statuses":
+        result = await remonline.getOrderStatuses()
+        break
+
+      default:
+        return NextResponse.json({ success: false, error: "Unknown endpoint" }, { status: 400 })
     }
 
-    console.log("Testing RemOnline API connection...")
+    console.log(`✅ API test result:`, result)
 
-    // Test basic connection with orders endpoint
-    const connectionTest = await remonline.testConnection()
-
-    if (!connectionTest.success) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Failed to connect to RemOnline API",
-          details: connectionTest,
-        },
-        { status: 500 },
-      )
-    }
-
-    // Test fetching clients (first page, limit 5) - this will try multiple endpoints
-    const clientsTest = await remonline.getClients({ page: 1, limit: 5 })
-
-    // Test fetching order statuses
-    const statusesTest = await remonline.getOrderStatuses()
-
-    // Test creating a client (with test data) - this will also try multiple endpoints
-    const testClientData = {
-      first_name: "Test",
-      last_name: "Client",
-      email: `test-${Date.now()}@example.com`,
-      address: "Test Address",
-    }
-
-    const createClientTest = await remonline.createClient(testClientData)
-
-    return NextResponse.json({
-      success: true,
-      message: "RemOnline API is working correctly",
-      tests: {
-        connection: connectionTest,
-        clients: {
-          success: clientsTest.success,
-          count: clientsTest.data?.data?.length || 0,
-          total: clientsTest.data?.count || 0,
-          endpoint: (clientsTest as any).endpoint || "unknown",
-          message: clientsTest.success ? "Clients fetched successfully" : clientsTest.message,
-          details: clientsTest.success ? null : clientsTest.details,
-        },
-        orderStatuses: {
-          success: statusesTest.success,
-          count: statusesTest.data?.data?.length || 0,
-          message: statusesTest.success ? "Order statuses fetched successfully" : statusesTest.message,
-        },
-        createClient: {
-          success: createClientTest.success,
-          message: createClientTest.success ? "Test client created successfully" : createClientTest.message,
-          clientId: createClientTest.success ? createClientTest.client?.id : null,
-          endpoint: (createClientTest as any).endpoint || "unknown",
-          details: createClientTest.success ? null : createClientTest.details,
-        },
-      },
-    })
+    return NextResponse.json(result)
   } catch (error) {
-    console.error("Error testing RemOnline API:", error)
+    console.error("💥 API test error:", error)
     return NextResponse.json(
       {
         success: false,
-        error: "Failed to test RemOnline API",
+        error: "API test failed",
         details: error instanceof Error ? error.message : String(error),
       },
       { status: 500 },
