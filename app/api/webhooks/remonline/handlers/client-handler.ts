@@ -1,91 +1,38 @@
-import { NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { ClientService } from "../services/client-service"
 
-interface RemOnlineWebhookData {
-  id: string
-  created_at: string
-  event_name: string
-  context: {
-    object_id: number
-    object_type: string
-  }
-  metadata?: {
-    client?: {
-      id: number
-      fullname: string
-    }
-  }
-  employee: {
-    id: number
-    full_name: string
-    email: string
-  }
-}
-
-export async function handleClientEvents(webhookData: RemOnlineWebhookData) {
+export async function handleClientEvents(webhookData: any) {
   try {
-    console.log(`👤 Processing client event: ${webhookData.event_name}`)
+    console.log("👤 Processing client event:", webhookData.event)
 
-    const supabase = createClient()
-    const eventType = webhookData.event_name
+    const eventType = webhookData.event
+    const clientId = webhookData.context?.object_id
 
-    // Handle different client events
+    if (!clientId) {
+      console.error("❌ No client ID in webhook context")
+      return { success: false, message: "No client ID provided" }
+    }
+
+    console.log(`👤 Client ID: ${clientId}`)
+
+    const clientService = new ClientService()
+
     switch (eventType) {
       case "Client.Created":
-        return await handleClientCreated(supabase, webhookData)
-
+        return await clientService.handleClientCreated(clientId)
       case "Client.Updated":
-        return await handleClientUpdated(supabase, webhookData)
-
+        return await clientService.handleClientUpdated(clientId)
       case "Client.Deleted":
-        return await handleClientDeleted(supabase, webhookData)
-
+        return await clientService.handleClientDeleted(clientId)
       default:
         console.log(`⚠️ Unhandled client event: ${eventType}`)
-        return NextResponse.json({
-          success: true,
-          message: `Client event ${eventType} received but not processed`,
-        })
+        return { success: true, message: `Client event ${eventType} received but not processed` }
     }
   } catch (error) {
-    console.error("💥 Error handling client event:", error)
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Failed to process client event",
-        details: error instanceof Error ? error.message : String(error),
-      },
-      { status: 500 },
-    )
+    console.error("💥 Client event processing error:", error)
+    return {
+      success: false,
+      message: "Client event processing failed",
+      error: error instanceof Error ? error.message : String(error),
+    }
   }
-}
-
-async function handleClientCreated(supabase: any, webhookData: RemOnlineWebhookData) {
-  console.log("👤 Handling Client.Created event")
-
-  // Handle client creation
-  return NextResponse.json({
-    success: true,
-    message: "Client created event processed",
-  })
-}
-
-async function handleClientUpdated(supabase: any, webhookData: RemOnlineWebhookData) {
-  console.log("👤 Handling Client.Updated event")
-
-  // Handle client updates
-  return NextResponse.json({
-    success: true,
-    message: "Client updated event processed",
-  })
-}
-
-async function handleClientDeleted(supabase: any, webhookData: RemOnlineWebhookData) {
-  console.log("👤 Handling Client.Deleted event")
-
-  // Handle client deletion
-  return NextResponse.json({
-    success: true,
-    message: "Client deleted event processed",
-  })
 }

@@ -1,121 +1,42 @@
-import { NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { createClient } from "@/lib/supabase"
+import { OrderService } from "../services/order-service"
 
-interface RemOnlineWebhookData {
-  id: string
-  created_at: string
-  event_name: string
-  context: {
-    object_id: number
-    object_type: string
-  }
-  metadata?: {
-    order?: {
-      id: number
-      name: string
-      type?: number
-    }
-    client?: {
-      id: number
-      fullname: string
-    }
-    status?: {
-      id: number
-    }
-    asset?: {
-      id: number
-      name: string
-    }
-  }
-  employee: {
-    id: number
-    full_name: string
-    email: string
-  }
-}
-
-export async function handleOrderEvents(webhookData: RemOnlineWebhookData) {
+export async function handleOrderEvents(webhookData: any) {
   try {
-    console.log(`🔄 Processing order event: ${webhookData.event_name}`)
+    console.log("📦 Processing order event:", webhookData.event)
 
-    const supabase = createClient()
-    const eventType = webhookData.event_name
-    const orderId = webhookData.context.object_id
+    const eventType = webhookData.event
+    const orderId = webhookData.context?.object_id
+    const clientId = webhookData.metadata?.client?.id
 
-    // Handle different order events
+    if (!orderId) {
+      console.error("❌ No order ID in webhook context")
+      return { success: false, message: "No order ID provided" }
+    }
+
+    console.log(`📦 Order ID: ${orderId}, Client ID: ${clientId}`)
+
+    const orderService = new OrderService(createClient())
+
     switch (eventType) {
       case "Order.Created":
-        return await handleOrderCreated(supabase, webhookData)
-
+        return await orderService.handleOrderCreated(orderId, clientId)
       case "Order.Updated":
-        return await handleOrderUpdated(supabase, webhookData)
-
-      case "Order.StatusChanged":
-        return await handleOrderStatusChanged(supabase, webhookData)
-
-      case "Order.Deleted":
-        return await handleOrderDeleted(supabase, webhookData)
-
+        return await orderService.handleOrderUpdated(orderId, clientId)
+      case "Order.Completed":
+        return await orderService.handleOrderCompleted(orderId, clientId)
+      case "Order.Cancelled":
+        return await orderService.handleOrderCancelled(orderId, clientId)
       default:
         console.log(`⚠️ Unhandled order event: ${eventType}`)
-        return NextResponse.json({
-          success: true,
-          message: `Order event ${eventType} received but not processed`,
-        })
+        return { success: true, message: `Order event ${eventType} received but not processed` }
     }
   } catch (error) {
-    console.error("💥 Error handling order event:", error)
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Failed to process order event",
-        details: error instanceof Error ? error.message : String(error),
-      },
-      { status: 500 },
-    )
+    console.error("💥 Order event processing error:", error)
+    return {
+      success: false,
+      message: "Order event processing failed",
+      error: error instanceof Error ? error.message : String(error),
+    }
   }
-}
-
-async function handleOrderCreated(supabase: any, webhookData: RemOnlineWebhookData) {
-  console.log("📝 Handling Order.Created event")
-
-  // Here you would typically:
-  // 1. Fetch full order details from RemOnline API
-  // 2. Store order in your database
-  // 3. Send notifications if needed
-
-  return NextResponse.json({
-    success: true,
-    message: "Order created event processed",
-  })
-}
-
-async function handleOrderUpdated(supabase: any, webhookData: RemOnlineWebhookData) {
-  console.log("📝 Handling Order.Updated event")
-
-  // Handle order updates
-  return NextResponse.json({
-    success: true,
-    message: "Order updated event processed",
-  })
-}
-
-async function handleOrderStatusChanged(supabase: any, webhookData: RemOnlineWebhookData) {
-  console.log("📝 Handling Order.StatusChanged event")
-
-  // Handle status changes
-  return NextResponse.json({
-    success: true,
-    message: "Order status changed event processed",
-  })
-}
-
-async function handleOrderDeleted(supabase: any, webhookData: RemOnlineWebhookData) {
-  console.log("📝 Handling Order.Deleted event")
-
-  // Handle order deletion
-  return NextResponse.json({
-    success: true,
-    message: "Order deleted event processed",
-  })
 }
