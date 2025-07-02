@@ -2,105 +2,140 @@
 
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
-import { RefreshCw, Trash2, Globe, Clock, User, FileText, AlertCircle } from "lucide-react"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import {
+  Activity,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  Clock,
+  Trash2,
+  RefreshCw,
+  Eye,
+  EyeOff,
+  Zap,
+  Database,
+  Code,
+  Globe,
+  Server,
+} from "lucide-react"
+import { toast } from "sonner"
 
 interface WebhookLog {
   id: number
-  method: string
-  url: string
-  headers: Record<string, any>
+  event_type: string
+  status: "received" | "success" | "failed" | "error"
+  message: string
+  processing_time_ms: number
+  webhook_data: any
+  display_payload: any
   raw_body: string
-  payload: any
-  user_agent: string
-  content_type: string
+  headers: Record<string, string>
+  metadata: any
   created_at: string
-}
-
-interface WebhookLogsResponse {
-  logs: WebhookLog[]
-  total: number
-  limit: number
-  offset: number
 }
 
 export function WebhookMonitor() {
   const [logs, setLogs] = useState<WebhookLog[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [selectedLog, setSelectedLog] = useState<WebhookLog | null>(null)
-  const [autoRefresh, setAutoRefresh] = useState(true)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isAutoRefresh, setIsAutoRefresh] = useState(true)
+  const [expandedLogs, setExpandedLogs] = useState<Set<number>>(new Set())
+  const [lastFetchTime, setLastFetchTime] = useState<string>("")
+  const [error, setError] = useState<string>("")
+  const [total, setTotal] = useState(0)
 
   const fetchLogs = async () => {
     try {
-      setError(null)
-      const response = await fetch("/api/admin/webhook-logs?limit=50")
+      console.log("🔄 Fetching webhook logs...")
+      setError("")
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`)
+      const response = await fetch("/api/admin/webhook-logs?limit=100")
+      const data = await response.json()
+
+      if (response.ok && data.success) {
+        console.log(`✅ Fetched ${data.logs?.length || 0} logs`)
+        setLogs(data.logs || [])
+        setTotal(data.total || 0)
+        setLastFetchTime(new Date().toLocaleTimeString())
+      } else {
+        console.error("❌ Failed to fetch logs:", data.error)
+        setError(data.error || "Failed to fetch logs")
+        toast.error(`Failed to fetch logs: ${data.error}`)
       }
-
-      const data: WebhookLogsResponse = await response.json()
-      setLogs(data.logs || [])
-    } catch (err) {
-      console.error("Error fetching webhook logs:", err)
-      setError(err instanceof Error ? err.message : "Failed to fetch logs")
+    } catch (error) {
+      console.error("💥 Error fetching webhook logs:", error)
+      setError("Network error")
+      toast.error("Network error fetching webhook logs")
     } finally {
-      setLoading(false)
+      setIsLoading(false)
     }
   }
 
   const clearLogs = async () => {
+    if (!confirm("Are you sure you want to clear all webhook logs?")) {
+      return
+    }
+
     try {
       const response = await fetch("/api/admin/webhook-logs", {
         method: "DELETE",
       })
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`)
+      const data = await response.json()
+
+      if (response.ok && data.success) {
+        setLogs([])
+        setTotal(0)
+        toast.success(data.message || "Webhook logs cleared")
+      } else {
+        toast.error(`Failed to clear logs: ${data.error}`)
       }
-
-      setLogs([])
-      setSelectedLog(null)
-    } catch (err) {
-      console.error("Error clearing logs:", err)
-      setError(err instanceof Error ? err.message : "Failed to clear logs")
+    } catch (error) {
+      console.error("Error clearing logs:", error)
+      toast.error("Error clearing logs")
     }
   }
 
-  useEffect(() => {
-    fetchLogs()
-  }, [])
-
-  useEffect(() => {
-    if (!autoRefresh) return
-
-    const interval = setInterval(fetchLogs, 3000) // Refresh every 3 seconds
-    return () => clearInterval(interval)
-  }, [autoRefresh])
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString("cs-CZ")
+  const toggleLogExpansion = (logId: number) => {
+    const newExpanded = new Set(expandedLogs)
+    if (newExpanded.has(logId)) {
+      newExpanded.delete(logId)
+    } else {
+      newExpanded.add(logId)
+    }
+    setExpandedLogs(newExpanded)
   }
 
-  const getMethodBadgeVariant = (method: string) => {
-    switch (method.toUpperCase()) {
-      case "GET":
-        return "secondary"
-      case "POST":
-        return "default"
-      case "PUT":
-        return "outline"
-      case "DELETE":
-        return "destructive"
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case "success":
+        return <CheckCircle className="h-4 w-4 text-green-500" />
+      case "failed":
+      case "error":
+        return <XCircle className="h-4 w-4 text-red-500" />
+      case "received":
+        return <Clock className="h-4 w-4 text-blue-500" />
       default:
-        return "outline"
+        return <AlertCircle className="h-4 w-4 text-yellow-500" />
     }
+  }
+
+  const getStatusBadge = (status: string) => {
+    const variants = {
+      success: "default" as const,
+      failed: "destructive" as const,
+      error: "destructive" as const,
+      received: "secondary" as const,
+    }
+    return <Badge variant={variants[status as keyof typeof variants] || "secondary"}>{status}</Badge>
+  }
+
+  const formatTime = (timestamp: string) => {
+    return new Date(timestamp).toLocaleString()
   }
 
   const formatJson = (obj: any) => {
@@ -111,212 +146,283 @@ export function WebhookMonitor() {
     }
   }
 
-  if (loading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Globe className="h-5 w-5" />
-            Webhook Monitor
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-center py-8">
-            <RefreshCw className="h-6 w-6 animate-spin" />
-          </div>
-        </CardContent>
-      </Card>
-    )
+  useEffect(() => {
+    fetchLogs()
+  }, [])
+
+  useEffect(() => {
+    if (!isAutoRefresh) return
+
+    const interval = setInterval(fetchLogs, 3000)
+    return () => clearInterval(interval)
+  }, [isAutoRefresh])
+
+  const stats = {
+    total: logs.length,
+    success: logs.filter((log) => log.status === "success").length,
+    failed: logs.filter((log) => log.status === "failed" || log.status === "error").length,
+    received: logs.filter((log) => log.status === "received").length,
+    avgProcessingTime:
+      logs.length > 0 ? Math.round(logs.reduce((sum, log) => sum + log.processing_time_ms, 0) / logs.length) : 0,
   }
 
   return (
     <div className="space-y-6">
+      {/* Connection Status */}
+      <Card className={error ? "border-red-200 bg-red-50" : "border-green-200 bg-green-50"}>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              {error ? <XCircle className="h-5 w-5 text-red-600" /> : <Zap className="h-5 w-5 text-green-600" />}
+              <div>
+                <p className={`font-medium ${error ? "text-red-900" : "text-green-900"}`}>
+                  {error ? "Connection Error" : "Webhook Endpoint Active"}
+                </p>
+                <p className={`text-sm ${error ? "text-red-700" : "text-green-700"}`}>
+                  {error || "https://devicehelp.cz/api/webhooks/remonline"}
+                </p>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className={`text-sm ${error ? "text-red-700" : "text-green-700"}`}>
+                Last Update: {lastFetchTime || "Never"}
+              </p>
+              <p className={`text-xs ${error ? "text-red-600" : "text-green-600"}`}>Total Records: {total}</p>
+              <div className={`flex items-center gap-1 ${error ? "text-red-600" : "text-green-600"}`}>
+                {isAutoRefresh && !error && <RefreshCw className="h-3 w-3 animate-spin" />}
+                <span className="text-xs">{isAutoRefresh ? "Live" : "Paused"}</span>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <Database className="h-4 w-4 text-blue-500" />
+              <div>
+                <p className="text-sm font-medium">Total</p>
+                <p className="text-2xl font-bold">{stats.total}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <Clock className="h-4 w-4 text-blue-500" />
+              <div>
+                <p className="text-sm font-medium">Received</p>
+                <p className="text-2xl font-bold text-blue-600">{stats.received}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <CheckCircle className="h-4 w-4 text-green-500" />
+              <div>
+                <p className="text-sm font-medium">Success</p>
+                <p className="text-2xl font-bold text-green-600">{stats.success}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <XCircle className="h-4 w-4 text-red-500" />
+              <div>
+                <p className="text-sm font-medium">Failed</p>
+                <p className="text-2xl font-bold text-red-600">{stats.failed}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <Clock className="h-4 w-4 text-orange-500" />
+              <div>
+                <p className="text-sm font-medium">Avg Time</p>
+                <p className="text-2xl font-bold">{stats.avgProcessingTime}ms</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Webhook Logs */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="flex items-center gap-2">
-                <Globe className="h-5 w-5" />
+                <Activity className="h-5 w-5" />
                 Webhook Monitor
-                {autoRefresh && (
-                  <Badge variant="secondary" className="ml-2">
-                    Live
+                {isAutoRefresh && !error && (
+                  <Badge variant="outline" className="ml-2 animate-pulse">
+                    <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
+                    LIVE
                   </Badge>
                 )}
               </CardTitle>
-              <CardDescription>Real-time monitoring of incoming webhooks ({logs.length} total)</CardDescription>
+              <CardDescription>
+                Real-time monitoring of all incoming webhook requests
+                {error && <span className="text-red-600 ml-2">({error})</span>}
+              </CardDescription>
             </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => setAutoRefresh(!autoRefresh)}>
-                {autoRefresh ? "Pause" : "Resume"}
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => setIsAutoRefresh(!isAutoRefresh)}>
+                {isAutoRefresh ? (
+                  <>
+                    <EyeOff className="h-4 w-4 mr-1" />
+                    Pause
+                  </>
+                ) : (
+                  <>
+                    <Eye className="h-4 w-4 mr-1" />
+                    Resume
+                  </>
+                )}
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={fetchLogs}
-                className="flex items-center gap-2 bg-transparent"
-              >
-                <RefreshCw className="h-4 w-4" />
+              <Button variant="outline" size="sm" onClick={fetchLogs}>
+                <RefreshCw className="h-4 w-4 mr-1" />
                 Refresh
               </Button>
-              <Button variant="destructive" size="sm" onClick={clearLogs} className="flex items-center gap-2">
-                <Trash2 className="h-4 w-4" />
+              <Button variant="outline" size="sm" onClick={clearLogs} disabled={logs.length === 0}>
+                <Trash2 className="h-4 w-4 mr-1" />
                 Clear
               </Button>
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          {error && (
-            <Alert variant="destructive" className="mb-4">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-
-          {logs.length === 0 ? (
-            <div className="text-center py-8">
-              <Globe className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No webhooks received</h3>
-              <p className="text-muted-foreground">Webhooks will appear here when they are received</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Logs List */}
-              <div className="space-y-2">
-                <h3 className="font-semibold mb-3">Recent Webhooks</h3>
-                <ScrollArea className="h-[600px]">
-                  <div className="space-y-2">
-                    {logs.map((log) => (
-                      <Card
-                        key={log.id}
-                        className={`cursor-pointer transition-colors ${
-                          selectedLog?.id === log.id ? "ring-2 ring-primary" : ""
-                        }`}
-                        onClick={() => setSelectedLog(log)}
-                      >
-                        <CardContent className="p-4">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              <Badge variant={getMethodBadgeVariant(log.method)}>{log.method}</Badge>
-                              <span className="text-sm font-mono">{log.url?.split("/").pop() || "webhook"}</span>
-                            </div>
-                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                              <Clock className="h-3 w-3" />
-                              {formatDate(log.created_at)}
-                            </div>
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            <div className="flex items-center gap-1 mb-1">
-                              <User className="h-3 w-3" />
-                              {log.user_agent || "Unknown"}
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <FileText className="h-3 w-3" />
-                              {log.content_type || "Unknown"}
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </ScrollArea>
+          <ScrollArea className="h-[700px]">
+            {isLoading ? (
+              <div className="flex items-center justify-center h-32">
+                <RefreshCw className="h-6 w-6 animate-spin" />
+                <span className="ml-2">Loading webhook logs...</span>
               </div>
-
-              {/* Log Details */}
-              <div>
-                <h3 className="font-semibold mb-3">Webhook Details</h3>
-                {selectedLog ? (
-                  <Card>
-                    <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="flex items-center gap-2">
-                          <Badge variant={getMethodBadgeVariant(selectedLog.method)}>{selectedLog.method}</Badge>
-                          <span className="text-sm">#{selectedLog.id}</span>
-                        </CardTitle>
-                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                          <Clock className="h-4 w-4" />
-                          {formatDate(selectedLog.created_at)}
+            ) : error ? (
+              <div className="text-center text-red-600 py-8">
+                <XCircle className="h-12 w-12 mx-auto mb-4" />
+                <p className="text-lg font-medium">Connection Error</p>
+                <p className="text-sm">{error}</p>
+                <Button onClick={fetchLogs} className="mt-4">
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Retry
+                </Button>
+              </div>
+            ) : logs.length === 0 ? (
+              <div className="text-center text-muted-foreground py-8">
+                <Activity className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p className="text-lg font-medium">No webhooks received yet</p>
+                <p className="text-sm">Webhooks sent to the endpoint will appear here automatically</p>
+                <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+                  <p className="text-sm text-blue-800 font-medium">Endpoint URL:</p>
+                  <p className="text-xs text-blue-600 font-mono">https://devicehelp.cz/api/webhooks/remonline</p>
+                  <p className="text-xs text-blue-600 mt-1">Method: POST</p>
+                  <p className="text-xs text-blue-600">Content-Type: application/json</p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {logs.map((log) => (
+                  <div key={log.id} className="border rounded-lg p-4 hover:bg-muted/50 transition-colors">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center space-x-3">
+                        {getStatusIcon(log.status)}
+                        <div>
+                          <p className="font-medium">{log.event_type}</p>
+                          <p className="text-sm text-muted-foreground">{formatTime(log.created_at)}</p>
                         </div>
                       </div>
-                    </CardHeader>
-                    <CardContent>
-                      <Tabs defaultValue="payload" className="w-full">
-                        <TabsList className="grid w-full grid-cols-4">
-                          <TabsTrigger value="payload">Payload</TabsTrigger>
-                          <TabsTrigger value="headers">Headers</TabsTrigger>
-                          <TabsTrigger value="raw">Raw Body</TabsTrigger>
-                          <TabsTrigger value="meta">Metadata</TabsTrigger>
-                        </TabsList>
-
-                        <TabsContent value="payload" className="mt-4">
-                          <ScrollArea className="h-[400px]">
-                            <pre className="text-xs bg-muted p-4 rounded overflow-auto">
-                              {formatJson(selectedLog.payload)}
-                            </pre>
-                          </ScrollArea>
-                        </TabsContent>
-
-                        <TabsContent value="headers" className="mt-4">
-                          <ScrollArea className="h-[400px]">
-                            <pre className="text-xs bg-muted p-4 rounded overflow-auto">
-                              {formatJson(selectedLog.headers)}
-                            </pre>
-                          </ScrollArea>
-                        </TabsContent>
-
-                        <TabsContent value="raw" className="mt-4">
-                          <ScrollArea className="h-[400px]">
-                            <pre className="text-xs bg-muted p-4 rounded overflow-auto whitespace-pre-wrap">
-                              {selectedLog.raw_body || "No raw body"}
-                            </pre>
-                          </ScrollArea>
-                        </TabsContent>
-
-                        <TabsContent value="meta" className="mt-4">
-                          <div className="space-y-4">
-                            <div>
-                              <label className="text-sm font-medium">URL</label>
-                              <p className="text-sm text-muted-foreground font-mono">{selectedLog.url}</p>
-                            </div>
-                            <Separator />
-                            <div>
-                              <label className="text-sm font-medium">User Agent</label>
-                              <p className="text-sm text-muted-foreground">
-                                {selectedLog.user_agent || "Not provided"}
-                              </p>
-                            </div>
-                            <Separator />
-                            <div>
-                              <label className="text-sm font-medium">Content Type</label>
-                              <p className="text-sm text-muted-foreground">
-                                {selectedLog.content_type || "Not provided"}
-                              </p>
-                            </div>
-                            <Separator />
-                            <div>
-                              <label className="text-sm font-medium">Timestamp</label>
-                              <p className="text-sm text-muted-foreground">{formatDate(selectedLog.created_at)}</p>
-                            </div>
-                          </div>
-                        </TabsContent>
-                      </Tabs>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <Card>
-                    <CardContent className="flex items-center justify-center py-12">
-                      <div className="text-center">
-                        <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                        <h3 className="text-lg font-semibold mb-2">Select a webhook</h3>
-                        <p className="text-muted-foreground">Click on a webhook from the list to view its details</p>
+                      <div className="flex items-center space-x-2">
+                        {getStatusBadge(log.status)}
+                        <Badge variant="outline">{log.processing_time_ms}ms</Badge>
+                        <Button variant="ghost" size="sm" onClick={() => toggleLogExpansion(log.id)}>
+                          {expandedLogs.has(log.id) ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </Button>
                       </div>
-                    </CardContent>
-                  </Card>
-                )}
+                    </div>
+
+                    {log.message && <p className="text-sm text-muted-foreground mb-2">{log.message}</p>}
+
+                    {expandedLogs.has(log.id) && (
+                      <>
+                        <Separator className="my-3" />
+                        <Tabs defaultValue="payload" className="w-full">
+                          <TabsList className="grid w-full grid-cols-4">
+                            <TabsTrigger value="payload" className="flex items-center gap-1">
+                              <Code className="h-3 w-3" />
+                              Payload
+                            </TabsTrigger>
+                            <TabsTrigger value="headers" className="flex items-center gap-1">
+                              <Globe className="h-3 w-3" />
+                              Headers
+                            </TabsTrigger>
+                            <TabsTrigger value="raw" className="flex items-center gap-1">
+                              <Server className="h-3 w-3" />
+                              Raw Body
+                            </TabsTrigger>
+                            <TabsTrigger value="metadata" className="flex items-center gap-1">
+                              <Database className="h-3 w-3" />
+                              Metadata
+                            </TabsTrigger>
+                          </TabsList>
+
+                          <TabsContent value="payload" className="mt-4">
+                            <div>
+                              <p className="text-sm font-medium mb-2">Parsed Payload:</p>
+                              <pre className="bg-muted p-3 rounded text-xs overflow-auto max-h-64 whitespace-pre-wrap">
+                                {formatJson(log.display_payload)}
+                              </pre>
+                            </div>
+                          </TabsContent>
+
+                          <TabsContent value="headers" className="mt-4">
+                            <div>
+                              <p className="text-sm font-medium mb-2">HTTP Headers:</p>
+                              <pre className="bg-muted p-3 rounded text-xs overflow-auto max-h-64 whitespace-pre-wrap">
+                                {formatJson(log.headers)}
+                              </pre>
+                            </div>
+                          </TabsContent>
+
+                          <TabsContent value="raw" className="mt-4">
+                            <div>
+                              <p className="text-sm font-medium mb-2">Raw Request Body:</p>
+                              <pre className="bg-muted p-3 rounded text-xs overflow-auto max-h-64 whitespace-pre-wrap">
+                                {log.raw_body || "(empty)"}
+                              </pre>
+                            </div>
+                          </TabsContent>
+
+                          <TabsContent value="metadata" className="mt-4">
+                            <div>
+                              <p className="text-sm font-medium mb-2">Request Metadata:</p>
+                              <pre className="bg-muted p-3 rounded text-xs overflow-auto max-h-64 whitespace-pre-wrap">
+                                {formatJson(log.metadata)}
+                              </pre>
+                            </div>
+                          </TabsContent>
+                        </Tabs>
+                      </>
+                    )}
+                  </div>
+                ))}
               </div>
-            </div>
-          )}
+            )}
+          </ScrollArea>
         </CardContent>
       </Card>
     </div>

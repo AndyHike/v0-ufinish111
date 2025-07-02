@@ -1,313 +1,276 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
-import { Skeleton } from "@/components/ui/skeleton"
-import { RefreshCw, Package, Calendar, Smartphone, DollarSign, AlertCircle, CheckCircle } from "lucide-react"
-import { formatCurrency } from "@/lib/format-currency"
+import { CalendarDays, Package, Search, Filter, Smartphone, DollarSign, Shield } from "lucide-react"
+import { cn } from "@/lib/utils"
 
-interface OrderService {
-  id: number
+interface Service {
+  id: string
   name: string
   price: number
-  warrantyPeriod?: number
-  warrantyUnits?: string
-  status?: string
-  statusName?: string
-  statusColor?: string
-}
-
-interface RepairOrder {
-  id: number
-  documentId: string
-  createdAt: string
-  creationDate?: string
-  deviceSerial?: string
-  deviceSerialNumber?: string
-  deviceName: string
-  deviceBrand?: string
-  deviceModel?: string
-  totalAmount: number
+  warrantyPeriod: number | null
+  warrantyUnits: string | null
   status: string
-  statusName?: string
-  statusColor?: string
-  overallStatus?: string
-  overallStatusName?: string
-  overallStatusColor?: string
-  services: OrderService[]
+  statusName: string
+  statusColor: string
 }
 
-interface ApiResponse {
-  success?: boolean
-  orders?: RepairOrder[]
-  total?: number
-  error?: string
-  details?: string
-  suggestion?: string
+interface Order {
+  id: string
+  documentId: string
+  creationDate: string
+  deviceSerialNumber: string
+  deviceName: string
+  services: Service[]
+  totalAmount: number
+  overallStatus: string
+  overallStatusName: string
+  overallStatusColor: string
 }
 
 export function UserOrders() {
-  const [orders, setOrders] = useState<RepairOrder[]>([])
+  const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [refreshing, setRefreshing] = useState(false)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [statusFilter, setStatusFilter] = useState("all")
+  const [filteredOrders, setFilteredOrders] = useState<Order[]>([])
 
-  const fetchOrders = async (isRefresh = false) => {
-    try {
-      if (isRefresh) {
-        setRefreshing(true)
-      } else {
-        setLoading(true)
-      }
-      setError(null)
-
-      console.log("🔍 Fetching user repair orders...")
-
-      const response = await fetch("/api/user/repair-orders", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        cache: "no-store",
-      })
-
-      console.log("📡 Response status:", response.status)
-      console.log("📡 Response ok:", response.ok)
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        console.error("❌ API Error:", errorData)
-        throw new Error(errorData.error || `HTTP ${response.status}`)
-      }
-
-      const data: ApiResponse = await response.json()
-      console.log("📦 Received data:", data)
-
-      if (data.success === false) {
-        throw new Error(data.error || "Failed to fetch orders")
-      }
-
-      const fetchedOrders = data.orders || []
-      console.log(`✅ Successfully fetched ${fetchedOrders.length} orders`)
-
-      setOrders(fetchedOrders)
-    } catch (err) {
-      console.error("💥 Error fetching orders:", err)
-      const errorMessage = err instanceof Error ? err.message : "Failed to fetch orders"
-      setError(errorMessage)
-    } finally {
-      setLoading(false)
-      setRefreshing(false)
-    }
-  }
-
+  // Fetch orders from API
   useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        setLoading(true)
+        const response = await fetch("/api/user/repair-orders")
+        const data = await response.json()
+
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to fetch orders")
+        }
+
+        if (data.success) {
+          setOrders(data.orders)
+        } else {
+          throw new Error(data.error || "Failed to fetch orders")
+        }
+      } catch (err) {
+        console.error("Error fetching orders:", err)
+        setError(err instanceof Error ? err.message : "Failed to fetch orders")
+      } finally {
+        setLoading(false)
+      }
+    }
+
     fetchOrders()
   }, [])
 
-  const getStatusBadgeVariant = (status: string) => {
-    const lowerStatus = status?.toLowerCase() || ""
-    if (lowerStatus.includes("completed") || lowerStatus.includes("finished")) {
-      return "default"
+  // Filter orders based on search term and status
+  useEffect(() => {
+    let filtered = orders
+
+    // Filter by search term
+    if (searchTerm) {
+      filtered = filtered.filter(
+        (order) =>
+          order.documentId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          order.deviceName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          order.deviceSerialNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          order.services.some((service) => service.name.toLowerCase().includes(searchTerm.toLowerCase())),
+      )
     }
-    if (lowerStatus.includes("progress") || lowerStatus.includes("working")) {
-      return "secondary"
+
+    // Filter by status
+    if (statusFilter !== "all") {
+      filtered = filtered.filter((order) => order.overallStatus === statusFilter)
     }
-    if (lowerStatus.includes("new") || lowerStatus.includes("pending")) {
-      return "outline"
-    }
-    return "outline"
-  }
+
+    setFilteredOrders(filtered)
+  }, [orders, searchTerm, statusFilter])
+
+  // Get unique statuses for filter dropdown
+  const uniqueStatuses = Array.from(new Set(orders.map((order) => order.overallStatus)))
 
   const formatDate = (dateString: string) => {
-    try {
-      return new Date(dateString).toLocaleDateString("cs-CZ", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-    } catch {
-      return dateString
-    }
+    return new Date(dateString).toLocaleDateString("uk-UA", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    })
+  }
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("uk-UA", {
+      style: "currency",
+      currency: "UAH",
+    }).format(amount)
+  }
+
+  const formatWarranty = (period: number | null, units: string | null) => {
+    if (!period || !units) return "Без гарантії"
+    return `${period} ${units}`
   }
 
   if (loading) {
     return (
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold">Historie oprav</h2>
-          <Skeleton className="h-10 w-32" />
-        </div>
-        {[1, 2, 3].map((i) => (
-          <Card key={i}>
-            <CardHeader>
-              <Skeleton className="h-6 w-48" />
-              <Skeleton className="h-4 w-32" />
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-4 w-1/2" />
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Package className="h-5 w-5" />
+            Історія замовлень
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center py-8">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-muted-foreground">Завантаження замовлень...</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     )
   }
 
   if (error) {
     return (
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold">Historie oprav</h2>
-          <Button
-            onClick={() => fetchOrders()}
-            disabled={loading}
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-2"
-          >
-            <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
-            Obnovit
-          </Button>
-        </div>
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            <div className="space-y-2">
-              <p>
-                <strong>Chyba při načítání objednávek:</strong>
-              </p>
-              <p className="text-sm">{error}</p>
-              <Button onClick={() => fetchOrders()} variant="outline" size="sm" className="mt-2">
-                Zkusit znovu
-              </Button>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Package className="h-5 w-5" />
+            Історія замовлень
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center py-8">
+            <div className="text-center">
+              <p className="text-destructive mb-4">Помилка завантаження: {error}</p>
+              <Button onClick={() => window.location.reload()}>Спробувати знову</Button>
             </div>
-          </AlertDescription>
-        </Alert>
-      </div>
+          </div>
+        </CardContent>
+      </Card>
     )
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Historie oprav</h2>
-          <p className="text-muted-foreground">
-            {orders.length === 0 ? "Zatím nemáte žádné objednávky" : `Celkem ${orders.length} objednávek`}
-          </p>
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Package className="h-5 w-5" />
+          Історія замовлень
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* Search and Filter Controls */}
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input
+              placeholder="Пошук за номером замовлення, пристроєм або послугою..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Фільтр за статусом" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Всі статуси</SelectItem>
+                {uniqueStatuses.map((status) => {
+                  const order = orders.find((o) => o.overallStatus === status)
+                  return (
+                    <SelectItem key={status} value={status}>
+                      {order?.overallStatusName || status}
+                    </SelectItem>
+                  )
+                })}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-        <Button
-          onClick={() => fetchOrders(true)}
-          disabled={refreshing}
-          variant="outline"
-          size="sm"
-          className="flex items-center gap-2"
-        >
-          <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
-          Obnovit
-        </Button>
-      </div>
 
-      {orders.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <Package className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Žádné objednávky</h3>
-            <p className="text-muted-foreground text-center">
-              Zatím nemáte žádné objednávky oprav. Když si objednáte opravu, zobrazí se zde její průběh a historie.
+        {/* Orders List */}
+        {filteredOrders.length === 0 ? (
+          <div className="text-center py-8">
+            <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">
+              {orders.length === 0 ? "Немає замовлень" : "Замовлення не знайдено"}
+            </h3>
+            <p className="text-muted-foreground">
+              {orders.length === 0
+                ? "У вас поки що немає жодного замовлення."
+                : "Спробуйте змінити критерії пошуку або фільтрування."}
             </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-4">
-          {orders.map((order) => (
-            <Card key={order.id} className="overflow-hidden">
-              <CardHeader className="pb-4">
-                <div className="flex items-start justify-between">
-                  <div className="space-y-1">
-                    <CardTitle className="flex items-center gap-2">
-                      <span>Objednávka #{order.documentId}</span>
-                      <Badge variant={getStatusBadgeVariant(order.status || order.overallStatus || "")}>
-                        {order.statusName || order.overallStatusName || order.status || order.overallStatus}
-                      </Badge>
-                    </CardTitle>
-                    <CardDescription className="flex items-center gap-4 text-sm">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="h-4 w-4" />
-                        {formatDate(order.createdAt || order.creationDate || "")}
-                      </span>
-                      {(order.deviceSerial || order.deviceSerialNumber) && (
-                        <span className="flex items-center gap-1">
-                          <Smartphone className="h-4 w-4" />
-                          {order.deviceSerial || order.deviceSerialNumber}
-                        </span>
-                      )}
-                    </CardDescription>
-                  </div>
-                  <div className="text-right">
-                    <div className="flex items-center gap-1 text-lg font-semibold">
-                      <DollarSign className="h-4 w-4" />
-                      {formatCurrency(order.totalAmount)}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {filteredOrders.map((order) => (
+              <Card key={order.id} className="border-l-4 border-l-primary/20">
+                <CardContent className="p-6">
+                  {/* Desktop View */}
+                  <div className="hidden md:block">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold text-lg">Замовлення #{order.documentId}</h3>
+                          <Badge className={cn("text-xs", order.overallStatusColor)}>{order.overallStatusName}</Badge>
+                        </div>
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <CalendarDays className="h-4 w-4" />
+                            {formatDate(order.creationDate)}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Smartphone className="h-4 w-4" />
+                            {order.deviceName}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Package className="h-4 w-4" />
+                            S/N: {order.deviceSerialNumber}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-primary">{formatCurrency(order.totalAmount)}</div>
+                        <div className="text-sm text-muted-foreground">Загальна сума</div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              </CardHeader>
 
-              <CardContent className="space-y-4">
-                {/* Device Info */}
-                <div className="flex items-center gap-2 text-sm">
-                  <Smartphone className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">{order.deviceName}</span>
-                  {order.deviceBrand && (
-                    <>
-                      <span className="text-muted-foreground">•</span>
-                      <span>{order.deviceBrand}</span>
-                    </>
-                  )}
-                  {order.deviceModel && (
-                    <>
-                      <span className="text-muted-foreground">•</span>
-                      <span>{order.deviceModel}</span>
-                    </>
-                  )}
-                </div>
+                    <Separator className="my-4" />
 
-                {/* Services */}
-                {order.services && order.services.length > 0 && (
-                  <>
-                    <Separator />
                     <div className="space-y-3">
-                      <h4 className="font-medium text-sm">Služby:</h4>
-                      <div className="space-y-2">
-                        {order.services.map((service, index) => (
+                      <h4 className="font-medium flex items-center gap-2">
+                        <DollarSign className="h-4 w-4" />
+                        Послуги ({order.services.length})
+                      </h4>
+                      <div className="grid gap-3">
+                        {order.services.map((service) => (
                           <div
-                            key={service.id || index}
+                            key={service.id}
                             className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
                           >
-                            <div className="space-y-1">
-                              <div className="flex items-center gap-2">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
                                 <span className="font-medium">{service.name}</span>
-                                {service.status && (
-                                  <Badge variant="outline" className="text-xs">
-                                    {service.statusName || service.status}
-                                  </Badge>
-                                )}
+                                <Badge variant="outline" className={cn("text-xs", service.statusColor)}>
+                                  {service.statusName}
+                                </Badge>
                               </div>
-                              {service.warrantyPeriod && service.warrantyPeriod > 0 && (
-                                <p className="text-xs text-muted-foreground flex items-center gap-1">
-                                  <CheckCircle className="h-3 w-3" />
-                                  Záruka: {service.warrantyPeriod} {service.warrantyUnits || "dní"}
-                                </p>
+                              {(service.warrantyPeriod || service.warrantyUnits) && (
+                                <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                                  <Shield className="h-3 w-3" />
+                                  Гарантія: {formatWarranty(service.warrantyPeriod, service.warrantyUnits)}
+                                </div>
                               )}
                             </div>
                             <div className="text-right">
@@ -317,13 +280,67 @@ export function UserOrders() {
                         ))}
                       </div>
                     </div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-    </div>
+                  </div>
+
+                  {/* Mobile View */}
+                  <div className="md:hidden space-y-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-semibold">#{order.documentId}</h3>
+                        <Badge className={cn("text-xs", order.overallStatusColor)}>{order.overallStatusName}</Badge>
+                      </div>
+                      <div className="text-sm text-muted-foreground space-y-1">
+                        <div className="flex items-center gap-1">
+                          <CalendarDays className="h-3 w-3" />
+                          {formatDate(order.creationDate)}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Smartphone className="h-3 w-3" />
+                          {order.deviceName}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Package className="h-3 w-3" />
+                          S/N: {order.deviceSerialNumber}
+                        </div>
+                      </div>
+                    </div>
+
+                    <Separator />
+
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-medium text-sm">Послуги ({order.services.length})</h4>
+                        <div className="text-lg font-bold text-primary">{formatCurrency(order.totalAmount)}</div>
+                      </div>
+                      <div className="space-y-2">
+                        {order.services.map((service) => (
+                          <div key={service.id} className="p-3 bg-muted/50 rounded-lg space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="font-medium text-sm">{service.name}</span>
+                              <span className="font-semibold text-sm">{formatCurrency(service.price)}</span>
+                            </div>
+                            <div className="flex items-center justify-between text-xs">
+                              <Badge variant="outline" className={cn(service.statusColor)}>
+                                {service.statusName}
+                              </Badge>
+                              {(service.warrantyPeriod || service.warrantyUnits) && (
+                                <div className="flex items-center gap-1 text-muted-foreground">
+                                  <Shield className="h-3 w-3" />
+                                  {formatWarranty(service.warrantyPeriod, service.warrantyUnits)}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   )
 }
