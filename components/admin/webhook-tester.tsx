@@ -3,357 +3,242 @@
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
-import { Copy, Send, TestTube, CheckCircle, XCircle, Clock, Zap, Globe } from "lucide-react"
+import { Copy, Send, Zap } from "lucide-react"
 import { toast } from "sonner"
 
-export function WebhookTester() {
-  const [isLoading, setIsLoading] = useState(false)
-  const [testResult, setTestResult] = useState<any>(null)
-  const [customPayload, setCustomPayload] = useState("")
-  const [webhookUrl] = useState("https://devicehelp.cz/api/webhooks/remonline")
+const WEBHOOK_URL = "https://devicehelp.cz/api/webhooks/remonline"
 
-  const samplePayloads = {
-    orderCreated: {
-      id: "webhook_123",
-      created_at: "2024-01-15T10:30:00Z",
-      event_name: "Order.Created",
-      context: {
-        object_id: 12345,
-        object_type: "order",
+const SAMPLE_WEBHOOKS = {
+  "Order.Created": {
+    id: "webhook_123",
+    created_at: new Date().toISOString(),
+    event_name: "Order.Created",
+    context: {
+      object_id: 12345,
+      object_type: "Order",
+    },
+    metadata: {
+      order: {
+        id: 12345,
+        name: "ORD-2024-001",
+        type: 1,
       },
-      metadata: {
-        order: {
-          id: 12345,
-          name: "Ремонт iPhone 14",
-          type: 1,
-        },
-        client: {
-          id: 67890,
-          fullname: "Іван Петренко",
-        },
-        status: {
-          id: 1,
-        },
+      client: {
+        id: 67890,
+        fullname: "Іван Петренко",
       },
-      employee: {
-        id: 1,
-        full_name: "Майстер Олександр",
-        email: "master@devicehelp.cz",
+      asset: {
+        id: 11111,
+        name: "iPhone 13 Pro",
       },
     },
-    orderUpdated: {
-      id: "webhook_124",
-      created_at: "2024-01-15T11:30:00Z",
-      event_name: "Order.Updated",
-      context: {
-        object_id: 12345,
-        object_type: "order",
+    employee: {
+      id: 1,
+      full_name: "Адміністратор",
+      email: "admin@devicehelp.cz",
+    },
+  },
+  "Order.StatusChanged": {
+    id: "webhook_124",
+    created_at: new Date().toISOString(),
+    event_name: "Order.StatusChanged",
+    context: {
+      object_id: 12345,
+      object_type: "Order",
+    },
+    metadata: {
+      order: {
+        id: 12345,
+        name: "ORD-2024-001",
       },
-      metadata: {
-        order: {
-          id: 12345,
-          name: "Ремонт iPhone 14",
-          type: 1,
-        },
-        client: {
-          id: 67890,
-          fullname: "Іван Петренко",
-        },
-        status: {
-          id: 2,
-        },
-      },
-      employee: {
-        id: 1,
-        full_name: "Майстер Олександр",
-        email: "master@devicehelp.cz",
+      status: {
+        id: 3,
       },
     },
-    clientCreated: {
-      id: "webhook_125",
-      created_at: "2024-01-15T09:15:00Z",
-      event_name: "Client.Created",
-      context: {
-        object_id: 67890,
-        object_type: "client",
-      },
-      metadata: {
-        client: {
-          id: 67890,
-          fullname: "Марія Коваленко",
-        },
-      },
-      employee: {
-        id: 1,
-        full_name: "Майстер Олександр",
-        email: "master@devicehelp.cz",
+    employee: {
+      id: 1,
+      full_name: "Адміністратор",
+      email: "admin@devicehelp.cz",
+    },
+  },
+  "Client.Created": {
+    id: "webhook_125",
+    created_at: new Date().toISOString(),
+    event_name: "Client.Created",
+    context: {
+      object_id: 67890,
+      object_type: "Client",
+    },
+    metadata: {
+      client: {
+        id: 67890,
+        fullname: "Марія Коваленко",
       },
     },
-    rawTest: {
-      test: true,
-      message: "This is a raw test webhook",
-      timestamp: new Date().toISOString(),
-      data: {
-        some: "random",
-        nested: {
-          data: "structure",
-        },
-      },
+    employee: {
+      id: 1,
+      full_name: "Адміністратор",
+      email: "admin@devicehelp.cz",
     },
+  },
+}
+
+export function WebhookTester() {
+  const [selectedEvent, setSelectedEvent] = useState<string>("")
+  const [customPayload, setCustomPayload] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  const [lastResponse, setLastResponse] = useState<any>(null)
+
+  const copyWebhookUrl = () => {
+    navigator.clipboard.writeText(WEBHOOK_URL)
+    toast.success("Webhook URL copied to clipboard")
   }
 
-  const sendTestWebhook = async (payload: any) => {
-    setIsLoading(true)
-    setTestResult(null)
+  const loadSamplePayload = (eventType: string) => {
+    const sample = SAMPLE_WEBHOOKS[eventType as keyof typeof SAMPLE_WEBHOOKS]
+    if (sample) {
+      setCustomPayload(JSON.stringify(sample, null, 2))
+    }
+  }
+
+  const sendTestWebhook = async () => {
+    if (!customPayload.trim()) {
+      toast.error("Please enter a webhook payload")
+      return
+    }
 
     try {
-      console.log("🧪 Sending test webhook:", payload)
+      setIsLoading(true)
+      const payload = JSON.parse(customPayload)
 
-      const response = await fetch(webhookUrl, {
+      const response = await fetch(WEBHOOK_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "User-Agent": "WebhookTester/1.0",
-          "X-Test-Source": "admin-panel",
+          "x-remonline-signature": "test-signature",
         },
         body: JSON.stringify(payload),
       })
 
       const result = await response.json()
-
-      setTestResult({
-        success: response.ok,
+      setLastResponse({
         status: response.status,
+        statusText: response.statusText,
         data: result,
-        timestamp: new Date().toISOString(),
       })
 
       if (response.ok) {
-        toast.success("Test webhook sent successfully! Check the monitor tab.")
+        toast.success("Webhook sent successfully!")
       } else {
-        toast.error(`Test webhook failed: ${result.error || "Unknown error"}`)
+        toast.error(`Webhook failed: ${response.status}`)
       }
     } catch (error) {
-      console.error("Test webhook error:", error)
-      setTestResult({
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
-        timestamp: new Date().toISOString(),
-      })
-      toast.error("Failed to send test webhook")
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const sendCustomWebhook = async () => {
-    if (!customPayload.trim()) {
-      toast.error("Please enter a custom payload")
-      return
-    }
-
-    try {
-      const payload = JSON.parse(customPayload)
-      await sendTestWebhook(payload)
-    } catch (error) {
-      toast.error("Invalid JSON payload")
-    }
-  }
-
-  const testEndpointConnection = async () => {
-    setIsLoading(true)
-    try {
-      const response = await fetch(webhookUrl, { method: "GET" })
-      const result = await response.json()
-
-      setTestResult({
-        success: response.ok,
-        status: response.status,
-        data: result,
-        timestamp: new Date().toISOString(),
-      })
-
-      if (response.ok) {
-        toast.success("Endpoint is active and responding!")
-      } else {
-        toast.error("Endpoint test failed")
-      }
-    } catch (error) {
-      toast.error("Failed to connect to endpoint")
-      setTestResult({
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
-        timestamp: new Date().toISOString(),
+      console.error("Error sending webhook:", error)
+      toast.error("Failed to send webhook")
+      setLastResponse({
+        status: 0,
+        statusText: "Error",
+        data: { error: error instanceof Error ? error.message : String(error) },
       })
     } finally {
       setIsLoading(false)
     }
-  }
-
-  const copyWebhookUrl = () => {
-    navigator.clipboard.writeText(webhookUrl)
-    toast.success("Webhook URL copied to clipboard")
-  }
-
-  const getStatusIcon = (success: boolean) => {
-    return success ? <CheckCircle className="h-4 w-4 text-green-500" /> : <XCircle className="h-4 w-4 text-red-500" />
   }
 
   return (
     <div className="space-y-6">
       {/* Webhook URL */}
-      <Card className="border-green-200 bg-green-50">
+      <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-green-800">
-            <Globe className="h-5 w-5" />
-            Webhook Endpoint
-          </CardTitle>
-          <CardDescription className="text-green-700">
-            This endpoint captures ALL incoming webhooks - no filtering
-          </CardDescription>
+          <CardTitle className="text-lg">Webhook Endpoint</CardTitle>
+          <CardDescription>Use this URL in your RemOnline webhook settings</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-2 mb-4">
-            <Input value={webhookUrl} readOnly className="font-mono bg-white" />
-            <Button variant="outline" onClick={copyWebhookUrl}>
+          <div className="flex items-center gap-2">
+            <code className="flex-1 bg-muted p-2 rounded text-sm font-mono">{WEBHOOK_URL}</code>
+            <Button variant="outline" size="sm" onClick={copyWebhookUrl}>
               <Copy className="h-4 w-4" />
             </Button>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={testEndpointConnection} disabled={isLoading}>
-              <Zap className="h-4 w-4 mr-2" />
-              Test Connection
-            </Button>
-            <Badge variant="secondary" className="text-green-700">
-              Accepts any JSON payload
-            </Badge>
+        </CardContent>
+      </Card>
+
+      {/* Sample Events */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Quick Test</CardTitle>
+          <CardDescription>Select a sample event to test</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+              {Object.keys(SAMPLE_WEBHOOKS).map((eventType) => (
+                <Button
+                  key={eventType}
+                  variant="outline"
+                  onClick={() => {
+                    setSelectedEvent(eventType)
+                    loadSamplePayload(eventType)
+                  }}
+                  className="justify-start"
+                >
+                  <Zap className="h-4 w-4 mr-2" />
+                  {eventType}
+                </Button>
+              ))}
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Sample Webhooks */}
+      {/* Custom Payload */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TestTube className="h-5 w-5" />
-            Test Sample Webhooks
-          </CardTitle>
-          <CardDescription>Send sample webhook events to test your integration</CardDescription>
+          <CardTitle className="text-lg">Custom Webhook Payload</CardTitle>
+          <CardDescription>Edit the JSON payload and send a test webhook</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Button
-              variant="outline"
-              onClick={() => sendTestWebhook(samplePayloads.orderCreated)}
-              disabled={isLoading}
-              className="h-auto p-4 flex flex-col items-start"
-            >
-              <div className="font-medium">Order Created</div>
-              <div className="text-sm text-muted-foreground">RemOnline order webhook</div>
-            </Button>
-
-            <Button
-              variant="outline"
-              onClick={() => sendTestWebhook(samplePayloads.orderUpdated)}
-              disabled={isLoading}
-              className="h-auto p-4 flex flex-col items-start"
-            >
-              <div className="font-medium">Order Updated</div>
-              <div className="text-sm text-muted-foreground">Order status change</div>
-            </Button>
-
-            <Button
-              variant="outline"
-              onClick={() => sendTestWebhook(samplePayloads.clientCreated)}
-              disabled={isLoading}
-              className="h-auto p-4 flex flex-col items-start"
-            >
-              <div className="font-medium">Client Created</div>
-              <div className="text-sm text-muted-foreground">New client webhook</div>
-            </Button>
-
-            <Button
-              variant="outline"
-              onClick={() => sendTestWebhook(samplePayloads.rawTest)}
-              disabled={isLoading}
-              className="h-auto p-4 flex flex-col items-start"
-            >
-              <div className="font-medium">Raw Test</div>
-              <div className="text-sm text-muted-foreground">Simple test payload</div>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Custom Webhook */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Custom Webhook</CardTitle>
-          <CardDescription>Send any custom JSON payload to test webhook capture</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <Label htmlFor="custom-payload">JSON Payload</Label>
+          <div className="space-y-2">
+            <Label htmlFor="payload">JSON Payload</Label>
             <Textarea
-              id="custom-payload"
-              placeholder='{"your": "custom", "webhook": "data", "goes": "here"}'
+              id="payload"
               value={customPayload}
               onChange={(e) => setCustomPayload(e.target.value)}
-              className="min-h-[200px] font-mono"
+              placeholder="Enter webhook JSON payload..."
+              className="min-h-[300px] font-mono text-sm"
             />
           </div>
-          <Button onClick={sendCustomWebhook} disabled={isLoading}>
-            <Send className="h-4 w-4 mr-2" />
-            Send Custom Webhook
-          </Button>
+
+          <div className="flex gap-2">
+            <Button onClick={sendTestWebhook} disabled={isLoading}>
+              <Send className="h-4 w-4 mr-2" />
+              {isLoading ? "Sending..." : "Send Test Webhook"}
+            </Button>
+            <Button variant="outline" onClick={() => setCustomPayload("")} disabled={isLoading}>
+              Clear
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
-      {/* Test Result */}
-      {testResult && (
+      {/* Response */}
+      {lastResponse && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              {getStatusIcon(testResult.success)}
-              Test Result
-              <Badge variant={testResult.success ? "default" : "destructive"}>
-                {testResult.success ? "Success" : "Failed"}
+            <CardTitle className="text-lg flex items-center gap-2">
+              Last Response
+              <Badge variant={lastResponse.status === 200 ? "default" : "destructive"}>
+                {lastResponse.status} {lastResponse.statusText}
               </Badge>
             </CardTitle>
-            <CardDescription className="flex items-center gap-2">
-              <Clock className="h-3 w-3" />
-              {new Date(testResult.timestamp).toLocaleString()}
-            </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {testResult.status && (
-                <div>
-                  <Label>HTTP Status</Label>
-                  <Badge variant="outline" className="ml-2">
-                    {testResult.status}
-                  </Badge>
-                </div>
-              )}
-
-              <Separator />
-
-              <div>
-                <Label>Response</Label>
-                <pre className="bg-muted p-3 rounded text-sm overflow-auto max-h-64 mt-2">
-                  {JSON.stringify(testResult.data || testResult.error, null, 2)}
-                </pre>
-              </div>
-
-              <div className="text-sm text-blue-600 bg-blue-50 p-3 rounded">
-                💡 Check the "Monitor" tab to see this webhook appear in real-time!
-              </div>
-            </div>
+            <pre className="bg-muted p-4 rounded text-sm overflow-auto">
+              {JSON.stringify(lastResponse.data, null, 2)}
+            </pre>
           </CardContent>
         </Card>
       )}

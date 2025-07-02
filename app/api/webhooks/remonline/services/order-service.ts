@@ -1,5 +1,36 @@
 import remonline from "@/lib/api/remonline"
 import { createClient } from "@/lib/supabase/server"
+import type {
+  OrderData as RemonlineOrderData,
+  ServiceData as RemonlineServiceData,
+} from "@/app/api/webhooks/remonline/services/order-service"
+
+export interface OrderData {
+  id: number
+  document_id: string
+  creation_date: string
+  device_serial_number: string
+  device_name: string
+  device_brand?: string
+  device_model?: string
+  total_amount: number
+  overall_status: string
+  overall_status_name: string
+  overall_status_color: string
+  user_id?: string
+}
+
+export interface ServiceData {
+  id: string
+  service_name: string
+  price: number
+  warranty_period?: number
+  warranty_units?: string
+  service_status: string
+  service_status_name: string
+  service_status_color: string
+  order_id: number
+}
 
 export class OrderService {
   private supabase = createClient()
@@ -148,6 +179,7 @@ export class OrderService {
           service_name: service.name || "Unknown Service",
           price: service.price || 0,
           warranty_period: service.warranty_period || 0,
+          warranty_units: service.warranty_units || "",
           status: service.status || "pending",
         }))
 
@@ -180,5 +212,71 @@ export class OrderService {
         error: error instanceof Error ? error.message : String(error),
       }
     }
+  }
+}
+
+export async function saveOrderToDatabase(orderData: RemonlineOrderData, services: RemonlineServiceData[] = []) {
+  try {
+    const supabase = createClient()
+
+    // Insert or update the order
+    const { data: order, error: orderError } = await supabase
+      .from("user_repair_orders")
+      .upsert([orderData], { onConflict: "remonline_order_id" })
+      .select()
+      .single()
+
+    if (orderError) {
+      console.error("Error saving order:", orderError)
+      throw orderError
+    }
+
+    // Insert or update services
+    if (services.length > 0) {
+      const servicesWithOrderId = services.map((service) => ({
+        ...service,
+        order_id: order.id,
+      }))
+
+      const { error: servicesError } = await supabase
+        .from("user_repair_order_services")
+        .upsert(servicesWithOrderId, { onConflict: "remonline_service_id" })
+
+      if (servicesError) {
+        console.error("Error saving services:", servicesError)
+        throw servicesError
+      }
+    }
+
+    console.log(`✅ Order ${orderData.document_id} saved successfully`)
+    return { success: true, order }
+  } catch (error) {
+    console.error("💥 Error saving order to database:", error)
+    throw error
+  }
+}
+
+export async function getOrderFromDatabase(orderId: number) {
+  try {
+    const supabase = createClient()
+
+    const { data: order, error } = await supabase
+      .from("user_repair_orders")
+      .select(`
+        *,
+        services:user_repair_order_services(*)
+      `)
+      .eq("remonline_order_id", orderId)
+      .single()
+
+    if (error && error.code !== "PGRST116") {
+      console.error("Error fetching order:", error)
+      throw error
+    }
+
+    return order
+  } catch (error) {
+    console.error("💥 Error fetching order from database:", error)
+    throw error
   }
 }

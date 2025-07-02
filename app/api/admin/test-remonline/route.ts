@@ -1,56 +1,81 @@
-import { type NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
+import { getCurrentUser } from "@/lib/auth/session"
+import remonline from "@/lib/api/remonline"
 
-export async function POST(request: NextRequest) {
+export async function GET() {
   try {
-    const { endpoint, id } = await request.json()
-
-    if (!endpoint || !id) {
-      return NextResponse.json({ error: "Missing endpoint or id parameter" }, { status: 400 })
+    // Check if the user is an admin
+    const user = await getCurrentUser()
+    if (!user || user.role !== "admin") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const apiKey = process.env.REMONLINE_API_KEY
-    const apiToken = process.env.REMONLINE_API_TOKEN
+    console.log("Testing RemOnline API connection...")
 
-    if (!apiKey) {
-      return NextResponse.json({ error: "RemOnline API key not configured" }, { status: 500 })
+    // Test basic connection with orders endpoint
+    const connectionTest = await remonline.testConnection()
+
+    if (!connectionTest.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Failed to connect to RemOnline API",
+          details: connectionTest,
+        },
+        { status: 500 },
+      )
     }
 
-    console.log(`🧪 Testing RemOnline API: ${endpoint}/${id}`)
+    // Test fetching clients (first page, limit 5) - this will try multiple endpoints
+    const clientsTest = await remonline.getClients({ page: 1, limit: 5 })
 
-    // Construct the RemOnline API URL
-    const apiUrl = `https://api.remonline.app/token/${apiKey}/${endpoint}/${id}`
+    // Test fetching order statuses
+    const statusesTest = await remonline.getOrderStatuses()
 
-    const response = await fetch(apiUrl, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        "User-Agent": "DeviceHelp-Integration/1.0",
-        ...(apiToken && { Authorization: `Bearer ${apiToken}` }),
-      },
-    })
+    // Test creating a client (with test data) - this will also try multiple endpoints
+    const testClientData = {
+      first_name: "Test",
+      last_name: "Client",
+      email: `test-${Date.now()}@example.com`,
+      address: "Test Address",
+    }
 
-    const data = await response.json()
-
-    console.log(`✅ RemOnline API response:`, {
-      status: response.status,
-      ok: response.ok,
-      dataKeys: Object.keys(data || {}),
-    })
+    const createClientTest = await remonline.createClient(testClientData)
 
     return NextResponse.json({
-      success: response.ok,
-      status: response.status,
-      endpoint: `${endpoint}/${id}`,
-      data: data,
-      timestamp: new Date().toISOString(),
+      success: true,
+      message: "RemOnline API is working correctly",
+      tests: {
+        connection: connectionTest,
+        clients: {
+          success: clientsTest.success,
+          count: clientsTest.data?.data?.length || 0,
+          total: clientsTest.data?.count || 0,
+          endpoint: (clientsTest as any).endpoint || "unknown",
+          message: clientsTest.success ? "Clients fetched successfully" : clientsTest.message,
+          details: clientsTest.success ? null : clientsTest.details,
+        },
+        orderStatuses: {
+          success: statusesTest.success,
+          count: statusesTest.data?.data?.length || 0,
+          message: statusesTest.success ? "Order statuses fetched successfully" : statusesTest.message,
+        },
+        createClient: {
+          success: createClientTest.success,
+          message: createClientTest.success ? "Test client created successfully" : createClientTest.message,
+          clientId: createClientTest.success ? createClientTest.client?.id : null,
+          endpoint: (createClientTest as any).endpoint || "unknown",
+          details: createClientTest.success ? null : createClientTest.details,
+        },
+      },
     })
   } catch (error) {
-    console.error("💥 RemOnline API test error:", error)
+    console.error("Error testing RemOnline API:", error)
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : String(error),
-        timestamp: new Date().toISOString(),
+        error: "Failed to test RemOnline API",
+        details: error instanceof Error ? error.message : String(error),
       },
       { status: 500 },
     )

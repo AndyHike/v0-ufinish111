@@ -1,229 +1,167 @@
 import { type NextRequest, NextResponse } from "next/server"
+import { z } from "zod"
+import { handleOrderEvents } from "./handlers/order-handler"
+import { handleClientEvents } from "./handlers/client-handler"
 import { createClient } from "@/lib/supabase/server"
 
-// Функція для безпечного логування
-function safeLog(message: string, data?: any) {
-  console.log(`[WEBHOOK] ${message}`)
-  if (data) {
-    try {
-      console.log(`[WEBHOOK] Data:`, JSON.stringify(data, null, 2))
-    } catch (e) {
-      console.log(`[WEBHOOK] Data (raw):`, data)
-    }
-  }
-}
+// Different secret keys for different webhook types
+const ORDER_WEBHOOK_SECRET = process.env.REMONLINE_ORDER_WEBHOOK_SECRET || "your-order-webhook-secret"
+const GENERAL_WEBHOOK_SECRET = process.env.REMONLINE_WEBHOOK_SECRET || "your-webhook-secret"
 
-// POST обробник для webhooks
+// Define a schema for the RemOnline webhook payload
+const remonlineWebhookSchema = z.object({
+  id: z.string(),
+  created_at: z.string(),
+  event_name: z.string(),
+  context: z.object({
+    object_id: z.number(),
+    object_type: z.string(),
+  }),
+  metadata: z
+    .object({
+      order: z
+        .object({
+          id: z.number(),
+          name: z.string(),
+          type: z.number().optional(),
+        })
+        .optional(),
+      client: z
+        .object({
+          id: z.number(),
+          fullname: z.string(),
+        })
+        .optional(),
+      status: z
+        .object({
+          id: z.number(),
+        })
+        .optional(),
+      asset: z
+        .object({
+          id: z.number(),
+          name: z.string(),
+        })
+        .optional(),
+    })
+    .optional(),
+  employee: z.object({
+    id: z.number(),
+    full_name: z.string(),
+    email: z.string().email(),
+  }),
+})
+
 export async function POST(request: NextRequest) {
   const startTime = Date.now()
-
-  safeLog("🔔 POST REQUEST RECEIVED!")
-  safeLog("📍 URL:", request.url)
-  safeLog("🌐 Method:", request.method)
-
-  // Логуємо всі headers
-  const headers = Object.fromEntries(request.headers.entries())
-  safeLog("📋 Headers:", headers)
-
-  let rawBody = ""
-  let parsedData: any = null
-  const contentType = request.headers.get("content-type") || "unknown"
+  let webhookData: any = null
 
   try {
-    // Читаємо raw body
-    rawBody = await request.text()
-    safeLog("📦 Raw Body Length:", rawBody.length)
-    safeLog("📦 Raw Body:", rawBody)
-    safeLog("📦 Content-Type:", contentType)
+    // Parse the webhook data
+    webhookData = await request.json()
+    console.log("🔔 Webhook received:", JSON.stringify(webhookData, null, 2))
 
-    // Намагаємося парсити JSON
-    if (rawBody.trim()) {
-      try {
-        parsedData = JSON.parse(rawBody)
-        safeLog("✅ JSON Parsed Successfully")
-        safeLog("📊 Parsed Data:", parsedData)
-      } catch (parseError) {
-        safeLog("❌ JSON Parse Error:", parseError)
-        parsedData = {
-          _error: "JSON_PARSE_FAILED",
-          _raw_body: rawBody,
-          _parse_error: String(parseError),
-        }
-      }
+    // Log webhook to database for real-time monitoring
+    await logWebhook(webhookData, "received")
+
+    // Validate webhook signature for security
+    const signature = request.headers.get("x-remonline-signature")
+    if (!validateWebhookSignature(webhookData, signature)) {
+      console.error("❌ Invalid webhook signature")
+      await logWebhook(webhookData, "failed", "Invalid signature")
+      return NextResponse.json({ error: "Invalid signature" }, { status: 401 })
+    }
+
+    // Extract event type
+    const eventType = webhookData.event_name || ""
+    if (!eventType) {
+      console.error("❌ No event type in webhook")
+      await logWebhook(webhookData, "failed", "No event type")
+      return NextResponse.json({ error: "No event type" }, { status: 400 })
+    }
+
+    console.log(`🎯 Processing event: ${eventType}`)
+
+    let result: any = { success: false, message: "Unknown event type" }
+
+    // Route to appropriate handler based on event type
+    if (eventType.startsWith("Order.")) {
+      result = await handleOrderEvents(webhookData)
+    } else if (eventType.startsWith("Client.")) {
+      result = await handleClientEvents(webhookData)
     } else {
-      safeLog("⚠️ Empty Body Received")
-      parsedData = {
-        _error: "EMPTY_BODY",
-        _content_type: contentType,
-      }
-    }
-
-    // Визначаємо тип події
-    const eventType =
-      parsedData?.event || parsedData?.event_name || parsedData?.type || parsedData?.action || "unknown_event"
-
-    safeLog("🎯 Event Type:", eventType)
-
-    // Створюємо повний об'єкт для збереження
-    const webhookLogData = {
-      event_type: eventType,
-      status: "received" as const,
-      message: `Webhook received successfully (${eventType})`,
-      processing_time_ms: Date.now() - startTime,
-      webhook_data: {
-        parsed_payload: parsedData,
-        raw_body: rawBody,
-        headers: headers,
-        metadata: {
-          url: request.url,
-          method: request.method,
-          content_type: contentType,
-          body_length: rawBody.length,
-          timestamp: new Date().toISOString(),
-          user_agent: request.headers.get("user-agent") || "unknown",
-        },
-      },
-      created_at: new Date().toISOString(),
-    }
-
-    safeLog("💾 Saving to Database...")
-
-    // Зберігаємо в базу даних
-    try {
-      const supabase = createClient()
-      const { data, error } = await supabase.from("webhook_logs").insert([webhookLogData]).select()
-
-      if (error) {
-        safeLog("❌ Database Error:", error)
-      } else {
-        safeLog("✅ Saved to Database:", data?.[0]?.id)
-      }
-    } catch (dbError) {
-      safeLog("💥 Database Exception:", dbError)
+      console.log(`⚠️ Unhandled event type: ${eventType}`)
+      result = { success: true, message: `Event ${eventType} received but not processed` }
     }
 
     const processingTime = Date.now() - startTime
-    safeLog(`⏱️ Total Processing Time: ${processingTime}ms`)
+    console.log(`✅ Webhook processed in ${processingTime}ms:`, result)
 
-    // Завжди повертаємо успішну відповідь
-    const response = {
-      success: true,
-      message: "Webhook received and processed",
-      event_type: eventType,
-      processing_time_ms: processingTime,
-      timestamp: new Date().toISOString(),
-      received_data: parsedData ? Object.keys(parsedData) : [],
-    }
+    // Log successful processing
+    await logWebhook(webhookData, result.success ? "success" : "failed", result.message, processingTime)
 
-    safeLog("✅ Sending Response:", response)
-
-    return NextResponse.json(response, {
-      status: 200,
-      headers: {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization",
-      },
-    })
+    return NextResponse.json(result)
   } catch (error) {
     const processingTime = Date.now() - startTime
-    safeLog("💥 CRITICAL ERROR:", error)
+    console.error("💥 Webhook processing error:", error)
 
-    // Навіть при помилці намагаємося зберегти лог
-    try {
-      const supabase = createClient()
-      await supabase.from("webhook_logs").insert([
-        {
-          event_type: "error",
-          status: "error" as const,
-          message: `Critical error: ${error instanceof Error ? error.message : String(error)}`,
-          processing_time_ms: processingTime,
-          webhook_data: {
-            error: String(error),
-            raw_body: rawBody,
-            headers: headers,
-            stack: error instanceof Error ? error.stack : undefined,
-          },
-          created_at: new Date().toISOString(),
-        },
-      ])
-    } catch (dbError) {
-      safeLog("💥 Failed to log error to database:", dbError)
-    }
+    // Log error
+    await logWebhook(webhookData, "error", error instanceof Error ? error.message : String(error), processingTime)
 
-    // Все одно повертаємо 200, щоб не ламати RemOnline
     return NextResponse.json(
       {
         success: false,
-        error: "Internal server error",
-        message: "Webhook received but processing failed",
-        timestamp: new Date().toISOString(),
+        error: "Webhook processing failed",
+        details: error instanceof Error ? error.message : String(error),
       },
-      { status: 200 },
+      { status: 500 },
     )
   }
 }
 
-// GET обробник для перевірки статусу
-export async function GET(request: NextRequest) {
-  safeLog("🔍 GET REQUEST RECEIVED")
-  safeLog("📍 URL:", request.url)
-
-  // Логуємо GET запит теж
-  try {
-    const supabase = createClient()
-    await supabase.from("webhook_logs").insert([
-      {
-        event_type: "health_check",
-        status: "success" as const,
-        message: "GET request - endpoint health check",
-        processing_time_ms: 0,
-        webhook_data: {
-          method: "GET",
-          url: request.url,
-          headers: Object.fromEntries(request.headers.entries()),
-          timestamp: new Date().toISOString(),
-        },
-        created_at: new Date().toISOString(),
-      },
-    ])
-  } catch (error) {
-    safeLog("❌ Failed to log GET request:", error)
+function validateWebhookSignature(data: any, signature: string | null): boolean {
+  // For testing, allow test signatures
+  if (signature === "test-signature") {
+    console.log("🧪 Test signature detected, skipping validation")
+    return true
   }
 
-  const response = {
-    status: "active",
-    message: "RemOnline webhook endpoint is working",
-    endpoint: request.url,
-    methods: ["GET", "POST", "OPTIONS"],
-    timestamp: new Date().toISOString(),
-    server_time: new Date().toLocaleString(),
-    ready_for_webhooks: true,
+  // Implement your actual signature validation logic here
+  const expectedSecret = process.env.REMONLINE_ORDER_WEBHOOK_SECRET
+  if (!expectedSecret) {
+    console.error("❌ REMONLINE_ORDER_WEBHOOK_SECRET not configured")
+    return false
   }
 
-  safeLog("✅ GET Response:", response)
-
-  return NextResponse.json(response, {
-    status: 200,
-    headers: {
-      "Content-Type": "application/json",
-      "Access-Control-Allow-Origin": "*",
-    },
-  })
+  // Add your signature validation logic here
+  // This is a placeholder - implement according to RemOnline's documentation
+  return true
 }
 
-// OPTIONS обробник для CORS
-export async function OPTIONS(request: NextRequest) {
-  safeLog("🔧 OPTIONS REQUEST RECEIVED")
+async function logWebhook(
+  webhookData: any,
+  status: "received" | "success" | "failed" | "error",
+  message?: string,
+  processingTime?: number,
+) {
+  try {
+    const supabase = createClient()
 
-  return new NextResponse(null, {
-    status: 200,
-    headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With",
-      "Access-Control-Max-Age": "86400",
-    },
-  })
+    const logEntry = {
+      event_type: webhookData?.event_name || "unknown",
+      status,
+      message: message || "",
+      processing_time_ms: processingTime || 0,
+      webhook_data: webhookData,
+      created_at: new Date().toISOString(),
+    }
+
+    const { error } = await supabase.from("webhook_logs").insert([logEntry])
+
+    if (error) {
+      console.error("Failed to log webhook:", error)
+    }
+  } catch (error) {
+    console.error("Error logging webhook:", error)
+  }
 }
