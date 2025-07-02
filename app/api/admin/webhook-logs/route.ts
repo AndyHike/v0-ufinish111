@@ -1,106 +1,64 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { getCurrentUser } from "@/lib/auth/session"
 
 export async function GET(request: NextRequest) {
   try {
-    console.log("📊 Fetching webhook logs...")
+    const user = await getCurrentUser()
+    if (!user || user.role !== "admin") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
 
     const { searchParams } = new URL(request.url)
-    const limit = Number.parseInt(searchParams.get("limit") || "100")
+    const limit = Number.parseInt(searchParams.get("limit") || "50")
     const offset = Number.parseInt(searchParams.get("offset") || "0")
 
     const supabase = createClient()
 
-    // Отримуємо логи з сортуванням по даті (найновіші спочатку)
-    const {
-      data: logs,
-      error,
-      count,
-    } = await supabase
+    const { data: logs, error } = await supabase
       .from("webhook_logs")
-      .select("*", { count: "exact" })
+      .select("*")
       .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1)
 
     if (error) {
-      console.error("❌ Database error:", error)
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Database error",
-          details: error.message,
-        },
-        { status: 500 },
-      )
+      console.error("Error fetching webhook logs:", error)
+      return NextResponse.json({ error: "Failed to fetch logs" }, { status: 500 })
     }
 
-    // Обробляємо логи для зручного відображення
-    const processedLogs =
-      logs?.map((log) => ({
-        ...log,
-        display_payload: log.webhook_data?.parsed_payload || log.webhook_data,
-        raw_body: log.webhook_data?.raw_body || "",
-        headers: log.webhook_data?.headers || {},
-        metadata: log.webhook_data?.metadata || {},
-      })) || []
-
-    console.log(`✅ Fetched ${processedLogs.length} logs`)
+    const { count } = await supabase.from("webhook_logs").select("*", { count: "exact", head: true })
 
     return NextResponse.json({
-      success: true,
-      logs: processedLogs,
+      logs: logs || [],
       total: count || 0,
       limit,
       offset,
     })
   } catch (error) {
-    console.error("💥 Error fetching webhook logs:", error)
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Internal server error",
-        details: error instanceof Error ? error.message : String(error),
-      },
-      { status: 500 },
-    )
+    console.error("Webhook logs API error:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
 
 export async function DELETE(request: NextRequest) {
   try {
-    console.log("🗑️ Clearing webhook logs...")
+    const user = await getCurrentUser()
+    if (!user || user.role !== "admin") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
 
     const supabase = createClient()
 
-    const { error } = await supabase.from("webhook_logs").delete().neq("id", 0) // Видаляємо всі записи
+    const { error } = await supabase.from("webhook_logs").delete().neq("id", 0)
 
     if (error) {
-      console.error("❌ Database error:", error)
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Database error",
-          details: error.message,
-        },
-        { status: 500 },
-      )
+      console.error("Error clearing webhook logs:", error)
+      return NextResponse.json({ error: "Failed to clear logs" }, { status: 500 })
     }
 
-    console.log("✅ Webhook logs cleared")
-
-    return NextResponse.json({
-      success: true,
-      message: "All webhook logs have been cleared",
-    })
+    return NextResponse.json({ success: true, message: "Logs cleared successfully" })
   } catch (error) {
-    console.error("💥 Error clearing webhook logs:", error)
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Internal server error",
-        details: error instanceof Error ? error.message : String(error),
-      },
-      { status: 500 },
-    )
+    console.error("Clear webhook logs API error:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

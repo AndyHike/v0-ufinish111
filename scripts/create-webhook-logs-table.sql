@@ -1,26 +1,34 @@
--- Create webhook_logs table if it doesn't exist
+-- Create webhook_logs table
 CREATE TABLE IF NOT EXISTS webhook_logs (
   id BIGSERIAL PRIMARY KEY,
-  event_type TEXT NOT NULL DEFAULT 'unknown',
-  status TEXT NOT NULL DEFAULT 'received' CHECK (status IN ('received', 'success', 'failed', 'error')),
-  message TEXT DEFAULT '',
-  processing_time_ms INTEGER DEFAULT 0,
-  webhook_data JSONB DEFAULT '{}',
+  method VARCHAR(10) NOT NULL DEFAULT 'POST',
+  url TEXT,
+  headers JSONB,
+  raw_body TEXT,
+  payload JSONB,
+  user_agent TEXT,
+  content_type VARCHAR(255),
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_webhook_logs_created_at ON webhook_logs(created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_webhook_logs_event_type ON webhook_logs(event_type);
-CREATE INDEX IF NOT EXISTS idx_webhook_logs_status ON webhook_logs(status);
+CREATE INDEX IF NOT EXISTS idx_webhook_logs_method ON webhook_logs(method);
+CREATE INDEX IF NOT EXISTS idx_webhook_logs_content_type ON webhook_logs(content_type);
 
--- Add RLS policies if needed
+-- Enable RLS (Row Level Security)
 ALTER TABLE webhook_logs ENABLE ROW LEVEL SECURITY;
 
--- Allow all operations for authenticated users (adjust as needed)
-CREATE POLICY IF NOT EXISTS "Allow all for authenticated users" ON webhook_logs
-  FOR ALL USING (auth.role() = 'authenticated');
+-- Create policy for admins to access all webhook logs
+CREATE POLICY "Admin can access webhook logs" ON webhook_logs
+  FOR ALL USING (
+    EXISTS (
+      SELECT 1 FROM auth.users 
+      WHERE auth.users.id = auth.uid() 
+      AND auth.users.raw_user_meta_data->>'role' = 'admin'
+    )
+  );
 
--- Allow all operations for service role
-CREATE POLICY IF NOT EXISTS "Allow all for service role" ON webhook_logs
-  FOR ALL USING (auth.role() = 'service_role');
+-- Grant permissions
+GRANT ALL ON webhook_logs TO authenticated;
+GRANT USAGE, SELECT ON SEQUENCE webhook_logs_id_seq TO authenticated;
