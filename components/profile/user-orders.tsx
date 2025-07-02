@@ -10,6 +10,7 @@ import { CalendarDays, Package, Search, Filter, Smartphone, DollarSign, Shield, 
 import { formatCurrency } from "@/lib/format-currency"
 import { cn } from "@/lib/utils"
 import { useTranslations } from "next-intl"
+import { useParams } from "next/navigation"
 
 interface Service {
   id: string
@@ -36,6 +37,9 @@ interface Order {
 
 export function UserOrders() {
   const t = useTranslations("orders")
+  const params = useParams()
+  const locale = (params.locale as string) || "uk"
+
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -48,7 +52,7 @@ export function UserOrders() {
     try {
       setLoading(true)
       setError(null)
-      const response = await fetch("/api/user/repair-orders")
+      const response = await fetch(`/api/user/repair-orders?locale=${locale}`)
       const data = await response.json()
 
       if (!response.ok) {
@@ -70,7 +74,7 @@ export function UserOrders() {
 
   useEffect(() => {
     fetchOrders()
-  }, [])
+  }, [locale])
 
   // Filter orders based on search term and status
   useEffect(() => {

@@ -1,79 +1,126 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
 import { getStatusByRemOnlineId } from "@/lib/order-status-utils"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import { getSession } from "@/lib/auth/session"
 
 export async function GET(request: NextRequest) {
   try {
-    // Get user session
-    const session = await getServerSession(authOptions)
+    console.log("🔍 Fetching user repair orders...")
+
+    // Get current user session
+    const session = await getSession()
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      console.log("❌ No authenticated user found")
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
     }
 
-    // Get user locale
+    const userId = session.user.id
+    console.log(`👤 Fetching orders for user: ${userId}`)
+
+    // Get locale from request headers or URL
+    const url = new URL(request.url)
+    const locale =
+      url.searchParams.get("locale") || request.headers.get("accept-language")?.split(",")[0]?.split("-")[0] || "uk"
+    console.log(`🌍 Using locale: ${locale}`)
+
     const supabase = createClient()
-    const { data: userData } = await supabase.from("users").select("locale").eq("id", session.user.id).single()
 
-    const userLocale = userData?.locale || "uk"
-
-    // Fetch user's repair orders
-    const { data: orders, error } = await supabase
+    // Fetch user's repair orders with services
+    const { data: orders, error: ordersError } = await supabase
       .from("user_repair_orders")
-      .select(`
-        *,
-        user_repair_order_services (
-          id,
-          service_name,
-          price,
-          warranty_period,
-          warranty_units
-        )
-      `)
-      .eq("user_id", session.user.id)
-      .order("created_at", { ascending: false })
+      .select(
+        `
+        id,
+        remonline_order_id,
+        document_id,
+        creation_date,
+        device_serial_number,
+        device_name,
+        device_brand,
+        device_model,
+        total_amount,
+        overall_status,
+        overall_status_name,
+        overall_status_color,
+        created_at,
+        updated_at
+      `,
+      )
+      .eq("user_id", userId)
+      .order("creation_date", { ascending: false })
 
-    if (error) {
-      console.error("Error fetching repair orders:", error)
-      return NextResponse.json({ error: "Failed to fetch orders" }, { status: 500 })
+    if (ordersError) {
+      console.error("❌ Error fetching orders:", ordersError)
+      return NextResponse.json({ success: false, error: "Failed to fetch orders" }, { status: 500 })
     }
 
-    // Transform orders data
-    const transformedOrders = await Promise.all(
+    console.log(`📦 Found ${orders?.length || 0} orders`)
+
+    // Fetch services for each order and get proper status translations
+    const ordersWithServices = await Promise.all(
       (orders || []).map(async (order) => {
-        // Get status information with user's locale
-        const statusInfo = await getStatusByRemOnlineId(Number.parseInt(order.overall_status), userLocale)
+        const { data: services, error: servicesError } = await supabase
+          .from("user_repair_order_services")
+          .select(
+            `
+            id,
+            remonline_service_id,
+            service_name,
+            price,
+            warranty_period,
+            warranty_units,
+            created_at,
+            updated_at
+          `,
+          )
+          .eq("order_id", order.id)
+          .order("created_at", { ascending: true })
+
+        if (servicesError) {
+          console.error(`❌ Error fetching services for order ${order.id}:`, servicesError)
+        }
+
+        // Get status information with current locale
+        const statusInfo = await getStatusByRemOnlineId(Number.parseInt(order.overall_status), locale, true)
 
         return {
           id: order.id,
-          documentId: order.document_id || "N/A",
+          documentId: order.document_id || "Не вказано",
           creationDate: order.creation_date || order.created_at,
-          deviceSerialNumber: order.device_serial_number || "Not specified",
-          deviceName: order.device_name || "Unknown device",
+          deviceSerialNumber: order.device_serial_number || "Не вказано",
+          deviceName: order.device_name || "Невідомий пристрій",
           deviceBrand: order.device_brand,
           deviceModel: order.device_model,
-          services: (order.user_repair_order_services || []).map((service: any) => ({
+          totalAmount: Number(order.total_amount) || 0,
+          overallStatus: order.overall_status || "unknown",
+          overallStatusName: statusInfo.name,
+          overallStatusColor: statusInfo.color,
+          services: (services || []).map((service) => ({
             id: service.id,
-            name: service.service_name,
-            price: Number.parseFloat(service.price) || 0,
+            name: service.service_name || "Невідома послуга",
+            price: Number(service.price) || 0,
             warrantyPeriod: service.warranty_period,
             warrantyUnits: service.warranty_units,
           })),
-          totalAmount: Number.parseFloat(order.total_amount) || 0,
-          overallStatus: order.overall_status,
-          overallStatusName: statusInfo.name,
-          overallStatusColor: statusInfo.color,
         }
       }),
     )
 
+    console.log(`✅ Successfully processed ${ordersWithServices.length} orders with services`)
+
     return NextResponse.json({
       success: true,
-      orders: transformedOrders,
+      orders: ordersWithServices,
     })
   } catch (error) {
-    console.error("Error in repair orders API:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    console.error("💥 Error in repair orders API:", error)
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Internal server error",
+        details: error instanceof Error ? error.message : String(error),
+      },
+      { status: 500 },
+    )
   }
 }
