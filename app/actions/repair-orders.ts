@@ -1,23 +1,23 @@
 "use server"
 
-import { createServerSupabaseClient } from "@/lib/supabase"
-import { getSession } from "@/lib/auth/session"
+import { createClient } from "@/lib/supabase/server"
+import { getCurrentUser } from "@/lib/auth/session"
 
 export async function getUserRepairOrders() {
   try {
     console.log("🔍 getUserRepairOrders called")
 
     // Get the current user session
-    const session = await getSession()
-    if (!session || !session.user) {
-      console.log("❌ No session or user found")
+    const user = await getCurrentUser()
+    if (!user) {
+      console.log("❌ No user found")
       return { success: false, message: "Unauthorized" }
     }
 
-    const userId = session.user.id
+    const userId = user.id
     console.log(`👤 Getting repair orders for user: ${userId}`)
 
-    const supabase = createServerSupabaseClient()
+    const supabase = createClient()
 
     // First, let's check if the tables exist and have data
     const { data: ordersCheck, error: ordersCheckError } = await supabase
