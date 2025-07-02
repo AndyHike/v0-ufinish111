@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
-import { getStatusByRemOnlineId } from "@/lib/order-status-utils"
 import { getSession } from "@/lib/auth/session"
+import { getStatusByRemOnlineId } from "@/lib/order-status-utils"
 
 export async function GET(request: NextRequest) {
   try {
@@ -85,10 +85,10 @@ export async function GET(request: NextRequest) {
 
         return {
           id: order.id,
-          documentId: order.document_id || "Не вказано",
+          documentId: order.document_id || "not_specified",
           creationDate: order.creation_date || order.created_at,
-          deviceSerialNumber: order.device_serial_number || "Не вказано",
-          deviceName: order.device_name || "Невідомий пристрій",
+          deviceSerialNumber: order.device_serial_number || "not_specified",
+          deviceName: order.device_name || "unknown_device",
           deviceBrand: order.device_brand,
           deviceModel: order.device_model,
           totalAmount: Number(order.total_amount) || 0,
@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
           overallStatusColor: statusInfo.color,
           services: (services || []).map((service) => ({
             id: service.id,
-            name: service.service_name || "Невідома послуга",
+            name: service.service_name || "unknown_service",
             price: Number(service.price) || 0,
             warrantyPeriod: service.warranty_period,
             warrantyUnits: service.warranty_units,

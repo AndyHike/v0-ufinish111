@@ -108,7 +108,7 @@ export function UserOrders() {
       if (isNaN(date.getTime())) {
         return t("dateNotSpecified")
       }
-      return date.toLocaleDateString("uk-UA", {
+      return date.toLocaleDateString(locale === "uk" ? "uk-UA" : locale === "en" ? "en-US" : "cs-CZ", {
         year: "numeric",
         month: "long",
         day: "numeric",
@@ -139,6 +139,14 @@ export function UserOrders() {
 
     // Default fallback
     return "bg-gray-100 text-gray-800 border border-gray-200"
+  }
+
+  // Helper function to get translated text for static values
+  const getTranslatedValue = (value: string) => {
+    if (value === "not_specified") return t("notSpecified")
+    if (value === "unknown_device") return t("unknownDevice")
+    if (value === "unknown_service") return t("unknownService")
+    return value
   }
 
   if (loading) {
@@ -271,7 +279,9 @@ export function UserOrders() {
                 <div className="flex items-start justify-between">
                   <div className="space-y-2">
                     <div className="flex items-center gap-3">
-                      <CardTitle className="text-xl">{t("orderNumber", { number: order.documentId })}</CardTitle>
+                      <CardTitle className="text-xl">
+                        {t("orderNumber", { number: getTranslatedValue(order.documentId) })}
+                      </CardTitle>
                       <Badge
                         className={cn("text-xs font-medium", getStatusBadgeClass(order.overallStatusColor))}
                         style={
@@ -288,16 +298,16 @@ export function UserOrders() {
                       </div>
                       <div className="flex items-center gap-2">
                         <Smartphone className="h-4 w-4" />
-                        <span>{order.deviceName}</span>
+                        <span>{getTranslatedValue(order.deviceName)}</span>
                         {order.deviceBrand && <span>• {order.deviceBrand}</span>}
                         {order.deviceModel && <span>• {order.deviceModel}</span>}
                       </div>
                     </div>
-                    {order.deviceSerialNumber && order.deviceSerialNumber !== t("notSpecified") && (
+                    {order.deviceSerialNumber && order.deviceSerialNumber !== "not_specified" && (
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Package className="h-4 w-4" />
                         <span>
-                          {t("serialNumber")}: {order.deviceSerialNumber}
+                          {t("serialNumber")}: {getTranslatedValue(order.deviceSerialNumber)}
                         </span>
                       </div>
                     )}
@@ -323,7 +333,7 @@ export function UserOrders() {
                       >
                         <div className="flex-1 space-y-1">
                           <div className="flex items-center gap-3">
-                            <span className="font-medium">{service.name}</span>
+                            <span className="font-medium">{getTranslatedValue(service.name)}</span>
                           </div>
                           {(service.warrantyPeriod || service.warrantyUnits) && (
                             <div className="flex items-center gap-2 text-sm text-muted-foreground">

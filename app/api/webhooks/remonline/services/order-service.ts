@@ -1,69 +1,7 @@
-import { createClient } from "@/lib/supabase"
 import { getStatusByRemOnlineId } from "@/lib/order-status-utils"
 
 export class OrderService {
-  private supabase: any
-
-  constructor(supabaseClient: any) {
-    this.supabase = supabaseClient
-  }
-
-  static async createOrUpdateOrder(webhookData: any) {
-    // Implementation for creating/updating orders
-    console.log("📦 OrderService.createOrUpdateOrder called")
-  }
-
-  static async checkOrderExists(remonlineOrderId: number): Promise<boolean> {
-    console.log("🔍 Checking if order exists:", remonlineOrderId)
-
-    try {
-      const supabase = createClient()
-      const { data, error } = await supabase
-        .from("user_repair_orders")
-        .select("id")
-        .eq("remonline_order_id", remonlineOrderId.toString())
-        .single()
-
-      if (error) {
-        console.log("❌ Error checking order existence:", error)
-        return false
-      }
-
-      console.log("✅ Order exists:", !!data)
-      return !!data
-    } catch (error) {
-      console.error("💥 Error in checkOrderExists:", error)
-      return false
-    }
-  }
-
-  static async getUserLocaleByOrderId(remonlineOrderId: number): Promise<string> {
-    console.log("🌍 Getting user locale for order:", remonlineOrderId)
-
-    try {
-      const supabase = createClient()
-      const { data, error } = await supabase
-        .from("user_repair_orders")
-        .select(`
-          user_id,
-          users!inner(locale)
-        `)
-        .eq("remonline_order_id", remonlineOrderId.toString())
-        .single()
-
-      if (error || !data) {
-        console.log("❌ Error getting user locale, using default 'uk':", error)
-        return "uk"
-      }
-
-      const locale = data.users?.locale || "uk"
-      console.log("✅ User locale found:", locale)
-      return locale
-    } catch (error) {
-      console.error("💥 Error in getUserLocaleByOrderId:", error)
-      return "uk"
-    }
-  }
+  constructor(private supabase: any) {}
 
   async createOrder(userId: string, remonlineOrderId: number, orderData: any, orderItems: any[]) {
     try {
