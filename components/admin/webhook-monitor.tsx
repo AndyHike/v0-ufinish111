@@ -6,7 +6,19 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
-import { Activity, CheckCircle, XCircle, AlertCircle, Clock, Trash2, RefreshCw, Eye, EyeOff, Zap } from "lucide-react"
+import {
+  Activity,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  Clock,
+  Trash2,
+  RefreshCw,
+  Eye,
+  EyeOff,
+  Zap,
+  Database,
+} from "lucide-react"
 import { toast } from "sonner"
 
 interface WebhookLog {
@@ -25,24 +37,29 @@ export function WebhookMonitor() {
   const [isAutoRefresh, setIsAutoRefresh] = useState(true)
   const [expandedLogs, setExpandedLogs] = useState<Set<number>>(new Set())
   const [lastFetchTime, setLastFetchTime] = useState<string>("")
+  const [error, setError] = useState<string>("")
 
   const fetchLogs = async () => {
     try {
       console.log("🔄 Fetching webhook logs...")
+      setError("")
+
       const response = await fetch("/api/admin/webhook-logs?limit=100")
       const data = await response.json()
 
-      if (response.ok) {
+      if (response.ok && data.success) {
         console.log(`✅ Fetched ${data.logs?.length || 0} logs`)
         setLogs(data.logs || [])
         setLastFetchTime(new Date().toLocaleTimeString())
       } else {
         console.error("❌ Failed to fetch logs:", data.error)
+        setError(data.error || "Failed to fetch logs")
         toast.error(`Failed to fetch logs: ${data.error}`)
       }
     } catch (error) {
       console.error("💥 Error fetching webhook logs:", error)
-      toast.error("Error fetching webhook logs")
+      setError("Network error")
+      toast.error("Network error fetching webhook logs")
     } finally {
       setIsLoading(false)
     }
@@ -54,11 +71,12 @@ export function WebhookMonitor() {
         method: "DELETE",
       })
 
-      if (response.ok) {
+      const data = await response.json()
+
+      if (response.ok && data.success) {
         setLogs([])
-        toast.success("Webhook logs cleared")
+        toast.success(data.message || "Webhook logs cleared")
       } else {
-        const data = await response.json()
         toast.error(`Failed to clear logs: ${data.error}`)
       }
     } catch (error) {
@@ -112,7 +130,7 @@ export function WebhookMonitor() {
   useEffect(() => {
     if (!isAutoRefresh) return
 
-    const interval = setInterval(fetchLogs, 2000) // Refresh every 2 seconds for better real-time feel
+    const interval = setInterval(fetchLogs, 3000) // Every 3 seconds
     return () => clearInterval(interval)
   }, [isAutoRefresh])
 
@@ -128,20 +146,26 @@ export function WebhookMonitor() {
   return (
     <div className="space-y-6">
       {/* Connection Status */}
-      <Card className="border-blue-200 bg-blue-50">
+      <Card className={error ? "border-red-200 bg-red-50" : "border-green-200 bg-green-50"}>
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Zap className="h-5 w-5 text-blue-600" />
+              {error ? <XCircle className="h-5 w-5 text-red-600" /> : <Zap className="h-5 w-5 text-green-600" />}
               <div>
-                <p className="font-medium text-blue-900">Webhook Endpoint Active</p>
-                <p className="text-sm text-blue-700">https://devicehelp.cz/api/webhooks/remonline</p>
+                <p className={`font-medium ${error ? "text-red-900" : "text-green-900"}`}>
+                  {error ? "Connection Error" : "Webhook Endpoint Active"}
+                </p>
+                <p className={`text-sm ${error ? "text-red-700" : "text-green-700"}`}>
+                  {error || "https://devicehelp.cz/api/webhooks/remonline"}
+                </p>
               </div>
             </div>
             <div className="text-right">
-              <p className="text-sm text-blue-700">Last Update: {lastFetchTime}</p>
-              <div className="flex items-center gap-1 text-blue-600">
-                {isAutoRefresh && <RefreshCw className="h-3 w-3 animate-spin" />}
+              <p className={`text-sm ${error ? "text-red-700" : "text-green-700"}`}>
+                Last Update: {lastFetchTime || "Never"}
+              </p>
+              <div className={`flex items-center gap-1 ${error ? "text-red-600" : "text-green-600"}`}>
+                {isAutoRefresh && !error && <RefreshCw className="h-3 w-3 animate-spin" />}
                 <span className="text-xs">{isAutoRefresh ? "Live" : "Paused"}</span>
               </div>
             </div>
@@ -154,7 +178,7 @@ export function WebhookMonitor() {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
-              <Activity className="h-4 w-4 text-blue-500" />
+              <Database className="h-4 w-4 text-blue-500" />
               <div>
                 <p className="text-sm font-medium">Total</p>
                 <p className="text-2xl font-bold">{stats.total}</p>
@@ -219,15 +243,18 @@ export function WebhookMonitor() {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Activity className="h-5 w-5" />
-                Real-time Webhook Monitor
-                {isAutoRefresh && (
+                Webhook Monitor
+                {isAutoRefresh && !error && (
                   <Badge variant="outline" className="ml-2 animate-pulse">
                     <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
                     LIVE
                   </Badge>
                 )}
               </CardTitle>
-              <CardDescription>All incoming webhooks are captured and displayed here in real-time</CardDescription>
+              <CardDescription>
+                Real-time monitoring of all incoming webhook requests
+                {error && <span className="text-red-600 ml-2">({error})</span>}
+              </CardDescription>
             </div>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={() => setIsAutoRefresh(!isAutoRefresh)}>
@@ -247,7 +274,7 @@ export function WebhookMonitor() {
                 <RefreshCw className="h-4 w-4 mr-1" />
                 Refresh
               </Button>
-              <Button variant="outline" size="sm" onClick={clearLogs}>
+              <Button variant="outline" size="sm" onClick={clearLogs} disabled={logs.length === 0}>
                 <Trash2 className="h-4 w-4 mr-1" />
                 Clear
               </Button>
@@ -261,16 +288,29 @@ export function WebhookMonitor() {
                 <RefreshCw className="h-6 w-6 animate-spin" />
                 <span className="ml-2">Loading webhook logs...</span>
               </div>
+            ) : error ? (
+              <div className="text-center text-red-600 py-8">
+                <XCircle className="h-12 w-12 mx-auto mb-4" />
+                <p className="text-lg font-medium">Connection Error</p>
+                <p className="text-sm">{error}</p>
+                <Button onClick={fetchLogs} className="mt-4">
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Retry
+                </Button>
+              </div>
             ) : logs.length === 0 ? (
               <div className="text-center text-muted-foreground py-8">
                 <Activity className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p className="text-lg font-medium">No webhooks received yet</p>
-                <p className="text-sm">Send a webhook to https://devicehelp.cz/api/webhooks/remonline</p>
-                <p className="text-xs mt-2 text-blue-600">All incoming requests will appear here automatically</p>
+                <p className="text-sm">Webhooks sent to the endpoint will appear here automatically</p>
+                <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+                  <p className="text-sm text-blue-800 font-medium">Endpoint URL:</p>
+                  <p className="text-xs text-blue-600 font-mono">https://devicehelp.cz/api/webhooks/remonline</p>
+                </div>
               </div>
             ) : (
               <div className="space-y-4">
-                {logs.map((log, index) => (
+                {logs.map((log) => (
                   <div key={log.id} className="border rounded-lg p-4 hover:bg-muted/50 transition-colors">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center space-x-3">
