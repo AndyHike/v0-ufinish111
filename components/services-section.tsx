@@ -145,7 +145,7 @@ export function ServicesSection() {
         )}
 
         <div className="flex justify-center mt-4 md:mt-6">
-          <Button asChild size="sm" variant="outline" className="rounded-full text-xs">
+          <Button asChild size="sm" variant="outline" className="rounded-full text-xs bg-transparent">
             <Link href="/services">{t("allServicesButton")}</Link>
           </Button>
         </div>

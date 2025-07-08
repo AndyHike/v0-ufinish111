@@ -226,7 +226,7 @@ export function ServiceEditor({ serviceId, onClose }: ServiceEditorProps) {
                 <img
                   src={service.image_url || "/placeholder.svg"}
                   alt="Service preview"
-                  className="h-20 w-20 object-cover rounded-lg"
+                  className="h-20 w-20 object-contain bg-white rounded-lg border"
                 />
               </div>
             )}

@@ -82,7 +82,7 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
                 <img
                   src={formatImageUrl(serviceData.image_url) || "/placeholder.svg"}
                   alt={translation.name}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain bg-white"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
