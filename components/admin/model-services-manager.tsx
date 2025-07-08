@@ -20,9 +20,13 @@ import { formatCurrency } from "@/lib/format-currency"
 
 type Service = {
   id: string
+  slug: string
   name: string
   description: string
   position: number
+  image_url?: string
+  warranty_months: number
+  duration_hours: number
 }
 
 type ModelService = {
@@ -75,7 +79,24 @@ export function ModelServicesManager({ modelId, locale }: ModelServicesManagerPr
 
       const servicesData = await servicesRes.json()
       console.log("All services data:", servicesData)
-      setAllServices(servicesData)
+
+      // Transform services data to match expected format
+      const transformedServices =
+        servicesData.services?.map((service: any) => {
+          const translation = service.services_translations?.find((t: any) => t.locale === locale)
+          return {
+            id: service.id,
+            slug: service.slug,
+            name: translation?.name || "",
+            description: translation?.description || "",
+            position: service.position,
+            image_url: service.image_url,
+            warranty_months: service.warranty_months,
+            duration_hours: service.duration_hours,
+          }
+        }) || []
+
+      setAllServices(transformedServices)
 
       // Fetch model services
       console.log(`Fetching model services for model ${modelId} and locale ${locale}`)
@@ -94,8 +115,8 @@ export function ModelServicesManager({ modelId, locale }: ModelServicesManagerPr
       console.error("Error fetching data:", error)
       setError(error instanceof Error ? error.message : "Failed to fetch data")
       toast({
-        title: t("error"),
-        description: t("errorFetchingData"),
+        title: "Помилка",
+        description: "Помилка завантаження даних",
         variant: "destructive",
       })
     } finally {
@@ -108,8 +129,8 @@ export function ModelServicesManager({ modelId, locale }: ModelServicesManagerPr
     await fetchData()
     setIsRefreshing(false)
     toast({
-      title: t("success"),
-      description: "Data refreshed successfully",
+      title: "Успіх",
+      description: "Дані оновлено успішно",
     })
   }
 
@@ -119,8 +140,8 @@ export function ModelServicesManager({ modelId, locale }: ModelServicesManagerPr
   const handleAddService = async () => {
     if (!selectedService) {
       toast({
-        title: t("validationError"),
-        description: t("pleaseSelectService"),
+        title: "Помилка валідації",
+        description: "Будь ласка, оберіть послугу",
         variant: "destructive",
       })
       return
@@ -132,8 +153,8 @@ export function ModelServicesManager({ modelId, locale }: ModelServicesManagerPr
     // If price is provided, validate it's a positive number
     if (priceValue !== null && (isNaN(priceValue) || priceValue <= 0)) {
       toast({
-        title: t("validationError"),
-        description: t("pleaseEnterValidPrice"),
+        title: "Помилка валідації",
+        description: "Будь ласка, введіть правильну ціну",
         variant: "destructive",
       })
       return
@@ -191,17 +212,17 @@ export function ModelServicesManager({ modelId, locale }: ModelServicesManagerPr
       setIsDialogOpen(false)
 
       toast({
-        title: t("success"),
-        description: t("serviceAddedSuccessfully"),
+        title: "Успіх",
+        description: "Послугу додано успішно",
       })
     } catch (error) {
       console.error("Error adding service:", error)
       toast({
-        title: t("error"),
+        title: "Помилка",
         description:
           typeof error === "object" && error !== null && "message" in error
             ? String(error.message)
-            : t("errorAddingService"),
+            : "Помилка додавання послуги",
         variant: "destructive",
       })
     } finally {
@@ -212,8 +233,8 @@ export function ModelServicesManager({ modelId, locale }: ModelServicesManagerPr
   const handleEditService = async () => {
     if (!editingServiceId) {
       toast({
-        title: t("validationError"),
-        description: t("serviceNotSelected"),
+        title: "Помилка валідації",
+        description: "Послугу не обрано",
         variant: "destructive",
       })
       return
@@ -225,8 +246,8 @@ export function ModelServicesManager({ modelId, locale }: ModelServicesManagerPr
     // If price is provided, validate it's a positive number
     if (priceValue !== null && (isNaN(priceValue) || priceValue <= 0)) {
       toast({
-        title: t("validationError"),
-        description: t("pleaseEnterValidPrice"),
+        title: "Помилка валідації",
+        description: "Будь ласка, введіть правильну ціну",
         variant: "destructive",
       })
       return
@@ -271,17 +292,17 @@ export function ModelServicesManager({ modelId, locale }: ModelServicesManagerPr
       setIsDialogOpen(false)
 
       toast({
-        title: t("success"),
-        description: t("serviceUpdatedSuccessfully"),
+        title: "Успіх",
+        description: "Послугу оновлено успішно",
       })
     } catch (error) {
       console.error("Error updating service:", error)
       toast({
-        title: t("error"),
+        title: "Помилка",
         description:
           typeof error === "object" && error !== null && "message" in error
             ? String(error.message)
-            : t("errorUpdatingService"),
+            : "Помилка оновлення послуги",
         variant: "destructive",
       })
     } finally {
@@ -290,7 +311,7 @@ export function ModelServicesManager({ modelId, locale }: ModelServicesManagerPr
   }
 
   const handleDeleteService = async (id: string) => {
-    if (!confirm(t("confirmDeleteService"))) return
+    if (!confirm("Ви впевнені, що хочете видалити цю послугу?")) return
 
     try {
       setIsSubmitting(true)
@@ -313,17 +334,17 @@ export function ModelServicesManager({ modelId, locale }: ModelServicesManagerPr
       setModelServices(modelServices.filter((ms) => ms.id !== id))
 
       toast({
-        title: t("success"),
-        description: t("serviceDeletedSuccessfully"),
+        title: "Успіх",
+        description: "Послугу видалено успішно",
       })
     } catch (error) {
       console.error("Error deleting service:", error)
       toast({
-        title: t("error"),
+        title: "Помилка",
         description:
           typeof error === "object" && error !== null && "message" in error
             ? String(error.message)
-            : t("errorDeletingService"),
+            : "Помилка видалення послуги",
         variant: "destructive",
       })
     } finally {
@@ -346,55 +367,55 @@ export function ModelServicesManager({ modelId, locale }: ModelServicesManagerPr
   }
 
   const renderPrice = (price: number | null) => {
-    return price !== null ? formatCurrency(price) : t("priceOnRequest")
+    return price !== null ? formatCurrency(price) : "Ціна за запитом"
   }
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between">
-        <h2 className="text-xl font-semibold">{t("manageModelServices")}</h2>
+        <h2 className="text-xl font-semibold">Керувати послугами моделі</h2>
         <div className="flex gap-2">
           <Button onClick={refreshData} variant="outline" disabled={isRefreshing}>
             <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
-            {isRefreshing ? "Refreshing..." : "Refresh"}
+            {isRefreshing ? "Оновлення..." : "Оновити"}
           </Button>
           <Button onClick={openAddDialog} disabled={isSubmitting}>
             <Plus className="mr-2 h-4 w-4" />
-            {t("addService")}
+            Додати послугу
           </Button>
         </div>
       </div>
 
       {isLoading ? (
-        <div className="text-center">{t("loading")}</div>
+        <div className="text-center">Завантаження...</div>
       ) : error ? (
         <div className="rounded-md border border-red-200 bg-red-50 p-4 text-red-800">
           <div className="flex items-center">
             <AlertCircle className="mr-2 h-5 w-5" />
-            <p className="font-medium">Error loading data:</p>
+            <p className="font-medium">Помилка завантаження даних:</p>
           </div>
           <p className="mt-2">{error}</p>
-          <Button onClick={refreshData} variant="outline" className="mt-4" disabled={isRefreshing}>
+          <Button onClick={refreshData} variant="outline" className="mt-4 bg-transparent" disabled={isRefreshing}>
             <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
-            {isRefreshing ? "Retrying..." : "Retry"}
+            {isRefreshing ? "Повторна спроба..." : "Спробувати знову"}
           </Button>
         </div>
       ) : modelServices.length === 0 ? (
         <div className="rounded-md border border-dashed p-8 text-center">
-          <p className="text-muted-foreground">{t("noServicesForModel")}</p>
+          <p className="text-muted-foreground">Для цієї моделі ще не додано жодної послуги.</p>
           <Button onClick={openAddDialog} className="mt-4" disabled={isSubmitting}>
             <Plus className="mr-2 h-4 w-4" />
-            {t("addService")}
+            Додати послугу
           </Button>
         </div>
       ) : (
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>{t("serviceName")}</TableHead>
-              <TableHead>{t("serviceDescription")}</TableHead>
-              <TableHead className="text-right">{t("price")}</TableHead>
-              <TableHead className="w-[100px]">{t("actions")}</TableHead>
+              <TableHead>Назва послуги</TableHead>
+              <TableHead>Опис</TableHead>
+              <TableHead className="text-right">Ціна</TableHead>
+              <TableHead className="w-[100px]">Дії</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -412,7 +433,7 @@ export function ModelServicesManager({ modelId, locale }: ModelServicesManagerPr
                       disabled={isSubmitting}
                     >
                       <Pencil className="h-4 w-4" />
-                      <span className="sr-only">{t("edit")}</span>
+                      <span className="sr-only">Редагувати</span>
                     </Button>
                     <Button
                       variant="ghost"
@@ -421,7 +442,7 @@ export function ModelServicesManager({ modelId, locale }: ModelServicesManagerPr
                       disabled={isSubmitting}
                     >
                       <Trash2 className="h-4 w-4" />
-                      <span className="sr-only">{t("delete")}</span>
+                      <span className="sr-only">Видалити</span>
                     </Button>
                   </div>
                 </TableCell>
@@ -434,23 +455,23 @@ export function ModelServicesManager({ modelId, locale }: ModelServicesManagerPr
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editingServiceId ? t("editServicePrice") : t("addServiceToModel")}</DialogTitle>
+            <DialogTitle>{editingServiceId ? "Редагувати ціну послуги" : "Додати послугу до моделі"}</DialogTitle>
             <DialogDescription>
-              {editingServiceId ? t("editServicePriceDescription") : t("addServiceToModelDescription")}
+              {editingServiceId ? "Змініть ціну для цієї послуги" : "Оберіть послугу та встановіть ціну"}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             {!editingServiceId && (
               <div className="grid gap-2">
-                <label htmlFor="service">{t("service")}</label>
+                <label htmlFor="service">Послуга</label>
                 <Select value={selectedService} onValueChange={setSelectedService}>
                   <SelectTrigger>
-                    <SelectValue placeholder={t("selectService")} />
+                    <SelectValue placeholder="Оберіть послугу" />
                   </SelectTrigger>
                   <SelectContent>
                     {availableServices.length === 0 ? (
                       <div className="p-2 text-center text-sm text-muted-foreground">
-                        No available services. All services have been added to this model.
+                        Немає доступних послуг. Всі послуги вже додані до цієї моделі.
                       </div>
                     ) : (
                       availableServices.map((service) => (
@@ -464,7 +485,7 @@ export function ModelServicesManager({ modelId, locale }: ModelServicesManagerPr
               </div>
             )}
             <div className="grid gap-2">
-              <label htmlFor="price">{t("price")}</label>
+              <label htmlFor="price">Ціна</label>
               <Input
                 id="price"
                 type="number"
@@ -472,20 +493,20 @@ export function ModelServicesManager({ modelId, locale }: ModelServicesManagerPr
                 min="0"
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
-                placeholder={t("priceOnRequest")}
+                placeholder="Ціна за запитом"
               />
-              <p className="text-xs text-muted-foreground">{t("leaveEmptyForPriceOnRequest")}</p>
+              <p className="text-xs text-muted-foreground">Залиште порожнім для "Ціна за запитом"</p>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDialogOpen(false)} disabled={isSubmitting}>
-              {t("cancel")}
+              Скасувати
             </Button>
             <Button
               onClick={editingServiceId ? handleEditService : handleAddService}
               disabled={isSubmitting || (!editingServiceId && !selectedService)}
             >
-              {isSubmitting ? t("processing") : editingServiceId ? t("saveChanges") : t("addService")}
+              {isSubmitting ? "Обробка..." : editingServiceId ? "Зберегти зміни" : "Додати послугу"}
             </Button>
           </DialogFooter>
         </DialogContent>

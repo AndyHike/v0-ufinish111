@@ -1,4 +1,3 @@
-import { getTranslations } from "next-intl/server"
 import { notFound } from "next/navigation"
 import Link from "next/link"
 import { createServerClient } from "@/utils/supabase/server"
@@ -15,7 +14,6 @@ type Props = {
 
 export default async function ModelServicesPage({ params }: Props) {
   const { id, locale } = params
-  const t = await getTranslations("Admin")
 
   const supabase = createServerClient()
 
@@ -34,15 +32,15 @@ export default async function ModelServicesPage({ params }: Props) {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">{t("modelServices", { model: model.name })}</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Послуги для {model.name}</h1>
           <p className="text-muted-foreground">
-            {t("modelServicesDescription", { model: model.name, brand: model.brands?.name })}
+            Керування послугами та цінами для {model.name} від {model.brands?.name}
           </p>
         </div>
         <Link href={`/${locale}/admin/models`}>
           <Button variant="outline" size="sm">
             <ChevronLeft className="mr-2 h-4 w-4" />
-            {t("backToModels")}
+            Назад до моделей
           </Button>
         </Link>
       </div>

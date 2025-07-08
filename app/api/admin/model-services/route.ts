@@ -22,7 +22,11 @@ export async function GET(request: NextRequest) {
       .from("services")
       .select(`
         id, 
+        slug,
         position,
+        image_url,
+        warranty_months,
+        duration_hours,
         services_translations(
           name,
           description,
@@ -67,7 +71,11 @@ export async function GET(request: NextRequest) {
 
       servicesMap.set(service.id, {
         id: service.id,
+        slug: service.slug,
         position: service.position,
+        image_url: service.image_url,
+        warranty_months: service.warranty_months,
+        duration_hours: service.duration_hours,
         name: translations[0]?.name || "",
         description: translations[0]?.description || "",
       })
