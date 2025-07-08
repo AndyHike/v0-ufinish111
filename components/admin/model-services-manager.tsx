@@ -67,9 +67,9 @@ export function ModelServicesManager({ modelId, locale }: ModelServicesManagerPr
       setIsLoading(true)
       setError(null)
 
-      // Fetch all services first
+      // Fetch all services using the same endpoint as the services management page
       console.log(`Fetching all services for locale ${locale}`)
-      const servicesRes = await fetch(`/api/admin/services?locale=${locale}`)
+      const servicesRes = await fetch(`/api/admin/services`)
 
       if (!servicesRes.ok) {
         const errorData = await servicesRes.json()
@@ -83,19 +83,26 @@ export function ModelServicesManager({ modelId, locale }: ModelServicesManagerPr
       // Transform services data to match expected format
       const transformedServices =
         servicesData.services?.map((service: any) => {
-          const translation = service.services_translations?.find((t: any) => t.locale === locale)
+          // Find translation for current locale, fallback to first available
+          const translation =
+            service.services_translations?.find((t: any) => t.locale === locale) || service.services_translations?.[0]
+
           return {
             id: service.id,
             slug: service.slug,
-            name: translation?.name || "",
+            name: translation?.name || `Service ${service.id}`,
             description: translation?.description || "",
-            position: service.position,
+            position: service.position || 0,
             image_url: service.image_url,
-            warranty_months: service.warranty_months,
-            duration_hours: service.duration_hours,
+            warranty_months: service.warranty_months || 0,
+            duration_hours: service.duration_hours || 0,
           }
         }) || []
 
+      // Sort by position
+      transformedServices.sort((a: Service, b: Service) => a.position - b.position)
+
+      console.log("Transformed services:", transformedServices)
       setAllServices(transformedServices)
 
       // Fetch model services
@@ -136,6 +143,10 @@ export function ModelServicesManager({ modelId, locale }: ModelServicesManagerPr
 
   // Get services that are not already assigned to the model
   const availableServices = allServices.filter((service) => !modelServices.some((ms) => ms.service_id === service.id))
+
+  console.log("Available services for selection:", availableServices)
+  console.log("All services:", allServices)
+  console.log("Model services:", modelServices)
 
   const handleAddService = async () => {
     if (!selectedService) {
@@ -379,7 +390,7 @@ export function ModelServicesManager({ modelId, locale }: ModelServicesManagerPr
             <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
             {isRefreshing ? "Оновлення..." : "Оновити"}
           </Button>
-          <Button onClick={openAddDialog} disabled={isSubmitting}>
+          <Button onClick={openAddDialog} disabled={isSubmitting || availableServices.length === 0}>
             <Plus className="mr-2 h-4 w-4" />
             Додати послугу
           </Button>
@@ -400,56 +411,79 @@ export function ModelServicesManager({ modelId, locale }: ModelServicesManagerPr
             {isRefreshing ? "Повторна спроба..." : "Спробувати знову"}
           </Button>
         </div>
-      ) : modelServices.length === 0 ? (
-        <div className="rounded-md border border-dashed p-8 text-center">
-          <p className="text-muted-foreground">Для цієї моделі ще не додано жодної послуги.</p>
-          <Button onClick={openAddDialog} className="mt-4" disabled={isSubmitting}>
-            <Plus className="mr-2 h-4 w-4" />
-            Додати послугу
-          </Button>
-        </div>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Назва послуги</TableHead>
-              <TableHead>Опис</TableHead>
-              <TableHead className="text-right">Ціна</TableHead>
-              <TableHead className="w-[100px]">Дії</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {modelServices.map((modelService) => (
-              <TableRow key={modelService.id}>
-                <TableCell className="font-medium">{modelService.services?.name}</TableCell>
-                <TableCell className="max-w-md truncate">{modelService.services?.description}</TableCell>
-                <TableCell className="text-right">{renderPrice(modelService.price)}</TableCell>
-                <TableCell>
-                  <div className="flex items-center justify-end gap-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => openEditDialog(modelService)}
-                      disabled={isSubmitting}
-                    >
-                      <Pencil className="h-4 w-4" />
-                      <span className="sr-only">Редагувати</span>
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDeleteService(modelService.id)}
-                      disabled={isSubmitting}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      <span className="sr-only">Видалити</span>
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <>
+          {/* Debug info */}
+          <div className="text-xs text-muted-foreground">
+            Всього послуг: {allServices.length} | Доступних для додавання: {availableServices.length} | Вже додано:{" "}
+            {modelServices.length}
+          </div>
+
+          {modelServices.length === 0 ? (
+            <div className="rounded-md border border-dashed p-8 text-center">
+              <p className="text-muted-foreground">Для цієї моделі ще не додано жодної послуги.</p>
+              <Button
+                onClick={openAddDialog}
+                className="mt-4"
+                disabled={isSubmitting || availableServices.length === 0}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Додати послугу
+              </Button>
+              {availableServices.length === 0 && (
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Немає доступних послуг для додавання. Спочатку створіть послуги в розділі "Послуги".
+                </p>
+              )}
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Назва послуги</TableHead>
+                  <TableHead>Опис</TableHead>
+                  <TableHead>Slug</TableHead>
+                  <TableHead className="text-right">Ціна</TableHead>
+                  <TableHead className="w-[100px]">Дії</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {modelServices.map((modelService) => (
+                  <TableRow key={modelService.id}>
+                    <TableCell className="font-medium">{modelService.services?.name}</TableCell>
+                    <TableCell className="max-w-md truncate">{modelService.services?.description}</TableCell>
+                    <TableCell>
+                      <code className="text-xs bg-muted px-1 py-0.5 rounded">{modelService.services?.slug}</code>
+                    </TableCell>
+                    <TableCell className="text-right">{renderPrice(modelService.price)}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => openEditDialog(modelService)}
+                          disabled={isSubmitting}
+                        >
+                          <Pencil className="h-4 w-4" />
+                          <span className="sr-only">Редагувати</span>
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDeleteService(modelService.id)}
+                          disabled={isSubmitting}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          <span className="sr-only">Видалити</span>
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </>
       )}
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -471,21 +505,29 @@ export function ModelServicesManager({ modelId, locale }: ModelServicesManagerPr
                   <SelectContent>
                     {availableServices.length === 0 ? (
                       <div className="p-2 text-center text-sm text-muted-foreground">
-                        Немає доступних послуг. Всі послуги вже додані до цієї моделі.
+                        Немає доступних послуг. Всі послуги вже додані до цієї моделі або немає створених послуг.
                       </div>
                     ) : (
                       availableServices.map((service) => (
                         <SelectItem key={service.id} value={service.id}>
-                          {service.name}
+                          <div className="flex flex-col">
+                            <span className="font-medium">{service.name}</span>
+                            <span className="text-xs text-muted-foreground">{service.slug}</span>
+                          </div>
                         </SelectItem>
                       ))
                     )}
                   </SelectContent>
                 </Select>
+                {availableServices.length > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Доступно {availableServices.length} послуг для додавання
+                  </p>
+                )}
               </div>
             )}
             <div className="grid gap-2">
-              <label htmlFor="price">Ціна</label>
+              <label htmlFor="price">Ціна (грн)</label>
               <Input
                 id="price"
                 type="number"
