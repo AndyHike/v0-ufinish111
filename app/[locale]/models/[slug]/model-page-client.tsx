@@ -99,7 +99,7 @@ export default function ModelPageClient({ modelData, locale }: Props) {
           </div>
         </div>
 
-        {/* Services Grid - компактні картки з правильним масштабуванням фото */}
+        {/* Services Grid - виправлене відображення фото */}
         <div>
           <h2 className="text-2xl font-bold text-gray-900 mb-6">{t("availableServices")}</h2>
 
@@ -112,16 +112,16 @@ export default function ModelPageClient({ modelData, locale }: Props) {
                   className="group block"
                 >
                   <div className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg hover:border-blue-300 transition-all duration-300 group-hover:-translate-y-1">
-                    {/* Service Image - горизонтальний простір з правильним масштабуванням */}
-                    <div className="aspect-[16/9] bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
+                    {/* Service Image - виправлене відображення без обрізання */}
+                    <div className="h-48 bg-white border-b border-gray-100 p-4 flex items-center justify-center">
                       {service.image_url ? (
                         <img
                           src={formatImageUrl(service.image_url) || "/placeholder.svg"}
                           alt={service.name}
-                          className="w-full h-full object-cover"
+                          className="max-w-full max-h-full object-contain"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center">
+                        <div className="w-full h-full flex items-center justify-center bg-gray-50 rounded-lg">
                           <div className="text-center p-3">
                             <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-2">
                               <div className="w-5 h-5 bg-blue-600 rounded-sm"></div>
@@ -132,13 +132,13 @@ export default function ModelPageClient({ modelData, locale }: Props) {
                       )}
                     </div>
 
-                    {/* Service Content - зменшені відступи */}
+                    {/* Service Content */}
                     <div className="p-4">
                       <h3 className="text-lg font-bold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
                         {service.name}
                       </h3>
 
-                      {/* Key Benefits - компактніше */}
+                      {/* Key Benefits */}
                       <div className="mb-3 space-y-1">
                         <div className="flex items-center gap-2 text-sm text-gray-600">
                           <Clock className="h-3 w-3 text-blue-600" />
