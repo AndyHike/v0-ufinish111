@@ -43,17 +43,39 @@ export async function POST(request: NextRequest) {
     const supabase = createServerClient()
     const body = await request.json()
 
+    console.log("Received service data:", body)
+
     const { slug, position, warranty_months, duration_hours, image_url, translations } = body
 
-    // Створюємо послугу
+    // Валідація обов'язкових полів
+    if (!slug) {
+      return NextResponse.json({ error: "Slug is required" }, { status: 400 })
+    }
+
+    if (!translations || typeof translations !== "object") {
+      return NextResponse.json({ error: "Translations are required" }, { status: 400 })
+    }
+
+    // Перевіряємо чи є хоча б один переклад з назвою
+    const hasValidTranslation = Object.values(translations).some((t: any) => t?.name?.trim())
+    if (!hasValidTranslation) {
+      return NextResponse.json({ error: "At least one translation with name is required" }, { status: 400 })
+    }
+
+    // Отримуємо назву з першого доступного перекладу для поля name в services
+    const firstTranslation = Object.values(translations).find((t: any) => t?.name?.trim()) as any
+    const serviceName = firstTranslation?.name || slug
+
+    // Створюємо послугу з назвою
     const { data: service, error: serviceError } = await supabase
       .from("services")
       .insert({
         slug,
-        position,
-        warranty_months,
-        duration_hours,
-        image_url,
+        name: serviceName, // Додаємо назву послуги
+        position: position || 0,
+        warranty_months: warranty_months || 6,
+        duration_hours: duration_hours || 2,
+        image_url: image_url || null,
       })
       .select()
       .single()
@@ -63,16 +85,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Failed to create service" }, { status: 500 })
     }
 
+    console.log("Created service:", service)
+
     // Створюємо переклади
-    const translationInserts = Object.entries(translations).map(([locale, translation]: [string, any]) => ({
-      service_id: service.id,
-      locale,
-      name: translation.name,
-      description: translation.description,
-      detailed_description: translation.detailed_description,
-      what_included: translation.what_included,
-      benefits: translation.benefits,
-    }))
+    const translationInserts = Object.entries(translations)
+      .filter(([_, translation]: [string, any]) => translation?.name?.trim()) // Фільтруємо тільки переклади з назвою
+      .map(([locale, translation]: [string, any]) => ({
+        service_id: service.id,
+        locale,
+        name: translation.name.trim(),
+        description: translation.description?.trim() || "",
+        detailed_description: translation.detailed_description?.trim() || null,
+        what_included: translation.what_included?.trim() || null,
+        benefits: translation.benefits?.trim() || null,
+      }))
+
+    console.log("Translation inserts:", translationInserts)
+
+    if (translationInserts.length === 0) {
+      // Видаляємо створену послугу якщо немає валідних перекладів
+      await supabase.from("services").delete().eq("id", service.id)
+      return NextResponse.json({ error: "No valid translations provided" }, { status: 400 })
+    }
 
     const { error: translationsError } = await supabase.from("services_translations").insert(translationInserts)
 
@@ -82,6 +116,8 @@ export async function POST(request: NextRequest) {
       await supabase.from("services").delete().eq("id", service.id)
       return NextResponse.json({ error: "Failed to create translations" }, { status: 500 })
     }
+
+    console.log("Service created successfully:", service.id)
 
     return NextResponse.json({ service })
   } catch (error) {
