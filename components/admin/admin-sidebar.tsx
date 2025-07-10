@@ -7,14 +7,13 @@ import {
   LayoutDashboard,
   Package,
   Tags,
+  Smartphone,
   Users,
-  MessageSquare,
   Settings,
+  MessageSquare,
   Percent,
   FileText,
   BarChart3,
-  Smartphone,
-  Wrench,
   Upload,
   FolderSyncIcon as Sync,
   Zap,
@@ -44,7 +43,7 @@ const sidebarItems = [
   {
     title: "Послуги",
     href: "/admin/services",
-    icon: Wrench,
+    icon: FileText,
   },
   {
     title: "Користувачі",
@@ -67,9 +66,14 @@ const sidebarItems = [
     icon: BarChart3,
   },
   {
+    title: "Описи",
+    href: "/admin/descriptions",
+    icon: FileText,
+  },
+  {
     title: "Банер",
     href: "/admin/banner",
-    icon: FileText,
+    icon: Upload,
   },
   {
     title: "Масовий імпорт",
@@ -79,17 +83,17 @@ const sidebarItems = [
   {
     title: "Масові послуги",
     href: "/admin/bulk-services",
-    icon: Package,
-  },
-  {
-    title: "Синхронізація",
-    href: "/admin/sync",
-    icon: Sync,
+    icon: Upload,
   },
   {
     title: "RemOnline синхронізація",
     href: "/admin/remonline-sync",
     icon: Zap,
+  },
+  {
+    title: "Синхронізація",
+    href: "/admin/sync",
+    icon: Sync,
   },
   {
     title: "Налаштування",
@@ -105,6 +109,7 @@ export function AdminSidebar() {
     <div className="pb-12 w-64">
       <div className="space-y-4 py-4">
         <div className="px-3 py-2">
+          <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">Адміністрування</h2>
           <div className="space-y-1">
             {sidebarItems.map((item) => (
               <Link
@@ -112,7 +117,7 @@ export function AdminSidebar() {
                 href={item.href}
                 className={cn(
                   "flex items-center rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
-                  pathname === item.href ? "bg-accent text-accent-foreground" : "text-muted-foreground",
+                  pathname === item.href ? "bg-accent text-accent-foreground" : "transparent",
                 )}
               >
                 <item.icon className="mr-2 h-4 w-4" />

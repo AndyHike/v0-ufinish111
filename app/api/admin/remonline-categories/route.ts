@@ -45,8 +45,8 @@ export async function POST(request: Request) {
       .from("remonline_categories")
       .insert({
         category_id: Number.parseInt(category_id),
-        category_title: category_title.trim(),
-        description: description?.trim() || null,
+        category_title,
+        description: description || null,
       })
       .select()
       .single()
@@ -56,7 +56,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Failed to create category" }, { status: 500 })
     }
 
-    return NextResponse.json({ success: true, category })
+    return NextResponse.json({ category })
   } catch (error) {
     console.error("Error in POST /api/admin/remonline-categories:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })

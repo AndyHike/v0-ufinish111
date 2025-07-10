@@ -7,7 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Progress } from "@/components/ui/progress"
-import { RefreshCw, Download, XCircle, Zap, Clock } from "lucide-react"
+import { RefreshCw, Download, XCircle, Zap, Clock, AlertTriangle } from "lucide-react"
 import { toast } from "sonner"
 
 interface RemOnlineCategory {
@@ -20,11 +20,15 @@ interface RemOnlineCategory {
 interface SyncSession {
   id: string
   session_id: string
+  phase: string
   total_services: number
+  fetched_services: number
+  parsed_services: number
   processed_services: number
   created_services: number
   updated_services: number
   error_services: number
+  services_needing_review: number
   created_brands: number
   created_series: number
   created_models: number
@@ -155,9 +159,36 @@ export function RemOnlineServicesSync() {
     }
   }
 
-  const getProgress = () => {
-    if (!currentSession || currentSession.total_services === 0) return 0
-    return Math.round((currentSession.processed_services / currentSession.total_services) * 100)
+  const getPhaseProgress = () => {
+    if (!currentSession) return 0
+
+    switch (currentSession.phase) {
+      case "fetching":
+        return Math.min(25, (currentSession.fetched_services / Math.max(currentSession.total_services, 1)) * 25)
+      case "parsing":
+        return 25 + Math.min(25, (currentSession.parsed_services / Math.max(currentSession.total_services, 1)) * 25)
+      case "processing":
+        return 50 + Math.min(50, (currentSession.processed_services / Math.max(currentSession.total_services, 1)) * 50)
+      case "completed":
+        return 100
+      default:
+        return 0
+    }
+  }
+
+  const getPhaseText = (phase: string) => {
+    switch (phase) {
+      case "fetching":
+        return "Отримання послуг з RemOnline"
+      case "parsing":
+        return "Аналіз штрихкодів та співставлення"
+      case "processing":
+        return "Збереження в базу даних"
+      case "completed":
+        return "Завершено"
+      default:
+        return phase
+    }
   }
 
   const formatDuration = (startTime: string, endTime?: string) => {
@@ -189,7 +220,7 @@ export function RemOnlineServicesSync() {
             Синхронізація послуг RemOnline
           </CardTitle>
           <CardDescription>
-            Синхронізуйте послуги з RemOnline API з автоматичним створенням брендів, серій та моделей
+            Двоетапний процес: спочатку отримання всіх послуг, потім аналіз та розподіл по брендам/серіям/моделям
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -265,34 +296,58 @@ export function RemOnlineServicesSync() {
                   Прогрес синхронізації
                 </h4>
 
-                {/* Progress Bar */}
+                {/* Phase Progress */}
                 <div className="space-y-2 mb-6">
                   <div className="flex justify-between text-sm">
-                    <span>
-                      Оброблено: {currentSession.processed_services} / {currentSession.total_services}
-                    </span>
-                    <span>{getProgress()}%</span>
+                    <span>Фаза: {getPhaseText(currentSession.phase)}</span>
+                    <span>{Math.round(getPhaseProgress())}%</span>
                   </div>
-                  <Progress value={getProgress()} className="h-2" />
+                  <Progress value={getPhaseProgress()} className="h-2" />
                   {currentSession.current_service_title && (
-                    <p className="text-sm text-muted-foreground">
-                      Поточна послуга: {currentSession.current_service_title}
-                    </p>
+                    <p className="text-sm text-muted-foreground">{currentSession.current_service_title}</p>
                   )}
                 </div>
 
-                {/* Real-time Stats */}
+                {/* Phase Details */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  <Card className={currentSession.phase === "fetching" ? "ring-2 ring-blue-500" : ""}>
+                    <CardContent className="p-4 text-center">
+                      <div className="text-xl font-bold text-blue-600">
+                        {currentSession.fetched_services} / {currentSession.total_services}
+                      </div>
+                      <div className="text-sm text-muted-foreground">Отримано з API</div>
+                    </CardContent>
+                  </Card>
+                  <Card className={currentSession.phase === "parsing" ? "ring-2 ring-yellow-500" : ""}>
+                    <CardContent className="p-4 text-center">
+                      <div className="text-xl font-bold text-yellow-600">
+                        {currentSession.parsed_services} / {currentSession.total_services}
+                      </div>
+                      <div className="text-sm text-muted-foreground">Проаналізовано</div>
+                    </CardContent>
+                  </Card>
+                  <Card className={currentSession.phase === "processing" ? "ring-2 ring-green-500" : ""}>
+                    <CardContent className="p-4 text-center">
+                      <div className="text-xl font-bold text-green-600">
+                        {currentSession.processed_services} / {currentSession.total_services}
+                      </div>
+                      <div className="text-sm text-muted-foreground">Збережено</div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Results Stats */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                   <Card>
                     <CardContent className="p-4 text-center">
                       <div className="text-2xl font-bold text-green-600">{currentSession.created_services}</div>
-                      <div className="text-sm text-muted-foreground">Створено послуг</div>
+                      <div className="text-sm text-muted-foreground">Створено</div>
                     </CardContent>
                   </Card>
                   <Card>
                     <CardContent className="p-4 text-center">
                       <div className="text-2xl font-bold text-blue-600">{currentSession.updated_services}</div>
-                      <div className="text-sm text-muted-foreground">Оновлено послуг</div>
+                      <div className="text-sm text-muted-foreground">Оновлено</div>
                     </CardContent>
                   </Card>
                   <Card>
@@ -303,32 +358,8 @@ export function RemOnlineServicesSync() {
                   </Card>
                   <Card>
                     <CardContent className="p-4 text-center">
-                      <div className="text-2xl font-bold text-purple-600">
-                        {currentSession.created_brands + currentSession.created_series + currentSession.created_models}
-                      </div>
-                      <div className="text-sm text-muted-foreground">Створено об'єктів</div>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {/* Hierarchy Creation Stats */}
-                <div className="grid grid-cols-3 gap-4 mb-6">
-                  <Card>
-                    <CardContent className="p-4 text-center">
-                      <div className="text-xl font-bold text-orange-600">{currentSession.created_brands}</div>
-                      <div className="text-sm text-muted-foreground">Нових брендів</div>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="p-4 text-center">
-                      <div className="text-xl font-bold text-teal-600">{currentSession.created_series}</div>
-                      <div className="text-sm text-muted-foreground">Нових серій</div>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="p-4 text-center">
-                      <div className="text-xl font-bold text-indigo-600">{currentSession.created_models}</div>
-                      <div className="text-sm text-muted-foreground">Нових моделей</div>
+                      <div className="text-2xl font-bold text-orange-600">{currentSession.services_needing_review}</div>
+                      <div className="text-sm text-muted-foreground">Потребують перевірки</div>
                     </CardContent>
                   </Card>
                 </div>
@@ -343,6 +374,22 @@ export function RemOnlineServicesSync() {
                     {currentSession.session_id}
                   </Badge>
                 </div>
+
+                {/* Warning about services needing review */}
+                {currentSession.services_needing_review > 0 && currentSession.status === "completed" && (
+                  <div className="mt-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="h-5 w-5 text-orange-600 mt-0.5" />
+                      <div>
+                        <p className="font-medium text-orange-800">Увага!</p>
+                        <p className="text-sm text-orange-700">
+                          {currentSession.services_needing_review} послуг потребують ручної перевірки. Перейдіть на
+                          вкладку "Перевірка послуг" для налаштування.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Error Message */}
                 {currentSession.error_message && (

@@ -1,23 +1,16 @@
 "use client"
 
 import type React from "react"
+
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
-import { Trash2, Edit, Plus, Tag, Info } from "lucide-react"
+import { Separator } from "@/components/ui/separator"
+import { Plus, Edit, Trash2, Save, X } from "lucide-react"
 import { toast } from "sonner"
 
 interface RemOnlineCategory {
@@ -26,14 +19,14 @@ interface RemOnlineCategory {
   category_title: string
   description?: string
   created_at: string
+  updated_at: string
 }
 
 export function RemOnlineCategoriesManager() {
   const [categories, setCategories] = useState<RemOnlineCategory[]>([])
-  const [loading, setLoading] = useState(true)
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [editingCategory, setEditingCategory] = useState<RemOnlineCategory | null>(null)
-
+  const [loading, setLoading] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [showAddForm, setShowAddForm] = useState(false)
   const [formData, setFormData] = useState({
     category_id: "",
     category_title: "",
@@ -67,19 +60,15 @@ export function RemOnlineCategoriesManager() {
     e.preventDefault()
 
     if (!formData.category_id || !formData.category_title) {
-      toast.error("Заповніть обов'язкові поля")
+      toast.error("ID категорії та назва обов'язкові")
       return
     }
 
     try {
-      const url = editingCategory
-        ? `/api/admin/remonline-categories/${editingCategory.id}`
-        : "/api/admin/remonline-categories"
-
-      const method = editingCategory ? "PUT" : "POST"
+      const url = editingId ? `/api/admin/remonline-categories/${editingId}` : "/api/admin/remonline-categories"
 
       const response = await fetch(url, {
-        method,
+        method: editingId ? "PUT" : "POST",
         headers: {
           "Content-Type": "application/json",
         },
@@ -87,18 +76,12 @@ export function RemOnlineCategoriesManager() {
       })
 
       if (response.ok) {
-        toast.success(editingCategory ? "Категорію оновлено" : "Категорію створено")
-        setIsDialogOpen(false)
-        setEditingCategory(null)
-        setFormData({
-          category_id: "",
-          category_title: "",
-          description: "",
-        })
+        toast.success(editingId ? "Категорію оновлено" : "Категорію створено")
         fetchCategories()
+        resetForm()
       } else {
-        const error = await response.json()
-        toast.error(error.error || "Помилка збереження")
+        const data = await response.json()
+        toast.error(data.error || "Помилка збереження")
       }
     } catch (error) {
       console.error("Error saving category:", error)
@@ -107,13 +90,13 @@ export function RemOnlineCategoriesManager() {
   }
 
   const handleEdit = (category: RemOnlineCategory) => {
-    setEditingCategory(category)
+    setEditingId(category.id)
     setFormData({
       category_id: category.category_id.toString(),
       category_title: category.category_title,
       description: category.description || "",
     })
-    setIsDialogOpen(true)
+    setShowAddForm(true)
   }
 
   const handleDelete = async (id: string) => {
@@ -138,6 +121,16 @@ export function RemOnlineCategoriesManager() {
     }
   }
 
+  const resetForm = () => {
+    setFormData({
+      category_id: "",
+      category_title: "",
+      description: "",
+    })
+    setEditingId(null)
+    setShowAddForm(false)
+  }
+
   if (loading) {
     return (
       <Card>
@@ -152,53 +145,33 @@ export function RemOnlineCategoriesManager() {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <Tag className="h-5 w-5" />
-                Категорії RemOnline
-              </CardTitle>
-              <CardDescription>
-                Додайте категорії RemOnline для візуального розуміння та фільтрації при синхронізації
-              </CardDescription>
-            </div>
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button
-                  onClick={() => {
-                    setEditingCategory(null)
-                    setFormData({
-                      category_id: "",
-                      category_title: "",
-                      description: "",
-                    })
-                  }}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Додати категорію
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>{editingCategory ? "Редагувати категорію" : "Додати категорію"}</DialogTitle>
-                  <DialogDescription>
-                    Додайте категорію RemOnline для кращого розуміння та організації синхронізації
-                  </DialogDescription>
-                </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
+          <CardTitle className="flex items-center justify-between">
+            Категорії RemOnline
+            <Button onClick={() => setShowAddForm(true)} disabled={showAddForm}>
+              <Plus className="h-4 w-4 mr-2" />
+              Додати категорію
+            </Button>
+          </CardTitle>
+          <CardDescription>Додайте категорії RemOnline для візуального розуміння та фільтрації послуг</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {/* Add/Edit Form */}
+          {showAddForm && (
+            <div className="mb-6 p-4 border rounded-lg bg-muted/50">
+              <h4 className="font-medium mb-4">{editingId ? "Редагувати категорію" : "Додати нову категорію"}</h4>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="category_id">ID категорії RemOnline *</Label>
+                    <Label htmlFor="category_id">ID категорії *</Label>
                     <Input
                       id="category_id"
                       type="number"
                       value={formData.category_id}
                       onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
                       placeholder="1575764"
+                      disabled={!!editingId}
                       required
                     />
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Знайдіть ID категорії в RemOnline API або інтерфейсі
-                    </p>
                   </div>
                   <div>
                     <Label htmlFor="category_title">Назва категорії *</Label>
@@ -210,83 +183,68 @@ export function RemOnlineCategoriesManager() {
                       required
                     />
                   </div>
-                  <div>
-                    <Label htmlFor="description">Опис (необов'язково)</Label>
-                    <Textarea
-                      id="description"
-                      value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      placeholder="Всі послуги для iPhone..."
-                      rows={3}
-                    />
-                  </div>
-                  <div className="flex justify-end space-x-2">
-                    <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                      Скасувати
-                    </Button>
-                    <Button type="submit">{editingCategory ? "Оновити" : "Створити"}</Button>
-                  </div>
-                </form>
-              </DialogContent>
-            </Dialog>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <div className="flex items-start gap-2">
-              <Info className="h-5 w-5 text-blue-600 mt-0.5" />
-              <div className="text-sm text-blue-800">
-                <p className="font-medium mb-1">Як це працює:</p>
-                <ul className="list-disc list-inside space-y-1">
-                  <li>Додайте категорії RemOnline для візуального розуміння (наприклад: 1575764 → iPhone)</li>
-                  <li>При синхронізації ви зможете обрати конкретні категорії або синхронізувати всі</li>
-                  <li>Система автоматично створить бренди, серії та моделі на основі barcode послуг</li>
-                </ul>
-              </div>
+                </div>
+                <div>
+                  <Label htmlFor="description">Опис</Label>
+                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="Опис категорії для кращого розуміння"
+                    rows={2}
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button type="submit">
+                    <Save className="h-4 w-4 mr-2" />
+                    {editingId ? "Оновити" : "Створити"}
+                  </Button>
+                  <Button type="button" variant="outline" onClick={resetForm}>
+                    <X className="h-4 w-4 mr-2" />
+                    Скасувати
+                  </Button>
+                </div>
+              </form>
             </div>
-          </div>
+          )}
 
-          {categories.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              Категорії не знайдено. Додайте першу категорію для кращої організації.
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>ID категорії</TableHead>
-                  <TableHead>Назва</TableHead>
-                  <TableHead>Опис</TableHead>
-                  <TableHead>Створено</TableHead>
-                  <TableHead className="text-right">Дії</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+          <Separator className="my-6" />
+
+          {/* Categories List */}
+          <div className="space-y-4">
+            <h4 className="font-medium">Існуючі категорії ({categories.length})</h4>
+            {categories.length === 0 ? (
+              <p className="text-muted-foreground text-center py-8">
+                Категорії не знайдено. Додайте першу категорію для початку роботи.
+              </p>
+            ) : (
+              <div className="grid gap-4">
                 {categories.map((category) => (
-                  <TableRow key={category.id}>
-                    <TableCell>
+                  <div key={category.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex items-center gap-4">
                       <Badge variant="outline" className="font-mono">
                         {category.category_id}
                       </Badge>
-                    </TableCell>
-                    <TableCell className="font-medium">{category.category_title}</TableCell>
-                    <TableCell className="text-muted-foreground">{category.description || "Без опису"}</TableCell>
-                    <TableCell>{new Date(category.created_at).toLocaleDateString("uk-UA")}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end space-x-2">
-                        <Button variant="outline" size="sm" onClick={() => handleEdit(category)}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => handleDelete(category.id)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                      <div>
+                        <h5 className="font-medium">{category.category_title}</h5>
+                        {category.description && (
+                          <p className="text-sm text-muted-foreground">{category.description}</p>
+                        )}
                       </div>
-                    </TableCell>
-                  </TableRow>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" onClick={() => handleEdit(category)}>
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => handleDelete(category.id)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
                 ))}
-              </TableBody>
-            </Table>
-          )}
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>

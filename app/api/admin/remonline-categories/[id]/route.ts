@@ -10,10 +10,10 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     }
 
     const body = await request.json()
-    const { category_id, category_title, description } = body
+    const { category_title, description } = body
 
-    if (!category_id || !category_title) {
-      return NextResponse.json({ error: "Category ID and title are required" }, { status: 400 })
+    if (!category_title) {
+      return NextResponse.json({ error: "Category title is required" }, { status: 400 })
     }
 
     const supabase = createClient()
@@ -21,9 +21,8 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     const { data: category, error } = await supabase
       .from("remonline_categories")
       .update({
-        category_id: Number.parseInt(category_id),
-        category_title: category_title.trim(),
-        description: description?.trim() || null,
+        category_title,
+        description: description || null,
         updated_at: new Date().toISOString(),
       })
       .eq("id", params.id)
@@ -35,7 +34,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       return NextResponse.json({ error: "Failed to update category" }, { status: 500 })
     }
 
-    return NextResponse.json({ success: true, category })
+    return NextResponse.json({ category })
   } catch (error) {
     console.error("Error in PUT /api/admin/remonline-categories/[id]:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
