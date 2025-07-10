@@ -27,6 +27,7 @@ interface ServiceTranslation {
 interface Service {
   id: string
   slug: string
+  name: string
   position: number
   warranty_months: number
   duration_hours: number
@@ -53,12 +54,21 @@ export function ServicesManagement() {
 
   const fetchServices = async () => {
     try {
+      setLoading(true)
       const response = await fetch("/api/admin/services")
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
       const data = await response.json()
+      console.log("Fetched services data:", data)
+
       setServices(data.services || [])
     } catch (error) {
       console.error("Error fetching services:", error)
       toast.error("Помилка завантаження послуг")
+      setServices([])
     } finally {
       setLoading(false)
     }
@@ -68,6 +78,8 @@ export function ServicesManagement() {
     try {
       const url = editingService ? `/api/admin/services/${editingService.id}` : "/api/admin/services"
       const method = editingService ? "PUT" : "POST"
+
+      console.log("Saving service:", { url, method, serviceData })
 
       const response = await fetch(url, {
         method,
@@ -83,7 +95,9 @@ export function ServicesManagement() {
         setEditingService(null)
         fetchServices()
       } else {
-        toast.error("Помилка збереження послуги")
+        const errorData = await response.json()
+        console.error("Error response:", errorData)
+        toast.error(errorData.error || "Помилка збереження послуги")
       }
     } catch (error) {
       console.error("Error saving service:", error)
@@ -135,6 +149,7 @@ export function ServicesManagement() {
 
     const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault()
+      console.log("Form data being submitted:", formData)
       handleSaveService(formData)
     }
 
@@ -305,13 +320,20 @@ export function ServicesManagement() {
   }
 
   if (loading) {
-    return <div className="p-6">Завантаження...</div>
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center">Завантаження послуг...</div>
+        </CardContent>
+      </Card>
+    )
   }
 
   // Якщо управляємо FAQ
   if (managingFaqsFor) {
     const service = services.find((s) => s.id === managingFaqsFor)
-    const serviceName = service?.services_translations?.find((t) => t.locale === "uk")?.name || "Невідома послуга"
+    const serviceName =
+      service?.services_translations?.find((t) => t.locale === "uk")?.name || service?.name || "Невідома послуга"
 
     return (
       <div className="space-y-6">
@@ -330,7 +352,7 @@ export function ServicesManagement() {
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle>Управління послугами</CardTitle>
+          <CardTitle>Управління послугами ({services.length})</CardTitle>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button onClick={() => setEditingService(null)}>
@@ -348,54 +370,60 @@ export function ServicesManagement() {
         </div>
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Назва</TableHead>
-              <TableHead>Slug</TableHead>
-              <TableHead>Позиція</TableHead>
-              <TableHead>Гарантія</TableHead>
-              <TableHead>Тривалість</TableHead>
-              <TableHead>Дії</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {services.map((service) => {
-              const ukTranslation = service.services_translations?.find((t) => t.locale === "uk")
-              return (
-                <TableRow key={service.id}>
-                  <TableCell>{ukTranslation?.name || "Без назви"}</TableCell>
-                  <TableCell>
-                    <Badge variant="secondary">{service.slug}</Badge>
-                  </TableCell>
-                  <TableCell>{service.position}</TableCell>
-                  <TableCell>{service.warranty_months} міс</TableCell>
-                  <TableCell>{service.duration_hours} год</TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setEditingService(service)
-                          setIsDialogOpen(true)
-                        }}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={() => setManagingFaqsFor(service.id)}>
-                        <HelpCircle className="h-4 w-4" />
-                      </Button>
-                      <Button size="sm" variant="destructive" onClick={() => handleDeleteService(service.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              )
-            })}
-          </TableBody>
-        </Table>
+        {services.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">Послуги не знайдено. Додайте першу послугу.</div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Назва</TableHead>
+                <TableHead>Slug</TableHead>
+                <TableHead>Позиція</TableHead>
+                <TableHead>Гарантія</TableHead>
+                <TableHead>Тривалість</TableHead>
+                <TableHead>Дії</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {services.map((service) => {
+                const ukTranslation = service.services_translations?.find((t) => t.locale === "uk")
+                const displayName = ukTranslation?.name || service.name || "Без назви"
+
+                return (
+                  <TableRow key={service.id}>
+                    <TableCell>{displayName}</TableCell>
+                    <TableCell>
+                      <Badge variant="secondary">{service.slug}</Badge>
+                    </TableCell>
+                    <TableCell>{service.position}</TableCell>
+                    <TableCell>{service.warranty_months} міс</TableCell>
+                    <TableCell>{service.duration_hours} год</TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setEditingService(service)
+                            setIsDialogOpen(true)
+                          }}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => setManagingFaqsFor(service.id)}>
+                          <HelpCircle className="h-4 w-4" />
+                        </Button>
+                        <Button size="sm" variant="destructive" onClick={() => handleDeleteService(service.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
+            </TableBody>
+          </Table>
+        )}
       </CardContent>
     </Card>
   )

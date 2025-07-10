@@ -1,11 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/utils/supabase/server"
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const supabase = createServerClient()
-    const { searchParams } = new URL(request.url)
-    const locale = searchParams.get("locale") || "uk"
 
     const { data: services, error } = await supabase
       .from("services")
@@ -17,46 +15,24 @@ export async function GET(request: NextRequest) {
         warranty_months,
         duration_hours,
         image_url,
-        created_at,
-        services_translations!inner(
-          locale,
+        services_translations(
+          id,
           name,
           description,
           detailed_description,
           what_included,
-          benefits
+          benefits,
+          locale
         )
       `)
-      .eq("services_translations.locale", locale)
-      .order("position", { ascending: true })
+      .order("position")
 
     if (error) {
       console.error("Error fetching services:", error)
       return NextResponse.json({ error: "Failed to fetch services" }, { status: 500 })
     }
 
-    // Трансформуємо дані для зручності використання
-    const transformedServices =
-      services?.map((service) => ({
-        id: service.id,
-        slug: service.slug,
-        name: service.name,
-        position: service.position,
-        warranty_months: service.warranty_months,
-        duration_hours: service.duration_hours,
-        image_url: service.image_url,
-        created_at: service.created_at,
-        // Беремо перший переклад (оскільки фільтруємо по locale)
-        translation: service.services_translations?.[0] || {
-          name: service.name,
-          description: "",
-          detailed_description: null,
-          what_included: null,
-          benefits: null,
-        },
-      })) || []
-
-    return NextResponse.json(transformedServices)
+    return NextResponse.json({ services })
   } catch (error) {
     console.error("Error in GET /api/admin/services:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
