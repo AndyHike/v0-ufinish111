@@ -47,6 +47,41 @@ interface StatusesResponse {
   message?: string
 }
 
+interface ServicesResponse {
+  success: boolean
+  services?: any[]
+  message?: string
+  total?: number
+  page?: number
+}
+
+interface RemOnlineService {
+  id: number
+  title: string
+  is_labor: boolean
+  uom: {
+    id: number
+    description: string
+    title: string
+  }
+  category: {
+    id: number
+    title: string
+    parent_id?: number
+  }
+  cost: number
+  duration_hours: number
+  barcodes: Array<{
+    id: number
+    code: string
+    type: string
+  }>
+  description: string
+  warranty: number
+  warranty_period: number
+  prices: Record<string, number>
+}
+
 class RemonlineClient {
   private apiKey: string
   private baseUrl: string
@@ -165,6 +200,107 @@ class RemonlineClient {
       return {
         success: false,
         message: error instanceof Error ? error.message : "Authentication failed",
+      }
+    }
+  }
+
+  async getServices(
+    page = 1,
+    categoryIds?: number[],
+  ): Promise<{
+    success: boolean
+    services?: RemOnlineService[]
+    message?: string
+    total?: number
+    page?: number
+  }> {
+    try {
+      let endpoint = `/services/?page=${page}`
+
+      // Add category filter if provided
+      if (categoryIds && categoryIds.length > 0) {
+        const categoryParams = categoryIds.map((id) => `categories[]=${id}`).join("&")
+        endpoint += `&${categoryParams}`
+      }
+
+      console.log(`📋 Fetching services from: ${endpoint}`)
+      const result = await this.makeRequest(endpoint)
+
+      if (result.success) {
+        const { data, page: currentPage, count, success } = result.data
+
+        console.log(`📋 Found ${data?.length || 0} services on page ${currentPage}`)
+        console.log(`📋 Total services: ${count}`)
+
+        return {
+          success: true,
+          services: data || [],
+          total: count || 0,
+          page: currentPage || 1,
+        }
+      }
+
+      return {
+        success: false,
+        message: result.message || "Failed to fetch services",
+      }
+    } catch (error) {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "Failed to fetch services",
+      }
+    }
+  }
+
+  async getAllServices(categoryIds?: number[]): Promise<{
+    success: boolean
+    services?: RemOnlineService[]
+    message?: string
+    total?: number
+  }> {
+    try {
+      console.log(`🔄 Starting to fetch all services...`)
+
+      // Get first page to determine total count
+      const firstPageResult = await this.getServices(1, categoryIds)
+
+      if (!firstPageResult.success) {
+        return {
+          success: false,
+          message: firstPageResult.message || "Failed to fetch first page",
+        }
+      }
+
+      const totalServices = firstPageResult.total || 0
+      const totalPages = Math.ceil(totalServices / 50)
+      let allServices: RemOnlineService[] = firstPageResult.services || []
+
+      console.log(`📊 Total services: ${totalServices}, Total pages: ${totalPages}`)
+
+      // Fetch remaining pages
+      for (let page = 2; page <= totalPages; page++) {
+        console.log(`📄 Fetching page ${page}/${totalPages}...`)
+
+        const pageResult = await this.getServices(page, categoryIds)
+
+        if (pageResult.success && pageResult.services) {
+          allServices = [...allServices, ...pageResult.services]
+        } else {
+          console.warn(`⚠️ Failed to fetch page ${page}: ${pageResult.message}`)
+        }
+      }
+
+      console.log(`✅ Successfully fetched ${allServices.length} services`)
+
+      return {
+        success: true,
+        services: allServices,
+        total: allServices.length,
+      }
+    } catch (error) {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "Failed to fetch all services",
       }
     }
   }
@@ -483,7 +619,7 @@ class RemonlineClient {
     message?: string
     workingEndpoint?: string
   }> {
-    const endpoints = ["/orders", "/clients/", "/statuses/orders"]
+    const endpoints = ["/orders", "/clients/", "/statuses/orders", "/services/"]
 
     for (const endpoint of endpoints) {
       try {
