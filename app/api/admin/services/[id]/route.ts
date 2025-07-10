@@ -51,20 +51,34 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
     const { slug, position, warranty_months, duration_hours, image_url, translations } = body
 
+    // Перевіряємо, що translations є об'єктом або масивом
+    let translationEntries: [string, any][] = []
+
+    if (translations) {
+      if (Array.isArray(translations)) {
+        // Якщо це масив, конвертуємо в entries
+        translationEntries = translations.map((t) => [t.locale, t])
+      } else if (typeof translations === "object") {
+        // Якщо це об'єкт, отримуємо entries
+        translationEntries = Object.entries(translations)
+      }
+    }
+
     // Отримуємо назву з першого доступного перекладу
-    const firstTranslation = translations?.find((t: any) => t?.name?.trim())
-    const serviceName = firstTranslation?.name || slug
+    const firstTranslation = translationEntries.find(([_, translation]: [string, any]) => translation?.name?.trim())
+
+    const serviceName = firstTranslation ? (firstTranslation[1] as any).name.trim() : slug || "Unnamed Service"
 
     // Оновлюємо основну інформацію про послугу
     const { error: serviceError } = await supabase
       .from("services")
       .update({
-        slug: slug || null,
-        name: serviceName, // Оновлюємо назву
+        slug: slug?.trim() || null,
+        name: serviceName,
         position: position || 0,
         warranty_months: warranty_months || 6,
         duration_hours: duration_hours || 2,
-        image_url: image_url || null,
+        image_url: image_url?.trim() || null,
       })
       .eq("id", id)
 
@@ -74,16 +88,16 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     }
 
     // Оновлюємо переклади
-    if (translations && Array.isArray(translations)) {
+    if (translationEntries.length > 0) {
       // Видаляємо старі переклади
       await supabase.from("services_translations").delete().eq("service_id", id)
 
       // Додаємо нові переклади
-      const translationInserts = translations
-        .filter((translation: any) => translation?.name?.trim())
-        .map((translation: any) => ({
+      const translationInserts = translationEntries
+        .filter(([_, translation]: [string, any]) => translation?.name?.trim())
+        .map(([locale, translation]: [string, any]) => ({
           service_id: id,
-          locale: translation.locale,
+          locale,
           name: translation.name.trim(),
           description: translation.description?.trim() || "",
           detailed_description: translation.detailed_description?.trim() || null,
