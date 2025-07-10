@@ -1,13 +1,12 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Textarea } from "@/components/ui/textarea"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import {
   Dialog,
@@ -18,36 +17,19 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
-import { Trash2, Edit, Plus, Link } from "lucide-react"
+import { Trash2, Edit, Plus, Tag, Info } from "lucide-react"
 import { toast } from "sonner"
-
-interface Brand {
-  id: string
-  name: string
-  slug: string
-}
-
-interface Series {
-  id: string
-  name: string
-  slug: string
-}
 
 interface RemOnlineCategory {
   id: string
   category_id: number
   category_title: string
-  association_type: "brand" | "series"
-  target_id: string
+  description?: string
   created_at: string
-  brands?: Brand
-  series?: Series
 }
 
 export function RemOnlineCategoriesManager() {
   const [categories, setCategories] = useState<RemOnlineCategory[]>([])
-  const [brands, setBrands] = useState<Brand[]>([])
-  const [series, setSeries] = useState<Series[]>([])
   const [loading, setLoading] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingCategory, setEditingCategory] = useState<RemOnlineCategory | null>(null)
@@ -55,44 +37,27 @@ export function RemOnlineCategoriesManager() {
   const [formData, setFormData] = useState({
     category_id: "",
     category_title: "",
-    association_type: "brand" as "brand" | "series",
-    target_id: "",
+    description: "",
   })
 
   useEffect(() => {
-    fetchData()
+    fetchCategories()
   }, [])
 
-  const fetchData = async () => {
+  const fetchCategories = async () => {
     try {
       setLoading(true)
+      const response = await fetch("/api/admin/remonline-categories")
+      const data = await response.json()
 
-      // Fetch categories
-      const categoriesRes = await fetch("/api/admin/remonline-categories")
-      const categoriesData = await categoriesRes.json()
-
-      // Fetch brands
-      const brandsRes = await fetch("/api/admin/brands")
-      const brandsData = await brandsRes.json()
-
-      // Fetch series
-      const seriesRes = await fetch("/api/admin/series")
-      const seriesData = await seriesRes.json()
-
-      if (categoriesRes.ok) {
-        setCategories(categoriesData.categories || [])
-      }
-
-      if (brandsRes.ok) {
-        setBrands(brandsData.brands || [])
-      }
-
-      if (seriesRes.ok) {
-        setSeries(seriesData.series || [])
+      if (response.ok) {
+        setCategories(data.categories || [])
+      } else {
+        toast.error("Помилка завантаження категорій")
       }
     } catch (error) {
-      console.error("Error fetching data:", error)
-      toast.error("Помилка завантаження даних")
+      console.error("Error fetching categories:", error)
+      toast.error("Помилка завантаження категорій")
     } finally {
       setLoading(false)
     }
@@ -101,8 +66,8 @@ export function RemOnlineCategoriesManager() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!formData.category_id || !formData.category_title || !formData.target_id) {
-      toast.error("Заповніть всі обов'язкові поля")
+    if (!formData.category_id || !formData.category_title) {
+      toast.error("Заповніть обов'язкові поля")
       return
     }
 
@@ -122,16 +87,15 @@ export function RemOnlineCategoriesManager() {
       })
 
       if (response.ok) {
-        toast.success(editingCategory ? "Асоціацію оновлено" : "Асоціацію створено")
+        toast.success(editingCategory ? "Категорію оновлено" : "Категорію створено")
         setIsDialogOpen(false)
         setEditingCategory(null)
         setFormData({
           category_id: "",
           category_title: "",
-          association_type: "brand",
-          target_id: "",
+          description: "",
         })
-        fetchData()
+        fetchCategories()
       } else {
         const error = await response.json()
         toast.error(error.error || "Помилка збереження")
@@ -147,14 +111,13 @@ export function RemOnlineCategoriesManager() {
     setFormData({
       category_id: category.category_id.toString(),
       category_title: category.category_title,
-      association_type: category.association_type,
-      target_id: category.target_id,
+      description: category.description || "",
     })
     setIsDialogOpen(true)
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Ви впевнені, що хочете видалити цю асоціацію?")) {
+    if (!confirm("Ви впевнені, що хочете видалити цю категорію?")) {
       return
     }
 
@@ -164,8 +127,8 @@ export function RemOnlineCategoriesManager() {
       })
 
       if (response.ok) {
-        toast.success("Асоціацію видалено")
-        fetchData()
+        toast.success("Категорію видалено")
+        fetchCategories()
       } else {
         toast.error("Помилка видалення")
       }
@@ -173,20 +136,6 @@ export function RemOnlineCategoriesManager() {
       console.error("Error deleting category:", error)
       toast.error("Помилка видалення")
     }
-  }
-
-  const getTargetOptions = () => {
-    return formData.association_type === "brand" ? brands : series
-  }
-
-  const getTargetName = (category: RemOnlineCategory) => {
-    if (category.association_type === "brand" && category.brands) {
-      return category.brands.name
-    }
-    if (category.association_type === "series" && category.series) {
-      return category.series.name
-    }
-    return "Невідомо"
   }
 
   if (loading) {
@@ -206,10 +155,12 @@ export function RemOnlineCategoriesManager() {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="flex items-center gap-2">
-                <Link className="h-5 w-5" />
-                Асоціації категорій RemOnline
+                <Tag className="h-5 w-5" />
+                Категорії RemOnline
               </CardTitle>
-              <CardDescription>Налаштуйте відповідність між категоріями RemOnline та брендами/серіями</CardDescription>
+              <CardDescription>
+                Додайте категорії RemOnline для візуального розуміння та фільтрації при синхронізації
+              </CardDescription>
             </div>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
@@ -219,23 +170,24 @@ export function RemOnlineCategoriesManager() {
                     setFormData({
                       category_id: "",
                       category_title: "",
-                      association_type: "brand",
-                      target_id: "",
+                      description: "",
                     })
                   }}
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  Додати асоціацію
+                  Додати категорію
                 </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>{editingCategory ? "Редагувати асоціацію" : "Додати асоціацію"}</DialogTitle>
-                  <DialogDescription>Створіть зв'язок між категорією RemOnline та брендом або серією</DialogDescription>
+                  <DialogTitle>{editingCategory ? "Редагувати категорію" : "Додати категорію"}</DialogTitle>
+                  <DialogDescription>
+                    Додайте категорію RemOnline для кращого розуміння та організації синхронізації
+                  </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
-                    <Label htmlFor="category_id">ID категорії RemOnline</Label>
+                    <Label htmlFor="category_id">ID категорії RemOnline *</Label>
                     <Input
                       id="category_id"
                       type="number"
@@ -244,9 +196,12 @@ export function RemOnlineCategoriesManager() {
                       placeholder="1575764"
                       required
                     />
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Знайдіть ID категорії в RemOnline API або інтерфейсі
+                    </p>
                   </div>
                   <div>
-                    <Label htmlFor="category_title">Назва категорії</Label>
+                    <Label htmlFor="category_title">Назва категорії *</Label>
                     <Input
                       id="category_title"
                       value={formData.category_title}
@@ -256,41 +211,14 @@ export function RemOnlineCategoriesManager() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="association_type">Тип асоціації</Label>
-                    <Select
-                      value={formData.association_type}
-                      onValueChange={(value: "brand" | "series") =>
-                        setFormData({ ...formData, association_type: value, target_id: "" })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="brand">Бренд</SelectItem>
-                        <SelectItem value="series">Серія</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="target_id">{formData.association_type === "brand" ? "Бренд" : "Серія"}</Label>
-                    <Select
-                      value={formData.target_id}
-                      onValueChange={(value) => setFormData({ ...formData, target_id: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue
-                          placeholder={`Оберіть ${formData.association_type === "brand" ? "бренд" : "серію"}`}
-                        />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {getTargetOptions().map((option) => (
-                          <SelectItem key={option.id} value={option.id}>
-                            {option.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Label htmlFor="description">Опис (необов'язково)</Label>
+                    <Textarea
+                      id="description"
+                      value={formData.description}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      placeholder="Всі послуги для iPhone..."
+                      rows={3}
+                    />
                   </div>
                   <div className="flex justify-end space-x-2">
                     <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
@@ -304,18 +232,31 @@ export function RemOnlineCategoriesManager() {
           </div>
         </CardHeader>
         <CardContent>
+          <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-start gap-2">
+              <Info className="h-5 w-5 text-blue-600 mt-0.5" />
+              <div className="text-sm text-blue-800">
+                <p className="font-medium mb-1">Як це працює:</p>
+                <ul className="list-disc list-inside space-y-1">
+                  <li>Додайте категорії RemOnline для візуального розуміння (наприклад: 1575764 → iPhone)</li>
+                  <li>При синхронізації ви зможете обрати конкретні категорії або синхронізувати всі</li>
+                  <li>Система автоматично створить бренди, серії та моделі на основі barcode послуг</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
           {categories.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              Асоціації категорій не знайдено. Додайте першу асоціацію.
+              Категорії не знайдено. Додайте першу категорію для кращої організації.
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>ID категорії</TableHead>
-                  <TableHead>Назва категорії</TableHead>
-                  <TableHead>Тип</TableHead>
-                  <TableHead>Пов'язано з</TableHead>
+                  <TableHead>Назва</TableHead>
+                  <TableHead>Опис</TableHead>
                   <TableHead>Створено</TableHead>
                   <TableHead className="text-right">Дії</TableHead>
                 </TableRow>
@@ -323,14 +264,13 @@ export function RemOnlineCategoriesManager() {
               <TableBody>
                 {categories.map((category) => (
                   <TableRow key={category.id}>
-                    <TableCell className="font-mono">{category.category_id}</TableCell>
-                    <TableCell>{category.category_title}</TableCell>
                     <TableCell>
-                      <Badge variant={category.association_type === "brand" ? "default" : "secondary"}>
-                        {category.association_type === "brand" ? "Бренд" : "Серія"}
+                      <Badge variant="outline" className="font-mono">
+                        {category.category_id}
                       </Badge>
                     </TableCell>
-                    <TableCell>{getTargetName(category)}</TableCell>
+                    <TableCell className="font-medium">{category.category_title}</TableCell>
+                    <TableCell className="text-muted-foreground">{category.description || "Без опису"}</TableCell>
                     <TableCell>{new Date(category.created_at).toLocaleDateString("uk-UA")}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end space-x-2">
