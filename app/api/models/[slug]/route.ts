@@ -1,20 +1,20 @@
-import { NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase"
+import { type NextRequest, NextResponse } from "next/server"
+import { createClient } from "@/utils/supabase/server"
 
-export async function GET(request: Request, { params }: { params: { slug: string } }) {
+export async function GET(request: NextRequest, { params }: { params: { slug: string } }) {
   try {
+    const supabase = createClient()
     const { slug } = params
-    const url = new URL(request.url)
-    const locale = url.searchParams.get("locale") || "uk"
+    const { searchParams } = new URL(request.url)
+    const locale = searchParams.get("locale") || "uk"
 
     console.log(`Fetching model data for slug: ${slug}, locale: ${locale}`)
 
-    const supabase = createClient()
-
-    // Fetch model with brand and series info
+    // Get model with brand and series info
     const { data: model, error: modelError } = await supabase
       .from("models")
-      .select(`
+      .select(
+        `
         id,
         name,
         slug,
@@ -30,21 +30,23 @@ export async function GET(request: Request, { params }: { params: { slug: string
           name,
           slug
         )
-      `)
+      `,
+      )
       .eq("slug", slug)
       .single()
 
-    if (modelError || !model) {
-      console.error("Model not found:", modelError)
+    if (modelError) {
+      console.error("Model error:", modelError)
       return NextResponse.json({ error: "Model not found" }, { status: 404 })
     }
 
-    console.log(`Found model: ${model.name}`)
+    console.log("Found model:", model)
 
-    // Fetch model services with all the new columns
+    // Get model services with service details and translations
     const { data: modelServices, error: servicesError } = await supabase
       .from("model_services")
-      .select(`
+      .select(
+        `
         id,
         price,
         warranty_months,
@@ -56,63 +58,64 @@ export async function GET(request: Request, { params }: { params: { slug: string
         services (
           id,
           slug,
-          position,
           image_url,
+          position,
           services_translations (
+            locale,
             name,
-            description,
-            locale
+            description
           )
         )
-      `)
+      `,
+      )
       .eq("model_id", model.id)
-      .order("services(position)", { ascending: true })
+      .order("services(position)")
 
     if (servicesError) {
-      console.error("Error fetching model services:", servicesError)
+      console.error("Services error:", servicesError)
       return NextResponse.json({ error: "Failed to fetch services" }, { status: 500 })
     }
 
-    console.log(`Found ${modelServices?.length || 0} services for model`)
+    console.log("Found model services:", modelServices?.length || 0)
 
-    // Transform services data to include translations and model-specific data
-    const transformedServices = (modelServices || [])
-      .map((modelService: any) => {
-        const service = modelService.services
+    // Transform services data to include model-specific data
+    const services = modelServices
+      ?.map((ms) => {
+        const service = ms.services
         if (!service) return null
 
-        // Find translation for the requested locale, fallback to first available
+        // Find translation for current locale, fallback to first available
         const translation =
-          service.services_translations?.find((t: any) => t.locale === locale) || service.services_translations?.[0]
+          service.services_translations?.find((t) => t.locale === locale) || service.services_translations?.[0]
 
         if (!translation) return null
 
         return {
-          id: modelService.id,
+          id: service.id,
           slug: service.slug,
           name: translation.name,
           description: translation.description,
-          price: modelService.price,
+          price: ms.price, // From model_services table
           position: service.position,
-          // Use model-specific values from model_services table
-          warranty_months: modelService.warranty_months,
-          duration_hours: modelService.duration_hours,
-          warranty_period: modelService.warranty_period,
+          warranty_months: ms.warranty_months, // From model_services table
+          duration_hours: ms.duration_hours, // From model_services table
+          warranty_period: ms.warranty_period, // From model_services table
           image_url: service.image_url,
-          detailed_description: modelService.detailed_description,
-          what_included: modelService.what_included,
-          benefits: modelService.benefits,
+          detailed_description: ms.detailed_description, // From model_services table
+          what_included: ms.what_included, // From model_services table
+          benefits: ms.benefits, // From model_services table
         }
       })
-      .filter(Boolean) // Remove null entries
-      .sort((a: any, b: any) => (a.position || 0) - (b.position || 0))
+      .filter(Boolean)
+      .sort((a, b) => a.position - b.position)
+
+    console.log("Transformed services:", services?.length || 0)
 
     const result = {
       ...model,
-      services: transformedServices,
+      services: services || [],
     }
 
-    console.log(`Returning model data with ${transformedServices.length} services`)
     return NextResponse.json(result)
   } catch (error) {
     console.error("Error fetching model:", error)

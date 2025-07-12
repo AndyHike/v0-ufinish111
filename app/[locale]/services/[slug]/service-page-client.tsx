@@ -13,6 +13,7 @@ interface ServiceData {
   position: number
   warranty_months: number | null
   duration_hours: number | null
+  warranty_period: string
   image_url: string | null
   slug: string | null
   translation: {
@@ -20,6 +21,7 @@ interface ServiceData {
     description: string
     detailed_description: string | null
     what_included: string | null
+    benefits: string | null
   }
   faqs: Array<{
     id: string
@@ -61,6 +63,17 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
   const backText = sourceModel ? `${sourceModel.brands?.name} ${sourceModel.name}` : commonT("backToHome")
 
   const whatIncludedList = translation.what_included?.split("\n").filter((item) => item.trim()) || []
+  const benefitsList = translation.benefits?.split("\n").filter((item) => item.trim()) || []
+
+  const formatWarranty = (months: number | null, period: string) => {
+    if (!months) return t("contactForWarranty")
+    return period === "days" ? t("warrantyDays", { count: months }) : t("warrantyMonths", { count: months })
+  }
+
+  const formatDuration = (hours: number | null) => {
+    if (!hours) return t("contactForTime")
+    return t("fromHours", { hours })
+  }
 
   return (
     <div className="min-h-screen bg-white">
@@ -130,11 +143,7 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
                 <Clock className="h-5 w-5 text-blue-600 flex-shrink-0" />
                 <div>
                   <div className="font-semibold text-gray-900 text-sm">{t("executionTime")}</div>
-                  <div className="text-xs text-gray-600">
-                    {serviceData.duration_hours
-                      ? t("fromHours", { hours: serviceData.duration_hours })
-                      : t("contactForTime")}
-                  </div>
+                  <div className="text-xs text-gray-600">{formatDuration(serviceData.duration_hours)}</div>
                 </div>
               </div>
               <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
@@ -142,9 +151,7 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
                 <div>
                   <div className="font-semibold text-gray-900 text-sm">{t("warranty")}</div>
                   <div className="text-xs text-gray-600">
-                    {serviceData.warranty_months
-                      ? t("months", { count: serviceData.warranty_months })
-                      : t("contactForWarranty")}
+                    {formatWarranty(serviceData.warranty_months, serviceData.warranty_period)}
                   </div>
                 </div>
               </div>
@@ -187,12 +194,27 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
                 </div>
               </div>
             )}
+
+            {/* Переваги */}
+            {benefitsList.length > 0 && (
+              <div className="pt-2">
+                <h3 className="text-lg font-bold text-gray-900 mb-3">{t("benefits")}</h3>
+                <div className="space-y-2">
+                  {benefitsList.map((item, index) => (
+                    <div key={index} className="flex items-start gap-2">
+                      <CheckCircle className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                      <span className="text-gray-700 text-sm">{item}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Компактні повноширинні секції */}
         <div className="space-y-8">
-          {/* FAQ Section - Повернув розділ частих питань */}
+          {/* FAQ Section */}
           {faqs.length > 0 && (
             <section className="bg-gray-50 rounded-xl p-6 lg:p-8">
               <h2 className="text-xl lg:text-2xl font-bold text-gray-900 mb-6 text-center">{t("frequentQuestions")}</h2>

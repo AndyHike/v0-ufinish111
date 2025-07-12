@@ -1,248 +1,147 @@
-import { NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase"
+import { type NextRequest, NextResponse } from "next/server"
+import { createClient } from "@/utils/supabase/server"
 import Papa from "papaparse"
 
-type RemOnlineServiceRow = {
-  Опис: string
-  Категорія: string
-  "Стандартна ціна": string | number
-  Гарантія: string | number
-  "Гарантійний період": string
-  "Тривалість (хвилини)": string | number
-  [key: string]: any
-}
-
-type ParsedService = {
-  id: string
-  slug: string | null
-  brand: string | null
-  series: string | null
-  model: string | null
-  price: number | null
-  warranty_months: number | null
-  warranty_period: "months" | "days" | null
-  duration_hours: number | null
-  original_description: string
-  original_category: string
-  service_found: boolean
-  brand_found: boolean
-  series_found: boolean
-  model_found: boolean
-  service_id: string | null
-  brand_id: string | null
-  series_id: string | null
-  model_id: string | null
-  errors: string[]
-  needs_new_model: boolean
-  suggested_model_name: string | null
-}
-
-function extractSlugFromDescription(description: string): string | null {
-  const match = description.match(/\[([^\]]+)\]/)
-  return match ? match[1] : null
-}
-
-function parseCategoryHierarchy(category: string): {
-  brand: string | null
-  series: string | null
-  model: string | null
-} {
-  const parts = category.split(" > ").map((part) => part.trim())
-
-  return {
-    brand: parts[0] || null,
-    series: parts[1] || null,
-    model: parts[2] || null,
-  }
-}
-
-function parseWarrantyPeriod(period: string): "months" | "days" | null {
-  const normalized = period.toLowerCase().trim()
-  if (normalized.includes("міс") || normalized.includes("month")) return "months"
-  if (normalized.includes("дн") || normalized.includes("day")) return "days"
-  return null
-}
-
-function parseNumber(value: string | number): number | null {
-  if (typeof value === "number") return value
-  if (typeof value === "string") {
-    const cleaned = value.replace(/[^\d.,]/g, "").replace(",", ".")
-    const parsed = Number.parseFloat(cleaned)
-    return isNaN(parsed) ? null : parsed
-  }
-  return null
-}
-
-function convertToWarrantyMonths(duration: number | null, period: "months" | "days" | null): number | null {
-  if (!duration) return null
-
+// Helper function to convert warranty duration to months
+function convertToWarrantyMonths(duration: string, period: string): number {
+  const durationNum = Number.parseInt(duration) || 0
   if (period === "days") {
-    // Convert days to months (approximately)
-    return Math.round((duration / 30) * 100) / 100
-  } else if (period === "months") {
-    return duration
+    return Math.round(durationNum / 30) // Convert days to months
   }
-
-  return duration // Default to months if period is unclear
+  return durationNum // Already in months
 }
 
-function convertToHours(minutes: number | null): number | null {
-  if (!minutes) return null
-  return Math.round((minutes / 60) * 100) / 100 // Convert minutes to hours with 2 decimal places
+// Helper function to convert minutes to hours
+function convertToHours(minutes: string): number {
+  const minutesNum = Number.parseInt(minutes) || 0
+  return Math.round((minutesNum / 60) * 100) / 100 // Convert to hours with 2 decimal places
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const { csvData } = await request.json()
-
-    if (!csvData || typeof csvData !== "string") {
-      return NextResponse.json({ error: "CSV data is required" }, { status: 400 })
-    }
-
     const supabase = createClient()
 
+    // Check if user is admin
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    // Check admin role
+    const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single()
+
+    if (profile?.role !== "admin") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+
+    const formData = await request.formData()
+    const file = formData.get("file") as File
+
+    if (!file) {
+      return NextResponse.json({ error: "No file provided" }, { status: 400 })
+    }
+
+    const text = await file.text()
+
     // Parse CSV
-    const parseResult = Papa.parse(csvData, {
+    const parseResult = Papa.parse(text, {
       header: true,
       skipEmptyLines: true,
-      encoding: "UTF-8",
+      transformHeader: (header) => header.trim(),
     })
 
     if (parseResult.errors.length > 0) {
-      return NextResponse.json(
-        {
-          error: "CSV parsing error",
-          details: parseResult.errors,
-        },
-        { status: 400 },
-      )
+      console.error("CSV parsing errors:", parseResult.errors)
+      return NextResponse.json({ error: "CSV parsing failed", details: parseResult.errors }, { status: 400 })
     }
 
-    const rows = parseResult.data as RemOnlineServiceRow[]
-    const parsedServices: ParsedService[] = []
+    const csvData = parseResult.data as any[]
+    console.log("Parsed CSV data:", csvData.slice(0, 3)) // Log first 3 rows
 
-    // Get all existing data for matching
-    const [servicesResult, brandsResult, seriesResult, modelsResult] = await Promise.all([
-      supabase.from("services").select("id, slug, name").order("name"),
-      supabase.from("brands").select("id, name, slug"),
-      supabase.from("series").select("id, name, slug, brand_id"),
-      supabase.from("models").select("id, name, slug, brand_id, series_id"),
-    ])
+    // Transform and validate data
+    const transformedData = csvData
+      .map((row, index) => {
+        try {
+          // Required fields validation
+          if (!row.model_name || !row.service_name) {
+            console.warn(`Row ${index + 1}: Missing required fields`, row)
+            return null
+          }
 
-    const services = servicesResult.data || []
-    const brands = brandsResult.data || []
-    const series = seriesResult.data || []
-    const models = modelsResult.data || []
+          // Convert warranty data
+          const warrantyMonths = convertToWarrantyMonths(row.warranty_duration || "0", row.warranty_period || "months")
+          const durationHours = convertToHours(row.duration_minutes || "0")
 
-    // Process each row
-    for (let i = 0; i < rows.length; i++) {
-      const row = rows[i]
-      const errors: string[] = []
+          return {
+            model_name: String(row.model_name).trim(),
+            brand_name: String(row.brand_name || "").trim(),
+            series_name: String(row.series_name || "").trim(),
+            service_name: String(row.service_name).trim(),
+            service_description: String(row.service_description || "").trim(),
+            price: row.price ? Number.parseFloat(String(row.price).replace(/[^\d.-]/g, "")) : null,
+            warranty_months: warrantyMonths,
+            duration_hours: durationHours,
+            warranty_period: row.warranty_period || "months",
+            detailed_description: String(row.detailed_description || "").trim(),
+            what_included: String(row.what_included || "").trim(),
+            benefits: String(row.benefits || "").trim(),
+            original_row: index + 1,
+          }
+        } catch (error) {
+          console.error(`Error processing row ${index + 1}:`, error, row)
+          return null
+        }
+      })
+      .filter(Boolean)
 
-      // Extract slug from description
-      const slug = extractSlugFromDescription(row["Опис"] || "")
+    console.log(`Processed ${transformedData.length} valid rows out of ${csvData.length}`)
 
-      // Parse category hierarchy
-      const hierarchy = parseCategoryHierarchy(row["Категорія"] || "")
+    if (transformedData.length === 0) {
+      return NextResponse.json({ error: "No valid data found in CSV" }, { status: 400 })
+    }
 
-      // Parse numeric values
-      const price = parseNumber(row["Стандартна ціна"])
-      const warrantyDuration = parseNumber(row["Гарантія"])
-      const durationMinutes = parseNumber(row["Тривалість (хвилини)"])
-      const warrantyPeriod = parseWarrantyPeriod(row["Гарантійний період"] || "")
-
-      // Convert to proper units
-      const warrantyMonths = convertToWarrantyMonths(warrantyDuration, warrantyPeriod)
-      const durationHours = convertToHours(durationMinutes)
-
-      // Find matching records
-      const foundService = slug ? services.find((s) => s.slug === slug) : null
-
-      const foundBrand = hierarchy.brand
-        ? brands.find(
-            (b) =>
-              b.name.toLowerCase() === hierarchy.brand?.toLowerCase() ||
-              b.slug?.toLowerCase() === hierarchy.brand?.toLowerCase(),
-          )
-        : null
-
-      const foundSeries =
-        hierarchy.series && foundBrand
-          ? series.find(
-              (s) =>
-                s.brand_id === foundBrand.id &&
-                (s.name.toLowerCase() === hierarchy.series?.toLowerCase() ||
-                  s.slug?.toLowerCase() === hierarchy.series?.toLowerCase()),
-            )
-          : null
-
-      const foundModel =
-        hierarchy.model && foundBrand
-          ? models.find(
-              (m) =>
-                m.brand_id === foundBrand.id &&
-                (m.name.toLowerCase() === hierarchy.model?.toLowerCase() ||
-                  m.slug?.toLowerCase() === hierarchy.model?.toLowerCase()),
-            )
-          : null
-
-      // Determine if we need to create a new model
-      const needsNewModel = !foundModel && hierarchy.model && foundBrand
-      const suggestedModelName = needsNewModel ? hierarchy.model : null
-
-      // Collect errors (but not for missing models - we'll create them)
-      if (!slug) errors.push("Slug не знайдено в описі")
-      if (slug && !foundService) errors.push(`Послуга з slug "${slug}" не знайдена`)
-      if (hierarchy.brand && !foundBrand) errors.push(`Бренд "${hierarchy.brand}" не знайдений`)
-      if (hierarchy.series && !foundSeries) errors.push(`Серія "${hierarchy.series}" не знайдена`)
-
-      const parsedService: ParsedService = {
-        id: `temp_${i}`,
-        slug,
-        brand: hierarchy.brand,
-        series: hierarchy.series,
-        model: hierarchy.model,
-        price,
-        warranty_months: warrantyMonths,
-        warranty_period: warrantyPeriod,
-        duration_hours: durationHours,
-        original_description: row["Опис"] || "",
-        original_category: row["Категорія"] || "",
-        service_found: !!foundService,
-        brand_found: !!foundBrand,
-        series_found: !!foundSeries,
-        model_found: !!foundModel,
-        service_id: foundService?.id || null,
-        brand_id: foundBrand?.id || null,
-        series_id: foundSeries?.id || null,
-        model_id: foundModel?.id || null,
-        errors,
-        needs_new_model: needsNewModel,
-        suggested_model_name: suggestedModelName,
+    // Group by model for preview
+    const groupedData = transformedData.reduce((acc, item) => {
+      const key = `${item.brand_name}_${item.series_name}_${item.model_name}`.toLowerCase()
+      if (!acc[key]) {
+        acc[key] = {
+          model_name: item.model_name,
+          brand_name: item.brand_name,
+          series_name: item.series_name,
+          services: [],
+        }
       }
+      acc[key].services.push({
+        service_name: item.service_name,
+        service_description: item.service_description,
+        price: item.price,
+        warranty_months: item.warranty_months,
+        duration_hours: item.duration_hours,
+        warranty_period: item.warranty_period,
+        detailed_description: item.detailed_description,
+        what_included: item.what_included,
+        benefits: item.benefits,
+      })
+      return acc
+    }, {} as any)
 
-      parsedServices.push(parsedService)
-    }
+    const previewData = Object.values(groupedData).slice(0, 10) // Limit preview to 10 models
 
-    // Return parsed data for preview
     return NextResponse.json({
       success: true,
-      total: parsedServices.length,
-      services: parsedServices,
-      summary: {
-        total: parsedServices.length,
-        with_errors: parsedServices.filter((s) => s.errors.length > 0).length,
-        services_found: parsedServices.filter((s) => s.service_found).length,
-        brands_found: parsedServices.filter((s) => s.brand_found).length,
-        series_found: parsedServices.filter((s) => s.series_found).length,
-        models_found: parsedServices.filter((s) => s.model_found).length,
-        new_models_needed: parsedServices.filter((s) => s.needs_new_model).length,
-      },
+      preview: previewData,
+      totalRows: transformedData.length,
+      totalModels: Object.keys(groupedData).length,
+      rawData: transformedData, // Include for saving
     })
   } catch (error) {
-    console.error("Error processing RemOnline import:", error)
+    console.error("Error processing CSV:", error)
     return NextResponse.json(
-      { error: "Failed to process import", details: error instanceof Error ? error.message : String(error) },
+      { error: "Internal server error", details: error instanceof Error ? error.message : "Unknown error" },
       { status: 500 },
     )
   }
