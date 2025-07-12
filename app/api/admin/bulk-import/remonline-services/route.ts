@@ -11,9 +11,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 })
     }
 
-    console.log("Processing CSV file:", file.name)
+    if (file.type !== "text/csv") {
+      return NextResponse.json({ error: "Only CSV files are allowed" }, { status: 400 })
+    }
 
-    // Read and parse CSV
     const text = await file.text()
     const lines = text.split("\n").filter((line) => line.trim())
 
@@ -21,92 +22,91 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "CSV file must have at least a header and one data row" }, { status: 400 })
     }
 
-    // Parse header
-    const header = lines[0].split(",").map((h) => h.trim().replace(/"/g, ""))
-    console.log("CSV Header:", header)
+    const headers = lines[0].split(",").map((h) => h.trim().replace(/"/g, ""))
+    console.log("CSV Headers:", headers)
 
-    // Expected columns
-    const expectedColumns = [
-      "brand_name",
-      "series_name",
-      "model_name",
-      "service_name",
-      "price",
-      "warranty_duration",
-      "warranty_period",
-      "duration_minutes",
-      "detailed_description",
-      "what_included",
-      "benefits",
-    ]
+    // Перевіряємо наявність обов'язкових колонок
+    const requiredColumns = ["brand_name", "model_name", "service_name", "price"]
+    const missingColumns = requiredColumns.filter((col) => !headers.includes(col))
 
-    // Check if all required columns are present
-    const missingColumns = expectedColumns.filter((col) => !header.includes(col))
     if (missingColumns.length > 0) {
       return NextResponse.json({ error: `Missing required columns: ${missingColumns.join(", ")}` }, { status: 400 })
     }
 
-    // Parse data rows
-    const services = []
-    for (let i = 1; i < lines.length; i++) {
-      const values = lines[i].split(",").map((v) => v.trim().replace(/"/g, ""))
+    // Функція для конвертації гарантії в місяці
+    const convertToWarrantyMonths = (duration: string, period: string): number | null => {
+      const durationNum = Number.parseFloat(duration)
+      if (isNaN(durationNum)) return null
 
-      if (values.length !== header.length) {
-        console.warn(`Row ${i + 1} has ${values.length} values but header has ${header.length} columns`)
-        continue
+      switch (period?.toLowerCase()) {
+        case "days":
+        case "день":
+        case "дні":
+        case "днів":
+          return Math.round(durationNum / 30) // Конвертуємо дні в місяці
+        case "months":
+        case "місяць":
+        case "місяці":
+        case "місяців":
+          return Math.round(durationNum)
+        case "years":
+        case "рік":
+        case "роки":
+        case "років":
+          return Math.round(durationNum * 12)
+        default:
+          return Math.round(durationNum) // За замовчуванням вважаємо місяцями
       }
-
-      const rowData: any = {}
-      header.forEach((col, index) => {
-        rowData[col] = values[index] || ""
-      })
-
-      // Convert warranty duration to months
-      const convertToWarrantyMonths = (duration: string, period: string): number | null => {
-        const durationNum = Number.parseFloat(duration)
-        if (isNaN(durationNum)) return null
-
-        if (period.toLowerCase().includes("day")) {
-          return Math.round(durationNum / 30) // Convert days to months
-        } else if (period.toLowerCase().includes("month")) {
-          return durationNum
-        }
-        return durationNum // Default to months
-      }
-
-      // Convert duration minutes to hours
-      const convertToHours = (minutes: string): number | null => {
-        const minutesNum = Number.parseFloat(minutes)
-        if (isNaN(minutesNum)) return null
-        return Math.round((minutesNum / 60) * 100) / 100 // Round to 2 decimal places
-      }
-
-      const service = {
-        brand_name: rowData.brand_name,
-        series_name: rowData.series_name,
-        model_name: rowData.model_name,
-        service_name: rowData.service_name,
-        price: rowData.price ? Number.parseFloat(rowData.price) : null,
-        warranty_months: convertToWarrantyMonths(rowData.warranty_duration, rowData.warranty_period),
-        warranty_period: rowData.warranty_period?.toLowerCase().includes("day") ? "days" : "months",
-        duration_hours: convertToHours(rowData.duration_minutes),
-        detailed_description: rowData.detailed_description || null,
-        what_included: rowData.what_included || null,
-        benefits: rowData.benefits || null,
-      }
-
-      services.push(service)
     }
 
-    console.log(`Parsed ${services.length} services from CSV`)
+    // Функція для конвертації тривалості в години
+    const convertToHours = (minutes: string): number | null => {
+      const minutesNum = Number.parseFloat(minutes)
+      if (isNaN(minutesNum)) return null
+      return Math.round((minutesNum / 60) * 100) / 100 // Округлюємо до 2 знаків після коми
+    }
+
+    const data = lines.slice(1).map((line, index) => {
+      const values = line.split(",").map((v) => v.trim().replace(/"/g, ""))
+      const row: any = {}
+
+      headers.forEach((header, i) => {
+        row[header] = values[i] || ""
+      })
+
+      // Конвертуємо дані
+      const warrantyMonths = row.warranty_duration
+        ? convertToWarrantyMonths(row.warranty_duration, row.warranty_period || "months")
+        : null
+
+      const durationHours = row.duration_minutes ? convertToHours(row.duration_minutes) : null
+
+      return {
+        rowIndex: index + 2, // +2 тому що рахуємо з 1 і пропускаємо заголовок
+        brand_name: row.brand_name,
+        model_name: row.model_name,
+        service_name: row.service_name,
+        price: row.price ? Number.parseFloat(row.price) : null,
+        warranty_months: warrantyMonths,
+        duration_hours: durationHours,
+        warranty_period: row.warranty_period || "months",
+        detailed_description: row.detailed_description || "",
+        what_included: row.what_included || "",
+        benefits: row.benefits || "",
+        original_warranty_duration: row.warranty_duration || "",
+        original_duration_minutes: row.duration_minutes || "",
+      }
+    })
+
+    console.log("Parsed data sample:", data.slice(0, 3))
 
     return NextResponse.json({
       success: true,
-      services,
-      total: services.length,
+      data,
+      totalRows: data.length,
     })
   } catch (error) {
-    console.error("Error processing CSV:", error)
-    return NextResponse.json({ error: "Failed to process CSV file" }, { status: 500 })
+    console.error("Error parsing CSV:", error)
+    return NextResponse.json({ error: "Failed to parse CSV file" }, { status: 500 })
   }
 }

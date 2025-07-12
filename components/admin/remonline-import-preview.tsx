@@ -2,202 +2,189 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { useToast } from "@/components/ui/use-toast"
-import { CheckCircle, XCircle, Upload, AlertCircle } from "lucide-react"
-import { formatCurrency } from "@/lib/format-currency"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { CheckCircle, XCircle, AlertCircle, Loader2 } from "lucide-react"
+import { useTranslations } from "next-intl"
 
-interface Service {
+interface ImportData {
+  rowIndex: number
   brand_name: string
-  series_name: string
   model_name: string
   service_name: string
   price: number | null
   warranty_months: number | null
-  warranty_period: string
   duration_hours: number | null
-  detailed_description: string | null
-  what_included: string | null
-  benefits: string | null
+  warranty_period: string
+  detailed_description: string
+  what_included: string
+  benefits: string
+  original_warranty_duration: string
+  original_duration_minutes: string
 }
 
-interface ImportResult {
-  status: "success" | "error"
-  service: string
-  action?: string
-  error?: string
+interface ImportResults {
+  success: number
+  failed: number
+  errors: Array<{ row: number; error: string }>
 }
 
 interface Props {
-  services: Service[]
-  onImportComplete: () => void
+  data: ImportData[]
+  onImport: (data: ImportData[]) => Promise<ImportResults>
+  onCancel: () => void
 }
 
-export function RemOnlineImportPreview({ services, onImportComplete }: Props) {
-  const [isImporting, setIsImporting] = useState(false)
-  const [importResults, setImportResults] = useState<ImportResult[]>([])
-  const [showResults, setShowResults] = useState(false)
-  const { toast } = useToast()
+function RemOnlineImportPreview({ data, onImport, onCancel }: Props) {
+  const t = useTranslations("Admin")
+  const [importing, setImporting] = useState(false)
+  const [results, setResults] = useState<ImportResults | null>(null)
 
   const handleImport = async () => {
-    setIsImporting(true)
-    setShowResults(false)
-
+    setImporting(true)
     try {
-      const response = await fetch("/api/admin/bulk-import/remonline-services/save", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ services }),
-      })
-
-      const result = await response.json()
-
-      if (!response.ok) {
-        throw new Error(result.error || "Import failed")
-      }
-
-      setImportResults(result.results.details)
-      setShowResults(true)
-
-      toast({
-        title: "Імпорт завершено",
-        description: `Успішно: ${result.results.success}, Помилки: ${result.results.errors}`,
-      })
-
-      if (result.results.success > 0) {
-        onImportComplete()
-      }
+      const importResults = await onImport(data)
+      setResults(importResults)
     } catch (error) {
       console.error("Import error:", error)
-      toast({
-        title: "Помилка імпорту",
-        description: error instanceof Error ? error.message : "Невідома помилка",
-        variant: "destructive",
-      })
     } finally {
-      setIsImporting(false)
+      setImporting(false)
     }
   }
 
+  const formatPrice = (price: number | null) => {
+    if (price === null) return t("priceOnRequest")
+    return `${price} Kč`
+  }
+
   const formatWarranty = (months: number | null, period: string) => {
-    if (!months) return "Не вказано"
-    return period === "days" ? `${months} дн.` : `${months} міс.`
+    if (!months) return "-"
+    return period === "days" ? `${months} днів` : `${months} міс.`
   }
 
   const formatDuration = (hours: number | null) => {
-    if (!hours) return "Не вказано"
+    if (!hours) return "-"
     return `${hours} год.`
   }
 
-  if (showResults) {
+  if (results) {
     return (
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold">Результати імпорту</h3>
-          <Button onClick={() => setShowResults(false)} variant="outline">
-            Повернутися до перегляду
-          </Button>
-        </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            {results.failed === 0 ? (
+              <CheckCircle className="h-5 w-5 text-green-600" />
+            ) : (
+              <AlertCircle className="h-5 w-5 text-yellow-600" />
+            )}
+            {t("importSuccess")}
+          </CardTitle>
+          <CardDescription>
+            {t("importResultSummary", {
+              success: results.success,
+              total: results.success + results.failed,
+              failed: results.failed,
+            })}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex items-center gap-2">
+              <CheckCircle className="h-4 w-4 text-green-600" />
+              <span>
+                {t("synced")}: {results.success}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <XCircle className="h-4 w-4 text-red-600" />
+              <span>
+                {t("failed")}: {results.failed}
+              </span>
+            </div>
+          </div>
 
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Статус</TableHead>
-                <TableHead>Послуга</TableHead>
-                <TableHead>Дія</TableHead>
-                <TableHead>Помилка</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {importResults.map((result, index) => (
-                <TableRow key={index}>
-                  <TableCell>
-                    {result.status === "success" ? (
-                      <Badge variant="default" className="bg-green-100 text-green-800">
-                        <CheckCircle className="mr-1 h-3 w-3" />
-                        Успіх
-                      </Badge>
-                    ) : (
-                      <Badge variant="destructive">
-                        <XCircle className="mr-1 h-3 w-3" />
-                        Помилка
-                      </Badge>
-                    )}
-                  </TableCell>
-                  <TableCell className="font-medium">{result.service}</TableCell>
-                  <TableCell>
-                    {result.action && (
-                      <Badge variant="outline">{result.action === "created" ? "Створено" : "Оновлено"}</Badge>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-red-600 text-sm">{result.error}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      </div>
+          {results.errors.length > 0 && (
+            <div>
+              <h4 className="font-semibold mb-2">{t("showErrors")}</h4>
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {results.errors.slice(0, 10).map((error, index) => (
+                  <Alert key={index} variant="destructive">
+                    <AlertDescription>
+                      Рядок {error.row}: {error.error}
+                    </AlertDescription>
+                  </Alert>
+                ))}
+                {results.errors.length > 10 && (
+                  <p className="text-sm text-gray-500">{t("andMoreErrors", { count: results.errors.length - 10 })}</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          <Button onClick={onCancel} className="w-full">
+            Закрити
+          </Button>
+        </CardContent>
+      </Card>
     )
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold">Перегляд даних для імпорту</h3>
-          <p className="text-sm text-muted-foreground">Знайдено {services.length} послуг для імпорту</p>
-        </div>
-        <Button onClick={handleImport} disabled={isImporting || services.length === 0}>
-          <Upload className="mr-2 h-4 w-4" />
-          {isImporting ? "Імпорт..." : "Імпортувати"}
-        </Button>
-      </div>
-
-      {services.length === 0 ? (
-        <div className="text-center py-8">
-          <AlertCircle className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-2 text-sm font-semibold text-gray-900">Немає даних для імпорту</h3>
-          <p className="mt-1 text-sm text-gray-500">Завантажте CSV файл з даними послуг</p>
-        </div>
-      ) : (
-        <div className="rounded-md border">
+    <Card>
+      <CardHeader>
+        <CardTitle>{t("previewData")}</CardTitle>
+        <CardDescription>{t("rowsDetected", { count: data.length })}</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="max-h-96 overflow-auto">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Бренд</TableHead>
-                <TableHead>Серія</TableHead>
                 <TableHead>Модель</TableHead>
                 <TableHead>Послуга</TableHead>
                 <TableHead>Ціна</TableHead>
                 <TableHead>Гарантія</TableHead>
                 <TableHead>Тривалість</TableHead>
+                <TableHead>Статус</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {services.slice(0, 50).map((service, index) => (
+              {data.slice(0, 10).map((item, index) => (
                 <TableRow key={index}>
-                  <TableCell className="font-medium">{service.brand_name}</TableCell>
-                  <TableCell>{service.series_name || "—"}</TableCell>
-                  <TableCell>{service.model_name}</TableCell>
-                  <TableCell>{service.service_name}</TableCell>
-                  <TableCell>{service.price ? formatCurrency(service.price) : "За запитом"}</TableCell>
-                  <TableCell>{formatWarranty(service.warranty_months, service.warranty_period)}</TableCell>
-                  <TableCell>{formatDuration(service.duration_hours)}</TableCell>
+                  <TableCell className="font-medium">{item.brand_name}</TableCell>
+                  <TableCell>{item.model_name}</TableCell>
+                  <TableCell>{item.service_name}</TableCell>
+                  <TableCell>{formatPrice(item.price)}</TableCell>
+                  <TableCell>{formatWarranty(item.warranty_months, item.warranty_period)}</TableCell>
+                  <TableCell>{formatDuration(item.duration_hours)}</TableCell>
+                  <TableCell>
+                    <Badge variant="secondary">Готово до імпорту</Badge>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
-          {services.length > 50 && (
-            <div className="p-4 text-center text-sm text-muted-foreground border-t">
-              Показано перші 50 записів з {services.length}
-            </div>
+          {data.length > 10 && (
+            <p className="text-sm text-gray-500 mt-2 text-center">{t("andMoreRows", { count: data.length - 10 })}</p>
           )}
         </div>
-      )}
-    </div>
+
+        <div className="flex gap-2">
+          <Button onClick={handleImport} disabled={importing} className="flex-1">
+            {importing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {importing ? t("saving") : t("uploadAndProcess")}
+          </Button>
+          <Button variant="outline" onClick={onCancel} disabled={importing}>
+            {t("cancel")}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   )
 }
+
+// Export the component under the expected named export
+export { RemOnlineImportPreview }

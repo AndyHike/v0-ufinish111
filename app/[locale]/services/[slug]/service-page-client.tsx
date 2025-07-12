@@ -77,24 +77,28 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
 
   // Виправлена логіка відображення ціни
   const renderPrice = () => {
-    // Якщо є конкретна модель і ціна для неї
-    if (sourceModel && modelServicePrice !== null) {
+    console.log("[CLIENT] Price logic:", {
+      sourceModel: !!sourceModel,
+      modelServicePrice,
+      minPrice,
+      maxPrice,
+    })
+
+    // Якщо є конкретна модель
+    if (sourceModel) {
+      // Якщо ціна null або undefined - показуємо "ціна за запитом"
+      if (modelServicePrice === null || modelServicePrice === undefined) {
+        return t("priceOnRequest")
+      }
+      // Якщо ціна є - показуємо її
       return formatCurrency(modelServicePrice)
     }
 
-    // Якщо є конкретна модель але ціна null - показуємо "ціна за запитом"
-    if (sourceModel && modelServicePrice === null) {
-      return t("priceOnRequest")
-    }
-
     // Якщо немає конкретної моделі, показуємо діапазон цін або "ціна за запитом"
-    if (!sourceModel) {
-      if (minPrice && maxPrice) {
-        return minPrice === maxPrice
-          ? formatCurrency(minPrice)
-          : `${formatCurrency(minPrice)} - ${formatCurrency(maxPrice)}`
-      }
-      return t("priceOnRequest")
+    if (minPrice && maxPrice) {
+      return minPrice === maxPrice
+        ? formatCurrency(minPrice)
+        : `${formatCurrency(minPrice)} - ${formatCurrency(maxPrice)}`
     }
 
     return t("priceOnRequest")

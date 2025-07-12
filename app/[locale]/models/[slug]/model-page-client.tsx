@@ -58,6 +58,16 @@ export default function ModelPageClient({ modelData, locale }: Props) {
     return t("fromHours", { hours })
   }
 
+  console.log(
+    "[MODEL CLIENT] Services data:",
+    modelData.services.map((s) => ({
+      name: s.name,
+      warranty_months: s.warranty_months,
+      duration_hours: s.duration_hours,
+      price: s.price,
+    })),
+  )
+
   return (
     <div className="min-h-screen bg-white">
       <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
