@@ -1,43 +1,16 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/utils/supabase/server"
 
-function generateSlug(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/[^\w\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .trim()
-}
-
 export async function POST(request: NextRequest) {
   try {
     const supabase = createClient()
+    const { services } = await request.json()
 
-    // Check if user is admin
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    if (!services || !Array.isArray(services)) {
+      return NextResponse.json({ error: "Invalid services data" }, { status: 400 })
     }
 
-    // Check admin role
-    const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single()
-
-    if (profile?.role !== "admin") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
-    }
-
-    const { data: rawData, locale = "uk" } = await request.json()
-
-    if (!rawData || !Array.isArray(rawData)) {
-      return NextResponse.json({ error: "Invalid data provided" }, { status: 400 })
-    }
-
-    console.log(`Starting import of ${rawData.length} records for locale ${locale}`)
+    console.log(`Starting import of ${services.length} services`)
 
     const results = {
       success: 0,
@@ -45,277 +18,208 @@ export async function POST(request: NextRequest) {
       details: [] as any[],
     }
 
-    // Process each record
-    for (const [index, item] of rawData.entries()) {
+    for (const service of services) {
       try {
-        console.log(`Processing record ${index + 1}/${rawData.length}:`, {
-          model: item.model_name,
-          service: item.service_name,
-        })
+        console.log(`Processing: ${service.brand_name} ${service.model_name} - ${service.service_name}`)
 
-        // Step 1: Find or create brand
-        let brand = null
-        if (item.brand_name) {
-          const brandSlug = generateSlug(item.brand_name)
-          const { data: existingBrand } = await supabase.from("brands").select("id").eq("slug", brandSlug).maybeSingle()
+        // 1. Find or create brand
+        let { data: brand, error: brandError } = await supabase
+          .from("brands")
+          .select("id")
+          .eq("name", service.brand_name)
+          .maybeSingle()
 
-          if (existingBrand) {
-            brand = existingBrand
-            console.log(`Found existing brand: ${item.brand_name}`)
-          } else {
-            // Get max position for new brand
-            const { data: maxPositionData } = await supabase
-              .from("brands")
-              .select("position")
-              .order("position", { ascending: false })
-              .limit(1)
-
-            const maxPosition = maxPositionData?.[0]?.position || 0
-
-            const { data: newBrand, error: brandError } = await supabase
-              .from("brands")
-              .insert({
-                name: item.brand_name,
-                slug: brandSlug,
-                position: maxPosition + 1,
-              })
-              .select("id")
-              .single()
-
-            if (brandError) {
-              console.error(`Error creating brand ${item.brand_name}:`, brandError)
-              throw brandError
-            }
-
-            brand = newBrand
-            console.log(`Created new brand: ${item.brand_name}`)
-          }
+        if (brandError) {
+          console.error("Brand lookup error:", brandError)
+          throw new Error(`Brand lookup failed: ${brandError.message}`)
         }
 
-        // Step 2: Find or create series
-        let series = null
-        if (item.series_name && brand) {
-          const seriesSlug = generateSlug(item.series_name)
-          const { data: existingSeries } = await supabase
+        if (!brand) {
+          console.log(`Creating new brand: ${service.brand_name}`)
+          const { data: newBrand, error: createBrandError } = await supabase
+            .from("brands")
+            .insert({
+              name: service.brand_name,
+              slug: service.brand_name.toLowerCase().replace(/\s+/g, "-"),
+              position: 999,
+            })
+            .select("id")
+            .single()
+
+          if (createBrandError) {
+            console.error("Brand creation error:", createBrandError)
+            throw new Error(`Failed to create brand: ${createBrandError.message}`)
+          }
+
+          brand = newBrand
+        }
+
+        // 2. Find or create series (if provided)
+        let seriesId = null
+        if (service.series_name && service.series_name.trim()) {
+          let { data: series, error: seriesError } = await supabase
             .from("series")
             .select("id")
-            .eq("slug", seriesSlug)
+            .eq("name", service.series_name)
             .eq("brand_id", brand.id)
             .maybeSingle()
 
-          if (existingSeries) {
-            series = existingSeries
-            console.log(`Found existing series: ${item.series_name}`)
-          } else {
-            // Get max position for new series
-            const { data: maxPositionData } = await supabase
-              .from("series")
-              .select("position")
-              .eq("brand_id", brand.id)
-              .order("position", { ascending: false })
-              .limit(1)
+          if (seriesError) {
+            console.error("Series lookup error:", seriesError)
+            throw new Error(`Series lookup failed: ${seriesError.message}`)
+          }
 
-            const maxPosition = maxPositionData?.[0]?.position || 0
-
-            const { data: newSeries, error: seriesError } = await supabase
+          if (!series) {
+            console.log(`Creating new series: ${service.series_name}`)
+            const { data: newSeries, error: createSeriesError } = await supabase
               .from("series")
               .insert({
-                name: item.series_name,
-                slug: seriesSlug,
+                name: service.series_name,
+                slug: service.series_name.toLowerCase().replace(/\s+/g, "-"),
                 brand_id: brand.id,
-                position: maxPosition + 1,
+                position: 999,
               })
               .select("id")
               .single()
 
-            if (seriesError) {
-              console.error(`Error creating series ${item.series_name}:`, seriesError)
-              throw seriesError
+            if (createSeriesError) {
+              console.error("Series creation error:", createSeriesError)
+              throw new Error(`Failed to create series: ${createSeriesError.message}`)
             }
 
             series = newSeries
-            console.log(`Created new series: ${item.series_name}`)
           }
+
+          seriesId = series.id
         }
 
-        // Step 3: Find or create model
-        const modelSlug = generateSlug(item.model_name)
-        const { data: existingModel } = await supabase.from("models").select("id").eq("slug", modelSlug).maybeSingle()
+        // 3. Find or create model
+        let { data: model, error: modelError } = await supabase
+          .from("models")
+          .select("id")
+          .eq("name", service.model_name)
+          .eq("brand_id", brand.id)
+          .maybeSingle()
 
-        let model = null
-        if (existingModel) {
-          model = existingModel
-          console.log(`Found existing model: ${item.model_name}`)
-        } else {
-          // Get max position for new model
-          const { data: maxPositionData } = await supabase
-            .from("models")
-            .select("position")
-            .order("position", { ascending: false })
-            .limit(1)
+        if (modelError) {
+          console.error("Model lookup error:", modelError)
+          throw new Error(`Model lookup failed: ${modelError.message}`)
+        }
 
-          const maxPosition = maxPositionData?.[0]?.position || 0
-
-          const { data: newModel, error: modelError } = await supabase
+        if (!model) {
+          console.log(`Creating new model: ${service.model_name}`)
+          const { data: newModel, error: createModelError } = await supabase
             .from("models")
             .insert({
-              name: item.model_name,
-              slug: modelSlug,
-              brand_id: brand?.id || null,
-              series_id: series?.id || null,
-              position: maxPosition + 1,
+              name: service.model_name,
+              slug: service.model_name.toLowerCase().replace(/\s+/g, "-"),
+              brand_id: brand.id,
+              series_id: seriesId,
+              position: 999,
             })
             .select("id")
             .single()
 
-          if (modelError) {
-            console.error(`Error creating model ${item.model_name}:`, modelError)
-            throw modelError
+          if (createModelError) {
+            console.error("Model creation error:", createModelError)
+            throw new Error(`Failed to create model: ${createModelError.message}`)
           }
 
           model = newModel
-          console.log(`Created new model: ${item.model_name}`)
         }
 
-        // Step 4: Find or create service
-        const serviceSlug = generateSlug(item.service_name)
-        const { data: existingService } = await supabase
+        // 4. Find service by name
+        const { data: serviceData, error: serviceError } = await supabase
           .from("services")
           .select("id")
-          .eq("slug", serviceSlug)
+          .eq("slug", service.service_name.toLowerCase().replace(/\s+/g, "-"))
           .maybeSingle()
 
-        let service = null
-        if (existingService) {
-          service = existingService
-          console.log(`Found existing service: ${item.service_name}`)
-        } else {
-          // Get max position for new service
-          const { data: maxPositionData } = await supabase
-            .from("services")
-            .select("position")
-            .order("position", { ascending: false })
-            .limit(1)
-
-          const maxPosition = maxPositionData?.[0]?.position || 0
-
-          const { data: newService, error: serviceError } = await supabase
-            .from("services")
-            .insert({
-              slug: serviceSlug,
-              position: maxPosition + 1,
-              warranty_months: item.warranty_months || 3, // Default values for service template
-              duration_hours: item.duration_hours || 1,
-            })
-            .select("id")
-            .single()
-
-          if (serviceError) {
-            console.error(`Error creating service ${item.service_name}:`, serviceError)
-            throw serviceError
-          }
-
-          service = newService
-          console.log(`Created new service: ${item.service_name}`)
-
-          // Create service translation
-          const { error: translationError } = await supabase.from("services_translations").insert({
-            service_id: service.id,
-            locale,
-            name: item.service_name,
-            description: item.service_description || "",
-            detailed_description: item.detailed_description || null,
-            what_included: item.what_included || null,
-            benefits: item.benefits || null,
-          })
-
-          if (translationError) {
-            console.error(`Error creating service translation:`, translationError)
-            throw translationError
-          }
-
-          console.log(`Created service translation for locale ${locale}`)
+        if (serviceError) {
+          console.error("Service lookup error:", serviceError)
+          throw new Error(`Service lookup failed: ${serviceError.message}`)
         }
 
-        // Step 5: Create or update model service with all new fields
-        const { data: existingModelService } = await supabase
+        if (!serviceData) {
+          console.error(`Service not found: ${service.service_name}`)
+          throw new Error(`Service not found: ${service.service_name}`)
+        }
+
+        // 5. Create or update model service using the same logic as model-services API
+        const { data: existingModelService, error: existingError } = await supabase
           .from("model_services")
           .select("id")
           .eq("model_id", model.id)
-          .eq("service_id", service.id)
+          .eq("service_id", serviceData.id)
           .maybeSingle()
+
+        if (existingError) {
+          console.error("Existing model service lookup error:", existingError)
+          throw new Error(`Model service lookup failed: ${existingError.message}`)
+        }
 
         const modelServiceData = {
           model_id: model.id,
-          service_id: service.id,
-          price: item.price,
-          warranty_months: item.warranty_months,
-          duration_hours: item.duration_hours,
-          warranty_period: item.warranty_period || "months",
-          detailed_description: item.detailed_description || null,
-          what_included: item.what_included || null,
-          benefits: item.benefits || null,
+          service_id: serviceData.id,
+          price: service.price,
+          warranty_months: service.warranty_months,
+          duration_hours: service.duration_hours,
+          warranty_period: service.warranty_period,
+          detailed_description: service.detailed_description,
+          what_included: service.what_included,
+          benefits: service.benefits,
         }
 
         if (existingModelService) {
           // Update existing model service
+          console.log(`Updating existing model service for ${service.model_name} - ${service.service_name}`)
           const { error: updateError } = await supabase
             .from("model_services")
             .update(modelServiceData)
             .eq("id", existingModelService.id)
 
           if (updateError) {
-            console.error(`Error updating model service:`, updateError)
-            throw updateError
+            console.error("Model service update error:", updateError)
+            throw new Error(`Failed to update model service: ${updateError.message}`)
           }
-
-          console.log(`Updated existing model service`)
         } else {
           // Create new model service
+          console.log(`Creating new model service for ${service.model_name} - ${service.service_name}`)
           const { error: insertError } = await supabase.from("model_services").insert(modelServiceData)
 
           if (insertError) {
-            console.error(`Error creating model service:`, insertError)
-            throw insertError
+            console.error("Model service creation error:", insertError)
+            throw new Error(`Failed to create model service: ${insertError.message}`)
           }
-
-          console.log(`Created new model service`)
         }
 
         results.success++
         results.details.push({
-          row: item.original_row,
           status: "success",
-          model: item.model_name,
-          service: item.service_name,
+          service: `${service.brand_name} ${service.model_name} - ${service.service_name}`,
+          action: existingModelService ? "updated" : "created",
         })
 
-        console.log(`Successfully processed record ${index + 1}`)
+        console.log(`✅ Successfully processed: ${service.brand_name} ${service.model_name} - ${service.service_name}`)
       } catch (error) {
-        console.error(`Error processing record ${index + 1}:`, error)
+        console.error(`❌ Error processing service:`, error)
         results.errors++
         results.details.push({
-          row: item.original_row,
           status: "error",
-          model: item.model_name,
-          service: item.service_name,
+          service: `${service.brand_name} ${service.model_name} - ${service.service_name}`,
           error: error instanceof Error ? error.message : "Unknown error",
         })
       }
     }
 
-    console.log(`Import completed. Success: ${results.success}, Errors: ${results.errors}`)
+    console.log(`Import completed: ${results.success} success, ${results.errors} errors`)
 
     return NextResponse.json({
       success: true,
-      message: `Import completed. ${results.success} records processed successfully, ${results.errors} errors.`,
       results,
     })
   } catch (error) {
-    console.error("Error saving imported data:", error)
-    return NextResponse.json(
-      { error: "Internal server error", details: error instanceof Error ? error.message : "Unknown error" },
-      { status: 500 },
-    )
+    console.error("Bulk import error:", error)
+    return NextResponse.json({ error: "Failed to import services" }, { status: 500 })
   }
 }

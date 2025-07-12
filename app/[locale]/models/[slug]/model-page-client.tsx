@@ -49,12 +49,12 @@ export default function ModelPageClient({ modelData, locale }: Props) {
   const commonT = useTranslations("Common")
 
   const formatWarranty = (months: number | null, period: string | null) => {
-    if (!months) return t("warrantyMonths", { count: 3 }) // Default fallback
+    if (!months) return t("contactForWarranty")
     return period === "days" ? t("warrantyDays", { count: months }) : t("warrantyMonths", { count: months })
   }
 
   const formatDuration = (hours: number | null) => {
-    if (!hours) return t("fromHours", { hours: 1 }) // Default fallback
+    if (!hours) return t("contactForTime")
     return t("fromHours", { hours })
   }
 
@@ -152,7 +152,7 @@ export default function ModelPageClient({ modelData, locale }: Props) {
                         {service.name}
                       </h3>
 
-                      {/* Key Benefits */}
+                      {/* Key Benefits - використовуємо дані з model_services */}
                       <div className="mb-3 space-y-1">
                         <div className="flex items-center gap-2 text-sm text-gray-600">
                           <Clock className="h-3 w-3 text-blue-600" />

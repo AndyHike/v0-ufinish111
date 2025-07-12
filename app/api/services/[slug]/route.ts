@@ -11,45 +11,77 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
 
     console.log(`Fetching service data for slug: ${slug}, locale: ${locale}, model: ${modelSlug}`)
 
-    // Get service with translations and FAQs
-    const { data: service, error: serviceError } = await supabase
+    // Спочатку спробуємо знайти за slug
+    let { data: service, error } = await supabase
       .from("services")
-      .select(
-        `
+      .select(`
         id,
         slug,
         position,
         image_url,
-        services_translations (
-          locale,
+        services_translations(
           name,
           description,
           detailed_description,
           what_included,
-          benefits
+          benefits,
+          locale
         ),
-        service_faqs (
+        service_faqs(
           id,
           position,
-          service_faq_translations (
-            locale,
+          service_faq_translations(
             question,
-            answer
+            answer,
+            locale
           )
         )
-      `,
-      )
+      `)
       .eq("slug", slug)
       .single()
 
-    if (serviceError) {
-      console.error("Service error:", serviceError)
+    // Якщо не знайдено за slug, спробуємо за ID
+    if (!service) {
+      const { data, error: idError } = await supabase
+        .from("services")
+        .select(`
+          id,
+          slug,
+          position,
+          image_url,
+          services_translations(
+            name,
+            description,
+            detailed_description,
+            what_included,
+            benefits,
+            locale
+          ),
+          service_faqs(
+            id,
+            position,
+            service_faq_translations(
+              question,
+              answer,
+              locale
+            )
+          )
+        `)
+        .eq("id", slug)
+        .single()
+
+      service = data
+      error = idError
+    }
+
+    if (error || !service) {
+      console.error("Service not found:", error)
       return NextResponse.json({ error: "Service not found" }, { status: 404 })
     }
 
-    console.log("Found service:", service)
+    console.log("Found service:", service.id)
 
-    // Find translation for current locale, fallback to first available
+    // Знаходимо переклад для поточної локалі
     const translation =
       service.services_translations?.find((t) => t.locale === locale) || service.services_translations?.[0]
 
@@ -57,7 +89,7 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
       return NextResponse.json({ error: "Service translation not found" }, { status: 404 })
     }
 
-    // Transform FAQs
+    // Трансформуємо FAQ
     const faqs = service.service_faqs
       ?.map((faq) => {
         const faqTranslation =
@@ -77,42 +109,38 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
       .filter(Boolean)
       .sort((a, b) => a.position - b.position)
 
-    // Get model-specific data if model is provided
+    // Отримуємо дані для конкретної моделі якщо вказана
     let sourceModel = null
-    let modelServicePrice = null
     let modelServiceData = null
 
     if (modelSlug) {
       console.log(`Fetching model-specific data for model: ${modelSlug}`)
 
-      // Get model info
+      // Отримуємо інформацію про модель
       const { data: model, error: modelError } = await supabase
         .from("models")
-        .select(
-          `
+        .select(`
           id,
           name,
           slug,
           image_url,
-          brands (
+          brands(
             id,
             name,
             slug,
             logo_url
           )
-        `,
-        )
+        `)
         .eq("slug", modelSlug)
         .single()
 
       if (!modelError && model) {
         sourceModel = model
 
-        // Get model-specific service data
+        // Отримуємо дані послуги для конкретної моделі з model_services
         const { data: modelService, error: modelServiceError } = await supabase
           .from("model_services")
-          .select(
-            `
+          .select(`
             price,
             warranty_months,
             duration_hours,
@@ -120,32 +148,30 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
             detailed_description,
             what_included,
             benefits
-          `,
-          )
+          `)
           .eq("model_id", model.id)
           .eq("service_id", service.id)
           .single()
 
         if (!modelServiceError && modelService) {
-          modelServicePrice = modelService.price
-          modelServiceData = {
+          modelServiceData = modelService
+          console.log("Found model-specific service data:", {
+            price: modelService.price,
             warranty_months: modelService.warranty_months,
             duration_hours: modelService.duration_hours,
             warranty_period: modelService.warranty_period,
-            detailed_description: modelService.detailed_description,
-            what_included: modelService.what_included,
-            benefits: modelService.benefits,
-          }
-          console.log("Found model-specific service data:", modelServiceData)
+          })
+        } else {
+          console.log("No model-specific service data found")
         }
       }
     }
 
-    // Get price range from all model services if no specific model
+    // Отримуємо діапазон цін якщо немає конкретної моделі
     let minPrice = null
     let maxPrice = null
 
-    if (!modelSlug) {
+    if (!modelSlug || !modelServiceData) {
       const { data: priceData, error: priceError } = await supabase
         .from("model_services")
         .select("price")
@@ -166,33 +192,38 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
       slug: service.slug,
       position: service.position,
       image_url: service.image_url,
-      // Use model-specific data if available, otherwise use service defaults
+      // Використовуємо дані з model_services якщо є, інакше null
       warranty_months: modelServiceData?.warranty_months || null,
       duration_hours: modelServiceData?.duration_hours || null,
       warranty_period: modelServiceData?.warranty_period || "months",
       translation: {
         name: translation.name,
         description: translation.description,
-        // Use model-specific detailed description if available
+        // Використовуємо модель-специфічні дані якщо є
         detailed_description: modelServiceData?.detailed_description || translation.detailed_description,
         what_included: modelServiceData?.what_included || translation.what_included,
         benefits: modelServiceData?.benefits || translation.benefits,
       },
       faqs: faqs || [],
       sourceModel,
-      modelServicePrice,
-      minPrice,
-      maxPrice,
+      // ВАЖЛИВО: Використовуємо ціну з model_services, а не діапазон якщо є конкретна модель
+      modelServicePrice: modelServiceData?.price || null,
+      minPrice: modelServiceData ? null : minPrice, // Не показуємо діапазон якщо є конкретна модель
+      maxPrice: modelServiceData ? null : maxPrice,
     }
 
     console.log("Final service result:", {
-      ...result,
-      translation: { ...result.translation, detailed_description: "..." }, // Truncate for logging
+      warranty_months: result.warranty_months,
+      duration_hours: result.duration_hours,
+      warranty_period: result.warranty_period,
+      modelServicePrice: result.modelServicePrice,
+      minPrice: result.minPrice,
+      maxPrice: result.maxPrice,
     })
 
     return NextResponse.json(result)
   } catch (error) {
-    console.error("Error fetching service:", error)
+    console.error("Error in services API:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

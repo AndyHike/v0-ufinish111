@@ -10,43 +10,46 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
 
     console.log(`Fetching model data for slug: ${slug}, locale: ${locale}`)
 
-    // Get model with brand and series info
-    const { data: model, error: modelError } = await supabase
+    // Спочатку спробуємо знайти за слагом
+    let { data: model, error } = await supabase
       .from("models")
-      .select(
-        `
-        id,
-        name,
-        slug,
-        image_url,
-        brands (
-          id,
-          name,
-          slug,
-          logo_url
-        ),
-        series (
-          id,
-          name,
-          slug
-        )
-      `,
-      )
+      .select(`
+        *,
+        brand:brands(id, name, slug, logo_url),
+        series:series(id, name, slug)
+      `)
       .eq("slug", slug)
       .single()
 
-    if (modelError) {
-      console.error("Model error:", modelError)
-      return NextResponse.json({ error: "Model not found" }, { status: 404 })
+    // Якщо не знайдено за слагом, спробуємо знайти за ID (для зворотної сумісності)
+    if (error && error.code === "PGRST116") {
+      const { data: dataById, error: errorById } = await supabase
+        .from("models")
+        .select(`
+          *,
+          brand:brands(id, name, slug, logo_url),
+          series:series(id, name, slug)
+        `)
+        .eq("id", slug)
+        .single()
+
+      if (errorById) {
+        console.error("Error fetching model by ID:", errorById)
+        return NextResponse.json({ error: "Model not found" }, { status: 404 })
+      }
+
+      model = dataById
+    } else if (error) {
+      console.error("Error fetching model:", error)
+      return NextResponse.json({ error: "Failed to fetch model" }, { status: 500 })
     }
 
-    console.log("Found model:", model)
+    console.log("Found model:", model.name)
 
-    // Get model services with service details and translations
+    // Отримуємо послуги моделі з правильними даними з model_services
     const { data: modelServices, error: servicesError } = await supabase
       .from("model_services")
-      .select(
-        `
+      .select(`
         id,
         price,
         warranty_months,
@@ -66,25 +69,23 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
             description
           )
         )
-      `,
-      )
+      `)
       .eq("model_id", model.id)
-      .order("services(position)")
 
     if (servicesError) {
-      console.error("Services error:", servicesError)
+      console.error("Error fetching model services:", servicesError)
       return NextResponse.json({ error: "Failed to fetch services" }, { status: 500 })
     }
 
-    console.log("Found model services:", modelServices?.length || 0)
+    console.log(`Found ${modelServices?.length || 0} model services`)
 
-    // Transform services data to include model-specific data
+    // Трансформуємо дані послуг
     const services = modelServices
       ?.map((ms) => {
         const service = ms.services
         if (!service) return null
 
-        // Find translation for current locale, fallback to first available
+        // Знаходимо переклад для поточної локалі
         const translation =
           service.services_translations?.find((t) => t.locale === locale) || service.services_translations?.[0]
 
@@ -95,21 +96,22 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
           slug: service.slug,
           name: translation.name,
           description: translation.description,
-          price: ms.price, // From model_services table
+          // ВАЖЛИВО: Використовуємо дані з model_services, а не з services
+          price: ms.price,
+          warranty_months: ms.warranty_months,
+          duration_hours: ms.duration_hours,
+          warranty_period: ms.warranty_period || "months",
           position: service.position,
-          warranty_months: ms.warranty_months, // From model_services table
-          duration_hours: ms.duration_hours, // From model_services table
-          warranty_period: ms.warranty_period, // From model_services table
           image_url: service.image_url,
-          detailed_description: ms.detailed_description, // From model_services table
-          what_included: ms.what_included, // From model_services table
-          benefits: ms.benefits, // From model_services table
+          detailed_description: ms.detailed_description,
+          what_included: ms.what_included,
+          benefits: ms.benefits,
         }
       })
       .filter(Boolean)
-      .sort((a, b) => a.position - b.position)
+      .sort((a, b) => (a.position || 0) - (b.position || 0))
 
-    console.log("Transformed services:", services?.length || 0)
+    console.log("Transformed services with model-specific data:", services?.length || 0)
 
     const result = {
       ...model,
@@ -118,7 +120,7 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
 
     return NextResponse.json(result)
   } catch (error) {
-    console.error("Error fetching model:", error)
+    console.error("Unexpected error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

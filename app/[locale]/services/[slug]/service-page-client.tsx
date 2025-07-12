@@ -75,6 +75,31 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
     return t("fromHours", { hours })
   }
 
+  // Виправлена логіка відображення ціни
+  const renderPrice = () => {
+    // Якщо є конкретна модель і ціна для неї
+    if (sourceModel && modelServicePrice !== null) {
+      return formatCurrency(modelServicePrice)
+    }
+
+    // Якщо є конкретна модель але ціна null - показуємо "ціна за запитом"
+    if (sourceModel && modelServicePrice === null) {
+      return t("priceOnRequest")
+    }
+
+    // Якщо немає конкретної моделі, показуємо діапазон цін або "ціна за запитом"
+    if (!sourceModel) {
+      if (minPrice && maxPrice) {
+        return minPrice === maxPrice
+          ? formatCurrency(minPrice)
+          : `${formatCurrency(minPrice)} - ${formatCurrency(maxPrice)}`
+      }
+      return t("priceOnRequest")
+    }
+
+    return t("priceOnRequest")
+  }
+
   return (
     <div className="min-h-screen bg-white">
       <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
@@ -121,15 +146,7 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
 
             {/* Ціна */}
             <div>
-              <div className="text-2xl lg:text-3xl font-bold text-gray-900 mb-1">
-                {modelServicePrice
-                  ? formatCurrency(modelServicePrice)
-                  : minPrice && maxPrice
-                    ? minPrice === maxPrice
-                      ? formatCurrency(minPrice)
-                      : `${formatCurrency(minPrice)} - ${formatCurrency(maxPrice)}`
-                    : t("priceOnRequest")}
-              </div>
+              <div className="text-2xl lg:text-3xl font-bold text-gray-900 mb-1">{renderPrice()}</div>
               {sourceModel && (
                 <p className="text-gray-600 text-sm">
                   {t("forModel", { brand: sourceModel.brands?.name, model: sourceModel.name })}

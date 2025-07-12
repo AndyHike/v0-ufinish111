@@ -3,67 +3,54 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/components/ui/use-toast"
-import { CheckCircle, AlertCircle, Upload } from "lucide-react"
+import { CheckCircle, XCircle, Upload, AlertCircle } from "lucide-react"
 import { formatCurrency } from "@/lib/format-currency"
 
-interface PreviewData {
-  model_name: string
+interface Service {
   brand_name: string
   series_name: string
-  services: Array<{
-    service_name: string
-    service_description: string
-    price: number | null
-    warranty_months: number
-    duration_hours: number
-    warranty_period: string
-    detailed_description: string
-    what_included: string
-    benefits: string
-  }>
+  model_name: string
+  service_name: string
+  price: number | null
+  warranty_months: number | null
+  warranty_period: string
+  duration_hours: number | null
+  detailed_description: string | null
+  what_included: string | null
+  benefits: string | null
 }
 
 interface ImportResult {
-  success: number
-  errors: number
-  details: Array<{
-    row: number
-    status: "success" | "error"
-    model: string
-    service: string
-    error?: string
-  }>
+  status: "success" | "error"
+  service: string
+  action?: string
+  error?: string
 }
 
 interface Props {
-  preview: PreviewData[]
-  totalRows: number
-  totalModels: number
-  rawData: any[]
-  onClose: () => void
+  services: Service[]
+  onImportComplete: () => void
 }
 
-export function RemOnlineImportPreview({ preview, totalRows, totalModels, rawData, onClose }: Props) {
+export function RemOnlineImportPreview({ services, onImportComplete }: Props) {
   const [isImporting, setIsImporting] = useState(false)
-  const [importResult, setImportResult] = useState<ImportResult | null>(null)
+  const [importResults, setImportResults] = useState<ImportResult[]>([])
+  const [showResults, setShowResults] = useState(false)
   const { toast } = useToast()
 
   const handleImport = async () => {
-    try {
-      setIsImporting(true)
+    setIsImporting(true)
+    setShowResults(false)
 
+    try {
       const response = await fetch("/api/admin/bulk-import/remonline-services/save", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          data: rawData,
-          locale: "uk",
-        }),
+        body: JSON.stringify({ services }),
       })
 
       const result = await response.json()
@@ -72,11 +59,17 @@ export function RemOnlineImportPreview({ preview, totalRows, totalModels, rawDat
         throw new Error(result.error || "Import failed")
       }
 
-      setImportResult(result.results)
+      setImportResults(result.results.details)
+      setShowResults(true)
+
       toast({
         title: "Імпорт завершено",
-        description: result.message,
+        description: `Успішно: ${result.results.success}, Помилки: ${result.results.errors}`,
       })
+
+      if (result.results.success > 0) {
+        onImportComplete()
+      }
     } catch (error) {
       console.error("Import error:", error)
       toast({
@@ -89,174 +82,122 @@ export function RemOnlineImportPreview({ preview, totalRows, totalModels, rawDat
     }
   }
 
-  const formatWarranty = (months: number, period: string) => {
+  const formatWarranty = (months: number | null, period: string) => {
+    if (!months) return "Не вказано"
     return period === "days" ? `${months} дн.` : `${months} міс.`
   }
 
-  const formatDuration = (hours: number) => {
+  const formatDuration = (hours: number | null) => {
+    if (!hours) return "Не вказано"
     return `${hours} год.`
   }
 
-  if (importResult) {
+  if (showResults) {
     return (
-      <Card className="w-full max-w-6xl mx-auto">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CheckCircle className="h-5 w-5 text-green-600" />
-            Результати імпорту
-          </CardTitle>
-          <CardDescription>
-            Успішно оброблено: {importResult.success}, Помилок: {importResult.errors}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="text-center p-4 bg-green-50 rounded-lg">
-                <div className="text-2xl font-bold text-green-600">{importResult.success}</div>
-                <div className="text-sm text-green-700">Успішно</div>
-              </div>
-              <div className="text-center p-4 bg-red-50 rounded-lg">
-                <div className="text-2xl font-bold text-red-600">{importResult.errors}</div>
-                <div className="text-sm text-red-700">Помилок</div>
-              </div>
-            </div>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold">Результати імпорту</h3>
+          <Button onClick={() => setShowResults(false)} variant="outline">
+            Повернутися до перегляду
+          </Button>
+        </div>
 
-            {importResult.details.length > 0 && (
-              <div className="max-h-96 overflow-y-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Рядок</TableHead>
-                      <TableHead>Статус</TableHead>
-                      <TableHead>Модель</TableHead>
-                      <TableHead>Послуга</TableHead>
-                      <TableHead>Помилка</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {importResult.details.map((detail, index) => (
-                      <TableRow key={index}>
-                        <TableCell>{detail.row}</TableCell>
-                        <TableCell>
-                          {detail.status === "success" ? (
-                            <Badge variant="default" className="bg-green-100 text-green-800">
-                              Успіх
-                            </Badge>
-                          ) : (
-                            <Badge variant="destructive">Помилка</Badge>
-                          )}
-                        </TableCell>
-                        <TableCell>{detail.model}</TableCell>
-                        <TableCell>{detail.service}</TableCell>
-                        <TableCell className="text-red-600 text-sm">{detail.error || "-"}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-
-            <div className="flex justify-end">
-              <Button onClick={onClose}>Закрити</Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Статус</TableHead>
+                <TableHead>Послуга</TableHead>
+                <TableHead>Дія</TableHead>
+                <TableHead>Помилка</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {importResults.map((result, index) => (
+                <TableRow key={index}>
+                  <TableCell>
+                    {result.status === "success" ? (
+                      <Badge variant="default" className="bg-green-100 text-green-800">
+                        <CheckCircle className="mr-1 h-3 w-3" />
+                        Успіх
+                      </Badge>
+                    ) : (
+                      <Badge variant="destructive">
+                        <XCircle className="mr-1 h-3 w-3" />
+                        Помилка
+                      </Badge>
+                    )}
+                  </TableCell>
+                  <TableCell className="font-medium">{result.service}</TableCell>
+                  <TableCell>
+                    {result.action && (
+                      <Badge variant="outline">{result.action === "created" ? "Створено" : "Оновлено"}</Badge>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-red-600 text-sm">{result.error}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
     )
   }
 
   return (
-    <Card className="w-full max-w-6xl mx-auto">
-      <CardHeader>
-        <CardTitle>Попередній перегляд імпорту</CardTitle>
-        <CardDescription>
-          Знайдено {totalModels} моделей з {totalRows} послугами. Перевірте дані перед імпортом.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-6">
-          {/* Summary */}
-          <div className="grid grid-cols-3 gap-4 text-center">
-            <div className="p-4 bg-blue-50 rounded-lg">
-              <div className="text-2xl font-bold text-blue-600">{totalModels}</div>
-              <div className="text-sm text-blue-700">Моделей</div>
-            </div>
-            <div className="p-4 bg-green-50 rounded-lg">
-              <div className="text-2xl font-bold text-green-600">{totalRows}</div>
-              <div className="text-sm text-green-700">Послуг</div>
-            </div>
-            <div className="p-4 bg-purple-50 rounded-lg">
-              <div className="text-2xl font-bold text-purple-600">{preview.length}</div>
-              <div className="text-sm text-purple-700">У попередньому перегляді</div>
-            </div>
-          </div>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold">Перегляд даних для імпорту</h3>
+          <p className="text-sm text-muted-foreground">Знайдено {services.length} послуг для імпорту</p>
+        </div>
+        <Button onClick={handleImport} disabled={isImporting || services.length === 0}>
+          <Upload className="mr-2 h-4 w-4" />
+          {isImporting ? "Імпорт..." : "Імпортувати"}
+        </Button>
+      </div>
 
-          {/* Preview Table */}
-          <div className="max-h-96 overflow-y-auto border rounded-lg">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Модель</TableHead>
-                  <TableHead>Бренд</TableHead>
-                  <TableHead>Серія</TableHead>
-                  <TableHead>Послуга</TableHead>
-                  <TableHead>Ціна</TableHead>
-                  <TableHead>Гарантія</TableHead>
-                  <TableHead>Тривалість</TableHead>
+      {services.length === 0 ? (
+        <div className="text-center py-8">
+          <AlertCircle className="mx-auto h-12 w-12 text-gray-400" />
+          <h3 className="mt-2 text-sm font-semibold text-gray-900">Немає даних для імпорту</h3>
+          <p className="mt-1 text-sm text-gray-500">Завантажте CSV файл з даними послуг</p>
+        </div>
+      ) : (
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Бренд</TableHead>
+                <TableHead>Серія</TableHead>
+                <TableHead>Модель</TableHead>
+                <TableHead>Послуга</TableHead>
+                <TableHead>Ціна</TableHead>
+                <TableHead>Гарантія</TableHead>
+                <TableHead>Тривалість</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {services.slice(0, 50).map((service, index) => (
+                <TableRow key={index}>
+                  <TableCell className="font-medium">{service.brand_name}</TableCell>
+                  <TableCell>{service.series_name || "—"}</TableCell>
+                  <TableCell>{service.model_name}</TableCell>
+                  <TableCell>{service.service_name}</TableCell>
+                  <TableCell>{service.price ? formatCurrency(service.price) : "За запитом"}</TableCell>
+                  <TableCell>{formatWarranty(service.warranty_months, service.warranty_period)}</TableCell>
+                  <TableCell>{formatDuration(service.duration_hours)}</TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {preview.map((model, modelIndex) =>
-                  model.services.map((service, serviceIndex) => (
-                    <TableRow key={`${modelIndex}-${serviceIndex}`}>
-                      {serviceIndex === 0 && (
-                        <>
-                          <TableCell rowSpan={model.services.length} className="font-medium">
-                            {model.model_name}
-                          </TableCell>
-                          <TableCell rowSpan={model.services.length}>{model.brand_name}</TableCell>
-                          <TableCell rowSpan={model.services.length}>{model.series_name}</TableCell>
-                        </>
-                      )}
-                      <TableCell>{service.service_name}</TableCell>
-                      <TableCell>{service.price ? formatCurrency(service.price) : "Ціна за запитом"}</TableCell>
-                      <TableCell>{formatWarranty(service.warranty_months, service.warranty_period)}</TableCell>
-                      <TableCell>{formatDuration(service.duration_hours)}</TableCell>
-                    </TableRow>
-                  )),
-                )}
-              </TableBody>
-            </Table>
-          </div>
-
-          {/* Actions */}
-          <div className="flex justify-between">
-            <Button variant="outline" onClick={onClose} disabled={isImporting}>
-              Скасувати
-            </Button>
-            <Button onClick={handleImport} disabled={isImporting}>
-              {isImporting ? (
-                <>
-                  <AlertCircle className="mr-2 h-4 w-4 animate-spin" />
-                  Імпорт...
-                </>
-              ) : (
-                <>
-                  <Upload className="mr-2 h-4 w-4" />
-                  Розпочати імпорт
-                </>
-              )}
-            </Button>
-          </div>
-
-          {totalModels > preview.length && (
-            <div className="text-sm text-muted-foreground text-center">
-              Показано перші {preview.length} моделей з {totalModels}. Всі дані будуть імпортовані.
+              ))}
+            </TableBody>
+          </Table>
+          {services.length > 50 && (
+            <div className="p-4 text-center text-sm text-muted-foreground border-t">
+              Показано перші 50 записів з {services.length}
             </div>
           )}
         </div>
-      </CardContent>
-    </Card>
+      )}
+    </div>
   )
 }
