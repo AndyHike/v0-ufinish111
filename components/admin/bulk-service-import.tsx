@@ -11,6 +11,8 @@ import { Progress } from "@/components/ui/progress"
 import { useToast } from "@/components/ui/use-toast"
 import { Upload, AlertCircle, CheckCircle, FileSpreadsheet, Download, X } from "lucide-react"
 import Papa from "papaparse"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { RemOnlineImport } from "./remonline-import"
 
 type ServiceImportRow = {
   brand: string
@@ -241,160 +243,177 @@ export function BulkServiceImport({ onSuccess }: BulkServiceImportProps) {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-medium">{t("importServices")}</h3>
-        <Button variant="outline" onClick={downloadTemplate}>
-          <FileSpreadsheet className="mr-2 h-4 w-4" />
-          <Download className="mr-2 h-4 w-4" />
-          {t("downloadTemplate")}
-        </Button>
-      </div>
+    <Tabs defaultValue="standard" className="w-full">
+      <TabsList className="grid w-full grid-cols-2">
+        <TabsTrigger value="standard">Стандартний імпорт</TabsTrigger>
+        <TabsTrigger value="remonline">RemOnline імпорт</TabsTrigger>
+      </TabsList>
 
-      {error && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>{t("error")}</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
+      <TabsContent value="standard">
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <h3 className="text-lg font-medium">{t("importServices")}</h3>
+            <Button variant="outline" onClick={downloadTemplate}>
+              <FileSpreadsheet className="mr-2 h-4 w-4" />
+              <Download className="mr-2 h-4 w-4" />
+              {t("downloadTemplate")}
+            </Button>
+          </div>
 
-      {result && (
-        <Alert variant={result.failed === 0 ? "default" : "warning"}>
-          <CheckCircle className="h-4 w-4" />
-          <AlertTitle>{result.failed === 0 ? t("importSuccess") : t("importPartialSuccess")}</AlertTitle>
-          <AlertDescription>
-            {t("importResultSummary", {
-              success: result.success,
-              failed: result.failed,
-              total: result.total,
-            })}
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>{t("error")}</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
 
-            {result.errors.length > 0 && (
-              <div className="mt-2">
-                <details>
-                  <summary className="cursor-pointer font-medium">{t("showErrors")}</summary>
-                  <ul className="mt-2 list-disc pl-5 text-sm">
-                    {result.errors.slice(0, 10).map((error, index) => (
-                      <li key={index}>{error}</li>
-                    ))}
-                    {result.errors.length > 10 && (
-                      <li>...{t("andMoreErrors", { count: result.errors.length - 10 })}</li>
+          {result && (
+            <Alert variant={result.failed === 0 ? "default" : "warning"}>
+              <CheckCircle className="h-4 w-4" />
+              <AlertTitle>{result.failed === 0 ? t("importSuccess") : t("importPartialSuccess")}</AlertTitle>
+              <AlertDescription>
+                {t("importResultSummary", {
+                  success: result.success,
+                  failed: result.failed,
+                  total: result.total,
+                })}
+
+                {result.errors.length > 0 && (
+                  <div className="mt-2">
+                    <details>
+                      <summary className="cursor-pointer font-medium">{t("showErrors")}</summary>
+                      <ul className="mt-2 list-disc pl-5 text-sm">
+                        {result.errors.slice(0, 10).map((error, index) => (
+                          <li key={index}>{error}</li>
+                        ))}
+                        {result.errors.length > 10 && (
+                          <li>...{t("andMoreErrors", { count: result.errors.length - 10 })}</li>
+                        )}
+                      </ul>
+                    </details>
+                  </div>
+                )}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg">
+                <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".csv" className="hidden" />
+
+                {!file ? (
+                  <div className="text-center">
+                    <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
+                    <h3 className="mt-2 text-lg font-semibold">{t("dropCSVFile")}</h3>
+                    <p className="mt-1 text-sm text-muted-foreground">{t("orClickToUpload")}</p>
+                    <Button variant="outline" onClick={() => fileInputRef.current?.click()} className="mt-4">
+                      {t("selectFile")}
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="w-full space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <FileSpreadsheet className="h-5 w-5 text-muted-foreground" />
+                        <div>
+                          <p className="font-medium">{file.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {parsedData.length} {t("rowsDetected")}
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          setFile(null)
+                          setParsedData([])
+                          setResult(null)
+                          if (fileInputRef.current) fileInputRef.current.value = ""
+                        }}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+
+                    {isProcessing && (
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-xs">
+                          <span>{t("processing")}</span>
+                          <span>{progress}%</span>
+                        </div>
+                        <Progress value={progress} />
+                      </div>
                     )}
-                  </ul>
-                </details>
-              </div>
-            )}
-          </AlertDescription>
-        </Alert>
-      )}
 
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg">
-            <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".csv" className="hidden" />
-
-            {!file ? (
-              <div className="text-center">
-                <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
-                <h3 className="mt-2 text-lg font-semibold">{t("dropCSVFile")}</h3>
-                <p className="mt-1 text-sm text-muted-foreground">{t("orClickToUpload")}</p>
-                <Button variant="outline" onClick={() => fileInputRef.current?.click()} className="mt-4">
-                  {t("selectFile")}
-                </Button>
-              </div>
-            ) : (
-              <div className="w-full space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <FileSpreadsheet className="h-5 w-5 text-muted-foreground" />
-                    <div>
-                      <p className="font-medium">{file.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {parsedData.length} {t("rowsDetected")}
-                      </p>
-                    </div>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => {
-                      setFile(null)
-                      setParsedData([])
-                      setResult(null)
-                      if (fileInputRef.current) fileInputRef.current.value = ""
-                    }}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-
-                {isProcessing && (
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-xs">
-                      <span>{t("processing")}</span>
-                      <span>{progress}%</span>
-                    </div>
-                    <Progress value={progress} />
+                    <Button
+                      onClick={handleUpload}
+                      disabled={isProcessing || parsedData.length === 0}
+                      className="w-full"
+                    >
+                      <Upload className="mr-2 h-4 w-4" />
+                      {isProcessing ? t("processing") : t("uploadAndProcess")}
+                    </Button>
                   </div>
                 )}
-
-                <Button onClick={handleUpload} disabled={isProcessing || parsedData.length === 0} className="w-full">
-                  <Upload className="mr-2 h-4 w-4" />
-                  {isProcessing ? t("processing") : t("uploadAndProcess")}
-                </Button>
               </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
 
-      {parsedData.length > 0 && (
-        <div className="mt-4">
-          <h3 className="text-lg font-medium mb-2">{t("previewData")}</h3>
-          <div className="border rounded-lg overflow-auto max-h-64">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t("brand")}
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t("series")}
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t("model")}
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t("service")}
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t("price")}
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {parsedData.slice(0, 5).map((row, index) => (
-                  <tr key={index}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">{row.brand}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">{row.series || "-"}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">{row.model}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">{row.service || "-"}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">{row.price || t("priceOnRequest")}</td>
-                  </tr>
-                ))}
-                {parsedData.length > 5 && (
-                  <tr>
-                    <td colSpan={5} className="px-6 py-4 text-sm text-center text-gray-500">
-                      {t("andMoreRows", { count: parsedData.length - 5 })}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+          {parsedData.length > 0 && (
+            <div className="mt-4">
+              <h3 className="text-lg font-medium mb-2">{t("previewData")}</h3>
+              <div className="border rounded-lg overflow-auto max-h-64">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        {t("brand")}
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        {t("series")}
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        {t("model")}
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        {t("service")}
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        {t("price")}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {parsedData.slice(0, 5).map((row, index) => (
+                      <tr key={index}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">{row.brand}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">{row.series || "-"}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">{row.model}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">{row.service || "-"}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">{row.price || t("priceOnRequest")}</td>
+                      </tr>
+                    ))}
+                    {parsedData.length > 5 && (
+                      <tr>
+                        <td colSpan={5} className="px-6 py-4 text-sm text-center text-gray-500">
+                          {t("andMoreRows", { count: parsedData.length - 5 })}
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
-      )}
-    </div>
+      </TabsContent>
+
+      <TabsContent value="remonline">
+        <RemOnlineImport onSuccess={onSuccess} />
+      </TabsContent>
+    </Tabs>
   )
 }
