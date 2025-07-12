@@ -13,6 +13,15 @@ type ServiceToSave = {
   duration_minutes: number | null
 }
 
+function generateSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .trim()
+}
+
 export async function POST(request: Request) {
   try {
     const { services } = await request.json()
@@ -32,24 +41,39 @@ export async function POST(request: Request) {
 
         // Create new model if needed
         if (!modelId && service.model_name && service.brand_id) {
+          const modelSlug = generateSlug(service.model_name)
+
+          // Get the highest position for this brand
+          const { data: existingModels } = await supabase
+            .from("models")
+            .select("position")
+            .eq("brand_id", service.brand_id)
+            .order("position", { ascending: false })
+            .limit(1)
+
+          const nextPosition = existingModels && existingModels.length > 0 ? existingModels[0].position + 1 : 1
+
           const { data: newModel, error: modelError } = await supabase
             .from("models")
             .insert({
               name: service.model_name,
-              slug: service.model_name.toLowerCase().replace(/\s+/g, "-"),
+              slug: modelSlug,
               brand_id: service.brand_id,
               series_id: service.series_id,
+              position: nextPosition,
             })
             .select("id")
             .single()
 
           if (modelError) {
+            console.error("Error creating model:", modelError)
             errors.push(`Failed to create model "${service.model_name}": ${modelError.message}`)
             errorCount++
             continue
           }
 
           modelId = newModel.id
+          console.log(`Created new model: ${service.model_name} with ID: ${modelId}`)
         }
 
         if (!modelId) {
@@ -59,30 +83,43 @@ export async function POST(request: Request) {
         }
 
         // Check if model_service already exists
-        const { data: existingService } = await supabase
+        const { data: existingModelService, error: checkError } = await supabase
           .from("model_services")
           .select("id")
           .eq("model_id", modelId)
           .eq("service_id", service.service_id)
-          .single()
+          .maybeSingle()
 
-        if (existingService) {
+        if (checkError) {
+          console.error("Error checking existing model service:", checkError)
+          errors.push(`Failed to check existing service: ${checkError.message}`)
+          errorCount++
+          continue
+        }
+
+        const modelServiceData = {
+          price: service.price,
+          warranty_duration: service.warranty_duration,
+          warranty_period: service.warranty_period,
+          duration_minutes: service.duration_minutes,
+        }
+
+        if (existingModelService) {
           // Update existing service
           const { error: updateError } = await supabase
             .from("model_services")
             .update({
-              price: service.price,
-              warranty_duration: service.warranty_duration,
-              warranty_period: service.warranty_period,
-              duration_minutes: service.duration_minutes,
+              ...modelServiceData,
               updated_at: new Date().toISOString(),
             })
-            .eq("id", existingService.id)
+            .eq("id", existingModelService.id)
 
           if (updateError) {
-            errors.push(`Failed to update service: ${updateError.message}`)
+            console.error("Error updating model service:", updateError)
+            errors.push(`Failed to update service for model ${modelId}: ${updateError.message}`)
             errorCount++
           } else {
+            console.log(`Updated service for model ${modelId}`)
             successCount++
           }
         } else {
@@ -90,21 +127,21 @@ export async function POST(request: Request) {
           const { error: insertError } = await supabase.from("model_services").insert({
             model_id: modelId,
             service_id: service.service_id,
-            price: service.price,
-            warranty_duration: service.warranty_duration,
-            warranty_period: service.warranty_period,
-            duration_minutes: service.duration_minutes,
+            ...modelServiceData,
           })
 
           if (insertError) {
-            errors.push(`Failed to create service: ${insertError.message}`)
+            console.error("Error creating model service:", insertError)
+            errors.push(`Failed to create service for model ${modelId}: ${insertError.message}`)
             errorCount++
           } else {
+            console.log(`Created new service for model ${modelId}`)
             successCount++
           }
         }
       } catch (error) {
-        errors.push(`Unexpected error: ${error instanceof Error ? error.message : String(error)}`)
+        console.error("Error processing service:", error)
+        errors.push(`Error processing service: ${error instanceof Error ? error.message : String(error)}`)
         errorCount++
       }
     }

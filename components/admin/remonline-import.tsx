@@ -4,11 +4,11 @@ import type React from "react"
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/components/ui/use-toast"
-import { Upload, FileText, AlertCircle } from "lucide-react"
+import { Upload } from "lucide-react"
 import { RemOnlineImportPreview } from "./remonline-import-preview"
 
 type ParsedService = {
@@ -48,33 +48,37 @@ type ImportSummary = {
 
 export function RemOnlineImport() {
   const { toast } = useToast()
-  const [file, setFile] = useState<File | null>(null)
+  const [csvData, setCsvData] = useState("")
   const [isProcessing, setIsProcessing] = useState(false)
   const [parsedServices, setParsedServices] = useState<ParsedService[] | null>(null)
   const [summary, setSummary] = useState<ImportSummary | null>(null)
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = event.target.files?.[0]
-    if (selectedFile) {
-      if (selectedFile.type !== "text/csv" && !selectedFile.name.endsWith(".csv")) {
-        toast({
-          title: "Помилка",
-          description: "Будь ласка, виберіть CSV файл",
-          variant: "destructive",
-        })
-        return
-      }
-      setFile(selectedFile)
-      setParsedServices(null)
-      setSummary(null)
-    }
-  }
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
 
-  const processFile = async () => {
-    if (!file) {
+    if (file.type !== "text/csv" && !file.name.endsWith(".csv")) {
       toast({
         title: "Помилка",
-        description: "Будь ласка, виберіть файл",
+        description: "Будь ласка, виберіть CSV файл",
+        variant: "destructive",
+      })
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const text = e.target?.result as string
+      setCsvData(text)
+    }
+    reader.readAsText(file, "UTF-8")
+  }
+
+  const processImport = async () => {
+    if (!csvData.trim()) {
+      toast({
+        title: "Помилка",
+        description: "Будь ласка, завантажте CSV файл або введіть дані",
         variant: "destructive",
       })
       return
@@ -82,8 +86,6 @@ export function RemOnlineImport() {
 
     setIsProcessing(true)
     try {
-      const csvData = await file.text()
-
       const response = await fetch("/api/admin/bulk-import/remonline-services", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -97,16 +99,16 @@ export function RemOnlineImport() {
         setSummary(result.summary)
         toast({
           title: "Успіх",
-          description: `Оброблено ${result.total} записів`,
+          description: `Оброблено ${result.total} послуг`,
         })
       } else {
-        throw new Error(result.error || "Failed to process file")
+        throw new Error(result.error || "Failed to process import")
       }
     } catch (error) {
-      console.error("Error processing file:", error)
+      console.error("Error processing import:", error)
       toast({
         title: "Помилка",
-        description: "Не вдалося обробити файл",
+        description: "Не вдалося обробити імпорт",
         variant: "destructive",
       })
     } finally {
@@ -117,15 +119,14 @@ export function RemOnlineImport() {
   const handleBack = () => {
     setParsedServices(null)
     setSummary(null)
-    setFile(null)
   }
 
   const handleSuccess = () => {
     setParsedServices(null)
     setSummary(null)
-    setFile(null)
+    setCsvData("")
     toast({
-      title: "Успіх",
+      title: "Готово",
       description: "Імпорт завершено успішно",
     })
   }
@@ -143,84 +144,57 @@ export function RemOnlineImport() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold">Імпорт з RemOnline</h2>
-        <p className="text-muted-foreground">
-          Завантажте CSV файл експорту з RemOnline для автоматичного імпорту послуг
-        </p>
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold">Імпорт з RemOnline експорту</h3>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Формат файлу
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="bg-muted p-4 rounded-lg">
-            <h4 className="font-medium mb-2">Очікувані колонки в CSV файлі:</h4>
-            <ul className="space-y-1 text-sm">
-              <li>
-                <strong>Опис</strong> - містить [slug] послуги в квадратних дужках
-              </li>
-              <li>
-                <strong>Категорія</strong> - ієрархія "Бренд {">"} Серія {">"} Модель"
-              </li>
-              <li>
-                <strong>Стандартна ціна</strong> - ціна послуги
-              </li>
-              <li>
-                <strong>Гарантія</strong> - тривалість гарантії (число)
-              </li>
-              <li>
-                <strong>Гарантійний період</strong> - метрика (міс. або дн.)
-              </li>
-              <li>
-                <strong>Тривалість (хвилини)</strong> - час виконання в хвилинах
-              </li>
-            </ul>
-          </div>
+      <div className="bg-blue-50 p-4 rounded-lg">
+        <h4 className="font-medium text-blue-900 mb-2">Формат файлу</h4>
+        <div className="text-sm text-blue-800 space-y-1">
+          <p>
+            • <strong>Опис:</strong> містить [slug] в квадратних дужках
+          </p>
+          <p>
+            • <strong>Категорія:</strong> ієрархія через &quot;&gt;&quot; (Apple &gt; iPhone &gt; iPhone 13)
+          </p>
+          <p>
+            • <strong>Стандартна ціна:</strong> ціна послуги
+          </p>
+          <p>
+            • <strong>Гарантія:</strong> тривалість гарантії
+          </p>
+          <p>
+            • <strong>Гарантійний період:</strong> міс. або дн.
+          </p>
+          <p>
+            • <strong>Тривалість (хвилини):</strong> час виконання
+          </p>
+        </div>
+      </div>
 
-          <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
-            <div className="flex items-start gap-2">
-              <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
-              <div>
-                <h4 className="font-medium text-yellow-800">Важливо</h4>
-                <p className="text-sm text-yellow-700">
-                  Система автоматично співставить дані з вашою базою. Якщо модель не знайдена - буде запропоновано
-                  створити нову.
-                </p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="space-y-4">
+        <div>
+          <Label htmlFor="csv-file">Завантажити CSV файл з RemOnline</Label>
+          <Input id="csv-file" type="file" accept=".csv" onChange={handleFileUpload} className="mt-1" />
+        </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Завантаження файлу</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <Label htmlFor="csv-file">CSV файл з RemOnline</Label>
-            <Input id="csv-file" type="file" accept=".csv" onChange={handleFileChange} className="mt-1" />
-          </div>
+        <div>
+          <Label htmlFor="csv-data">Або вставити CSV дані</Label>
+          <Textarea
+            id="csv-data"
+            value={csvData}
+            onChange={(e) => setCsvData(e.target.value)}
+            placeholder="Опис,Категорія,Стандартна ціна,Гарантія,Гарантійний період,Тривалість (хвилини)"
+            rows={10}
+            className="mt-1 font-mono text-sm"
+          />
+        </div>
 
-          {file && (
-            <div className="bg-green-50 border border-green-200 p-3 rounded-lg">
-              <p className="text-sm text-green-700">
-                Файл вибрано: <strong>{file.name}</strong> ({(file.size / 1024).toFixed(1)} KB)
-              </p>
-            </div>
-          )}
-
-          <Button onClick={processFile} disabled={!file || isProcessing} className="w-full">
-            <Upload className="h-4 w-4 mr-2" />
-            {isProcessing ? "Обробка файлу..." : "Обробити файл"}
-          </Button>
-        </CardContent>
-      </Card>
+        <Button onClick={processImport} disabled={isProcessing || !csvData.trim()}>
+          <Upload className="h-4 w-4 mr-2" />
+          {isProcessing ? "Обробка..." : "Обробити"}
+        </Button>
+      </div>
     </div>
   )
 }
