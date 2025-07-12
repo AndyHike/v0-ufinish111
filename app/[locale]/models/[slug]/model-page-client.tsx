@@ -31,7 +31,11 @@ interface ModelData {
     position: number
     warranty_months: number | null
     duration_hours: number | null
+    warranty_period: string | null
     image_url: string | null
+    detailed_description: string | null
+    what_included: string | null
+    benefits: string | null
   }>
 }
 
@@ -43,6 +47,16 @@ interface Props {
 export default function ModelPageClient({ modelData, locale }: Props) {
   const t = useTranslations("Models")
   const commonT = useTranslations("Common")
+
+  const formatWarranty = (months: number | null, period: string | null) => {
+    if (!months) return t("warrantyMonths", { count: 3 }) // Default fallback
+    return period === "days" ? t("warrantyDays", { count: months }) : t("warrantyMonths", { count: months })
+  }
+
+  const formatDuration = (hours: number | null) => {
+    if (!hours) return t("fromHours", { hours: 1 }) // Default fallback
+    return t("fromHours", { hours })
+  }
 
   return (
     <div className="min-h-screen bg-white">
@@ -142,11 +156,11 @@ export default function ModelPageClient({ modelData, locale }: Props) {
                       <div className="mb-3 space-y-1">
                         <div className="flex items-center gap-2 text-sm text-gray-600">
                           <Clock className="h-3 w-3 text-blue-600" />
-                          <span>{t("fromHours", { hours: service.duration_hours || 1 })}</span>
+                          <span>{formatDuration(service.duration_hours)}</span>
                         </div>
                         <div className="flex items-center gap-2 text-sm text-gray-600">
                           <Shield className="h-3 w-3 text-green-600" />
-                          <span>{t("warrantyMonths", { count: service.warranty_months || 3 })}</span>
+                          <span>{formatWarranty(service.warranty_months, service.warranty_period)}</span>
                         </div>
                       </div>
 

@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
 
     console.log(`[GET] /api/admin/model-services - Found ${servicesData.length} services`)
 
-    // Then fetch model services
+    // Then fetch model services with all the new columns
     console.log(`[GET] /api/admin/model-services - Fetching model services for model ${modelId}`)
     const { data: modelServicesData, error: modelServicesError } = await supabase
       .from("model_services")
@@ -50,7 +50,13 @@ export async function GET(request: NextRequest) {
         id, 
         price, 
         model_id, 
-        service_id
+        service_id,
+        warranty_months,
+        duration_hours,
+        warranty_period,
+        detailed_description,
+        what_included,
+        benefits
       `)
       .eq("model_id", modelId)
 
@@ -74,8 +80,9 @@ export async function GET(request: NextRequest) {
         slug: service.slug,
         position: service.position,
         image_url: service.image_url,
-        warranty_months: service.warranty_months,
-        duration_hours: service.duration_hours,
+        // Default values from services table (used as fallback)
+        default_warranty_months: service.warranty_months,
+        default_duration_hours: service.duration_hours,
         name: translations[0]?.name || "",
         description: translations[0]?.description || "",
       })
@@ -97,6 +104,13 @@ export async function GET(request: NextRequest) {
           model_id: modelService.model_id,
           service_id: modelService.service_id,
           price: modelService.price,
+          // Use model-specific values or fall back to service defaults
+          warranty_months: modelService.warranty_months ?? serviceInfo.default_warranty_months,
+          duration_hours: modelService.duration_hours ?? serviceInfo.default_duration_hours,
+          warranty_period: modelService.warranty_period || "months",
+          detailed_description: modelService.detailed_description,
+          what_included: modelService.what_included,
+          benefits: modelService.benefits,
           services: serviceInfo,
         }
       })
@@ -146,6 +160,17 @@ export async function POST(request: Request) {
       )
     }
 
+    // Prepare the data with all new columns
+    const serviceData = {
+      price: body.price,
+      warranty_months: body.warranty_months,
+      duration_hours: body.duration_hours,
+      warranty_period: body.warranty_period || "months",
+      detailed_description: body.detailed_description,
+      what_included: body.what_included,
+      benefits: body.benefits,
+    }
+
     let result
 
     if (existingData) {
@@ -153,7 +178,7 @@ export async function POST(request: Request) {
       console.log(`[POST] /api/admin/model-services - Updating existing model service with ID ${existingData.id}`)
       const { data, error } = await supabase
         .from("model_services")
-        .update({ price: body.price })
+        .update(serviceData)
         .eq("id", existingData.id)
         .select()
         .single()
@@ -173,7 +198,7 @@ export async function POST(request: Request) {
         .insert({
           model_id: body.modelId,
           service_id: body.serviceId,
-          price: body.price,
+          ...serviceData,
         })
         .select()
         .single()

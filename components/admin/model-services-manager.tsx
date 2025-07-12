@@ -4,6 +4,8 @@ import { useState, useEffect } from "react"
 import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import {
   Dialog,
@@ -25,8 +27,8 @@ type Service = {
   description: string
   position: number
   image_url?: string
-  warranty_months: number
-  duration_hours: number
+  default_warranty_months: number
+  default_duration_hours: number
 }
 
 type ModelService = {
@@ -34,6 +36,12 @@ type ModelService = {
   model_id: string
   service_id: string
   price: number | null
+  warranty_months: number | null
+  duration_hours: number | null
+  warranty_period: string
+  detailed_description: string | null
+  what_included: string | null
+  benefits: string | null
   services: Service
 }
 
@@ -51,7 +59,15 @@ export function ModelServicesManager({ modelId, locale }: ModelServicesManagerPr
   const [isLoading, setIsLoading] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [selectedService, setSelectedService] = useState<string>("")
-  const [price, setPrice] = useState<string>("")
+  const [formData, setFormData] = useState({
+    price: "",
+    warranty_months: "",
+    duration_hours: "",
+    warranty_period: "months",
+    detailed_description: "",
+    what_included: "",
+    benefits: "",
+  })
   const [editingServiceId, setEditingServiceId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -94,8 +110,8 @@ export function ModelServicesManager({ modelId, locale }: ModelServicesManagerPr
             description: translation?.description || "",
             position: service.position || 0,
             image_url: service.image_url,
-            warranty_months: service.warranty_months || 0,
-            duration_hours: service.duration_hours || 0,
+            default_warranty_months: service.warranty_months || 0,
+            default_duration_hours: service.duration_hours || 0,
           }
         }) || []
 
@@ -144,9 +160,17 @@ export function ModelServicesManager({ modelId, locale }: ModelServicesManagerPr
   // Get services that are not already assigned to the model
   const availableServices = allServices.filter((service) => !modelServices.some((ms) => ms.service_id === service.id))
 
-  console.log("Available services for selection:", availableServices)
-  console.log("All services:", allServices)
-  console.log("Model services:", modelServices)
+  const resetForm = () => {
+    setFormData({
+      price: "",
+      warranty_months: "",
+      duration_hours: "",
+      warranty_period: "months",
+      detailed_description: "",
+      what_included: "",
+      benefits: "",
+    })
+  }
 
   const handleAddService = async () => {
     if (!selectedService) {
@@ -158,11 +182,29 @@ export function ModelServicesManager({ modelId, locale }: ModelServicesManagerPr
       return
     }
 
-    // Allow empty price (will be stored as null)
-    const priceValue = price.trim() === "" ? null : Number.parseFloat(price)
+    // Get default values from selected service
+    const selectedServiceData = allServices.find((s) => s.id === selectedService)
 
-    // If price is provided, validate it's a positive number
-    if (priceValue !== null && (isNaN(priceValue) || priceValue <= 0)) {
+    const serviceData = {
+      modelId,
+      serviceId: selectedService,
+      price: formData.price.trim() === "" ? null : Number.parseFloat(formData.price),
+      warranty_months:
+        formData.warranty_months.trim() === ""
+          ? selectedServiceData?.default_warranty_months
+          : Number.parseInt(formData.warranty_months),
+      duration_hours:
+        formData.duration_hours.trim() === ""
+          ? selectedServiceData?.default_duration_hours
+          : Number.parseFloat(formData.duration_hours),
+      warranty_period: formData.warranty_period,
+      detailed_description: formData.detailed_description.trim() || null,
+      what_included: formData.what_included.trim() || null,
+      benefits: formData.benefits.trim() || null,
+    }
+
+    // Validate price if provided
+    if (serviceData.price !== null && (isNaN(serviceData.price) || serviceData.price <= 0)) {
       toast({
         title: "Помилка валідації",
         description: "Будь ласка, введіть правильну ціну",
@@ -173,18 +215,14 @@ export function ModelServicesManager({ modelId, locale }: ModelServicesManagerPr
 
     try {
       setIsSubmitting(true)
-      console.log("Adding service:", { modelId, serviceId: selectedService, price: priceValue })
+      console.log("Adding service:", serviceData)
 
       const res = await fetch("/api/admin/model-services", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          modelId,
-          serviceId: selectedService,
-          price: priceValue,
-        }),
+        body: JSON.stringify(serviceData),
       })
 
       const responseData = await res.json()
@@ -195,31 +233,9 @@ export function ModelServicesManager({ modelId, locale }: ModelServicesManagerPr
       }
 
       console.log("Service added successfully:", responseData)
-
-      // Find the service details
-      const serviceDetails = allServices.find((s) => s.id === selectedService)
-
-      if (serviceDetails) {
-        // Add the new model service to the list
-        const updatedServices = [
-          ...modelServices,
-          {
-            ...responseData,
-            services: serviceDetails,
-          },
-        ]
-
-        console.log("Updated services list:", updatedServices)
-        setModelServices(updatedServices)
-      } else {
-        console.error("Service details not found for ID:", selectedService)
-        // Refresh the data to ensure we have the latest
-        await fetchData()
-      }
-
-      // Reset form
+      await fetchData() // Refresh data
+      resetForm()
       setSelectedService("")
-      setPrice("")
       setIsDialogOpen(false)
 
       toast({
@@ -251,11 +267,25 @@ export function ModelServicesManager({ modelId, locale }: ModelServicesManagerPr
       return
     }
 
-    // Allow empty price (will be stored as null)
-    const priceValue = price.trim() === "" ? null : Number.parseFloat(price)
+    const modelService = modelServices.find((ms) => ms.id === editingServiceId)
+    if (!modelService) {
+      throw new Error("Model service not found")
+    }
 
-    // If price is provided, validate it's a positive number
-    if (priceValue !== null && (isNaN(priceValue) || priceValue <= 0)) {
+    const serviceData = {
+      modelId,
+      serviceId: modelService.service_id,
+      price: formData.price.trim() === "" ? null : Number.parseFloat(formData.price),
+      warranty_months: formData.warranty_months.trim() === "" ? null : Number.parseInt(formData.warranty_months),
+      duration_hours: formData.duration_hours.trim() === "" ? null : Number.parseFloat(formData.duration_hours),
+      warranty_period: formData.warranty_period,
+      detailed_description: formData.detailed_description.trim() || null,
+      what_included: formData.what_included.trim() || null,
+      benefits: formData.benefits.trim() || null,
+    }
+
+    // Validate price if provided
+    if (serviceData.price !== null && (isNaN(serviceData.price) || serviceData.price <= 0)) {
       toast({
         title: "Помилка валідації",
         description: "Будь ласка, введіть правильну ціну",
@@ -266,23 +296,14 @@ export function ModelServicesManager({ modelId, locale }: ModelServicesManagerPr
 
     try {
       setIsSubmitting(true)
-      const modelService = modelServices.find((ms) => ms.id === editingServiceId)
-      if (!modelService) {
-        throw new Error("Model service not found")
-      }
-
-      console.log("Updating service:", { modelId, serviceId: modelService.service_id, price: priceValue })
+      console.log("Updating service:", serviceData)
 
       const res = await fetch("/api/admin/model-services", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          modelId,
-          serviceId: modelService.service_id,
-          price: priceValue,
-        }),
+        body: JSON.stringify(serviceData),
       })
 
       const responseData = await res.json()
@@ -293,13 +314,9 @@ export function ModelServicesManager({ modelId, locale }: ModelServicesManagerPr
       }
 
       console.log("Service updated successfully:", responseData)
-
-      // Update the model service in the list
-      setModelServices(modelServices.map((ms) => (ms.id === editingServiceId ? { ...ms, price: priceValue } : ms)))
-
-      // Reset form
+      await fetchData() // Refresh data
+      resetForm()
       setEditingServiceId(null)
-      setPrice("")
       setIsDialogOpen(false)
 
       toast({
@@ -340,8 +357,6 @@ export function ModelServicesManager({ modelId, locale }: ModelServicesManagerPr
       }
 
       console.log("Service deleted successfully:", responseData)
-
-      // Remove the model service from the list
       setModelServices(modelServices.filter((ms) => ms.id !== id))
 
       toast({
@@ -366,19 +381,37 @@ export function ModelServicesManager({ modelId, locale }: ModelServicesManagerPr
   const openAddDialog = () => {
     setEditingServiceId(null)
     setSelectedService("")
-    setPrice("")
+    resetForm()
     setIsDialogOpen(true)
   }
 
   const openEditDialog = (modelService: ModelService) => {
     setEditingServiceId(modelService.id)
     setSelectedService(modelService.service_id)
-    setPrice(modelService.price !== null ? modelService.price.toString() : "")
+    setFormData({
+      price: modelService.price !== null ? modelService.price.toString() : "",
+      warranty_months: modelService.warranty_months !== null ? modelService.warranty_months.toString() : "",
+      duration_hours: modelService.duration_hours !== null ? modelService.duration_hours.toString() : "",
+      warranty_period: modelService.warranty_period || "months",
+      detailed_description: modelService.detailed_description || "",
+      what_included: modelService.what_included || "",
+      benefits: modelService.benefits || "",
+    })
     setIsDialogOpen(true)
   }
 
   const renderPrice = (price: number | null) => {
     return price !== null ? formatCurrency(price) : "Ціна за запитом"
+  }
+
+  const renderWarranty = (months: number | null, period: string) => {
+    if (!months) return "Не вказано"
+    return period === "months" ? `${months} міс.` : `${months} дн.`
+  }
+
+  const renderDuration = (hours: number | null) => {
+    if (!hours) return "Не вказано"
+    return `${hours} год.`
   }
 
   return (
@@ -442,8 +475,9 @@ export function ModelServicesManager({ modelId, locale }: ModelServicesManagerPr
                 <TableRow>
                   <TableHead>Назва послуги</TableHead>
                   <TableHead>Опис</TableHead>
-                  <TableHead>Slug</TableHead>
                   <TableHead className="text-right">Ціна</TableHead>
+                  <TableHead>Гарантія</TableHead>
+                  <TableHead>Тривалість</TableHead>
                   <TableHead className="w-[100px]">Дії</TableHead>
                 </TableRow>
               </TableHeader>
@@ -452,10 +486,9 @@ export function ModelServicesManager({ modelId, locale }: ModelServicesManagerPr
                   <TableRow key={modelService.id}>
                     <TableCell className="font-medium">{modelService.services?.name}</TableCell>
                     <TableCell className="max-w-md truncate">{modelService.services?.description}</TableCell>
-                    <TableCell>
-                      <code className="text-xs bg-muted px-1 py-0.5 rounded">{modelService.services?.slug}</code>
-                    </TableCell>
                     <TableCell className="text-right">{renderPrice(modelService.price)}</TableCell>
+                    <TableCell>{renderWarranty(modelService.warranty_months, modelService.warranty_period)}</TableCell>
+                    <TableCell>{renderDuration(modelService.duration_hours)}</TableCell>
                     <TableCell>
                       <div className="flex items-center justify-end gap-2">
                         <Button
@@ -487,17 +520,17 @@ export function ModelServicesManager({ modelId, locale }: ModelServicesManagerPr
       )}
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{editingServiceId ? "Редагувати ціну послуги" : "Додати послугу до моделі"}</DialogTitle>
+            <DialogTitle>{editingServiceId ? "Редагувати послугу" : "Додати послугу до моделі"}</DialogTitle>
             <DialogDescription>
-              {editingServiceId ? "Змініть ціну для цієї послуги" : "Оберіть послугу та встановіть ціну"}
+              {editingServiceId ? "Змініть параметри для цієї послуги" : "Оберіть послугу та встановіть параметри"}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             {!editingServiceId && (
               <div className="grid gap-2">
-                <label htmlFor="service">Послуга</label>
+                <Label htmlFor="service">Послуга</Label>
                 <Select value={selectedService} onValueChange={setSelectedService}>
                   <SelectTrigger>
                     <SelectValue placeholder="Оберіть послугу" />
@@ -519,25 +552,93 @@ export function ModelServicesManager({ modelId, locale }: ModelServicesManagerPr
                     )}
                   </SelectContent>
                 </Select>
-                {availableServices.length > 0 && (
-                  <p className="text-xs text-muted-foreground">
-                    Доступно {availableServices.length} послуг для додавання
-                  </p>
-                )}
               </div>
             )}
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="price">Ціна (грн)</Label>
+                <Input
+                  id="price"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.price}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, price: e.target.value }))}
+                  placeholder="Ціна за запитом"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="warranty_months">Гарантія</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="warranty_months"
+                    type="number"
+                    min="0"
+                    value={formData.warranty_months}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, warranty_months: e.target.value }))}
+                    placeholder="Кількість"
+                  />
+                  <Select
+                    value={formData.warranty_period}
+                    onValueChange={(value) => setFormData((prev) => ({ ...prev, warranty_period: value }))}
+                  >
+                    <SelectTrigger className="w-24">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="months">міс.</SelectItem>
+                      <SelectItem value="days">дн.</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
             <div className="grid gap-2">
-              <label htmlFor="price">Ціна (грн)</label>
+              <Label htmlFor="duration_hours">Тривалість (години)</Label>
               <Input
-                id="price"
+                id="duration_hours"
                 type="number"
-                step="0.01"
+                step="0.1"
                 min="0"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                placeholder="Ціна за запитом"
+                value={formData.duration_hours}
+                onChange={(e) => setFormData((prev) => ({ ...prev, duration_hours: e.target.value }))}
+                placeholder="Тривалість роботи"
               />
-              <p className="text-xs text-muted-foreground">Залиште порожнім для "Ціна за запитом"</p>
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="detailed_description">Детальний опис</Label>
+              <Textarea
+                id="detailed_description"
+                value={formData.detailed_description}
+                onChange={(e) => setFormData((prev) => ({ ...prev, detailed_description: e.target.value }))}
+                placeholder="Детальний опис послуги для цієї моделі"
+                rows={3}
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="what_included">Що включено</Label>
+              <Textarea
+                id="what_included"
+                value={formData.what_included}
+                onChange={(e) => setFormData((prev) => ({ ...prev, what_included: e.target.value }))}
+                placeholder="Що включено в послугу (по одному пункту на рядок)"
+                rows={3}
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="benefits">Переваги</Label>
+              <Textarea
+                id="benefits"
+                value={formData.benefits}
+                onChange={(e) => setFormData((prev) => ({ ...prev, benefits: e.target.value }))}
+                placeholder="Переваги послуги (по одному пункту на рядок)"
+                rows={3}
+              />
             </div>
           </div>
           <DialogFooter>

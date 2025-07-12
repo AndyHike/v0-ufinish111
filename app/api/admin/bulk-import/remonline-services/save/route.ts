@@ -8,9 +8,12 @@ type ServiceToSave = {
   model_id: string | null
   model_name: string | null
   price: number | null
-  warranty_duration: number | null
+  warranty_months: number | null
   warranty_period: "months" | "days" | null
-  duration_minutes: number | null
+  duration_hours: number | null
+  detailed_description?: string | null
+  what_included?: string | null
+  benefits?: string | null
 }
 
 function generateSlug(name: string): string {
@@ -99,6 +102,17 @@ export async function POST(request: Request) {
           continue
         }
 
+        // Prepare service data with all new columns
+        const serviceData = {
+          price: service.price,
+          warranty_months: service.warranty_months,
+          duration_hours: service.duration_hours,
+          warranty_period: service.warranty_period || "months",
+          detailed_description: service.detailed_description,
+          what_included: service.what_included,
+          benefits: service.benefits,
+        }
+
         let result
 
         if (existingData) {
@@ -106,12 +120,7 @@ export async function POST(request: Request) {
           console.log(`Updating existing model service with ID ${existingData.id}`)
           const { data, error } = await supabase
             .from("model_services")
-            .update({
-              price: service.price,
-              warranty_duration: service.warranty_duration,
-              warranty_period: service.warranty_period,
-              duration_minutes: service.duration_minutes,
-            })
+            .update(serviceData)
             .eq("id", existingData.id)
             .select()
             .single()
@@ -133,10 +142,7 @@ export async function POST(request: Request) {
             .insert({
               model_id: modelId,
               service_id: service.service_id,
-              price: service.price,
-              warranty_duration: service.warranty_duration,
-              warranty_period: service.warranty_period,
-              duration_minutes: service.duration_minutes,
+              ...serviceData,
             })
             .select()
             .single()
