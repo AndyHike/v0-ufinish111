@@ -278,7 +278,7 @@ export function RemOnlineImportPreview({ services, summary, onBack, onSuccess }:
                   <TableHead>Модель</TableHead>
                   <TableHead>Ціна</TableHead>
                   <TableHead>Гарантія</TableHead>
-                  <TableHead>Тривалість</TableHead>
+                  <TableHead>Тривалість (хв)</TableHead>
                   <TableHead>Статус</TableHead>
                   <TableHead>Дії</TableHead>
                 </TableRow>
@@ -458,6 +458,7 @@ export function RemOnlineImportPreview({ services, summary, onBack, onSuccess }:
                               updateService(service.id, "warranty_duration", Number.parseInt(e.target.value) || null)
                             }
                             className="w-16"
+                            placeholder="Кількість"
                           />
                           <Select
                             value={service.warranty_period || ""}
@@ -487,10 +488,11 @@ export function RemOnlineImportPreview({ services, summary, onBack, onSuccess }:
                           onChange={(e) =>
                             updateService(service.id, "duration_minutes", Number.parseInt(e.target.value) || null)
                           }
-                          className="w-16"
+                          className="w-20"
+                          placeholder="Хвилини"
                         />
                       ) : (
-                        <div className="text-sm">{service.duration_minutes} хв.</div>
+                        <div className="text-sm">{service.duration_minutes || "-"}</div>
                       )}
                     </TableCell>
 
