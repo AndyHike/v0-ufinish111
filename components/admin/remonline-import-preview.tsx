@@ -18,9 +18,9 @@ type ParsedService = {
   series: string | null
   model: string | null
   price: number | null
-  warranty_duration: number | null
+  warranty_months: number | null
   warranty_period: "months" | "days" | null
-  duration_minutes: number | null
+  duration_hours: number | null
   original_description: string
   original_category: string
   service_found: boolean
@@ -165,9 +165,9 @@ export function RemOnlineImportPreview({ services, summary, onBack, onSuccess }:
         model_id: service.model_id,
         model_name: service.needs_new_model ? service.suggested_model_name : null,
         price: service.price,
-        warranty_duration: service.warranty_duration,
+        warranty_months: service.warranty_months,
         warranty_period: service.warranty_period,
-        duration_minutes: service.duration_minutes,
+        duration_hours: service.duration_hours,
       }))
 
       const response = await fetch("/api/admin/bulk-import/remonline-services/save", {
@@ -277,8 +277,8 @@ export function RemOnlineImportPreview({ services, summary, onBack, onSuccess }:
                   <TableHead>Серія</TableHead>
                   <TableHead>Модель</TableHead>
                   <TableHead>Ціна</TableHead>
-                  <TableHead>Гарантія</TableHead>
-                  <TableHead>Тривалість (хв)</TableHead>
+                  <TableHead>Гарантія (міс.)</TableHead>
+                  <TableHead>Тривалість (год.)</TableHead>
                   <TableHead>Статус</TableHead>
                   <TableHead>Дії</TableHead>
                 </TableRow>
@@ -450,32 +450,19 @@ export function RemOnlineImportPreview({ services, summary, onBack, onSuccess }:
 
                     <TableCell>
                       {editingId === service.id ? (
-                        <div className="space-y-1">
-                          <Input
-                            type="number"
-                            value={service.warranty_duration || ""}
-                            onChange={(e) =>
-                              updateService(service.id, "warranty_duration", Number.parseInt(e.target.value) || null)
-                            }
-                            className="w-16"
-                            placeholder="Кількість"
-                          />
-                          <Select
-                            value={service.warranty_period || ""}
-                            onValueChange={(value) => updateService(service.id, "warranty_period", value)}
-                          >
-                            <SelectTrigger className="w-16">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="months">міс.</SelectItem>
-                              <SelectItem value="days">дн.</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
+                        <Input
+                          type="number"
+                          step="0.1"
+                          value={service.warranty_months || ""}
+                          onChange={(e) =>
+                            updateService(service.id, "warranty_months", Number.parseFloat(e.target.value) || null)
+                          }
+                          className="w-20"
+                          placeholder="Місяці"
+                        />
                       ) : (
                         <div className="text-sm">
-                          {service.warranty_duration} {service.warranty_period === "months" ? "міс." : "дн."}
+                          {service.warranty_months ? `${service.warranty_months} міс.` : "-"}
                         </div>
                       )}
                     </TableCell>
@@ -484,15 +471,16 @@ export function RemOnlineImportPreview({ services, summary, onBack, onSuccess }:
                       {editingId === service.id ? (
                         <Input
                           type="number"
-                          value={service.duration_minutes || ""}
+                          step="0.01"
+                          value={service.duration_hours || ""}
                           onChange={(e) =>
-                            updateService(service.id, "duration_minutes", Number.parseInt(e.target.value) || null)
+                            updateService(service.id, "duration_hours", Number.parseFloat(e.target.value) || null)
                           }
                           className="w-20"
-                          placeholder="Хвилини"
+                          placeholder="Години"
                         />
                       ) : (
-                        <div className="text-sm">{service.duration_minutes || "-"}</div>
+                        <div className="text-sm">{service.duration_hours ? `${service.duration_hours} год.` : "-"}</div>
                       )}
                     </TableCell>
 

@@ -19,9 +19,9 @@ type ParsedService = {
   series: string | null
   model: string | null
   price: number | null
-  warranty_duration: number | null
+  warranty_months: number | null
   warranty_period: "months" | "days" | null
-  duration_minutes: number | null
+  duration_hours: number | null
   original_description: string
   original_category: string
   service_found: boolean
@@ -71,6 +71,24 @@ function parseNumber(value: string | number): number | null {
     return isNaN(parsed) ? null : parsed
   }
   return null
+}
+
+function convertToWarrantyMonths(duration: number | null, period: "months" | "days" | null): number | null {
+  if (!duration) return null
+
+  if (period === "days") {
+    // Convert days to months (approximately)
+    return Math.round((duration / 30) * 100) / 100
+  } else if (period === "months") {
+    return duration
+  }
+
+  return duration // Default to months if period is unclear
+}
+
+function convertToHours(minutes: number | null): number | null {
+  if (!minutes) return null
+  return Math.round((minutes / 60) * 100) / 100 // Convert minutes to hours with 2 decimal places
 }
 
 export async function POST(request: Request) {
@@ -133,6 +151,10 @@ export async function POST(request: Request) {
       const durationMinutes = parseNumber(row["Тривалість (хвилини)"])
       const warrantyPeriod = parseWarrantyPeriod(row["Гарантійний період"] || "")
 
+      // Convert to proper units
+      const warrantyMonths = convertToWarrantyMonths(warrantyDuration, warrantyPeriod)
+      const durationHours = convertToHours(durationMinutes)
+
       // Find matching records
       const foundService = slug ? services.find((s) => s.slug === slug) : null
 
@@ -181,9 +203,9 @@ export async function POST(request: Request) {
         series: hierarchy.series,
         model: hierarchy.model,
         price,
-        warranty_duration: warrantyDuration,
+        warranty_months: warrantyMonths,
         warranty_period: warrantyPeriod,
-        duration_minutes: durationMinutes,
+        duration_hours: durationHours,
         original_description: row["Опис"] || "",
         original_category: row["Категорія"] || "",
         service_found: !!foundService,
