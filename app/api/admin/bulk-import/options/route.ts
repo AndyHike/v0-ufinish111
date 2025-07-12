@@ -6,7 +6,7 @@ export async function GET() {
     const supabase = createClient()
 
     const [servicesResult, brandsResult, seriesResult, modelsResult] = await Promise.all([
-      supabase.from("services_translations").select("service_id, name").eq("locale", "uk").order("name"),
+      supabase.from("services").select("id, name, slug").order("name"),
       supabase.from("brands").select("id, name, slug").order("position", { ascending: true }),
       supabase.from("series").select("id, name, slug, brand_id").order("position", { ascending: true }),
       supabase.from("models").select("id, name, slug, brand_id, series_id").order("position", { ascending: true }),

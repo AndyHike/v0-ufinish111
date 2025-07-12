@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { useToast } from "@/components/ui/use-toast"
-import { ArrowLeft, Save, AlertCircle, CheckCircle, Edit } from "lucide-react"
+import { ArrowLeft, Save, AlertCircle, CheckCircle, Edit, Plus } from "lucide-react"
 
 type ParsedService = {
   id: string
@@ -32,6 +32,8 @@ type ParsedService = {
   series_id: string | null
   model_id: string | null
   errors: string[]
+  needs_new_model: boolean
+  suggested_model_name: string | null
 }
 
 type ImportSummary = {
@@ -41,10 +43,11 @@ type ImportSummary = {
   brands_found: number
   series_found: number
   models_found: number
+  new_models_needed: number
 }
 
 type ImportOptions = {
-  services: Array<{ service_id: string; name: string }>
+  services: Array<{ id: string; name: string; slug: string }>
   brands: Array<{ id: string; name: string; slug: string }>
   series: Array<{ id: string; name: string; slug: string; brand_id: string }>
   models: Array<{ id: string; name: string; slug: string; brand_id: string; series_id: string | null }>
@@ -88,7 +91,7 @@ export function RemOnlineImportPreview({ services, summary, onBack, onSuccess }:
 
           // Update related IDs when selections change
           if (field === "service_id") {
-            const foundService = options?.services.find((s) => s.service_id === value)
+            const foundService = options?.services.find((s) => s.id === value)
             updated.service_found = !!foundService
           } else if (field === "brand_id") {
             const foundBrand = options?.brands.find((b) => b.id === value)
@@ -99,6 +102,7 @@ export function RemOnlineImportPreview({ services, summary, onBack, onSuccess }:
             updated.model_id = null
             updated.series_found = false
             updated.model_found = false
+            updated.needs_new_model = false
           } else if (field === "series_id") {
             const foundSeries = options?.series.find((s) => s.id === value)
             updated.series_found = !!foundSeries
@@ -106,10 +110,16 @@ export function RemOnlineImportPreview({ services, summary, onBack, onSuccess }:
             // Reset model when series changes
             updated.model_id = null
             updated.model_found = false
+            updated.needs_new_model = false
           } else if (field === "model_id") {
             const foundModel = options?.models.find((m) => m.id === value)
             updated.model_found = !!foundModel
             updated.model = foundModel?.name || null
+            updated.needs_new_model = false
+          } else if (field === "suggested_model_name") {
+            updated.needs_new_model = !!value
+            updated.model_found = false
+            updated.model_id = null
           }
 
           return updated
@@ -129,13 +139,18 @@ export function RemOnlineImportPreview({ services, summary, onBack, onSuccess }:
     return options.models.filter((m) => m.brand_id === brandId && (seriesId ? m.series_id === seriesId : true))
   }
 
-  const canSave = editedServices.every((service) => service.service_id && service.brand_id && service.model_id)
+  const canSave = editedServices.every(
+    (service) =>
+      service.service_id &&
+      service.brand_id &&
+      (service.model_id || (service.needs_new_model && service.suggested_model_name)),
+  )
 
   const handleSave = async () => {
     if (!canSave) {
       toast({
         title: "Помилка",
-        description: "Всі послуги повинні мати вибрану послугу, бренд та модель",
+        description: "Всі послуги повинні мати вибрану послугу, бренд та модель (або назву нової моделі)",
         variant: "destructive",
       })
       return
@@ -148,6 +163,7 @@ export function RemOnlineImportPreview({ services, summary, onBack, onSuccess }:
         brand_id: service.brand_id,
         series_id: service.series_id,
         model_id: service.model_id,
+        model_name: service.needs_new_model ? service.suggested_model_name : null,
         price: service.price,
         warranty_duration: service.warranty_duration,
         warranty_period: service.warranty_period,
@@ -200,7 +216,7 @@ export function RemOnlineImportPreview({ services, summary, onBack, onSuccess }:
       </div>
 
       {summary && (
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-7 gap-4">
           <Card>
             <CardContent className="p-4 text-center">
               <div className="text-2xl font-bold">{summary.total}</div>
@@ -237,6 +253,12 @@ export function RemOnlineImportPreview({ services, summary, onBack, onSuccess }:
               <div className="text-sm text-muted-foreground">Моделі знайдені</div>
             </CardContent>
           </Card>
+          <Card>
+            <CardContent className="p-4 text-center">
+              <div className="text-2xl font-bold text-blue-600">{summary.new_models_needed}</div>
+              <div className="text-sm text-muted-foreground">Нові моделі</div>
+            </CardContent>
+          </Card>
         </div>
       )}
 
@@ -256,6 +278,7 @@ export function RemOnlineImportPreview({ services, summary, onBack, onSuccess }:
                   <TableHead>Модель</TableHead>
                   <TableHead>Ціна</TableHead>
                   <TableHead>Гарантія</TableHead>
+                  <TableHead>Тривалість</TableHead>
                   <TableHead>Статус</TableHead>
                   <TableHead>Дії</TableHead>
                 </TableRow>
@@ -281,7 +304,7 @@ export function RemOnlineImportPreview({ services, summary, onBack, onSuccess }:
                           </SelectTrigger>
                           <SelectContent>
                             {options?.services.map((s) => (
-                              <SelectItem key={s.service_id} value={s.service_id}>
+                              <SelectItem key={s.id} value={s.id}>
                                 {s.name}
                               </SelectItem>
                             ))}
@@ -291,7 +314,7 @@ export function RemOnlineImportPreview({ services, summary, onBack, onSuccess }:
                         <div>
                           {service.service_found ? (
                             <Badge variant="default">
-                              {options?.services.find((s) => s.service_id === service.service_id)?.name || service.slug}
+                              {options?.services.find((s) => s.id === service.service_id)?.name || service.slug}
                             </Badge>
                           ) : (
                             <Badge variant="destructive">Не знайдено</Badge>
@@ -359,25 +382,49 @@ export function RemOnlineImportPreview({ services, summary, onBack, onSuccess }:
 
                     <TableCell>
                       {editingId === service.id ? (
-                        <Select
-                          value={service.model_id || ""}
-                          onValueChange={(value) => updateService(service.id, "model_id", value)}
-                          disabled={!service.brand_id}
-                        >
-                          <SelectTrigger className="w-40">
-                            <SelectValue placeholder="Вибрати модель" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {getAvailableModels(service.brand_id, service.series_id).map((m) => (
-                              <SelectItem key={m.id} value={m.id}>
-                                {m.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <div className="space-y-2">
+                          {service.needs_new_model ? (
+                            <Input
+                              value={service.suggested_model_name || ""}
+                              onChange={(e) => updateService(service.id, "suggested_model_name", e.target.value)}
+                              placeholder="Назва нової моделі"
+                              className="w-40"
+                            />
+                          ) : (
+                            <Select
+                              value={service.model_id || ""}
+                              onValueChange={(value) => updateService(service.id, "model_id", value)}
+                              disabled={!service.brand_id}
+                            >
+                              <SelectTrigger className="w-40">
+                                <SelectValue placeholder="Вибрати модель" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {getAvailableModels(service.brand_id, service.series_id).map((m) => (
+                                  <SelectItem key={m.id} value={m.id}>
+                                    {m.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => updateService(service.id, "needs_new_model", !service.needs_new_model)}
+                          >
+                            <Plus className="h-3 w-3 mr-1" />
+                            {service.needs_new_model ? "Вибрати існуючу" : "Створити нову"}
+                          </Button>
+                        </div>
                       ) : (
                         <div>
-                          {service.model_found ? (
+                          {service.needs_new_model ? (
+                            <Badge variant="secondary">
+                              <Plus className="h-3 w-3 mr-1" />
+                              {service.suggested_model_name}
+                            </Badge>
+                          ) : service.model_found ? (
                             <Badge variant="default">{service.model}</Badge>
                           ) : (
                             <Badge variant="destructive">{service.model || "Не знайдено"}</Badge>
@@ -402,10 +449,49 @@ export function RemOnlineImportPreview({ services, summary, onBack, onSuccess }:
                     </TableCell>
 
                     <TableCell>
-                      <div className="text-sm">
-                        {service.warranty_duration} {service.warranty_period === "months" ? "міс." : "дн."}
-                      </div>
-                      <div className="text-xs text-muted-foreground">{service.duration_minutes} хв.</div>
+                      {editingId === service.id ? (
+                        <div className="space-y-1">
+                          <Input
+                            type="number"
+                            value={service.warranty_duration || ""}
+                            onChange={(e) =>
+                              updateService(service.id, "warranty_duration", Number.parseInt(e.target.value) || null)
+                            }
+                            className="w-16"
+                          />
+                          <Select
+                            value={service.warranty_period || ""}
+                            onValueChange={(value) => updateService(service.id, "warranty_period", value)}
+                          >
+                            <SelectTrigger className="w-16">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="months">міс.</SelectItem>
+                              <SelectItem value="days">дн.</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      ) : (
+                        <div className="text-sm">
+                          {service.warranty_duration} {service.warranty_period === "months" ? "міс." : "дн."}
+                        </div>
+                      )}
+                    </TableCell>
+
+                    <TableCell>
+                      {editingId === service.id ? (
+                        <Input
+                          type="number"
+                          value={service.duration_minutes || ""}
+                          onChange={(e) =>
+                            updateService(service.id, "duration_minutes", Number.parseInt(e.target.value) || null)
+                          }
+                          className="w-16"
+                        />
+                      ) : (
+                        <div className="text-sm">{service.duration_minutes} хв.</div>
+                      )}
                     </TableCell>
 
                     <TableCell>
@@ -414,7 +500,9 @@ export function RemOnlineImportPreview({ services, summary, onBack, onSuccess }:
                           <AlertCircle className="h-3 w-3 mr-1" />
                           Помилки
                         </Badge>
-                      ) : service.service_found && service.brand_found && service.model_found ? (
+                      ) : service.service_found &&
+                        service.brand_found &&
+                        (service.model_found || service.needs_new_model) ? (
                         <Badge variant="default">
                           <CheckCircle className="h-3 w-3 mr-1" />
                           Готово

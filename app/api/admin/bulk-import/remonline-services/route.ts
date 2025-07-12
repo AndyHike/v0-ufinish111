@@ -33,6 +33,8 @@ type ParsedService = {
   series_id: string | null
   model_id: string | null
   errors: string[]
+  needs_new_model: boolean
+  suggested_model_name: string | null
 }
 
 function extractSlugFromDescription(description: string): string | null {
@@ -103,7 +105,7 @@ export async function POST(request: Request) {
 
     // Get all existing data for matching
     const [servicesResult, brandsResult, seriesResult, modelsResult] = await Promise.all([
-      supabase.from("services_translations").select("service_id, name, locale").eq("locale", "uk"),
+      supabase.from("services").select("id, slug, name").order("name"),
       supabase.from("brands").select("id, name, slug"),
       supabase.from("series").select("id, name, slug, brand_id"),
       supabase.from("models").select("id, name, slug, brand_id, series_id"),
@@ -132,12 +134,7 @@ export async function POST(request: Request) {
       const warrantyPeriod = parseWarrantyPeriod(row["Гарантійний період"] || "")
 
       // Find matching records
-      const foundService = slug
-        ? services.find(
-            (s) =>
-              s.name.toLowerCase().includes(slug.toLowerCase()) || slug.toLowerCase().includes(s.name.toLowerCase()),
-          )
-        : null
+      const foundService = slug ? services.find((s) => s.slug === slug) : null
 
       const foundBrand = hierarchy.brand
         ? brands.find(
@@ -167,12 +164,15 @@ export async function POST(request: Request) {
             )
           : null
 
-      // Collect errors
+      // Determine if we need to create a new model
+      const needsNewModel = !foundModel && hierarchy.model && foundBrand
+      const suggestedModelName = needsNewModel ? hierarchy.model : null
+
+      // Collect errors (but not for missing models - we'll create them)
       if (!slug) errors.push("Slug не знайдено в описі")
       if (slug && !foundService) errors.push(`Послуга з slug "${slug}" не знайдена`)
       if (hierarchy.brand && !foundBrand) errors.push(`Бренд "${hierarchy.brand}" не знайдений`)
       if (hierarchy.series && !foundSeries) errors.push(`Серія "${hierarchy.series}" не знайдена`)
-      if (hierarchy.model && !foundModel) errors.push(`Модель "${hierarchy.model}" не знайдена`)
 
       const parsedService: ParsedService = {
         id: `temp_${i}`,
@@ -190,11 +190,13 @@ export async function POST(request: Request) {
         brand_found: !!foundBrand,
         series_found: !!foundSeries,
         model_found: !!foundModel,
-        service_id: foundService?.service_id || null,
+        service_id: foundService?.id || null,
         brand_id: foundBrand?.id || null,
         series_id: foundSeries?.id || null,
         model_id: foundModel?.id || null,
         errors,
+        needs_new_model: needsNewModel,
+        suggested_model_name: suggestedModelName,
       }
 
       parsedServices.push(parsedService)
@@ -212,6 +214,7 @@ export async function POST(request: Request) {
         brands_found: parsedServices.filter((s) => s.brand_found).length,
         series_found: parsedServices.filter((s) => s.series_found).length,
         models_found: parsedServices.filter((s) => s.model_found).length,
+        new_models_needed: parsedServices.filter((s) => s.needs_new_model).length,
       },
     })
   } catch (error) {
