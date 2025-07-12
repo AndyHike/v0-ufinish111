@@ -6,9 +6,9 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useToast } from "@/components/ui/use-toast"
-import { Upload } from "lucide-react"
+import { Upload, FileText } from "lucide-react"
 import { RemOnlineImportPreview } from "./remonline-import-preview"
 
 type ParsedService = {
@@ -48,37 +48,34 @@ type ImportSummary = {
 
 export function RemOnlineImport() {
   const { toast } = useToast()
-  const [csvData, setCsvData] = useState("")
+  const [file, setFile] = useState<File | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const [parsedServices, setParsedServices] = useState<ParsedService[] | null>(null)
-  const [summary, setSummary] = useState<ImportSummary | null>(null)
+  const [importSummary, setImportSummary] = useState<ImportSummary | null>(null)
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-
-    if (file.type !== "text/csv" && !file.name.endsWith(".csv")) {
-      toast({
-        title: "Помилка",
-        description: "Будь ласка, виберіть CSV файл",
-        variant: "destructive",
-      })
-      return
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = event.target.files?.[0]
+    if (selectedFile) {
+      if (selectedFile.type === "text/csv" || selectedFile.name.endsWith(".csv")) {
+        setFile(selectedFile)
+        // Reset previous results
+        setParsedServices(null)
+        setImportSummary(null)
+      } else {
+        toast({
+          title: "Помилка",
+          description: "Будь ласка, оберіть CSV файл",
+          variant: "destructive",
+        })
+      }
     }
-
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      const text = e.target?.result as string
-      setCsvData(text)
-    }
-    reader.readAsText(file, "UTF-8")
   }
 
-  const processImport = async () => {
-    if (!csvData.trim()) {
+  const handleProcess = async () => {
+    if (!file) {
       toast({
         title: "Помилка",
-        description: "Будь ласка, завантажте CSV файл або введіть дані",
+        description: "Будь ласка, оберіть файл для обробки",
         variant: "destructive",
       })
       return
@@ -86,29 +83,34 @@ export function RemOnlineImport() {
 
     setIsProcessing(true)
     try {
+      // Read file content
+      const fileContent = await file.text()
+
       const response = await fetch("/api/admin/bulk-import/remonline-services", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ csvData }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ csvData: fileContent }),
       })
 
       const result = await response.json()
 
       if (response.ok) {
         setParsedServices(result.services)
-        setSummary(result.summary)
+        setImportSummary(result.summary)
         toast({
           title: "Успіх",
-          description: `Оброблено ${result.total} послуг`,
+          description: `Оброблено ${result.total} записів`,
         })
       } else {
-        throw new Error(result.error || "Failed to process import")
+        throw new Error(result.error || "Помилка обробки файлу")
       }
     } catch (error) {
-      console.error("Error processing import:", error)
+      console.error("Error processing file:", error)
       toast({
         title: "Помилка",
-        description: "Не вдалося обробити імпорт",
+        description: error instanceof Error ? error.message : "Помилка обробки файлу",
         variant: "destructive",
       })
     } finally {
@@ -118,24 +120,24 @@ export function RemOnlineImport() {
 
   const handleBack = () => {
     setParsedServices(null)
-    setSummary(null)
+    setImportSummary(null)
   }
 
   const handleSuccess = () => {
+    setFile(null)
     setParsedServices(null)
-    setSummary(null)
-    setCsvData("")
-    toast({
-      title: "Готово",
-      description: "Імпорт завершено успішно",
-    })
+    setImportSummary(null)
+    // Reset file input
+    const fileInput = document.getElementById("remonline-file-upload") as HTMLInputElement
+    if (fileInput) fileInput.value = ""
   }
 
+  // Show preview if we have parsed services
   if (parsedServices) {
     return (
       <RemOnlineImportPreview
         services={parsedServices}
-        summary={summary}
+        summary={importSummary}
         onBack={handleBack}
         onSuccess={handleSuccess}
       />
@@ -144,56 +146,32 @@ export function RemOnlineImport() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Імпорт з RemOnline експорту</h3>
-      </div>
-
-      <div className="bg-blue-50 p-4 rounded-lg">
-        <h4 className="font-medium text-blue-900 mb-2">Формат файлу</h4>
-        <div className="text-sm text-blue-800 space-y-1">
-          <p>
-            • <strong>Опис:</strong> містить [slug] в квадратних дужках
-          </p>
-          <p>
-            • <strong>Категорія:</strong> ієрархія через &quot;&gt;&quot; (Apple &gt; iPhone &gt; iPhone 13)
-          </p>
-          <p>
-            • <strong>Стандартна ціна:</strong> ціна послуги
-          </p>
-          <p>
-            • <strong>Гарантія:</strong> тривалість гарантії
-          </p>
-          <p>
-            • <strong>Гарантійний період:</strong> міс. або дн.
-          </p>
-          <p>
-            • <strong>Тривалість (хвилини):</strong> час виконання
-          </p>
-        </div>
-      </div>
+      <Alert>
+        <FileText className="h-4 w-4" />
+        <AlertDescription>
+          Завантажте CSV файл експорту з RemOnline. Файл повинен містити колонки: Опис, Категорія, Стандартна ціна,
+          Гарантія, Гарантійний період, Тривалість (хвилини).
+        </AlertDescription>
+      </Alert>
 
       <div className="space-y-4">
         <div>
-          <Label htmlFor="csv-file">Завантажити CSV файл з RemOnline</Label>
-          <Input id="csv-file" type="file" accept=".csv" onChange={handleFileUpload} className="mt-1" />
+          <Label htmlFor="remonline-file-upload">Оберіть CSV файл з RemOnline</Label>
+          <Input id="remonline-file-upload" type="file" accept=".csv" onChange={handleFileChange} className="mt-2" />
         </div>
 
-        <div>
-          <Label htmlFor="csv-data">Або вставити CSV дані</Label>
-          <Textarea
-            id="csv-data"
-            value={csvData}
-            onChange={(e) => setCsvData(e.target.value)}
-            placeholder="Опис,Категорія,Стандартна ціна,Гарантія,Гарантійний період,Тривалість (хвилини)"
-            rows={10}
-            className="mt-1 font-mono text-sm"
-          />
-        </div>
+        {file && (
+          <div className="text-sm text-muted-foreground">
+            Обраний файл: {file.name} ({Math.round(file.size / 1024)} KB)
+          </div>
+        )}
 
-        <Button onClick={processImport} disabled={isProcessing || !csvData.trim()}>
-          <Upload className="h-4 w-4 mr-2" />
-          {isProcessing ? "Обробка..." : "Обробити"}
-        </Button>
+        <div className="flex gap-4">
+          <Button onClick={handleProcess} disabled={!file || isProcessing}>
+            <Upload className="h-4 w-4 mr-2" />
+            {isProcessing ? "Обробка..." : "Обробити файл"}
+          </Button>
+        </div>
       </div>
     </div>
   )

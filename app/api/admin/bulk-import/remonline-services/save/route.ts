@@ -82,63 +82,77 @@ export async function POST(request: Request) {
           continue
         }
 
-        // Check if model_service already exists
-        const { data: existingModelService, error: checkError } = await supabase
+        // Use the same logic as the model services management API
+        // Check if the model service already exists
+        console.log(`Checking if model service exists: modelId=${modelId}, serviceId=${service.service_id}`)
+        const { data: existingData, error: existingError } = await supabase
           .from("model_services")
           .select("id")
           .eq("model_id", modelId)
           .eq("service_id", service.service_id)
           .maybeSingle()
 
-        if (checkError) {
-          console.error("Error checking existing model service:", checkError)
-          errors.push(`Failed to check existing service: ${checkError.message}`)
+        if (existingError) {
+          console.error(`Error checking existing model service:`, existingError)
+          errors.push(`Failed to check existing model service: ${existingError.message}`)
           errorCount++
           continue
         }
 
-        const modelServiceData = {
-          price: service.price,
-          warranty_duration: service.warranty_duration,
-          warranty_period: service.warranty_period,
-          duration_minutes: service.duration_minutes,
-        }
+        let result
 
-        if (existingModelService) {
-          // Update existing service
-          const { error: updateError } = await supabase
+        if (existingData) {
+          // Update existing record - same as in model-services API
+          console.log(`Updating existing model service with ID ${existingData.id}`)
+          const { data, error } = await supabase
             .from("model_services")
             .update({
-              ...modelServiceData,
-              updated_at: new Date().toISOString(),
+              price: service.price,
+              warranty_duration: service.warranty_duration,
+              warranty_period: service.warranty_period,
+              duration_minutes: service.duration_minutes,
             })
-            .eq("id", existingModelService.id)
+            .eq("id", existingData.id)
+            .select()
+            .single()
 
-          if (updateError) {
-            console.error("Error updating model service:", updateError)
-            errors.push(`Failed to update service for model ${modelId}: ${updateError.message}`)
+          if (error) {
+            console.error("Error updating model service:", error)
+            errors.push(`Failed to update model service: ${error.message}`)
             errorCount++
-          } else {
-            console.log(`Updated service for model ${modelId}`)
-            successCount++
+            continue
           }
+
+          console.log("Successfully updated model service:", data)
+          result = data
         } else {
-          // Create new service
-          const { error: insertError } = await supabase.from("model_services").insert({
-            model_id: modelId,
-            service_id: service.service_id,
-            ...modelServiceData,
-          })
+          // Insert new record - same as in model-services API
+          console.log("Creating new model service")
+          const { data, error } = await supabase
+            .from("model_services")
+            .insert({
+              model_id: modelId,
+              service_id: service.service_id,
+              price: service.price,
+              warranty_duration: service.warranty_duration,
+              warranty_period: service.warranty_period,
+              duration_minutes: service.duration_minutes,
+            })
+            .select()
+            .single()
 
-          if (insertError) {
-            console.error("Error creating model service:", insertError)
-            errors.push(`Failed to create service for model ${modelId}: ${insertError.message}`)
+          if (error) {
+            console.error("Error creating model service:", error)
+            errors.push(`Failed to create model service: ${error.message}`)
             errorCount++
-          } else {
-            console.log(`Created new service for model ${modelId}`)
-            successCount++
+            continue
           }
+
+          console.log("Successfully created model service:", data)
+          result = data
         }
+
+        successCount++
       } catch (error) {
         console.error("Error processing service:", error)
         errors.push(`Error processing service: ${error instanceof Error ? error.message : String(error)}`)

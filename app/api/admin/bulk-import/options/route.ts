@@ -5,75 +5,66 @@ export async function GET() {
   try {
     const supabase = createClient()
 
-    // Get all services with translations
-    const { data: servicesData, error: servicesError } = await supabase
-      .from("services")
-      .select(`
-        id,
-        slug,
-        name,
-        services_translations!inner(name, locale)
-      `)
-      .eq("services_translations.locale", "uk")
-      .order("name")
+    // Fetch all data needed for dropdowns
+    const [servicesResult, brandsResult, seriesResult, modelsResult] = await Promise.all([
+      supabase
+        .from("services")
+        .select(`
+          id,
+          slug,
+          name,
+          services_translations(
+            name,
+            locale
+          )
+        `)
+        .order("name"),
+      supabase.from("brands").select("id, name, slug").order("name"),
+      supabase.from("series").select("id, name, slug, brand_id").order("name"),
+      supabase.from("models").select("id, name, slug, brand_id, series_id").order("name"),
+    ])
 
-    if (servicesError) {
-      console.error("Error fetching services:", servicesError)
+    if (servicesResult.error) {
+      console.error("Error fetching services:", servicesResult.error)
       return NextResponse.json({ error: "Failed to fetch services" }, { status: 500 })
     }
 
-    // Get all brands
-    const { data: brandsData, error: brandsError } = await supabase
-      .from("brands")
-      .select("id, name, slug")
-      .order("name")
-
-    if (brandsError) {
-      console.error("Error fetching brands:", brandsError)
+    if (brandsResult.error) {
+      console.error("Error fetching brands:", brandsResult.error)
       return NextResponse.json({ error: "Failed to fetch brands" }, { status: 500 })
     }
 
-    // Get all series
-    const { data: seriesData, error: seriesError } = await supabase
-      .from("series")
-      .select("id, name, slug, brand_id")
-      .order("name")
-
-    if (seriesError) {
-      console.error("Error fetching series:", seriesError)
+    if (seriesResult.error) {
+      console.error("Error fetching series:", seriesResult.error)
       return NextResponse.json({ error: "Failed to fetch series" }, { status: 500 })
     }
 
-    // Get all models
-    const { data: modelsData, error: modelsError } = await supabase
-      .from("models")
-      .select("id, name, slug, brand_id, series_id")
-      .order("name")
-
-    if (modelsError) {
-      console.error("Error fetching models:", modelsError)
+    if (modelsResult.error) {
+      console.error("Error fetching models:", modelsResult.error)
       return NextResponse.json({ error: "Failed to fetch models" }, { status: 500 })
     }
 
-    // Format services data
-    const services =
-      servicesData?.map((service) => ({
+    // Transform services to include translated names
+    const services = servicesResult.data.map((service) => {
+      // Try to get Ukrainian translation first, then fallback to service name
+      const ukTranslation = service.services_translations?.find((t: any) => t.locale === "uk")
+      const displayName = ukTranslation?.name || service.name || `Service ${service.id}`
+
+      return {
         id: service.id,
-        name: service.services_translations[0]?.name || service.name,
+        name: displayName,
         slug: service.slug,
-      })) || []
+      }
+    })
 
     return NextResponse.json({
       services,
-      brands: brandsData || [],
-      series: seriesData || [],
-      models: modelsData || [],
+      brands: brandsResult.data,
+      series: seriesResult.data,
+      models: modelsResult.data,
     })
   } catch (error) {
-    console.error("Error in options API:", error)
-    return NextResponse.json(
-      { error: "Internal server error", details: error instanceof Error ? error.message : String(error) },
-      { status: 500 },
-    )
+    console.error("Error fetching options:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

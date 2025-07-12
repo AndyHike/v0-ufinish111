@@ -1,7 +1,6 @@
 "use client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { BulkModelImport } from "./bulk-model-import"
 import { BulkServiceImportComponent } from "./bulk-service-import-component"
 import { RemOnlineImport } from "./remonline-import"
 
@@ -9,26 +8,19 @@ export function BulkServiceImport() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Масовий імпорт</CardTitle>
+        <CardTitle>Масовий імпорт послуг</CardTitle>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="remonline" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="remonline">RemOnline експорт</TabsTrigger>
-            <TabsTrigger value="services">Послуги</TabsTrigger>
-            <TabsTrigger value="models">Моделі</TabsTrigger>
+        <Tabs defaultValue="csv" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="csv">CSV імпорт</TabsTrigger>
+            <TabsTrigger value="remonline">RemOnline імпорт</TabsTrigger>
           </TabsList>
-
-          <TabsContent value="remonline" className="space-y-4">
-            <RemOnlineImport />
-          </TabsContent>
-
-          <TabsContent value="services" className="space-y-4">
+          <TabsContent value="csv">
             <BulkServiceImportComponent />
           </TabsContent>
-
-          <TabsContent value="models" className="space-y-4">
-            <BulkModelImport />
+          <TabsContent value="remonline">
+            <RemOnlineImport />
           </TabsContent>
         </Tabs>
       </CardContent>
@@ -36,5 +28,5 @@ export function BulkServiceImport() {
   )
 }
 
-// Export both named and default
+// Also export as named export for compatibility
 export { BulkServiceImport as default }
