@@ -8,7 +8,7 @@ type RemOnlineServiceRow = {
   "Стандартна ціна": string | number
   Гарантія: string | number
   "Гарантійний період": string
-  Тривалість: string | number
+  "Тривалість (хвилини)": string | number
   [key: string]: any
 }
 
@@ -130,7 +130,7 @@ export async function POST(request: Request) {
       // Parse numeric values
       const price = parseNumber(row["Стандартна ціна"])
       const warrantyDuration = parseNumber(row["Гарантія"])
-      const durationMinutes = parseNumber(row["Тривалість"])
+      const durationMinutes = parseNumber(row["Тривалість (хвилини)"])
       const warrantyPeriod = parseWarrantyPeriod(row["Гарантійний період"] || "")
 
       // Find matching records

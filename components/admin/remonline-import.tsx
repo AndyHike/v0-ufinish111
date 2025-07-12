@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useToast } from "@/components/ui/use-toast"
 import { Upload, FileText, AlertCircle } from "lucide-react"
 import { RemOnlineImportPreview } from "./remonline-import-preview"
@@ -51,22 +50,23 @@ export function RemOnlineImport() {
   const { toast } = useToast()
   const [file, setFile] = useState<File | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
-  const [parsedServices, setParsedServices] = useState<ParsedService[]>([])
+  const [parsedServices, setParsedServices] = useState<ParsedService[] | null>(null)
   const [summary, setSummary] = useState<ImportSummary | null>(null)
-  const [showPreview, setShowPreview] = useState(false)
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0]
     if (selectedFile) {
-      if (selectedFile.type === "text/csv" || selectedFile.name.endsWith(".csv")) {
-        setFile(selectedFile)
-      } else {
+      if (selectedFile.type !== "text/csv" && !selectedFile.name.endsWith(".csv")) {
         toast({
           title: "Помилка",
           description: "Будь ласка, виберіть CSV файл",
           variant: "destructive",
         })
+        return
       }
+      setFile(selectedFile)
+      setParsedServices(null)
+      setSummary(null)
     }
   }
 
@@ -95,7 +95,6 @@ export function RemOnlineImport() {
       if (response.ok) {
         setParsedServices(result.services)
         setSummary(result.summary)
-        setShowPreview(true)
         toast({
           title: "Успіх",
           description: `Оброблено ${result.total} записів`,
@@ -116,15 +115,13 @@ export function RemOnlineImport() {
   }
 
   const handleBack = () => {
-    setShowPreview(false)
-    setParsedServices([])
+    setParsedServices(null)
     setSummary(null)
     setFile(null)
   }
 
   const handleSuccess = () => {
-    setShowPreview(false)
-    setParsedServices([])
+    setParsedServices(null)
     setSummary(null)
     setFile(null)
     toast({
@@ -133,7 +130,7 @@ export function RemOnlineImport() {
     })
   }
 
-  if (showPreview) {
+  if (parsedServices) {
     return (
       <RemOnlineImportPreview
         services={parsedServices}
@@ -147,7 +144,7 @@ export function RemOnlineImport() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold mb-2">Імпорт з RemOnline</h2>
+        <h2 className="text-2xl font-bold">Імпорт з RemOnline</h2>
         <p className="text-muted-foreground">
           Завантажте CSV файл експорту з RemOnline для автоматичного імпорту послуг
         </p>
@@ -157,8 +154,52 @@ export function RemOnlineImport() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
-            Завантаження файлу
+            Формат файлу
           </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="bg-muted p-4 rounded-lg">
+            <h4 className="font-medium mb-2">Очікувані колонки в CSV файлі:</h4>
+            <ul className="space-y-1 text-sm">
+              <li>
+                <strong>Опис</strong> - містить [slug] послуги в квадратних дужках
+              </li>
+              <li>
+                <strong>Категорія</strong> - ієрархія "Бренд {">"} Серія {">"} Модель"
+              </li>
+              <li>
+                <strong>Стандартна ціна</strong> - ціна послуги
+              </li>
+              <li>
+                <strong>Гарантія</strong> - тривалість гарантії (число)
+              </li>
+              <li>
+                <strong>Гарантійний період</strong> - метрика (міс. або дн.)
+              </li>
+              <li>
+                <strong>Тривалість (хвилини)</strong> - час виконання в хвилинах
+              </li>
+            </ul>
+          </div>
+
+          <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
+              <div>
+                <h4 className="font-medium text-yellow-800">Важливо</h4>
+                <p className="text-sm text-yellow-700">
+                  Система автоматично співставить дані з вашою базою. Якщо модель не знайдена - буде запропоновано
+                  створити нову.
+                </p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Завантаження файлу</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
@@ -167,35 +208,19 @@ export function RemOnlineImport() {
           </div>
 
           {file && (
-            <div className="p-3 bg-muted rounded-lg">
-              <div className="flex items-center gap-2">
-                <FileText className="h-4 w-4" />
-                <span className="font-medium">{file.name}</span>
-                <span className="text-sm text-muted-foreground">({(file.size / 1024).toFixed(1)} KB)</span>
-              </div>
+            <div className="bg-green-50 border border-green-200 p-3 rounded-lg">
+              <p className="text-sm text-green-700">
+                Файл вибрано: <strong>{file.name}</strong> ({(file.size / 1024).toFixed(1)} KB)
+              </p>
             </div>
           )}
 
           <Button onClick={processFile} disabled={!file || isProcessing} className="w-full">
             <Upload className="h-4 w-4 mr-2" />
-            {isProcessing ? "Обробка..." : "Обробити файл"}
+            {isProcessing ? "Обробка файлу..." : "Обробити файл"}
           </Button>
         </CardContent>
       </Card>
-
-      <Alert>
-        <AlertCircle className="h-4 w-4" />
-        <AlertDescription>
-          <strong>Формат файлу:</strong>
-          <ul className="mt-2 space-y-1 text-sm">
-            <li>• Колонка "Опис" повинна містити slug в квадратних дужках: [screen-replacement]</li>
-            <li>
-              • Колонка "Категорія" повинна містити ієрархію: Apple {">"} iPhone {">"} iPhone 11
-            </li>
-            <li>• Колонки "Стандартна ціна", "Гарантія", "Гарантійний період", "Тривалість"</li>
-          </ul>
-        </AlertDescription>
-      </Alert>
     </div>
   )
 }
