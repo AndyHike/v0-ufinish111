@@ -8,45 +8,39 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
     const { searchParams } = new URL(request.url)
     const locale = searchParams.get("locale") || "uk"
 
-    console.log(`[API] Fetching model data for slug: ${slug}, locale: ${locale}`)
+    console.log(`[MODELS API] Fetching model data for slug: ${slug}, locale: ${locale}`)
 
-    // Спочатку спробуємо знайти за слагом
-    let { data: model, error } = await supabase
+    // Отримуємо дані моделі
+    const { data: model, error: modelError } = await supabase
       .from("models")
       .select(`
-        *,
-        brand:brands(id, name, slug, logo_url),
-        series:series(id, name, slug)
+        id,
+        name,
+        slug,
+        image_url,
+        brands(
+          id,
+          name,
+          slug,
+          logo_url
+        ),
+        series(
+          id,
+          name,
+          slug
+        )
       `)
       .eq("slug", slug)
       .single()
 
-    // Якщо не знайдено за слагом, спробуємо знайти за ID (для зворотної сумісності)
-    if (error && error.code === "PGRST116") {
-      const { data: dataById, error: errorById } = await supabase
-        .from("models")
-        .select(`
-          *,
-          brand:brands(id, name, slug, logo_url),
-          series:series(id, name, slug)
-        `)
-        .eq("id", slug)
-        .single()
-
-      if (errorById) {
-        console.error("[API] Error fetching model by ID:", errorById)
-        return NextResponse.json({ error: "Model not found" }, { status: 404 })
-      }
-
-      model = dataById
-    } else if (error) {
-      console.error("[API] Error fetching model:", error)
-      return NextResponse.json({ error: "Failed to fetch model" }, { status: 500 })
+    if (modelError || !model) {
+      console.error("[MODELS API] Model not found:", modelError)
+      return NextResponse.json({ error: "Model not found" }, { status: 404 })
     }
 
-    console.log(`[API] Found model: ${model.name}`)
+    console.log(`[MODELS API] Found model: ${model.id} - ${model.name}`)
 
-    // Отримуємо послуги моделі з правильними даними з model_services
+    // Отримуємо послуги для моделі з правильною конвертацією типів
     const { data: modelServices, error: servicesError } = await supabase
       .from("model_services")
       .select(`
@@ -72,85 +66,75 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
         )
       `)
       .eq("model_id", model.id)
-      .order("services(position)", { ascending: true })
+      .order("services(position)")
 
     if (servicesError) {
-      console.error("[API] Error fetching model services:", servicesError)
-      return NextResponse.json({ error: "Failed to fetch services" }, { status: 500 })
+      console.error("[MODELS API] Error fetching services:", servicesError)
+      return NextResponse.json({ error: "Error fetching services" }, { status: 500 })
     }
 
-    console.log(`[API] Found ${modelServices?.length || 0} model services`)
+    console.log(`[MODELS API] Found ${modelServices?.length || 0} services for model`)
 
     // Трансформуємо дані послуг з правильною конвертацією типів
-    const services = modelServices
-      ?.map((ms) => {
-        const service = ms.services
-        if (!service) {
-          console.log("[API] Service not found for model_service:", ms.id)
-          return null
-        }
+    const services =
+      modelServices
+        ?.map((ms) => {
+          const service = ms.services
+          if (!service) return null
 
-        // Знаходимо переклад для поточної локалі
-        const translation =
-          service.services_translations?.find((t) => t.locale === locale) || service.services_translations?.[0]
+          const translation = service.services_translations?.find((t: any) => t.locale === locale)
+          if (!translation) return null
 
-        if (!translation) {
-          console.log("[API] Translation not found for service:", service.id, "locale:", locale)
-          return null
-        }
+          // Правильна конвертація типів даних з бази
+          const price = ms.price ? Number.parseFloat(ms.price.toString()) : null
+          const warrantyMonths = ms.warranty_months ? Number.parseInt(ms.warranty_months.toString()) : null
+          const durationHours = ms.duration_hours ? Number.parseFloat(ms.duration_hours.toString()) : null
 
-        // Конвертуємо типи даних правильно
-        const price = ms.price ? Number.parseFloat(ms.price.toString()) : null
-        const warrantyMonths = ms.warranty_months ? Number.parseInt(ms.warranty_months.toString()) : null
-        const durationHours = ms.duration_hours ? Number.parseFloat(ms.duration_hours.toString()) : null
+          console.log(`[MODELS API] Converting service ${service.slug}:`, {
+            original_price: ms.price,
+            converted_price: price,
+            original_warranty_months: ms.warranty_months,
+            converted_warranty_months: warrantyMonths,
+            original_duration_hours: ms.duration_hours,
+            converted_duration_hours: durationHours,
+            warranty_period: ms.warranty_period,
+          })
 
-        console.log(`[API] Processing service: ${translation.name}`, {
-          original_warranty_months: ms.warranty_months,
-          converted_warranty_months: warrantyMonths,
-          original_duration_hours: ms.duration_hours,
-          converted_duration_hours: durationHours,
-          original_price: ms.price,
-          converted_price: price,
+          return {
+            id: service.id,
+            slug: service.slug,
+            name: translation.name,
+            description: translation.description,
+            // ВАЖЛИВО: Використовуємо правильно конвертовані дані з model_services
+            price: price,
+            warranty_months: warrantyMonths,
+            duration_hours: durationHours,
+            warranty_period: ms.warranty_period || "months",
+            position: service.position,
+            image_url: service.image_url,
+            detailed_description: ms.detailed_description,
+            what_included: ms.what_included,
+            benefits: ms.benefits,
+          }
         })
+        .filter(Boolean)
+        .sort((a, b) => a.position - b.position) || []
 
-        return {
-          id: service.id,
-          slug: service.slug,
-          name: translation.name,
-          description: translation.description,
-          // ВАЖЛИВО: Використовуємо правильно конвертовані дані з model_services
-          price: price,
-          warranty_months: warrantyMonths,
-          duration_hours: durationHours,
-          warranty_period: ms.warranty_period || "months",
-          position: service.position,
-          image_url: service.image_url,
-          detailed_description: ms.detailed_description,
-          what_included: ms.what_included,
-          benefits: ms.benefits,
-        }
-      })
-      .filter(Boolean)
-      .sort((a, b) => (a.position || 0) - (b.position || 0))
-
-    console.log(
-      `[API] Final transformed services:`,
-      services?.map((s) => ({
-        name: s.name,
-        warranty_months: s.warranty_months,
-        duration_hours: s.duration_hours,
-        price: s.price,
-      })),
-    )
-
-    const result = {
-      ...model,
-      services: services || [],
+    const modelData = {
+      id: model.id,
+      name: model.name,
+      slug: model.slug,
+      image_url: model.image_url,
+      brands: model.brands,
+      series: model.series,
+      services: services,
     }
 
-    return NextResponse.json(result)
+    console.log(`[MODELS API] Returning model data with ${services.length} services`)
+
+    return NextResponse.json(modelData)
   } catch (error) {
-    console.error("[API] Unexpected error:", error)
+    console.error("[MODELS API] Error in models API:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

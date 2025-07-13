@@ -1,5 +1,7 @@
 "use client"
 
+import { useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
@@ -56,8 +58,26 @@ interface Props {
 export default function ServicePageClient({ serviceData, locale }: Props) {
   const t = useTranslations("Services")
   const commonT = useTranslations("Common")
+  const router = useRouter()
+  const searchParams = useSearchParams()
 
   const { translation, faqs, sourceModel, modelServicePrice, minPrice, maxPrice } = serviceData
+
+  // Отримуємо параметр model з URL
+  const modelParam = searchParams.get("model")
+
+  // Виправляємо URL при зміні мови, зберігаючи параметр model
+  useEffect(() => {
+    if (modelParam && !sourceModel) {
+      // Якщо є параметр model в URL, але sourceModel не знайдено,
+      // можливо потрібно перезавантажити дані
+      console.log("[SERVICE CLIENT] Model param exists but sourceModel not found:", {
+        modelParam,
+        sourceModel,
+        currentUrl: window.location.href,
+      })
+    }
+  }, [modelParam, sourceModel])
 
   const backUrl = sourceModel ? `/${locale}/models/${sourceModel.slug}` : `/${locale}`
   const backText = sourceModel ? `${sourceModel.brands?.name} ${sourceModel.name}` : commonT("backToHome")
@@ -85,16 +105,17 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
 
   // Виправлена логіка відображення ціни
   const renderPrice = () => {
-    console.log("[CLIENT] Price logic:", {
+    console.log("[SERVICE CLIENT] Price logic:", {
       sourceModel: !!sourceModel,
+      modelParam,
       modelServicePrice,
       modelServicePriceType: typeof modelServicePrice,
       minPrice,
       maxPrice,
     })
 
-    // Якщо є конкретна модель
-    if (sourceModel) {
+    // Якщо є параметр model в URL (незалежно від того чи знайдено sourceModel)
+    if (modelParam) {
       // Правильна перевірка: перевіряємо на null/undefined, а не на falsy
       if (modelServicePrice === null || modelServicePrice === undefined) {
         return t("priceOnRequest")
@@ -103,7 +124,7 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
       return formatCurrency(modelServicePrice)
     }
 
-    // Якщо немає конкретної моделі, показуємо діапазон цін або "ціна за запитом"
+    // Якщо немає параметра model, показуємо діапазон цін або "ціна за запитом"
     if (minPrice !== null && maxPrice !== null && minPrice !== undefined && maxPrice !== undefined) {
       return minPrice === maxPrice
         ? formatCurrency(minPrice)
@@ -113,13 +134,15 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
     return t("priceOnRequest")
   }
 
-  console.log("[CLIENT] Service data:", {
+  console.log("[SERVICE CLIENT] Service data:", {
     warranty_months: serviceData.warranty_months,
     warranty_months_type: typeof serviceData.warranty_months,
     duration_hours: serviceData.duration_hours,
     duration_hours_type: typeof serviceData.duration_hours,
     modelServicePrice: serviceData.modelServicePrice,
     modelServicePrice_type: typeof serviceData.modelServicePrice,
+    modelParam,
+    sourceModel: !!sourceModel,
   })
 
   return (
@@ -169,9 +192,11 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
             {/* Ціна */}
             <div>
               <div className="text-2xl lg:text-3xl font-bold text-gray-900 mb-1">{renderPrice()}</div>
-              {sourceModel && (
+              {(sourceModel || modelParam) && (
                 <p className="text-gray-600 text-sm">
-                  {t("forModel", { brand: sourceModel.brands?.name, model: sourceModel.name })}
+                  {sourceModel
+                    ? t("forModel", { brand: sourceModel.brands?.name, model: sourceModel.name })
+                    : t("forSpecificModel")}
                 </p>
               )}
             </div>
@@ -200,7 +225,13 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Button size="lg" className="bg-blue-600 hover:bg-blue-700 py-3" asChild>
                 <Link
-                  href={`/${locale}/contact?service=${encodeURIComponent(translation.name)}${sourceModel ? `&model=${encodeURIComponent(sourceModel.name)}` : ""}`}
+                  href={`/${locale}/contact?service=${encodeURIComponent(translation.name)}${
+                    sourceModel
+                      ? `&model=${encodeURIComponent(sourceModel.name)}`
+                      : modelParam
+                        ? `&model=${encodeURIComponent(modelParam)}`
+                        : ""
+                  }`}
                 >
                   <Phone className="h-4 w-4 mr-2" />
                   {t("orderService")}
