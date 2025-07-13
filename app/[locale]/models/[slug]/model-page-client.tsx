@@ -48,13 +48,21 @@ export default function ModelPageClient({ modelData, locale }: Props) {
   const t = useTranslations("Models")
   const commonT = useTranslations("Common")
 
+  // Виправлена логіка форматування гарантії
   const formatWarranty = (months: number | null, period: string | null) => {
-    if (!months) return t("contactForWarranty")
+    // Правильна перевірка: перевіряємо на null/undefined, а не на falsy значення
+    if (months === null || months === undefined) return t("contactForWarranty")
+
+    // Якщо months = 0, то показуємо "0 місяців" або "0 днів"
     return period === "days" ? t("warrantyDays", { count: months }) : t("warrantyMonths", { count: months })
   }
 
+  // Виправлена логіка форматування тривалості
   const formatDuration = (hours: number | null) => {
-    if (!hours) return t("contactForTime")
+    // Правильна перевірка: перевіряємо на null/undefined, а не на falsy значення
+    if (hours === null || hours === undefined) return t("contactForTime")
+
+    // Якщо hours = 0, то показуємо "від 0 годин"
     return t("fromHours", { hours })
   }
 
@@ -63,8 +71,11 @@ export default function ModelPageClient({ modelData, locale }: Props) {
     modelData.services.map((s) => ({
       name: s.name,
       warranty_months: s.warranty_months,
+      warranty_months_type: typeof s.warranty_months,
       duration_hours: s.duration_hours,
+      duration_hours_type: typeof s.duration_hours,
       price: s.price,
+      price_type: typeof s.price,
     })),
   )
 
@@ -162,7 +173,7 @@ export default function ModelPageClient({ modelData, locale }: Props) {
                         {service.name}
                       </h3>
 
-                      {/* Key Benefits - використовуємо дані з model_services */}
+                      {/* Key Benefits - використовуємо правильно конвертовані дані з model_services */}
                       <div className="mb-3 space-y-1">
                         <div className="flex items-center gap-2 text-sm text-gray-600">
                           <Clock className="h-3 w-3 text-blue-600" />
@@ -174,10 +185,13 @@ export default function ModelPageClient({ modelData, locale }: Props) {
                         </div>
                       </div>
 
-                      {/* Price and CTA */}
+                      {/* Price and CTA - виправлена логіка для ціни */}
                       <div className="flex items-center justify-between">
                         <div className="text-xl font-bold text-gray-900">
-                          {service.price ? formatCurrency(service.price) : t("priceOnRequest")}
+                          {/* Правильна перевірка ціни: перевіряємо на null/undefined, а не на falsy */}
+                          {service.price !== null && service.price !== undefined
+                            ? formatCurrency(service.price)
+                            : t("priceOnRequest")}
                         </div>
                         <div className="flex items-center text-blue-600 font-semibold group-hover:text-blue-700">
                           <span className="mr-1 text-sm">{commonT("details")}</span>

@@ -155,11 +155,32 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
           .single()
 
         if (!modelServiceError && modelService) {
-          modelServiceData = modelService
-          console.log("[API] Found model-specific service data:", {
-            price: modelService.price,
-            warranty_months: modelService.warranty_months,
-            duration_hours: modelService.duration_hours,
+          // Конвертуємо типи даних правильно
+          const price = modelService.price ? Number.parseFloat(modelService.price.toString()) : null
+          const warrantyMonths = modelService.warranty_months
+            ? Number.parseInt(modelService.warranty_months.toString())
+            : null
+          const durationHours = modelService.duration_hours
+            ? Number.parseFloat(modelService.duration_hours.toString())
+            : null
+
+          modelServiceData = {
+            price: price,
+            warranty_months: warrantyMonths,
+            duration_hours: durationHours,
+            warranty_period: modelService.warranty_period || "months",
+            detailed_description: modelService.detailed_description,
+            what_included: modelService.what_included,
+            benefits: modelService.benefits,
+          }
+
+          console.log("[API] Found and converted model-specific service data:", {
+            original_price: modelService.price,
+            converted_price: price,
+            original_warranty_months: modelService.warranty_months,
+            converted_warranty_months: warrantyMonths,
+            original_duration_hours: modelService.duration_hours,
+            converted_duration_hours: durationHours,
             warranty_period: modelService.warranty_period,
           })
         } else {
@@ -170,11 +191,11 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
       }
     }
 
-    // Отримуємо діапазон цін тільки якщо немає конкретної моделі
+    // Отримуємо діапазон цін тільки якщо немає конкретної моделі або немає model service data
     let minPrice = null
     let maxPrice = null
 
-    if (!modelSlug) {
+    if (!modelSlug || !modelServiceData) {
       const { data: priceData, error: priceError } = await supabase
         .from("model_services")
         .select("price")
@@ -182,7 +203,7 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
         .not("price", "is", null)
 
       if (!priceError && priceData && priceData.length > 0) {
-        const prices = priceData.map((p) => p.price).filter((p) => p !== null)
+        const prices = priceData.map((p) => Number.parseFloat(p.price.toString())).filter((p) => !isNaN(p) && p > 0)
         if (prices.length > 0) {
           minPrice = Math.min(...prices)
           maxPrice = Math.max(...prices)

@@ -65,13 +65,21 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
   const whatIncludedList = translation.what_included?.split("\n").filter((item) => item.trim()) || []
   const benefitsList = translation.benefits?.split("\n").filter((item) => item.trim()) || []
 
+  // Виправлена логіка форматування гарантії
   const formatWarranty = (months: number | null, period: string) => {
-    if (!months) return t("contactForWarranty")
+    // Правильна перевірка: перевіряємо на null/undefined, а не на falsy значення
+    if (months === null || months === undefined) return t("contactForWarranty")
+
+    // Якщо months = 0, то показуємо "0 місяців" або "0 днів"
     return period === "days" ? t("warrantyDays", { count: months }) : t("warrantyMonths", { count: months })
   }
 
+  // Виправлена логіка форматування тривалості
   const formatDuration = (hours: number | null) => {
-    if (!hours) return t("contactForTime")
+    // Правильна перевірка: перевіряємо на null/undefined, а не на falsy значення
+    if (hours === null || hours === undefined) return t("contactForTime")
+
+    // Якщо hours = 0, то показуємо "від 0 годин"
     return t("fromHours", { hours })
   }
 
@@ -80,22 +88,23 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
     console.log("[CLIENT] Price logic:", {
       sourceModel: !!sourceModel,
       modelServicePrice,
+      modelServicePriceType: typeof modelServicePrice,
       minPrice,
       maxPrice,
     })
 
     // Якщо є конкретна модель
     if (sourceModel) {
-      // Якщо ціна null або undefined - показуємо "ціна за запитом"
+      // Правильна перевірка: перевіряємо на null/undefined, а не на falsy
       if (modelServicePrice === null || modelServicePrice === undefined) {
         return t("priceOnRequest")
       }
-      // Якщо ціна є - показуємо її
+      // Якщо ціна є (навіть 0) - показуємо її
       return formatCurrency(modelServicePrice)
     }
 
     // Якщо немає конкретної моделі, показуємо діапазон цін або "ціна за запитом"
-    if (minPrice && maxPrice) {
+    if (minPrice !== null && maxPrice !== null && minPrice !== undefined && maxPrice !== undefined) {
       return minPrice === maxPrice
         ? formatCurrency(minPrice)
         : `${formatCurrency(minPrice)} - ${formatCurrency(maxPrice)}`
@@ -103,6 +112,15 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
 
     return t("priceOnRequest")
   }
+
+  console.log("[CLIENT] Service data:", {
+    warranty_months: serviceData.warranty_months,
+    warranty_months_type: typeof serviceData.warranty_months,
+    duration_hours: serviceData.duration_hours,
+    duration_hours_type: typeof serviceData.duration_hours,
+    modelServicePrice: serviceData.modelServicePrice,
+    modelServicePrice_type: typeof serviceData.modelServicePrice,
+  })
 
   return (
     <div className="min-h-screen bg-white">
@@ -158,7 +176,7 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
               )}
             </div>
 
-            {/* Компактні переваги */}
+            {/* Компактні переваги - використовуємо правильно конвертовані дані */}
             <div className="grid grid-cols-2 gap-3">
               <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
                 <Clock className="h-5 w-5 text-blue-600 flex-shrink-0" />

@@ -81,7 +81,7 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
 
     console.log(`[API] Found ${modelServices?.length || 0} model services`)
 
-    // Трансформуємо дані послуг
+    // Трансформуємо дані послуг з правильною конвертацією типів
     const services = modelServices
       ?.map((ms) => {
         const service = ms.services
@@ -99,19 +99,29 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
           return null
         }
 
-        console.log(
-          `[API] Processing service: ${translation.name}, warranty_months: ${ms.warranty_months}, duration_hours: ${ms.duration_hours}, price: ${ms.price}`,
-        )
+        // Конвертуємо типи даних правильно
+        const price = ms.price ? Number.parseFloat(ms.price.toString()) : null
+        const warrantyMonths = ms.warranty_months ? Number.parseInt(ms.warranty_months.toString()) : null
+        const durationHours = ms.duration_hours ? Number.parseFloat(ms.duration_hours.toString()) : null
+
+        console.log(`[API] Processing service: ${translation.name}`, {
+          original_warranty_months: ms.warranty_months,
+          converted_warranty_months: warrantyMonths,
+          original_duration_hours: ms.duration_hours,
+          converted_duration_hours: durationHours,
+          original_price: ms.price,
+          converted_price: price,
+        })
 
         return {
           id: service.id,
           slug: service.slug,
           name: translation.name,
           description: translation.description,
-          // ВАЖЛИВО: Використовуємо дані з model_services, а не з services
-          price: ms.price,
-          warranty_months: ms.warranty_months,
-          duration_hours: ms.duration_hours,
+          // ВАЖЛИВО: Використовуємо правильно конвертовані дані з model_services
+          price: price,
+          warranty_months: warrantyMonths,
+          duration_hours: durationHours,
           warranty_period: ms.warranty_period || "months",
           position: service.position,
           image_url: service.image_url,
@@ -124,7 +134,7 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
       .sort((a, b) => (a.position || 0) - (b.position || 0))
 
     console.log(
-      `[API] Transformed services with model-specific data:`,
+      `[API] Final transformed services:`,
       services?.map((s) => ({
         name: s.name,
         warranty_months: s.warranty_months,
