@@ -1,7 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
@@ -58,7 +57,6 @@ interface Props {
 export default function ServicePageClient({ serviceData, locale }: Props) {
   const t = useTranslations("Services")
   const commonT = useTranslations("Common")
-  const router = useRouter()
   const searchParams = useSearchParams()
 
   const { translation, faqs, sourceModel, modelServicePrice, minPrice, maxPrice } = serviceData
@@ -66,57 +64,37 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
   // Отримуємо параметр model з URL
   const modelParam = searchParams.get("model")
 
-  // Виправляємо URL при зміні мови, зберігаючи параметр model
-  useEffect(() => {
-    if (modelParam && !sourceModel) {
-      // Якщо є параметр model в URL, але sourceModel не знайдено,
-      // можливо потрібно перезавантажити дані
-      console.log("[SERVICE CLIENT] Model param exists but sourceModel not found:", {
-        modelParam,
-        sourceModel,
-        currentUrl: window.location.href,
-      })
-    }
-  }, [modelParam, sourceModel])
-
   const backUrl = sourceModel ? `/${locale}/models/${sourceModel.slug}` : `/${locale}`
   const backText = sourceModel ? `${sourceModel.brands?.name} ${sourceModel.name}` : commonT("backToHome")
 
   const whatIncludedList = translation.what_included?.split("\n").filter((item) => item.trim()) || []
   const benefitsList = translation.benefits?.split("\n").filter((item) => item.trim()) || []
 
-  // Виправлена логіка форматування гарантії
   const formatWarranty = (months: number | null, period: string) => {
-    // Правильна перевірка: перевіряємо на null/undefined, а не на falsy значення
+    // Виправлена перевірка: перевіряємо на null/undefined, а не на falsy значення
     if (months === null || months === undefined) return t("contactForWarranty")
-
-    // Якщо months = 0, то показуємо "0 місяців" або "0 днів"
     return period === "days" ? t("warrantyDays", { count: months }) : t("warrantyMonths", { count: months })
   }
 
-  // Виправлена логіка форматування тривалості
   const formatDuration = (hours: number | null) => {
-    // Правильна перевірка: перевіряємо на null/undefined, а не на falsy значення
+    // Виправлена перевірка: перевіряємо на null/undefined, а не на falsy значення
     if (hours === null || hours === undefined) return t("contactForTime")
-
-    // Якщо hours = 0, то показуємо "від 0 годин"
     return t("fromHours", { hours })
   }
 
   // Виправлена логіка відображення ціни
   const renderPrice = () => {
-    console.log("[SERVICE CLIENT] Price logic:", {
+    console.log("[CLIENT] Price logic:", {
       sourceModel: !!sourceModel,
       modelParam,
       modelServicePrice,
-      modelServicePriceType: typeof modelServicePrice,
       minPrice,
       maxPrice,
     })
 
     // Якщо є параметр model в URL (незалежно від того чи знайдено sourceModel)
     if (modelParam) {
-      // Правильна перевірка: перевіряємо на null/undefined, а не на falsy
+      // Виправлена перевірка: перевіряємо на null/undefined, а не на falsy
       if (modelServicePrice === null || modelServicePrice === undefined) {
         return t("priceOnRequest")
       }
@@ -133,17 +111,6 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
 
     return t("priceOnRequest")
   }
-
-  console.log("[SERVICE CLIENT] Service data:", {
-    warranty_months: serviceData.warranty_months,
-    warranty_months_type: typeof serviceData.warranty_months,
-    duration_hours: serviceData.duration_hours,
-    duration_hours_type: typeof serviceData.duration_hours,
-    modelServicePrice: serviceData.modelServicePrice,
-    modelServicePrice_type: typeof serviceData.modelServicePrice,
-    modelParam,
-    sourceModel: !!sourceModel,
-  })
 
   return (
     <div className="min-h-screen bg-white">
@@ -201,7 +168,7 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
               )}
             </div>
 
-            {/* Компактні переваги - використовуємо правильно конвертовані дані */}
+            {/* Компактні переваги */}
             <div className="grid grid-cols-2 gap-3">
               <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
                 <Clock className="h-5 w-5 text-blue-600 flex-shrink-0" />
