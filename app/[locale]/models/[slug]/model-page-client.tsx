@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl"
 import { Clock, Shield, ArrowRight } from "lucide-react"
 import { formatCurrency } from "@/lib/format-currency"
 import { formatImageUrl } from "@/utils/image-url"
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 
 interface ModelData {
   id: string
@@ -48,30 +48,52 @@ interface Props {
 export default function ModelPageClient({ modelData, locale }: Props) {
   const t = useTranslations("Models")
   const commonT = useTranslations("Common")
+  const viewContentSent = useRef(false) // Уникаємо дублювання
 
-  // Facebook Pixel - ViewContent для сторінки моделі
+  // ВИПРАВЛЕНО: Покращена подія ViewContent для сторінки моделі
   useEffect(() => {
-    if (typeof window !== "undefined" && window.fbq) {
+    if (typeof window !== "undefined" && window.fbq && !viewContentSent.current) {
+      // Розраховуємо середню ціну послуг
+      const servicesWithPrice = modelData.services.filter((s) => s.price !== null && s.price !== undefined)
       const avgPrice =
-        modelData.services.length > 0
-          ? modelData.services.filter((s) => s.price !== null).reduce((sum, s) => sum + (s.price || 0), 0) /
-            modelData.services.filter((s) => s.price !== null).length
+        servicesWithPrice.length > 0
+          ? servicesWithPrice.reduce((sum, s) => sum + (s.price || 0), 0) / servicesWithPrice.length
           : 0
 
+      // ПОКРАЩЕНІ ПАРАМЕТРИ для сторінки моделі
       window.fbq("track", "ViewContent", {
-        content_type: "product",
+        content_type: "product", // Модель = продукт
         content_name: `${modelData.brands?.name} ${modelData.name}`,
         content_category: "device_model",
-        value: avgPrice || 0,
+        value: Math.round(avgPrice) || 0,
         currency: "CZK",
+        // Структуровані параметри
         custom_parameters: {
+          // Основні дані моделі (НАЙВАЖЛИВІШЕ!)
           model_id: modelData.id,
           model_name: modelData.name,
+          model_slug: modelData.slug,
+          // Дані про бренд
+          brand_id: modelData.brands?.id || "unknown",
           brand_name: modelData.brands?.name || "unknown",
+          brand_slug: modelData.brands?.slug || "unknown",
+          // Дані про серію
+          series_id: modelData.series?.id || "unknown",
           series_name: modelData.series?.name || "unknown",
+          series_slug: modelData.series?.slug || "unknown",
+          // Статистика послуг
           services_count: modelData.services.length,
+          services_with_price: servicesWithPrice.length,
+          avg_service_price: Math.round(avgPrice),
+          min_service_price: servicesWithPrice.length > 0 ? Math.min(...servicesWithPrice.map((s) => s.price || 0)) : 0,
+          max_service_price: servicesWithPrice.length > 0 ? Math.max(...servicesWithPrice.map((s) => s.price || 0)) : 0,
+          // Контекст
+          page_url: window.location.href,
+          referrer: document.referrer || "direct",
         },
       })
+
+      viewContentSent.current = true
     }
   }, [modelData])
 
@@ -88,7 +110,7 @@ export default function ModelPageClient({ modelData, locale }: Props) {
   }
 
   const handleServiceClick = (service: any) => {
-    // Facebook Pixel - відстеження кліку на послугу
+    // ВИПРАВЛЕНО: Покращена подія ViewContent для кліку на послугу
     if (typeof window !== "undefined" && window.fbq) {
       window.fbq("track", "ViewContent", {
         content_type: "service",
@@ -97,9 +119,24 @@ export default function ModelPageClient({ modelData, locale }: Props) {
         value: service.price || 0,
         currency: "CZK",
         custom_parameters: {
+          // Дані про послугу
           service_id: service.id,
+          service_name: service.name,
+          service_price: service.price,
+          service_slug: service.slug,
+          // Контекст моделі (ВАЖЛИВО!)
+          model_id: modelData.id,
           model_name: modelData.name,
+          brand_id: modelData.brands?.id || "unknown",
           brand_name: modelData.brands?.name || "unknown",
+          series_id: modelData.series?.id || "unknown",
+          series_name: modelData.series?.name || "unknown",
+          // Технічні характеристики
+          warranty_months: service.warranty_months || 0,
+          duration_hours: service.duration_hours || 0,
+          // Контекст кліку
+          click_source: "model_page_service_grid",
+          service_position: service.position || 0,
         },
       })
     }

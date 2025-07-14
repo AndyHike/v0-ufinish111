@@ -49,6 +49,7 @@ export function Header({ user }) {
   const [showResults, setShowResults] = useState(false)
   const [hasSearched, setHasSearched] = useState(false)
   const [isFirstSearch, setIsFirstSearch] = useState(true)
+  const [lastSearchQuery, setLastSearchQuery] = useState("") // Для уникнення дублювання
   const searchTimeoutRef = useRef<NodeJS.Timeout>()
   const searchInputRef = useRef<HTMLInputElement>(null)
   const { settings } = useSiteSettings()
@@ -67,6 +68,23 @@ export function Header({ user }) {
     return pathname.startsWith(path)
   }
 
+  // ВИПРАВЛЕНО: Функція для відправки події пошуку (тільки при реальному пошуку)
+  const trackSearchEvent = (query: string, resultsCount: number) => {
+    // Уникаємо дублювання - відправляємо тільки якщо запит змінився
+    if (typeof window !== "undefined" && window.fbq && query !== lastSearchQuery && query.length >= 3) {
+      window.fbq("track", "Search", {
+        search_string: query,
+        content_category: "site_search",
+        custom_parameters: {
+          results_count: resultsCount,
+          search_length: query.length,
+          page_url: window.location.href,
+        },
+      })
+      setLastSearchQuery(query)
+    }
+  }
+
   const handleSearch = async (query: string) => {
     if (query.length < 2) {
       setSearchResults([])
@@ -74,14 +92,6 @@ export function Header({ user }) {
       setHasSearched(false)
       setIsFirstSearch(true)
       return
-    }
-
-    // Facebook Pixel - відстеження пошуку
-    if (typeof window !== "undefined" && window.fbq) {
-      window.fbq("track", "Search", {
-        search_string: query,
-        content_category: "site_search",
-      })
     }
 
     // Показуємо спінер тільки при першому пошуку
@@ -97,6 +107,11 @@ export function Header({ user }) {
       if (data.results) {
         setSearchResults(data.results || [])
         setShowResults(true)
+
+        // ВИПРАВЛЕНО: Відправляємо подію пошуку тільки для запитів >= 3 символи
+        if (query.length >= 3) {
+          trackSearchEvent(query, data.results.length)
+        }
       } else {
         setSearchResults([])
         setShowResults(true)
@@ -129,11 +144,12 @@ export function Header({ user }) {
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (searchQuery.trim()) {
+      // ВИПРАВЛЕНО: Відправляємо подію пошуку при submit
+      trackSearchEvent(searchQuery.trim(), searchResults.length)
+
       // Якщо є результати, перейти до першого
       if (searchResults.length > 0) {
-        router.push(searchResults[0].url)
-        setShowResults(false)
-        setSearchQuery("")
+        handleResultClick(searchResults[0])
       } else {
         // Якщо немає результатів, перейти на сторінку брендів
         router.push(`/${locale}/brands`)
@@ -143,6 +159,21 @@ export function Header({ user }) {
   }
 
   const handleResultClick = (result: SearchResult) => {
+    // ВИПРАВЛЕНО: Відстеження кліку на результат пошуку з детальними параметрами
+    if (typeof window !== "undefined" && window.fbq) {
+      window.fbq("track", "ViewContent", {
+        content_type: result.type,
+        content_name: result.name,
+        content_category: "search_result",
+        custom_parameters: {
+          search_query: searchQuery,
+          result_position: searchResults.findIndex((r) => r.id === result.id) + 1,
+          result_type: result.type,
+          total_results: searchResults.length,
+        },
+      })
+    }
+
     router.push(result.url)
     setShowResults(false)
     setSearchQuery("")

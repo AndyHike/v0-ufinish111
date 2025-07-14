@@ -8,7 +8,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Phone, MessageCircle, Clock, Shield, CheckCircle, ChevronDown, ArrowLeft } from "lucide-react"
 import { formatCurrency } from "@/lib/format-currency"
 import { formatImageUrl } from "@/utils/image-url"
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 
 interface ServiceData {
   id: string
@@ -59,6 +59,7 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
   const t = useTranslations("Services")
   const commonT = useTranslations("Common")
   const searchParams = useSearchParams()
+  const viewContentSent = useRef(false) // Уникаємо дублювання
 
   const { translation, faqs, sourceModel, modelServicePrice, minPrice, maxPrice } = serviceData
 
@@ -71,30 +72,49 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
   const whatIncludedList = translation.what_included?.split("\n").filter((item) => item.trim()) || []
   const benefitsList = translation.benefits?.split("\n").filter((item) => item.trim()) || []
 
-  // Facebook Pixel - ViewContent для сторінки послуги
+  // ВИПРАВЛЕНО: Покращена подія ViewContent для сторінки послуги
   useEffect(() => {
-    if (typeof window !== "undefined" && window.fbq) {
-      const price =
-        modelParam && modelServicePrice !== null
+    if (typeof window !== "undefined" && window.fbq && !viewContentSent.current) {
+      // Визначаємо правильну ціну
+      const actualPrice =
+        modelParam && modelServicePrice !== null && modelServicePrice !== undefined
           ? modelServicePrice
           : minPrice !== null && maxPrice !== null
-            ? (minPrice + maxPrice) / 2
+            ? minPrice === maxPrice
+              ? minPrice
+              : (minPrice + maxPrice) / 2
             : null
 
+      // ПОКРАЩЕНІ ПАРАМЕТРИ для сторінки послуги
       window.fbq("track", "ViewContent", {
         content_type: "service",
         content_name: translation.name,
         content_category: "repair_service",
-        value: price || 0,
+        value: actualPrice || 0,
         currency: "CZK",
+        // Структуровані параметри
         custom_parameters: {
           service_id: serviceData.id,
+          service_name: translation.name,
+          service_price: actualPrice,
+          // Дані про модель (НАЙВАЖЛИВІШЕ!)
+          model_id: sourceModel?.id || "unknown",
           model_name: sourceModel?.name || modelParam || "unknown",
+          brand_id: sourceModel?.brands?.id || "unknown",
           brand_name: sourceModel?.brands?.name || "unknown",
+          // Технічні характеристики
           warranty_months: serviceData.warranty_months || 0,
+          warranty_period: serviceData.warranty_period || "months",
           duration_hours: serviceData.duration_hours || 0,
+          // Контекст
+          has_model_context: !!(sourceModel || modelParam),
+          price_type: actualPrice ? "fixed" : "on_request",
+          page_url: window.location.href,
+          referrer: document.referrer || "direct",
         },
       })
+
+      viewContentSent.current = true
     }
   }, [serviceData, translation.name, modelParam, sourceModel, modelServicePrice, minPrice, maxPrice])
 
@@ -148,20 +168,30 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
   }
 
   const handleOrderClick = () => {
-    // Facebook Pixel - відстеження кліку на замовлення
+    // ВИПРАВЛЕНО: Покращена подія InitiateCheckout
     if (typeof window !== "undefined" && window.fbq) {
-      const price =
-        modelParam && modelServicePrice !== null
+      const actualPrice =
+        modelParam && modelServicePrice !== null && modelServicePrice !== undefined
           ? modelServicePrice
           : minPrice !== null && maxPrice !== null
-            ? (minPrice + maxPrice) / 2
+            ? minPrice === maxPrice
+              ? minPrice
+              : (minPrice + maxPrice) / 2
             : null
 
       window.fbq("track", "InitiateCheckout", {
         content_type: "service",
         content_name: translation.name,
-        value: price || 0,
+        value: actualPrice || 0,
         currency: "CZK",
+        custom_parameters: {
+          service_id: serviceData.id,
+          service_name: translation.name,
+          model_name: sourceModel?.name || modelParam || "unknown",
+          brand_name: sourceModel?.brands?.name || "unknown",
+          action_type: "order_service",
+          button_location: "service_page_cta",
+        },
       })
     }
   }
