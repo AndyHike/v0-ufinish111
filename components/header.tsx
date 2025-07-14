@@ -159,13 +159,13 @@ export function Header({ user }) {
   const getResultTypeLabel = (type: string) => {
     switch (type) {
       case "model":
-        return "Модель"
+        return t("searchResultTypes.model")
       case "brand":
-        return "Бренд"
+        return t("searchResultTypes.brand")
       case "series":
-        return "Серія"
+        return t("searchResultTypes.series")
       case "service":
-        return "Послуга"
+        return t("searchResultTypes.service")
       default:
         return ""
     }
@@ -278,7 +278,7 @@ export function Header({ user }) {
                   )}
                   <input
                     type="text"
-                    placeholder={t("search") || "Пошук моделей, брендів, послуг..."}
+                    placeholder={t("searchPlaceholder")}
                     value={searchQuery}
                     onChange={handleSearchInputChange}
                     onFocus={() => {
@@ -297,12 +297,12 @@ export function Header({ user }) {
                   {isSearching && isFirstSearch ? (
                     <div className="px-4 py-6 text-center text-sm text-muted-foreground">
                       <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2" />
-                      Пошук...
+                      {t("searchLoading")}
                     </div>
                   ) : searchResults.length > 0 ? (
                     <>
                       <div className="px-4 py-2 text-xs text-muted-foreground border-b border-border bg-muted/30">
-                        Знайдено {searchResults.length} результатів
+                        {t("searchResultsFound", { count: searchResults.length })}
                       </div>
                       {searchResults.map((result, index) => (
                         <button
@@ -329,7 +329,7 @@ export function Header({ user }) {
                     </>
                   ) : hasSearched ? (
                     <div className="px-4 py-6 text-center text-sm text-muted-foreground">
-                      Нічого не знайдено для "{searchQuery}"
+                      {t("searchNoResults", { query: searchQuery })}
                     </div>
                   ) : null}
                 </div>

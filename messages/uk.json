@@ -12,6 +12,16 @@
     "profile": "Профіль",
     "admin": "Адмін",
     "logout": "Вийти",
+    "searchPlaceholder": "Пошук моделей, брендів, послуг...",
+    "searchLoading": "Пошук...",
+    "searchResultsFound": "Знайдено {count} результатів",
+    "searchNoResults": "Нічого не знайдено для {query}",
+    "searchResultTypes": {
+      "model": "Модель",
+      "brand": "Бренд", 
+      "series": "Серія",
+      "service": "Послуга"
+      },
     "login": "Увійти"
   },
   "Footer": {

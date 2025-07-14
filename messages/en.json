@@ -11,6 +11,16 @@
     "profile": "Profile",
     "admin": "Admin",
     "logout": "Logout",
+    "searchPlaceholder": "Search for models, brands, services...",
+    "searchLoading": "Searching...",
+    "searchResultsFound": "{count} results found",
+    "searchNoResults": "No results found for \"{query}\"",
+    "searchResultTypes": {
+    "model": "Model",
+    "brand": "Brand",
+    "series": "Series",
+    "service": "Service"
+  },
     "login": "Login"
   },
   "Footer": {

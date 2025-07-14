@@ -11,7 +11,17 @@
     "profile": "Profil",
     "admin": "Admin",
     "logout": "Odhlásit se",
-    "login": "Přihlásit se"
+    "login": "Přihlásit se",
+     "searchPlaceholder": "Hledat modely, značky, služby...",
+  "searchLoading": "Hledání...",
+  "searchResultsFound": "Nalezeno {count} výsledků",
+  "searchNoResults": "Pro {query} nebyly nalezeny žádné výsledky",
+  "searchResultTypes": {
+    "model": "Model",
+    "brand": "Značka",
+    "series": "Série",
+    "service": "Služba"
+  }
   },
   "Footer": {
     "siteTitle": "Oprava Telefonů",
