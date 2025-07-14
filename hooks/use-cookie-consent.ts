@@ -18,15 +18,30 @@ export function useCookieConsent() {
     consentDate: null,
   })
 
-  // Простіше очищення cookies
+  // Функція для очищення cookies при відкликанні згоди
   const clearCookies = (category: "analytics" | "marketing") => {
     if (typeof document === "undefined") return
 
-    const cookiesToClear = category === "analytics" ? ["_ga", "_ga_WZ0WCHZ3XT", "_gid", "_gat"] : ["_fbp", "_fbc"]
+    const cookiesToClear =
+      category === "analytics"
+        ? ["_ga", "_ga_WZ0WCHZ3XT", "_gid", "_gat"]
+        : ["_fbp", "_fbc", "fr", "_gcl_aw", "_gcl_dc"]
+
+    const domains = [
+      "",
+      window.location.hostname,
+      "." + window.location.hostname,
+      "." + window.location.hostname.replace(/^www\./, ""),
+    ]
 
     cookiesToClear.forEach((name) => {
-      document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`
-      document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname}`
+      domains.forEach((domain) => {
+        const expireDate = "Thu, 01 Jan 1970 00:00:00 UTC"
+        const cookieString = domain
+          ? `${name}=; expires=${expireDate}; path=/; domain=${domain}`
+          : `${name}=; expires=${expireDate}; path=/`
+        document.cookie = cookieString
+      })
     })
 
     // Очищення localStorage
@@ -34,9 +49,16 @@ export function useCookieConsent() {
       Object.keys(localStorage).forEach((key) => {
         if (key.startsWith("_ga")) localStorage.removeItem(key)
       })
+    } else if (category === "marketing") {
+      Object.keys(localStorage).forEach((key) => {
+        if (key.includes("facebook") || key.includes("_fb")) {
+          localStorage.removeItem(key)
+        }
+      })
     }
   }
 
+  // Завантаження збереженої згоди при ініціалізації
   useEffect(() => {
     const stored = localStorage.getItem(COOKIE_CONSENT_KEY)
     if (stored) {
@@ -54,6 +76,7 @@ export function useCookieConsent() {
             consentDate: parsed.consentDate,
           })
         } else {
+          // Згода застаріла - показуємо банер
           setState((prev) => ({ ...prev, showBanner: true }))
         }
       } catch {
@@ -64,11 +87,14 @@ export function useCookieConsent() {
     }
   }, [])
 
+  // Збереження згоди
   const saveConsent = (consent: CookieConsent, previousConsent?: CookieConsent) => {
     const consentData = {
       consent,
       consentDate: new Date().toISOString(),
     }
+
+    // Зберігаємо в localStorage
     localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(consentData))
 
     // Очищення при відкликанні згоди
@@ -78,6 +104,10 @@ export function useCookieConsent() {
       }
       if (previousConsent.marketing && !consent.marketing) {
         clearCookies("marketing")
+        // Для Facebook Pixel рекомендується reload
+        setTimeout(() => {
+          window.location.reload()
+        }, 100)
       }
     }
 
