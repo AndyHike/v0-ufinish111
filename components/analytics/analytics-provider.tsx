@@ -14,42 +14,46 @@ interface AnalyticsSettings {
 }
 
 export function AnalyticsProvider() {
-  const [settings, setSettings] = useState<AnalyticsSettings>({
-    google_analytics_id: "",
-    google_tag_manager_id: "",
-    facebook_pixel_id: "1707859576556389", // Fallback ID
-    cookie_banner_enabled: true,
-    analytics_enabled: true,
-    marketing_enabled: true,
-  })
+  const [pixelId, setPixelId] = useState<string>("")
+  const [isLoading, setIsLoading] = useState(true)
   const { consent } = useCookieConsent()
 
   useEffect(() => {
     const fetchSettings = async () => {
       try {
+        console.log("🔄 Fetching analytics settings...")
         const response = await fetch("/api/admin/cookie-settings")
+
         if (response.ok) {
           const data = await response.json()
-          setSettings((prev) => ({
-            ...prev,
-            ...data,
-            // Якщо facebook_pixel_id порожній, використовуємо fallback
-            facebook_pixel_id: data.facebook_pixel_id || "1707859576556389",
-          }))
+          console.log("📊 Analytics settings loaded:", data)
+
+          if (data.facebook_pixel_id) {
+            setPixelId(data.facebook_pixel_id)
+            console.log("✅ Facebook Pixel ID set:", data.facebook_pixel_id)
+          } else {
+            console.warn("⚠️ No Facebook Pixel ID in settings")
+          }
+        } else {
+          console.error("❌ Failed to fetch analytics settings:", response.status)
         }
       } catch (error) {
-        console.warn("Failed to load analytics settings:", error)
-        // Використовуємо fallback налаштування при помилці
+        console.error("❌ Error fetching analytics settings:", error)
+      } finally {
+        setIsLoading(false)
       }
     }
 
     fetchSettings()
   }, [])
 
-  return (
-    <>
-      {/* Facebook Pixel завжди рендериться, але працює тільки при згоді */}
-      <FacebookPixel pixelId={settings.facebook_pixel_id} consent={consent.marketing} />
-    </>
-  )
+  // Не рендеримо FacebookPixel поки не завантажили налаштування
+  if (isLoading || !pixelId) {
+    console.log("⏳ Waiting for pixel ID...", { isLoading, pixelId })
+    return null
+  }
+
+  console.log("🚀 Rendering FacebookPixel with ID:", pixelId, "Consent:", consent.marketing)
+
+  return <FacebookPixel pixelId={pixelId} consent={consent.marketing} />
 }
