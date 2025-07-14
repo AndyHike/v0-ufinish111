@@ -50,7 +50,7 @@ export default function ModelPageClient({ modelData, locale }: Props) {
   const commonT = useTranslations("Common")
   const viewContentSent = useRef(false)
 
-  // ВИПРАВЛЕНО: Правильна структура Facebook Pixel для моделі
+  // МІНІМАЛЬНА структура Facebook Pixel для моделі
   useEffect(() => {
     if (typeof window !== "undefined" && window.fbq && !viewContentSent.current) {
       // Розраховуємо середню ціну послуг
@@ -60,30 +60,25 @@ export default function ModelPageClient({ modelData, locale }: Props) {
           ? servicesWithPrice.reduce((sum, s) => sum + (s.price || 0), 0) / servicesWithPrice.length
           : 0
 
-      // Формуємо правильну назву контенту
-      const contentName = `${modelData.brands?.name || "Unknown"} ${modelData.name}`
+      // ТІЛЬКИ НАЙВАЖЛИВІШІ ДАНІ
+      const brandName = modelData.brands?.name || "Unknown"
+      const modelName = modelData.name
+      const contentName = `${brandName} ${modelName}`
 
-      // ПРАВИЛЬНА СТРУКТУРА Facebook Pixel
       window.fbq("track", "ViewContent", {
-        // Стандартні поля Facebook
         content_type: "product",
         content_id: `model_${modelData.id}`,
         content_name: contentName,
         content_category: "device_models",
         value: Math.round(avgPrice) || 0,
         currency: "CZK",
-
-        // Тільки специфічні дані в custom_parameters
-        custom_parameters: {
-          services_count: modelData.services.length,
-          services_with_price: servicesWithPrice.length,
-        },
+        // БЕЗ custom_parameters
       })
 
-      console.log("📊 Model ViewContent sent:", {
-        content_id: `model_${modelData.id}`,
-        content_name: contentName,
-        value: Math.round(avgPrice) || 0,
+      console.log("📊 Model ViewContent:", {
+        brand: brandName,
+        model: modelName,
+        avg_price: Math.round(avgPrice) || 0,
         services_count: modelData.services.length,
       })
 
@@ -102,29 +97,10 @@ export default function ModelPageClient({ modelData, locale }: Props) {
   }
 
   const handleServiceClick = (service: any) => {
-    // ВИПРАВЛЕНО: Правильна структура для кліку на послугу
-    if (typeof window !== "undefined" && window.fbq) {
-      const contentName = `${service.name} - ${modelData.brands?.name || "Unknown"} ${modelData.name}`
-
-      window.fbq("track", "ViewContent", {
-        content_type: "product",
-        content_id: `service_${service.id}`,
-        content_name: contentName,
-        content_category: "repair_services",
-        value: service.price || 0,
-        currency: "CZK",
-        custom_parameters: {
-          click_source: "model_page_service_grid",
-          warranty_months: service.warranty_months || 0,
-          duration_hours: service.duration_hours || 0,
-        },
-      })
-
-      console.log("📊 Service click from model page:", {
-        content_name: contentName,
-        value: service.price || 0,
-      })
-    }
+    // ВИДАЛЕНО: ViewContent при кліку на послугу
+    // Це створювало дублювання з service-page-client.tsx
+    // Тепер тільки навігація без додаткових подій
+    console.log("🔗 Navigating to service:", service.name)
   }
 
   return (

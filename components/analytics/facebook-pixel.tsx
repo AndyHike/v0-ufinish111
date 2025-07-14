@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useRef } from "react"
-import { usePathname } from "next/navigation"
 
 interface FacebookPixelProps {
   pixelId: string
@@ -20,7 +19,6 @@ declare global {
 }
 
 export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
-  const pathname = usePathname()
   const isInitialized = useRef(false)
 
   // Повне очищення Facebook ресурсів
@@ -76,20 +74,16 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
         s.parentNode.insertBefore(t, s)
       })(window, document, "script", "https://connect.facebook.net/en_US/fbevents.js")
 
-      // Ініціалізація піксель - ТІЛЬКИ ОДИН РАЗ
+      // ТІЛЬКИ ініціалізація піксель БЕЗ PageView
       window.fbq("init", pixelId)
-      window.fbq("track", "PageView") // Тільки при ініціалізації
+      // ВИДАЛЕНО: window.fbq("track", "PageView") - це створювало дублювання
 
       isInitialized.current = true
-      console.log("✅ Facebook Pixel initialized successfully")
+      console.log("✅ Facebook Pixel initialized successfully (without PageView)")
     } catch (error) {
       console.error("❌ Facebook Pixel initialization failed:", error)
     }
   }
-
-  // ВИДАЛЕНО: автоматичне відстеження PageView при зміні сторінки
-  // Тепер PageView відправляється тільки один раз при ініціалізації
-  // Конкретні сторінки самі відправляють ViewContent події
 
   // Основний ефект згоди
   useEffect(() => {
@@ -106,29 +100,11 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
     }
   }, [consent, pixelId])
 
-  // Глобальні функції для тестування та відстеження
+  // Мінімальні глобальні функції
   useEffect(() => {
-    window.trackServiceClick = (serviceName: string, modelName: string, price: number) => {
-      if (window.fbq && consent && isInitialized.current) {
-        console.log("📊 Tracking service click:", { serviceName, modelName, price })
-        try {
-          window.fbq("track", "ViewContent", {
-            content_type: "product",
-            content_id: `service_${serviceName.toLowerCase().replace(/\s+/g, "_")}`,
-            content_name: `${serviceName} - ${modelName}`,
-            content_category: "repair_services",
-            value: price,
-            currency: "CZK",
-          })
-        } catch (error) {
-          console.error("❌ Service click tracking failed:", error)
-        }
-      }
-    }
-
     window.trackContactSubmission = (formData: any) => {
       if (window.fbq && consent && isInitialized.current) {
-        console.log("📊 Tracking contact submission:", formData)
+        console.log("📊 Tracking contact submission")
         try {
           window.fbq("track", "Lead", {
             content_name: "Contact Form Submission",
@@ -141,39 +117,17 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
       }
     }
 
-    window.trackContactClick = (method: string, location: string) => {
-      if (window.fbq && consent && isInitialized.current) {
-        console.log("📊 Tracking contact click:", { method, location })
-        try {
-          window.fbq("track", "Contact", {
-            content_name: `Contact via ${method}`,
-            custom_parameters: {
-              contact_method: method,
-              click_location: location,
-            },
-          })
-        } catch (error) {
-          console.error("❌ Contact click tracking failed:", error)
-        }
-      }
-    }
-
     window.testFacebookPixel = () => {
       console.log("=== Facebook Pixel Test ===")
       console.log("Pixel ID:", pixelId)
       console.log("Consent:", consent)
       console.log("Initialized:", isInitialized.current)
       console.log("fbq available:", !!window.fbq)
-      console.log("Current pathname:", pathname)
 
       if (window.fbq && consent && isInitialized.current) {
         try {
           window.fbq("trackCustom", "ManualTest", {
             content_name: "Manual Pixel Test",
-            custom_parameters: {
-              timestamp: new Date().toISOString(),
-              page_url: window.location.href,
-            },
           })
           console.log("✅ Test event sent successfully")
         } catch (error) {
@@ -183,7 +137,7 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
         console.log("❌ Test failed - requirements not met")
       }
     }
-  }, [consent, pixelId, pathname])
+  }, [consent, pixelId])
 
   return null
 }

@@ -70,7 +70,7 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
   const whatIncludedList = translation.what_included?.split("\n").filter((item) => item.trim()) || []
   const benefitsList = translation.benefits?.split("\n").filter((item) => item.trim()) || []
 
-  // ВИПРАВЛЕНО: Правильна структура Facebook Pixel
+  // МІНІМАЛЬНА структура Facebook Pixel - тільки найважливіші дані
   useEffect(() => {
     if (typeof window !== "undefined" && window.fbq && !viewContentSent.current) {
       // Визначаємо правильну ціну
@@ -83,36 +83,29 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
               : (minPrice + maxPrice) / 2
             : null
 
-      // Формуємо правильну назву контенту
-      const contentName =
-        sourceModel || modelParam
-          ? `${translation.name} - ${sourceModel?.brands?.name || "Unknown"} ${sourceModel?.name || modelParam}`
-          : translation.name
+      // ТІЛЬКИ НАЙВАЖЛИВІШІ ДАНІ
+      const brandName = sourceModel?.brands?.name || "Unknown"
+      const modelName = sourceModel?.name || modelParam || "Unknown"
+      const serviceName = translation.name
 
-      // ПРАВИЛЬНА СТРУКТУРА Facebook Pixel
+      // Формуємо точне визначення
+      const contentName = `${serviceName} - ${brandName} ${modelName}`
+
       window.fbq("track", "ViewContent", {
-        // Стандартні поля Facebook
         content_type: "product",
         content_id: `service_${serviceData.id}`,
         content_name: contentName,
         content_category: "repair_services",
         value: actualPrice || 0,
         currency: "CZK",
-
-        // Тільки специфічні дані в custom_parameters
-        custom_parameters: {
-          warranty_months: serviceData.warranty_months || 0,
-          duration_hours: serviceData.duration_hours || 0,
-          has_model_context: !!(sourceModel || modelParam),
-        },
+        // БЕЗ custom_parameters - тільки основні дані
       })
 
-      console.log("📊 Service ViewContent sent:", {
-        content_id: `service_${serviceData.id}`,
-        content_name: contentName,
-        value: actualPrice || 0,
-        warranty: serviceData.warranty_months,
-        duration: serviceData.duration_hours,
+      console.log("📊 Service ViewContent:", {
+        service: serviceName,
+        brand: brandName,
+        model: modelName,
+        price: actualPrice || 0,
       })
 
       viewContentSent.current = true
@@ -147,7 +140,7 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
   }
 
   const handleOrderClick = () => {
-    // ВИПРАВЛЕНО: Правильна структура InitiateCheckout
+    // МІНІМАЛЬНА подія InitiateCheckout
     if (typeof window !== "undefined" && window.fbq) {
       const actualPrice =
         modelParam && modelServicePrice !== null && modelServicePrice !== undefined
@@ -158,10 +151,9 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
               : (minPrice + maxPrice) / 2
             : null
 
-      const contentName =
-        sourceModel || modelParam
-          ? `${translation.name} - ${sourceModel?.brands?.name || "Unknown"} ${sourceModel?.name || modelParam}`
-          : translation.name
+      const brandName = sourceModel?.brands?.name || "Unknown"
+      const modelName = sourceModel?.name || modelParam || "Unknown"
+      const contentName = `${translation.name} - ${brandName} ${modelName}`
 
       window.fbq("track", "InitiateCheckout", {
         content_type: "product",
@@ -170,14 +162,13 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
         content_category: "repair_services",
         value: actualPrice || 0,
         currency: "CZK",
-        custom_parameters: {
-          action_source: "service_page_order_button",
-        },
       })
 
-      console.log("📊 InitiateCheckout sent:", {
-        content_name: contentName,
-        value: actualPrice || 0,
+      console.log("📊 InitiateCheckout:", {
+        service: translation.name,
+        brand: brandName,
+        model: modelName,
+        price: actualPrice || 0,
       })
     }
   }
