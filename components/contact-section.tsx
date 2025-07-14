@@ -39,25 +39,39 @@ export function ContactSection() {
 
       if (response.ok) {
         setIsSuccess(true)
-        // Після setIsSuccess(true) додай відстеження ліда
-        if (typeof window !== "undefined" && window.fbq) {
-          window.fbq("track", "Lead", {
-            content_name: "Contact Form",
-            content_category: "Contact",
-            value: 100, // потенційна вартість ліда
-            currency: "CZK",
-          })
-          console.log("📊 Tracking contact form lead")
-        }
         setName("")
         setEmail("")
         setPhone("")
         setMessage("")
+
+        // Facebook Pixel - відстеження успішної відправки форми
+        if (typeof window !== "undefined" && window.fbq) {
+          window.fbq("track", "Lead", {
+            content_name: "Contact Form Submission",
+            value: 100,
+            currency: "CZK",
+            custom_parameters: {
+              form_type: "contact_section",
+              has_phone: !!phone,
+              message_length: message.length,
+            },
+          })
+        }
       }
     } catch (err) {
       console.error("Error submitting form:", err)
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleContactClick = (method: string) => {
+    // Facebook Pixel - відстеження кліків на контактні методи
+    if (typeof window !== "undefined" && window.fbq) {
+      window.fbq("track", "Contact", {
+        contact_method: method,
+        content_name: "Contact Section Click",
+      })
     }
   }
 
@@ -77,7 +91,11 @@ export function ContactSection() {
                 <Phone className="h-4 w-4 text-primary" />
               </div>
               <div>
-                <a href="tel:+420775848259" className="text-sm font-medium hover:text-primary">
+                <a
+                  href="tel:+420775848259"
+                  className="text-sm font-medium hover:text-primary"
+                  onClick={() => handleContactClick("phone")}
+                >
                   +420775848259
                 </a>
               </div>
@@ -87,7 +105,11 @@ export function ContactSection() {
                 <Mail className="h-4 w-4 text-primary" />
               </div>
               <div>
-                <a href="mailto:info@devicehelp.cz" className="text-sm font-medium hover:text-primary">
+                <a
+                  href="mailto:info@devicehelp.cz"
+                  className="text-sm font-medium hover:text-primary"
+                  onClick={() => handleContactClick("email")}
+                >
                   info@devicehelp.cz
                 </a>
               </div>
@@ -335,7 +357,11 @@ export function ContactSection() {
                   </div>
                   <div>
                     <h3 className="font-medium text-gray-900 text-sm md:text-base">{t("phone")}</h3>
-                    <a href="tel:+420775848259" className="text-gray-600 text-sm md:text-base hover:text-primary">
+                    <a
+                      href="tel:+420775848259"
+                      className="text-gray-600 text-sm md:text-base hover:text-primary"
+                      onClick={() => handleContactClick("phone")}
+                    >
                       +420775848259
                     </a>
                   </div>
@@ -350,6 +376,7 @@ export function ContactSection() {
                     <a
                       href="mailto:info@devicehelp.cz"
                       className="text-gray-600 text-sm md:text-base hover:text-primary"
+                      onClick={() => handleContactClick("email")}
                     >
                       info@devicehelp.cz
                     </a>

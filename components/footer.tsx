@@ -6,16 +6,6 @@ import { Mail, Phone, MapPin, Settings } from "lucide-react"
 import { useSiteSettings } from "@/hooks/use-site-settings"
 import { useCookieConsentContext } from "@/contexts/cookie-consent-context"
 
-// Додай функцію після імпортів
-const trackContactClick = (method: string, location: string) => {
-  if (typeof window !== "undefined" && window.fbq) {
-    window.fbq("track", "Contact", {
-      contact_method: method,
-    })
-    console.log("📊 Tracking contact click:", { method, location })
-  }
-}
-
 export function Footer() {
   const t = useTranslations("Footer")
   const params = useParams()
@@ -25,6 +15,16 @@ export function Footer() {
 
   const handleCookieSettings = () => {
     setShowBanner(true)
+  }
+
+  const handleContactClick = (method: string) => {
+    // Facebook Pixel - відстеження кліків на контактні методи
+    if (typeof window !== "undefined" && window.fbq) {
+      window.fbq("track", "Contact", {
+        contact_method: method,
+        content_name: "Footer Contact Click",
+      })
+    }
   }
 
   return (
@@ -84,8 +84,8 @@ export function Footer() {
                 <Phone className="h-4 w-4 text-gray-500" />
                 <a
                   href="tel:+420775848259"
-                  onClick={() => trackContactClick("phone", "footer")}
                   className="text-sm text-gray-500 hover:text-gray-900"
+                  onClick={() => handleContactClick("phone")}
                 >
                   +420775848259
                 </a>
@@ -94,8 +94,8 @@ export function Footer() {
                 <Mail className="h-4 w-4 text-gray-500" />
                 <a
                   href="mailto:info@devicehelp.cz"
-                  onClick={() => trackContactClick("email", "footer")}
                   className="text-sm text-gray-500 hover:text-gray-900"
+                  onClick={() => handleContactClick("email")}
                 >
                   info@devicehelp.cz
                 </a>

@@ -54,19 +54,22 @@ export default function ContactPageClient() {
         description: t("successMessage"),
       })
 
-      // Після toast success додай відстеження ліда
-      if (typeof window !== "undefined" && window.fbq) {
-        window.fbq("track", "Lead", {
-          content_name: "Contact Page Form",
-          content_category: "Contact",
-          value: 100,
-          currency: "CZK",
-        })
-        console.log("📊 Tracking contact page lead")
-      }
-
       // Встановлюємо стан успіху
       setIsSuccess(true)
+
+      // Facebook Pixel - відстеження успішної відправки форми
+      if (typeof window !== "undefined" && window.fbq) {
+        window.fbq("track", "Lead", {
+          content_name: "Contact Page Form Submission",
+          value: 150,
+          currency: "CZK",
+          custom_parameters: {
+            form_type: "contact_page",
+            has_phone: !!formValues.phone,
+            message_length: formValues.message.length,
+          },
+        })
+      }
 
       // Очищаємо форму
       e.currentTarget.reset()
@@ -79,6 +82,16 @@ export default function ContactPageClient() {
       })
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  const handleContactClick = (method: string) => {
+    // Facebook Pixel - відстеження кліків на контактні методи
+    if (typeof window !== "undefined" && window.fbq) {
+      window.fbq("track", "Contact", {
+        contact_method: method,
+        content_name: "Contact Page Click",
+      })
     }
   }
 
@@ -99,7 +112,11 @@ export default function ContactPageClient() {
                   <Phone className="mt-1 h-5 w-5 text-primary" />
                   <div>
                     <h3 className="font-semibold">{t("phone")}</h3>
-                    <a href="tel:+420775848259" className="text-sm text-muted-foreground hover:text-primary">
+                    <a
+                      href="tel:+420775848259"
+                      className="text-sm text-muted-foreground hover:text-primary"
+                      onClick={() => handleContactClick("phone")}
+                    >
                       +420 775 848 259
                     </a>
                   </div>
@@ -113,7 +130,11 @@ export default function ContactPageClient() {
                   <Mail className="mt-1 h-5 w-5 text-primary" />
                   <div>
                     <h3 className="font-semibold">{t("email")}</h3>
-                    <a href="mailto:info@devicehelp.cz" className="text-sm text-muted-foreground hover:text-primary">
+                    <a
+                      href="mailto:info@devicehelp.cz"
+                      className="text-sm text-muted-foreground hover:text-primary"
+                      onClick={() => handleContactClick("email")}
+                    >
                       info@devicehelp.cz
                     </a>
                   </div>

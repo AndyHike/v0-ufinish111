@@ -76,6 +76,14 @@ export function Header({ user }) {
       return
     }
 
+    // Facebook Pixel - відстеження пошуку
+    if (typeof window !== "undefined" && window.fbq) {
+      window.fbq("track", "Search", {
+        search_string: query,
+        content_category: "site_search",
+      })
+    }
+
     // Показуємо спінер тільки при першому пошуку
     if (isFirstSearch) {
       setIsSearching(true)
@@ -86,16 +94,7 @@ export function Header({ user }) {
       const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&locale=${locale}`)
       const data = await response.json()
 
-      if (data.results && data.results.length > 0) {
-        // Відстежуємо пошук
-        if (typeof window !== "undefined" && window.fbq) {
-          window.fbq("track", "Search", {
-            search_string: query,
-            content_category: "Device Search",
-          })
-          console.log("📊 Tracking search:", { query, results: data.results.length })
-        }
-
+      if (data.results) {
         setSearchResults(data.results || [])
         setShowResults(true)
       } else {
@@ -244,33 +243,11 @@ export function Header({ user }) {
                     <div className="px-3 space-y-1">
                       <div className="flex items-center gap-2">
                         <Phone className="h-4 w-4 text-primary" />
-                        <span
-                          className="text-sm cursor-pointer"
-                          onClick={() => {
-                            if (typeof window !== "undefined" && window.fbq) {
-                              window.fbq("track", "Contact", { contact_method: "phone" })
-                              console.log("📊 Tracking header phone click")
-                            }
-                            window.location.href = "tel:+42075848259"
-                          }}
-                        >
-                          +42075848259
-                        </span>
+                        <span className="text-sm">+42075848259</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Mail className="h-4 w-4 text-primary" />
-                        <span
-                          className="text-sm cursor-pointer"
-                          onClick={() => {
-                            if (typeof window !== "undefined" && window.fbq) {
-                              window.fbq("track", "Contact", { contact_method: "email" })
-                              console.log("📊 Tracking header email click")
-                            }
-                            window.location.href = "mailto:info@devicehelp.cz"
-                          }}
-                        >
-                          info@devicehelp.cz
-                        </span>
+                        <span className="text-sm">info@devicehelp.cz</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <MapPin className="h-4 w-4 text-primary" />
