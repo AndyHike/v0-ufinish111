@@ -22,18 +22,31 @@ export function useCookieConsent() {
   const clearCookies = (category: "analytics" | "marketing") => {
     if (typeof document === "undefined") return
 
+    console.log(`🧹 Clearing ${category} cookies`)
+
     const cookiesToClear = category === "analytics" ? ["_ga", "_ga_WZ0WCHZ3XT", "_gid", "_gat"] : ["_fbp", "_fbc"]
 
+    const domains = ["", window.location.hostname, `.${window.location.hostname.replace(/^www\./, "")}`]
+
     cookiesToClear.forEach((name) => {
-      document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`
-      document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname}`
+      domains.forEach((domain) => {
+        const cookieString = domain
+          ? `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${domain}`
+          : `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`
+        document.cookie = cookieString
+      })
     })
 
     // Очищення localStorage
-    if (category === "analytics") {
+    try {
+      const storagePrefix = category === "analytics" ? "_ga" : "_fb"
       Object.keys(localStorage).forEach((key) => {
-        if (key.startsWith("_ga")) localStorage.removeItem(key)
+        if (key.startsWith(storagePrefix)) {
+          localStorage.removeItem(key)
+        }
       })
+    } catch (error) {
+      console.warn("Could not clear localStorage:", error)
     }
   }
 
@@ -71,6 +84,8 @@ export function useCookieConsent() {
     }
     localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(consentData))
 
+    console.log("💾 Saving consent:", { consent, previousConsent })
+
     // Очищення при відкликанні згоди
     if (previousConsent) {
       if (previousConsent.analytics && !consent.analytics) {
@@ -89,15 +104,18 @@ export function useCookieConsent() {
     })
 
     // Повідомляємо про зміну згоди
-    window.dispatchEvent(
-      new CustomEvent("cookieConsentChanged", {
-        detail: { consent, previousConsent },
-      }),
-    )
+    setTimeout(() => {
+      window.dispatchEvent(
+        new CustomEvent("cookieConsentChanged", {
+          detail: { consent, previousConsent, timestamp: Date.now() },
+        }),
+      )
+    }, 50)
   }
 
   const acceptAll = () => {
     const previousConsent = state.consent
+    console.log("✅ Accepting all cookies")
     saveConsent(
       {
         necessary: true,
@@ -110,6 +128,7 @@ export function useCookieConsent() {
 
   const acceptNecessary = () => {
     const previousConsent = state.consent
+    console.log("⚠️ Accepting only necessary cookies")
     saveConsent(
       {
         necessary: true,
@@ -132,6 +151,7 @@ export function useCookieConsent() {
 
   const saveCurrentSettings = () => {
     const previousConsent = { ...state.consent }
+    console.log("💾 Saving current settings")
     saveConsent(state.consent, previousConsent)
   }
 
