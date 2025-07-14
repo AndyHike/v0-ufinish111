@@ -9,7 +9,7 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
     const locale = searchParams.get("locale") || "uk"
     const modelSlug = searchParams.get("model")
 
-    console.log(`Fetching service data for slug: ${slug}, locale: ${locale}, model: ${modelSlug}`)
+    console.log(`[API] Fetching service data for slug: ${slug}, locale: ${locale}, model: ${modelSlug}`)
 
     // Спочатку спробуємо знайти за slug
     let { data: service, error } = await supabase
@@ -19,6 +19,8 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
         slug,
         position,
         image_url,
+        warranty_months,
+        duration_hours,
         services_translations(
           name,
           description,
@@ -49,6 +51,8 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
           slug,
           position,
           image_url,
+          warranty_months,
+          duration_hours,
           services_translations(
             name,
             description,
@@ -75,17 +79,18 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
     }
 
     if (error || !service) {
-      console.error("Service not found:", error)
+      console.error("[API] Service not found:", error)
       return NextResponse.json({ error: "Service not found" }, { status: 404 })
     }
 
-    console.log("Found service:", service.id)
+    console.log(`[API] Found service: ${service.id}`)
 
     // Знаходимо переклад для поточної локалі
     const translation =
       service.services_translations?.find((t) => t.locale === locale) || service.services_translations?.[0]
 
     if (!translation) {
+      console.error("[API] Service translation not found for locale:", locale)
       return NextResponse.json({ error: "Service translation not found" }, { status: 404 })
     }
 
@@ -114,7 +119,7 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
     let modelServiceData = null
 
     if (modelSlug) {
-      console.log(`Fetching model-specific data for model: ${modelSlug}`)
+      console.log(`[API] Fetching model-specific data for model: ${modelSlug}`)
 
       // Отримуємо інформацію про модель
       const { data: model, error: modelError } = await supabase
@@ -154,7 +159,7 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
           .single()
 
         if (!modelServiceError && modelService) {
-          // ВИПРАВЛЕНА конвертація: перевіряємо на null/undefined, а не на falsy
+          // Правильна конвертація типів даних з перевіркою на null/undefined
           const price =
             modelService.price !== null && modelService.price !== undefined
               ? Number.parseFloat(modelService.price.toString())
@@ -178,25 +183,28 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
             benefits: modelService.benefits,
           }
 
-          console.log("FIXED: Model service data conversion:", {
+          console.log("[API] Found and converted model-specific service data:", {
             original_price: modelService.price,
             converted_price: price,
-            original_warranty: modelService.warranty_months,
-            converted_warranty: warrantyMonths,
-            original_duration: modelService.duration_hours,
-            converted_duration: durationHours,
+            original_warranty_months: modelService.warranty_months,
+            converted_warranty_months: warrantyMonths,
+            original_duration_hours: modelService.duration_hours,
+            converted_duration_hours: durationHours,
+            warranty_period: modelService.warranty_period,
           })
         } else {
-          console.log("No model-specific service data found")
+          console.log("[API] No model-specific service data found:", modelServiceError)
         }
+      } else {
+        console.log("[API] Model not found:", modelError)
       }
     }
 
-    // Отримуємо діапазон цін тільки якщо немає конкретної моделі
+    // Отримуємо діапазон цін тільки якщо немає конкретної моделі або немає model service data
     let minPrice = null
     let maxPrice = null
 
-    if (!modelSlug) {
+    if (!modelSlug || !modelServiceData) {
       const { data: priceData, error: priceError } = await supabase
         .from("model_services")
         .select("price")
@@ -204,10 +212,11 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
         .not("price", "is", null)
 
       if (!priceError && priceData && priceData.length > 0) {
-        const prices = priceData.map((p) => Number.parseFloat(p.price.toString())).filter((p) => !isNaN(p))
+        const prices = priceData.map((p) => Number.parseFloat(p.price.toString())).filter((p) => !isNaN(p) && p > 0)
         if (prices.length > 0) {
           minPrice = Math.min(...prices)
           maxPrice = Math.max(...prices)
+          console.log("[API] Price range:", { minPrice, maxPrice })
         }
       }
     }
@@ -217,9 +226,15 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
       slug: service.slug,
       position: service.position,
       image_url: service.image_url,
-      // Використовуємо дані з model_services якщо є, інакше null
-      warranty_months: modelServiceData?.warranty_months || null,
-      duration_hours: modelServiceData?.duration_hours || null,
+      // ВИПРАВЛЕНО: Використовуємо пріоритетну логіку - model_services має пріоритет над services
+      warranty_months:
+        modelServiceData?.warranty_months !== null && modelServiceData?.warranty_months !== undefined
+          ? modelServiceData.warranty_months
+          : service.warranty_months,
+      duration_hours:
+        modelServiceData?.duration_hours !== null && modelServiceData?.duration_hours !== undefined
+          ? modelServiceData.duration_hours
+          : service.duration_hours,
       warranty_period: modelServiceData?.warranty_period || "months",
       translation: {
         name: translation.name,
@@ -237,9 +252,11 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
       maxPrice: modelServiceData ? null : maxPrice,
     }
 
-    console.log("Final service result:", {
+    console.log("[API] Final service result:", {
       warranty_months: result.warranty_months,
+      warranty_source: modelServiceData?.warranty_months !== null ? "model_services" : "services",
       duration_hours: result.duration_hours,
+      duration_source: modelServiceData?.duration_hours !== null ? "model_services" : "services",
       warranty_period: result.warranty_period,
       modelServicePrice: result.modelServicePrice,
       minPrice: result.minPrice,
@@ -249,7 +266,7 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
 
     return NextResponse.json(result)
   } catch (error) {
-    console.error("Error in services API:", error)
+    console.error("[API] Error in services API:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

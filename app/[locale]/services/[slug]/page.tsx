@@ -117,6 +117,8 @@ export default async function ServicePage({ params, searchParams }: Props) {
     // Get source model if specified
     let sourceModel = null
     let modelServicePrice = null
+    let modelWarrantyMonths = null
+    let modelDurationHours = null
 
     if (modelSlug) {
       const { data: model } = await supabase
@@ -139,16 +141,32 @@ export default async function ServicePage({ params, searchParams }: Props) {
       if (model) {
         sourceModel = model
 
-        // Get specific price for this model-service combination
+        // ВИПРАВЛЕНО: Отримуємо ВСІ дані з model_services, включаючи warranty та duration
         const { data: modelService } = await supabase
           .from("model_services")
-          .select("price")
+          .select(`
+            price,
+            warranty_months,
+            duration_hours
+          `)
           .eq("model_id", model.id)
           .eq("service_id", service.id)
           .single()
 
         if (modelService) {
           modelServicePrice = modelService.price
+          // ВИПРАВЛЕНО: Зберігаємо warranty та duration з model_services
+          modelWarrantyMonths = modelService.warranty_months
+          modelDurationHours = modelService.duration_hours
+
+          console.log("Model-specific service data found:", {
+            price: modelServicePrice,
+            warranty_months: modelWarrantyMonths,
+            duration_hours: modelDurationHours,
+            source: "model_services table",
+          })
+        } else {
+          console.log("No model-specific service data found, using service defaults")
         }
       }
     }
@@ -174,8 +192,13 @@ export default async function ServicePage({ params, searchParams }: Props) {
     const serviceData = {
       id: service.id,
       position: service.position,
-      warranty_months: service.warranty_months,
-      duration_hours: service.duration_hours,
+      // ВИПРАВЛЕНО: Використовуємо пріоритетну логіку для warranty та duration
+      warranty_months:
+        modelWarrantyMonths !== null && modelWarrantyMonths !== undefined
+          ? modelWarrantyMonths
+          : service.warranty_months,
+      duration_hours:
+        modelDurationHours !== null && modelDurationHours !== undefined ? modelDurationHours : service.duration_hours,
       image_url: service.image_url,
       slug: service.slug,
       translation: {
@@ -190,6 +213,15 @@ export default async function ServicePage({ params, searchParams }: Props) {
       minPrice,
       maxPrice,
     }
+
+    console.log("Final service data:", {
+      warranty_months: serviceData.warranty_months,
+      duration_hours: serviceData.duration_hours,
+      warranty_source: modelWarrantyMonths !== null ? "model_services" : "services",
+      duration_source: modelDurationHours !== null ? "model_services" : "services",
+      modelServicePrice: serviceData.modelServicePrice,
+      hasSourceModel: !!sourceModel,
+    })
 
     return <ServicePageClient serviceData={serviceData} locale={locale} />
   } catch (error) {
