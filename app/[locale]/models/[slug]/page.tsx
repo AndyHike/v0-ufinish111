@@ -71,11 +71,20 @@ export default async function ModelPage({ params }: Props) {
       notFound()
     }
 
+    console.log(`[MODEL PAGE] Found model: ${model.id} - ${model.name}`)
+
+    // Отримуємо послуги для моделі з правильною логікою пріоритетів
     const { data: modelServices } = await supabase
       .from("model_services")
       .select(`
         id,
         price,
+        warranty_months,
+        duration_hours,
+        warranty_period,
+        detailed_description,
+        what_included,
+        benefits,
         services(
           id,
           slug,
@@ -93,6 +102,8 @@ export default async function ModelPage({ params }: Props) {
       .eq("model_id", model.id)
       .order("services(position)")
 
+    console.log(`[MODEL PAGE] Found ${modelServices?.length || 0} model services`)
+
     const servicesWithTranslations =
       modelServices
         ?.map((ms) => {
@@ -102,19 +113,54 @@ export default async function ModelPage({ params }: Props) {
           const translation = service.services_translations?.find((t: any) => t.locale === locale)
           if (!translation) return null
 
+          // ВИПРАВЛЕНО: Використовуємо пріоритетну логіку - model_services має пріоритет над services
+          const warrantyMonths =
+            ms.warranty_months !== null && ms.warranty_months !== undefined
+              ? Number.parseInt(ms.warranty_months.toString())
+              : service.warranty_months !== null && service.warranty_months !== undefined
+                ? Number.parseInt(service.warranty_months.toString())
+                : null
+
+          const durationHours =
+            ms.duration_hours !== null && ms.duration_hours !== undefined
+              ? Number.parseFloat(ms.duration_hours.toString())
+              : service.duration_hours !== null && service.duration_hours !== undefined
+                ? Number.parseFloat(service.duration_hours.toString())
+                : null
+
+          const price = ms.price !== null && ms.price !== undefined ? Number.parseFloat(ms.price.toString()) : null
+
+          console.log(`[MODEL PAGE] Service ${service.id} data:`, {
+            name: translation.name,
+            model_service_warranty: ms.warranty_months,
+            service_warranty: service.warranty_months,
+            final_warranty: warrantyMonths,
+            model_service_duration: ms.duration_hours,
+            service_duration: service.duration_hours,
+            final_duration: durationHours,
+            price: price,
+            warranty_period: ms.warranty_period || "months",
+          })
+
           return {
             id: service.id,
             slug: service.slug,
             name: translation.name,
             description: translation.description,
-            price: ms.price,
+            price: price,
             position: service.position,
-            warranty_months: service.warranty_months,
-            duration_hours: service.duration_hours,
+            warranty_months: warrantyMonths,
+            duration_hours: durationHours,
+            warranty_period: ms.warranty_period || "months",
             image_url: service.image_url,
+            detailed_description: ms.detailed_description || translation.description,
+            what_included: ms.what_included,
+            benefits: ms.benefits,
           }
         })
         .filter(Boolean) || []
+
+    console.log(`[MODEL PAGE] Final services count: ${servicesWithTranslations.length}`)
 
     const modelData = {
       id: model.id,
@@ -128,7 +174,7 @@ export default async function ModelPage({ params }: Props) {
 
     return <ModelPageClient modelData={modelData} locale={locale} />
   } catch (error) {
-    console.error("Error in ModelPage:", error)
+    console.error("[MODEL PAGE] Error:", error)
     notFound()
   }
 }
