@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
 import { useTranslations } from "next-intl"
 import { useRouter, useParams } from "next/navigation"
