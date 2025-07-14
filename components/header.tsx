@@ -1,13 +1,14 @@
 "use client"
 
+import type React from "react"
+
 import Link from "next/link"
-import { usePathname, useParams } from "next/navigation"
+import { usePathname, useParams, useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Menu, Smartphone, Search, Phone, Mail, MapPin, Home, MessageSquare } from "lucide-react"
 import { LanguageSwitcher } from "@/components/language-switcher"
-import { SearchDialog } from "@/components/search-dialog"
 import { UserNav } from "@/components/user-nav"
 import { useState } from "react"
 import { MobileNav } from "@/components/mobile-nav"
@@ -18,7 +19,12 @@ export function Header({ user }) {
   const pathname = usePathname()
   const params = useParams()
   const locale = params.locale as string
-  const [isSearchOpen, setIsSearchOpen] = useState(false)
+  const router = useRouter()
+
+  const [searchQuery, setSearchQuery] = useState("")
+  const [searchResults, setSearchResults] = useState([])
+  const [isSearching, setIsSearching] = useState(false)
+  const [showResults, setShowResults] = useState(false)
   const { settings } = useSiteSettings()
 
   const navigation = [
@@ -33,6 +39,35 @@ export function Header({ user }) {
       return pathname === `/${locale}`
     }
     return pathname.startsWith(path)
+  }
+
+  const handleSearch = async (query: string) => {
+    if (query.length < 2) {
+      setSearchResults([])
+      setShowResults(false)
+      return
+    }
+
+    setIsSearching(true)
+    try {
+      const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&locale=${locale}`)
+      const data = await response.json()
+      setSearchResults(data.results || [])
+      setShowResults(true)
+    } catch (error) {
+      console.error("Search error:", error)
+      setSearchResults([])
+    } finally {
+      setIsSearching(false)
+    }
+  }
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (searchQuery.trim()) {
+      // Перехід на сторінку пошуку або до першого результату
+      router.push(`/${locale}/search?q=${encodeURIComponent(searchQuery.trim())}`)
+    }
   }
 
   return (
@@ -129,13 +164,50 @@ export function Header({ user }) {
           </nav>
           <div className="flex items-center gap-2 flex-shrink-0 min-w-0 md:min-w-auto">
             <LanguageSwitcher className="flex" />
-            <Button variant="ghost" size="icon" onClick={() => setIsSearchOpen(true)} aria-label={t("search")}>
-              <Search className="h-5 w-5" />
-            </Button>
+            <div className="relative">
+              <form onSubmit={handleSearchSubmit} className="flex items-center">
+                <div className="relative">
+                  <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <input
+                    type="text"
+                    placeholder={t("search")}
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value)
+                      handleSearch(e.target.value)
+                    }}
+                    onFocus={() => searchQuery.length >= 2 && setShowResults(true)}
+                    onBlur={() => setTimeout(() => setShowResults(false), 200)}
+                    className="w-48 pl-8 pr-3 py-1.5 text-sm border border-input bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                  />
+                </div>
+              </form>
+
+              {showResults && searchResults.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-background border border-border rounded-md shadow-lg z-50 max-h-96 overflow-auto">
+                  {searchResults.map((result, index) => (
+                    <button
+                      key={`${result.type}-${result.id}`}
+                      onClick={() => {
+                        router.push(result.url)
+                        setShowResults(false)
+                        setSearchQuery("")
+                      }}
+                      className="w-full px-3 py-2 text-left hover:bg-accent flex items-center gap-2 border-b border-border last:border-b-0"
+                    >
+                      <span className="text-xs text-muted-foreground capitalize">{result.type}</span>
+                      <span className="font-medium">{result.name}</span>
+                      {result.breadcrumb && (
+                        <span className="text-xs text-muted-foreground">• {result.breadcrumb}</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <UserNav user={user} />
           </div>
         </div>
-        <SearchDialog open={isSearchOpen} onOpenChange={setIsSearchOpen} />
       </header>
 
       <MobileNav navigation={navigation} isActive={isActive} />

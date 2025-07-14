@@ -14,122 +14,168 @@ export async function GET(request: NextRequest) {
     }
 
     const searchTerm = query.toLowerCase().trim()
-    const nameColumn = `name_${locale}`
-
     console.log(`🔍 Searching for "${searchTerm}" in locale "${locale}"`)
 
-    // Пошук моделей (пріоритет 1)
-    const { data: models } = await supabase
-      .from("models")
-      .select(`
-        id,
-        slug,
-        ${nameColumn},
-        brands!inner(
-          id,
-          slug,
-          ${nameColumn}
-        ),
-        series!inner(
-          id,
-          slug,
-          ${nameColumn}
-        )
-      `)
-      .ilike(nameColumn, `%${searchTerm}%`)
-      .eq("is_active", true)
-      .order("position", { ascending: true })
-      .limit(4)
-
-    // Пошук брендів (пріоритет 2)
-    const { data: brands } = await supabase
+    // Пошук брендів
+    const { data: brands, error: brandsError } = await supabase
       .from("brands")
-      .select(`id, slug, ${nameColumn}`)
-      .ilike(nameColumn, `%${searchTerm}%`)
+      .select("id, slug, name")
+      .ilike("name", `%${searchTerm}%`)
       .eq("is_active", true)
       .order("position", { ascending: true })
-      .limit(3)
+      .limit(5)
 
-    // Пошук лінійок (пріоритет 3)
-    const { data: series } = await supabase
+    if (brandsError) {
+      console.error("❌ Brands search error:", brandsError)
+    }
+
+    // Пошук серій
+    const { data: series, error: seriesError } = await supabase
       .from("series")
       .select(`
         id,
         slug,
-        ${nameColumn},
+        name,
         brands!inner(
           id,
           slug,
-          ${nameColumn}
+          name
         )
       `)
-      .ilike(nameColumn, `%${searchTerm}%`)
+      .ilike("name", `%${searchTerm}%`)
       .eq("is_active", true)
       .order("position", { ascending: true })
-      .limit(3)
+      .limit(5)
 
-    // Пошук послуг (пріоритет 4)
-    const { data: services } = await supabase
-      .from("services")
-      .select(`id, slug, ${nameColumn}`)
-      .ilike(nameColumn, `%${searchTerm}%`)
+    if (seriesError) {
+      console.error("❌ Series search error:", seriesError)
+    }
+
+    // Пошук моделей
+    const { data: models, error: modelsError } = await supabase
+      .from("models")
+      .select(`
+        id,
+        slug,
+        name,
+        brands!inner(
+          id,
+          slug,
+          name
+        ),
+        series!inner(
+          id,
+          slug,
+          name
+        )
+      `)
+      .ilike("name", `%${searchTerm}%`)
       .eq("is_active", true)
       .order("position", { ascending: true })
-      .limit(3)
+      .limit(8)
+
+    if (modelsError) {
+      console.error("❌ Models search error:", modelsError)
+    }
+
+    // Пошук послуг через model_services
+    const serviceNameColumn = `name_${locale}`
+    const { data: modelServices, error: servicesError } = await supabase
+      .from("model_services")
+      .select(`
+        id,
+        service_id,
+        services!inner(
+          id,
+          slug,
+          ${serviceNameColumn},
+          is_active
+        ),
+        models!inner(
+          id,
+          slug,
+          name,
+          brands!inner(
+            id,
+            slug,
+            name
+          )
+        )
+      `)
+      .ilike(`services.${serviceNameColumn}`, `%${searchTerm}%`)
+      .eq("services.is_active", true)
+      .eq("models.is_active", true)
+      .limit(5)
+
+    if (servicesError) {
+      console.error("❌ Services search error:", servicesError)
+    }
 
     // Форматування результатів
-    const results = {
-      models:
-        models?.map((model) => ({
-          id: model.id,
-          type: "model",
-          name: model[nameColumn],
-          slug: model.slug,
-          url: `/${locale}/models/${model.slug}`,
-          breadcrumb: `${model.brands[nameColumn]} › ${model.series[nameColumn]}`,
-        })) || [],
+    const results = []
 
-      brands:
-        brands?.map((brand) => ({
+    // Додаємо бренди
+    if (brands) {
+      brands.forEach((brand) => {
+        results.push({
           id: brand.id,
           type: "brand",
-          name: brand[nameColumn],
+          name: brand.name,
           slug: brand.slug,
           url: `/${locale}/brands/${brand.slug}`,
           breadcrumb: null,
-        })) || [],
-
-      series:
-        series?.map((serie) => ({
-          id: serie.id,
-          type: "series",
-          name: serie[nameColumn],
-          slug: serie.slug,
-          url: `/${locale}/series/${serie.slug}`,
-          breadcrumb: serie.brands[nameColumn],
-        })) || [],
-
-      services:
-        services?.map((service) => ({
-          id: service.id,
-          type: "service",
-          name: service[nameColumn],
-          slug: service.slug,
-          url: `/${locale}/services/${service.slug}`,
-          breadcrumb: null,
-        })) || [],
+        })
+      })
     }
 
-    const totalResults = results.models.length + results.brands.length + results.series.length + results.services.length
+    // Додаємо серії
+    if (series) {
+      series.forEach((serie) => {
+        results.push({
+          id: serie.id,
+          type: "series",
+          name: serie.name,
+          slug: serie.slug,
+          url: `/${locale}/series/${serie.slug}`,
+          breadcrumb: serie.brands.name,
+        })
+      })
+    }
 
-    console.log(`✅ Found ${totalResults} results:`, {
-      models: results.models.length,
-      brands: results.brands.length,
-      series: results.series.length,
-      services: results.services.length,
+    // Додаємо моделі
+    if (models) {
+      models.forEach((model) => {
+        results.push({
+          id: model.id,
+          type: "model",
+          name: model.name,
+          slug: model.slug,
+          url: `/${locale}/models/${model.slug}`,
+          breadcrumb: `${model.brands.name} › ${model.series.name}`,
+        })
+      })
+    }
+
+    // Додаємо послуги
+    if (modelServices) {
+      modelServices.forEach((ms) => {
+        results.push({
+          id: ms.services.id,
+          type: "service",
+          name: ms.services[serviceNameColumn],
+          slug: ms.services.slug,
+          url: `/${locale}/services/${ms.services.slug}`,
+          breadcrumb: `${ms.models.brands.name} ${ms.models.name}`,
+        })
+      })
+    }
+
+    console.log(`✅ Found ${results.length} results`)
+
+    return NextResponse.json({
+      results,
+      totalResults: results.length,
     })
-
-    return NextResponse.json({ results, totalResults })
   } catch (error) {
     console.error("❌ Search API error:", error)
     return NextResponse.json({ error: "Search failed" }, { status: 500 })
