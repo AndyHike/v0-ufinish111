@@ -238,7 +238,7 @@
   },
   "Models": {
   "executionTime": "Час виконання",
-  "fromHours": "від {hours} годин",
+  "fromHours": "~ {hours} години",
   "contactForTime": "уточнюйте час",
   "warranty": "Гарантія", 
   "professionalRepair": "Професійний ремонт телефонів",

@@ -263,7 +263,7 @@
   },
   "Models": {
   "executionTime": "Doba provádění",
-  "fromHours": "od {hours} hodin", 
+  "fromHours": "~ {hours} hodiny", 
   "contactForTime": "kontaktujte pro čas",
   "warranty": "Záruka",
   "professionalRepair": "Profesionální oprava telefonů",

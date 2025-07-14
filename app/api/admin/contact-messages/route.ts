@@ -83,7 +83,7 @@ export async function GET(request: Request) {
     // Обчислюємо загальну кількість сторінок
     const totalPages = count ? Math.ceil(count / limit) : 0
 
-    // Успішна відповідь
+    // Успі��на відповідь
     return NextResponse.json({
       data: data || [],
       pagination: {

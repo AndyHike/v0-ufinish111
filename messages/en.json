@@ -207,7 +207,7 @@
   },
   "Models": {
   "executionTime": "Execution Time",
-  "fromHours": "from {hours} hours",
+  "fromHours": "~ {hours} hours",
   "contactForTime": "contact for time", 
   "warranty": "Warranty",
   "professionalRepair": "Professional phone repair",
