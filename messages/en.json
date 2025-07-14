@@ -574,7 +574,7 @@
     "home": "Home",
     "brands": "Brands",
     "contact": "Contact",
-    "search": "Search",
-    "searchPlaceholder": "Search phones, brands, services..."
+    "searchPlaceholder": "Search phones, brands, services...",
+    "search": "Search"
   }
 }

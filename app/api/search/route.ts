@@ -14,29 +14,28 @@ export async function GET(request: NextRequest) {
     }
 
     const searchTerm = query.toLowerCase().trim()
-    const nameColumn = `name_${locale}`
 
     console.log(`🔍 Searching for "${searchTerm}" in locale "${locale}"`)
 
-    // Пошук моделей (пріоритет 1)
+    // Пошук моделей (пріоритет 1) - тільки англійська назва
     const { data: models, error: modelsError } = await supabase
       .from("models")
       .select(`
         id,
         slug,
-        ${nameColumn},
+        name,
         brands!inner(
           id,
           slug,
-          ${nameColumn}
+          name
         ),
         series!inner(
           id,
           slug,
-          ${nameColumn}
+          name
         )
       `)
-      .ilike(nameColumn, `%${searchTerm}%`)
+      .ilike("name", `%${searchTerm}%`)
       .eq("is_active", true)
       .order("position", { ascending: true })
       .limit(4)
@@ -45,11 +44,11 @@ export async function GET(request: NextRequest) {
       console.error("❌ Models search error:", modelsError)
     }
 
-    // Пошук брендів (пріоритет 2)
+    // Пошук брендів (пріоритет 2) - тільки англійська назва
     const { data: brands, error: brandsError } = await supabase
       .from("brands")
-      .select(`id, slug, ${nameColumn}`)
-      .ilike(nameColumn, `%${searchTerm}%`)
+      .select(`id, slug, name`)
+      .ilike("name", `%${searchTerm}%`)
       .eq("is_active", true)
       .order("position", { ascending: true })
       .limit(3)
@@ -58,20 +57,20 @@ export async function GET(request: NextRequest) {
       console.error("❌ Brands search error:", brandsError)
     }
 
-    // Пошук лінійок (пріоритет 3)
+    // Пошук лінійок (пріоритет 3) - тільки англійська назва
     const { data: series, error: seriesError } = await supabase
       .from("series")
       .select(`
         id,
         slug,
-        ${nameColumn},
+        name,
         brands!inner(
           id,
           slug,
-          ${nameColumn}
+          name
         )
       `)
-      .ilike(nameColumn, `%${searchTerm}%`)
+      .ilike("name", `%${searchTerm}%`)
       .eq("is_active", true)
       .order("position", { ascending: true })
       .limit(3)
@@ -80,11 +79,12 @@ export async function GET(request: NextRequest) {
       console.error("❌ Series search error:", seriesError)
     }
 
-    // Пошук послуг (пріоритет 4)
+    // Пошук послуг (пріоритет 4) - мультимовний пошук
+    const serviceNameColumn = `name_${locale}`
     const { data: services, error: servicesError } = await supabase
       .from("services")
-      .select(`id, slug, ${nameColumn}`)
-      .ilike(nameColumn, `%${searchTerm}%`)
+      .select(`id, slug, ${serviceNameColumn}`)
+      .ilike(serviceNameColumn, `%${searchTerm}%`)
       .eq("is_active", true)
       .order("position", { ascending: true })
       .limit(3)
@@ -99,17 +99,17 @@ export async function GET(request: NextRequest) {
         models?.map((model) => ({
           id: model.id,
           type: "model",
-          name: model[nameColumn],
+          name: model.name,
           slug: model.slug,
           url: `/${locale}/models/${model.slug}`,
-          breadcrumb: `${model.brands[nameColumn]} › ${model.series[nameColumn]}`,
+          breadcrumb: `${model.brands.name} › ${model.series.name}`,
         })) || [],
 
       brands:
         brands?.map((brand) => ({
           id: brand.id,
           type: "brand",
-          name: brand[nameColumn],
+          name: brand.name,
           slug: brand.slug,
           url: `/${locale}/brands/${brand.slug}`,
           breadcrumb: null,
@@ -119,17 +119,17 @@ export async function GET(request: NextRequest) {
         series?.map((serie) => ({
           id: serie.id,
           type: "series",
-          name: serie[nameColumn],
+          name: serie.name,
           slug: serie.slug,
           url: `/${locale}/series/${serie.slug}`,
-          breadcrumb: serie.brands[nameColumn],
+          breadcrumb: serie.brands.name,
         })) || [],
 
       services:
         services?.map((service) => ({
           id: service.id,
           type: "service",
-          name: service[nameColumn],
+          name: service[serviceNameColumn],
           slug: service.slug,
           url: `/${locale}/services/${service.slug}`,
           breadcrumb: null,
