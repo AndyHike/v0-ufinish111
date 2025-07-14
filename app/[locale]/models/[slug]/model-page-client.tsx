@@ -48,9 +48,9 @@ interface Props {
 export default function ModelPageClient({ modelData, locale }: Props) {
   const t = useTranslations("Models")
   const commonT = useTranslations("Common")
-  const viewContentSent = useRef(false) // Уникаємо дублювання
+  const viewContentSent = useRef(false)
 
-  // ВИПРАВЛЕНО: Покращена подія ViewContent для сторінки моделі
+  // ВИПРАВЛЕНО: Правильна структура Facebook Pixel для моделі
   useEffect(() => {
     if (typeof window !== "undefined" && window.fbq && !viewContentSent.current) {
       // Розраховуємо середню ціну послуг
@@ -60,101 +60,72 @@ export default function ModelPageClient({ modelData, locale }: Props) {
           ? servicesWithPrice.reduce((sum, s) => sum + (s.price || 0), 0) / servicesWithPrice.length
           : 0
 
-      // ПОКРАЩЕНІ ПАРАМЕТРИ для сторінки моделі
+      // Формуємо правильну назву контенту
+      const contentName = `${modelData.brands?.name || "Unknown"} ${modelData.name}`
+
+      // ПРАВИЛЬНА СТРУКТУРА Facebook Pixel
       window.fbq("track", "ViewContent", {
-        content_type: "product", // Модель = продукт
-        content_name: `${modelData.brands?.name} ${modelData.name}`,
-        content_category: "device_model",
+        // Стандартні поля Facebook
+        content_type: "product",
+        content_id: `model_${modelData.id}`,
+        content_name: contentName,
+        content_category: "device_models",
         value: Math.round(avgPrice) || 0,
         currency: "CZK",
-        // Структуровані параметри
+
+        // Тільки специфічні дані в custom_parameters
         custom_parameters: {
-          // Основні дані моделі (НАЙВАЖЛИВІШЕ!)
-          model_id: modelData.id,
-          model_name: modelData.name,
-          model_slug: modelData.slug,
-          // Дані про бренд
-          brand_id: modelData.brands?.id || "unknown",
-          brand_name: modelData.brands?.name || "unknown",
-          brand_slug: modelData.brands?.slug || "unknown",
-          // Дані про серію
-          series_id: modelData.series?.id || "unknown",
-          series_name: modelData.series?.name || "unknown",
-          series_slug: modelData.series?.slug || "unknown",
-          // Статистика послуг
           services_count: modelData.services.length,
           services_with_price: servicesWithPrice.length,
-          avg_service_price: Math.round(avgPrice),
-          min_service_price: servicesWithPrice.length > 0 ? Math.min(...servicesWithPrice.map((s) => s.price || 0)) : 0,
-          max_service_price: servicesWithPrice.length > 0 ? Math.max(...servicesWithPrice.map((s) => s.price || 0)) : 0,
-          // Контекст
-          page_url: window.location.href,
-          referrer: document.referrer || "direct",
         },
+      })
+
+      console.log("📊 Model ViewContent sent:", {
+        content_id: `model_${modelData.id}`,
+        content_name: contentName,
+        value: Math.round(avgPrice) || 0,
+        services_count: modelData.services.length,
       })
 
       viewContentSent.current = true
     }
   }, [modelData])
 
-  // ВИПРАВЛЕНО: Правильна логіка форматування гарантії з перевіркою на null/undefined
   const formatWarranty = (months: number | null, period: string | null) => {
     if (months === null || months === undefined) return t("contactForWarranty")
     return period === "days" ? t("warrantyDays", { count: months }) : t("warrantyMonths", { count: months })
   }
 
-  // ВИПРАВЛЕНО: Правильна логіка форматування тривалості з перевіркою на null/undefined
   const formatDuration = (hours: number | null) => {
     if (hours === null || hours === undefined) return t("contactForTime")
     return t("fromHours", { hours })
   }
 
   const handleServiceClick = (service: any) => {
-    // ВИПРАВЛЕНО: Покращена подія ViewContent для кліку на послугу
+    // ВИПРАВЛЕНО: Правильна структура для кліку на послугу
     if (typeof window !== "undefined" && window.fbq) {
+      const contentName = `${service.name} - ${modelData.brands?.name || "Unknown"} ${modelData.name}`
+
       window.fbq("track", "ViewContent", {
-        content_type: "service",
-        content_name: service.name,
-        content_category: "repair_service",
+        content_type: "product",
+        content_id: `service_${service.id}`,
+        content_name: contentName,
+        content_category: "repair_services",
         value: service.price || 0,
         currency: "CZK",
         custom_parameters: {
-          // Дані про послугу
-          service_id: service.id,
-          service_name: service.name,
-          service_price: service.price,
-          service_slug: service.slug,
-          // Контекст моделі (ВАЖЛИВО!)
-          model_id: modelData.id,
-          model_name: modelData.name,
-          brand_id: modelData.brands?.id || "unknown",
-          brand_name: modelData.brands?.name || "unknown",
-          series_id: modelData.series?.id || "unknown",
-          series_name: modelData.series?.name || "unknown",
-          // Технічні характеристики
+          click_source: "model_page_service_grid",
           warranty_months: service.warranty_months || 0,
           duration_hours: service.duration_hours || 0,
-          // Контекст кліку
-          click_source: "model_page_service_grid",
-          service_position: service.position || 0,
         },
+      })
+
+      console.log("📊 Service click from model page:", {
+        content_name: contentName,
+        value: service.price || 0,
       })
     }
   }
-
-  console.log(
-    "[MODEL CLIENT] Services data:",
-    modelData.services.map((s) => ({
-      name: s.name,
-      warranty_months: s.warranty_months,
-      warranty_months_type: typeof s.warranty_months,
-      duration_hours: s.duration_hours,
-      duration_hours_type: typeof s.duration_hours,
-      price: s.price,
-      price_type: typeof s.price,
-      warranty_period: s.warranty_period,
-    })),
-  )
 
   return (
     <div className="min-h-screen bg-white">
@@ -211,7 +182,7 @@ export default function ModelPageClient({ modelData, locale }: Props) {
           </div>
         </div>
 
-        {/* Services Grid - виправлене відображення фото */}
+        {/* Services Grid */}
         <div>
           <h2 className="text-2xl font-bold text-gray-900 mb-6">{t("availableServices")}</h2>
 
@@ -225,7 +196,7 @@ export default function ModelPageClient({ modelData, locale }: Props) {
                   onClick={() => handleServiceClick(service)}
                 >
                   <div className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg hover:border-blue-300 transition-all duration-300 group-hover:-translate-y-1">
-                    {/* Service Image - виправлене відображення без обрізання */}
+                    {/* Service Image */}
                     <div className="h-48 bg-white border-b border-gray-100 p-4 flex items-center justify-center">
                       {service.image_url ? (
                         <img
@@ -251,7 +222,7 @@ export default function ModelPageClient({ modelData, locale }: Props) {
                         {service.name}
                       </h3>
 
-                      {/* Key Benefits - ВИПРАВЛЕНО: використовуємо правильно конвертовані дані з model_services */}
+                      {/* Key Benefits */}
                       <div className="mb-3 space-y-1">
                         <div className="flex items-center gap-2 text-sm text-gray-600">
                           <Clock className="h-3 w-3 text-blue-600" />
@@ -263,7 +234,7 @@ export default function ModelPageClient({ modelData, locale }: Props) {
                         </div>
                       </div>
 
-                      {/* Price and CTA - ВИПРАВЛЕНО: правильна перевірка ціни */}
+                      {/* Price and CTA */}
                       <div className="flex items-center justify-between">
                         <div className="text-xl font-bold text-gray-900">
                           {service.price !== null && service.price !== undefined

@@ -76,9 +76,9 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
         s.parentNode.insertBefore(t, s)
       })(window, document, "script", "https://connect.facebook.net/en_US/fbevents.js")
 
-      // Ініціалізація піксель
+      // Ініціалізація піксель - ТІЛЬКИ ОДИН РАЗ
       window.fbq("init", pixelId)
-      window.fbq("track", "PageView")
+      window.fbq("track", "PageView") // Тільки при ініціалізації
 
       isInitialized.current = true
       console.log("✅ Facebook Pixel initialized successfully")
@@ -87,30 +87,9 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
     }
   }
 
-  // Відстеження переходів по сторінках
-  const trackPageView = () => {
-    if (!window.fbq || !isInitialized.current || !consent) {
-      console.log("⚠️ Skipping page view:", { fbq: !!window.fbq, initialized: isInitialized.current, consent })
-      return
-    }
-
-    console.log("📊 Tracking page view for:", pathname)
-
-    try {
-      window.fbq("track", "PageView")
-
-      // Специфічні події
-      if (pathname.includes("/models/")) {
-        window.fbq("track", "ViewContent", {
-          content_type: "product",
-        })
-      } else if (pathname.includes("/contact")) {
-        window.fbq("track", "Contact")
-      }
-    } catch (error) {
-      console.error("❌ Page view tracking failed:", error)
-    }
-  }
+  // ВИДАЛЕНО: автоматичне відстеження PageView при зміні сторінки
+  // Тепер PageView відправляється тільки один раз при ініціалізації
+  // Конкретні сторінки самі відправляють ViewContent події
 
   // Основний ефект згоди
   useEffect(() => {
@@ -118,7 +97,6 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
 
     if (consent && !isInitialized.current) {
       console.log("✅ Starting initialization due to consent...")
-      // Невелика затримка щоб переконатися що DOM готовий
       setTimeout(() => {
         initializeFacebookPixel()
       }, 100)
@@ -128,16 +106,6 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
     }
   }, [consent, pixelId])
 
-  // Ефект сторінок
-  useEffect(() => {
-    if (consent && isInitialized.current) {
-      // Невелика затримка для відстеження переходів
-      setTimeout(() => {
-        trackPageView()
-      }, 100)
-    }
-  }, [pathname, consent])
-
   // Глобальні функції для тестування та відстеження
   useEffect(() => {
     window.trackServiceClick = (serviceName: string, modelName: string, price: number) => {
@@ -145,7 +113,10 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
         console.log("📊 Tracking service click:", { serviceName, modelName, price })
         try {
           window.fbq("track", "ViewContent", {
-            content_name: serviceName,
+            content_type: "product",
+            content_id: `service_${serviceName.toLowerCase().replace(/\s+/g, "_")}`,
+            content_name: `${serviceName} - ${modelName}`,
+            content_category: "repair_services",
             value: price,
             currency: "CZK",
           })
@@ -160,7 +131,7 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
         console.log("📊 Tracking contact submission:", formData)
         try {
           window.fbq("track", "Lead", {
-            content_name: "Contact Form",
+            content_name: "Contact Form Submission",
             value: 100,
             currency: "CZK",
           })
@@ -175,7 +146,11 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
         console.log("📊 Tracking contact click:", { method, location })
         try {
           window.fbq("track", "Contact", {
-            contact_method: method,
+            content_name: `Contact via ${method}`,
+            custom_parameters: {
+              contact_method: method,
+              click_location: location,
+            },
           })
         } catch (error) {
           console.error("❌ Contact click tracking failed:", error)
@@ -194,8 +169,11 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
       if (window.fbq && consent && isInitialized.current) {
         try {
           window.fbq("trackCustom", "ManualTest", {
-            timestamp: new Date().toISOString(),
-            page_url: window.location.href,
+            content_name: "Manual Pixel Test",
+            custom_parameters: {
+              timestamp: new Date().toISOString(),
+              page_url: window.location.href,
+            },
           })
           console.log("✅ Test event sent successfully")
         } catch (error) {

@@ -59,11 +59,9 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
   const t = useTranslations("Services")
   const commonT = useTranslations("Common")
   const searchParams = useSearchParams()
-  const viewContentSent = useRef(false) // Уникаємо дублювання
+  const viewContentSent = useRef(false)
 
   const { translation, faqs, sourceModel, modelServicePrice, minPrice, maxPrice } = serviceData
-
-  // Отримуємо параметр model з URL
   const modelParam = searchParams.get("model")
 
   const backUrl = sourceModel ? `/${locale}/models/${sourceModel.slug}` : `/${locale}`
@@ -72,7 +70,7 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
   const whatIncludedList = translation.what_included?.split("\n").filter((item) => item.trim()) || []
   const benefitsList = translation.benefits?.split("\n").filter((item) => item.trim()) || []
 
-  // ВИПРАВЛЕНО: Покращена подія ViewContent для сторінки послуги
+  // ВИПРАВЛЕНО: Правильна структура Facebook Pixel
   useEffect(() => {
     if (typeof window !== "undefined" && window.fbq && !viewContentSent.current) {
       // Визначаємо правильну ціну
@@ -85,33 +83,36 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
               : (minPrice + maxPrice) / 2
             : null
 
-      // ПОКРАЩЕНІ ПАРАМЕТРИ для сторінки послуги
+      // Формуємо правильну назву контенту
+      const contentName =
+        sourceModel || modelParam
+          ? `${translation.name} - ${sourceModel?.brands?.name || "Unknown"} ${sourceModel?.name || modelParam}`
+          : translation.name
+
+      // ПРАВИЛЬНА СТРУКТУРА Facebook Pixel
       window.fbq("track", "ViewContent", {
-        content_type: "service",
-        content_name: translation.name,
-        content_category: "repair_service",
+        // Стандартні поля Facebook
+        content_type: "product",
+        content_id: `service_${serviceData.id}`,
+        content_name: contentName,
+        content_category: "repair_services",
         value: actualPrice || 0,
         currency: "CZK",
-        // Структуровані параметри
+
+        // Тільки специфічні дані в custom_parameters
         custom_parameters: {
-          service_id: serviceData.id,
-          service_name: translation.name,
-          service_price: actualPrice,
-          // Дані про модель (НАЙВАЖЛИВІШЕ!)
-          model_id: sourceModel?.id || "unknown",
-          model_name: sourceModel?.name || modelParam || "unknown",
-          brand_id: sourceModel?.brands?.id || "unknown",
-          brand_name: sourceModel?.brands?.name || "unknown",
-          // Технічні характеристики
           warranty_months: serviceData.warranty_months || 0,
-          warranty_period: serviceData.warranty_period || "months",
           duration_hours: serviceData.duration_hours || 0,
-          // Контекст
           has_model_context: !!(sourceModel || modelParam),
-          price_type: actualPrice ? "fixed" : "on_request",
-          page_url: window.location.href,
-          referrer: document.referrer || "direct",
         },
+      })
+
+      console.log("📊 Service ViewContent sent:", {
+        content_id: `service_${serviceData.id}`,
+        content_name: contentName,
+        value: actualPrice || 0,
+        warranty: serviceData.warranty_months,
+        duration: serviceData.duration_hours,
       })
 
       viewContentSent.current = true
@@ -119,45 +120,23 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
   }, [serviceData, translation.name, modelParam, sourceModel, modelServicePrice, minPrice, maxPrice])
 
   const formatWarranty = (months: number | null, period: string) => {
-    console.log("FORMATTING WARRANTY:", { months, period, type: typeof months })
-    // ВИПРАВЛЕНО: правильна перевірка на null/undefined
     if (months === null || months === undefined) return t("contactForWarranty")
-    // Тепер навіть 0 місяців буде показано
     return period === "days" ? t("warrantyDays", { count: months }) : t("warrantyMonths", { count: months })
   }
 
   const formatDuration = (hours: number | null) => {
-    console.log("FORMATTING DURATION:", { hours, type: typeof hours })
-    // ВИПРАВЛЕНО: правильна перевірка на null/undefined
     if (hours === null || hours === undefined) return t("contactForTime")
-    // Тепер навіть 0 годин буде показано
     return t("fromHours", { hours })
   }
 
-  // Виправлена логіка відображення ціни
   const renderPrice = () => {
-    console.log("[CLIENT] FIXED Price logic:", {
-      sourceModel: !!sourceModel,
-      modelParam,
-      modelServicePrice,
-      modelServicePriceType: typeof modelServicePrice,
-      minPrice,
-      maxPrice,
-    })
-
-    // Якщо є параметр model в URL (незалежно від того чи знайдено sourceModel)
     if (modelParam) {
-      console.log("[CLIENT] Using model-specific pricing")
-      // ВИПРАВЛЕНО: правильна перевірка на null/undefined
       if (modelServicePrice === null || modelServicePrice === undefined) {
         return t("priceOnRequest")
       }
-      // Тепер навіть ціна 0 буде показана
       return formatCurrency(modelServicePrice)
     }
 
-    // Якщо немає параметра model, показуємо діапазон цін
-    console.log("[CLIENT] Using price range")
     if (minPrice !== null && maxPrice !== null && minPrice !== undefined && maxPrice !== undefined) {
       return minPrice === maxPrice
         ? formatCurrency(minPrice)
@@ -168,7 +147,7 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
   }
 
   const handleOrderClick = () => {
-    // ВИПРАВЛЕНО: Покращена подія InitiateCheckout
+    // ВИПРАВЛЕНО: Правильна структура InitiateCheckout
     if (typeof window !== "undefined" && window.fbq) {
       const actualPrice =
         modelParam && modelServicePrice !== null && modelServicePrice !== undefined
@@ -179,19 +158,26 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
               : (minPrice + maxPrice) / 2
             : null
 
+      const contentName =
+        sourceModel || modelParam
+          ? `${translation.name} - ${sourceModel?.brands?.name || "Unknown"} ${sourceModel?.name || modelParam}`
+          : translation.name
+
       window.fbq("track", "InitiateCheckout", {
-        content_type: "service",
-        content_name: translation.name,
+        content_type: "product",
+        content_id: `service_${serviceData.id}`,
+        content_name: contentName,
+        content_category: "repair_services",
         value: actualPrice || 0,
         currency: "CZK",
         custom_parameters: {
-          service_id: serviceData.id,
-          service_name: translation.name,
-          model_name: sourceModel?.name || modelParam || "unknown",
-          brand_name: sourceModel?.brands?.name || "unknown",
-          action_type: "order_service",
-          button_location: "service_page_cta",
+          action_source: "service_page_order_button",
         },
+      })
+
+      console.log("📊 InitiateCheckout sent:", {
+        content_name: contentName,
+        value: actualPrice || 0,
       })
     }
   }
