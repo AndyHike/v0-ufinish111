@@ -14,7 +14,7 @@ interface AnalyticsSettings {
 }
 
 export function AnalyticsProvider() {
-  const [pixelId, setPixelId] = useState("1823195131746594") // Fallback ID
+  const [pixelId, setPixelId] = useState("1707859576556389") // Ваш новий ID
   const { consent } = useCookieConsent()
 
   useEffect(() => {

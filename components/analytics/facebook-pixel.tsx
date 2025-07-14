@@ -37,6 +37,9 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
     // Видалення скриптів
     document.querySelectorAll('script[src*="fbevents.js"]').forEach((script) => script.remove())
 
+    // Видалення noscript img
+    document.querySelectorAll('img[src*="facebook.com/tr"]').forEach((img) => img.remove())
+
     // Очищення глобальних змінних
     delete window.fbq
     delete window._fbq
@@ -44,11 +47,11 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
     isInitialized.current = false
   }
 
-  // Ініціалізація Facebook Pixel
+  // Ініціалізація Facebook Pixel (точно як в офіційному коді)
   const initializeFacebookPixel = () => {
     if (!pixelId || isInitialized.current) return
 
-    // Facebook Pixel код
+    // Точний код з Facebook
     !((f: any, b: any, e: any, v: any, n?: any, t?: any, s?: any) => {
       if (f.fbq) return
       n = f.fbq = () => {
@@ -66,9 +69,17 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
       s.parentNode.insertBefore(t, s)
     })(window, document, "script", "https://connect.facebook.net/en_US/fbevents.js")
 
-    // Ініціалізація
+    // Ініціалізація з вашим ID
     window.fbq("init", pixelId)
     window.fbq("track", "PageView")
+
+    // Додаємо noscript img
+    const noscriptImg = document.createElement("img")
+    noscriptImg.height = 1
+    noscriptImg.width = 1
+    noscriptImg.style.display = "none"
+    noscriptImg.src = `https://www.facebook.com/tr?id=${pixelId}&ev=PageView&noscript=1`
+    document.body.appendChild(noscriptImg)
 
     isInitialized.current = true
   }
@@ -128,17 +139,23 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
     }
 
     window.testFacebookPixel = () => {
+      console.log("=== Facebook Pixel Test ===")
+      console.log("Consent:", consent)
+      console.log("Pixel ID:", pixelId)
+      console.log("Initialized:", isInitialized.current)
+      console.log("fbq available:", !!window.fbq)
+
       if (window.fbq && consent) {
         window.fbq("trackCustom", "ManualTest", {
           timestamp: new Date().toISOString(),
           page_url: window.location.href,
         })
-        console.log("Facebook Pixel test event sent")
+        console.log("✅ Test event sent")
       } else {
-        console.log("Facebook Pixel not available or consent not granted")
+        console.log("❌ Facebook Pixel not available or consent not granted")
       }
     }
-  }, [consent])
+  }, [consent, pixelId])
 
   return null
 }
