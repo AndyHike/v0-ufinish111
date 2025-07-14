@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef } from "react"
 import { usePathname } from "next/navigation"
 
 interface FacebookPixelProps {
@@ -20,18 +20,19 @@ declare global {
 }
 
 export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
-  const [isInitialized, setIsInitialized] = useState(false)
   const pathname = usePathname()
   const previousPathname = useRef(pathname)
+  const scriptLoaded = useRef(false)
+  const pixelInitialized = useRef(false)
 
   // Стандартна ініціалізація Facebook Pixel
-  const initializePixel = () => {
-    if (!pixelId || isInitialized) return
+  const loadFacebookPixel = () => {
+    if (scriptLoaded.current || !consent || !pixelId) return
 
-    console.log(`🚀 Initializing Facebook Pixel: ${pixelId}`)
+    console.log(`🚀 Loading Facebook Pixel: ${pixelId}`)
 
-    // Стандартний Facebook код
-    ;((f: any, b: any, e: any, v: any, n?: any, t?: any, s?: any) => {
+    // Стандартний Facebook Pixel код
+    !((f: any, b: any, e: any, v: any, n?: any, t?: any, s?: any) => {
       if (f.fbq) return
       n = f.fbq = () => {
         n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments)
@@ -48,258 +49,142 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
       s.parentNode.insertBefore(t, s)
     })(window, document, "script", "https://connect.facebook.net/en_US/fbevents.js")
 
-    // Ініціалізація з Enhanced Match
-    window.fbq("init", pixelId, {
-      // Enhanced Match - покращує таргетинг
-      external_id: `user_${Date.now()}`,
-      agent: "plnextjs",
-    })
+    scriptLoaded.current = true
 
-    // Початкова подія
+    // Ініціалізація пікселя
+    window.fbq("init", pixelId)
     window.fbq("track", "PageView")
 
-    setIsInitialized(true)
+    pixelInitialized.current = true
     console.log(`✅ Facebook Pixel initialized: ${pixelId}`)
   }
 
-  // ПРАВИЛЬНЕ відкликання згоди
-  const revokeConsent = () => {
-    if (!window.fbq) return
+  // Очищення при відкликанні згоди
+  const clearFacebookPixel = () => {
+    if (!scriptLoaded.current) return
 
-    console.log("🚫 Revoking Facebook Pixel consent")
+    console.log("🧹 Clearing Facebook Pixel")
 
-    // 1. Офіційний метод відкликання згоди
-    window.fbq("consent", "revoke")
-
-    // 2. Зупиняємо всі активні відстеження
-    window.fbq("set", "autoConfig", false, pixelId)
-
-    // 3. Очищуємо черги подій
-    if (window.fbq.queue) {
-      window.fbq.queue.length = 0
-    }
-
-    // 4. Простіше очищення cookies
+    // Очищення cookies
     const cookiesToClear = ["_fbp", "_fbc"]
     cookiesToClear.forEach((name) => {
       document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`
       document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname}`
-      document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${window.location.hostname.replace(/^www\./, "")}`
+      const baseDomain = window.location.hostname.replace(/^www\./, "")
+      document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${baseDomain}`
     })
 
-    // 5. Видаляємо Facebook скрипти
+    // Видалення скриптів
     const fbScripts = document.querySelectorAll('script[src*="fbevents.js"]')
     fbScripts.forEach((script) => script.remove())
 
-    // 6. Очищуємо глобальні змінні
-    delete window.fbq
-    delete window._fbq
+    // Очищення глобальних змінних
+    if (window.fbq) {
+      delete window.fbq
+    }
+    if (window._fbq) {
+      delete window._fbq
+    }
 
-    setIsInitialized(false)
-    console.log("✅ Facebook Pixel consent revoked and cleaned")
+    scriptLoaded.current = false
+    pixelInitialized.current = false
+    console.log("✅ Facebook Pixel cleared")
   }
 
   // Основна логіка згоди
   useEffect(() => {
-    if (consent && !isInitialized) {
-      // Надання згоди - ініціалізуємо
-      initializePixel()
-    } else if (!consent && isInitialized) {
-      // Відкликання згоди - повністю зупиняємо
-      revokeConsent()
+    if (consent) {
+      loadFacebookPixel()
+    } else {
+      clearFacebookPixel()
     }
-  }, [consent, pixelId, isInitialized])
+  }, [consent, pixelId])
 
   // Відстеження переходів по сторінках
   useEffect(() => {
-    if (!consent || !isInitialized || !window.fbq) return
+    if (!consent || !pixelInitialized.current || !window.fbq) return
 
     if (pathname !== previousPathname.current) {
       console.log(`📊 Page view: ${pathname}`)
 
-      // Затримка для завантаження сторінки
-      setTimeout(() => {
-        // Основна подія PageView
-        window.fbq("track", "PageView", {
-          page_url: window.location.href,
-          page_title: document.title,
-          referrer: document.referrer || "",
-        })
+      window.fbq("track", "PageView")
 
-        // Специфічні події для різних типів сторінок
-        if (pathname.includes("/models/")) {
-          // Сторінка моделі пристрою
-          window.fbq("track", "ViewContent", {
-            content_type: "product",
-            content_category: "device_model",
-            content_name: document.title,
-            value: 0.01,
-            currency: "CZK",
-          })
-        } else if (pathname.includes("/services/")) {
-          // Сторінка послуги
-          window.fbq("track", "ViewContent", {
-            content_type: "service",
-            content_category: "repair_service",
-            content_name: document.title,
-            value: 0.01,
-            currency: "CZK",
-          })
-        } else if (pathname.includes("/brands/")) {
-          // Сторінка бренду
-          window.fbq("track", "ViewContent", {
-            content_type: "product_catalog",
-            content_category: "device_brand",
-            content_name: document.title,
-            value: 0.01,
-            currency: "CZK",
-          })
-        } else if (pathname.includes("/contact")) {
-          // Сторінка контактів
-          window.fbq("track", "Contact", {
-            content_category: "contact_page",
-          })
-        }
-      }, 300)
+      // Специфічні події для різних типів сторінок
+      if (pathname.includes("/models/")) {
+        window.fbq("track", "ViewContent", {
+          content_type: "product",
+          content_category: "device_model",
+        })
+      } else if (pathname.includes("/services/")) {
+        window.fbq("track", "ViewContent", {
+          content_type: "service",
+          content_category: "repair_service",
+        })
+      } else if (pathname.includes("/contact")) {
+        window.fbq("track", "Contact")
+      }
 
       previousPathname.current = pathname
     }
-  }, [pathname, consent, isInitialized])
+  }, [pathname, consent])
 
-  // Глобальні функції для відстеження конверсій
+  // Глобальні функції для відстеження
   useEffect(() => {
-    if (typeof window !== "undefined" && consent && isInitialized) {
+    if (typeof window !== "undefined") {
       // Відстеження кліків на послуги
       window.trackServiceClick = (serviceName: string, modelName: string, price: number) => {
-        if (!window.fbq) return
-
-        console.log(`📊 Service click: ${serviceName} for ${modelName}`)
+        if (!window.fbq || !consent || !pixelInitialized.current) return
 
         window.fbq("track", "ViewContent", {
           content_name: serviceName,
           content_type: "service",
-          content_category: "repair_service",
           value: price,
           currency: "CZK",
-          custom_data: {
-            service_name: serviceName,
-            device_model: modelName,
-            predicted_ltv: price * 2, // Прогнозована життєва вартість
-          },
-        })
-
-        // Додаткова подія для кращого відстеження інтересу
-        window.fbq("trackCustom", "ServiceInterest", {
-          service_type: serviceName,
-          device_model: modelName,
-          price_range: price > 1000 ? "high" : price > 500 ? "medium" : "low",
         })
       }
 
-      // Відстеження відправки форм контактів
+      // Відстеження форм контактів
       window.trackContactSubmission = (formData: any) => {
-        if (!window.fbq) return
+        if (!window.fbq || !consent || !pixelInitialized.current) return
 
-        console.log("📊 Contact form submission")
-
-        // Основна подія Lead
         window.fbq("track", "Lead", {
-          content_name: "Contact Form Submission",
-          content_category: "contact_inquiry",
-          value: 100, // Очікувана вартість ліда
+          content_name: "Contact Form",
+          value: 100,
           currency: "CZK",
-          custom_data: {
-            form_type: "contact",
-            predicted_ltv: 2000, // Прогнозована життєва вартість клієнта
-            lead_quality: "high", // Якість ліда
-            ...formData,
-          },
         })
-
-        // Enhanced Match - якщо є email або телефон
-        if (formData.email || formData.phone) {
-          window.fbq(
-            "track",
-            "Lead",
-            {
-              content_name: "Enhanced Contact Lead",
-              value: 150,
-              currency: "CZK",
-            },
-            {
-              em: formData.email ? btoa(formData.email.toLowerCase().trim()) : undefined,
-              ph: formData.phone ? btoa(formData.phone.replace(/\D/g, "")) : undefined,
-            },
-          )
-        }
       }
 
-      // Відстеження кліків на контактну інформацію
+      // Відстеження кліків на контакти
       window.trackContactClick = (method: string, location: string) => {
-        if (!window.fbq) return
-
-        console.log(`📊 Contact click: ${method} from ${location}`)
+        if (!window.fbq || !consent || !pixelInitialized.current) return
 
         window.fbq("track", "Contact", {
           contact_method: method,
-          content_category: `${method}_contact`,
-          custom_data: {
-            contact_location: location,
-            contact_method: method,
-            interaction_type: "click",
-          },
         })
-
-        // Спеціальна подія для телефонних дзвінків
-        if (method === "phone") {
-          window.fbq("trackCustom", "PhoneCallIntent", {
-            source: location,
-            value: 50, // Вартість наміру зателефонувати
-            currency: "CZK",
-          })
-        }
       }
-    }
-  }, [consent, isInitialized])
 
-  // Функція для тестування
-  useEffect(() => {
-    if (typeof window !== "undefined") {
+      // Функція тестування
       window.testFacebookPixel = () => {
         console.log("🧪 === Facebook Pixel Test ===")
         console.log("Consent:", consent)
         console.log("Pixel ID:", pixelId)
-        console.log("Initialized:", isInitialized)
+        console.log("Script loaded:", scriptLoaded.current)
+        console.log("Pixel initialized:", pixelInitialized.current)
         console.log("fbq available:", !!window.fbq)
-        console.log("Current URL:", window.location.href)
         console.log("Current cookies:", document.cookie)
 
-        if (window.fbq && consent && isInitialized) {
-          const testId = Math.random().toString(36).substring(7)
-          console.log(`🧪 Sending test events with ID: ${testId}`)
-
-          // Тестові події
+        if (window.fbq && consent && pixelInitialized.current) {
           window.fbq("trackCustom", "PixelTest", {
-            test_id: testId,
-            timestamp: new Date().toISOString(),
+            test_timestamp: Date.now(),
             page_url: window.location.href,
           })
-
-          window.fbq("track", "ViewContent", {
-            content_type: "test",
-            content_name: "Pixel Test Content",
-            value: 1,
-            currency: "CZK",
-            custom_data: { test_id: testId },
-          })
-
-          console.log(`✅ Test events sent with ID: ${testId}`)
+          console.log("✅ Test event sent")
         } else {
-          console.log("❌ Cannot send test events - pixel not ready or consent not granted")
+          console.log("❌ Cannot send test - pixel not ready or consent not granted")
         }
       }
     }
-  }, [consent, pixelId, isInitialized])
+  }, [consent, pixelId])
 
   return null
 }

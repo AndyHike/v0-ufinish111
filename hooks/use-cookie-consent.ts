@@ -18,38 +18,6 @@ export function useCookieConsent() {
     consentDate: null,
   })
 
-  // Простіше очищення cookies
-  const clearCookies = (category: "analytics" | "marketing") => {
-    if (typeof document === "undefined") return
-
-    console.log(`🧹 Clearing ${category} cookies`)
-
-    const cookiesToClear = category === "analytics" ? ["_ga", "_ga_WZ0WCHZ3XT", "_gid", "_gat"] : ["_fbp", "_fbc"]
-
-    const domains = ["", window.location.hostname, `.${window.location.hostname.replace(/^www\./, "")}`]
-
-    cookiesToClear.forEach((name) => {
-      domains.forEach((domain) => {
-        const cookieString = domain
-          ? `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${domain}`
-          : `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`
-        document.cookie = cookieString
-      })
-    })
-
-    // Очищення localStorage
-    try {
-      const storagePrefix = category === "analytics" ? "_ga" : "_fb"
-      Object.keys(localStorage).forEach((key) => {
-        if (key.startsWith(storagePrefix)) {
-          localStorage.removeItem(key)
-        }
-      })
-    } catch (error) {
-      console.warn("Could not clear localStorage:", error)
-    }
-  }
-
   useEffect(() => {
     const stored = localStorage.getItem(COOKIE_CONSENT_KEY)
     if (stored) {
@@ -77,24 +45,12 @@ export function useCookieConsent() {
     }
   }, [])
 
-  const saveConsent = (consent: CookieConsent, previousConsent?: CookieConsent) => {
+  const saveConsent = (consent: CookieConsent) => {
     const consentData = {
       consent,
       consentDate: new Date().toISOString(),
     }
     localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(consentData))
-
-    console.log("💾 Saving consent:", { consent, previousConsent })
-
-    // Очищення при відкликанні згоди
-    if (previousConsent) {
-      if (previousConsent.analytics && !consent.analytics) {
-        clearCookies("analytics")
-      }
-      if (previousConsent.marketing && !consent.marketing) {
-        clearCookies("marketing")
-      }
-    }
 
     setState({
       consent,
@@ -104,39 +60,27 @@ export function useCookieConsent() {
     })
 
     // Повідомляємо про зміну згоди
-    setTimeout(() => {
-      window.dispatchEvent(
-        new CustomEvent("cookieConsentChanged", {
-          detail: { consent, previousConsent, timestamp: Date.now() },
-        }),
-      )
-    }, 50)
+    window.dispatchEvent(
+      new CustomEvent("cookieConsentChanged", {
+        detail: { consent },
+      }),
+    )
   }
 
   const acceptAll = () => {
-    const previousConsent = state.consent
-    console.log("✅ Accepting all cookies")
-    saveConsent(
-      {
-        necessary: true,
-        analytics: true,
-        marketing: true,
-      },
-      previousConsent,
-    )
+    saveConsent({
+      necessary: true,
+      analytics: true,
+      marketing: true,
+    })
   }
 
   const acceptNecessary = () => {
-    const previousConsent = state.consent
-    console.log("⚠️ Accepting only necessary cookies")
-    saveConsent(
-      {
-        necessary: true,
-        analytics: false,
-        marketing: false,
-      },
-      previousConsent,
-    )
+    saveConsent({
+      necessary: true,
+      analytics: false,
+      marketing: false,
+    })
   }
 
   const updateCategory = (category: keyof CookieConsent, value: boolean) => {
@@ -150,9 +94,7 @@ export function useCookieConsent() {
   }
 
   const saveCurrentSettings = () => {
-    const previousConsent = { ...state.consent }
-    console.log("💾 Saving current settings")
-    saveConsent(state.consent, previousConsent)
+    saveConsent(state.consent)
   }
 
   const setShowBanner = (show: boolean) => {
