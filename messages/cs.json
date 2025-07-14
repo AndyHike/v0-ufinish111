@@ -7,7 +7,11 @@
     "about": "O nás",
     "contact": "Kontakt",
     "openMenu": "Otevřít menu",
-    "search": "Hledat"
+    "search": "Hledat...",
+    "profile": "Profil",
+    "admin": "Admin",
+    "logout": "Odhlásit se",
+    "login": "Přihlásit se"
   },
   "Footer": {
     "siteTitle": "Oprava Telefonů",
@@ -37,17 +41,17 @@
   },
   "Search": {
     "title": "Vyhledávání",
-    "placeholder": "Hledat telefony, značky, služby...",
+    "placeholder": "Hledat modely, značky, služby...",
     "search": "Hledat",
     "clear": "Vymazat",
     "searching": "Hledám",
     "results": "výsledků",
     "found": "Nalezeno",
-    "noResults": "Žádné výsledky nenalezeny",
+    "noResults": "Nic nenalezeno",
     "minChars": "Zadejte alespoň 2 znaky",
     "models": "Modely",
     "brands": "Značky",
-    "series": "Řady",
+    "series": "Série",
     "services": "Služby",
     "model": "model",
     "brand": "značka",
@@ -705,7 +709,21 @@
       "completed": "Dokončeno",
       "cancelled": "Zrušeno",
       "dokončeno": "Dokončeno"
-    }
+    },
+    "loading": "Načítání...",
+    "error": "Chyba",
+    "retry": "Zkusit znovu",
+    "close": "Zavřít",
+    "save": "Uložit",
+    "cancel": "Zrušit",
+    "delete": "Smazat",
+    "edit": "Upravit",
+    "add": "Přidat",
+    "back": "Zpět",
+    "next": "Další",
+    "previous": "Předchozí",
+    "submit": "Odeslat",
+    "reset": "Resetovat"
   },
   "Profile": {
     "userProfile": "Profil uživatele",
@@ -772,8 +790,8 @@
   "Navigation": {
     "home": "Domů",
     "brands": "Značky",
+    "services": "Služby",
     "contact": "Kontakt",
-    "search": "Hledat",
-    "searchPlaceholder": "Hledat telefony, značky, služby..."
+    "about": "O nás"
   }
 }

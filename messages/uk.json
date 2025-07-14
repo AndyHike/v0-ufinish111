@@ -8,7 +8,11 @@
     "about": "Про нас",
     "contact": "Контакти",
     "openMenu": "Відкрити меню",
-    "search": "Пошук"
+    "search": "Пошук...",
+    "profile": "Профіль",
+    "admin": "Адмін",
+    "logout": "Вийти",
+    "login": "Увійти"
   },
   "Footer": {
     "siteTitle": "Ремонт Телефонів",
@@ -40,13 +44,13 @@
   },
   "Search": {
     "title": "Пошук",
-    "placeholder": "Шукати телефони, бренди, послуги...",
+    "placeholder": "Шукати моделі, бренди, послуги...",
     "search": "Шукати",
     "clear": "Очистити",
     "searching": "Шукаю",
     "results": "результатів",
     "found": "Знайдено",
-    "noResults": "Результатів не знайдено",
+    "noResults": "Нічого не знайдено",
     "minChars": "Введіть принаймні 2 символи",
     "models": "Моделі",
     "brands": "Бренди",
@@ -752,7 +756,7 @@
     "importModels": "Імпорт моделей",
     "importModelsDescription": "Імпортуйте моделі телефонів з CSV-файлу",
     "importServices": "Імпорт послуг",
-    "importServicesDescription": "Імпортуйте послуги та ціни для моделей телефонів з CSV-файлу",
+    "importServicesDescription": "Імпортувати послуги та ціни для моделей телефонів з CSV-файлу",
     "infoBanner": "Інформаційний банер",
     "contactMessages": "Повідомлення"
   },
@@ -787,7 +791,6 @@
     "requestService": "Замовити послугу",
     "backToHome": "На головну",
     "learnMore": "Дізнатися більше",
-    "contactUs": "Зв'язатися з нами",
     "viewAll": "Переглянути все",
     "orderStatuses": {
       "new": "Новий",
@@ -796,7 +799,21 @@
       "completed": "Виданий",
       "cancelled": "Скасований",
       "dokončeno": "Завершено"
-    }
+    },
+    "loading": "Завантаження...",
+    "error": "Помилка",
+    "retry": "Спробувати знову",
+    "close": "Закрити",
+    "save": "Зберегти",
+    "cancel": "Скасувати",
+    "delete": "Видалити",
+    "edit": "Редагувати",
+    "add": "Додати",
+    "back": "Назад",
+    "next": "Далі",
+    "previous": "Попередній",
+    "submit": "Відправити",
+    "reset": "Скинути"
   },
   "cookies": {
     "banner": {
@@ -882,8 +899,10 @@
   "Navigation": {
     "home": "Головна",
     "brands": "Бренди",
+    "services": "Послуги",
     "contact": "Контакти",
-    "search": "Пошук",
-    "searchPlaceholder": "Шукати телефони, бренди, послуги..."
+    "about": "Про нас",
+    "search": "Пошук...",
+    "searchPlaceholder": "Шукати моделі, бренди, послуги..."
   }
 }

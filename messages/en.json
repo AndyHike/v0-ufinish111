@@ -7,7 +7,11 @@
     "about": "About",
     "contact": "Contact",
     "openMenu": "Open menu",
-    "search": "Search"
+    "search": "Search...",
+    "profile": "Profile",
+    "admin": "Admin",
+    "logout": "Logout",
+    "login": "Login"
   },
   "Footer": {
     "siteTitle": "Phone Repair",
@@ -36,22 +40,18 @@
   },
   "Search": {
     "title": "Search",
-    "placeholder": "Search phones, brands, services...",
+    "placeholder": "Search models, brands, services...",
     "search": "Search",
     "clear": "Clear",
     "searching": "Searching",
     "results": "results",
     "found": "Found",
-    "noResults": "No results found",
+    "noResults": "Nothing found",
     "minChars": "Enter at least 2 characters",
     "models": "Models",
     "brands": "Brands",
     "series": "Series",
-    "services": "Services",
-    "model": "model",
-    "brand": "brand",
-    "serie": "series",
-    "service": "service"
+    "services": "Services"
   },
   "Hero": {
     "title": "Professional Mobile Phone Repair",
@@ -180,7 +180,21 @@
   },
   "Common": {
     "contactUs": "Contact Us",
-    "details": "Learn More"
+    "details": "Learn More",
+    "loading": "Loading...",
+    "error": "Error",
+    "retry": "Try again",
+    "close": "Close",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "submit": "Submit",
+    "reset": "Reset"
   },
   "Brands": {
     "backToBrands": "Back to all brands",
@@ -573,7 +587,9 @@
   "Navigation": {
     "home": "Home",
     "brands": "Brands",
+    "services": "Services",
     "contact": "Contact",
+    "about": "About",
     "searchPlaceholder": "Search phones, brands, services...",
     "search": "Search"
   }

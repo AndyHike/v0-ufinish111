@@ -10,88 +10,47 @@ export async function GET(request: NextRequest) {
     const locale = searchParams.get("locale") || "cs"
 
     if (!query || query.length < 2) {
-      return NextResponse.json({ results: [] })
+      return NextResponse.json({ results: [], totalResults: 0 })
     }
 
     const searchTerm = query.toLowerCase().trim()
     console.log(`🔍 Searching for "${searchTerm}" in locale "${locale}"`)
 
-    // Пошук брендів
-    const { data: brands, error: brandsError } = await supabase
-      .from("brands")
-      .select("id, slug, name")
-      .ilike("name", `%${searchTerm}%`)
-      .eq("is_active", true)
-      .order("position", { ascending: true })
-      .limit(5)
+    const results = []
 
-    if (brandsError) {
-      console.error("❌ Brands search error:", brandsError)
+    // Пошук брендів (найвищий пріоритет)
+    try {
+      const { data: brands, error: brandsError } = await supabase
+        .from("brands")
+        .select("id, slug, name")
+        .ilike("name", `%${searchTerm}%`)
+        .eq("is_active", true)
+        .order("position", { ascending: true })
+        .limit(3)
+
+      if (brandsError) {
+        console.error("❌ Brands search error:", brandsError)
+      } else if (brands) {
+        brands.forEach((brand) => {
+          results.push({
+            id: brand.id,
+            type: "brand",
+            name: brand.name,
+            slug: brand.slug,
+            url: `/${locale}/brands/${brand.slug}`,
+            breadcrumb: null,
+          })
+        })
+      }
+    } catch (error) {
+      console.error("❌ Brands search failed:", error)
     }
 
     // Пошук серій
-    const { data: series, error: seriesError } = await supabase
-      .from("series")
-      .select(`
-        id,
-        slug,
-        name,
-        brands!inner(
-          id,
-          slug,
-          name
-        )
-      `)
-      .ilike("name", `%${searchTerm}%`)
-      .eq("is_active", true)
-      .order("position", { ascending: true })
-      .limit(5)
-
-    if (seriesError) {
-      console.error("❌ Series search error:", seriesError)
-    }
-
-    // Пошук моделей
-    const { data: models, error: modelsError } = await supabase
-      .from("models")
-      .select(`
-        id,
-        slug,
-        name,
-        brands!inner(
-          id,
-          slug,
-          name
-        ),
-        series!inner(
-          id,
-          slug,
-          name
-        )
-      `)
-      .ilike("name", `%${searchTerm}%`)
-      .eq("is_active", true)
-      .order("position", { ascending: true })
-      .limit(8)
-
-    if (modelsError) {
-      console.error("❌ Models search error:", modelsError)
-    }
-
-    // Пошук послуг через model_services
-    const serviceNameColumn = `name_${locale}`
-    const { data: modelServices, error: servicesError } = await supabase
-      .from("model_services")
-      .select(`
-        id,
-        service_id,
-        services!inner(
-          id,
-          slug,
-          ${serviceNameColumn},
-          is_active
-        ),
-        models!inner(
+    try {
+      const { data: series, error: seriesError } = await supabase
+        .from("series")
+        .select(`
           id,
           slug,
           name,
@@ -100,74 +59,98 @@ export async function GET(request: NextRequest) {
             slug,
             name
           )
-        )
-      `)
-      .ilike(`services.${serviceNameColumn}`, `%${searchTerm}%`)
-      .eq("services.is_active", true)
-      .eq("models.is_active", true)
-      .limit(5)
+        `)
+        .ilike("name", `%${searchTerm}%`)
+        .eq("is_active", true)
+        .order("position", { ascending: true })
+        .limit(3)
 
-    if (servicesError) {
-      console.error("❌ Services search error:", servicesError)
+      if (seriesError) {
+        console.error("❌ Series search error:", seriesError)
+      } else if (series) {
+        series.forEach((serie) => {
+          results.push({
+            id: serie.id,
+            type: "series",
+            name: serie.name,
+            slug: serie.slug,
+            url: `/${locale}/series/${serie.slug}`,
+            breadcrumb: serie.brands?.name || null,
+          })
+        })
+      }
+    } catch (error) {
+      console.error("❌ Series search failed:", error)
     }
 
-    // Форматування результатів
-    const results = []
+    // Пошук моделей (найбільш релевантний)
+    try {
+      const { data: models, error: modelsError } = await supabase
+        .from("models")
+        .select(`
+          id,
+          slug,
+          name,
+          brands!inner(
+            id,
+            slug,
+            name
+          ),
+          series!inner(
+            id,
+            slug,
+            name
+          )
+        `)
+        .ilike("name", `%${searchTerm}%`)
+        .eq("is_active", true)
+        .order("position", { ascending: true })
+        .limit(5)
 
-    // Додаємо бренди
-    if (brands) {
-      brands.forEach((brand) => {
-        results.push({
-          id: brand.id,
-          type: "brand",
-          name: brand.name,
-          slug: brand.slug,
-          url: `/${locale}/brands/${brand.slug}`,
-          breadcrumb: null,
+      if (modelsError) {
+        console.error("❌ Models search error:", modelsError)
+      } else if (models) {
+        models.forEach((model) => {
+          results.push({
+            id: model.id,
+            type: "model",
+            name: model.name,
+            slug: model.slug,
+            url: `/${locale}/models/${model.slug}`,
+            breadcrumb: `${model.brands?.name || ""} › ${model.series?.name || ""}`,
+          })
         })
-      })
+      }
+    } catch (error) {
+      console.error("❌ Models search failed:", error)
     }
 
-    // Додаємо серії
-    if (series) {
-      series.forEach((serie) => {
-        results.push({
-          id: serie.id,
-          type: "series",
-          name: serie.name,
-          slug: serie.slug,
-          url: `/${locale}/series/${serie.slug}`,
-          breadcrumb: serie.brands.name,
-        })
-      })
-    }
+    // Пошук послуг через model_services
+    try {
+      const serviceNameColumn = `name_${locale}`
+      const { data: services, error: servicesError } = await supabase
+        .from("services")
+        .select(`id, slug, ${serviceNameColumn}`)
+        .ilike(serviceNameColumn, `%${searchTerm}%`)
+        .eq("is_active", true)
+        .limit(3)
 
-    // Додаємо моделі
-    if (models) {
-      models.forEach((model) => {
-        results.push({
-          id: model.id,
-          type: "model",
-          name: model.name,
-          slug: model.slug,
-          url: `/${locale}/models/${model.slug}`,
-          breadcrumb: `${model.brands.name} › ${model.series.name}`,
+      if (servicesError) {
+        console.error("❌ Services search error:", servicesError)
+      } else if (services) {
+        services.forEach((service) => {
+          results.push({
+            id: service.id,
+            type: "service",
+            name: service[serviceNameColumn] || service.name_cs || service.name_en,
+            slug: service.slug,
+            url: `/${locale}/services/${service.slug}`,
+            breadcrumb: null,
+          })
         })
-      })
-    }
-
-    // Додаємо послуги
-    if (modelServices) {
-      modelServices.forEach((ms) => {
-        results.push({
-          id: ms.services.id,
-          type: "service",
-          name: ms.services[serviceNameColumn],
-          slug: ms.services.slug,
-          url: `/${locale}/services/${ms.services.slug}`,
-          breadcrumb: `${ms.models.brands.name} ${ms.models.name}`,
-        })
-      })
+      }
+    } catch (error) {
+      console.error("❌ Services search failed:", error)
     }
 
     console.log(`✅ Found ${results.length} results`)
@@ -178,6 +161,13 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error("❌ Search API error:", error)
-    return NextResponse.json({ error: "Search failed" }, { status: 500 })
+    return NextResponse.json(
+      {
+        error: "Search failed",
+        results: [],
+        totalResults: 0,
+      },
+      { status: 500 },
+    )
   }
 }
