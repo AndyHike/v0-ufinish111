@@ -1,31 +1,31 @@
 "use client"
 
-import { useState } from "react"
 import { useSearchParams } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { Clock, Shield, ArrowLeft, Phone, MessageCircle } from "lucide-react"
 import Link from "next/link"
-import Image from "next/image"
 import { useTranslations } from "next-intl"
+import { Button } from "@/components/ui/button"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { Phone, MessageCircle, Clock, Shield, CheckCircle, ChevronDown, ArrowLeft } from "lucide-react"
+import { formatCurrency } from "@/lib/format-currency"
+import { formatImageUrl } from "@/utils/image-url"
 
 interface ServiceData {
-  id: number
+  id: string
   position: number
   warranty_months: number | null
   duration_hours: number | null
+  warranty_period: string
   image_url: string | null
-  slug: string
+  slug: string | null
   translation: {
     name: string
-    description: string | null
+    description: string
     detailed_description: string | null
     what_included: string | null
+    benefits: string | null
   }
   faqs: Array<{
-    id: number
+    id: string
     position: number
     translation: {
       question: string
@@ -33,14 +33,14 @@ interface ServiceData {
     }
   }>
   sourceModel: {
-    id: number
+    id: string
     name: string
-    slug: string
+    slug: string | null
     image_url: string | null
     brands: {
-      id: number
+      id: string
       name: string
-      slug: string
+      slug: string | null
       logo_url: string | null
     }
   } | null
@@ -49,292 +49,255 @@ interface ServiceData {
   maxPrice: number | null
 }
 
-interface ServicePageClientProps {
+interface Props {
   serviceData: ServiceData
   locale: string
 }
 
-export default function ServicePageClient({ serviceData, locale }: ServicePageClientProps) {
-  const t = useTranslations()
+export default function ServicePageClient({ serviceData, locale }: Props) {
+  const t = useTranslations("Services")
+  const commonT = useTranslations("Common")
   const searchParams = useSearchParams()
 
-  // ВИПРАВЛЕНО: Читаємо параметр model з URL напряму
+  const { translation, faqs, sourceModel, modelServicePrice, minPrice, maxPrice } = serviceData
+
+  // Отримуємо параметр model з URL
   const modelParam = searchParams.get("model")
 
-  const [isLoading, setIsLoading] = useState(false)
+  const backUrl = sourceModel ? `/${locale}/models/${sourceModel.slug}` : `/${locale}`
+  const backText = sourceModel ? `${sourceModel.brands?.name} ${sourceModel.name}` : commonT("backToHome")
 
-  // ВИПРАВЛЕНО: Логіка відображення ціни на основі URL параметра
-  const shouldShowModelPrice = modelParam && serviceData.modelServicePrice !== null
-  const shouldShowPriceRange = !modelParam && serviceData.minPrice !== null && serviceData.maxPrice !== null
+  const whatIncludedList = translation.what_included?.split("\n").filter((item) => item.trim()) || []
+  const benefitsList = translation.benefits?.split("\n").filter((item) => item.trim()) || []
 
-  console.log("ServicePageClient render:", {
-    modelParam,
-    hasSourceModel: !!serviceData.sourceModel,
-    modelServicePrice: serviceData.modelServicePrice,
-    shouldShowModelPrice,
-    shouldShowPriceRange,
-    minPrice: serviceData.minPrice,
-    maxPrice: serviceData.maxPrice,
-  })
-
-  const formatPrice = (price: number | null) => {
-    if (price === null || price === undefined) return null
-    return `${price.toLocaleString()} Kč`
-  }
-
-  const formatWarranty = (months: number | null) => {
-    if (months === null || months === undefined) return null
-    if (months === 0) return t("services.noWarranty")
-    if (months === 1) return t("services.oneMonth")
-    if (months < 5) return t("services.fewMonths", { count: months })
-    return t("services.manyMonths", { count: months })
+  const formatWarranty = (months: number | null, period: string) => {
+    console.log("FORMATTING WARRANTY:", { months, period, type: typeof months })
+    // ВИПРАВЛЕНО: правильна перевірка на null/undefined
+    if (months === null || months === undefined) return t("contactForWarranty")
+    // Тепер навіть 0 місяців буде показано
+    return period === "days" ? t("warrantyDays", { count: months }) : t("warrantyMonths", { count: months })
   }
 
   const formatDuration = (hours: number | null) => {
-    if (hours === null || hours === undefined) return null
-    if (hours === 0) return t("services.instantService")
-    if (hours === 1) return t("services.oneHour")
-    if (hours < 5) return t("services.fewHours", { count: hours })
-    return t("services.manyHours", { count: hours })
+    console.log("FORMATTING DURATION:", { hours, type: typeof hours })
+    // ВИПРАВЛЕНО: правильна перевірка на null/undefined
+    if (hours === null || hours === undefined) return t("contactForTime")
+    // Тепер навіть 0 годин буде показано
+    return t("fromHours", { hours })
   }
 
-  const handleContactClick = () => {
-    setIsLoading(true)
-    // Simulate contact action
-    setTimeout(() => setIsLoading(false), 1000)
+  // Виправлена логіка відображення ціни
+  const renderPrice = () => {
+    console.log("[CLIENT] FIXED Price logic:", {
+      sourceModel: !!sourceModel,
+      modelParam,
+      modelServicePrice,
+      modelServicePriceType: typeof modelServicePrice,
+      minPrice,
+      maxPrice,
+    })
+
+    // Якщо є параметр model в URL (незалежно від того чи знайдено sourceModel)
+    if (modelParam) {
+      console.log("[CLIENT] Using model-specific pricing")
+      // ВИПРАВЛЕНО: правильна перевірка на null/undefined
+      if (modelServicePrice === null || modelServicePrice === undefined) {
+        return t("priceOnRequest")
+      }
+      // Тепер навіть ціна 0 буде показана
+      return formatCurrency(modelServicePrice)
+    }
+
+    // Якщо немає параметра model, показуємо діапазон цін
+    console.log("[CLIENT] Using price range")
+    if (minPrice !== null && maxPrice !== null && minPrice !== undefined && maxPrice !== undefined) {
+      return minPrice === maxPrice
+        ? formatCurrency(minPrice)
+        : `${formatCurrency(minPrice)} - ${formatCurrency(maxPrice)}`
+    }
+
+    return t("priceOnRequest")
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <div className="container mx-auto px-4 py-8">
-        {/* Breadcrumb Navigation */}
-        <div className="mb-6">
-          <nav className="flex items-center space-x-2 text-sm text-muted-foreground">
-            <Link href={`/${locale}`} className="hover:text-primary transition-colors">
-              {t("navigation.home")}
-            </Link>
-            <span>/</span>
-            {serviceData.sourceModel && (
-              <>
+    <div className="min-h-screen bg-white">
+      <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
+        {/* Breadcrumb */}
+        <nav className="mb-4 text-sm text-gray-500">
+          <Link href={backUrl} className="hover:text-blue-600 transition-colors flex items-center gap-2">
+            <ArrowLeft className="h-4 w-4" />
+            {backText}
+          </Link>
+        </nav>
+
+        {/* Компактний двоколонковий макет */}
+        <div className="grid lg:grid-cols-5 gap-6 mb-8">
+          {/* Ліва колонка - збільшене фото (2 колонки з 5) */}
+          <div className="lg:col-span-2">
+            <div className="aspect-[5/4] bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl overflow-hidden">
+              {serviceData.image_url ? (
+                <img
+                  src={formatImageUrl(serviceData.image_url) || "/placeholder.svg"}
+                  alt={translation.name}
+                  className="w-full h-full object-contain bg-white"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <div className="w-8 h-8 bg-blue-600 rounded-lg"></div>
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-700">{translation.name}</h3>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Права колонка - основна інформація (3 колонки з 5) */}
+          <div className="lg:col-span-3 space-y-4">
+            <div>
+              <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">{translation.name}</h1>
+              <p className="text-gray-600 leading-relaxed">
+                {translation.detailed_description || translation.description}
+              </p>
+            </div>
+
+            {/* Ціна */}
+            <div>
+              <div className="text-2xl lg:text-3xl font-bold text-gray-900 mb-1">{renderPrice()}</div>
+              {(sourceModel || modelParam) && (
+                <p className="text-gray-600 text-sm">
+                  {sourceModel
+                    ? t("forModel", { brand: sourceModel.brands?.name, model: sourceModel.name })
+                    : t("forSpecificModel")}
+                </p>
+              )}
+            </div>
+
+            {/* Компактні переваги */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
+                <Clock className="h-5 w-5 text-blue-600 flex-shrink-0" />
+                <div>
+                  <div className="font-semibold text-gray-900 text-sm">{t("executionTime")}</div>
+                  <div className="text-xs text-gray-600">{formatDuration(serviceData.duration_hours)}</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
+                <Shield className="h-5 w-5 text-green-600 flex-shrink-0" />
+                <div>
+                  <div className="font-semibold text-gray-900 text-sm">{t("warranty")}</div>
+                  <div className="text-xs text-gray-600">
+                    {formatWarranty(serviceData.warranty_months, serviceData.warranty_period)}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* CTA Buttons */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Button size="lg" className="bg-blue-600 hover:bg-blue-700 py-3" asChild>
                 <Link
-                  href={`/${locale}/brands/${serviceData.sourceModel.brands.slug}`}
-                  className="hover:text-primary transition-colors"
+                  href={`/${locale}/contact?service=${encodeURIComponent(translation.name)}${
+                    sourceModel
+                      ? `&model=${encodeURIComponent(sourceModel.name)}`
+                      : modelParam
+                        ? `&model=${encodeURIComponent(modelParam)}`
+                        : ""
+                  }`}
                 >
-                  {serviceData.sourceModel.brands.name}
+                  <Phone className="h-4 w-4 mr-2" />
+                  {t("orderService")}
                 </Link>
-                <span>/</span>
-                <Link
-                  href={`/${locale}/models/${serviceData.sourceModel.slug}`}
-                  className="hover:text-primary transition-colors"
-                >
-                  {serviceData.sourceModel.name}
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                className="border-gray-300 hover:bg-gray-50 py-3 bg-transparent"
+                asChild
+              >
+                <Link href={`/${locale}/contact`}>
+                  <MessageCircle className="h-4 w-4 mr-2" />
+                  {t("askQuestion")}
                 </Link>
-                <span>/</span>
-              </>
+              </Button>
+            </div>
+
+            {/* Що входить у послугу */}
+            {whatIncludedList.length > 0 && (
+              <div className="pt-2">
+                <h3 className="text-lg font-bold text-gray-900 mb-3">{t("whatIncluded")}</h3>
+                <div className="space-y-2">
+                  {whatIncludedList.map((item, index) => (
+                    <div key={index} className="flex items-start gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                      <span className="text-gray-700 text-sm">{item}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
-            <span className="text-foreground font-medium">{serviceData.translation.name}</span>
-          </nav>
+
+            {/* Переваги */}
+            {benefitsList.length > 0 && (
+              <div className="pt-2">
+                <h3 className="text-lg font-bold text-gray-900 mb-3">{t("benefits")}</h3>
+                <div className="space-y-2">
+                  {benefitsList.map((item, index) => (
+                    <div key={index} className="flex items-start gap-2">
+                      <CheckCircle className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                      <span className="text-gray-700 text-sm">{item}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Back Button */}
-        {serviceData.sourceModel && (
-          <div className="mb-6">
-            <Link
-              href={`/${locale}/models/${serviceData.sourceModel.slug}`}
-              className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              {t("common.backTo", { item: serviceData.sourceModel.name })}
-            </Link>
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Service Header */}
-            <Card className="overflow-hidden">
-              <div className="relative">
-                {serviceData.image_url && (
-                  <div className="aspect-video relative">
-                    <Image
-                      src={serviceData.image_url || "/placeholder.svg"}
-                      alt={serviceData.translation.name}
-                      fill
-                      className="object-cover"
-                    />
-                  </div>
-                )}
-                <CardHeader
-                  className={
-                    serviceData.image_url
-                      ? "absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent text-white"
-                      : ""
-                  }
-                >
-                  <CardTitle className="text-2xl lg:text-3xl">{serviceData.translation.name}</CardTitle>
-                  {serviceData.translation.description && (
-                    <CardDescription className={serviceData.image_url ? "text-gray-200" : ""}>
-                      {serviceData.translation.description}
-                    </CardDescription>
-                  )}
-                </CardHeader>
+        {/* Компактні повноширинні секції */}
+        <div className="space-y-8">
+          {/* FAQ Section */}
+          {faqs.length > 0 && (
+            <section className="bg-gray-50 rounded-xl p-6 lg:p-8">
+              <h2 className="text-xl lg:text-2xl font-bold text-gray-900 mb-6 text-center">{t("frequentQuestions")}</h2>
+              <div className="space-y-4 max-w-4xl mx-auto">
+                {faqs.map((faq) => (
+                  <Collapsible key={faq.id}>
+                    <CollapsibleTrigger className="flex w-full items-center justify-between p-4 text-left bg-white hover:bg-gray-50 rounded-lg transition-colors border border-gray-200">
+                      <span className="font-semibold text-gray-900 text-sm lg:text-base pr-4">
+                        {faq.translation.question}
+                      </span>
+                      <ChevronDown className="h-5 w-5 text-gray-500 transition-transform ui-open:rotate-180 flex-shrink-0" />
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="px-4 pb-4 bg-white rounded-b-lg border-x border-b border-gray-200 -mt-1">
+                      <div className="pt-2 border-t border-gray-100">
+                        <p className="text-gray-600 leading-relaxed text-sm lg:text-base">{faq.translation.answer}</p>
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+                ))}
               </div>
-            </Card>
+            </section>
+          )}
 
-            {/* Service Details */}
-            {serviceData.translation.detailed_description && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>{t("services.serviceDetails")}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div
-                    className="prose prose-sm max-w-none"
-                    dangerouslySetInnerHTML={{ __html: serviceData.translation.detailed_description }}
-                  />
-                </CardContent>
-              </Card>
-            )}
-
-            {/* What's Included */}
-            {serviceData.translation.what_included && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>{t("services.whatIncluded")}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div
-                    className="prose prose-sm max-w-none"
-                    dangerouslySetInnerHTML={{ __html: serviceData.translation.what_included }}
-                  />
-                </CardContent>
-              </Card>
-            )}
-
-            {/* FAQs */}
-            {serviceData.faqs.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>{t("services.frequentlyAsked")}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Accordion type="single" collapsible className="w-full">
-                    {serviceData.faqs.map((faq, index) => (
-                      <AccordionItem key={faq.id} value={`item-${index}`}>
-                        <AccordionTrigger className="text-left">{faq.translation.question}</AccordionTrigger>
-                        <AccordionContent>
-                          <div
-                            className="prose prose-sm max-w-none"
-                            dangerouslySetInnerHTML={{ __html: faq.translation.answer }}
-                          />
-                        </AccordionContent>
-                      </AccordionItem>
-                    ))}
-                  </Accordion>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Source Model Info */}
-            {serviceData.sourceModel && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">{t("services.forDevice")}</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    {serviceData.sourceModel.brands.logo_url && (
-                      <Image
-                        src={serviceData.sourceModel.brands.logo_url || "/placeholder.svg"}
-                        alt={serviceData.sourceModel.brands.name}
-                        width={32}
-                        height={32}
-                        className="object-contain"
-                      />
-                    )}
-                    <div>
-                      <p className="font-medium">{serviceData.sourceModel.brands.name}</p>
-                      <p className="text-sm text-muted-foreground">{serviceData.sourceModel.name}</p>
-                    </div>
-                  </div>
-                  {serviceData.sourceModel.image_url && (
-                    <div className="aspect-square relative rounded-lg overflow-hidden">
-                      <Image
-                        src={serviceData.sourceModel.image_url || "/placeholder.svg"}
-                        alt={serviceData.sourceModel.name}
-                        fill
-                        className="object-cover"
-                      />
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Pricing */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">{t("services.pricing")}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {shouldShowModelPrice ? (
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-primary">{formatPrice(serviceData.modelServicePrice)}</div>
-                    <p className="text-sm text-muted-foreground mt-1">{t("services.specificPrice")}</p>
-                  </div>
-                ) : shouldShowPriceRange ? (
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-primary">
-                      {serviceData.minPrice === serviceData.maxPrice
-                        ? formatPrice(serviceData.minPrice)
-                        : `${formatPrice(serviceData.minPrice)} - ${formatPrice(serviceData.maxPrice)}`}
-                    </div>
-                    <p className="text-sm text-muted-foreground mt-1">{t("services.priceRange")}</p>
-                  </div>
-                ) : (
-                  <div className="text-center">
-                    <p className="text-muted-foreground">{t("services.contactForPrice")}</p>
-                  </div>
-                )}
-
-                <Separator />
-
-                {/* Service Info */}
-                <div className="space-y-3">
-                  {formatWarranty(serviceData.warranty_months) && (
-                    <div className="flex items-center gap-2">
-                      <Shield className="h-4 w-4 text-green-600" />
-                      <span className="text-sm">{formatWarranty(serviceData.warranty_months)}</span>
-                    </div>
-                  )}
-                  {formatDuration(serviceData.duration_hours) && (
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-blue-600" />
-                      <span className="text-sm">{formatDuration(serviceData.duration_hours)}</span>
-                    </div>
-                  )}
-                </div>
-
-                <Separator />
-
-                {/* Contact Buttons */}
-                <div className="space-y-2">
-                  <Button className="w-full" onClick={handleContactClick} disabled={isLoading}>
-                    <Phone className="h-4 w-4 mr-2" />
-                    {isLoading ? t("common.loading") : t("services.callNow")}
-                  </Button>
-                  <Button variant="outline" className="w-full bg-transparent">
-                    <MessageCircle className="h-4 w-4 mr-2" />
-                    {t("services.writeMessage")}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          {/* Final CTA */}
+          <section className="bg-blue-600 rounded-xl p-6 lg:p-8 text-center text-white">
+            <h2 className="text-xl lg:text-2xl font-bold mb-2">{t("haveQuestions")}</h2>
+            <p className="text-blue-100 mb-4 lg:mb-6 max-w-xl mx-auto text-sm lg:text-base">{t("expertsReady")}</p>
+            <Button
+              size="lg"
+              variant="outline"
+              className="bg-white text-blue-600 hover:bg-gray-50 border-white px-6 py-3"
+              asChild
+            >
+              <Link href={`/${locale}/contact`}>
+                <MessageCircle className="h-4 w-4 mr-2" />
+                {commonT("contactUs")}
+              </Link>
+            </Button>
+          </section>
         </div>
       </div>
     </div>
