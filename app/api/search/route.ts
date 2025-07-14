@@ -18,13 +18,12 @@ export async function GET(request: NextRequest) {
 
     const results = []
 
-    // Пошук брендів (використовуємо колонку name)
+    // Пошук брендів (без is_active)
     try {
       const { data: brands, error: brandsError } = await supabase
         .from("brands")
         .select("id, slug, name")
         .ilike("name", `%${searchTerm}%`)
-        .eq("is_active", true)
         .order("position", { ascending: true })
         .limit(3)
 
@@ -46,7 +45,7 @@ export async function GET(request: NextRequest) {
       console.error("❌ Brands search failed:", error)
     }
 
-    // Пошук серій (використовуємо колонку name)
+    // Пошук серій (без is_active)
     try {
       const { data: series, error: seriesError } = await supabase
         .from("series")
@@ -61,7 +60,6 @@ export async function GET(request: NextRequest) {
           )
         `)
         .ilike("name", `%${searchTerm}%`)
-        .eq("is_active", true)
         .order("position", { ascending: true })
         .limit(3)
 
@@ -83,7 +81,7 @@ export async function GET(request: NextRequest) {
       console.error("❌ Series search failed:", error)
     }
 
-    // Пошук моделей (використовуємо колонку name)
+    // Пошук моделей (без is_active)
     try {
       const { data: models, error: modelsError } = await supabase
         .from("models")
@@ -103,7 +101,6 @@ export async function GET(request: NextRequest) {
           )
         `)
         .ilike("name", `%${searchTerm}%`)
-        .eq("is_active", true)
         .order("position", { ascending: true })
         .limit(5)
 
@@ -125,28 +122,27 @@ export async function GET(request: NextRequest) {
       console.error("❌ Models search failed:", error)
     }
 
-    // Пошук послуг через services та services_translation
+    // Пошук послуг через services та services_translations (множина)
     try {
       const { data: servicesWithTranslations, error: servicesError } = await supabase
         .from("services")
         .select(`
           id,
           slug,
-          services_translation!inner(
+          services_translations!inner(
             name,
             locale
           )
         `)
-        .eq("services_translation.locale", locale)
-        .ilike("services_translation.name", `%${searchTerm}%`)
-        .eq("is_active", true)
+        .eq("services_translations.locale", locale)
+        .ilike("services_translations.name", `%${searchTerm}%`)
         .limit(3)
 
       if (servicesError) {
         console.error("❌ Services search error:", servicesError)
       } else if (servicesWithTranslations) {
         servicesWithTranslations.forEach((service) => {
-          const translation = service.services_translation?.[0]
+          const translation = service.services_translations?.[0]
           if (translation) {
             results.push({
               id: service.id,
