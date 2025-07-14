@@ -707,5 +707,121 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
     }
   }, [consent, isInitialized])
 
+  // Стандартна ініціалізація Facebook Pixel
+  const initializePixel = () => {
+    if (!pixelId || isInitialized) return
+
+    console.log(`🚀 Initializing Facebook Pixel: ${pixelId}`)
+
+    // Стандартний Facebook код
+    ;((f: any, b: any, e: any, v: any, n?: any, t?: any, s?: any) => {
+      if (f.fbq) return
+      n = f.fbq = () => {
+        n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments)
+      }
+      if (!f._fbq) f._fbq = n
+      n.push = n
+      n.loaded = !0
+      n.version = "2.0"
+      n.queue = []
+      t = b.createElement(e)
+      t.async = !0
+      t.src = v
+      s = b.getElementsByTagName(e)[0]
+      s.parentNode.insertBefore(t, s)
+    })(window, document, "script", "https://connect.facebook.net/en_US/fbevents.js")
+
+    // Ініціалізація з згодою
+    window.fbq("consent", "grant")
+    window.fbq("init", pixelId)
+    window.fbq("track", "PageView")
+
+    setIsInitialized(true)
+    console.log(`✅ Facebook Pixel initialized: ${pixelId}`)
+  }
+
+  // Відкликання згоди
+  const revokeConsent = () => {
+    if (window.fbq) {
+      console.log("🚫 Revoking Facebook Pixel consent")
+      window.fbq("consent", "revoke")
+    }
+  }
+
+  // Основна логіка згоди
+  useEffect(() => {
+    if (consent && !isInitialized) {
+      initializePixel()
+    } else if (!consent && isInitialized) {
+      revokeConsent()
+    }
+  }, [consent, pixelId])
+
+  // Відстеження переходів по сторінках
+  useEffect(() => {
+    if (consent && isInitialized && pathname !== previousPathname.current) {
+      console.log(`📊 Page view: ${pathname}`)
+
+      // Затримка для завантаження сторінки
+      setTimeout(() => {
+        if (window.fbq) {
+          window.fbq("track", "PageView", {
+            page_url: window.location.href,
+            page_title: document.title,
+          })
+
+          // Специфічні події для різних типів сторінок
+          if (pathname.includes("/models/")) {
+            window.fbq("track", "ViewContent", {
+              content_type: "product",
+              content_category: "device_model",
+            })
+          } else if (pathname.includes("/contact")) {
+            window.fbq("track", "Contact")
+          }
+        }
+      }, 300)
+
+      previousPathname.current = pathname
+    }
+  }, [pathname, consent, isInitialized])
+
+  // Глобальні функції для відстеження
+  useEffect(() => {
+    if (typeof window !== "undefined" && isInitialized) {
+      // Відстеження кліків на послуги
+      window.trackServiceClick = (serviceName: string, modelName: string, price: number) => {
+        if (window.fbq) {
+          window.fbq("track", "ViewContent", {
+            content_name: serviceName,
+            content_type: "service",
+            value: price,
+            currency: "CZK",
+          })
+        }
+      }
+
+      // Відстеження форм
+      window.trackContactSubmission = (formData: any) => {
+        if (window.fbq) {
+          window.fbq("track", "Lead", {
+            content_name: "Contact Form",
+            value: 100,
+            currency: "CZK",
+          })
+        }
+      }
+
+      // Відстеження контактів
+      window.trackContactClick = (method: string) => {
+        if (window.fbq) {
+          window.fbq("track", "Contact", {
+            contact_method: method,
+          })
+        }
+      }
+    }
+  }, [isInitialized])
+
   return null
 }
