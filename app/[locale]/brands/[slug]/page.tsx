@@ -121,7 +121,7 @@ export default async function BrandPage({ params }: Props) {
           <div>
             <h1 className="text-center text-3xl font-bold tracking-tight md:text-left md:text-4xl">{brand.name}</h1>
             <p className="mt-3 max-w-[900px] text-center text-muted-foreground md:text-left">
-              {t("brandPageDescription", { brand: brand.name })}
+              {t("allBrandsDescription", { brand: brand.name })}
             </p>
           </div>
         </div>
