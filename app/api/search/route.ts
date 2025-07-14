@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
 
     const results = []
 
-    // Пошук брендів (найвищий пріоритет)
+    // Пошук брендів (використовуємо колонку name)
     try {
       const { data: brands, error: brandsError } = await supabase
         .from("brands")
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
       console.error("❌ Brands search failed:", error)
     }
 
-    // Пошук серій
+    // Пошук серій (використовуємо колонку name)
     try {
       const { data: series, error: seriesError } = await supabase
         .from("series")
@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
       console.error("❌ Series search failed:", error)
     }
 
-    // Пошук моделей (найбільш релевантний)
+    // Пошук моделей (використовуємо колонку name)
     try {
       const { data: models, error: modelsError } = await supabase
         .from("models")
@@ -125,28 +125,38 @@ export async function GET(request: NextRequest) {
       console.error("❌ Models search failed:", error)
     }
 
-    // Пошук послуг через model_services
+    // Пошук послуг через services та services_translation
     try {
-      const serviceNameColumn = `name_${locale}`
-      const { data: services, error: servicesError } = await supabase
+      const { data: servicesWithTranslations, error: servicesError } = await supabase
         .from("services")
-        .select(`id, slug, ${serviceNameColumn}`)
-        .ilike(serviceNameColumn, `%${searchTerm}%`)
+        .select(`
+          id,
+          slug,
+          services_translation!inner(
+            name,
+            locale
+          )
+        `)
+        .eq("services_translation.locale", locale)
+        .ilike("services_translation.name", `%${searchTerm}%`)
         .eq("is_active", true)
         .limit(3)
 
       if (servicesError) {
         console.error("❌ Services search error:", servicesError)
-      } else if (services) {
-        services.forEach((service) => {
-          results.push({
-            id: service.id,
-            type: "service",
-            name: service[serviceNameColumn] || service.name_cs || service.name_en,
-            slug: service.slug,
-            url: `/${locale}/services/${service.slug}`,
-            breadcrumb: null,
-          })
+      } else if (servicesWithTranslations) {
+        servicesWithTranslations.forEach((service) => {
+          const translation = service.services_translation?.[0]
+          if (translation) {
+            results.push({
+              id: service.id,
+              type: "service",
+              name: translation.name,
+              slug: service.slug,
+              url: `/${locale}/services/${service.slug}`,
+              breadcrumb: null,
+            })
+          }
         })
       }
     } catch (error) {
