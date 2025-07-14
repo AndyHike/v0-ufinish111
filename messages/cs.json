@@ -130,10 +130,10 @@
   },
   "Services": {
   "executionTime": "Doba provádění",
-  "fromHours": "od {hours} hodin",
+  "fromHours": "~ {hours} hodiny",
   "contactForTime": "kontaktujte pro čas",
   "warranty": "Záruka",
-  "months": "{count} měsíců",
+  "warrantyMonths": "{count} měsíců",
   "contactForWarranty": "kontaktujte pro záruku",
   "orderService": "Objednat službu",
   "askQuestion": "Položit otázku",

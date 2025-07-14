@@ -64,10 +64,10 @@
   },
   "Services": {
   "executionTime": "Час виконання",
-  "fromHours": "від {hours} годин",
+  "fromHours": "~ {hours} години",
   "contactForTime": "уточнюйте час",
   "warranty": "Гарантія",
-  "months": "{count} місяців",
+  "warrantyMonths": "{count} місяців",
   "contactForWarranty": "уточнюйте гарантію",
   "orderService": "Замовити послугу",
   "askQuestion": "Задати питання",
