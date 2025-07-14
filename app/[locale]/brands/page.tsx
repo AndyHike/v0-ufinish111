@@ -63,7 +63,7 @@ export default async function BrandsPage({ params }: Props) {
         <div className="mb-12 text-center">
           <h1 className="text-3xl font-bold tracking-tight md:text-4xl">{t("allBrands") || "Всі бренди"}</h1>
           <p className="mt-3 text-muted-foreground">
-            {t("brandsPageDescription") || "Оберіть бренд вашого пристрою для професійного ремонту"}
+            {t("allBrandsDescription") || "Оберіть бренд вашого пристрою для професійного ремонту"}
           </p>
         </div>
 
