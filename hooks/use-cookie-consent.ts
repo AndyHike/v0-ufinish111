@@ -18,6 +18,25 @@ export function useCookieConsent() {
     consentDate: null,
   })
 
+  // Простіше очищення cookies
+  const clearCookies = (category: "analytics" | "marketing") => {
+    if (typeof document === "undefined") return
+
+    const cookiesToClear = category === "analytics" ? ["_ga", "_ga_WZ0WCHZ3XT", "_gid", "_gat"] : ["_fbp", "_fbc"]
+
+    cookiesToClear.forEach((name) => {
+      document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`
+      document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname}`
+    })
+
+    // Очищення localStorage
+    if (category === "analytics") {
+      Object.keys(localStorage).forEach((key) => {
+        if (key.startsWith("_ga")) localStorage.removeItem(key)
+      })
+    }
+  }
+
   useEffect(() => {
     const stored = localStorage.getItem(COOKIE_CONSENT_KEY)
     if (stored) {
@@ -45,12 +64,22 @@ export function useCookieConsent() {
     }
   }, [])
 
-  const saveConsent = (consent: CookieConsent) => {
+  const saveConsent = (consent: CookieConsent, previousConsent?: CookieConsent) => {
     const consentData = {
       consent,
       consentDate: new Date().toISOString(),
     }
     localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(consentData))
+
+    // Очищення при відкликанні згоди
+    if (previousConsent) {
+      if (previousConsent.analytics && !consent.analytics) {
+        clearCookies("analytics")
+      }
+      if (previousConsent.marketing && !consent.marketing) {
+        clearCookies("marketing")
+      }
+    }
 
     setState({
       consent,
@@ -62,25 +91,33 @@ export function useCookieConsent() {
     // Повідомляємо про зміну згоди
     window.dispatchEvent(
       new CustomEvent("cookieConsentChanged", {
-        detail: { consent },
+        detail: { consent, previousConsent },
       }),
     )
   }
 
   const acceptAll = () => {
-    saveConsent({
-      necessary: true,
-      analytics: true,
-      marketing: true,
-    })
+    const previousConsent = state.consent
+    saveConsent(
+      {
+        necessary: true,
+        analytics: true,
+        marketing: true,
+      },
+      previousConsent,
+    )
   }
 
   const acceptNecessary = () => {
-    saveConsent({
-      necessary: true,
-      analytics: false,
-      marketing: false,
-    })
+    const previousConsent = state.consent
+    saveConsent(
+      {
+        necessary: true,
+        analytics: false,
+        marketing: false,
+      },
+      previousConsent,
+    )
   }
 
   const updateCategory = (category: keyof CookieConsent, value: boolean) => {
@@ -94,7 +131,8 @@ export function useCookieConsent() {
   }
 
   const saveCurrentSettings = () => {
-    saveConsent(state.consent)
+    const previousConsent = { ...state.consent }
+    saveConsent(state.consent, previousConsent)
   }
 
   const setShowBanner = (show: boolean) => {

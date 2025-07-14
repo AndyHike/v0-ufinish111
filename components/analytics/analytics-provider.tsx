@@ -27,6 +27,7 @@ export function AnalyticsProvider() {
           const data = await response.json()
           setSettings(data)
         } else {
+          // Fallback налаштування
           setSettings({
             google_analytics_id: "",
             google_tag_manager_id: "",
