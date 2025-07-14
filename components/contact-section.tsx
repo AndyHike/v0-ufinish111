@@ -39,6 +39,16 @@ export function ContactSection() {
 
       if (response.ok) {
         setIsSuccess(true)
+        // Після setIsSuccess(true) додай відстеження ліда
+        if (typeof window !== "undefined" && window.fbq) {
+          window.fbq("track", "Lead", {
+            content_name: "Contact Form",
+            content_category: "Contact",
+            value: 100, // потенційна вартість ліда
+            currency: "CZK",
+          })
+          console.log("📊 Tracking contact form lead")
+        }
         setName("")
         setEmail("")
         setPhone("")

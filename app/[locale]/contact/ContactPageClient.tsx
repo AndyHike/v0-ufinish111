@@ -54,6 +54,17 @@ export default function ContactPageClient() {
         description: t("successMessage"),
       })
 
+      // Після toast success додай відстеження ліда
+      if (typeof window !== "undefined" && window.fbq) {
+        window.fbq("track", "Lead", {
+          content_name: "Contact Page Form",
+          content_category: "Contact",
+          value: 100,
+          currency: "CZK",
+        })
+        console.log("📊 Tracking contact page lead")
+      }
+
       // Встановлюємо стан успіху
       setIsSuccess(true)
 
