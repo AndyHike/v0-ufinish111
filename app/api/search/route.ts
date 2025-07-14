@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     console.log(`🔍 Searching for "${searchTerm}" in locale "${locale}"`)
 
     // Пошук моделей (пріоритет 1)
-    const { data: models } = await supabase
+    const { data: models, error: modelsError } = await supabase
       .from("models")
       .select(`
         id,
@@ -41,8 +41,12 @@ export async function GET(request: NextRequest) {
       .order("position", { ascending: true })
       .limit(4)
 
+    if (modelsError) {
+      console.error("❌ Models search error:", modelsError)
+    }
+
     // Пошук брендів (пріоритет 2)
-    const { data: brands } = await supabase
+    const { data: brands, error: brandsError } = await supabase
       .from("brands")
       .select(`id, slug, ${nameColumn}`)
       .ilike(nameColumn, `%${searchTerm}%`)
@@ -50,8 +54,12 @@ export async function GET(request: NextRequest) {
       .order("position", { ascending: true })
       .limit(3)
 
+    if (brandsError) {
+      console.error("❌ Brands search error:", brandsError)
+    }
+
     // Пошук лінійок (пріоритет 3)
-    const { data: series } = await supabase
+    const { data: series, error: seriesError } = await supabase
       .from("series")
       .select(`
         id,
@@ -68,14 +76,22 @@ export async function GET(request: NextRequest) {
       .order("position", { ascending: true })
       .limit(3)
 
+    if (seriesError) {
+      console.error("❌ Series search error:", seriesError)
+    }
+
     // Пошук послуг (пріоритет 4)
-    const { data: services } = await supabase
+    const { data: services, error: servicesError } = await supabase
       .from("services")
       .select(`id, slug, ${nameColumn}`)
       .ilike(nameColumn, `%${searchTerm}%`)
       .eq("is_active", true)
       .order("position", { ascending: true })
       .limit(3)
+
+    if (servicesError) {
+      console.error("❌ Services search error:", servicesError)
+    }
 
     // Форматування результатів
     const results = {
