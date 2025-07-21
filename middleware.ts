@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import createIntlMiddleware from "next-intl/middleware"
-import { createClient } from "@/lib/supabase"
+import { createClient } from "@/utils/supabase/server"
 
 // Create the next-intl middleware
 const intlMiddleware = createIntlMiddleware({
@@ -46,31 +46,30 @@ async function isMaintenanceModeEnabled(): Promise<boolean> {
   }
 }
 
-async function isUserAdmin(sessionId: string): Promise<boolean> {
+async function isUserAdmin(): Promise<boolean> {
   try {
     const supabase = createClient()
 
-    const { data: session, error: sessionError } = await supabase
-      .from("sessions")
-      .select("user_id")
-      .eq("id", sessionId)
-      .single()
-
-    if (sessionError || !session) {
-      return false
-    }
-
-    const { data: user, error: userError } = await supabase
-      .from("users")
-      .select("role")
-      .eq("id", session.user_id)
-      .single()
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser()
 
     if (userError || !user) {
       return false
     }
 
-    return user.role === "admin"
+    const { data: roleData, error: roleError } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("id", user.id)
+      .single()
+
+    if (roleError || !roleData) {
+      return false
+    }
+
+    return roleData.role === "admin"
   } catch (error) {
     console.error("Error checking user admin status:", error)
     return false
@@ -90,17 +89,11 @@ export async function middleware(request: NextRequest) {
   const maintenanceEnabled = await isMaintenanceModeEnabled()
 
   if (maintenanceEnabled) {
-    const sessionId = request.cookies.get("session_id")?.value
-    let isAdmin = false
-
-    if (sessionId) {
-      isAdmin = await isUserAdmin(sessionId)
-    }
+    const isAdmin = await isUserAdmin()
 
     // Allow access to maintenance page and ALL auth routes for everyone
     const isMaintenancePage = pathname.includes("/maintenance")
     const isAuthRoute = pathname.includes("/auth/")
-    const isAdminRoute = pathname.includes("/admin")
 
     if (!isAdmin) {
       // Allow access to maintenance page and auth routes
@@ -129,43 +122,41 @@ export async function middleware(request: NextRequest) {
     // Handle internationalization for paths that already have locale prefix
     const response = intlMiddleware(request)
 
-    // Check for protected routes (only if not in maintenance mode or user is admin)
+    // Check for protected routes using Supabase Auth
     if (pathname.includes("/profile") || pathname.includes("/admin")) {
-      const sessionId = request.cookies.get("session_id")?.value
+      const supabase = createClient()
 
-      if (!sessionId) {
-        // Get locale from URL
-        const locale = pathname.split("/")[1] || "uk"
-
-        // Redirect to login page
-        const redirectUrl = new URL(`/${locale}/auth/signin`, request.url)
-        redirectUrl.searchParams.set("redirect", pathname)
-        return NextResponse.redirect(redirectUrl)
-      }
-
-      // Verify that the session exists in the database and is valid
       try {
-        const supabase = createClient()
+        const {
+          data: { user },
+          error,
+        } = await supabase.auth.getUser()
 
-        const { data: session, error } = await supabase
-          .from("sessions")
-          .select("id, user_id, expires_at")
-          .eq("id", sessionId)
-          .single()
-
-        if (error || !session || new Date(session.expires_at) < new Date()) {
-          // Session is invalid or expired, redirect to login
+        if (error || !user) {
+          // No valid session, redirect to login
           const locale = pathname.split("/")[1] || "uk"
-          const redirectUrl = new URL(`/${locale}/auth/signin`, request.url)
+          const redirectUrl = new URL(`/${locale}/auth/login`, request.url)
           redirectUrl.searchParams.set("redirect", pathname)
+          return NextResponse.redirect(redirectUrl)
+        }
 
-          // Clear the invalid session cookie
-          const response = NextResponse.redirect(redirectUrl)
-          response.cookies.delete("session_id")
-          return response
+        // For admin routes, check if user is admin
+        if (pathname.includes("/admin")) {
+          const { data: roleData } = await supabase.from("user_roles").select("role").eq("id", user.id).single()
+
+          if (!roleData || roleData.role !== "admin") {
+            // Not an admin, redirect to home
+            const locale = pathname.split("/")[1] || "uk"
+            return NextResponse.redirect(new URL(`/${locale}`, request.url))
+          }
         }
       } catch (error) {
         console.error("Error verifying session in middleware:", error)
+        // On error, redirect to login
+        const locale = pathname.split("/")[1] || "uk"
+        const redirectUrl = new URL(`/${locale}/auth/login`, request.url)
+        redirectUrl.searchParams.set("redirect", pathname)
+        return NextResponse.redirect(redirectUrl)
       }
     }
 
