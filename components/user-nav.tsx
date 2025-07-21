@@ -1,9 +1,12 @@
 "use client"
 
-import { useTranslations } from "next-intl"
+import { useState, useEffect } from "react"
 import Link from "next/link"
-import { useParams, useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import { useTranslations } from "next-intl"
+import { LogOut, Settings, UserCircle } from "lucide-react"
+
+import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,83 +15,111 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
-import { LogOut, Settings, UserIcon } from "lucide-react"
-import { signOutAndRedirect, getCurrentUser } from "@/app/actions/auth"
-import { createClient } from "@/utils/supabase/client"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { createClient } from "@/lib/supabase/client"
+import { signOutWithRedirect } from "@/app/actions/auth-api"
 
-export function UserNav() {
-  const t = useTranslations("UserNav")
-  const params = useParams()
+interface UserNavProps {
+  locale: string
+}
+
+export function UserNav({ locale }: UserNavProps) {
+  const t = useTranslations("Navigation")
   const router = useRouter()
-  const locale = params.locale as string
   const [user, setUser] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
+  const [profile, setProfile] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const getUser = async () => {
-      try {
-        const currentUser = await getCurrentUser()
-        setUser(currentUser)
-      } catch (error) {
-        console.error("Error getting user:", error)
-      } finally {
-        setLoading(false)
+    const supabase = createClient()
+
+    // Get initial session
+    const getInitialSession = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+
+      if (session?.user) {
+        setUser(session.user)
+
+        // Get profile data
+        const { data: profileData } = await supabase.from("profiles").select("*").eq("id", session.user.id).single()
+
+        setProfile(profileData)
       }
+
+      setIsLoading(false)
     }
 
-    getUser()
+    getInitialSession()
 
-    // Слухаємо зміни auth стану
-    const supabase = createClient()
+    // Listen for auth changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === "SIGNED_IN" && session) {
-        const currentUser = await getCurrentUser()
-        setUser(currentUser)
-      } else if (event === "SIGNED_OUT") {
+      if (session?.user) {
+        setUser(session.user)
+
+        // Get profile data
+        const { data: profileData } = await supabase.from("profiles").select("*").eq("id", session.user.id).single()
+
+        setProfile(profileData)
+      } else {
         setUser(null)
+        setProfile(null)
       }
+
+      setIsLoading(false)
     })
 
     return () => subscription.unsubscribe()
   }, [])
 
-  if (loading) {
-    return <div className="h-8 w-8 rounded-full bg-gray-200 animate-pulse" />
+  const handleSignOut = async () => {
+    try {
+      await signOutWithRedirect(locale)
+    } catch (error) {
+      console.error("Error signing out:", error)
+      router.push(`/${locale}`)
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center space-x-2">
+        <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse" />
+      </div>
+    )
   }
 
   if (!user) {
     return (
-      <Link href={`/${locale}/login`}>
-        <Button variant="outline" size="sm">
-          {t("login")}
+      <div className="flex items-center space-x-2">
+        <Button variant="ghost" size="sm" asChild>
+          <Link href={`/${locale}/auth/signin`}>{t("signIn")}</Link>
         </Button>
-      </Link>
+        <Button size="sm" asChild>
+          <Link href={`/${locale}/auth/register`}>{t("register")}</Link>
+        </Button>
+      </div>
     )
   }
 
+  const displayName = profile
+    ? `${profile.first_name || ""} ${profile.last_name || ""}`.trim() || user.email
+    : user.email
+
   const initials =
-    user.profile?.first_name && user.profile?.last_name
-      ? `${user.profile.first_name[0]}${user.profile.last_name[0]}`
-      : user.email?.substring(0, 2).toUpperCase()
-
-  const displayName =
-    user.profile?.first_name && user.profile?.last_name
-      ? `${user.profile.first_name} ${user.profile.last_name}`
-      : user.email
-
-  const handleLogout = async () => {
-    await signOutAndRedirect(locale)
-  }
+    profile && profile.first_name && profile.last_name
+      ? `${profile.first_name[0]}${profile.last_name[0]}`.toUpperCase()
+      : user.email?.[0]?.toUpperCase() || "U"
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-8 w-8">
+            <AvatarImage src={profile?.avatar_url || "/placeholder.svg"} alt={displayName} />
             <AvatarFallback>{initials}</AvatarFallback>
           </Avatar>
         </Button>
@@ -101,24 +132,24 @@ export function UserNav() {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <Link href={`/${locale}/profile`}>
-          <DropdownMenuItem>
-            <UserIcon className="mr-2 h-4 w-4" />
+        <DropdownMenuItem asChild>
+          <Link href={`/${locale}/profile`} className="flex items-center">
+            <UserCircle className="mr-2 h-4 w-4" />
             <span>{t("profile")}</span>
-          </DropdownMenuItem>
-        </Link>
-        {user.role === "admin" && (
-          <Link href={`/${locale}/admin`}>
-            <DropdownMenuItem>
-              <Settings className="mr-2 h-4 w-4" />
-              <span>{t("adminPanel")}</span>
-            </DropdownMenuItem>
           </Link>
+        </DropdownMenuItem>
+        {user.user_metadata?.role === "admin" && (
+          <DropdownMenuItem asChild>
+            <Link href={`/${locale}/admin`} className="flex items-center">
+              <Settings className="mr-2 h-4 w-4" />
+              <span>{t("admin")}</span>
+            </Link>
+          </DropdownMenuItem>
         )}
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
+        <DropdownMenuItem onClick={handleSignOut}>
           <LogOut className="mr-2 h-4 w-4" />
-          <span>{t("logout")}</span>
+          <span>{t("signOut")}</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

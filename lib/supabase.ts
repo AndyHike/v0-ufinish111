@@ -1,32 +1,18 @@
-import { createClient as _createClient } from "@supabase/supabase-js"
+import { createClient as createSupabaseClient } from "@supabase/supabase-js"
 
-const supabaseUrl = process.env.devicehelp_NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.devicehelp_NEXT_PUBLIC_SUPABASE_ANON_KEY!
-
-/** Статичний клієнт, яким можна користуватися у клієнтському коді */
-export const supabase = _createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true,
-  },
-})
-
-/** Функція-фабрика для створення нового клієнта (потрібен іменований експорт createClient) */
+// Create a Supabase client for server-side operations using new DB
 export function createClient() {
-  return _createClient(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: true,
-    },
+  const supabaseUrl = process.env.devicehelp_NEXT_PUBLIC_SUPABASE_URL!
+  const supabaseKey = process.env.devicehelp_SUPABASE_SERVICE_ROLE_KEY || process.env.devicehelp_SUPABASE_ANON_KEY!
+
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error("Missing Supabase environment variables for devicehelp database")
+  }
+
+  return createSupabaseClient(supabaseUrl, supabaseKey, {
+    auth: { persistSession: false },
   })
 }
 
-/**
- * Для сумісності з існуючим кодом та вимогами деплою.
- * У серверному оточенні використовуйте '@/utils/supabase/server'.
- */
+// For backward compatibility
 export const createServerSupabaseClient = createClient
-
-export default supabase

@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -24,11 +23,10 @@ export function ModernLoginForm({ locale }: ModernLoginFormProps) {
   const t = useTranslations("Auth")
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
-  const [identifier, setIdentifier] = useState("")
+  const [email, setEmail] = useState("")
   const [error, setError] = useState("")
   const [step, setStep] = useState<"initial" | "verification">("initial")
   const [verificationCode, setVerificationCode] = useState("")
-  const [userEmail, setUserEmail] = useState("")
 
   const handleInitialSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -36,10 +34,10 @@ export function ModernLoginForm({ locale }: ModernLoginFormProps) {
     setError("")
 
     try {
-      console.log(`Submitting login with email: ${identifier}`)
+      console.log(`Submitting login with email: ${email}`)
 
-      // Check if user exists in Remonline API
-      const userExists = await checkUserExists(identifier)
+      // Check if user exists
+      const userExists = await checkUserExists(email)
 
       if (!userExists.success) {
         setError(userExists.message || t("userNotFound"))
@@ -50,17 +48,12 @@ export function ModernLoginForm({ locale }: ModernLoginFormProps) {
       console.log("User exists:", userExists)
 
       // Send verification code
-      const result = await sendVerificationCode(identifier, "login")
+      const result = await sendVerificationCode(email, "login")
 
       if (!result.success) {
         setError(result.message || t("somethingWentWrong"))
         setIsLoading(false)
         return
-      }
-
-      // If the verification code was sent to a different email (in case of phone login)
-      if (result.email) {
-        setUserEmail(result.email)
       }
 
       // Move to verification step
@@ -79,10 +72,8 @@ export function ModernLoginForm({ locale }: ModernLoginFormProps) {
     setError("")
 
     try {
-      const currentIdentifier = identifier
-
       // Verify the code
-      const result = await verifyCode(currentIdentifier, verificationCode, "login")
+      const result = await verifyCode(email, verificationCode, "login")
 
       if (!result.success) {
         setError(result.message || t("invalidVerificationCode"))
@@ -92,6 +83,7 @@ export function ModernLoginForm({ locale }: ModernLoginFormProps) {
 
       // Redirect to appropriate page after successful login
       router.push(`/${locale}`)
+      router.refresh()
     } catch (error) {
       console.error("Verification error:", error)
       setError(t("somethingWentWrong"))
@@ -105,8 +97,7 @@ export function ModernLoginForm({ locale }: ModernLoginFormProps) {
     setError("")
 
     try {
-      const currentIdentifier = identifier
-      const result = await sendVerificationCode(currentIdentifier, "login")
+      const result = await sendVerificationCode(email, "login")
 
       if (!result.success) {
         setError(result.message || t("somethingWentWrong"))
@@ -159,8 +150,8 @@ export function ModernLoginForm({ locale }: ModernLoginFormProps) {
                     <Input
                       id="email"
                       type="email"
-                      value={identifier}
-                      onChange={(e) => setIdentifier(e.target.value)}
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
                       placeholder={t("emailPlaceholder")}
                       className="h-10 border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg"
                       required
@@ -225,7 +216,7 @@ export function ModernLoginForm({ locale }: ModernLoginFormProps) {
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">{t("verificationCodeSent")}</h3>
-                <p className="text-sm text-gray-600 mt-1">{userEmail || identifier}</p>
+                <p className="text-sm text-gray-600 mt-1">{email}</p>
               </div>
             </div>
 
@@ -263,7 +254,7 @@ export function ModernLoginForm({ locale }: ModernLoginFormProps) {
               <Button
                 type="button"
                 variant="outline"
-                className="w-full h-10 border-gray-200 text-gray-700 hover:bg-gray-50 rounded-lg"
+                className="w-full h-10 border-gray-200 text-gray-700 hover:bg-gray-50 rounded-lg bg-transparent"
                 onClick={handleResendCode}
                 disabled={isLoading}
               >

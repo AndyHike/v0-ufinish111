@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import createIntlMiddleware from "next-intl/middleware"
-import { createClient } from "@/utils/supabase/server"
+import { createClient } from "@/lib/supabase"
 
 // Create the next-intl middleware
 const intlMiddleware = createIntlMiddleware({
@@ -16,13 +16,13 @@ async function getDefaultLanguage(): Promise<string> {
     const { data, error } = await supabase.from("app_settings").select("value").eq("key", "default_language").single()
 
     if (error || !data) {
-      return "uk"
+      return "uk" // fallback
     }
 
     return data.value || "uk"
   } catch (error) {
     console.error("Error fetching default language:", error)
-    return "uk"
+    return "uk" // fallback
   }
 }
 
@@ -46,31 +46,33 @@ async function isMaintenanceModeEnabled(): Promise<boolean> {
   }
 }
 
-async function getUserRole(supabase: any): Promise<string | null> {
+async function isUserAdmin(request: NextRequest): Promise<boolean> {
   try {
+    // Get session from cookies
+    const accessToken = request.cookies.get("sb-access-token")?.value
+    const refreshToken = request.cookies.get("sb-refresh-token")?.value
+
+    if (!accessToken || !refreshToken) {
+      return false
+    }
+
+    const supabase = createClient()
+
+    // Verify the session
     const {
       data: { user },
-      error: userError,
-    } = await supabase.auth.getUser()
+      error,
+    } = await supabase.auth.getUser(accessToken)
 
-    if (userError || !user) {
-      return null
+    if (error || !user) {
+      return false
     }
 
-    const { data: roleData, error: roleError } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("id", user.id)
-      .single()
-
-    if (roleError || !roleData) {
-      return null
-    }
-
-    return roleData.role
+    // Check if user has admin role in user_metadata or app_metadata
+    return user.user_metadata?.role === "admin" || user.app_metadata?.role === "admin"
   } catch (error) {
-    console.error("Error getting user role:", error)
-    return null
+    console.error("Error checking user admin status:", error)
+    return false
   }
 }
 
@@ -78,86 +80,101 @@ export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
   const supportedLocales = ["uk", "cs", "en"]
 
-  // Skip API routes and webhooks
+  // Add exceptions for API routes and webhooks
   if (pathname.startsWith("/api/") || pathname.includes("/webhooks/") || pathname.startsWith("/app/api/")) {
     return NextResponse.next()
   }
 
-  // Check maintenance mode
+  // Check maintenance mode FIRST
   const maintenanceEnabled = await isMaintenanceModeEnabled()
 
   if (maintenanceEnabled) {
-    const supabase = createClient()
-    const userRole = await getUserRole(supabase)
-    const isAdmin = userRole === "admin"
+    const isAdmin = await isUserAdmin(request)
 
+    // Allow access to maintenance page and ALL auth routes for everyone
     const isMaintenancePage = pathname.includes("/maintenance")
-    const isAuthRoute = pathname.includes("/auth/") || pathname.includes("/login")
+    const isAuthRoute = pathname.includes("/auth/")
 
-    if (!isAdmin && !isMaintenancePage && !isAuthRoute) {
-      const locale = pathname.split("/")[1]
-      if (supportedLocales.includes(locale)) {
-        return NextResponse.redirect(new URL(`/${locale}/maintenance`, request.url))
+    if (!isAdmin) {
+      // Allow access to maintenance page and auth routes
+      if (isMaintenancePage || isAuthRoute) {
+        // Continue with normal processing - allow access
       } else {
-        const defaultLanguage = await getDefaultLanguage()
-        return NextResponse.redirect(new URL(`/${defaultLanguage}/maintenance`, request.url))
+        // Redirect all other pages to maintenance
+        const locale = pathname.split("/")[1]
+        if (supportedLocales.includes(locale)) {
+          return NextResponse.redirect(new URL(`/${locale}/maintenance`, request.url))
+        } else {
+          const defaultLanguage = await getDefaultLanguage()
+          return NextResponse.redirect(new URL(`/${defaultLanguage}/maintenance`, request.url))
+        }
       }
     }
+    // If user is admin, allow access to everything
   }
 
-  // Handle locale prefix
+  // CRUCIAL CHECK: If pathname already starts with a supported locale, proceed without redirection
   const hasLocalePrefix = supportedLocales.some(
     (locale) => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`,
   )
 
   if (hasLocalePrefix) {
+    // Handle internationalization for paths that already have locale prefix
     const response = intlMiddleware(request)
 
-    // Check protected routes
+    // Check for protected routes (only if not in maintenance mode or user is admin)
     if (pathname.includes("/profile") || pathname.includes("/admin")) {
-      const supabase = createClient()
+      // Check for Supabase session
+      const accessToken = request.cookies.get("sb-access-token")?.value
+      const refreshToken = request.cookies.get("sb-refresh-token")?.value
 
+      if (!accessToken || !refreshToken) {
+        // Get locale from URL
+        const locale = pathname.split("/")[1] || "uk"
+
+        // Redirect to login page
+        const redirectUrl = new URL(`/${locale}/auth/signin`, request.url)
+        redirectUrl.searchParams.set("redirect", pathname)
+        return NextResponse.redirect(redirectUrl)
+      }
+
+      // Verify that the session is valid
       try {
+        const supabase = createClient()
         const {
           data: { user },
           error,
-        } = await supabase.auth.getUser()
+        } = await supabase.auth.getUser(accessToken)
 
         if (error || !user) {
+          // Session is invalid, redirect to login
           const locale = pathname.split("/")[1] || "uk"
-          const redirectUrl = new URL(`/${locale}/login`, request.url)
+          const redirectUrl = new URL(`/${locale}/auth/signin`, request.url)
           redirectUrl.searchParams.set("redirect", pathname)
-          return NextResponse.redirect(redirectUrl)
-        }
 
-        // Check admin access
-        if (pathname.includes("/admin")) {
-          const userRole = await getUserRole(supabase)
-
-          if (userRole !== "admin") {
-            const locale = pathname.split("/")[1] || "uk"
-            return NextResponse.redirect(new URL(`/${locale}`, request.url))
-          }
+          // Clear the invalid session cookies
+          const response = NextResponse.redirect(redirectUrl)
+          response.cookies.delete("sb-access-token")
+          response.cookies.delete("sb-refresh-token")
+          return response
         }
       } catch (error) {
         console.error("Error verifying session in middleware:", error)
-        const locale = pathname.split("/")[1] || "uk"
-        const redirectUrl = new URL(`/${locale}/login`, request.url)
-        redirectUrl.searchParams.set("redirect", pathname)
-        return NextResponse.redirect(redirectUrl)
       }
     }
 
     return response
   }
 
-  // Handle root path
+  // ONLY apply locale redirection if pathname does NOT have a locale prefix
+
+  // Special handling for root path
   if (pathname === "/") {
     const defaultLanguage = await getDefaultLanguage()
     return NextResponse.redirect(new URL(`/${defaultLanguage}`, request.url))
   }
 
-  // Redirect to default locale
+  // For any other path without locale prefix, redirect to default locale + path
   const defaultLanguage = await getDefaultLanguage()
   return NextResponse.redirect(new URL(`/${defaultLanguage}${pathname}`, request.url))
 }

@@ -1,76 +1,80 @@
-import { cookies } from "next/headers"
-import { createClient } from "@/lib/supabase"
+import { createClient } from "@/utils/supabase/server"
+import type { User } from "@supabase/supabase-js"
 
-export async function getCurrentUser() {
-  const sessionId = cookies().get("session_id")?.value
-
-  if (!sessionId) {
-    return null
-  }
-
+export async function getCurrentUser(): Promise<User | null> {
   const supabase = createClient()
 
-  // Get session
-  const { data: sessionData, error: sessionError } = await supabase
-    .from("sessions")
-    .select("user_id, expires_at")
-    .eq("id", sessionId)
-    .single()
+  try {
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser()
 
-  if (sessionError || !sessionData || new Date(sessionData.expires_at) < new Date()) {
-    // Session expired or not found
-    cookies().delete("session_id")
+    if (error || !user) {
+      return null
+    }
+
+    return user
+  } catch (error) {
+    console.error("Error getting current user:", error)
     return null
   }
+}
 
-  // Get user
-  const { data: userData, error: userError } = await supabase
-    .from("users")
-    .select("id, email, role, first_name, last_name")
-    .eq("id", sessionData.user_id)
-    .single()
+export async function getUserProfile(userId: string) {
+  const supabase = createClient()
 
-  if (userError || !userData) {
-    console.error("Error fetching user data:", userError)
-    cookies().delete("session_id")
+  try {
+    const { data: profile, error } = await supabase.from("profiles").select("*").eq("id", userId).single()
+
+    if (error) {
+      console.error("Error fetching user profile:", error)
+      return null
+    }
+
+    return profile
+  } catch (error) {
+    console.error("Error in getUserProfile:", error)
     return null
-  }
-
-  // Get profile with phone number
-  const { data: profileData } = await supabase
-    .from("profiles")
-    .select("phone, avatar_url, first_name, last_name")
-    .eq("id", userData.id)
-    .single()
-
-  // Debug log
-  console.log("User data:", userData)
-  console.log("Profile data in session:", profileData)
-
-  // Combine first_name and last_name for full name
-  const fullName = [profileData?.first_name || userData.first_name, profileData?.last_name || userData.last_name]
-    .filter(Boolean)
-    .join(" ")
-
-  return {
-    id: userData.id,
-    email: userData.email,
-    role: userData.role,
-    name: fullName, // For backward compatibility
-    first_name: profileData?.first_name || userData.first_name || null,
-    last_name: profileData?.last_name || userData.last_name || null,
-    phone: profileData?.phone || null,
-    avatar_url: profileData?.avatar_url || null,
   }
 }
 
 export async function getSession() {
-  const user = await getCurrentUser()
-  if (user) {
-    return { user }
+  const supabase = createClient()
+
+  try {
+    const {
+      data: { session },
+      error,
+    } = await supabase.auth.getSession()
+
+    if (error) {
+      console.error("Error getting session:", error)
+      return null
+    }
+
+    return session
+  } catch (error) {
+    console.error("Error in getSession:", error)
+    return null
   }
-  return null
 }
 
-// Alias export for backwards-compatibility
+// Get user with profile data
+export async function getUserWithProfile() {
+  const user = await getCurrentUser()
+
+  if (!user) {
+    return null
+  }
+
+  const profile = await getUserProfile(user.id)
+
+  return {
+    ...user,
+    profile,
+  }
+}
+
+// Alias exports for backwards-compatibility
 export { getCurrentUser as getUser }

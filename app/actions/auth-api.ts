@@ -1,7 +1,8 @@
 "use server"
 
-import { cookies } from "next/headers"
-import { createClient } from "@/lib/supabase"
+import { createClient } from "@/utils/supabase/server"
+import { createClient as createServiceClient } from "@/lib/supabase"
+import { redirect } from "next/navigation"
 import {
   generateVerificationCode,
   saveVerificationCode,
@@ -9,10 +10,9 @@ import {
 } from "@/lib/auth/verification-code"
 import { sendVerificationCode as sendVerificationCodeEmail } from "@/lib/email/send-email"
 import { syncClientToRemonline, updateRemonlineIdForUser } from "@/lib/services/remonline-sync"
-import { hash } from "@/lib/auth/utils"
 
-// Check if user exists in our database
-export async function checkUserExists(identifier: string): Promise<{
+// Check if user exists in Supabase Auth
+export async function checkUserExists(email: string): Promise<{
   success: boolean
   message?: string
   userData?: {
@@ -23,80 +23,45 @@ export async function checkUserExists(identifier: string): Promise<{
   }
 }> {
   try {
-    console.log(`Checking if user exists with identifier: ${identifier}`)
+    console.log(`Checking if user exists with email: ${email}`)
 
-    const supabase = createClient()
+    const supabase = createServiceClient()
 
-    // Determine if identifier is email or phone
-    const isEmail = identifier.includes("@")
+    // Check if user exists in auth.users
+    const {
+      data: { users },
+      error,
+    } = await supabase.auth.admin.listUsers()
 
-    let userData
-
-    if (isEmail) {
-      // Search by email
-      const { data, error } = await supabase
-        .from("users")
-        .select(`
-          id, 
-          email, 
-          first_name,
-          last_name,
-          profiles!inner(phone)
-        `)
-        .eq("email", identifier.toLowerCase())
-        .maybeSingle()
-
-      if (error) {
-        console.error("Error checking user by email:", error)
-        return {
-          success: false,
-          message: "Error checking user. Please try again later.",
-        }
-      }
-
-      userData = data
-    } else {
-      // Search by phone
-      const { data, error } = await supabase
-        .from("profiles")
-        .select(`
-          id,
-          phone,
-          email,
-          first_name,
-          last_name,
-          users!inner(id, email, first_name, last_name)
-        `)
-        .eq("phone", identifier)
-        .maybeSingle()
-
-      if (error) {
-        console.error("Error checking user by phone:", error)
-        return {
-          success: false,
-          message: "Error checking user. Please try again later.",
-        }
-      }
-
-      if (data) {
-        userData = {
-          id: data.users.id,
-          email: data.users.email,
-          first_name: data.users.first_name,
-          last_name: data.users.last_name,
-          phone: data.phone,
-        }
+    if (error) {
+      console.error("Error checking users:", error)
+      return {
+        success: false,
+        message: "Error checking user. Please try again later.",
       }
     }
 
-    if (userData) {
+    const existingUser = users.find((user) => user.email?.toLowerCase() === email.toLowerCase())
+
+    if (existingUser) {
+      // Get profile data
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("first_name, last_name, phone")
+        .eq("id", existingUser.id)
+        .single()
+
+      const name = profile
+        ? `${profile.first_name || ""} ${profile.last_name || ""}`.trim()
+        : existingUser.user_metadata?.full_name || existingUser.email
+
       return {
         success: true,
         userData: {
-          id: userData.id,
-          email: userData.email,
-          name: `${userData.first_name} ${userData.last_name}`.trim(),
-          phone: isEmail ? userData.profiles?.phone : userData.phone,
+          id: existingUser.id,
+          email: existingUser.email!,
+          name,
+          phone: profile?.phone,
         },
       }
     }
@@ -116,30 +81,11 @@ export async function checkUserExists(identifier: string): Promise<{
 
 // Send verification code
 export async function sendVerificationCode(
-  identifier: string,
+  email: string,
   type: "login" | "registration",
-): Promise<{ success: boolean; message?: string; email?: string }> {
+): Promise<{ success: boolean; message?: string }> {
   try {
-    console.log(`Sending verification code for ${type} to identifier: ${identifier}`)
-
-    // If identifier is an email, use it directly
-    // If it's a phone number, we need to find the associated email
-    let email = identifier
-
-    if (!identifier.includes("@")) {
-      // It's a phone number, find the associated email
-      const userResult = await checkUserExists(identifier)
-      if (!userResult.success || !userResult.userData) {
-        return {
-          success: false,
-          message: "Could not find a user with this phone number",
-        }
-      }
-
-      email = userResult.userData.email
-    }
-
-    console.log(`Will send verification code to email: ${email}`)
+    console.log(`Sending verification code for ${type} to email: ${email}`)
 
     // Generate verification code
     const code = generateVerificationCode()
@@ -159,7 +105,7 @@ export async function sendVerificationCode(
     try {
       await sendVerificationCodeEmail(email, code, "uk", type === "login")
       console.log(`Verification code sent to ${email}`)
-      return { success: true, email }
+      return { success: true }
     } catch (emailError) {
       console.error("Failed to send verification email:", emailError)
       return {
@@ -176,38 +122,14 @@ export async function sendVerificationCode(
   }
 }
 
-// Verify code and create session
+// Verify code and sign in/up user
 export async function verifyCode(
-  identifier: string,
+  email: string,
   code: string,
   type: "login" | "registration",
 ): Promise<{ success: boolean; message?: string }> {
   try {
-    console.log(`Verifying code for ${identifier}: ${code}`)
-
-    // If identifier is a phone number, we need to find the associated email
-    let email = identifier
-    let userId = null
-
-    if (!identifier.includes("@")) {
-      // It's a phone number, find the associated email
-      const userResult = await checkUserExists(identifier)
-      if (!userResult.success || !userResult.userData) {
-        return {
-          success: false,
-          message: "Could not find a user with this phone number",
-        }
-      }
-
-      email = userResult.userData.email
-      userId = userResult.userData.id
-    } else {
-      // It's an email, get the user ID
-      const userResult = await checkUserExists(identifier)
-      if (userResult.success && userResult.userData) {
-        userId = userResult.userData.id
-      }
-    }
+    console.log(`Verifying code for ${email}: ${code}`)
 
     // Verify code
     const verification = await verifyCodeLib(email, code, type)
@@ -221,57 +143,63 @@ export async function verifyCode(
 
     console.log("Code verified successfully")
 
+    const supabase = createClient()
+
     if (type === "login") {
-      // For login, create session
-      const supabase = createClient()
+      // Sign in existing user
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: false,
+        },
+      })
 
-      // If we don't have a userId yet, get it from the database
-      if (!userId) {
-        const { data: userData } = await supabase
-          .from("users")
-          .select("id")
-          .eq("email", email.toLowerCase())
-          .maybeSingle()
-
-        if (!userData) {
-          return {
-            success: false,
-            message: "User not found",
-          }
-        }
-
-        userId = userData.id
-      }
-
-      // Create session
-      const { data: session, error: sessionError } = await supabase
-        .from("sessions")
-        .insert([
-          {
-            user_id: userId,
-            expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
-          },
-        ])
-        .select("id")
-        .single()
-
-      if (sessionError) {
-        console.error("Failed to create session:", sessionError)
+      if (error) {
+        console.error("Error signing in user:", error)
         return {
           success: false,
-          message: "Failed to create session",
+          message: "Failed to sign in user",
+        }
+      }
+    } else {
+      // Sign up new user
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password: Math.random().toString(36), // Random password, won't be used
+        options: {
+          emailRedirectTo: undefined, // Disable email confirmation
+        },
+      })
+
+      if (error) {
+        console.error("Error signing up user:", error)
+        return {
+          success: false,
+          message: "Failed to create user account",
         }
       }
 
-      console.log("Session created:", session)
+      // Create profile if user was created
+      if (data.user) {
+        const serviceSupabase = createServiceClient()
 
-      // Set session cookie
-      cookies().set("session_id", session.id, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        maxAge: 30 * 24 * 60 * 60, // 30 days
-        path: "/",
-      })
+        // Confirm the user's email since we verified it with our code
+        await serviceSupabase.auth.admin.updateUserById(data.user.id, {
+          email_confirm: true,
+        })
+
+        const { error: profileError } = await serviceSupabase.from("profiles").insert({
+          id: data.user.id,
+          first_name: "",
+          last_name: "",
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+
+        if (profileError) {
+          console.error("Failed to create profile:", profileError)
+        }
+      }
     }
 
     return { success: true }
@@ -284,170 +212,104 @@ export async function verifyCode(
   }
 }
 
-// Create user in our database and sync with RemOnline in the background
-export async function createUser(userData: {
+// Create user profile after registration
+export async function createUserProfile(userData: {
   first_name: string
   last_name: string
-  email: string
-  phone: string[]
+  phone?: string
   address?: string
 }): Promise<{ success: boolean; message?: string }> {
   try {
-    console.log("Creating user in database:", userData)
-
     const supabase = createClient()
 
-    // Check if user already exists
-    const { data: existingUser } = await supabase
-      .from("users")
-      .select("id")
-      .eq("email", userData.email.toLowerCase())
-      .maybeSingle()
+    // Get current user
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser()
 
-    if (existingUser) {
-      console.log("User already exists in database:", existingUser)
-
-      // Create session
-      const { data: session, error: sessionError } = await supabase
-        .from("sessions")
-        .insert([
-          {
-            user_id: existingUser.id,
-            expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
-          },
-        ])
-        .select("id")
-        .single()
-
-      if (sessionError) {
-        console.error("Failed to create session:", sessionError)
-        return {
-          success: false,
-          message: "Failed to create session",
-        }
+    if (userError || !user) {
+      return {
+        success: false,
+        message: "User not authenticated",
       }
+    }
 
-      // Set session cookie
-      cookies().set("session_id", session.id, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        maxAge: 30 * 24 * 60 * 60, // 30 days
-        path: "/",
+    // Update profile
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        first_name: userData.first_name,
+        last_name: userData.last_name,
+        phone: userData.phone || null,
+        address: userData.address || null,
+        updated_at: new Date().toISOString(),
       })
+      .eq("id", user.id)
 
-      // Sync with RemOnline in the background
-      syncClientToRemonline(userData)
+    if (error) {
+      console.error("Failed to update profile:", error)
+      return {
+        success: false,
+        message: "Failed to update profile",
+      }
+    }
+
+    // Sync with RemOnline in the background
+    if (userData.first_name && userData.last_name) {
+      syncClientToRemonline({
+        first_name: userData.first_name,
+        last_name: userData.last_name,
+        email: user.email!,
+        phone: userData.phone ? [userData.phone] : [],
+        address: userData.address,
+      })
         .then((result) => {
           if (result.success && result.remonlineId) {
-            updateRemonlineIdForUser(existingUser.id, result.remonlineId)
+            updateRemonlineIdForUser(user.id, result.remonlineId)
           }
         })
         .catch((error) => {
           console.error("Error syncing with RemOnline:", error)
         })
-
-      return { success: true }
     }
-
-    // Generate a random password (user will use passwordless login anyway)
-    const randomPassword = Math.random().toString(36).slice(-10)
-    const passwordHash = await hash(randomPassword)
-
-    // Create new user
-    const { data: newUser, error } = await supabase
-      .from("users")
-      .insert({
-        email: userData.email.toLowerCase(),
-        role: "user",
-        first_name: userData.first_name,
-        last_name: userData.last_name,
-        password_hash: passwordHash,
-        email_verified: true, // Since we verified with code
-      })
-      .select("id")
-      .single()
-
-    if (error) {
-      console.error("Failed to create user in database:", error)
-      return {
-        success: false,
-        message: "Failed to create user account",
-      }
-    }
-
-    // Create profile with email
-    const { error: profileError } = await supabase.from("profiles").insert({
-      id: newUser.id,
-      first_name: userData.first_name,
-      last_name: userData.last_name,
-      phone: userData.phone[0] || null,
-      email: userData.email.toLowerCase(), // Додаємо email в profiles
-      address: userData.address || null,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    })
-
-    if (profileError) {
-      console.error("Failed to create profile in database:", profileError)
-      // Видаляємо користувача, якщо не вдалося створити профіль
-      await supabase.from("users").delete().eq("id", newUser.id)
-      return {
-        success: false,
-        message: "Failed to create user profile",
-      }
-    }
-
-    // Create session
-    const { data: session, error: sessionError } = await supabase
-      .from("sessions")
-      .insert([
-        {
-          user_id: newUser.id,
-          expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
-        },
-      ])
-      .select("id")
-      .single()
-
-    if (sessionError) {
-      console.error("Failed to create session:", sessionError)
-      return {
-        success: false,
-        message: "Failed to create session",
-      }
-    }
-
-    // Set session cookie
-    cookies().set("session_id", session.id, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 30 * 24 * 60 * 60, // 30 days
-      path: "/",
-    })
-
-    // Sync with RemOnline in the background
-    syncClientToRemonline({
-      first_name: userData.first_name,
-      last_name: userData.last_name,
-      email: userData.email,
-      phone: userData.phone,
-      address: userData.address,
-    })
-      .then((result) => {
-        if (result.success && result.remonlineId) {
-          updateRemonlineIdForUser(newUser.id, result.remonlineId)
-        }
-      })
-      .catch((error) => {
-        console.error("Error syncing with RemOnline:", error)
-      })
 
     return { success: true }
   } catch (error) {
-    console.error("Create user error:", error)
+    console.error("Create user profile error:", error)
     return {
       success: false,
-      message: "Failed to create user. Please try again later.",
+      message: "Failed to create user profile. Please try again later.",
     }
   }
+}
+
+// Sign out user
+export async function signOut() {
+  const supabase = createClient()
+
+  try {
+    const { error } = await supabase.auth.signOut()
+
+    if (error) {
+      console.error("Error signing out:", error)
+      return { success: false, message: "Failed to sign out" }
+    }
+
+    return { success: true }
+  } catch (error) {
+    console.error("Sign out error:", error)
+    return { success: false, message: "Failed to sign out" }
+  }
+}
+
+// Sign out with redirect
+export async function signOutWithRedirect(locale: string) {
+  const result = await signOut()
+
+  if (result.success) {
+    redirect(`/${locale}`)
+  }
+
+  return result
 }
