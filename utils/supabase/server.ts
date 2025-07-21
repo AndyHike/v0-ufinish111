@@ -1,4 +1,4 @@
-import { createServerClient, type CookieOptions } from "@supabase/ssr"
+import { createServerClient as _createServerClient, type CookieOptions } from "@supabase/ssr"
 import { cookies } from "next/headers"
 
 export function createClient() {
@@ -8,7 +8,7 @@ export function createClient() {
   const supabaseUrl = process.env.devicehelp_SUPABASE_URL!
   const supabaseAnonKey = process.env.devicehelp_SUPABASE_ANON_KEY!
 
-  return createServerClient(supabaseUrl, supabaseAnonKey, {
+  return _createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
       get(name: string) {
         return cookieStore.get(name)?.value
@@ -30,6 +30,9 @@ export function createClient() {
     },
   })
 }
+
+// Re-export the original helper so other modules can import it.
+export const createServerClient = _createServerClient
 
 // Експорти для сумісності
 export const createServerSupabaseClient = createClient
