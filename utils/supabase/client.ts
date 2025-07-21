@@ -24,4 +24,7 @@ export function createClient() {
   })
 }
 
+// Named helper so other modules can import { createSupabaseClient }
+export const createSupabaseClient = createClient
+
 export default supabase
