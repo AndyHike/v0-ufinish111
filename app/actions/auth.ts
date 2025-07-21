@@ -1,249 +1,108 @@
 "use server"
 
+import { createClient } from "@/utils/supabase/server"
 import { redirect } from "next/navigation"
-import { cookies } from "next/headers"
-import { createClient } from "@supabase/supabase-js"
-import { hash, verifyPassword } from "@/utils/auth"
 
-// Create a Supabase client for server-side operations
-function createServerClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY!
+// Нова система авторизації через Supabase Auth
 
-  return createClient(supabaseUrl, supabaseKey, {
-    auth: { persistSession: false },
+export async function signInWithEmail(email: string) {
+  const supabase = createClient()
+
+  const { data, error } = await supabase.auth.signInWithOtp({
+    email,
+    options: {
+      shouldCreateUser: false, // Тільки для існуючих користувачів
+    },
   })
-}
 
-// Validate password strength
-function validatePassword(password: string): { valid: boolean; message?: string } {
-  if (password.length < 8) {
-    return { valid: false, message: "Password must be at least 8 characters long" }
+  if (error) {
+    return { success: false, message: error.message }
   }
-  return { valid: true }
+
+  return { success: true, message: "Check your email for the login code" }
 }
 
-// Register a new user
-export async function register(formData: FormData) {
+export async function signUpWithEmail(formData: FormData) {
   const email = formData.get("email") as string
-  const password = formData.get("password") as string
-  const name = formData.get("name") as string
-  const phone = (formData.get("phone") as string) || null
+  const firstName = formData.get("firstName") as string
+  const lastName = formData.get("lastName") as string
+  const phone = formData.get("phone") as string
 
-  // Validate inputs
-  if (!email || !password || !name) {
+  if (!email || !firstName || !lastName) {
     return { success: false, message: "All fields are required" }
   }
 
-  // Validate password
-  const passwordValidation = validatePassword(password)
-  if (!passwordValidation.valid) {
-    return { success: false, message: passwordValidation.message }
+  const supabase = createClient()
+
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password: Math.random().toString(36), // Тимчасовий пароль
+    options: {
+      data: {
+        first_name: firstName,
+        last_name: lastName,
+        phone: phone || null,
+      },
+    },
+  })
+
+  if (error) {
+    return { success: false, message: error.message }
   }
 
-  try {
-    const supabase = createServerClient()
-
-    // Check if email already exists
-    const { data: existingUser } = await supabase
-      .from("users")
-      .select("id")
-      .eq("email", email.toLowerCase())
-      .maybeSingle()
-
-    if (existingUser) {
-      return { success: false, message: "Email is already registered" }
-    }
-
-    // Hash password
-    const passwordHash = await hash(password)
-
-    // Insert user
-    const { data: userData, error: userError } = await supabase
-      .from("users")
-      .insert([{ email: email.toLowerCase(), password_hash: passwordHash, role: "user" }])
-      .select("id")
-      .single()
-
-    if (userError) {
-      console.error("Error creating user:", userError)
-      return { success: false, message: "Failed to create user account" }
-    }
-
-    // Check if profiles table has a phone column
-    const { data: profileColumns, error: columnsError } = await supabase.from("profiles").select("*").limit(1)
-
-    if (columnsError) {
-      console.error("Error checking profile columns:", columnsError)
-    }
-
-    // Determine if we should include phone in the profile
-    const hasPhoneColumn = profileColumns && Object.keys(profileColumns[0] || {}).includes("phone")
-
-    // Insert profile with or without phone based on schema
-    const profileData = hasPhoneColumn
-      ? {
-          id: userData.id,
-          name,
-          phone,
-          avatar_url: `/placeholder.svg?height=100&width=100&query=${encodeURIComponent(name)}`,
-        }
-      : {
-          id: userData.id,
-          name,
-          avatar_url: `/placeholder.svg?height=100&width=100&query=${encodeURIComponent(name)}`,
-        }
-
-    const { error: profileError } = await supabase.from("profiles").insert([profileData])
-
-    if (profileError) {
-      console.error("Error creating profile:", profileError)
-      // Delete user if profile creation fails
-      await supabase.from("users").delete().eq("id", userData.id)
-      return { success: false, message: "Failed to create user profile" }
-    }
-
-    // Create a session
-    const { data: session, error: sessionError } = await supabase
-      .from("sessions")
-      .insert([
-        {
-          user_id: userData.id,
-          expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
-        },
-      ])
-      .select("id")
-      .single()
-
-    if (sessionError) {
-      console.error("Error creating session:", sessionError)
-      return { success: false, message: "Failed to create session" }
-    }
-
-    // Set a cookie with the session ID
-    cookies().set("session_id", session.id, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 30 * 24 * 60 * 60, // 30 days
-      path: "/",
-    })
-
-    return { success: true }
-  } catch (error) {
-    console.error("Registration error:", error)
-    return { success: false, message: "An unexpected error occurred" }
-  }
+  return { success: true, message: "Check your email to confirm your account" }
 }
 
-// Login user
-export async function login(formData: FormData) {
-  const email = formData.get("email") as string
-  const password = formData.get("password") as string
+export async function signOut() {
+  const supabase = createClient()
 
-  // Validate inputs
-  if (!email || !password) {
-    return { success: false, message: "Email and password are required" }
+  const { error } = await supabase.auth.signOut()
+
+  if (error) {
+    return { success: false, message: error.message }
   }
 
-  try {
-    const supabase = createServerClient()
-
-    // Get user by email
-    const { data: userData, error: userError } = await supabase
-      .from("users")
-      .select("id, password_hash, role")
-      .eq("email", email.toLowerCase())
-      .maybeSingle()
-
-    if (userError || !userData) {
-      return { success: false, message: "invalidCredentials" }
-    }
-
-    // Verify password
-    const isPasswordValid = await verifyPassword(password, userData.password_hash)
-
-    if (!isPasswordValid) {
-      return { success: false, message: "invalidCredentials" }
-    }
-
-    // Generate session
-    const { data: session, error: sessionError } = await supabase
-      .from("sessions")
-      .insert([
-        {
-          user_id: userData.id,
-          expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
-        },
-      ])
-      .select("id")
-      .single()
-
-    if (sessionError) {
-      console.error("Error creating session:", sessionError)
-      return { success: false, message: "loginFailed" }
-    }
-
-    // Set session cookie
-    cookies().set("session_id", session.id, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 30 * 24 * 60 * 60, // 30 days
-      path: "/",
-    })
-
-    return { success: true, role: userData.role }
-  } catch (error) {
-    console.error("Login error:", error)
-    return { success: false, message: "unexpectedError" }
-  }
-}
-
-// Update the logout function to also remove the session from the database
-
-// Logout user
-export async function logout() {
-  const sessionId = cookies().get("session_id")?.value
-
-  if (sessionId) {
-    // Delete the session from the database
-    const supabase = createServerClient()
-    await supabase.from("sessions").delete().eq("id", sessionId)
-  }
-
-  // Delete the cookie
-  cookies().delete("session_id")
   return { success: true }
 }
 
-// Login with redirect
-export async function loginWithRedirect(formData: FormData, locale: string) {
-  const result = await login(formData)
-
-  if (result.success) {
-    // Redirect based on role
-    if (result.role === "admin") {
-      redirect(`/${locale}/admin`)
-    } else {
-      redirect(`/${locale}/profile`)
-    }
-  }
-
-  return result
+export async function signOutAndRedirect(locale: string) {
+  await signOut()
+  redirect(`/${locale}`)
 }
 
-// Register with redirect
-export async function registerWithRedirect(formData: FormData, locale: string) {
-  try {
-    const result = await register(formData)
+export async function getCurrentUser() {
+  const supabase = createClient()
 
-    if (result.success) {
-      // Redirect to home page after successful registration
-      redirect(`/${locale}`)
+  try {
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser()
+
+    if (error || !user) {
+      return null
     }
 
-    return result
+    // Отримуємо профіль та роль користувача
+    const [profileResult, roleResult] = await Promise.all([
+      supabase.from("profiles").select("*").eq("id", user.id).single(),
+      supabase.from("user_roles").select("role").eq("id", user.id).single(),
+    ])
+
+    return {
+      id: user.id,
+      email: user.email!,
+      role: roleResult.data?.role || "user",
+      profile: profileResult.data || null,
+      emailConfirmed: user.email_confirmed_at !== null,
+    }
   } catch (error) {
-    console.error("Registration redirect error:", error)
-    return { success: false, message: "An unexpected error occurred during registration" }
+    console.error("Error getting current user:", error)
+    return null
   }
+}
+
+export async function isUserAdmin() {
+  const user = await getCurrentUser()
+  return user?.role === "admin"
 }

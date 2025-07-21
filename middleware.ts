@@ -16,13 +16,13 @@ async function getDefaultLanguage(): Promise<string> {
     const { data, error } = await supabase.from("app_settings").select("value").eq("key", "default_language").single()
 
     if (error || !data) {
-      return "uk" // fallback
+      return "uk"
     }
 
     return data.value || "uk"
   } catch (error) {
     console.error("Error fetching default language:", error)
-    return "uk" // fallback
+    return "uk"
   }
 }
 
@@ -46,17 +46,15 @@ async function isMaintenanceModeEnabled(): Promise<boolean> {
   }
 }
 
-async function isUserAdmin(): Promise<boolean> {
+async function getUserRole(supabase: any): Promise<string | null> {
   try {
-    const supabase = createClient()
-
     const {
       data: { user },
       error: userError,
     } = await supabase.auth.getUser()
 
     if (userError || !user) {
-      return false
+      return null
     }
 
     const { data: roleData, error: roleError } = await supabase
@@ -66,13 +64,13 @@ async function isUserAdmin(): Promise<boolean> {
       .single()
 
     if (roleError || !roleData) {
-      return false
+      return null
     }
 
-    return roleData.role === "admin"
+    return roleData.role
   } catch (error) {
-    console.error("Error checking user admin status:", error)
-    return false
+    console.error("Error getting user role:", error)
+    return null
   }
 }
 
@@ -80,49 +78,42 @@ export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
   const supportedLocales = ["uk", "cs", "en"]
 
-  // Add exceptions for API routes and webhooks
+  // Skip API routes and webhooks
   if (pathname.startsWith("/api/") || pathname.includes("/webhooks/") || pathname.startsWith("/app/api/")) {
     return NextResponse.next()
   }
 
-  // Check maintenance mode FIRST
+  // Check maintenance mode
   const maintenanceEnabled = await isMaintenanceModeEnabled()
 
   if (maintenanceEnabled) {
-    const isAdmin = await isUserAdmin()
+    const supabase = createClient()
+    const userRole = await getUserRole(supabase)
+    const isAdmin = userRole === "admin"
 
-    // Allow access to maintenance page and ALL auth routes for everyone
     const isMaintenancePage = pathname.includes("/maintenance")
-    const isAuthRoute = pathname.includes("/auth/")
+    const isAuthRoute = pathname.includes("/auth/") || pathname.includes("/login")
 
-    if (!isAdmin) {
-      // Allow access to maintenance page and auth routes
-      if (isMaintenancePage || isAuthRoute) {
-        // Continue with normal processing - allow access
+    if (!isAdmin && !isMaintenancePage && !isAuthRoute) {
+      const locale = pathname.split("/")[1]
+      if (supportedLocales.includes(locale)) {
+        return NextResponse.redirect(new URL(`/${locale}/maintenance`, request.url))
       } else {
-        // Redirect all other pages to maintenance
-        const locale = pathname.split("/")[1]
-        if (supportedLocales.includes(locale)) {
-          return NextResponse.redirect(new URL(`/${locale}/maintenance`, request.url))
-        } else {
-          const defaultLanguage = await getDefaultLanguage()
-          return NextResponse.redirect(new URL(`/${defaultLanguage}/maintenance`, request.url))
-        }
+        const defaultLanguage = await getDefaultLanguage()
+        return NextResponse.redirect(new URL(`/${defaultLanguage}/maintenance`, request.url))
       }
     }
-    // If user is admin, allow access to everything
   }
 
-  // CRUCIAL CHECK: If pathname already starts with a supported locale, proceed without redirection
+  // Handle locale prefix
   const hasLocalePrefix = supportedLocales.some(
     (locale) => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`,
   )
 
   if (hasLocalePrefix) {
-    // Handle internationalization for paths that already have locale prefix
     const response = intlMiddleware(request)
 
-    // Check for protected routes using Supabase Auth
+    // Check protected routes
     if (pathname.includes("/profile") || pathname.includes("/admin")) {
       const supabase = createClient()
 
@@ -133,28 +124,25 @@ export async function middleware(request: NextRequest) {
         } = await supabase.auth.getUser()
 
         if (error || !user) {
-          // No valid session, redirect to login
           const locale = pathname.split("/")[1] || "uk"
-          const redirectUrl = new URL(`/${locale}/auth/login`, request.url)
+          const redirectUrl = new URL(`/${locale}/login`, request.url)
           redirectUrl.searchParams.set("redirect", pathname)
           return NextResponse.redirect(redirectUrl)
         }
 
-        // For admin routes, check if user is admin
+        // Check admin access
         if (pathname.includes("/admin")) {
-          const { data: roleData } = await supabase.from("user_roles").select("role").eq("id", user.id).single()
+          const userRole = await getUserRole(supabase)
 
-          if (!roleData || roleData.role !== "admin") {
-            // Not an admin, redirect to home
+          if (userRole !== "admin") {
             const locale = pathname.split("/")[1] || "uk"
             return NextResponse.redirect(new URL(`/${locale}`, request.url))
           }
         }
       } catch (error) {
         console.error("Error verifying session in middleware:", error)
-        // On error, redirect to login
         const locale = pathname.split("/")[1] || "uk"
-        const redirectUrl = new URL(`/${locale}/auth/login`, request.url)
+        const redirectUrl = new URL(`/${locale}/login`, request.url)
         redirectUrl.searchParams.set("redirect", pathname)
         return NextResponse.redirect(redirectUrl)
       }
@@ -163,15 +151,13 @@ export async function middleware(request: NextRequest) {
     return response
   }
 
-  // ONLY apply locale redirection if pathname does NOT have a locale prefix
-
-  // Special handling for root path
+  // Handle root path
   if (pathname === "/") {
     const defaultLanguage = await getDefaultLanguage()
     return NextResponse.redirect(new URL(`/${defaultLanguage}`, request.url))
   }
 
-  // For any other path without locale prefix, redirect to default locale + path
+  // Redirect to default locale
   const defaultLanguage = await getDefaultLanguage()
   return NextResponse.redirect(new URL(`/${defaultLanguage}${pathname}`, request.url))
 }
