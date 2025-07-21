@@ -1,454 +1,395 @@
 "use client"
 
-import { useState } from "react"
-import { useTranslations } from "next-intl"
-import Link from "next/link"
-import { useParams, useRouter } from "next/navigation"
-import { z } from "zod"
-import { useForm, Controller } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { isValidPhoneNumber } from "libphonenumber-js"
+import type React from "react"
 
+import { useState, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { DevEmailNotification } from "@/components/dev-email-notification"
-import { CustomPhoneInput } from "@/components/phone-input/custom-phone-input"
-import { UserPlus, CheckCircle, ArrowLeft, Shield } from "lucide-react"
-
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp"
+import { Loader2, Mail, ArrowLeft, User } from "lucide-react"
 import { checkUserExists, sendVerificationCode, verifyCode, createUserProfile } from "@/app/actions/auth-api"
-
-const initialSchema = z.object({
-  email: z.string().email(),
-  phone: z
-    .string()
-    .min(1, { message: "Phone number is required" })
-    .refine((val) => isValidPhoneNumber(val), {
-      message: "Invalid phone number",
-    }),
-  firstName: z.string().min(2),
-  lastName: z.string().min(2),
-})
-
-const verificationSchema = z.object({
-  code: z.string().length(6),
-})
-
-const profileSchema = z.object({
-  address: z.string().optional(),
-})
 
 export default function RegisterClient() {
   const t = useTranslations("Auth")
   const router = useRouter()
-  const params = useParams()
-  const locale = params.locale as string
+  const searchParams = useSearchParams()
+  const emailParam = searchParams.get("email") || ""
 
-  const [step, setStep] = useState<"initial" | "verification" | "profile" | "success">("initial")
-  const [userData, setUserData] = useState({ email: "", phone: "", firstName: "", lastName: "" })
-  const [error, setError] = useState<string | null>(null)
+  const [step, setStep] = useState<"email" | "code" | "profile">("email")
+  const [email, setEmail] = useState(emailParam)
+  const [code, setCode] = useState("")
+  const [firstName, setFirstName] = useState("")
+  const [lastName, setLastName] = useState("")
+  const [phone, setPhone] = useState("")
+  const [address, setAddress] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState("")
 
-  const initialForm = useForm({
-    resolver: zodResolver(initialSchema),
-    defaultValues: {
-      email: "",
-      phone: "+420", // Czech Republic code by default
-      firstName: "",
-      lastName: "",
-    },
-  })
+  useEffect(() => {
+    if (emailParam) {
+      // If email is provided in URL, check if user exists
+      checkExistingUser(emailParam)
+    }
+  }, [emailParam])
 
-  const verificationForm = useForm({
-    resolver: zodResolver(verificationSchema),
-    defaultValues: {
-      code: "",
-    },
-  })
+  const checkExistingUser = async (emailToCheck: string) => {
+    const userCheck = await checkUserExists(emailToCheck)
+    if (userCheck.success) {
+      // User exists, redirect to login
+      router.push(`/${router.locale}/auth/signin?email=${encodeURIComponent(emailToCheck)}`)
+    }
+  }
 
-  const profileForm = useForm({
-    resolver: zodResolver(profileSchema),
-    defaultValues: {
-      address: "",
-    },
-  })
-
-  const handleInitialSubmit = async (data: { email: string; phone: string; firstName: string; lastName: string }) => {
-    setError(null)
+  const handleEmailSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
     setIsLoading(true)
+    setError("")
 
     try {
-      console.log("Registration initial data:", data)
-      setUserData(data)
-
       // Check if user already exists
-      const userExists = await checkUserExists(data.email)
-      console.log("User exists check result:", userExists)
+      const userCheck = await checkUserExists(email)
 
-      if (userExists.success) {
-        setError(t("userAlreadyExists"))
-        setIsLoading(false)
+      if (userCheck.success) {
+        // User exists, redirect to login
+        router.push(`/${router.locale}/auth/signin?email=${encodeURIComponent(email)}`)
         return
       }
 
-      // Send verification code
-      const result = await sendVerificationCode(data.email, "registration")
-      console.log("Send verification code result:", result)
+      // New user - send registration code
+      const result = await sendVerificationCode(email, "registration")
 
-      if (!result.success) {
-        setError(result.message || t("somethingWentWrong"))
-        setIsLoading(false)
-        return
+      if (result.success) {
+        setStep("code")
+      } else {
+        setError(result.message || t("failedToSendCode"))
       }
-
-      // Move to verification step
-      setStep("verification")
     } catch (error) {
-      console.error("Registration error:", error)
-      setError(t("unexpectedError"))
+      console.error("Email submit error:", error)
+      setError(t("somethingWentWrong"))
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleVerificationSubmit = async (data: { code: string }) => {
-    setError(null)
+  const handleCodeSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (code.length !== 6) return
+
     setIsLoading(true)
+    setError("")
 
     try {
-      console.log(`Verifying code for ${userData.email}: ${data.code}`)
+      const result = await verifyCode(email, code, "registration")
 
-      const result = await verifyCode(userData.email, data.code, "registration")
-      console.log("Verification result:", result)
-
-      if (!result.success) {
-        setError(result.message || t("invalidVerificationCode"))
-        setIsLoading(false)
-        return
+      if (result.success) {
+        setStep("profile")
+      } else {
+        setError(result.message || t("invalidCode"))
+        setCode("")
       }
-
-      // Move to profile completion step
-      setStep("profile")
     } catch (error) {
-      console.error("Verification error:", error)
-      setError(t("unexpectedError"))
+      console.error("Code submit error:", error)
+      setError(t("somethingWentWrong"))
+      setCode("")
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleProfileSubmit = async (data: { address?: string }) => {
-    setError(null)
+  const handleProfileSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
     setIsLoading(true)
+    setError("")
 
     try {
-      console.log("Creating user profile with data:", { ...userData, ...data })
-
-      const createResult = await createUserProfile({
-        first_name: userData.firstName,
-        last_name: userData.lastName,
-        phone: userData.phone,
-        address: data.address,
+      const result = await createUserProfile({
+        first_name: firstName,
+        last_name: lastName,
+        phone: phone || undefined,
+        address: address || undefined,
       })
 
-      console.log("Create user profile result:", createResult)
-
-      if (!createResult.success) {
-        setError(createResult.message || t("registrationFailed"))
-        setIsLoading(false)
-        return
+      if (result.success) {
+        router.push(`/${router.locale}`)
+        router.refresh()
+      } else {
+        setError(result.message || t("failedToCreateProfile"))
       }
-
-      // Move to success step
-      setStep("success")
     } catch (error) {
-      console.error("Profile creation error:", error)
-      setError(t("unexpectedError"))
+      console.error("Profile submit error:", error)
+      setError(t("somethingWentWrong"))
     } finally {
       setIsLoading(false)
     }
   }
 
   const handleResendCode = async () => {
-    setError(null)
     setIsLoading(true)
+    setError("")
 
     try {
-      console.log(`Resending verification code to ${userData.email}`)
-
-      const result = await sendVerificationCode(userData.email, "registration")
-      console.log("Resend verification code result:", result)
+      const result = await sendVerificationCode(email, "registration")
 
       if (!result.success) {
-        setError(result.message || t("somethingWentWrong"))
+        setError(result.message || t("failedToSendCode"))
       }
     } catch (error) {
       console.error("Resend code error:", error)
-      setError(t("unexpectedError"))
+      setError(t("somethingWentWrong"))
     } finally {
       setIsLoading(false)
     }
   }
 
-  return (
-    <Card className="w-full max-w-md shadow-xl border-0 bg-white">
-      <CardHeader className="space-y-2 pb-4">
-        <div className="flex flex-col items-center space-y-2">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-green-500 to-emerald-600 shadow-lg">
-            {step === "success" ? (
-              <CheckCircle className="h-6 w-6 text-white" />
-            ) : (
-              <UserPlus className="h-6 w-6 text-white" />
-            )}
-          </div>
-          <div className="text-center space-y-1">
-            <CardTitle className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
-              {step === "success" ? t("registrationSuccessful") : t("createAccount")}
-            </CardTitle>
-            {step !== "success" && (
-              <CardDescription className="text-xs text-gray-600">
-                {t("alreadyHaveAccount")}{" "}
-                <Link
-                  href={`/${locale}/auth/login`}
-                  className="text-green-600 hover:text-green-700 font-medium hover:underline"
-                >
-                  {t("signIn")}
-                </Link>
-              </CardDescription>
-            )}
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {error && (
-          <Alert variant="destructive" className="border-red-200 bg-red-50">
-            <AlertDescription className="text-red-800">{error}</AlertDescription>
-          </Alert>
-        )}
+  const handleBackToEmail = () => {
+    setStep("email")
+    setCode("")
+    setError("")
+  }
 
-        {step === "initial" && (
-          <form onSubmit={initialForm.handleSubmit(handleInitialSubmit)} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="firstName" className="text-sm font-medium text-gray-700">
-                  {t("firstName")}
-                </Label>
-                <Input
-                  id="firstName"
-                  type="text"
-                  placeholder={t("firstNamePlaceholder")}
-                  {...initialForm.register("firstName")}
-                  disabled={isLoading}
-                  className="h-10 border-gray-200 focus:border-green-500 focus:ring-green-500 rounded-lg"
-                />
-                {initialForm.formState.errors.firstName && (
-                  <p className="text-sm text-red-600">{initialForm.formState.errors.firstName.message}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="lastName" className="text-sm font-medium text-gray-700">
-                  {t("lastName")}
-                </Label>
-                <Input
-                  id="lastName"
-                  type="text"
-                  placeholder={t("lastNamePlaceholder")}
-                  {...initialForm.register("lastName")}
-                  disabled={isLoading}
-                  className="h-10 border-gray-200 focus:border-green-500 focus:ring-green-500 rounded-lg"
-                />
-                {initialForm.formState.errors.lastName && (
-                  <p className="text-sm text-red-600">{initialForm.formState.errors.lastName.message}</p>
-                )}
-              </div>
-            </div>
+  const handleBackToCode = () => {
+    setStep("code")
+    setError("")
+  }
+
+  if (step === "email") {
+    return (
+      <Card className="w-full max-w-md mx-auto">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl font-bold text-center">{t("signUp")}</CardTitle>
+          <CardDescription className="text-center">{t("createNewAccount")}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleEmailSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm font-medium text-gray-700">
-                {t("email")}
-              </Label>
+              <Label htmlFor="email">{t("email")}</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder={t("emailPlaceholder")}
-                {...initialForm.register("email")}
+                placeholder={t("enterEmail")}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
                 disabled={isLoading}
-                className="h-10 border-gray-200 focus:border-green-500 focus:ring-green-500 rounded-lg"
               />
-              {initialForm.formState.errors.email && (
-                <p className="text-sm text-red-600">{initialForm.formState.errors.email.message}</p>
-              )}
             </div>
-            <Controller
-              name="phone"
-              control={initialForm.control}
-              render={({ field }) => (
-                <CustomPhoneInput
-                  id="phone"
-                  label={t("phone")}
-                  value={field.value}
-                  onChange={field.onChange}
-                  placeholder={t("phonePlaceholder")}
-                  disabled={isLoading}
-                  error={initialForm.formState.errors.phone?.message}
-                  required
-                />
-              )}
-            />
-            <Button
-              type="submit"
-              className="w-full h-10 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
-              disabled={isLoading}
-            >
+
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
+            <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? (
-                <div className="flex items-center space-x-2">
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span>{t("processing")}</span>
-                </div>
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {t("checking")}
+                </>
               ) : (
-                t("continueRegistration")
+                <>
+                  <Mail className="mr-2 h-4 w-4" />
+                  {t("continue")}
+                </>
               )}
             </Button>
           </form>
-        )}
 
-        {step === "verification" && (
-          <div className="space-y-4">
+          <div className="mt-4 text-center text-sm">
+            <span className="text-muted-foreground">{t("alreadyHaveAccount")} </span>
+            <Button variant="link" className="p-0 h-auto" asChild>
+              <a href={`/${router.locale}/auth/signin`}>{t("signIn")}</a>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (step === "code") {
+    return (
+      <Card className="w-full max-w-md mx-auto">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl font-bold text-center">{t("enterCode")}</CardTitle>
+          <CardDescription className="text-center">
+            {t("codeSentTo")} <strong>{email}</strong>
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleCodeSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="code">{t("verificationCode")}</Label>
+              <div className="flex justify-center">
+                <InputOTP
+                  value={code}
+                  onChange={setCode}
+                  maxLength={6}
+                  disabled={isLoading}
+                  onComplete={() => {
+                    // Auto-submit when code is complete
+                    if (code.length === 6) {
+                      handleCodeSubmit(new Event("submit") as any)
+                    }
+                  }}
+                >
+                  <InputOTPGroup>
+                    <InputOTPSlot index={0} />
+                    <InputOTPSlot index={1} />
+                    <InputOTPSlot index={2} />
+                    <InputOTPSlot index={3} />
+                    <InputOTPSlot index={4} />
+                    <InputOTPSlot index={5} />
+                  </InputOTPGroup>
+                </InputOTP>
+              </div>
+            </div>
+
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
+            <div className="space-y-2">
+              <Button type="submit" className="w-full" disabled={isLoading || code.length !== 6}>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {t("verifying")}
+                  </>
+                ) : (
+                  t("verify")
+                )}
+              </Button>
+
+              <div className="flex space-x-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1 bg-transparent"
+                  onClick={handleBackToEmail}
+                  disabled={isLoading}
+                >
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  {t("back")}
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1 bg-transparent"
+                  onClick={handleResendCode}
+                  disabled={isLoading}
+                >
+                  {t("resendCode")}
+                </Button>
+              </div>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  return (
+    <Card className="w-full max-w-md mx-auto">
+      <CardHeader className="space-y-1">
+        <CardTitle className="text-2xl font-bold text-center">{t("completeProfile")}</CardTitle>
+        <CardDescription className="text-center">{t("fillProfileInfo")}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleProfileSubmit} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="firstName">{t("firstName")}</Label>
+              <Input
+                id="firstName"
+                placeholder={t("enterFirstName")}
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                required
+                disabled={isLoading}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="lastName">{t("lastName")}</Label>
+              <Input
+                id="lastName"
+                placeholder={t("enterLastName")}
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                required
+                disabled={isLoading}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="phone">
+              {t("phone")} ({t("optional")})
+            </Label>
+            <Input
+              id="phone"
+              type="tel"
+              placeholder={t("enterPhone")}
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              disabled={isLoading}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="address">
+              {t("address")} ({t("optional")})
+            </Label>
+            <Input
+              id="address"
+              placeholder={t("enterAddress")}
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              disabled={isLoading}
+            />
+          </div>
+
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          <div className="space-y-2">
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {t("creating")}
+                </>
+              ) : (
+                <>
+                  <User className="mr-2 h-4 w-4" />
+                  {t("createAccount")}
+                </>
+              )}
+            </Button>
+
             <Button
-              variant="ghost"
-              size="sm"
-              className="mb-4 -ml-2 flex items-center text-gray-600 hover:text-gray-800"
-              onClick={() => setStep("initial")}
+              type="button"
+              variant="outline"
+              className="w-full bg-transparent"
+              onClick={handleBackToCode}
               disabled={isLoading}
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
-              {t("backToSignIn")}
-            </Button>
-
-            <div className="text-center space-y-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 mx-auto">
-                <Shield className="h-6 w-6 text-blue-600" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">{t("verificationCodeSent")}</h3>
-                <p className="text-sm text-gray-600 mt-1">{userData.email}</p>
-              </div>
-            </div>
-
-            <form onSubmit={verificationForm.handleSubmit(handleVerificationSubmit)} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="code" className="text-sm font-medium text-gray-700">
-                  {t("enterVerificationCode")}
-                </Label>
-                <Input
-                  id="code"
-                  type="text"
-                  placeholder="123456"
-                  {...verificationForm.register("code")}
-                  disabled={isLoading}
-                  maxLength={6}
-                  className="h-10 text-center text-lg tracking-widest border-gray-200 focus:border-green-500 focus:ring-green-500 rounded-lg"
-                />
-                {verificationForm.formState.errors.code && (
-                  <p className="text-sm text-red-600">{verificationForm.formState.errors.code.message}</p>
-                )}
-              </div>
-              <Button
-                type="submit"
-                className="w-full h-10 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <div className="flex items-center space-x-2">
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>{t("processing")}</span>
-                  </div>
-                ) : (
-                  t("verifyCode")
-                )}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full h-10 border-gray-200 text-gray-700 hover:bg-gray-50 rounded-lg bg-transparent"
-                onClick={handleResendCode}
-                disabled={isLoading}
-              >
-                {t("resendCode")}
-              </Button>
-            </form>
-          </div>
-        )}
-
-        {step === "profile" && (
-          <div className="space-y-4">
-            <div className="text-center space-y-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 mx-auto">
-                <UserPlus className="h-6 w-6 text-green-600" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">{t("completeProfile")}</h3>
-                <p className="text-sm text-gray-600 mt-1">{t("completeProfileDescription")}</p>
-              </div>
-            </div>
-
-            <form onSubmit={profileForm.handleSubmit(handleProfileSubmit)} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="address" className="text-sm font-medium text-gray-700">
-                  {t("address")} ({t("optional")})
-                </Label>
-                <Input
-                  id="address"
-                  type="text"
-                  placeholder={t("addressPlaceholder")}
-                  {...profileForm.register("address")}
-                  disabled={isLoading}
-                  className="h-10 border-gray-200 focus:border-green-500 focus:ring-green-500 rounded-lg"
-                />
-              </div>
-              <Button
-                type="submit"
-                className="w-full h-10 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <div className="flex items-center space-x-2">
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>{t("processing")}</span>
-                  </div>
-                ) : (
-                  t("completeRegistration")
-                )}
-              </Button>
-            </form>
-          </div>
-        )}
-
-        {step === "success" && (
-          <div className="space-y-4 text-center">
-            <div className="space-y-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 mx-auto">
-                <CheckCircle className="h-6 w-6 text-green-600" />
-              </div>
-              <div>
-                <h3 className="text-xl font-semibold text-green-600">{t("registrationSuccessful")}</h3>
-                <p className="mt-2 text-gray-600">{t("accountCreatedSuccessfully")}</p>
-              </div>
-            </div>
-            <Button
-              type="button"
-              className="w-full h-10 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
-              onClick={() => router.push(`/${locale}`)}
-            >
-              {t("goToHomePage")}
+              {t("back")}
             </Button>
           </div>
-        )}
+        </form>
       </CardContent>
-      <CardFooter>
-        <DevEmailNotification />
-      </CardFooter>
     </Card>
   )
 }

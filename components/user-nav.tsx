@@ -1,12 +1,9 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
-import { LogOut, Settings, UserCircle } from "lucide-react"
-
-import { Button } from "@/components/ui/button"
+import Link from "next/link"
+import { useParams, useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,37 +12,46 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
+import { LogOut, Settings, UserIcon } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { signOutWithRedirect } from "@/app/actions/auth-api"
 
-interface UserNavProps {
-  locale: string
-}
-
-export function UserNav({ locale }: UserNavProps) {
-  const t = useTranslations("Navigation")
+export function UserNav({ user: initialUser }: { user?: any }) {
+  const t = useTranslations("UserNav")
+  const params = useParams()
   const router = useRouter()
-  const [user, setUser] = useState<any>(null)
+  const locale = params.locale as string
+  const [user, setUser] = useState(initialUser)
   const [profile, setProfile] = useState<any>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(!initialUser)
 
   useEffect(() => {
     const supabase = createClient()
 
-    // Get initial session
+    // Get initial session if no user provided
     const getInitialSession = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
+      if (!initialUser) {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession()
 
-      if (session?.user) {
-        setUser(session.user)
+        if (session?.user) {
+          setUser(session.user)
 
-        // Get profile data
-        const { data: profileData } = await supabase.from("profiles").select("*").eq("id", session.user.id).single()
+          // Get profile data
+          const { data: profileData } = await supabase.from("profiles").select("*").eq("id", session.user.id).single()
 
-        setProfile(profileData)
+          setProfile(profileData)
+        }
+      } else if (initialUser) {
+        // Get profile data for provided user
+        const getProfile = async () => {
+          const { data: profileData } = await supabase.from("profiles").select("*").eq("id", initialUser.id).single()
+          setProfile(profileData)
+        }
+        getProfile()
       }
 
       setIsLoading(false)
@@ -73,53 +79,58 @@ export function UserNav({ locale }: UserNavProps) {
     })
 
     return () => subscription.unsubscribe()
-  }, [])
+  }, [initialUser])
 
-  const handleSignOut = async () => {
+  const handleLogout = async () => {
     try {
       await signOutWithRedirect(locale)
     } catch (error) {
       console.error("Error signing out:", error)
       router.push(`/${locale}`)
+      router.refresh()
     }
   }
 
   if (isLoading) {
     return (
-      <div className="flex items-center space-x-2">
-        <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse" />
-      </div>
+      <Button variant="outline" size="sm" disabled>
+        Loading...
+      </Button>
     )
   }
 
   if (!user) {
     return (
-      <div className="flex items-center space-x-2">
-        <Button variant="ghost" size="sm" asChild>
-          <Link href={`/${locale}/auth/signin`}>{t("signIn")}</Link>
+      <Link href={`/${locale}/auth/signin`}>
+        <Button variant="outline" size="sm">
+          {t("login")}
         </Button>
-        <Button size="sm" asChild>
-          <Link href={`/${locale}/auth/register`}>{t("register")}</Link>
-        </Button>
-      </div>
+      </Link>
     )
   }
 
+  // Create display name from profile or user data
   const displayName = profile
     ? `${profile.first_name || ""} ${profile.last_name || ""}`.trim() || user.email
-    : user.email
+    : user.user_metadata?.full_name || user.email
 
   const initials =
     profile && profile.first_name && profile.last_name
       ? `${profile.first_name[0]}${profile.last_name[0]}`.toUpperCase()
-      : user.email?.[0]?.toUpperCase() || "U"
+      : displayName
+          ?.split(" ")
+          .map((n: string) => n[0])
+          .join("")
+          .toUpperCase() || user.email?.substring(0, 2).toUpperCase()
+
+  // Check if user is admin
+  const isAdmin = user.user_metadata?.role === "admin" || user.app_metadata?.role === "admin"
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-8 w-8">
-            <AvatarImage src={profile?.avatar_url || "/placeholder.svg"} alt={displayName} />
             <AvatarFallback>{initials}</AvatarFallback>
           </Avatar>
         </Button>
@@ -127,29 +138,29 @@ export function UserNav({ locale }: UserNavProps) {
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{displayName}</p>
+            <p className="text-sm font-medium leading-none">{displayName || t("account")}</p>
             <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link href={`/${locale}/profile`} className="flex items-center">
-            <UserCircle className="mr-2 h-4 w-4" />
+        <Link href={`/${locale}/profile`}>
+          <DropdownMenuItem>
+            <UserIcon className="mr-2 h-4 w-4" />
             <span>{t("profile")}</span>
-          </Link>
-        </DropdownMenuItem>
-        {user.user_metadata?.role === "admin" && (
-          <DropdownMenuItem asChild>
-            <Link href={`/${locale}/admin`} className="flex items-center">
-              <Settings className="mr-2 h-4 w-4" />
-              <span>{t("admin")}</span>
-            </Link>
           </DropdownMenuItem>
+        </Link>
+        {isAdmin && (
+          <Link href={`/${locale}/admin`}>
+            <DropdownMenuItem>
+              <Settings className="mr-2 h-4 w-4" />
+              <span>{t("adminPanel")}</span>
+            </DropdownMenuItem>
+          </Link>
         )}
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleSignOut}>
+        <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
           <LogOut className="mr-2 h-4 w-4" />
-          <span>{t("signOut")}</span>
+          <span>{t("logout")}</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

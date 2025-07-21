@@ -1,92 +1,88 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { useTranslations } from "next-intl"
 
+import { useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Mail, ArrowLeft, Shield, CheckCircle } from "lucide-react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp"
+import { Loader2, Mail, ArrowLeft } from "lucide-react"
 import { checkUserExists, sendVerificationCode, verifyCode } from "@/app/actions/auth-api"
 
 interface ModernLoginFormProps {
   locale: string
 }
 
-export function ModernLoginForm({ locale }: ModernLoginFormProps) {
+export default function ModernLoginForm({ locale }: ModernLoginFormProps) {
   const t = useTranslations("Auth")
   const router = useRouter()
-  const [isLoading, setIsLoading] = useState(false)
-  const [email, setEmail] = useState("")
-  const [error, setError] = useState("")
-  const [step, setStep] = useState<"initial" | "verification">("initial")
-  const [verificationCode, setVerificationCode] = useState("")
+  const searchParams = useSearchParams()
+  const redirectTo = searchParams.get("redirect") || `/${locale}`
 
-  const handleInitialSubmit = async (e: React.FormEvent) => {
+  const [step, setStep] = useState<"email" | "code">("email")
+  const [email, setEmail] = useState("")
+  const [code, setCode] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState("")
+  const [isNewUser, setIsNewUser] = useState(false)
+
+  const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     setError("")
 
     try {
-      console.log(`Submitting login with email: ${email}`)
-
       // Check if user exists
-      const userExists = await checkUserExists(email)
+      const userCheck = await checkUserExists(email)
 
-      if (!userExists.success) {
-        setError(userExists.message || t("userNotFound"))
-        setIsLoading(false)
-        return
+      if (userCheck.success) {
+        // Existing user - send login code
+        setIsNewUser(false)
+        const result = await sendVerificationCode(email, "login")
+
+        if (result.success) {
+          setStep("code")
+        } else {
+          setError(result.message || t("failedToSendCode"))
+        }
+      } else {
+        // New user - redirect to registration
+        router.push(`/${locale}/auth/register?email=${encodeURIComponent(email)}`)
       }
-
-      console.log("User exists:", userExists)
-
-      // Send verification code
-      const result = await sendVerificationCode(email, "login")
-
-      if (!result.success) {
-        setError(result.message || t("somethingWentWrong"))
-        setIsLoading(false)
-        return
-      }
-
-      // Move to verification step
-      setStep("verification")
     } catch (error) {
-      console.error("Login error:", error)
+      console.error("Email submit error:", error)
       setError(t("somethingWentWrong"))
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleVerificationSubmit = async (e: React.FormEvent) => {
+  const handleCodeSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (code.length !== 6) return
+
     setIsLoading(true)
     setError("")
 
     try {
-      // Verify the code
-      const result = await verifyCode(email, verificationCode, "login")
+      const result = await verifyCode(email, code, "login")
 
-      if (!result.success) {
-        setError(result.message || t("invalidVerificationCode"))
-        setIsLoading(false)
-        return
+      if (result.success) {
+        router.push(redirectTo)
+        router.refresh()
+      } else {
+        setError(result.message || t("invalidCode"))
+        setCode("")
       }
-
-      // Redirect to appropriate page after successful login
-      router.push(`/${locale}`)
-      router.refresh()
     } catch (error) {
-      console.error("Verification error:", error)
+      console.error("Code submit error:", error)
       setError(t("somethingWentWrong"))
+      setCode("")
     } finally {
       setIsLoading(false)
     }
@@ -100,7 +96,7 @@ export function ModernLoginForm({ locale }: ModernLoginFormProps) {
       const result = await sendVerificationCode(email, "login")
 
       if (!result.success) {
-        setError(result.message || t("somethingWentWrong"))
+        setError(result.message || t("failedToSendCode"))
       }
     } catch (error) {
       console.error("Resend code error:", error)
@@ -110,159 +106,145 @@ export function ModernLoginForm({ locale }: ModernLoginFormProps) {
     }
   }
 
-  return (
-    <Card className="w-full max-w-md shadow-xl border-0 bg-white">
-      <CardHeader className="space-y-2 pb-4">
-        <div className="flex flex-col items-center space-y-2">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg">
-            <Shield className="h-6 w-6 text-white" />
-          </div>
-          <div className="text-center space-y-1">
-            <CardTitle className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
-              {t("signInToAccount")}
-            </CardTitle>
-            <p className="text-xs text-gray-600 max-w-sm">{t("signInDescription")}</p>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {error && (
-          <Alert variant="destructive" className="border-red-200 bg-red-50">
-            <AlertDescription className="text-red-800">{error}</AlertDescription>
-          </Alert>
-        )}
+  const handleBackToEmail = () => {
+    setStep("email")
+    setCode("")
+    setError("")
+  }
 
-        {step === "initial" && (
-          <>
-            <Tabs defaultValue="email" className="w-full">
-              <TabsList className="grid w-full grid-cols-1 bg-gray-100">
-                <TabsTrigger value="email" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">
+  if (step === "email") {
+    return (
+      <Card className="w-full max-w-md mx-auto">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl font-bold text-center">{t("signIn")}</CardTitle>
+          <CardDescription className="text-center">{t("enterEmailToSignIn")}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleEmailSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">{t("email")}</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder={t("enterEmail")}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                disabled={isLoading}
+              />
+            </div>
+
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {t("checking")}
+                </>
+              ) : (
+                <>
                   <Mail className="mr-2 h-4 w-4" />
-                  {t("emailLogin")}
-                </TabsTrigger>
-              </TabsList>
-              <TabsContent value="email" className="mt-6">
-                <form onSubmit={handleInitialSubmit} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="email" className="text-sm font-medium text-gray-700">
-                      {t("email")}
-                    </Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder={t("emailPlaceholder")}
-                      className="h-10 border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg"
-                      required
-                      disabled={isLoading}
-                    />
-                  </div>
-                  <Button
-                    type="submit"
-                    className="w-full h-10 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      <div className="flex items-center space-x-2">
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        <span>{t("processing")}</span>
-                      </div>
-                    ) : (
-                      t("continue")
-                    )}
-                  </Button>
-                </form>
-              </TabsContent>
-            </Tabs>
+                  {t("continue")}
+                </>
+              )}
+            </Button>
+          </form>
 
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-gray-200" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white px-2 text-gray-500">or</span>
-              </div>
-            </div>
+          <div className="mt-4 text-center text-sm">
+            <span className="text-muted-foreground">{t("dontHaveAccount")} </span>
+            <Button variant="link" className="p-0 h-auto" asChild>
+              <a href={`/${locale}/auth/register`}>{t("signUp")}</a>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
 
-            <div className="text-center text-sm space-y-2">
-              <p className="text-gray-600">{t("noAccount")}</p>
-              <Link
-                href={`/${locale}/auth/register`}
-                className="inline-flex items-center text-blue-600 hover:text-blue-700 font-medium hover:underline transition-colors"
+  return (
+    <Card className="w-full max-w-md mx-auto">
+      <CardHeader className="space-y-1">
+        <CardTitle className="text-2xl font-bold text-center">{t("enterCode")}</CardTitle>
+        <CardDescription className="text-center">
+          {t("codeSentTo")} <strong>{email}</strong>
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleCodeSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="code">{t("verificationCode")}</Label>
+            <div className="flex justify-center">
+              <InputOTP
+                value={code}
+                onChange={setCode}
+                maxLength={6}
+                disabled={isLoading}
+                onComplete={() => {
+                  // Auto-submit when code is complete
+                  if (code.length === 6) {
+                    handleCodeSubmit(new Event("submit") as any)
+                  }
+                }}
               >
-                {t("register")}
-              </Link>
+                <InputOTPGroup>
+                  <InputOTPSlot index={0} />
+                  <InputOTPSlot index={1} />
+                  <InputOTPSlot index={2} />
+                  <InputOTPSlot index={3} />
+                  <InputOTPSlot index={4} />
+                  <InputOTPSlot index={5} />
+                </InputOTPGroup>
+              </InputOTP>
             </div>
-          </>
-        )}
+          </div>
 
-        {step === "verification" && (
-          <div className="space-y-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="mb-4 -ml-2 flex items-center text-gray-600 hover:text-gray-800"
-              onClick={() => setStep("initial")}
-              disabled={isLoading}
-            >
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              {t("backToEmail")}
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          <div className="space-y-2">
+            <Button type="submit" className="w-full" disabled={isLoading || code.length !== 6}>
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {t("verifying")}
+                </>
+              ) : (
+                t("signIn")
+              )}
             </Button>
 
-            <div className="text-center space-y-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100 mx-auto">
-                <CheckCircle className="h-5 w-5 text-green-600" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">{t("verificationCodeSent")}</h3>
-                <p className="text-sm text-gray-600 mt-1">{email}</p>
-              </div>
-            </div>
-
-            <form onSubmit={handleVerificationSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="code" className="text-sm font-medium text-gray-700">
-                  {t("verificationCode")}
-                </Label>
-                <Input
-                  id="code"
-                  type="text"
-                  value={verificationCode}
-                  onChange={(e) => setVerificationCode(e.target.value)}
-                  placeholder={t("verificationCodePlaceholder")}
-                  maxLength={6}
-                  className="h-10 text-center text-lg tracking-widest border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg"
-                  required
-                  disabled={isLoading}
-                />
-              </div>
-              <Button
-                type="submit"
-                className="w-full h-10 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <div className="flex items-center space-x-2">
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>{t("processing")}</span>
-                  </div>
-                ) : (
-                  t("verifyAndLogin")
-                )}
-              </Button>
+            <div className="flex space-x-2">
               <Button
                 type="button"
                 variant="outline"
-                className="w-full h-10 border-gray-200 text-gray-700 hover:bg-gray-50 rounded-lg bg-transparent"
+                className="flex-1 bg-transparent"
+                onClick={handleBackToEmail}
+                disabled={isLoading}
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                {t("back")}
+              </Button>
+
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1 bg-transparent"
                 onClick={handleResendCode}
                 disabled={isLoading}
               >
                 {t("resendCode")}
               </Button>
-            </form>
+            </div>
           </div>
-        )}
+        </form>
       </CardContent>
     </Card>
   )

@@ -1,42 +1,32 @@
-import { createServerClient as createSupabaseServerClient } from "@supabase/ssr"
+import { createServerClient, type CookieOptions } from "@supabase/ssr"
 import { cookies } from "next/headers"
 
 export function createClient() {
   const cookieStore = cookies()
-  const supabaseUrl = process.env.devicehelp_NEXT_PUBLIC_SUPABASE_URL!
-  const supabaseAnonKey = process.env.devicehelp_NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
-  if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error("Missing Supabase environment variables for devicehelp database")
-  }
-
-  return createSupabaseServerClient(supabaseUrl, supabaseAnonKey, {
+  return createServerClient(process.env.devicehelp_SUPABASE_URL!, process.env.devicehelp_SUPABASE_ANON_KEY!, {
     cookies: {
       get(name: string) {
         return cookieStore.get(name)?.value
       },
-      set(
-        name: string,
-        value: string,
-        options: {
-          path: string
-          maxAge: number
-          domain?: string
-          secure: boolean
-          sameSite: "lax" | "strict" | "none"
-        },
-      ) {
-        cookieStore.set({ name, value, ...options })
+      set(name: string, value: string, options: CookieOptions) {
+        try {
+          cookieStore.set({ name, value, ...options })
+        } catch (error) {
+          // The `set` method was called from a Server Component.
+          // This can be ignored if you have middleware refreshing
+          // user sessions.
+        }
       },
-      remove(
-        name: string,
-        options: { path: string; domain?: string; secure: boolean; sameSite: "lax" | "strict" | "none" },
-      ) {
-        cookieStore.set({ name, value: "", ...options, maxAge: 0 })
+      remove(name: string, options: CookieOptions) {
+        try {
+          cookieStore.set({ name, value: "", ...options })
+        } catch (error) {
+          // The `delete` method was called from a Server Component.
+          // This can be ignored if you have middleware refreshing
+          // user sessions.
+        }
       },
     },
   })
 }
-
-export const createServerClient = createClient
-export const createServerSupabaseClient = createClient
