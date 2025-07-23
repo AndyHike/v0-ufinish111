@@ -77,6 +77,27 @@ async function isUserAdmin(sessionId: string): Promise<boolean> {
   }
 }
 
+async function hasValidSession(sessionId: string): Promise<boolean> {
+  try {
+    const supabase = createClient()
+
+    const { data: session, error } = await supabase
+      .from("sessions")
+      .select("id, expires_at")
+      .eq("id", sessionId)
+      .single()
+
+    if (error || !session || new Date(session.expires_at) < new Date()) {
+      return false
+    }
+
+    return true
+  } catch (error) {
+    console.error("Error checking session validity:", error)
+    return false
+  }
+}
+
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
   const supportedLocales = ["uk", "cs", "en"]
@@ -86,11 +107,20 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // ТИМЧАСОВО: Блокуємо всі auth маршрути
+  // ТИМЧАСОВО: Блокуємо доступ до сторінок авторизації для нових користувачів
   if (pathname.includes("/auth/") || pathname.includes("/login")) {
-    const locale = pathname.split("/")[1]
-    const validLocale = supportedLocales.includes(locale) ? locale : await getDefaultLanguage()
-    return NextResponse.redirect(new URL(`/${validLocale}`, request.url))
+    const sessionId = request.cookies.get("session_id")?.value
+
+    // Якщо користувач вже має валідну сесію, дозволяємо доступ (для адміна)
+    if (sessionId && (await hasValidSession(sessionId))) {
+      // Дозволяємо доступ до auth сторінок для тих хто вже увійшов
+      return intlMiddleware(request)
+    } else {
+      // Для нових користувачів - перенаправляємо на головну
+      const locale = pathname.split("/")[1]
+      const validLocale = supportedLocales.includes(locale) ? locale : await getDefaultLanguage()
+      return NextResponse.redirect(new URL(`/${validLocale}`, request.url))
+    }
   }
 
   // Check maintenance mode FIRST
@@ -144,10 +174,8 @@ export async function middleware(request: NextRequest) {
         // Get locale from URL
         const locale = pathname.split("/")[1] || "uk"
 
-        // Redirect to login page
-        const redirectUrl = new URL(`/${locale}/auth/signin`, request.url)
-        redirectUrl.searchParams.set("redirect", pathname)
-        return NextResponse.redirect(redirectUrl)
+        // ТИМЧАСОВО: Замість перенаправлення на логін, перенаправляємо на головну
+        return NextResponse.redirect(new URL(`/${locale}`, request.url))
       }
 
       // Verify that the session exists in the database and is valid
@@ -161,13 +189,11 @@ export async function middleware(request: NextRequest) {
           .single()
 
         if (error || !session || new Date(session.expires_at) < new Date()) {
-          // Session is invalid or expired, redirect to login
+          // Session is invalid or expired, redirect to home instead of login
           const locale = pathname.split("/")[1] || "uk"
-          const redirectUrl = new URL(`/${locale}/auth/signin`, request.url)
-          redirectUrl.searchParams.set("redirect", pathname)
 
           // Clear the invalid session cookie
-          const response = NextResponse.redirect(redirectUrl)
+          const response = NextResponse.redirect(new URL(`/${locale}`, request.url))
           response.cookies.delete("session_id")
           return response
         }

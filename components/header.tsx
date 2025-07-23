@@ -22,6 +22,7 @@ import {
   Wrench,
 } from "lucide-react"
 import { LanguageSwitcher } from "@/components/language-switcher"
+import { UserNav } from "@/components/user-nav"
 import { useState, useEffect, useRef } from "react"
 import { MobileNav } from "@/components/mobile-nav"
 import { useSiteSettings } from "@/hooks/use-site-settings"
@@ -393,7 +394,7 @@ export function Header({ user }) {
           {/* Мова та користувач */}
           <div className="flex items-center gap-2 flex-shrink-0">
             <LanguageSwitcher className="flex" />
-            {/* Тимчасово прибрано UserNav */}
+            <UserNav user={user} />
           </div>
         </div>
       </header>
