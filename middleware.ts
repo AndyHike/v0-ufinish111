@@ -86,6 +86,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
+  // ТИМЧАСОВО: Блокуємо всі auth маршрути
+  if (pathname.includes("/auth/") || pathname.includes("/login")) {
+    const locale = pathname.split("/")[1]
+    const validLocale = supportedLocales.includes(locale) ? locale : await getDefaultLanguage()
+    return NextResponse.redirect(new URL(`/${validLocale}`, request.url))
+  }
+
   // Check maintenance mode FIRST
   const maintenanceEnabled = await isMaintenanceModeEnabled()
 
