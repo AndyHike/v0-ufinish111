@@ -95,7 +95,7 @@
     "orderService": "Замовити послугу",
     "askQuestion": "Задати питання",
     "whatIncluded": "Що входить у послугу",
-    "frequentQuestions": "Часті питання",
+    "frequentQuestions": "Часті п��тання",
     "haveQuestions": "Залишилися питання?",
     "expertsReady": "Наші експерти готові відповісти на всі ваші питання та надати професійну консультацію",
     "priceOnRequest": "За запитом",
@@ -325,7 +325,7 @@
     "ourLocation": "Наше розташування",
     "mapTitle": "Карта розташування",
     "nameLabel": "Ім'я",
-    "namePlaceholder": "Введіть ваше ім'я",
+    "namePlaceholder": "Введіть ваш�� ім'я",
     "emailLabel": "Email",
     "emailPlaceholder": "Введіть ваш email",
     "phoneLabel": "Телефон",
@@ -954,7 +954,12 @@
     "whatNext": "Що далі?",
     "emailConfirmation": "Ви отримаєте підтвердження на email",
     "managerContact": "Наш менеджер зв'яжеться з вами",
-    "appointmentReminder": "Підтвердимо час зустрічі"
+    "appointmentReminder": "Підтвердимо час зустрічі",
+    "nextSteps": "Що далі?",
+    "step1": "Ви отримаєте підтвердження на email",
+    "step2": "Наш менеджер зв'яжеться з вами",
+    "step3": "Підтвердимо час зустрічі",
+    "workingHours": "Робочі години"
   }
 
 }

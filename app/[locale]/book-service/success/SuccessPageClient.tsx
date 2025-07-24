@@ -74,7 +74,7 @@ export default function SuccessPageClient({ locale }: Props) {
                 </div>
                 <div className="flex items-center gap-2">
                   <Phone className="h-4 w-4" />
-                  <span>+380 XX XXX XXXX</span>
+                  <span>+420 775 848 259</span>
                 </div>
               </div>
             </div>

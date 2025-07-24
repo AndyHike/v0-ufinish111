@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // Спочатку спробуємо знайти за слагом
   let { data: series } = await supabase.from("series").select("*, brands(name)").eq("slug", slug).single()
 
-  // Якщо не знайдено за слагом, спробуємо знайти за ID
+  // Якщо не знайдено за слагом, спробуємо з��айти за ID
   if (!series) {
     const { data } = await supabase.from("series").select("*, brands(name)").eq("id", slug).single()
     series = data

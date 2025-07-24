@@ -640,7 +640,12 @@
     "whatNext": "What's next?",
     "emailConfirmation": "You will receive confirmation via email",
     "managerContact": "Our manager will contact you",
-    "appointmentReminder": "We will confirm the appointment time"
-  }
+    "appointmentReminder": "We will confirm the appointment time",
+    "nextSteps": "What's next?",
+    "step1": "You will receive confirmation via email",
+    "step2": "Our manager will contact you",
+    "step3": "We will confirm the appointment time",
+    "workingHours": "Working hours"
+      }
 
 }
