@@ -79,12 +79,9 @@ export default function SuccessPageClient({ locale }: Props) {
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-3 pt-6">
-              <Button asChild className="flex-1 bg-gray-900 hover:bg-gray-800">
-                <Link href={`/${locale}`}>{commonT("backToHome")}</Link>
-              </Button>
-              <Button asChild variant="outline" className="flex-1 bg-transparent">
-                <Link href={`/${locale}/brands`}>Переглянути всі послуги</Link>
+            <div className="pt-6">
+              <Button asChild className="w-full bg-gray-900 hover:bg-gray-800">
+                <Link href={`/${locale || "cs"}`}>{commonT("backToHome")}</Link>
               </Button>
             </div>
           </CardContent>

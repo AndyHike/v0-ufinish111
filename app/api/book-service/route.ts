@@ -123,7 +123,8 @@ async function sendBookingConfirmationEmail(
       addressDetails: "Bělohorská 209/133, 169 00 Praha 6-Břevnov",
       contactPhone: "Contact Phone:",
       paymentInfo: "Payment Information:",
-      paymentDetails: "Payment is made after the service is completed. We accept cash and card payments.",
+      paymentDetails:
+        "Payment is made after the service is completed. We accept cash, QR code payments, and bank transfers.",
       footer: "We will contact you within 24 hours to confirm your appointment.",
       regards: "Best regards,\nMobile Repair Service Team",
     },
@@ -144,7 +145,8 @@ async function sendBookingConfirmationEmail(
       addressDetails: "Bělohorská 209/133, 169 00 Praha 6-Břevnov",
       contactPhone: "Телефон для зв'язку:",
       paymentInfo: "Інформація про оплату:",
-      paymentDetails: "Оплата здійснюється після виконання послуги. Приймаємо готівку та картки.",
+      paymentDetails:
+        "Оплата здійснюється після виконання послуги. Приймаємо готівку, оплату QR кодом та банківський переказ.",
       footer: "Ми зв'яжемося з вами протягом 24 годин для підтвердження зустрічі.",
       regards: "З повагою,\nКоманда сервісу ремонту мобільних",
     },
@@ -165,7 +167,7 @@ async function sendBookingConfirmationEmail(
       addressDetails: "Bělohorská 209/133, 169 00 Praha 6-Břevnov",
       contactPhone: "Kontaktní telefon:",
       paymentInfo: "Informace o platbě:",
-      paymentDetails: "Platba se provádí po dokončení služby. Přijímáme hotovost i karty.",
+      paymentDetails: "Platba se provádí po dokončení služby. Přijímáme hotovost, platbu QR kódem a bankovní převod.",
       footer: "Budeme vás kontaktovat do 24 hodin pro potvrzení schůzky.",
       regards: "S pozdravem,\nTým servisu mobilních telefonů",
     },
