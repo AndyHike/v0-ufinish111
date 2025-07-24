@@ -12,7 +12,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Calendar, User, MessageSquare, ArrowLeft, Star, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { formatCurrency } from "@/lib/format-currency"
-import { createClient } from "@/lib/supabase/client"
 
 interface Props {
   locale: string
@@ -50,7 +49,6 @@ export default function BookServiceClient({ locale, serviceSlug, modelSlug }: Pr
   const t = useTranslations("BookService")
   const commonT = useTranslations("Common")
   const router = useRouter()
-  const supabase = createClient()
 
   const [bookingData, setBookingData] = useState<BookingData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -69,7 +67,7 @@ export default function BookServiceClient({ locale, serviceSlug, modelSlug }: Pr
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
-  // Завантажуємо дані за slug (аналогічно до service page)
+  // Завантажуємо дані через API endpoint (аналогічно до service page)
   useEffect(() => {
     if (!serviceSlug) {
       setError("Service not specified")
@@ -79,97 +77,47 @@ export default function BookServiceClient({ locale, serviceSlug, modelSlug }: Pr
 
     const fetchData = async () => {
       try {
-        // Отримуємо послугу з перекладами (аналогічно до services/[slug]/page.tsx)
-        const { data: service, error: serviceError } = await supabase
-          .from("services")
-          .select(`
-            id, position, warranty_months, duration_hours, warranty_period, image_url, slug,
-            services_translations(
-              name,
-              description,
-              detailed_description,
-              what_included,
-              benefits,
-              locale
-            )
-          `)
-          .eq("slug", serviceSlug)
-          .single()
-
-        if (serviceError || !service) {
-          throw new Error("Service not found")
-        }
-
-        // Фільтруємо переклад за поточною локаллю
-        const translation = service.services_translations?.find((t: any) => t.locale === locale)
-        if (!translation) {
-          throw new Error("Translation not found")
-        }
-
-        let sourceModel = null
-        let modelServicePrice = null
-
-        // Якщо є модель, отримуємо її дані та ціну (аналогічно до service page)
-        if (modelSlug) {
-          const { data: model, error: modelError } = await supabase
-            .from("models")
-            .select(`
-              id, name, slug, image_url,
-              brands(id, name, slug, logo_url)
-            `)
-            .eq("slug", modelSlug)
-            .single()
-
-          if (!modelError && model) {
-            sourceModel = model
-
-            // Отримуємо ціну з model_services
-            const { data: modelService } = await supabase
-              .from("model_services")
-              .select(`price, warranty_months, duration_hours`)
-              .eq("model_id", model.id)
-              .eq("service_id", service.id)
-              .single()
-
-            if (modelService) {
-              modelServicePrice = modelService.price
-            }
-          }
-        }
-
-        // Якщо немає конкретної ціни для моделі, отримуємо діапазон цін
-        let priceRange = null
-        if (!modelServicePrice) {
-          const { data: priceData } = await supabase
-            .from("model_services")
-            .select("price")
-            .eq("service_id", service.id)
-            .not("price", "is", null)
-
-          if (priceData && priceData.length > 0) {
-            const prices = priceData.map((p) => p.price).filter((p) => p !== null)
-            if (prices.length > 0) {
-              const minPrice = Math.min(...prices)
-              const maxPrice = Math.max(...prices)
-              priceRange = minPrice === maxPrice ? minPrice : { min: minPrice, max: maxPrice }
-            }
-          }
-        }
-
-        setBookingData({
-          service: {
-            id: service.id,
-            slug: service.slug,
-            name: translation.name,
-            description: translation.description,
-            image_url: service.image_url,
-            warranty_months: service.warranty_months,
-            warranty_period: service.warranty_period,
-            duration_hours: service.duration_hours,
-          },
-          model: sourceModel,
-          price: modelServicePrice || priceRange,
+        // Використовуємо існуючий API endpoint services/[slug]
+        const params = new URLSearchParams({
+          locale,
         })
+
+        if (modelSlug) {
+          params.set("model", modelSlug)
+        }
+
+        const response = await fetch(`/api/services/${serviceSlug}?${params.toString()}`)
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+
+        const serviceData = await response.json()
+
+        // Трансформуємо дані в потрібний формат
+        const transformedData: BookingData = {
+          service: {
+            id: serviceData.id,
+            slug: serviceData.slug,
+            name: serviceData.translation.name,
+            description: serviceData.translation.description,
+            image_url: serviceData.image_url,
+            warranty_months: serviceData.warranty_months,
+            warranty_period: serviceData.warranty_period,
+            duration_hours: serviceData.duration_hours,
+          },
+          model: serviceData.sourceModel,
+          price:
+            serviceData.modelServicePrice !== null
+              ? serviceData.modelServicePrice
+              : serviceData.minPrice !== null && serviceData.maxPrice !== null
+                ? serviceData.minPrice === serviceData.maxPrice
+                  ? serviceData.minPrice
+                  : { min: serviceData.minPrice, max: serviceData.maxPrice }
+                : null,
+        }
+
+        setBookingData(transformedData)
       } catch (err) {
         console.error("Error fetching booking data:", err)
         setError("Failed to load booking information")
@@ -179,7 +127,7 @@ export default function BookServiceClient({ locale, serviceSlug, modelSlug }: Pr
     }
 
     fetchData()
-  }, [serviceSlug, modelSlug, locale, supabase])
+  }, [serviceSlug, modelSlug, locale])
 
   // Генеруємо доступні дати (наступні 14 днів, тільки робочі дні)
   const getAvailableDates = () => {

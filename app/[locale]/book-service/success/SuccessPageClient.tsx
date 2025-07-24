@@ -3,7 +3,7 @@
 import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { CheckCircle, Home, MessageCircle } from "lucide-react"
+import { CheckCircle, Home, Phone } from "lucide-react"
 import Link from "next/link"
 
 interface Props {
@@ -27,8 +27,11 @@ export default function SuccessPageClient({ locale }: Props) {
 
           <CardContent className="text-center space-y-6">
             <div className="space-y-4">
-              <p className="text-gray-600 leading-relaxed">{t("successMessage")}</p>
-              <p className="text-sm text-gray-500">{t("contactSoon")}</p>
+              <p className="text-gray-600 text-lg">{t("successMessage")}</p>
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <p className="text-blue-800 font-medium">{t("contactInfo")}</p>
+                <p className="text-blue-600 text-sm mt-1">{t("responseTime")}</p>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -38,9 +41,9 @@ export default function SuccessPageClient({ locale }: Props) {
                   {commonT("backToHome")}
                 </Link>
               </Button>
-              <Button variant="outline" asChild>
+              <Button asChild variant="outline">
                 <Link href={`/${locale}/contact`}>
-                  <MessageCircle className="h-4 w-4 mr-2" />
+                  <Phone className="h-4 w-4 mr-2" />
                   {commonT("contactUs")}
                 </Link>
               </Button>
