@@ -3,76 +3,62 @@ import { sendBookingConfirmationEmail, sendNewBookingNotification } from "@/lib/
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
+    const bookingData = await request.json()
 
-    const {
-      bookingId,
-      serviceId,
-      serviceName,
-      brandName,
-      modelName,
-      seriesName,
-      bookingDate,
-      bookingTime,
-      customerName,
-      customerPhone,
-      customerEmail,
-      customerAddress,
-      price,
-      notes,
-      locale,
-    } = body
+    // Generate booking ID
+    const bookingId = `BK-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
 
-    // Validate required fields
-    if (
-      !bookingId ||
-      !serviceName ||
-      !brandName ||
-      !modelName ||
-      !bookingDate ||
-      !bookingTime ||
-      !customerName ||
-      !customerPhone ||
-      !customerEmail
-    ) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
-    }
-
-    const bookingData = {
+    const fullBookingData = {
       id: bookingId,
-      serviceName,
-      brandName,
-      modelName: seriesName ? `${seriesName} ${modelName}` : modelName,
-      bookingDate,
-      bookingTime,
-      customerName,
-      customerEmail,
-      customerPhone,
-      customerAddress,
-      price,
-      notes,
+      ...bookingData,
     }
 
     // Send confirmation email to customer
-    const customerEmailSent = await sendBookingConfirmationEmail(customerEmail, bookingData, locale)
+    const customerEmailSent = await sendBookingConfirmationEmail(
+      bookingData.customerEmail,
+      {
+        id: bookingId,
+        serviceName: bookingData.serviceName,
+        brandName: bookingData.brandName,
+        modelName: bookingData.modelName,
+        bookingDate: bookingData.bookingDate,
+        bookingTime: bookingData.bookingTime,
+        customerName: bookingData.customerName,
+        price: bookingData.price,
+      },
+      bookingData.locale,
+    )
 
     // Send notification email to admin
-    const adminEmailSent = await sendNewBookingNotification(bookingData, locale)
+    const adminEmailSent = await sendNewBookingNotification(
+      {
+        id: bookingId,
+        serviceName: bookingData.serviceName,
+        brandName: bookingData.brandName,
+        modelName: bookingData.modelName,
+        bookingDate: bookingData.bookingDate,
+        bookingTime: bookingData.bookingTime,
+        customerName: bookingData.customerName,
+        customerEmail: bookingData.customerEmail,
+        customerPhone: bookingData.customerPhone,
+        customerAddress: bookingData.customerAddress,
+        price: bookingData.price,
+        notes: bookingData.notes,
+      },
+      bookingData.locale,
+    )
 
     if (!customerEmailSent || !adminEmailSent) {
-      console.error("Failed to send one or more emails")
+      console.warn("Some emails failed to send")
     }
 
     return NextResponse.json({
       success: true,
       bookingId,
-      emailsSent: {
-        customer: customerEmailSent,
-        admin: adminEmailSent,
-      },
+      emailsSent: { customer: customerEmailSent, admin: adminEmailSent },
     })
   } catch (error) {
-    console.error("Booking API error:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    console.error("Error processing booking:", error)
+    return NextResponse.json({ error: "Failed to process booking" }, { status: 500 })
   }
 }

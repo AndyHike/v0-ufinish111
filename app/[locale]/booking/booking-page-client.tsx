@@ -2,229 +2,233 @@
 
 import type React from "react"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { Calendar } from "@/components/ui/calendar"
+import { useState, useEffect } from "react"
+import { useSearchParams, useRouter } from "next/navigation"
+import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { CalendarIcon, Clock, User, CreditCard } from "lucide-react"
-import { format, addDays, isWeekend, isBefore, startOfDay } from "date-fns"
-import { uk, enUS, cs } from "date-fns/locale"
+import { CalendarIcon, Clock, Phone, Mail, User, MapPin, FileText, Wrench, Smartphone } from "lucide-react"
+import { format, addDays, isWeekend } from "date-fns"
+import { uk, cs, enUS } from "date-fns/locale"
+import { useLocale } from "next-intl"
 import { toast } from "sonner"
 
-type BookingData = {
-  service: {
-    id: string
-    slug: string
-    name: string
-    price: number | null
-  }
-  model: {
-    id: string
-    name: string
-    slug: string
-    image_url: string | null
-    brand: {
-      id: string
-      name: string
-      slug: string
-      logo_url: string | null
-    }
-    series: {
-      id: string
-      name: string
-      slug: string
-    } | null
-  }
-  availableServices: Array<{
-    id: string
-    slug: string
-    name: string
-    price: number | null
-  }>
+interface ServiceInfo {
+  id: string
+  name: string
+  price: number | null
 }
 
-type Props = {
-  bookingData: BookingData
-  locale: string
+interface ModelInfo {
+  id: string
+  name: string
+  brand_name: string
+  series_name: string
+  services: ServiceInfo[]
 }
 
-const timeSlots = [
-  "09:00",
-  "09:30",
-  "10:00",
-  "10:30",
-  "11:00",
-  "11:30",
-  "12:00",
-  "12:30",
-  "13:00",
-  "13:30",
-  "14:00",
-  "14:30",
-  "15:00",
-  "15:30",
-  "16:00",
-  "16:30",
-  "17:00",
-  "17:30",
-  "18:00",
-  "18:30",
-  "19:00",
-]
-
-export default function BookingPageClient({ bookingData, locale }: Props) {
+export default function BookingPageClient() {
+  const t = useTranslations("booking")
+  const searchParams = useSearchParams()
   const router = useRouter()
+  const locale = useLocale()
+
+  // Get URL parameters
+  const serviceId = searchParams.get("serviceId")
+  const modelId = searchParams.get("modelId")
+
+  // Form state
   const [selectedDate, setSelectedDate] = useState<Date>()
   const [selectedTime, setSelectedTime] = useState<string>("")
-  const [selectedService, setSelectedService] = useState(bookingData.service.id)
-  const [customerData, setCustomerData] = useState({
-    fullName: "",
-    phone: "",
-    email: "",
-    address: "",
-  })
+  const [selectedService, setSelectedService] = useState<string>(serviceId || "")
+  const [customerName, setCustomerName] = useState("")
+  const [customerEmail, setCustomerEmail] = useState("")
+  const [customerPhone, setCustomerPhone] = useState("")
+  const [customerAddress, setCustomerAddress] = useState("")
   const [notes, setNotes] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const dateLocale = locale === "uk" ? uk : locale === "cs" ? cs : enUS
+  // Data state
+  const [modelInfo, setModelInfo] = useState<ModelInfo | null>(null)
+  const [loading, setLoading] = useState(true)
 
-  // Get current selected service details
-  const currentService =
-    selectedService === bookingData.service.id
-      ? bookingData.service
-      : bookingData.availableServices.find((s) => s.id === selectedService)
-
-  const formatPrice = (price: number | null) => {
-    if (!price) return "Price on request"
-    return new Intl.NumberFormat(locale === "cs" ? "cs-CZ" : locale === "uk" ? "uk-UA" : "en-US", {
-      style: "currency",
-      currency: "CZK",
-    }).format(price)
+  // Generate time slots (9:00 - 19:00)
+  const timeSlots = []
+  for (let hour = 9; hour < 19; hour++) {
+    timeSlots.push(`${hour.toString().padStart(2, "0")}:00`)
+    timeSlots.push(`${hour.toString().padStart(2, "0")}:30`)
   }
 
-  const isDateDisabled = (date: Date) => {
-    const today = startOfDay(new Date())
-    const twoWeeksFromNow = addDays(today, 14)
-
-    return isBefore(date, today) || date > twoWeeksFromNow || isWeekend(date)
+  // Date locale mapping
+  const dateLocales = {
+    uk: uk,
+    cs: cs,
+    en: enUS,
   }
+
+  useEffect(() => {
+    if (!modelId) {
+      router.push("/")
+      return
+    }
+
+    // Fetch model info and services
+    const fetchModelInfo = async () => {
+      try {
+        const response = await fetch(`/api/models/${modelId}`)
+        if (response.ok) {
+          const data = await response.json()
+          setModelInfo(data)
+        }
+      } catch (error) {
+        console.error("Error fetching model info:", error)
+        toast.error(t("errorMessage"))
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchModelInfo()
+  }, [modelId, router, t])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!selectedDate || !selectedTime) {
-      toast.error("Please select date and time")
+    if (!selectedDate || !selectedTime || !selectedService || !customerName || !customerEmail || !customerPhone) {
+      toast.error(t("fillRequired"))
       return
     }
 
-    if (!customerData.fullName || !customerData.phone || !customerData.email) {
-      toast.error("Please fill in all required fields")
+    if (!selectedDate || !selectedTime) {
+      toast.error(t("selectDateTime"))
       return
     }
 
     setIsSubmitting(true)
 
     try {
-      const bookingId = `BK-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      const selectedServiceInfo = modelInfo?.services.find((s) => s.id === selectedService)
+
+      const bookingData = {
+        serviceId: selectedService,
+        serviceName: selectedServiceInfo?.name || "",
+        modelId: modelInfo?.id || "",
+        modelName: modelInfo?.name || "",
+        brandName: modelInfo?.brand_name || "",
+        seriesName: modelInfo?.series_name || "",
+        bookingDate: format(selectedDate, "yyyy-MM-dd"),
+        bookingTime: selectedTime,
+        customerName,
+        customerEmail,
+        customerPhone,
+        customerAddress: customerAddress || null,
+        notes: notes || null,
+        price: selectedServiceInfo?.price || null,
+        locale,
+      }
 
       const response = await fetch("/api/bookings", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          bookingId,
-          serviceId: selectedService,
-          serviceName: currentService?.name,
-          brandName: bookingData.model.brand.name,
-          modelName: bookingData.model.name,
-          seriesName: bookingData.model.series?.name,
-          bookingDate: format(selectedDate, "yyyy-MM-dd"),
-          bookingTime: selectedTime,
-          customerName: customerData.fullName,
-          customerPhone: customerData.phone,
-          customerEmail: customerData.email,
-          customerAddress: customerData.address || null,
-          price: currentService?.price || null,
-          notes: notes || null,
-          locale,
-        }),
+        body: JSON.stringify(bookingData),
       })
 
       if (response.ok) {
-        toast.success("Booking request sent successfully!")
-        // Redirect to success page or home
-        router.push(`/${locale}?booking=success`)
+        toast.success(t("successMessage"))
+        // Reset form
+        setSelectedDate(undefined)
+        setSelectedTime("")
+        setCustomerName("")
+        setCustomerEmail("")
+        setCustomerPhone("")
+        setCustomerAddress("")
+        setNotes("")
       } else {
-        throw new Error("Failed to send booking request")
+        toast.error(t("errorMessage"))
       }
     } catch (error) {
-      console.error("Booking error:", error)
-      toast.error("Error sending booking request")
+      console.error("Error submitting booking:", error)
+      toast.error(t("errorMessage"))
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Book a Service</h1>
-        <p className="text-muted-foreground">Fill out the form below to book a repair service for your device</p>
-      </div>
+  const selectedServiceInfo = modelInfo?.services.find((s) => s.id === selectedService)
 
+  if (loading) {
+    return <div className="flex justify-center items-center min-h-[400px]">Loading...</div>
+  }
+
+  if (!modelInfo) {
+    return <div className="text-center py-8">{t("errorMessage")}</div>
+  }
+
+  return (
+    <div className="max-w-4xl mx-auto">
       <form onSubmit={handleSubmit} className="space-y-8">
         {/* Service Information */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <CreditCard className="h-5 w-5" />
-              Service Information
+              <Wrench className="h-5 w-5" />
+              {t("serviceInfo")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label>Brand</Label>
-                <Input value={bookingData.model.brand.name} disabled className="bg-muted" />
+                <Label className="flex items-center gap-2">
+                  <Smartphone className="h-4 w-4" />
+                  {t("brand")}
+                </Label>
+                <Input value={modelInfo.brand_name} disabled className="bg-gray-50" />
               </div>
               <div>
-                <Label>Series</Label>
-                <Input value={bookingData.model.series?.name || "N/A"} disabled className="bg-muted" />
+                <Label>{t("series")}</Label>
+                <Input value={modelInfo.series_name} disabled className="bg-gray-50" />
               </div>
-            </div>
-            <div>
-              <Label>Model</Label>
-              <Input value={bookingData.model.name} disabled className="bg-muted" />
-            </div>
-            <div>
-              <Label>Service</Label>
-              <Select value={selectedService} onValueChange={setSelectedService}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={bookingData.service.id}>{bookingData.service.name}</SelectItem>
-                  {bookingData.availableServices
-                    .filter((s) => s.id !== bookingData.service.id)
-                    .map((service) => (
+              <div>
+                <Label>{t("model")}</Label>
+                <Input value={modelInfo.name} disabled className="bg-gray-50" />
+              </div>
+              <div>
+                <Label>{t("service")} *</Label>
+                <Select value={selectedService} onValueChange={setSelectedService}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t("selectService")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {modelInfo.services.map((service) => (
                       <SelectItem key={service.id} value={service.id}>
                         {service.name}
                       </SelectItem>
                     ))}
-                </SelectContent>
-              </Select>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <div>
-              <Label>Estimated Price</Label>
-              <Input value={formatPrice(currentService?.price || null)} disabled className="bg-muted" />
-            </div>
+            {selectedServiceInfo && (
+              <div>
+                <Label>{t("estimatedPrice")}</Label>
+                <div className="text-lg font-semibold text-green-600">
+                  {selectedServiceInfo.price
+                    ? new Intl.NumberFormat(locale === "cs" ? "cs-CZ" : locale === "uk" ? "uk-UA" : "en-US", {
+                        style: "currency",
+                        currency: "CZK",
+                      }).format(selectedServiceInfo.price)
+                    : t("priceOnRequest")}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -233,48 +237,39 @@ export default function BookingPageClient({ bookingData, locale }: Props) {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <User className="h-5 w-5" />
-              Customer Information
+              {t("customerInfo")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="fullName">Full Name *</Label>
-                <Input
-                  id="fullName"
-                  value={customerData.fullName}
-                  onChange={(e) => setCustomerData((prev) => ({ ...prev, fullName: e.target.value }))}
-                  required
-                />
+                <Label className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  {t("fullName")} *
+                </Label>
+                <Input value={customerName} onChange={(e) => setCustomerName(e.target.value)} required />
               </div>
               <div>
-                <Label htmlFor="phone">Phone *</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  value={customerData.phone}
-                  onChange={(e) => setCustomerData((prev) => ({ ...prev, phone: e.target.value }))}
-                  required
-                />
+                <Label className="flex items-center gap-2">
+                  <Phone className="h-4 w-4" />
+                  {t("phone")} *
+                </Label>
+                <Input type="tel" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} required />
               </div>
-            </div>
-            <div>
-              <Label htmlFor="email">Email *</Label>
-              <Input
-                id="email"
-                type="email"
-                value={customerData.email}
-                onChange={(e) => setCustomerData((prev) => ({ ...prev, email: e.target.value }))}
-                required
-              />
-            </div>
-            <div>
-              <Label htmlFor="address">Address (optional)</Label>
-              <Input
-                id="address"
-                value={customerData.address}
-                onChange={(e) => setCustomerData((prev) => ({ ...prev, address: e.target.value }))}
-              />
+              <div>
+                <Label className="flex items-center gap-2">
+                  <Mail className="h-4 w-4" />
+                  {t("email")} *
+                </Label>
+                <Input type="email" value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)} required />
+              </div>
+              <div>
+                <Label className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4" />
+                  {t("address")} ({t("optional")})
+                </Label>
+                <Input value={customerAddress} onChange={(e) => setCustomerAddress(e.target.value)} />
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -284,44 +279,49 @@ export default function BookingPageClient({ bookingData, locale }: Props) {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CalendarIcon className="h-5 w-5" />
-              Date & Time
+              {t("dateTime")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label>Select Date</Label>
+                <Label>{t("selectDate")} *</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button variant="outline" className="w-full justify-start text-left font-normal bg-transparent">
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {selectedDate ? format(selectedDate, "PPP", { locale: dateLocale }) : "Pick a date"}
+                      {selectedDate
+                        ? format(selectedDate, "PPP", {
+                            locale: dateLocales[locale as keyof typeof dateLocales],
+                          })
+                        : t("pickDate")}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
+                  <PopoverContent className="w-auto p-0">
                     <Calendar
                       mode="single"
                       selected={selectedDate}
                       onSelect={setSelectedDate}
-                      disabled={isDateDisabled}
+                      disabled={(date) => date < new Date() || date > addDays(new Date(), 14) || isWeekend(date)}
                       initialFocus
+                      locale={dateLocales[locale as keyof typeof dateLocales]}
                     />
                   </PopoverContent>
                 </Popover>
               </div>
               <div>
-                <Label>Select Time</Label>
+                <Label className="flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  {t("selectTime")} *
+                </Label>
                 <Select value={selectedTime} onValueChange={setSelectedTime}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Pick a time" />
+                    <SelectValue placeholder={t("pickTime")} />
                   </SelectTrigger>
                   <SelectContent>
                     {timeSlots.map((time) => (
                       <SelectItem key={time} value={time}>
-                        <div className="flex items-center gap-2">
-                          <Clock className="h-4 w-4" />
-                          {time}
-                        </div>
+                        {time}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -334,22 +334,25 @@ export default function BookingPageClient({ bookingData, locale }: Props) {
         {/* Additional Notes */}
         <Card>
           <CardHeader>
-            <CardTitle>Additional Notes</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              {t("additionalNotes")}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <Textarea
-              placeholder="Describe the problem or add any comments..."
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
+              placeholder={t("notesPlaceholder")}
               rows={4}
             />
           </CardContent>
         </Card>
 
         {/* Submit Button */}
-        <div className="flex justify-end">
-          <Button type="submit" size="lg" disabled={isSubmitting || !selectedDate || !selectedTime}>
-            {isSubmitting ? "Submitting..." : "Book Service"}
+        <div className="flex justify-center">
+          <Button type="submit" size="lg" disabled={isSubmitting} className="w-full md:w-auto px-8">
+            {isSubmitting ? t("submitting") : t("bookService")}
           </Button>
         </div>
       </form>
