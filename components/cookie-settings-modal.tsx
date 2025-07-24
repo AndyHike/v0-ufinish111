@@ -34,18 +34,11 @@ export function CookieSettingsModal({ open, onOpenChange }: CookieSettingsModalP
       services: [t("categories.necessary.services")],
     },
     {
-      id: "analytics",
-      name: t("categories.analytics.name"),
-      description: t("categories.analytics.description"),
-      required: false,
-      services: ["Google Analytics", "Google Tag Manager"],
-    },
-    {
       id: "marketing",
       name: t("categories.marketing.name"),
       description: t("categories.marketing.description"),
       required: false,
-      services: ["Facebook Pixel", "Google Ads", "Remarketing"],
+      services: ["Facebook Pixel"],
     },
   ]
 

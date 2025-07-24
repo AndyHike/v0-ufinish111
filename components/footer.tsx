@@ -72,7 +72,7 @@ export function Footer() {
                   className="text-sm text-gray-500 hover:text-gray-900 flex items-center gap-1"
                 >
                   <Settings className="h-3 w-3" />
-                  Налаштування cookies
+                  {t("cookieSettings")}
                 </button>
               </li>
             </ul>

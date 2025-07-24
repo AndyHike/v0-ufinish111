@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Edit, Plus, Trash2, Save, X, HelpCircle } from "lucide-react"
+import { Edit, Plus, Trash2, Save, X, HelpCircle, Upload, ImageIcon } from "lucide-react"
 import { toast } from "sonner"
 import { ServiceFaqManager } from "./service-faq-manager"
 
@@ -125,6 +125,29 @@ export function ServicesManagement() {
     }
   }
 
+  const handleImageUpload = async (file: File): Promise<string> => {
+    const formData = new FormData()
+    formData.append("file", file)
+
+    try {
+      const response = await fetch("/api/admin/upload", {
+        method: "POST",
+        body: formData,
+      })
+
+      if (!response.ok) {
+        throw new Error("Помилка завантаження файлу")
+      }
+
+      const data = await response.json()
+      return data.url
+    } catch (error) {
+      console.error("Error uploading image:", error)
+      toast.error("Помилка завантаження зображення")
+      throw error
+    }
+  }
+
   const ServiceForm = ({ service }: { service?: Service }) => {
     const [formData, setFormData] = useState({
       slug: service?.slug || "",
@@ -146,6 +169,36 @@ export function ServicesManagement() {
         {} as Record<string, Omit<ServiceTranslation, "locale">>,
       ),
     })
+
+    const [uploadingImage, setUploadingImage] = useState(false)
+
+    const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0]
+      if (!file) return
+
+      // Перевірка типу файлу
+      if (!file.type.startsWith("image/")) {
+        toast.error("Будь ласка, оберіть файл зображення")
+        return
+      }
+
+      // Перевірка розміру файлу (максимум 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("Розмір файлу не повинен перевищувати 5MB")
+        return
+      }
+
+      setUploadingImage(true)
+      try {
+        const imageUrl = await handleImageUpload(file)
+        setFormData({ ...formData, image_url: imageUrl })
+        toast.success("Зображення завантажено успішно")
+      } catch (error) {
+        // Помилка вже оброблена в handleImageUpload
+      } finally {
+        setUploadingImage(false)
+      }
+    }
 
     const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault()
@@ -197,13 +250,83 @@ export function ServicesManagement() {
           </div>
         </div>
 
-        <div>
-          <Label htmlFor="image_url">URL зображення</Label>
-          <Input
-            id="image_url"
-            value={formData.image_url}
-            onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-          />
+        <div className="space-y-4">
+          <Label>Зображення послуги</Label>
+
+          {/* Поточне зображення */}
+          {formData.image_url && (
+            <div className="flex items-center gap-4 p-4 border rounded-lg bg-gray-50">
+              <div className="flex-shrink-0">
+                <img
+                  src={formData.image_url || "/placeholder.svg"}
+                  alt="Service preview"
+                  className="w-20 h-20 object-cover rounded-lg"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement
+                    target.src = "/placeholder.svg?height=80&width=80"
+                  }}
+                />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm text-gray-600">Поточне зображення</p>
+                <p className="text-xs text-gray-500 break-all">{formData.image_url}</p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setFormData({ ...formData, image_url: "" })}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+
+          {/* Завантаження нового зображення */}
+          <div className="space-y-2">
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileUpload}
+                  disabled={uploadingImage}
+                  className="hidden"
+                  id="image-upload"
+                />
+                <Label
+                  htmlFor="image-upload"
+                  className="flex items-center justify-center gap-2 h-10 px-4 py-2 bg-white border border-input rounded-md cursor-pointer hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {uploadingImage ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
+                      Завантаження...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-4 w-4" />
+                      Завантажити з ПК
+                    </>
+                  )}
+                </Label>
+              </div>
+            </div>
+
+            <div className="text-center text-sm text-gray-500">або</div>
+
+            <div>
+              <Label htmlFor="image_url">URL зображення</Label>
+              <Input
+                id="image_url"
+                value={formData.image_url}
+                onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                placeholder="https://example.com/image.jpg"
+              />
+            </div>
+          </div>
+
+          <p className="text-xs text-gray-500">Підтримувані формати: JPG, PNG, GIF, WebP. Максимальний розмір: 5MB</p>
         </div>
 
         <Tabs defaultValue="uk" className="w-full">
@@ -310,7 +433,7 @@ export function ServicesManagement() {
             <X className="h-4 w-4 mr-2" />
             Скасувати
           </Button>
-          <Button type="submit">
+          <Button type="submit" disabled={uploadingImage}>
             <Save className="h-4 w-4 mr-2" />
             Зберегти
           </Button>
@@ -376,6 +499,7 @@ export function ServicesManagement() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Зображення</TableHead>
                 <TableHead>Назва</TableHead>
                 <TableHead>Slug</TableHead>
                 <TableHead>Позиція</TableHead>
@@ -391,6 +515,23 @@ export function ServicesManagement() {
 
                 return (
                   <TableRow key={service.id}>
+                    <TableCell>
+                      {service.image_url ? (
+                        <img
+                          src={service.image_url || "/placeholder.svg"}
+                          alt={displayName}
+                          className="w-12 h-12 object-cover rounded-lg"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement
+                            target.src = "/placeholder.svg?height=48&width=48"
+                          }}
+                        />
+                      ) : (
+                        <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                          <ImageIcon className="h-6 w-6 text-gray-400" />
+                        </div>
+                      )}
+                    </TableCell>
                     <TableCell>{displayName}</TableCell>
                     <TableCell>
                       <Badge variant="secondary">{service.slug}</Badge>
