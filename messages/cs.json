@@ -12,16 +12,16 @@
     "admin": "Admin",
     "logout": "Odhlásit se",
     "login": "Přihlásit se",
-     "searchPlaceholder": "Hledat modely, značky, služby...",
-  "searchLoading": "Hledání...",
-  "searchResultsFound": "Nalezeno {count} výsledků",
-  "searchNoResults": "Pro {query} nebyly nalezeny žádné výsledky",
-  "searchResultTypes": {
-    "model": "Model",
-    "brand": "Značka",
-    "series": "Série",
-    "service": "Služba"
-  }
+    "searchPlaceholder": "Hledat modely, značky, služby...",
+    "searchLoading": "Hledání...",
+    "searchResultsFound": "Nalezeno {count} výsledků",
+    "searchNoResults": "Pro {query} nebyly nalezeny žádné výsledky",
+    "searchResultTypes": {
+      "model": "Model",
+      "brand": "Značka",
+      "series": "Série",
+      "service": "Služba"
+    }
   },
   "Footer": {
     "siteTitle": "Oprava Telefonů",
@@ -41,7 +41,6 @@
     "tagline": "Profesionální opravy mobilních telefonů",
     "company": "Společnost"
   },
-
   "UserNav": {
     "login": "Přihlásit se",
     "profile": "Profil",
@@ -709,7 +708,7 @@
     "contactUs": "Kontaktujte nás",
     "details": "Více informací",
     "requestService": "Objednat službu",
-    "backToHome": "Na hlavní stránku",
+    "backToHome": "Na hlavní",
     "learnMore": "Zjistit více",
     "viewAll": "Zobrazit vše",
     "orderStatuses": {
@@ -722,6 +721,7 @@
     },
     "loading": "Načítání...",
     "error": "Chyba",
+    "success": "Úspěch",
     "retry": "Zkusit znovu",
     "close": "Zavřít",
     "save": "Uložit",
@@ -733,7 +733,25 @@
     "next": "Další",
     "previous": "Předchozí",
     "submit": "Odeslat",
-    "reset": "Resetovat"
+    "reset": "Resetovat",
+    "filter": "Filtr",
+    "sort": "Řadit",
+    "yes": "Ano",
+    "no": "Ne",
+    "confirm": "Potvrdit",
+    "clear": "Vymazat",
+    "select": "Vybrat",
+    "selectAll": "Vybrat vše",
+    "deselectAll": "Zrušit výběr",
+    "required": "Povinné",
+    "optional": "Volitelné",
+    "name": "Jméno",
+    "email": "Email",
+    "phone": "Telefon",
+    "message": "Zpráva",
+    "date": "Datum",
+    "time": "Čas",
+    "status": "Stav"
   },
   "Profile": {
     "userProfile": "Profil uživatele",
@@ -804,43 +822,49 @@
     "contact": "Kontakt",
     "about": "O nás"
   },
-
   "BookService": {
     "pageTitle": "Rezervace služby",
     "pageDescription": "Rezervujte si opravu mobilního telefonu",
-    "title": "Rezervace služby",
-    "selectedService": "Vybraná služba:",
-    "personalInfo": "Osobní údaje",
-    "name": "Jméno",
-    "namePlaceholder": "Zadejte své jméno",
-    "nameRequired": "Jméno je povinné",
-    "phone": "Telefon",
-    "phonePlaceholder": "+420 123 456 789",
-    "phoneRequired": "Telefon je povinný",
-    "email": "Email",
-    "emailPlaceholder": "vas@email.com",
-    "emailRequired": "Email je povinný",
-    "emailInvalid": "Neplatný formát emailu",
-    "dateTime": "Datum a čas",
-    "date": "Datum",
-    "selectDate": "Vyberte datum",
-    "dateRequired": "Datum je povinné",
-    "time": "Čas",
-    "selectTime": "Vyberte čas",
-    "timeRequired": "Čas je povinný",
-    "additionalInfo": "Dodatečné informace",
-    "comment": "Komentář",
-    "commentPlaceholder": "Popište problém nebo přidejte další informace...",
-    "submitBooking": "Potvrdit rezervaci",
-    "submitting": "Odesíláme...",
-    "submitError": "Chyba při odesílání. Zkuste to znovu.",
-    "successTitle": "Rezervace úspěšně odeslána!",
-    "successDescription": "Potvrzení rezervace",
-    "successMessage": "Děkujeme! Váš požadavek na rezervaci byl přijat.",
-    "whatNext": "Co dál?",
-    "emailConfirmation": "Obdržíte potvrzení emailem",
-    "managerContact": "Náš manažer vás bude kontaktovat pro potvrzení",
-    "appointmentReminder": "Přijďte ve stanovený čas se svým zařízením"
+    "title": "Objednat službu",
+    "description": "Vyplňte formulář níže a brzy vás kontaktujeme",
+    "form": {
+      "firstName": "Jméno",
+      "firstNamePlaceholder": "Zadejte své jméno",
+      "lastName": "Příjmení",
+      "lastNamePlaceholder": "Zadejte své příjmení",
+      "email": "Email",
+      "emailPlaceholder": "vas@email.com",
+      "phone": "Telefon",
+      "phonePlaceholder": "+420 123 456 789",
+      "service": "Služba",
+      "servicePlaceholder": "Název služby",
+      "model": "Model zařízení",
+      "modelPlaceholder": "iPhone 14, Samsung Galaxy S23, atd",
+      "description": "Popis problému",
+      "descriptionPlaceholder": "Detailně popište problém s vaším zařízením",
+      "submit": "Odeslat žádost",
+      "submitting": "Odesíláme..."
+    },
+    "validation": {
+      "firstNameRequired": "Jméno je povinné",
+      "lastNameRequired": "Příjmení je povinné",
+      "emailRequired": "Email je povinný",
+      "emailInvalid": "Neplatný formát emailu",
+      "phoneRequired": "Telefon je povinný",
+      "phoneInvalid": "Neplatný formát telefonu. Používejte pouze číslice, mezery, pomlčky a závorky",
+      "serviceRequired": "Služba je povinná",
+      "modelRequired": "Model zařízení je povinný",
+      "descriptionRequired": "Popis problému je povinný"
+    },
+    "submitError": "Chyba při odesílání žádosti. Zkuste to znovu.",
+    "success": {
+      "title": "Žádost úspěšně odeslána!",
+      "description": "Děkujeme za kontakt",
+      "message": "Obdrželi jsme vaši žádost o opravu a brzy vás kontaktujeme pro potvrzení detailů.",
+      "nextSteps": "Co dál?",
+      "backToHome": "Zpět na hlavní",
+      "contactUs": "Kontaktujte nás",
+      "emailNote": "Obdržíte také potvrzovací email."
+    }
   }
-
 }

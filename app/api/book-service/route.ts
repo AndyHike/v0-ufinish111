@@ -1,221 +1,71 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { sendNewContactMessageNotification } from "@/lib/email/send-email"
+import { sendNewContactMessageNotification, sendBookingConfirmation } from "@/lib/email/send-email"
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { name, phone, email, date, time, comment, service, brand, model, price, locale } = body
+    const { firstName, lastName, email, phone, service, model, description, locale = "uk" } = body
 
     // Валідація обов'язкових полів
-    if (!name || !phone || !email || !date || !time) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+    if (!firstName || !lastName || !email || !phone || !service || !model || !description) {
+      return NextResponse.json({ error: "All fields are required" }, { status: 400 })
     }
 
-    // Форматуємо дату для відображення
-    const formattedDate = new Date(date).toLocaleDateString(locale, {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    })
+    // Валідація email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) {
+      return NextResponse.json({ error: "Invalid email format" }, { status: 400 })
+    }
 
-    // Формуємо повідомлення для адміна
-    const serviceInfo = service ? `${service}${brand && model ? ` (${brand} ${model})` : ""}` : "Не вказано"
-    const priceInfo = price ? ` - ${price}` : ""
+    // Валідація телефону (тільки цифри, пробіли, дефіси, плюс та дужки)
+    const phoneRegex = /^[\d\s\-+$$$$]+$/
+    if (!phoneRegex.test(phone.trim())) {
+      return NextResponse.json({ error: "Invalid phone format" }, { status: 400 })
+    }
 
-    const adminMessage = `
-НОВЕ БРОНЮВАННЯ ПОСЛУГИ
+    const bookingData = {
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      email: email.trim(),
+      phone: phone.trim(),
+      service: service.trim(),
+      model: model.trim(),
+      description: description.trim(),
+    }
 
-Послуга: ${serviceInfo}${priceInfo}
-Дата: ${formattedDate}
-Час: ${time}
-
-КЛІЄНТ:
-Ім'я: ${name}
-Телефон: ${phone}
-Email: ${email}
-
-${comment ? `Додаткова інформація:\n${comment}` : ""}
-
----
-Це автоматичне повідомлення з системи бронювання.
-    `.trim()
-
-    // Відправляємо емейл адміну
-    const adminEmailSent = await sendNewContactMessageNotification(
+    // Відправляємо повідомлення адміністратору
+    const adminNotificationSent = await sendNewContactMessageNotification(
       {
-        name: name,
-        email: email,
-        phone: phone,
-        message: adminMessage,
+        name: `${bookingData.firstName} ${bookingData.lastName}`,
+        email: bookingData.email,
+        phone: bookingData.phone,
+        message: `Service: ${bookingData.service}\nModel: ${bookingData.model}\nDescription: ${bookingData.description}`,
       },
       locale,
     )
 
-    // Відправляємо підтвердження клієнту
-    const clientEmailSent = await sendBookingConfirmationEmail(
-      email,
-      {
-        name,
-        service: serviceInfo,
-        date: formattedDate,
-        time,
-        phone,
-        comment,
-      },
-      locale,
-    )
+    // Відправляємо підтвердження користувачу
+    const userConfirmationSent = await sendBookingConfirmation(bookingData.email, bookingData, locale)
 
-    if (!adminEmailSent) {
-      console.error("Failed to send admin notification email")
+    if (!adminNotificationSent) {
+      console.error("Failed to send admin notification")
     }
 
-    if (!clientEmailSent) {
-      console.error("Failed to send client confirmation email")
+    if (!userConfirmationSent) {
+      console.error("Failed to send user confirmation")
     }
 
+    // Повертаємо успішну відповідь навіть якщо один з емейлів не відправився
     return NextResponse.json({
       success: true,
-      message: "Booking request sent successfully",
+      message: "Booking request submitted successfully",
+      emailsSent: {
+        admin: adminNotificationSent,
+        user: userConfirmationSent,
+      },
     })
   } catch (error) {
-    console.error("Error processing booking:", error)
+    console.error("Error processing booking request:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
-  }
-}
-
-// Функція для відправки підтвердження клієнту
-async function sendBookingConfirmationEmail(
-  email: string,
-  bookingData: {
-    name: string
-    service: string
-    date: string
-    time: string
-    phone: string
-    comment?: string
-  },
-  locale: string,
-) {
-  const translations = {
-    en: {
-      subject: "Booking Confirmation - Mobile Repair Service",
-      title: "Booking Confirmation",
-      greeting: "Hello",
-      message:
-        "Thank you for your booking request. We have received your information and will contact you soon to confirm the appointment.",
-      details: "Booking Details:",
-      service: "Service:",
-      date: "Date:",
-      time: "Time:",
-      phone: "Phone:",
-      comment: "Additional Information:",
-      footer: "We will contact you within 24 hours to confirm your appointment.",
-      regards: "Best regards,\nMobile Repair Service Team",
-    },
-    uk: {
-      subject: "Підтвердження бронювання - Сервіс ремонту мобільних",
-      title: "Підтвердження бронювання",
-      greeting: "Вітаємо",
-      message:
-        "Дякуємо за ваш запит на бронювання. Ми отримали вашу інформацію і незабаром зв'яжемося з вами для підтвердження зустрічі.",
-      details: "Деталі бронювання:",
-      service: "Послуга:",
-      date: "Дата:",
-      time: "Час:",
-      phone: "Телефон:",
-      comment: "Додаткова інформація:",
-      footer: "Ми зв'яжемося з вами протягом 24 годин для підтвердження зустрічі.",
-      regards: "З повагою,\nКоманда сервісу ремонту мобільних",
-    },
-    cs: {
-      subject: "Potvrzení rezervace - Servis mobilních telefonů",
-      title: "Potvrzení rezervace",
-      greeting: "Dobrý den",
-      message:
-        "Děkujeme za váš požadavek na rezervaci. Obdrželi jsme vaše informace a brzy vás budeme kontaktovat pro potvrzení schůzky.",
-      details: "Detaily rezervace:",
-      service: "Služba:",
-      date: "Datum:",
-      time: "Čas:",
-      phone: "Telefon:",
-      comment: "Dodatečné informace:",
-      footer: "Budeme vás kontaktovat do 24 hodin pro potvrzení schůzky.",
-      regards: "S pozdravem,\nTým servisu mobilních telefonů",
-    },
-  }
-
-  const t = translations[locale as keyof typeof translations] || translations.en
-
-  const emailTemplate = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <title>${t.title}</title>
-      <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
-        .container { border: 1px solid #ddd; border-radius: 5px; padding: 20px; }
-        .header { background-color: #4F46E5; color: white; padding: 20px; border-radius: 5px 5px 0 0; margin: -20px -20px 20px -20px; }
-        .details { margin: 20px 0; padding: 15px; background-color: #f5f5f5; border-radius: 5px; }
-        .label { font-weight: bold; }
-        .footer { margin-top: 30px; font-size: 0.9em; color: #666; border-top: 1px solid #eee; padding-top: 20px; }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <div class="header">
-          <h2>${t.title}</h2>
-        </div>
-        <p>${t.greeting} ${bookingData.name},</p>
-        <p>${t.message}</p>
-        <div class="details">
-          <h3>${t.details}</h3>
-          <p><span class="label">${t.service}</span> ${bookingData.service}</p>
-          <p><span class="label">${t.date}</span> ${bookingData.date}</p>
-          <p><span class="label">${t.time}</span> ${bookingData.time}</p>
-          <p><span class="label">${t.phone}</span> ${bookingData.phone}</p>
-          ${bookingData.comment ? `<p><span class="label">${t.comment}</span> ${bookingData.comment}</p>` : ""}
-        </div>
-        <div class="footer">
-          <p>${t.footer}</p>
-          <p>${t.regards}</p>
-        </div>
-      </div>
-    </body>
-    </html>
-  `
-
-  try {
-    const nodemailer = require("nodemailer")
-
-    const transporter = nodemailer.createTransporter({
-      host: process.env.EMAIL_SERVER_HOST?.trim(),
-      port: Number.parseInt(process.env.EMAIL_SERVER_PORT || "587"),
-      secure: process.env.EMAIL_SERVER_SECURE === "true",
-      auth: {
-        user: process.env.EMAIL_SERVER_USER?.trim(),
-        pass: process.env.EMAIL_SERVER_PASSWORD,
-      },
-      tls: {
-        rejectUnauthorized: false,
-        minVersion: "TLSv1",
-        secureContext: false,
-      },
-    })
-
-    const from = process.env.EMAIL_FROM?.trim() || '"Mobile Repair Service" <noreply@example.com>'
-
-    await transporter.sendMail({
-      from,
-      to: email.trim(),
-      subject: t.subject,
-      html: emailTemplate,
-    })
-
-    return true
-  } catch (error) {
-    console.error("Error sending client confirmation email:", error)
-    return false
   }
 }
