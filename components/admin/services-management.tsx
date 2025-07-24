@@ -125,9 +125,15 @@ export function ServicesManagement() {
     }
   }
 
-  const handleImageUpload = async (file: File): Promise<string> => {
+  const handleImageUpload = async (file: File, slug: string): Promise<string> => {
+    if (!slug) {
+      throw new Error("Спочатку введіть slug послуги")
+    }
+
     const formData = new FormData()
     formData.append("file", file)
+    formData.append("type", "service")
+    formData.append("slug", slug)
 
     try {
       const response = await fetch("/api/admin/upload", {
@@ -176,6 +182,12 @@ export function ServicesManagement() {
       const file = event.target.files?.[0]
       if (!file) return
 
+      // Перевірка чи введений slug
+      if (!formData.slug.trim()) {
+        toast.error("Спочатку введіть slug послуги")
+        return
+      }
+
       // Перевірка типу файлу
       if (!file.type.startsWith("image/")) {
         toast.error("Будь ласка, оберіть файл зображення")
@@ -190,7 +202,7 @@ export function ServicesManagement() {
 
       setUploadingImage(true)
       try {
-        const imageUrl = await handleImageUpload(file)
+        const imageUrl = await handleImageUpload(file, formData.slug)
         setFormData({ ...formData, image_url: imageUrl })
         toast.success("Зображення завантажено успішно")
       } catch (error) {
@@ -216,7 +228,9 @@ export function ServicesManagement() {
               value={formData.slug}
               onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
               required
+              placeholder="repair-screen"
             />
+            <p className="text-xs text-gray-500 mt-1">Slug буде використаний як назва файлу зображення</p>
           </div>
           <div>
             <Label htmlFor="position">Позиція</Label>
@@ -270,6 +284,11 @@ export function ServicesManagement() {
               <div className="flex-1">
                 <p className="text-sm text-gray-600">Поточне зображення</p>
                 <p className="text-xs text-gray-500 break-all">{formData.image_url}</p>
+                {formData.slug && (
+                  <p className="text-xs text-blue-600 mt-1">
+                    Файл: services/{formData.slug}.{formData.image_url.split(".").pop()}
+                  </p>
+                )}
               </div>
               <Button
                 type="button"
@@ -290,13 +309,15 @@ export function ServicesManagement() {
                   type="file"
                   accept="image/*"
                   onChange={handleFileUpload}
-                  disabled={uploadingImage}
+                  disabled={uploadingImage || !formData.slug.trim()}
                   className="hidden"
                   id="image-upload"
                 />
                 <Label
                   htmlFor="image-upload"
-                  className="flex items-center justify-center gap-2 h-10 px-4 py-2 bg-white border border-input rounded-md cursor-pointer hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                  className={`flex items-center justify-center gap-2 h-10 px-4 py-2 bg-white border border-input rounded-md cursor-pointer hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50 ${
+                    !formData.slug.trim() ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
                 >
                   {uploadingImage ? (
                     <>
@@ -312,6 +333,14 @@ export function ServicesManagement() {
                 </Label>
               </div>
             </div>
+
+            {!formData.slug.trim() && (
+              <p className="text-xs text-amber-600">⚠️ Спочатку введіть slug послуги для завантаження зображення</p>
+            )}
+
+            {formData.slug.trim() && (
+              <p className="text-xs text-blue-600">📁 Файл буде збережений як: services/{formData.slug}.[розширення]</p>
+            )}
 
             <div className="text-center text-sm text-gray-500">або</div>
 

@@ -14,6 +14,7 @@ export async function POST(request: Request) {
     const formData = await request.formData()
     const file = formData.get("file") as File
     const uploadType = (formData.get("type") as string) || "default"
+    const slug = formData.get("slug") as string // Додаємо slug для послуг
 
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 })
@@ -23,12 +24,14 @@ export async function POST(request: Request) {
     const allowedTypes = {
       logo: ["image/png", "image/jpeg", "image/jpg", "image/svg+xml"],
       favicon: ["image/x-icon", "image/vnd.microsoft.icon", "image/png", "image/svg+xml"],
+      service: ["image/png", "image/jpeg", "image/jpg", "image/webp"],
       default: ["image/png", "image/jpeg", "image/jpg", "image/webp"],
     }
 
     const maxSizes = {
       logo: 5 * 1024 * 1024, // 5MB
       favicon: 1024 * 1024, // 1MB
+      service: 5 * 1024 * 1024, // 5MB для послуг
       default: 2 * 1024 * 1024, // 2MB
     }
 
@@ -49,10 +52,18 @@ export async function POST(request: Request) {
     const arrayBuffer = await file.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
 
-    // Generate a unique filename
-    const timestamp = Date.now()
+    // Generate filename based on upload type
+    let fileName: string
     const fileExtension = file.name.split(".").pop()
-    const fileName = `${uploadType}/${timestamp}-${Math.random().toString(36).substring(2, 15)}.${fileExtension}`
+
+    if (uploadType === "service" && slug) {
+      // Для послуг використовуємо slug як назву файлу
+      fileName = `services/${slug}.${fileExtension}`
+    } else {
+      // Для інших типів використовуємо timestamp + random
+      const timestamp = Date.now()
+      fileName = `${uploadType}/${timestamp}-${Math.random().toString(36).substring(2, 15)}.${fileExtension}`
+    }
 
     // Upload to Supabase Storage
     const supabase = createClient()
@@ -66,10 +77,15 @@ export async function POST(request: Request) {
       })
     }
 
+    // Якщо файл з таким ім'ям вже існує, видаляємо його
+    if (uploadType === "service" && slug) {
+      await supabase.storage.from(bucketName).remove([fileName])
+    }
+
     const { data, error } = await supabase.storage.from(bucketName).upload(fileName, buffer, {
       contentType: file.type,
       cacheControl: "3600",
-      upsert: false,
+      upsert: true, // Дозволяємо перезаписувати файли
     })
 
     if (error) {
