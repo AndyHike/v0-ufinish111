@@ -2,127 +2,81 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useState } from "react"
+import { useSearchParams } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Calendar, Clock, User, CreditCard, ArrowLeft, CheckCircle } from "lucide-react"
-import { formatCurrency } from "@/lib/format-currency"
-import Link from "next/link"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { CalendarIcon, Clock, CheckCircle } from "lucide-react"
+import { format } from "date-fns"
+import { uk, enUS, cs } from "date-fns/locale"
+import { useLocale } from "next-intl"
+import { toast } from "sonner"
 
-interface BookingData {
-  service: {
-    id: string
-    slug: string
-    name: string
-    description: string
-    price: number | null
-    warranty_months: number | null
-    duration_hours: number | null
-  }
-  model: {
-    id: string
-    name: string
-    slug: string
-    brand: {
-      id: string
-      name: string
-      slug: string
-    }
-    series: {
-      id: string
-      name: string
-      slug: string
-    } | null
-  }
-  availableServices: Array<{
-    id: string
-    slug: string
-    name: string
-    price: number | null
-  }>
-}
+const timeSlots = [
+  "09:00",
+  "09:30",
+  "10:00",
+  "10:30",
+  "11:00",
+  "11:30",
+  "12:00",
+  "12:30",
+  "13:00",
+  "13:30",
+  "14:00",
+  "14:30",
+  "15:00",
+  "15:30",
+  "16:00",
+  "16:30",
+  "17:00",
+  "17:30",
+  "18:00",
+]
 
-interface Props {
-  bookingData: BookingData
-  locale: string
-}
+export default function BookingPageClient() {
+  const t = useTranslations()
+  const locale = useLocale()
+  const searchParams = useSearchParams()
 
-export default function BookingPageClient({ bookingData, locale }: Props) {
-  const t = useTranslations("Booking")
-  const commonT = useTranslations("Common")
-  const router = useRouter()
-
-  const [selectedService, setSelectedService] = useState(bookingData.service.id)
-  const [selectedDate, setSelectedDate] = useState("")
-  const [selectedTime, setSelectedTime] = useState("")
-  const [bookedTimes, setBookedTimes] = useState<string[]>([])
-  const [customerData, setCustomerData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    address: "",
-    notes: "",
-  })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
+  const [selectedDate, setSelectedDate] = useState<Date>()
 
-  // Generate available dates (next 14 days, excluding weekends)
-  const generateAvailableDates = () => {
-    const dates = []
-    const today = new Date()
-    const currentDate = new Date(today)
-    currentDate.setDate(currentDate.getDate() + 1) // Start from tomorrow
+  const [formData, setFormData] = useState({
+    serviceName: searchParams.get("service") || "",
+    brandName: searchParams.get("brand") || "",
+    modelName: searchParams.get("model") || "",
+    customerName: "",
+    customerEmail: "",
+    customerPhone: "",
+    customerAddress: "",
+    bookingTime: "",
+    price: searchParams.get("price") || "",
+    notes: "",
+  })
 
-    while (dates.length < 14) {
-      const dayOfWeek = currentDate.getDay()
-      // Skip weekends (0 = Sunday, 6 = Saturday)
-      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-        dates.push(new Date(currentDate))
-      }
-      currentDate.setDate(currentDate.getDate() + 1)
-    }
-    return dates
-  }
+  const dateLocale = locale === "uk" ? uk : locale === "cs" ? cs : enUS
 
-  // Generate available time slots (9:00 - 19:00, every hour)
-  const generateTimeSlots = () => {
-    const slots = []
-    for (let hour = 9; hour < 19; hour++) {
-      slots.push(`${hour.toString().padStart(2, "0")}:00`)
-    }
-    return slots
-  }
-
-  const availableDates = generateAvailableDates()
-  const timeSlots = generateTimeSlots()
-
-  // Fetch booked times when date changes
-  useEffect(() => {
-    if (selectedDate) {
-      fetchBookedTimes(selectedDate)
-    }
-  }, [selectedDate])
-
-  const fetchBookedTimes = async (date: string) => {
-    try {
-      const response = await fetch(`/api/bookings?date=${date}`)
-      if (response.ok) {
-        const data = await response.json()
-        setBookedTimes(data.bookedTimes || [])
-      }
-    } catch (error) {
-      console.error("Error fetching booked times:", error)
-    }
+  const handleInputChange = (field: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (!selectedDate || !formData.bookingTime) {
+      toast.error(t("booking.selectDateTime"))
+      return
+    }
+
     setIsSubmitting(true)
 
     try {
@@ -132,57 +86,41 @@ export default function BookingPageClient({ bookingData, locale }: Props) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          serviceId: selectedService,
-          modelId: bookingData.model.id,
-          bookingDate: selectedDate,
-          bookingTime: selectedTime,
-          customerName: customerData.name,
-          customerEmail: customerData.email,
-          customerPhone: customerData.phone,
-          customerAddress: customerData.address,
-          notes: customerData.notes,
+          ...formData,
+          bookingDate: selectedDate.toISOString().split("T")[0],
           locale,
         }),
       })
 
+      const result = await response.json()
+
       if (response.ok) {
         setIsSuccess(true)
-        // Facebook Pixel tracking
-        if (typeof window !== "undefined" && window.fbq) {
-          const selectedServiceData = bookingData.availableServices.find((s) => s.id === selectedService)
-          window.fbq("track", "Purchase", {
-            content_type: "service",
-            content_id: `service_${selectedService}`,
-            content_name: selectedServiceData?.name || bookingData.service.name,
-            value: selectedServiceData?.price || bookingData.service.price || 0,
-            currency: "CZK",
-          })
-        }
+        toast.success(t("booking.successMessage"))
       } else {
-        const errorData = await response.json()
-        alert(errorData.error || "Booking failed")
+        toast.error(result.error || t("booking.errorMessage"))
       }
     } catch (error) {
-      console.error("Error submitting booking:", error)
-      alert("Booking failed")
+      console.error("Booking error:", error)
+      toast.error(t("booking.errorMessage"))
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  const selectedServiceData = bookingData.availableServices.find((s) => s.id === selectedService) || bookingData.service
-
   if (isSuccess) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardContent className="text-center p-8">
-            <CheckCircle className="h-16 w-16 text-green-600 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">{t("bookingConfirmed")}</h2>
-            <p className="text-gray-600 mb-6">{t("confirmationEmailSent")}</p>
-            <Button asChild className="w-full">
-              <Link href={`/${locale}`}>{commonT("backToHome")}</Link>
-            </Button>
+      <div className="max-w-2xl mx-auto">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center space-y-4">
+              <CheckCircle className="h-16 w-16 text-green-500 mx-auto" />
+              <h2 className="text-2xl font-bold text-green-700">{t("booking.successTitle")}</h2>
+              <p className="text-gray-600">{t("booking.successDescription")}</p>
+              <Button onClick={() => (window.location.href = `/${locale}`)} className="mt-4">
+                {t("booking.backToHome")}
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -190,258 +128,186 @@ export default function BookingPageClient({ bookingData, locale }: Props) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <Link
-            href={`/${locale}/services/${bookingData.service.slug}?model=${bookingData.model.slug}`}
-            className="inline-flex items-center text-blue-600 hover:text-blue-700 mb-4"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            {commonT("back")}
-          </Link>
-          <h1 className="text-3xl font-bold text-gray-900">{t("bookService")}</h1>
-          <p className="text-gray-600 mt-2">{t("selectDateAndTime")}</p>
-        </div>
+    <div className="max-w-2xl mx-auto">
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("booking.title")}</CardTitle>
+          <CardDescription>{t("booking.description")}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Service Information */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">{t("booking.serviceInfo")}</h3>
 
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Booking Form */}
-          <div className="lg:col-span-2">
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Service Selection */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <CreditCard className="h-5 w-5" />
-                    {t("selectService")}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Select value={selectedService} onValueChange={setSelectedService}>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="serviceName">{t("booking.service")}</Label>
+                  <Input
+                    id="serviceName"
+                    value={formData.serviceName}
+                    onChange={(e) => handleInputChange("serviceName", e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="brandName">{t("booking.brand")}</Label>
+                  <Input
+                    id="brandName"
+                    value={formData.brandName}
+                    onChange={(e) => handleInputChange("brandName", e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="modelName">{t("booking.model")}</Label>
+                  <Input
+                    id="modelName"
+                    value={formData.modelName}
+                    onChange={(e) => handleInputChange("modelName", e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              {formData.price && (
+                <div>
+                  <Label>{t("booking.estimatedPrice")}</Label>
+                  <div className="text-lg font-semibold text-green-600">{formData.price} ₴</div>
+                </div>
+              )}
+            </div>
+
+            {/* Customer Information */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">{t("booking.customerInfo")}</h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="customerName">{t("booking.fullName")}</Label>
+                  <Input
+                    id="customerName"
+                    value={formData.customerName}
+                    onChange={(e) => handleInputChange("customerName", e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="customerPhone">{t("booking.phone")}</Label>
+                  <Input
+                    id="customerPhone"
+                    type="tel"
+                    value={formData.customerPhone}
+                    onChange={(e) => handleInputChange("customerPhone", e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="customerEmail">{t("booking.email")}</Label>
+                <Input
+                  id="customerEmail"
+                  type="email"
+                  value={formData.customerEmail}
+                  onChange={(e) => handleInputChange("customerEmail", e.target.value)}
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="customerAddress">
+                  {t("booking.address")} ({t("booking.optional")})
+                </Label>
+                <Input
+                  id="customerAddress"
+                  value={formData.customerAddress}
+                  onChange={(e) => handleInputChange("customerAddress", e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Date and Time Selection */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">{t("booking.dateTime")}</h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label>{t("booking.selectDate")}</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="w-full justify-start text-left font-normal bg-transparent">
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {selectedDate ? (
+                          format(selectedDate, "PPP", { locale: dateLocale })
+                        ) : (
+                          <span>{t("booking.pickDate")}</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={selectedDate}
+                        onSelect={setSelectedDate}
+                        disabled={
+                          (date) =>
+                            date < new Date() ||
+                            date > new Date(Date.now() + 14 * 24 * 60 * 60 * 1000) ||
+                            date.getDay() === 0 // Disable Sundays
+                        }
+                        initialFocus
+                        locale={dateLocale}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                <div>
+                  <Label>{t("booking.selectTime")}</Label>
+                  <Select
+                    value={formData.bookingTime}
+                    onValueChange={(value) => handleInputChange("bookingTime", value)}
+                  >
                     <SelectTrigger>
-                      <SelectValue />
+                      <Clock className="mr-2 h-4 w-4" />
+                      <SelectValue placeholder={t("booking.pickTime")} />
                     </SelectTrigger>
                     <SelectContent>
-                      {bookingData.availableServices.map((service) => (
-                        <SelectItem key={service.id} value={service.id}>
-                          <div className="flex justify-between items-center w-full">
-                            <span>{service.name}</span>
-                            <span className="ml-4 font-semibold">
-                              {service.price ? formatCurrency(service.price) : t("priceOnRequest")}
-                            </span>
-                          </div>
+                      {timeSlots.map((time) => (
+                        <SelectItem key={time} value={time}>
+                          {time}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                </CardContent>
-              </Card>
-
-              {/* Date & Time Selection */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Calendar className="h-5 w-5" />
-                    {t("selectDateTime")}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="date">{t("selectDate")}</Label>
-                    <Select value={selectedDate} onValueChange={setSelectedDate}>
-                      <SelectTrigger>
-                        <SelectValue placeholder={t("chooseDatePlaceholder")} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableDates.map((date) => (
-                          <SelectItem key={date.toISOString()} value={date.toISOString().split("T")[0]}>
-                            {date.toLocaleDateString(locale === "cs" ? "cs-CZ" : locale === "uk" ? "uk-UA" : "en-US", {
-                              weekday: "long",
-                              year: "numeric",
-                              month: "long",
-                              day: "numeric",
-                            })}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {selectedDate && (
-                    <div>
-                      <Label htmlFor="time">{t("selectTime")}</Label>
-                      <Select value={selectedTime} onValueChange={setSelectedTime}>
-                        <SelectTrigger>
-                          <SelectValue placeholder={t("chooseTimePlaceholder")} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {timeSlots.map((time) => (
-                            <SelectItem key={time} value={time} disabled={bookedTimes.includes(time)}>
-                              <div className="flex items-center gap-2">
-                                <Clock className="h-4 w-4" />
-                                {time}
-                                {bookedTimes.includes(time) && (
-                                  <span className="text-red-500 text-sm">({t("booked")})</span>
-                                )}
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Customer Information */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <User className="h-5 w-5" />
-                    {t("customerInformation")}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="name">{t("fullName")} *</Label>
-                      <Input
-                        id="name"
-                        type="text"
-                        required
-                        value={customerData.name}
-                        onChange={(e) => setCustomerData((prev) => ({ ...prev, name: e.target.value }))}
-                        placeholder={t("enterFullName")}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="email">{t("email")} *</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        required
-                        value={customerData.email}
-                        onChange={(e) => setCustomerData((prev) => ({ ...prev, email: e.target.value }))}
-                        placeholder={t("enterEmail")}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="phone">{t("phone")} *</Label>
-                      <Input
-                        id="phone"
-                        type="tel"
-                        required
-                        value={customerData.phone}
-                        onChange={(e) => setCustomerData((prev) => ({ ...prev, phone: e.target.value }))}
-                        placeholder={t("enterPhone")}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="address">{t("address")}</Label>
-                      <Input
-                        id="address"
-                        type="text"
-                        value={customerData.address}
-                        onChange={(e) => setCustomerData((prev) => ({ ...prev, address: e.target.value }))}
-                        placeholder={t("enterAddress")}
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="notes">{t("additionalNotes")}</Label>
-                    <Textarea
-                      id="notes"
-                      value={customerData.notes}
-                      onChange={(e) => setCustomerData((prev) => ({ ...prev, notes: e.target.value }))}
-                      placeholder={t("enterNotes")}
-                      rows={3}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Submit Button */}
-              <Button
-                type="submit"
-                size="lg"
-                className="w-full"
-                disabled={
-                  isSubmitting ||
-                  !selectedDate ||
-                  !selectedTime ||
-                  !customerData.name ||
-                  !customerData.email ||
-                  !customerData.phone
-                }
-              >
-                {isSubmitting ? t("submitting") : t("confirmBooking")}
-              </Button>
-            </form>
-          </div>
-
-          {/* Booking Summary */}
-          <div className="lg:col-span-1">
-            <Card className="sticky top-8">
-              <CardHeader>
-                <CardTitle>{t("bookingSummary")}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <h4 className="font-semibold text-gray-900">{t("device")}</h4>
-                  <p className="text-gray-600">
-                    {bookingData.model.brand.name} {bookingData.model.name}
-                  </p>
-                  {bookingData.model.series && <p className="text-sm text-gray-500">{bookingData.model.series.name}</p>}
                 </div>
+              </div>
+            </div>
 
-                <div>
-                  <h4 className="font-semibold text-gray-900">{t("service")}</h4>
-                  <p className="text-gray-600">{selectedServiceData.name}</p>
-                </div>
+            {/* Additional Notes */}
+            <div>
+              <Label htmlFor="notes">
+                {t("booking.notes")} ({t("booking.optional")})
+              </Label>
+              <Textarea
+                id="notes"
+                value={formData.notes}
+                onChange={(e) => handleInputChange("notes", e.target.value)}
+                placeholder={t("booking.notesPlaceholder")}
+                rows={3}
+              />
+            </div>
 
-                {selectedDate && selectedTime && (
-                  <div>
-                    <h4 className="font-semibold text-gray-900">{t("dateTime")}</h4>
-                    <p className="text-gray-600">
-                      {new Date(selectedDate).toLocaleDateString(
-                        locale === "cs" ? "cs-CZ" : locale === "uk" ? "uk-UA" : "en-US",
-                      )}
-                    </p>
-                    <p className="text-gray-600">{selectedTime}</p>
-                  </div>
-                )}
-
-                <div className="border-t pt-4">
-                  <div className="flex justify-between items-center">
-                    <span className="font-semibold text-gray-900">{t("price")}</span>
-                    <span className="font-bold text-lg">
-                      {selectedServiceData.price ? formatCurrency(selectedServiceData.price) : t("priceOnRequest")}
-                    </span>
-                  </div>
-                </div>
-
-                {bookingData.service.warranty_months && (
-                  <div className="text-sm text-gray-600">
-                    <strong>{t("warranty")}:</strong>{" "}
-                    {t("warrantyMonths", { count: bookingData.service.warranty_months })}
-                  </div>
-                )}
-
-                {bookingData.service.duration_hours && (
-                  <div className="text-sm text-gray-600">
-                    <strong>{t("duration")}:</strong> {t("fromHours", { hours: bookingData.service.duration_hours })}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </div>
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
+              {isSubmitting ? t("booking.submitting") : t("booking.submitBooking")}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   )
 }

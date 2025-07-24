@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation"
 import { createServerClient } from "@/utils/supabase/server"
+import { Suspense } from "react"
+import { getTranslations } from "next-intl/server"
 import BookingPageClient from "./booking-page-client"
 
 type Props = {
@@ -12,9 +14,11 @@ type Props = {
   }
 }
 
-export default async function BookingPage({ params, searchParams }: Props) {
-  const { locale } = params
-  const { service: serviceSlug, model: modelSlug } = searchParams
+export default async function BookingPage({
+  params: { locale },
+  searchParams: { service: serviceSlug, model: modelSlug },
+}: Props) {
+  const t = await getTranslations("Booking")
 
   if (!serviceSlug || !modelSlug) {
     notFound()
@@ -138,9 +142,29 @@ export default async function BookingPage({ params, searchParams }: Props) {
       availableServices: availableServicesWithTranslations,
     }
 
-    return <BookingPageClient bookingData={bookingData} locale={locale} />
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-center mb-4">{t("title")}</h1>
+          <p className="text-gray-600 text-center max-w-2xl mx-auto">{t("description")}</p>
+        </div>
+
+        <Suspense fallback={<div>Loading...</div>}>
+          <BookingPageClient bookingData={bookingData} locale={locale} />
+        </Suspense>
+      </div>
+    )
   } catch (error) {
     console.error("Error in BookingPage:", error)
     notFound()
+  }
+}
+
+export async function generateMetadata({ params: { locale } }: Props) {
+  const t = await getTranslations({ locale, namespace: "Booking" })
+
+  return {
+    title: t("title"),
+    description: t("description"),
   }
 }

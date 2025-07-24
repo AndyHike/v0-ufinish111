@@ -53,7 +53,7 @@ export function GoogleAnalytics({ gaId, consent }: GoogleAnalyticsProps) {
       })
     })
 
-    // Скидаємо стан
+    // Скид��ємо стан
     scriptLoadedRef.current = false
     gaInitializedRef.current = false
     consentProcessedRef.current = false
