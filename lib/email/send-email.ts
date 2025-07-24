@@ -4,8 +4,6 @@ import {
   getPasswordResetEmailTemplate,
   getVerificationCodeEmailTemplate,
   getNewContactMessageTemplate,
-  getBookingConfirmationTemplate,
-  getNewBookingNotificationTemplate,
 } from "./templates"
 
 // Configure email transporter
@@ -23,7 +21,7 @@ function createTransporter() {
     throw new Error("Email configuration error: Invalid host")
   }
 
-  return nodemailer.createTransporter({
+  return nodemailer.createTransport({
     host,
     port,
     secure,
@@ -111,65 +109,6 @@ export async function sendNewContactMessageNotification(
   const subject = translations[locale as keyof typeof translations] || translations.en
 
   // Отримуємо адресу для сповіщень з env або використовуємо адресу відправника
-  const notificationEmail = process.env.NOTIFICATION_EMAIL || process.env.EMAIL_FROM?.trim() || "info@devicehelp.cz"
-
-  return await sendEmail(notificationEmail, subject, emailTemplate)
-}
-
-export async function sendBookingConfirmationEmail(
-  email: string,
-  bookingData: {
-    id: string
-    serviceName: string
-    brandName: string
-    modelName: string
-    bookingDate: string
-    bookingTime: string
-    customerName: string
-    price: number | null
-  },
-  locale = "uk",
-) {
-  const emailTemplate = getBookingConfirmationTemplate(bookingData, locale)
-
-  const translations = {
-    en: "Booking Confirmation - DeviceHelp",
-    uk: "Підтвердження бронювання - DeviceHelp",
-    cs: "Potvrzení rezervace - DeviceHelp",
-  }
-
-  const subject = translations[locale as keyof typeof translations] || translations.en
-
-  return await sendEmail(email, subject, emailTemplate)
-}
-
-export async function sendNewBookingNotification(
-  bookingData: {
-    id: string
-    serviceName: string
-    brandName: string
-    modelName: string
-    bookingDate: string
-    bookingTime: string
-    customerName: string
-    customerEmail: string
-    customerPhone: string
-    customerAddress?: string | null
-    price: number | null
-    notes?: string | null
-  },
-  locale = "uk",
-) {
-  const emailTemplate = getNewBookingNotificationTemplate(bookingData, locale)
-
-  const translations = {
-    en: "New Service Booking - DeviceHelp",
-    uk: "Нове бронювання послуги - DeviceHelp",
-    cs: "Nová rezervace služby - DeviceHelp",
-  }
-
-  const subject = translations[locale as keyof typeof translations] || translations.en
-
   const notificationEmail = process.env.NOTIFICATION_EMAIL || process.env.EMAIL_FROM?.trim() || "info@devicehelp.cz"
 
   return await sendEmail(notificationEmail, subject, emailTemplate)
