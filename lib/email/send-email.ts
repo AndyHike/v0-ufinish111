@@ -114,7 +114,8 @@ export async function sendNewContactMessageNotification(
   return await sendEmail(notificationEmail, subject, emailTemplate)
 }
 
-async function sendEmail(to: string, subject: string, html: string) {
+// Експортуємо функцію sendEmail для використання в інших модулях
+export async function sendEmail(to: string, subject: string, html: string) {
   try {
     console.log(`Attempting to send email to ${to} with subject "${subject}"`)
 

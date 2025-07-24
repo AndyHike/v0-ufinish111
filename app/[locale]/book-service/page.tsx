@@ -1,33 +1,30 @@
-import { Suspense } from "react"
-import { notFound } from "next/navigation"
+import { getTranslations } from "next-intl/server"
 import BookServiceClient from "./book-service-client"
-import { PageHeader } from "@/components/page-header"
 
-interface PageProps {
+interface Props {
   params: { locale: string }
-  searchParams: {
-    service?: string
-    brand?: string
-    model?: string
-    series?: string
+  searchParams: { service?: string; brand?: string; model?: string; price?: string }
+}
+
+export async function generateMetadata({ params }: { params: { locale: string } }) {
+  const t = await getTranslations({ locale: params.locale, namespace: "BookService" })
+
+  return {
+    title: t("pageTitle"),
+    description: t("pageDescription"),
   }
 }
 
-export default function BookServicePage({ params, searchParams }: PageProps) {
-  const { service, brand, model, series } = searchParams
-
-  // Якщо немає обов'язкових параметрів, показуємо 404
-  if (!service || !brand || !model) {
-    notFound()
-  }
-
+export default function BookServicePage({ params, searchParams }: Props) {
   return (
-    <div className="container mx-auto px-4 py-8">
-      <PageHeader title="Бронювання послуги" description="Оберіть зручний час для ремонту вашого пристрою" />
-
-      <Suspense fallback={<div>Завантаження...</div>}>
-        <BookServiceClient service={service} brand={brand} model={model} series={series} locale={params.locale} />
-      </Suspense>
+    <div className="min-h-screen bg-gray-50">
+      <BookServiceClient
+        locale={params.locale}
+        service={searchParams.service}
+        brand={searchParams.brand}
+        model={searchParams.model}
+        price={searchParams.price}
+      />
     </div>
   )
 }
