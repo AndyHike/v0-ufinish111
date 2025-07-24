@@ -43,6 +43,32 @@ function createTransporter() {
   })
 }
 
+export async function sendEmail(to: string, subject: string, html: string) {
+  try {
+    console.log(`Attempting to send email to ${to} with subject "${subject}"`)
+
+    // Create a new transporter for each email to ensure we have the latest config
+    const transporter = createTransporter()
+
+    const from = process.env.EMAIL_FROM
+      ? process.env.EMAIL_FROM.trim()
+      : `"Mobile Repair Service" <noreply@example.com>`
+
+    const result = await transporter.sendMail({
+      from,
+      to: to.trim(),
+      subject,
+      html,
+    })
+
+    console.log(`Email sent successfully to ${to}`)
+    return true
+  } catch (error) {
+    console.error("Error sending email:", error)
+    return false
+  }
+}
+
 export async function sendVerificationEmail(email: string, token: string, locale = "uk") {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ? process.env.NEXT_PUBLIC_APP_URL.trim() : ""
   const verificationLink = `${appUrl}/${locale}/auth/verify?token=${token}`
@@ -162,30 +188,4 @@ export async function sendNewBookingNotification(
   const notificationEmail = process.env.NOTIFICATION_EMAIL || process.env.EMAIL_FROM?.trim() || "info@devicehelp.cz"
 
   return await sendEmail(notificationEmail, subject, emailTemplate)
-}
-
-async function sendEmail(to: string, subject: string, html: string) {
-  try {
-    console.log(`Attempting to send email to ${to} with subject "${subject}"`)
-
-    // Create a new transporter for each email to ensure we have the latest config
-    const transporter = createTransporter()
-
-    const from = process.env.EMAIL_FROM
-      ? process.env.EMAIL_FROM.trim()
-      : `"Mobile Repair Service" <noreply@example.com>`
-
-    const result = await transporter.sendMail({
-      from,
-      to: to.trim(),
-      subject,
-      html,
-    })
-
-    console.log(`Email sent successfully to ${to}`)
-    return true
-  } catch (error) {
-    console.error("Error sending email:", error)
-    return false
-  }
 }

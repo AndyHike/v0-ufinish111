@@ -3,26 +3,24 @@ import { sendBookingConfirmationEmail, sendNewBookingNotification } from "@/lib/
 
 export async function POST(request: NextRequest) {
   try {
-    const bookingData = await request.json()
-
-    const { service, appointment, customer, locale = "uk" } = bookingData
+    const body = await request.json()
+    const { service, appointment, customer } = body
 
     // Validate required fields
     if (!service || !appointment || !customer) {
-      return NextResponse.json({ message: "Missing required booking data" }, { status: 400 })
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
-    if (!customer.firstName || !customer.lastName || !customer.email || !customer.phone) {
-      return NextResponse.json({ message: "Missing required customer information" }, { status: 400 })
-    }
+    // Get locale from headers or default to 'uk'
+    const locale = request.headers.get("accept-language")?.split(",")[0]?.split("-")[0] || "uk"
 
     // Send confirmation email to customer
     const customerEmailSent = await sendBookingConfirmationEmail(
       customer.email,
       {
         customerName: `${customer.firstName} ${customer.lastName}`,
-        service: service.name,
-        device: `${service.brand} ${service.model}`,
+        service: service.service,
+        device: `${service.brand} ${service.model}${service.series ? ` (${service.series})` : ""}`,
         dateTime: appointment.dateTime,
         price: service.price,
         notes: customer.notes,
@@ -33,29 +31,42 @@ export async function POST(request: NextRequest) {
     // Send notification email to admin
     const adminEmailSent = await sendNewBookingNotification(
       {
-        service,
-        appointment,
-        customer,
+        service: {
+          name: service.service,
+          brand: service.brand,
+          model: service.model,
+          series: service.series,
+          price: service.price,
+        },
+        appointment: {
+          dateTime: appointment.dateTime,
+        },
+        customer: {
+          firstName: customer.firstName,
+          lastName: customer.lastName,
+          email: customer.email,
+          phone: customer.phone,
+          address: customer.address,
+          notes: customer.notes,
+        },
       },
       locale,
     )
 
-    if (!customerEmailSent && !adminEmailSent) {
-      return NextResponse.json({ message: "Failed to send notification emails" }, { status: 500 })
+    if (!customerEmailSent) {
+      console.warn("Failed to send confirmation email to customer")
     }
 
-    return NextResponse.json(
-      {
-        message: "Booking submitted successfully",
-        emailsSent: {
-          customer: customerEmailSent,
-          admin: adminEmailSent,
-        },
-      },
-      { status: 200 },
-    )
+    if (!adminEmailSent) {
+      console.warn("Failed to send notification email to admin")
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: "Booking submitted successfully",
+    })
   } catch (error) {
-    console.error("Booking submission error:", error)
-    return NextResponse.json({ message: "Internal server error" }, { status: 500 })
+    console.error("Booking API error:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
