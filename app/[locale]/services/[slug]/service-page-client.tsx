@@ -1,29 +1,26 @@
 "use client"
 
-import { useSearchParams } from "next/navigation"
+import { useState } from "react"
 import Link from "next/link"
-import { useTranslations } from "next-intl"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { Phone, MessageCircle, Clock, Shield, CheckCircle, ChevronDown, ArrowLeft } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+import { Clock, Shield, Calendar, Star } from "lucide-react"
 import { formatCurrency } from "@/lib/format-currency"
-import { formatImageUrl } from "@/utils/image-url"
-import { useEffect, useRef } from "react"
 
-interface ServiceData {
+type ServiceData = {
   id: string
   position: number
   warranty_months: number | null
   duration_hours: number | null
-  warranty_period: string
   image_url: string | null
-  slug: string | null
+  slug: string
   translation: {
     name: string
     description: string
     detailed_description: string | null
     what_included: string | null
-    benefits: string | null
   }
   faqs: Array<{
     id: string
@@ -36,12 +33,12 @@ interface ServiceData {
   sourceModel: {
     id: string
     name: string
-    slug: string | null
+    slug: string
     image_url: string | null
     brands: {
       id: string
       name: string
-      slug: string | null
+      slug: string
       logo_url: string | null
     }
   } | null
@@ -50,303 +47,308 @@ interface ServiceData {
   maxPrice: number | null
 }
 
-interface Props {
+type Props = {
   serviceData: ServiceData
   locale: string
 }
 
 export default function ServicePageClient({ serviceData, locale }: Props) {
-  const t = useTranslations("Services")
-  const commonT = useTranslations("Common")
-  const searchParams = useSearchParams()
-  const viewContentSent = useRef(false)
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0)
 
-  const { translation, faqs, sourceModel, modelServicePrice, minPrice, maxPrice } = serviceData
-  const modelParam = searchParams.get("model")
+  const images = [
+    serviceData.image_url || "/placeholder.svg?height=400&width=600&text=Service+Image",
+    "/placeholder.svg?height=400&width=600&text=Before+Repair",
+    "/placeholder.svg?height=400&width=600&text=After+Repair",
+  ]
 
-  const backUrl = sourceModel ? `/${locale}/models/${sourceModel.slug}` : `/${locale}`
-  const backText = sourceModel ? `${sourceModel.brands?.name} ${sourceModel.name}` : commonT("backToHome")
+  const formatPrice = (price: number | null) => {
+    if (!price) return "Price on request"
+    return formatCurrency(price, locale)
+  }
 
-  const whatIncludedList = translation.what_included?.split("\n").filter((item) => item.trim()) || []
-  const benefitsList = translation.benefits?.split("\n").filter((item) => item.trim()) || []
-
-  // МІНІМАЛЬНА структура Facebook Pixel - тільки найважливіші дані
-  useEffect(() => {
-    if (typeof window !== "undefined" && window.fbq && !viewContentSent.current) {
-      // Визначаємо правильну ціну
-      const actualPrice =
-        modelParam && modelServicePrice !== null && modelServicePrice !== undefined
-          ? modelServicePrice
-          : minPrice !== null && maxPrice !== null
-            ? minPrice === maxPrice
-              ? minPrice
-              : (minPrice + maxPrice) / 2
-            : null
-
-      // ТІЛЬКИ НАЙВАЖЛИВІШІ ДАНІ
-      const brandName = sourceModel?.brands?.name || "Unknown"
-      const modelName = sourceModel?.name || modelParam || "Unknown"
-      const serviceName = translation.name
-
-      // Формуємо точне визначення
-      const contentName = `${serviceName} - ${brandName} ${modelName}`
-
-      window.fbq("track", "ViewContent", {
-        content_type: "product",
-        content_id: `service_${serviceData.id}`,
-        content_name: contentName,
-        content_category: "repair_services",
-        value: actualPrice || 0,
-        currency: "CZK",
-        // БЕЗ custom_parameters - тільки основні дані
-      })
-
-      console.log("📊 Service ViewContent:", {
-        service: serviceName,
-        brand: brandName,
-        model: modelName,
-        price: actualPrice || 0,
-      })
-
-      viewContentSent.current = true
+  const getPriceDisplay = () => {
+    if (serviceData.modelServicePrice !== null) {
+      return formatPrice(serviceData.modelServicePrice)
     }
-  }, [serviceData, translation.name, modelParam, sourceModel, modelServicePrice, minPrice, maxPrice])
 
-  const formatWarranty = (months: number | null, period: string) => {
-    if (months === null || months === undefined) return t("contactForWarranty")
-    return period === "days" ? t("warrantyDays", { count: months }) : t("warrantyMonths", { count: months })
-  }
-
-  const formatDuration = (hours: number | null) => {
-    if (hours === null || hours === undefined) return t("contactForTime")
-    return t("fromHours", { hours })
-  }
-
-  const renderPrice = () => {
-    if (modelParam) {
-      if (modelServicePrice === null || modelServicePrice === undefined) {
-        return t("priceOnRequest")
+    if (serviceData.minPrice && serviceData.maxPrice) {
+      if (serviceData.minPrice === serviceData.maxPrice) {
+        return formatPrice(serviceData.minPrice)
       }
-      return formatCurrency(modelServicePrice)
+      return `${formatPrice(serviceData.minPrice)} - ${formatPrice(serviceData.maxPrice)}`
     }
 
-    if (minPrice !== null && maxPrice !== null && minPrice !== undefined && maxPrice !== undefined) {
-      return minPrice === maxPrice
-        ? formatCurrency(minPrice)
-        : `${formatCurrency(minPrice)} - ${formatCurrency(maxPrice)}`
-    }
-
-    return t("priceOnRequest")
+    return "Price on request"
   }
 
-  const handleOrderClick = () => {
-    // МІНІМАЛЬНА подія InitiateCheckout
-    if (typeof window !== "undefined" && window.fbq) {
-      const actualPrice =
-        modelParam && modelServicePrice !== null && modelServicePrice !== undefined
-          ? modelServicePrice
-          : minPrice !== null && maxPrice !== null
-            ? minPrice === maxPrice
-              ? minPrice
-              : (minPrice + maxPrice) / 2
-            : null
-
-      const brandName = sourceModel?.brands?.name || "Unknown"
-      const modelName = sourceModel?.name || modelParam || "Unknown"
-      const contentName = `${translation.name} - ${brandName} ${modelName}`
-
-      window.fbq("track", "InitiateCheckout", {
-        content_type: "product",
-        content_id: `service_${serviceData.id}`,
-        content_name: contentName,
-        content_category: "repair_services",
-        value: actualPrice || 0,
-        currency: "CZK",
-      })
-
-      console.log("📊 InitiateCheckout:", {
-        service: translation.name,
-        brand: brandName,
-        model: modelName,
-        price: actualPrice || 0,
-      })
+  const getBookingUrl = () => {
+    if (serviceData.sourceModel) {
+      return `/${locale}/booking?service=${serviceData.slug}&model=${serviceData.sourceModel.slug}`
     }
+    return null
   }
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
-        {/* Breadcrumb */}
-        <nav className="mb-4 text-sm text-gray-500">
-          <Link href={backUrl} className="hover:text-blue-600 transition-colors flex items-center gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            {backText}
+    <div className="min-h-screen bg-background">
+      {/* Breadcrumb */}
+      <div className="container mx-auto px-4 py-4">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Link href={`/${locale}`} className="hover:text-foreground">
+            Home
           </Link>
-        </nav>
+          <span>/</span>
+          <Link href={`/${locale}/services`} className="hover:text-foreground">
+            Services
+          </Link>
+          <span>/</span>
+          <span className="text-foreground">{serviceData.translation.name}</span>
+        </div>
+      </div>
 
-        {/* Компактний двоколонковий макет */}
-        <div className="grid lg:grid-cols-5 gap-6 mb-8">
-          {/* Ліва колонка - збільшене фото (2 колонки з 5) */}
-          <div className="lg:col-span-2">
-            <div className="aspect-[5/4] bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl overflow-hidden">
-              {serviceData.image_url ? (
-                <img
-                  src={formatImageUrl(serviceData.image_url) || "/placeholder.svg"}
-                  alt={translation.name}
-                  className="w-full h-full object-contain bg-white"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <div className="w-8 h-8 bg-blue-600 rounded-lg"></div>
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-700">{translation.name}</h3>
-                  </div>
-                </div>
-              )}
+      <div className="container mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Left Column - Images */}
+          <div className="space-y-4">
+            <div className="aspect-[4/3] relative overflow-hidden rounded-lg bg-muted">
+              <Image
+                src={images[selectedImageIndex] || "/placeholder.svg"}
+                alt={serviceData.translation.name}
+                fill
+                className="object-cover"
+                priority
+              />
+            </div>
+
+            {/* Thumbnail Images */}
+            <div className="flex gap-2">
+              {images.map((image, index) => (
+                <button
+                  key={index}
+                  onClick={() => setSelectedImageIndex(index)}
+                  className={`aspect-square w-20 relative overflow-hidden rounded-md border-2 ${
+                    selectedImageIndex === index ? "border-primary" : "border-muted"
+                  }`}
+                >
+                  <Image
+                    src={image || "/placeholder.svg"}
+                    alt={`${serviceData.translation.name} ${index + 1}`}
+                    fill
+                    className="object-cover"
+                  />
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* Права колонка - основна інформація (3 колонки з 5) */}
-          <div className="lg:col-span-3 space-y-4">
-            <div>
-              <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">{translation.name}</h1>
-              <p className="text-gray-600 leading-relaxed">
-                {translation.detailed_description || translation.description}
-              </p>
-            </div>
-
-            {/* Ціна */}
-            <div>
-              <div className="text-2xl lg:text-3xl font-bold text-gray-900 mb-1">{renderPrice()}</div>
-              {(sourceModel || modelParam) && (
-                <p className="text-gray-600 text-sm">
-                  {sourceModel
-                    ? t("forModel", { brand: sourceModel.brands?.name, model: sourceModel.name })
-                    : t("forSpecificModel")}
-                </p>
-              )}
-            </div>
-
-            {/* Компактні переваги */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
-                <Clock className="h-5 w-5 text-blue-600 flex-shrink-0" />
+          {/* Right Column - Service Details */}
+          <div className="space-y-6">
+            {/* Source Model Info */}
+            {serviceData.sourceModel && (
+              <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg">
+                <div className="relative w-12 h-12">
+                  <Image
+                    src={serviceData.sourceModel.brands.logo_url || "/placeholder.svg?height=48&width=48"}
+                    alt={serviceData.sourceModel.brands.name}
+                    fill
+                    className="object-contain"
+                  />
+                </div>
                 <div>
-                  <div className="font-semibold text-gray-900 text-sm">{t("executionTime")}</div>
-                  <div className="text-xs text-gray-600">{formatDuration(serviceData.duration_hours)}</div>
+                  <p className="text-sm text-muted-foreground">Service for</p>
+                  <p className="font-medium">
+                    {serviceData.sourceModel.brands.name} {serviceData.sourceModel.name}
+                  </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
-                <Shield className="h-5 w-5 text-green-600 flex-shrink-0" />
-                <div>
-                  <div className="font-semibold text-gray-900 text-sm">{t("warranty")}</div>
-                  <div className="text-xs text-gray-600">
-                    {formatWarranty(serviceData.warranty_months, serviceData.warranty_period)}
+            )}
+
+            <div>
+              <h1 className="text-3xl font-bold mb-2">{serviceData.translation.name}</h1>
+              <p className="text-lg text-muted-foreground mb-4">{serviceData.translation.description}</p>
+
+              {/* Price */}
+              <div className="mb-6">
+                <div className="text-3xl font-bold text-primary mb-2">{getPriceDisplay()}</div>
+                {!serviceData.modelServicePrice && serviceData.minPrice && serviceData.maxPrice && (
+                  <p className="text-sm text-muted-foreground">Price varies by device model</p>
+                )}
+              </div>
+
+              {/* Service Features */}
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                {serviceData.warranty_months && (
+                  <div className="flex items-center gap-2">
+                    <Shield className="h-5 w-5 text-primary" />
+                    <div>
+                      <p className="font-medium">{serviceData.warranty_months} months</p>
+                      <p className="text-sm text-muted-foreground">Warranty</p>
+                    </div>
                   </div>
-                </div>
+                )}
+
+                {serviceData.duration_hours && (
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-5 w-5 text-primary" />
+                    <div>
+                      <p className="font-medium">{serviceData.duration_hours}h</p>
+                      <p className="text-sm text-muted-foreground">Duration</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="space-y-3">
+                {getBookingUrl() && (
+                  <Button asChild size="lg" className="w-full">
+                    <Link href={getBookingUrl()!} className="flex items-center gap-2">
+                      <Calendar className="h-5 w-5" />
+                      Book Service
+                    </Link>
+                  </Button>
+                )}
+
+                <Button variant="outline" size="lg" className="w-full bg-transparent">
+                  <Link href={`/${locale}/contact`} className="flex items-center gap-2">
+                    Get Quote
+                  </Link>
+                </Button>
               </div>
             </div>
-
-            {/* CTA Buttons */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <Button size="lg" className="bg-blue-600 hover:bg-blue-700 py-3" asChild>
-                <Link
-                  href={`/${locale}/booking?service=${encodeURIComponent(serviceData.slug)}&model=${encodeURIComponent(sourceModel?.slug || modelParam || "")}`}
-                  onClick={handleOrderClick}
-                >
-                  <Phone className="h-4 w-4 mr-2" />
-                  {t("orderService")}
-                </Link>
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                className="border-gray-300 hover:bg-gray-50 py-3 bg-transparent"
-                asChild
-              >
-                <Link href={`/${locale}/contact`}>
-                  <MessageCircle className="h-4 w-4 mr-2" />
-                  {t("askQuestion")}
-                </Link>
-              </Button>
-            </div>
-
-            {/* Що входить у послугу */}
-            {whatIncludedList.length > 0 && (
-              <div className="pt-2">
-                <h3 className="text-lg font-bold text-gray-900 mb-3">{t("whatIncluded")}</h3>
-                <div className="space-y-2">
-                  {whatIncludedList.map((item, index) => (
-                    <div key={index} className="flex items-start gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-                      <span className="text-gray-700 text-sm">{item}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Переваги */}
-            {benefitsList.length > 0 && (
-              <div className="pt-2">
-                <h3 className="text-lg font-bold text-gray-900 mb-3">{t("benefits")}</h3>
-                <div className="space-y-2">
-                  {benefitsList.map((item, index) => (
-                    <div key={index} className="flex items-start gap-2">
-                      <CheckCircle className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
-                      <span className="text-gray-700 text-sm">{item}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         </div>
 
-        {/* Компактні повноширинні секції */}
-        <div className="space-y-8">
-          {/* FAQ Section */}
-          {faqs.length > 0 && (
-            <section className="bg-gray-50 rounded-xl p-6 lg:p-8">
-              <h2 className="text-xl lg:text-2xl font-bold text-gray-900 mb-6 text-center">{t("frequentQuestions")}</h2>
-              <div className="space-y-4 max-w-4xl mx-auto">
-                {faqs.map((faq) => (
-                  <Collapsible key={faq.id}>
-                    <CollapsibleTrigger className="flex w-full items-center justify-between p-4 text-left bg-white hover:bg-gray-50 rounded-lg transition-colors border border-gray-200">
-                      <span className="font-semibold text-gray-900 text-sm lg:text-base pr-4">
-                        {faq.translation.question}
-                      </span>
-                      <ChevronDown className="h-5 w-5 text-gray-500 transition-transform ui-open:rotate-180 flex-shrink-0" />
-                    </CollapsibleTrigger>
-                    <CollapsibleContent className="px-4 pb-4 bg-white rounded-b-lg border-x border-b border-gray-200 -mt-1">
-                      <div className="pt-2 border-t border-gray-100">
-                        <p className="text-gray-600 leading-relaxed text-sm lg:text-base">{faq.translation.answer}</p>
-                      </div>
-                    </CollapsibleContent>
-                  </Collapsible>
-                ))}
-              </div>
-            </section>
-          )}
+        {/* Service Details Tabs */}
+        <div className="mt-12">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 space-y-8">
+              {/* Detailed Description */}
+              {serviceData.translation.detailed_description && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Service Details</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div
+                      className="prose prose-sm max-w-none"
+                      dangerouslySetInnerHTML={{
+                        __html: serviceData.translation.detailed_description,
+                      }}
+                    />
+                  </CardContent>
+                </Card>
+              )}
 
-          {/* Final CTA */}
-          <section className="bg-blue-600 rounded-xl p-6 lg:p-8 text-center text-white">
-            <h2 className="text-xl lg:text-2xl font-bold mb-2">{t("haveQuestions")}</h2>
-            <p className="text-blue-100 mb-4 lg:mb-6 max-w-xl mx-auto text-sm lg:text-base">{t("expertsReady")}</p>
-            <Button
-              size="lg"
-              variant="outline"
-              className="bg-white text-blue-600 hover:bg-gray-50 border-white px-6 py-3"
-              asChild
-            >
-              <Link href={`/${locale}/contact`}>
-                <MessageCircle className="h-4 w-4 mr-2" />
-                {commonT("contactUs")}
-              </Link>
-            </Button>
-          </section>
+              {/* What's Included */}
+              {serviceData.translation.what_included && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>What's Included</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div
+                      className="prose prose-sm max-w-none"
+                      dangerouslySetInnerHTML={{
+                        __html: serviceData.translation.what_included,
+                      }}
+                    />
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* FAQs */}
+              {serviceData.faqs.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Frequently Asked Questions</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Accordion type="single" collapsible className="w-full">
+                      {serviceData.faqs.map((faq, index) => (
+                        <AccordionItem key={faq.id} value={`item-${index}`}>
+                          <AccordionTrigger className="text-left">{faq.translation.question}</AccordionTrigger>
+                          <AccordionContent>
+                            <div
+                              className="prose prose-sm max-w-none"
+                              dangerouslySetInnerHTML={{
+                                __html: faq.translation.answer,
+                              }}
+                            />
+                          </AccordionContent>
+                        </AccordionItem>
+                      ))}
+                    </Accordion>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+
+            {/* Sidebar */}
+            <div className="space-y-6">
+              {/* Quick Info */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Service Information</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Price:</span>
+                    <span className="font-medium">{getPriceDisplay()}</span>
+                  </div>
+
+                  {serviceData.warranty_months && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Warranty:</span>
+                      <span className="font-medium">{serviceData.warranty_months} months</span>
+                    </div>
+                  )}
+
+                  {serviceData.duration_hours && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Duration:</span>
+                      <span className="font-medium">{serviceData.duration_hours} hours</span>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Trust Indicators */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Why Choose Us</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Star className="h-4 w-4 text-yellow-500" />
+                    <span className="text-sm">Professional technicians</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Shield className="h-4 w-4 text-green-500" />
+                    <span className="text-sm">Quality guarantee</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-blue-500" />
+                    <span className="text-sm">Fast turnaround</span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Contact Card */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Need Help?</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Have questions about this service? Contact us for more information.
+                  </p>
+                  <Button variant="outline" className="w-full bg-transparent" asChild>
+                    <Link href={`/${locale}/contact`}>Contact Us</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         </div>
       </div>
     </div>

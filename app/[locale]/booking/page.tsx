@@ -1,7 +1,6 @@
+import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { createServerClient } from "@/utils/supabase/server"
-import { Suspense } from "react"
-import { getTranslations } from "next-intl/server"
 import BookingPageClient from "./booking-page-client"
 
 type Props = {
@@ -14,11 +13,30 @@ type Props = {
   }
 }
 
-export default async function BookingPage({
-  params: { locale },
-  searchParams: { service: serviceSlug, model: modelSlug },
-}: Props) {
-  const t = await getTranslations("Booking")
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { locale } = params
+
+  const titles = {
+    en: "Book a Service | DeviceHelp",
+    uk: "Бронювання послуги | DeviceHelp",
+    cs: "Rezervace služby | DeviceHelp",
+  }
+
+  const descriptions = {
+    en: "Book a repair service for your device. Choose date and time that works for you.",
+    uk: "Забронюйте послугу ремонту для вашого пристрою. Оберіть зручну дату та час.",
+    cs: "Rezervujte si opravu vašeho zařízení. Vyberte si datum a čas, který vám vyhovuje.",
+  }
+
+  return {
+    title: titles[locale as keyof typeof titles] || titles.en,
+    description: descriptions[locale as keyof typeof descriptions] || descriptions.en,
+  }
+}
+
+export default async function BookingPage({ params, searchParams }: Props) {
+  const { locale } = params
+  const { service: serviceSlug, model: modelSlug } = searchParams
 
   if (!serviceSlug || !modelSlug) {
     notFound()
@@ -28,7 +46,7 @@ export default async function BookingPage({
 
   try {
     // Get service data
-    const { data: service, error: serviceError } = await supabase
+    const { data: service } = await supabase
       .from("services")
       .select(`
         id,
@@ -42,42 +60,36 @@ export default async function BookingPage({
       .eq("slug", serviceSlug)
       .single()
 
-    if (serviceError || !service) {
+    if (!service) {
       notFound()
     }
 
     // Get model data
-    const { data: model, error: modelError } = await supabase
+    const { data: model } = await supabase
       .from("models")
       .select(`
         id,
         name,
         slug,
+        image_url,
         brands(
           id,
           name,
           slug,
-          series(
-            id,
-            name,
-            slug
-          )
+          logo_url
+        ),
+        series(
+          id,
+          name,
+          slug
         )
       `)
       .eq("slug", modelSlug)
       .single()
 
-    if (modelError || !model) {
+    if (!model) {
       notFound()
     }
-
-    // Get service price for this model
-    const { data: modelService } = await supabase
-      .from("model_services")
-      .select("price, warranty_months, duration_hours")
-      .eq("model_id", model.id)
-      .eq("service_id", service.id)
-      .single()
 
     // Get all available services for this model
     const { data: availableServices } = await supabase
@@ -95,6 +107,14 @@ export default async function BookingPage({
       `)
       .eq("model_id", model.id)
 
+    // Get current service price
+    const { data: currentServicePrice } = await supabase
+      .from("model_services")
+      .select("price")
+      .eq("model_id", model.id)
+      .eq("service_id", service.id)
+      .single()
+
     const serviceTranslation = service.services_translations?.find((t: any) => t.locale === locale)
     if (!serviceTranslation) {
       notFound()
@@ -102,14 +122,14 @@ export default async function BookingPage({
 
     const availableServicesWithTranslations =
       availableServices
-        ?.map((ms: any) => {
-          const translation = ms.services?.services_translations?.find((t: any) => t.locale === locale)
+        ?.map((item: any) => {
+          const translation = item.services.services_translations?.find((t: any) => t.locale === locale)
           if (!translation) return null
           return {
-            id: ms.services.id,
-            slug: ms.services.slug,
+            id: item.services.id,
+            slug: item.services.slug,
             name: translation.name,
-            price: ms.price,
+            price: item.price,
           }
         })
         .filter(Boolean) || []
@@ -119,52 +139,33 @@ export default async function BookingPage({
         id: service.id,
         slug: service.slug,
         name: serviceTranslation.name,
-        description: serviceTranslation.description,
-        price: modelService?.price || null,
-        warranty_months: modelService?.warranty_months || null,
-        duration_hours: modelService?.duration_hours || null,
+        price: currentServicePrice?.price || null,
       },
       model: {
         id: model.id,
         name: model.name,
         slug: model.slug,
+        image_url: model.image_url,
         brand: {
-          id: model.brands?.id,
-          name: model.brands?.name,
-          slug: model.brands?.slug,
+          id: model.brands.id,
+          name: model.brands.name,
+          slug: model.brands.slug,
+          logo_url: model.brands.logo_url,
         },
-        series: {
-          id: model.brands?.series?.id,
-          name: model.brands?.series?.name,
-          slug: model.brands?.series?.slug,
-        },
+        series: model.series
+          ? {
+              id: model.series.id,
+              name: model.series.name,
+              slug: model.series.slug,
+            }
+          : null,
       },
       availableServices: availableServicesWithTranslations,
     }
 
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-center mb-4">{t("title")}</h1>
-          <p className="text-gray-600 text-center max-w-2xl mx-auto">{t("description")}</p>
-        </div>
-
-        <Suspense fallback={<div>Loading...</div>}>
-          <BookingPageClient bookingData={bookingData} locale={locale} />
-        </Suspense>
-      </div>
-    )
+    return <BookingPageClient bookingData={bookingData} locale={locale} />
   } catch (error) {
     console.error("Error in BookingPage:", error)
     notFound()
-  }
-}
-
-export async function generateMetadata({ params: { locale } }: Props) {
-  const t = await getTranslations({ locale, namespace: "Booking" })
-
-  return {
-    title: t("title"),
-    description: t("description"),
   }
 }
