@@ -166,7 +166,7 @@ export function ContactMessagesList({ locale }: ContactMessagesListProps) {
       lastUpdated: "Останнє оновлення",
       unauthorized: "Немає доступу. Будь ласка, увійдіть як адміністратор.",
       loginAgain: "Увійти знову",
-      errorLoading: "Помилка завантаження повідомлень",
+      errorLoading: "Помилка завантаження повідомле��ь",
       tryAgain: "Спробувати знову",
     },
     cs: {

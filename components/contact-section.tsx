@@ -66,7 +66,7 @@ export function ContactSection() {
   }
 
   const handleContactClick = (method: string) => {
-    // Facebook Pixel - відстеження кліків на контактні методи
+    // Facebook Pixel - відстеження кл��ків на контактні методи
     if (typeof window !== "undefined" && window.fbq) {
       window.fbq("track", "Contact", {
         contact_method: method,

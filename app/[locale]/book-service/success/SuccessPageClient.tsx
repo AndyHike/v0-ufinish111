@@ -20,7 +20,7 @@ export default function SuccessPageClient({ locale }: Props) {
         {/* Breadcrumb */}
         <nav className="mb-6">
           <Link
-            href={`/${locale}`}
+            href={`/`}
             className="text-gray-600 hover:text-gray-900 flex items-center gap-2 text-sm transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -81,7 +81,7 @@ export default function SuccessPageClient({ locale }: Props) {
 
             <div className="pt-6">
               <Button asChild className="w-full bg-gray-900 hover:bg-gray-800">
-                <Link href={`/${locale || "cs"}`}>{commonT("backToHome")}</Link>
+                <Link href="/">{commonT("backToHome")}</Link>
               </Button>
             </div>
           </CardContent>
