@@ -173,7 +173,7 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
     }
   }
 
-  // Формуємо URL для бронювання через slug
+  // Формуємо URL для бронювання через slug (аналогічно до model-page-client.tsx)
   const bookingUrl = (() => {
     const params = new URLSearchParams()
 
@@ -182,11 +182,11 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
       params.set("service_slug", serviceData.slug)
     }
 
-    // Якщо є модель з URL або sourceModel, передаємо її slug
+    // Якщо є модель, передаємо її slug
     if (sourceModel?.slug) {
       params.set("model_slug", sourceModel.slug)
     } else if (modelParam) {
-      // Якщо modelParam це slug, використовуємо його
+      // modelParam це slug моделі з URL
       params.set("model_slug", modelParam)
     }
 
