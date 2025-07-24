@@ -64,6 +64,7 @@ ${comment ? `Додаткова інформація:\n${comment}` : ""}
         time,
         phone,
         comment,
+        price: price || "Ціна за запитом",
       },
       locale,
     )
@@ -100,6 +101,7 @@ async function sendBookingConfirmationEmail(
     time: string
     phone: string
     comment?: string
+    price: string
   },
   locale: string,
 ) {
@@ -116,6 +118,12 @@ async function sendBookingConfirmationEmail(
       time: "Time:",
       phone: "Phone:",
       comment: "Additional Information:",
+      price: "Price:",
+      address: "Address:",
+      addressDetails: "Bělohorská 209/133, 169 00 Praha 6-Břevnov",
+      contactPhone: "Contact Phone:",
+      paymentInfo: "Payment Information:",
+      paymentDetails: "Payment is made after the service is completed. We accept cash and card payments.",
       footer: "We will contact you within 24 hours to confirm your appointment.",
       regards: "Best regards,\nMobile Repair Service Team",
     },
@@ -131,6 +139,12 @@ async function sendBookingConfirmationEmail(
       time: "Час:",
       phone: "Телефон:",
       comment: "Додаткова інформація:",
+      price: "Ціна:",
+      address: "Адреса:",
+      addressDetails: "Bělohorská 209/133, 169 00 Praha 6-Břevnov",
+      contactPhone: "Телефон для зв'язку:",
+      paymentInfo: "Інформація про оплату:",
+      paymentDetails: "Оплата здійснюється після виконання послуги. Приймаємо готівку та картки.",
       footer: "Ми зв'яжемося з вами протягом 24 годин для підтвердження зустрічі.",
       regards: "З повагою,\nКоманда сервісу ремонту мобільних",
     },
@@ -146,6 +160,12 @@ async function sendBookingConfirmationEmail(
       time: "Čas:",
       phone: "Telefon:",
       comment: "Dodatečné informace:",
+      price: "Cena:",
+      address: "Adresa:",
+      addressDetails: "Bělohorská 209/133, 169 00 Praha 6-Břevnov",
+      contactPhone: "Kontaktní telefon:",
+      paymentInfo: "Informace o platbě:",
+      paymentDetails: "Platba se provádí po dokončení služby. Přijímáme hotovost i karty.",
       footer: "Budeme vás kontaktovat do 24 hodin pro potvrzení schůzky.",
       regards: "S pozdravem,\nTým servisu mobilních telefonů",
     },
@@ -154,43 +174,173 @@ async function sendBookingConfirmationEmail(
   const t = translations[locale as keyof typeof translations] || translations.en
 
   const emailTemplate = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <title>${t.title}</title>
-      <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
-        .container { border: 1px solid #ddd; border-radius: 5px; padding: 20px; }
-        .header { background-color: #4F46E5; color: white; padding: 20px; border-radius: 5px 5px 0 0; margin: -20px -20px 20px -20px; }
-        .details { margin: 20px 0; padding: 15px; background-color: #f5f5f5; border-radius: 5px; }
-        .label { font-weight: bold; }
-        .footer { margin-top: 30px; font-size: 0.9em; color: #666; border-top: 1px solid #eee; padding-top: 20px; }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <div class="header">
-          <h2>${t.title}</h2>
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <meta charset="utf-8">
+    <title>${t.title}</title>
+    <style>
+      body { 
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+        line-height: 1.6; 
+        color: #333; 
+        max-width: 600px; 
+        margin: 0 auto; 
+        padding: 20px; 
+        background-color: #f9fafb;
+      }
+      .container { 
+        background: white;
+        border-radius: 8px; 
+        padding: 32px; 
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      }
+      .header { 
+        background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
+        color: white; 
+        padding: 24px; 
+        border-radius: 8px; 
+        margin: -32px -32px 24px -32px; 
+        text-align: center;
+      }
+      .header h1 {
+        margin: 0;
+        font-size: 24px;
+        font-weight: 600;
+      }
+      .details { 
+        background: #f9fafb; 
+        border-radius: 8px; 
+        padding: 20px; 
+        margin: 20px 0;
+        border-left: 4px solid #3b82f6;
+      }
+      .detail-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px solid #e5e7eb;
+      }
+      .detail-row:last-child {
+        border-bottom: none;
+      }
+      .label { 
+        font-weight: 600; 
+        color: #374151;
+        min-width: 120px;
+      }
+      .value {
+        color: #1f2937;
+        text-align: right;
+        flex: 1;
+      }
+      .price {
+        font-size: 18px;
+        font-weight: 700;
+        color: #059669;
+      }
+      .address-section {
+        background: #dbeafe;
+        border-radius: 8px;
+        padding: 16px;
+        margin: 20px 0;
+        border: 1px solid #93c5fd;
+      }
+      .payment-info {
+        background: #fef3c7;
+        border-radius: 8px;
+        padding: 16px;
+        margin: 20px 0;
+        border: 1px solid #fbbf24;
+      }
+      .footer { 
+        margin-top: 32px; 
+        padding-top: 20px;
+        border-top: 1px solid #e5e7eb;
+        color: #6b7280;
+        font-size: 14px;
+      }
+      .contact-info {
+        background: #f3f4f6;
+        border-radius: 6px;
+        padding: 12px;
+        margin: 16px 0;
+        font-weight: 500;
+        color: #1f2937;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>${t.title}</h1>
+      </div>
+      
+      <p><strong>${t.greeting} ${bookingData.name},</strong></p>
+      <p>${t.message}</p>
+      
+      <div class="details">
+        <h3 style="margin-top: 0; color: #1f2937;">${t.details}</h3>
+        
+        <div class="detail-row">
+          <span class="label">${t.service}</span>
+          <span class="value">${bookingData.service}</span>
         </div>
-        <p>${t.greeting} ${bookingData.name},</p>
-        <p>${t.message}</p>
-        <div class="details">
-          <h3>${t.details}</h3>
-          <p><span class="label">${t.service}</span> ${bookingData.service}</p>
-          <p><span class="label">${t.date}</span> ${bookingData.date}</p>
-          <p><span class="label">${t.time}</span> ${bookingData.time}</p>
-          <p><span class="label">${t.phone}</span> ${bookingData.phone}</p>
-          ${bookingData.comment ? `<p><span class="label">${t.comment}</span> ${bookingData.comment}</p>` : ""}
+        
+        <div class="detail-row">
+          <span class="label">${t.price}</span>
+          <span class="value price">${bookingData.price}</span>
         </div>
-        <div class="footer">
-          <p>${t.footer}</p>
-          <p>${t.regards}</p>
+        
+        <div class="detail-row">
+          <span class="label">${t.date}</span>
+          <span class="value">${bookingData.date}</span>
+        </div>
+        
+        <div class="detail-row">
+          <span class="label">${t.time}</span>
+          <span class="value">${bookingData.time}</span>
+        </div>
+        
+        <div class="detail-row">
+          <span class="label">${t.phone}</span>
+          <span class="value">${bookingData.phone}</span>
+        </div>
+        
+        ${
+          bookingData.comment
+            ? `
+        <div class="detail-row">
+          <span class="label">${t.comment}</span>
+          <span class="value">${bookingData.comment}</span>
+        </div>
+        `
+            : ""
+        }
+      </div>
+
+      <div class="address-section">
+        <h4 style="margin: 0 0 8px 0; color: #1e40af;">${t.address}</h4>
+        <p style="margin: 0; font-weight: 500;">${t.addressDetails}</p>
+        <div class="contact-info">
+          ${t.contactPhone} <strong>+420 775 848 259</strong>
         </div>
       </div>
-    </body>
-    </html>
-  `
+
+      <div class="payment-info">
+        <h4 style="margin: 0 0 8px 0; color: #d97706;">${t.paymentInfo}</h4>
+        <p style="margin: 0;">${t.paymentDetails}</p>
+      </div>
+      
+      <div class="footer">
+        <p><strong>${t.footer}</strong></p>
+        <p style="white-space: pre-line;">${t.regards}</p>
+      </div>
+    </div>
+  </body>
+  </html>
+`
 
   try {
     return await sendEmail(email, t.subject, emailTemplate)

@@ -84,7 +84,7 @@ export default function SuccessPageClient({ locale }: Props) {
                 <Link href={`/${locale}`}>{commonT("backToHome")}</Link>
               </Button>
               <Button asChild variant="outline" className="flex-1 bg-transparent">
-                <Link href={`/${locale}/services`}>{t("viewAllServices")}</Link>
+                <Link href={`/${locale}/brands`}>Переглянути всі послуги</Link>
               </Button>
             </div>
           </CardContent>
