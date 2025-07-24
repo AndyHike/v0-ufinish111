@@ -4,6 +4,8 @@ import {
   getPasswordResetEmailTemplate,
   getVerificationCodeEmailTemplate,
   getNewContactMessageTemplate,
+  getBookingConfirmationEmailTemplate,
+  getNewBookingNotificationTemplate,
 } from "./templates"
 
 // Configure email transporter
@@ -21,7 +23,7 @@ function createTransporter() {
     throw new Error("Email configuration error: Invalid host")
   }
 
-  return nodemailer.createTransport({
+  return nodemailer.createTransporter({
     host,
     port,
     secure,
@@ -109,6 +111,54 @@ export async function sendNewContactMessageNotification(
   const subject = translations[locale as keyof typeof translations] || translations.en
 
   // Отримуємо адресу для сповіщень з env або використовуємо адресу відправника
+  const notificationEmail = process.env.NOTIFICATION_EMAIL || process.env.EMAIL_FROM?.trim() || "info@devicehelp.cz"
+
+  return await sendEmail(notificationEmail, subject, emailTemplate)
+}
+
+export async function sendBookingConfirmationEmail(
+  email: string,
+  bookingDetails: {
+    customerName: string
+    service: string
+    device: string
+    dateTime: string
+    price: number | null
+    notes?: string
+  },
+  locale = "uk",
+) {
+  const emailTemplate = getBookingConfirmationEmailTemplate(bookingDetails, locale)
+
+  const translations = {
+    en: "Booking Confirmation - Phone Repair Service",
+    uk: "Підтвердження бронювання - Сервіс ремонту телефонів",
+    cs: "Potvrzení rezervace - Servis oprav telefonů",
+  }
+
+  const subject = translations[locale as keyof typeof translations] || translations.en
+
+  return await sendEmail(email, subject, emailTemplate)
+}
+
+export async function sendNewBookingNotification(
+  bookingData: {
+    service: any
+    appointment: any
+    customer: any
+  },
+  locale = "uk",
+) {
+  const emailTemplate = getNewBookingNotificationTemplate(bookingData, locale)
+
+  const translations = {
+    en: "New Service Booking Received",
+    uk: "Отримано нове бронювання послуги",
+    cs: "Přijata nová rezervace služby",
+  }
+
+  const subject = translations[locale as keyof typeof translations] || translations.en
+
   const notificationEmail = process.env.NOTIFICATION_EMAIL || process.env.EMAIL_FROM?.trim() || "info@devicehelp.cz"
 
   return await sendEmail(notificationEmail, subject, emailTemplate)
