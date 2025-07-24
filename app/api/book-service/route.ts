@@ -1,15 +1,17 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { sendNewContactMessageNotification } from "@/lib/email/send-email"
+import { sendNewContactMessageNotification, sendEmail } from "@/lib/email/send-email"
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { name, phone, email, date, time, comment, service, brand, model, price, locale } = body
+    const { firstName, lastName, phone, email, date, time, comment, service, brand, model, price, locale } = body
 
     // Валідація обов'язкових полів
-    if (!name || !phone || !email || !date || !time) {
+    if (!firstName || !lastName || !phone || !email || !date || !time) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
+
+    const fullName = `${firstName} ${lastName}`
 
     // Форматуємо дату для відображення
     const formattedDate = new Date(date).toLocaleDateString(locale, {
@@ -31,7 +33,7 @@ export async function POST(request: NextRequest) {
 Час: ${time}
 
 КЛІЄНТ:
-Ім'я: ${name}
+Ім'я: ${fullName}
 Телефон: ${phone}
 Email: ${email}
 
@@ -44,7 +46,7 @@ ${comment ? `Додаткова інформація:\n${comment}` : ""}
     // Відправляємо емейл адміну
     const adminEmailSent = await sendNewContactMessageNotification(
       {
-        name: name,
+        name: fullName,
         email: email,
         phone: phone,
         message: adminMessage,
@@ -56,7 +58,7 @@ ${comment ? `Додаткова інформація:\n${comment}` : ""}
     const clientEmailSent = await sendBookingConfirmationEmail(
       email,
       {
-        name,
+        name: fullName,
         service: serviceInfo,
         date: formattedDate,
         time,
@@ -77,6 +79,10 @@ ${comment ? `Додаткова інформація:\n${comment}` : ""}
     return NextResponse.json({
       success: true,
       message: "Booking request sent successfully",
+      emailsSent: {
+        admin: adminEmailSent,
+        client: clientEmailSent,
+      },
     })
   } catch (error) {
     console.error("Error processing booking:", error)
@@ -187,33 +193,7 @@ async function sendBookingConfirmationEmail(
   `
 
   try {
-    const nodemailer = require("nodemailer")
-
-    const transporter = nodemailer.createTransporter({
-      host: process.env.EMAIL_SERVER_HOST?.trim(),
-      port: Number.parseInt(process.env.EMAIL_SERVER_PORT || "587"),
-      secure: process.env.EMAIL_SERVER_SECURE === "true",
-      auth: {
-        user: process.env.EMAIL_SERVER_USER?.trim(),
-        pass: process.env.EMAIL_SERVER_PASSWORD,
-      },
-      tls: {
-        rejectUnauthorized: false,
-        minVersion: "TLSv1",
-        secureContext: false,
-      },
-    })
-
-    const from = process.env.EMAIL_FROM?.trim() || '"Mobile Repair Service" <noreply@example.com>'
-
-    await transporter.sendMail({
-      from,
-      to: email.trim(),
-      subject: t.subject,
-      html: emailTemplate,
-    })
-
-    return true
+    return await sendEmail(email, t.subject, emailTemplate)
   } catch (error) {
     console.error("Error sending client confirmation email:", error)
     return false
