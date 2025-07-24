@@ -2,11 +2,12 @@ import { getTranslations } from "next-intl/server"
 import SuccessPageClient from "./SuccessPageClient"
 
 interface Props {
-  params: { locale: string }
+  params: Promise<{ locale: string }>
 }
 
-export async function generateMetadata({ params }: { params: { locale: string } }) {
-  const t = await getTranslations({ locale: params.locale, namespace: "BookService" })
+export async function generateMetadata({ params }: Props) {
+  const { locale } = await params
+  const t = await getTranslations({ locale, namespace: "BookService" })
 
   return {
     title: t("successTitle"),
@@ -14,6 +15,7 @@ export async function generateMetadata({ params }: { params: { locale: string } 
   }
 }
 
-export default function BookServiceSuccessPage({ params }: Props) {
-  return <SuccessPageClient params={params} />
+export default async function BookServiceSuccessPage({ params }: Props) {
+  const { locale } = await params
+  return <SuccessPageClient locale={locale} />
 }
