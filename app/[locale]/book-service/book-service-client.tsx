@@ -1,150 +1,169 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
-import { useSearchParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { CalendarIcon, Clock, MapPin, Phone, ArrowLeft, Loader2 } from "lucide-react"
-import { format } from "date-fns"
-import { uk, enUS, cs } from "date-fns/locale"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Calendar, User, MessageSquare, ArrowLeft, Loader2, Clock, Shield } from "lucide-react"
 import Link from "next/link"
-import { cn } from "@/lib/utils"
-
-interface ServiceData {
-  id: number
-  name: string
-  description?: string
-  price?: number
-  warranty_months?: number
-  duration_hours?: number
-  model?: {
-    id: number
-    name: string
-    brand: {
-      name: string
-    }
-  }
-}
+import { formatCurrency } from "@/lib/format-currency"
 
 interface Props {
   locale: string
+  serviceSlug?: string
+  modelSlug?: string
 }
 
-const timeSlots = [
-  "09:00",
-  "09:30",
-  "10:00",
-  "10:30",
-  "11:00",
-  "11:30",
-  "12:00",
-  "12:30",
-  "13:00",
-  "13:30",
-  "14:00",
-  "14:30",
-  "15:00",
-  "15:30",
-  "16:00",
-  "16:30",
-  "17:00",
-  "17:30",
-  "18:00",
-]
-
-const localeMap = {
-  uk: uk,
-  en: enUS,
-  cs: cs,
+interface BookingData {
+  service: {
+    id: string
+    slug: string
+    name: string
+    description: string
+    image_url: string | null
+    warranty_months: number | null
+    warranty_period: string
+    duration_hours: number | null
+  }
+  model: {
+    id: string
+    name: string
+    slug: string
+    image_url: string | null
+    brands: {
+      id: string
+      name: string
+      slug: string
+      logo_url: string | null
+    }
+  } | null
+  price: number | { min: number; max: number } | null
 }
 
-export default function BookServiceClient({ locale }: Props) {
+export default function BookServiceClient({ locale, serviceSlug, modelSlug }: Props) {
   const t = useTranslations("BookService")
   const commonT = useTranslations("Common")
-  const searchParams = useSearchParams()
   const router = useRouter()
 
-  const [serviceData, setServiceData] = useState<ServiceData | null>(null)
+  const [bookingData, setBookingData] = useState<BookingData | null>(null)
   const [loading, setLoading] = useState(true)
-  const [submitting, setSubmitting] = useState(false)
-  const [date, setDate] = useState<Date>()
+  const [error, setError] = useState<string | null>(null)
+
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     phone: "",
     email: "",
+    date: "",
     time: "",
     comment: "",
   })
+
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
+  // Завантажуємо дані через API endpoint (аналогічно до service page)
   useEffect(() => {
-    const fetchServiceData = async () => {
+    if (!serviceSlug) {
+      setError("Service not specified")
+      setLoading(false)
+      return
+    }
+
+    const fetchData = async () => {
       try {
-        const serviceSlug = searchParams.get("service")
-        const modelSlug = searchParams.get("model")
-
-        if (!serviceSlug) {
-          throw new Error("Service not specified")
-        }
-
-        // Fetch service data
-        const serviceResponse = await fetch(`/api/services/${serviceSlug}`)
-        if (!serviceResponse.ok) {
-          throw new Error("Service not found")
-        }
-        const service = await serviceResponse.json()
-
-        let modelData = null
-        let price = null
+        // Використовуємо існуючий API endpoint services/[slug]
+        const params = new URLSearchParams({
+          locale,
+        })
 
         if (modelSlug) {
-          // Fetch model data
-          const modelResponse = await fetch(`/api/models/${modelSlug}`)
-          if (modelResponse.ok) {
-            modelData = await modelResponse.json()
-
-            // Find price for this service and model
-            const modelService = modelData.model_services?.find((ms: any) => ms.service.slug === serviceSlug)
-            price = modelService?.price
-          }
+          params.set("model", modelSlug)
         }
 
-        setServiceData({
-          id: service.id,
-          name: service.name,
-          description: service.description,
-          price: price,
-          warranty_months: service.warranty_months,
-          duration_hours: service.duration_hours,
-          model: modelData
-            ? {
-                id: modelData.id,
-                name: modelData.name,
-                brand: {
-                  name: modelData.brand.name,
-                },
-              }
-            : undefined,
-        })
-      } catch (error) {
-        console.error("Error fetching booking data:", error)
+        const response = await fetch(`/api/services/${serviceSlug}?${params.toString()}`)
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+
+        const serviceData = await response.json()
+
+        // Трансформуємо дані в потрібний формат
+        const transformedData: BookingData = {
+          service: {
+            id: serviceData.id,
+            slug: serviceData.slug,
+            name: serviceData.translation.name,
+            description: serviceData.translation.description,
+            image_url: serviceData.image_url,
+            warranty_months: serviceData.warranty_months,
+            warranty_period: serviceData.warranty_period,
+            duration_hours: serviceData.duration_hours,
+          },
+          model: serviceData.sourceModel,
+          price:
+            serviceData.modelServicePrice !== null
+              ? serviceData.modelServicePrice
+              : serviceData.minPrice !== null && serviceData.maxPrice !== null
+                ? serviceData.minPrice === serviceData.maxPrice
+                  ? serviceData.minPrice
+                  : { min: serviceData.minPrice, max: serviceData.maxPrice }
+                : null,
+        }
+
+        setBookingData(transformedData)
+      } catch (err) {
+        console.error("Error fetching booking data:", err)
+        setError("Failed to load booking information")
       } finally {
         setLoading(false)
       }
     }
 
-    fetchServiceData()
-  }, [searchParams])
+    fetchData()
+  }, [serviceSlug, modelSlug, locale])
+
+  // Генеруємо доступні дати (наступні 14 днів, тільки робочі дні)
+  const getAvailableDates = () => {
+    const dates = []
+    const today = new Date()
+
+    for (let i = 1; i <= 20; i++) {
+      const date = new Date(today)
+      date.setDate(today.getDate() + i)
+
+      // Пропускаємо вихідні (субота = 6, неділя = 0)
+      if (date.getDay() !== 0 && date.getDay() !== 6) {
+        dates.push(date)
+      }
+
+      if (dates.length >= 14) break
+    }
+
+    return dates
+  }
+
+  // Генеруємо доступний час (9:00 - 19:00)
+  const getAvailableTimes = () => {
+    const times = []
+    for (let hour = 9; hour <= 18; hour++) {
+      times.push(`${hour.toString().padStart(2, "0")}:00`)
+      times.push(`${hour.toString().padStart(2, "0")}:30`)
+    }
+    return times
+  }
+
+  // Валідація телефону - тільки цифри, пробіли, дефіси та плюс
+  const validatePhone = (phone: string) => {
+    const phoneRegex = /^[\d\s\-+()]+$/
+    return phoneRegex.test(phone) && phone.replace(/[\s\-+()]/g, "").length >= 9
+  }
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
@@ -152,20 +171,27 @@ export default function BookServiceClient({ locale }: Props) {
     if (!formData.firstName.trim()) {
       newErrors.firstName = t("firstNameRequired")
     }
+
     if (!formData.lastName.trim()) {
       newErrors.lastName = t("lastNameRequired")
     }
+
     if (!formData.phone.trim()) {
       newErrors.phone = t("phoneRequired")
+    } else if (!validatePhone(formData.phone)) {
+      newErrors.phone = t("phoneInvalid")
     }
+
     if (!formData.email.trim()) {
       newErrors.email = t("emailRequired")
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = t("emailInvalid")
     }
-    if (!date) {
+
+    if (!formData.date) {
       newErrors.date = t("dateRequired")
     }
+
     if (!formData.time) {
       newErrors.time = t("timeRequired")
     }
@@ -177,11 +203,11 @@ export default function BookServiceClient({ locale }: Props) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!validateForm()) {
+    if (!validateForm() || !bookingData) {
       return
     }
 
-    setSubmitting(true)
+    setIsSubmitting(true)
 
     try {
       const response = await fetch("/api/book-service", {
@@ -191,11 +217,10 @@ export default function BookServiceClient({ locale }: Props) {
         },
         body: JSON.stringify({
           ...formData,
-          date: date?.toISOString(),
-          service: serviceData?.name,
-          brand: serviceData?.model?.brand.name,
-          model: serviceData?.model?.name,
-          price: serviceData?.price ? `${serviceData.price} Kč` : t("priceOnRequest"),
+          service: bookingData.service.name,
+          brand: bookingData.model?.brands?.name,
+          model: bookingData.model?.name,
+          price: formatPrice(),
           locale,
         }),
       })
@@ -207,28 +232,67 @@ export default function BookServiceClient({ locale }: Props) {
       }
     } catch (error) {
       console.error("Error submitting booking:", error)
-      setErrors({ submit: t("submitError") })
+      alert(t("submitError"))
     } finally {
-      setSubmitting(false)
+      setIsSubmitting(false)
     }
+  }
+
+  const handleInputChange = (field: string, value: string) => {
+    // Для телефону дозволяємо тільки цифри, пробіли, дефіси, плюс та дужки
+    if (field === "phone") {
+      const cleanValue = value.replace(/[^\d\s\-+()]/g, "")
+      setFormData((prev) => ({ ...prev, [field]: cleanValue }))
+    } else {
+      setFormData((prev) => ({ ...prev, [field]: value }))
+    }
+
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: "" }))
+    }
+  }
+
+  const formatPrice = () => {
+    if (!bookingData?.price) return t("priceOnRequest")
+
+    if (typeof bookingData.price === "number") {
+      return formatCurrency(bookingData.price)
+    }
+
+    if (typeof bookingData.price === "object" && "min" in bookingData.price) {
+      return `${formatCurrency(bookingData.price.min)} - ${formatCurrency(bookingData.price.max)}`
+    }
+
+    return t("priceOnRequest")
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-600" />
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-2xl mx-auto px-4">
+          <Card className="shadow-sm">
+            <CardContent className="flex items-center justify-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-gray-600" />
+              <span className="ml-3 text-gray-600">{commonT("loading")}</span>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     )
   }
 
-  if (!serviceData) {
+  if (error || !bookingData) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-gray-600 mb-4">{t("serviceNotFound")}</p>
-          <Button asChild variant="outline">
-            <Link href={`/${locale}`}>{commonT("backToHome")}</Link>
-          </Button>
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-2xl mx-auto px-4">
+          <Card className="shadow-sm">
+            <CardContent className="text-center py-12">
+              <p className="text-red-600 mb-4">{error || "Service not found"}</p>
+              <Button asChild variant="outline">
+                <Link href={`/${locale}`}>{commonT("backToHome")}</Link>
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       </div>
     )
@@ -250,224 +314,219 @@ export default function BookServiceClient({ locale }: Props) {
 
         <Card className="shadow-sm border-0 bg-white">
           <CardHeader className="pb-6">
-            <CardTitle className="text-2xl font-semibold text-gray-900">{t("title")}</CardTitle>
-          </CardHeader>
+            <CardTitle className="text-2xl font-semibold text-center text-gray-900">{t("title")}</CardTitle>
 
-          <CardContent className="space-y-8">
-            {/* Service Info */}
-            <div className="bg-gray-50 rounded-lg p-6">
-              <h3 className="font-medium text-gray-900 mb-3">{t("selectedService")}</h3>
-              <div className="space-y-2">
-                <p className="font-medium text-gray-900">{serviceData.name}</p>
-                {serviceData.model && (
-                  <p className="text-gray-600 text-sm">
-                    {serviceData.model.brand.name} {serviceData.model.name}
-                  </p>
+            {/* Service Info - Clean and minimal */}
+            <div className="mt-6 p-6 bg-gray-50 rounded-lg border">
+              <div className="text-center">
+                <h3 className="text-lg font-medium text-gray-900 mb-2">{bookingData.service.name}</h3>
+
+                {bookingData.model && (
+                  <div className="mb-3">
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-white border text-gray-700">
+                      {bookingData.model.brands.name} {bookingData.model.name}
+                    </span>
+                  </div>
                 )}
-                {serviceData.price && <p className="text-lg font-semibold text-gray-900">{serviceData.price} Kč</p>}
-                {serviceData.description && <p className="text-gray-600 text-sm">{serviceData.description}</p>}
+
+                <div className="flex items-center justify-center gap-4 text-sm text-gray-600">
+                  <div className="flex items-center gap-1">
+                    <span className="font-semibold text-lg text-gray-900">{formatPrice()}</span>
+                  </div>
+
+                  {bookingData.service.duration_hours && (
+                    <div className="flex items-center gap-1">
+                      <Clock className="h-4 w-4" />
+                      <span>{bookingData.service.duration_hours}h</span>
+                    </div>
+                  )}
+
+                  {bookingData.service.warranty_months && (
+                    <div className="flex items-center gap-1">
+                      <Shield className="h-4 w-4" />
+                      <span>{bookingData.service.warranty_months} міс.</span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
+          </CardHeader>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Personal Information */}
+          <CardContent className="pt-0">
+            <form onSubmit={handleSubmit} className="space-y-8">
+              {/* Особисті дані */}
               <div className="space-y-4">
-                <h3 className="font-medium text-gray-900">{t("personalInfo")}</h3>
+                <div className="flex items-center gap-2 pb-2 border-b border-gray-200">
+                  <User className="h-5 w-5 text-gray-600" />
+                  <h3 className="text-lg font-medium text-gray-900">{t("personalInfo")}</h3>
+                </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="firstName" className="text-gray-700">
-                      {t("firstName")}
+                    <Label htmlFor="firstName" className="text-sm font-medium text-gray-700">
+                      {t("firstName")} <span className="text-red-500">*</span>
                     </Label>
                     <Input
                       id="firstName"
                       value={formData.firstName}
-                      onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                      onChange={(e) => handleInputChange("firstName", e.target.value)}
+                      className={`${errors.firstName ? "border-red-300 focus:border-red-500 focus:ring-red-500" : "border-gray-300 focus:border-blue-500 focus:ring-blue-500"} transition-colors`}
                       placeholder={t("firstNamePlaceholder")}
-                      className={cn(
-                        "border-gray-300 focus:border-gray-900 focus:ring-gray-900",
-                        errors.firstName && "border-red-500",
-                      )}
                     />
-                    {errors.firstName && <p className="text-red-500 text-sm">{errors.firstName}</p>}
+                    {errors.firstName && <p className="text-red-500 text-xs mt-1">{errors.firstName}</p>}
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="lastName" className="text-gray-700">
-                      {t("lastName")}
+                    <Label htmlFor="lastName" className="text-sm font-medium text-gray-700">
+                      {t("lastName")} <span className="text-red-500">*</span>
                     </Label>
                     <Input
                       id="lastName"
                       value={formData.lastName}
-                      onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                      onChange={(e) => handleInputChange("lastName", e.target.value)}
+                      className={`${errors.lastName ? "border-red-300 focus:border-red-500 focus:ring-red-500" : "border-gray-300 focus:border-blue-500 focus:ring-blue-500"} transition-colors`}
                       placeholder={t("lastNamePlaceholder")}
-                      className={cn(
-                        "border-gray-300 focus:border-gray-900 focus:ring-gray-900",
-                        errors.lastName && "border-red-500",
-                      )}
                     />
-                    {errors.lastName && <p className="text-red-500 text-sm">{errors.lastName}</p>}
+                    {errors.lastName && <p className="text-red-500 text-xs mt-1">{errors.lastName}</p>}
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="phone" className="text-gray-700">
-                      {t("phone")}
+                    <Label htmlFor="phone" className="text-sm font-medium text-gray-700">
+                      {t("phone")} <span className="text-red-500">*</span>
                     </Label>
                     <Input
                       id="phone"
                       type="tel"
                       value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      onChange={(e) => handleInputChange("phone", e.target.value)}
+                      className={`${errors.phone ? "border-red-300 focus:border-red-500 focus:ring-red-500" : "border-gray-300 focus:border-blue-500 focus:ring-blue-500"} transition-colors`}
                       placeholder={t("phonePlaceholder")}
-                      className={cn(
-                        "border-gray-300 focus:border-gray-900 focus:ring-gray-900",
-                        errors.phone && "border-red-500",
-                      )}
                     />
-                    {errors.phone && <p className="text-red-500 text-sm">{errors.phone}</p>}
+                    {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="email" className="text-gray-700">
-                      {t("email")}
+                    <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+                      {t("email")} <span className="text-red-500">*</span>
                     </Label>
                     <Input
                       id="email"
                       type="email"
                       value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      onChange={(e) => handleInputChange("email", e.target.value)}
+                      className={`${errors.email ? "border-red-300 focus:border-red-500 focus:ring-red-500" : "border-gray-300 focus:border-blue-500 focus:ring-blue-500"} transition-colors`}
                       placeholder={t("emailPlaceholder")}
-                      className={cn(
-                        "border-gray-300 focus:border-gray-900 focus:ring-gray-900",
-                        errors.email && "border-red-500",
-                      )}
                     />
-                    {errors.email && <p className="text-red-500 text-sm">{errors.email}</p>}
+                    {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
                   </div>
                 </div>
               </div>
 
-              {/* Date & Time */}
+              {/* Дата і час */}
               <div className="space-y-4">
-                <h3 className="font-medium text-gray-900">{t("dateTime")}</h3>
+                <div className="flex items-center gap-2 pb-2 border-b border-gray-200">
+                  <Calendar className="h-5 w-5 text-gray-600" />
+                  <h3 className="text-lg font-medium text-gray-900">{t("dateTime")}</h3>
+                </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label className="text-gray-700">{t("date")}</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-full justify-start text-left font-normal border-gray-300 hover:border-gray-400",
-                            !date && "text-gray-500",
-                            errors.date && "border-red-500",
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {date ? (
-                            format(date, "PPP", { locale: localeMap[locale as keyof typeof localeMap] })
-                          ) : (
-                            <span>{t("selectDate")}</span>
-                          )}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={date}
-                          onSelect={setDate}
-                          disabled={(date) => date < new Date() || date.getDay() === 0}
-                          initialFocus
-                          locale={localeMap[locale as keyof typeof localeMap]}
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    {errors.date && <p className="text-red-500 text-sm">{errors.date}</p>}
+                    <Label htmlFor="date" className="text-sm font-medium text-gray-700">
+                      {t("date")} <span className="text-red-500">*</span>
+                    </Label>
+                    <select
+                      id="date"
+                      value={formData.date}
+                      onChange={(e) => handleInputChange("date", e.target.value)}
+                      className={`w-full px-3 py-2 border rounded-md text-sm transition-colors ${
+                        errors.date
+                          ? "border-red-300 focus:border-red-500 focus:ring-red-500"
+                          : "border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                      } focus:outline-none focus:ring-2 focus:ring-opacity-50`}
+                    >
+                      <option value="">{t("selectDate")}</option>
+                      {getAvailableDates().map((date) => (
+                        <option key={date.toISOString()} value={date.toISOString().split("T")[0]}>
+                          {date.toLocaleDateString(locale, {
+                            weekday: "long",
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          })}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.date && <p className="text-red-500 text-xs mt-1">{errors.date}</p>}
                   </div>
 
                   <div className="space-y-2">
-                    <Label className="text-gray-700">{t("time")}</Label>
-                    <Select value={formData.time} onValueChange={(value) => setFormData({ ...formData, time: value })}>
-                      <SelectTrigger
-                        className={cn(
-                          "border-gray-300 focus:border-gray-900 focus:ring-gray-900",
-                          errors.time && "border-red-500",
-                        )}
-                      >
-                        <SelectValue placeholder={t("selectTime")} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {timeSlots.map((time) => (
-                          <SelectItem key={time} value={time}>
-                            <div className="flex items-center gap-2">
-                              <Clock className="h-4 w-4" />
-                              {time}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {errors.time && <p className="text-red-500 text-sm">{errors.time}</p>}
+                    <Label htmlFor="time" className="text-sm font-medium text-gray-700">
+                      {t("time")} <span className="text-red-500">*</span>
+                    </Label>
+                    <select
+                      id="time"
+                      value={formData.time}
+                      onChange={(e) => handleInputChange("time", e.target.value)}
+                      className={`w-full px-3 py-2 border rounded-md text-sm transition-colors ${
+                        errors.time
+                          ? "border-red-300 focus:border-red-500 focus:ring-red-500"
+                          : "border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                      } focus:outline-none focus:ring-2 focus:ring-opacity-50`}
+                    >
+                      <option value="">{t("selectTime")}</option>
+                      {getAvailableTimes().map((time) => (
+                        <option key={time} value={time}>
+                          {time}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.time && <p className="text-red-500 text-xs mt-1">{errors.time}</p>}
                   </div>
                 </div>
               </div>
 
-              {/* Additional Information */}
+              {/* Додаткова інформація */}
               <div className="space-y-4">
-                <h3 className="font-medium text-gray-900">{t("additionalInfo")}</h3>
+                <div className="flex items-center gap-2 pb-2 border-b border-gray-200">
+                  <MessageSquare className="h-5 w-5 text-gray-600" />
+                  <h3 className="text-lg font-medium text-gray-900">{t("additionalInfo")}</h3>
+                </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="comment" className="text-gray-700">
+                  <Label htmlFor="comment" className="text-sm font-medium text-gray-700">
                     {t("comment")}
                   </Label>
                   <Textarea
                     id="comment"
                     value={formData.comment}
-                    onChange={(e) => setFormData({ ...formData, comment: e.target.value })}
+                    onChange={(e) => handleInputChange("comment", e.target.value)}
                     placeholder={t("commentPlaceholder")}
                     rows={4}
-                    className="border-gray-300 focus:border-gray-900 focus:ring-gray-900 resize-none"
+                    className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 transition-colors resize-none"
                   />
                 </div>
               </div>
 
-              {/* Contact Info */}
-              <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                <div className="flex items-start gap-3">
-                  <MapPin className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                  <div className="space-y-1">
-                    <p className="font-medium text-blue-900">Bělohorská 209/133</p>
-                    <p className="text-blue-700 text-sm">169 00 Praha 6-Břevnov</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 mt-3">
-                  <Phone className="h-5 w-5 text-blue-600" />
-                  <p className="text-blue-700 font-medium">+420 775 848 259</p>
-                </div>
+              {/* Кнопка відправки */}
+              <div className="pt-6 border-t border-gray-200">
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full bg-gray-900 hover:bg-gray-800 text-white py-3 font-medium transition-colors disabled:opacity-50"
+                  size="lg"
+                >
+                  {isSubmitting ? (
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      {t("submitting")}
+                    </div>
+                  ) : (
+                    t("submitBooking")
+                  )}
+                </Button>
               </div>
-
-              {errors.submit && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                  <p className="text-red-700 text-sm">{errors.submit}</p>
-                </div>
-              )}
-
-              <Button
-                type="submit"
-                disabled={submitting}
-                className="w-full bg-gray-900 hover:bg-gray-800 text-white py-3"
-              >
-                {submitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {t("submitting")}
-                  </>
-                ) : (
-                  t("submitBooking")
-                )}
-              </Button>
             </form>
           </CardContent>
         </Card>

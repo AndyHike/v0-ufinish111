@@ -642,10 +642,10 @@
     "managerContact": "Our manager will contact you",
     "appointmentReminder": "We will confirm the appointment time",
     "nextSteps": "What's next?",
-    "step1": "You will receive confirmation via email",
-    "step2": "Our manager will contact you",
-    "step3": "We will confirm the appointment time",
-    "workingHours": "Working hours"
-      }
+"step1": "You will receive confirmation via email",
+"step2": "Our manager will contact you",
+"step3": "We will confirm the appointment time",
+"workingHours": "Working hours"
+  }
 
 }
