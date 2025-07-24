@@ -3,7 +3,7 @@ import BookServiceClient from "./book-service-client"
 
 interface Props {
   params: { locale: string }
-  searchParams: { service?: string; brand?: string; model?: string; price?: string }
+  searchParams: { service_slug?: string; model_slug?: string }
 }
 
 export async function generateMetadata({ params }: { params: { locale: string } }) {
@@ -20,10 +20,8 @@ export default function BookServicePage({ params, searchParams }: Props) {
     <div className="min-h-screen bg-gray-50">
       <BookServiceClient
         locale={params.locale}
-        service={searchParams.service}
-        brand={searchParams.brand}
-        model={searchParams.model}
-        price={searchParams.price}
+        serviceSlug={searchParams.service_slug}
+        modelSlug={searchParams.model_slug}
       />
     </div>
   )

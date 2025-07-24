@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
@@ -10,21 +10,50 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Calendar, User, MessageSquare, ArrowLeft, Star } from "lucide-react"
+import { Calendar, User, MessageSquare, ArrowLeft, Star, Loader2 } from "lucide-react"
 import Link from "next/link"
+import { formatCurrency } from "@/lib/format-currency"
 
 interface Props {
   locale: string
-  service?: string
-  brand?: string
-  model?: string
-  price?: string
+  serviceSlug?: string
+  modelSlug?: string
 }
 
-export default function BookServiceClient({ locale, service, brand, model, price }: Props) {
+interface BookingData {
+  service: {
+    id: string
+    slug: string
+    name: string
+    description: string
+    image_url: string | null
+    warranty_months: number | null
+    warranty_period: string
+    duration_hours: number | null
+  }
+  model: {
+    id: string
+    name: string
+    slug: string
+    image_url: string | null
+    brands: {
+      id: string
+      name: string
+      slug: string
+      logo_url: string | null
+    }
+  } | null
+  price: number | { min: number; max: number } | null
+}
+
+export default function BookServiceClient({ locale, serviceSlug, modelSlug }: Props) {
   const t = useTranslations("BookService")
   const commonT = useTranslations("Common")
   const router = useRouter()
+
+  const [bookingData, setBookingData] = useState<BookingData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -38,6 +67,44 @@ export default function BookServiceClient({ locale, service, brand, model, price
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
+
+  // Завантажуємо дані за slug
+  useEffect(() => {
+    if (!serviceSlug) {
+      setError("Service not specified")
+      setLoading(false)
+      return
+    }
+
+    const fetchData = async () => {
+      try {
+        const params = new URLSearchParams({
+          service_slug: serviceSlug,
+          locale: locale,
+        })
+
+        if (modelSlug) {
+          params.set("model_slug", modelSlug)
+        }
+
+        const response = await fetch(`/api/book-service/data?${params.toString()}`)
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch booking data")
+        }
+
+        const data = await response.json()
+        setBookingData(data)
+      } catch (err) {
+        console.error("Error fetching booking data:", err)
+        setError("Failed to load booking information")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [serviceSlug, modelSlug, locale])
 
   // Генеруємо доступні дати (наступні 14 днів, тільки робочі дні)
   const getAvailableDates = () => {
@@ -113,7 +180,7 @@ export default function BookServiceClient({ locale, service, brand, model, price
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!validateForm()) {
+    if (!validateForm() || !bookingData) {
       return
     }
 
@@ -127,10 +194,10 @@ export default function BookServiceClient({ locale, service, brand, model, price
         },
         body: JSON.stringify({
           ...formData,
-          service,
-          brand,
-          model,
-          price,
+          service: bookingData.service.name,
+          brand: bookingData.model?.brands?.name,
+          model: bookingData.model?.name,
+          price: formatPrice(),
           locale,
         }),
       })
@@ -162,7 +229,51 @@ export default function BookServiceClient({ locale, service, brand, model, price
     }
   }
 
-  const serviceInfo = service ? `${service}${brand && model ? ` (${brand} ${model})` : ""}` : ""
+  const formatPrice = () => {
+    if (!bookingData?.price) return t("priceOnRequest")
+
+    if (typeof bookingData.price === "number") {
+      return formatCurrency(bookingData.price)
+    }
+
+    if (typeof bookingData.price === "object" && "min" in bookingData.price) {
+      return `${formatCurrency(bookingData.price.min)} - ${formatCurrency(bookingData.price.max)}`
+    }
+
+    return t("priceOnRequest")
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-2xl mx-auto px-4">
+          <Card>
+            <CardContent className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+              <span className="ml-2 text-gray-600">{commonT("loading")}</span>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
+
+  if (error || !bookingData) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-2xl mx-auto px-4">
+          <Card>
+            <CardContent className="text-center py-12">
+              <p className="text-red-600 mb-4">{error || "Service not found"}</p>
+              <Button asChild>
+                <Link href={`/${locale}`}>{commonT("backToHome")}</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -178,28 +289,24 @@ export default function BookServiceClient({ locale, service, brand, model, price
         <Card>
           <CardHeader>
             <CardTitle className="text-2xl text-center">{t("title")}</CardTitle>
-            {serviceInfo && (
-              <div className="text-center bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg border-2 border-blue-200 mt-4">
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <Star className="h-5 w-5 text-yellow-500 fill-current" />
-                  <p className="text-sm font-medium text-gray-600 uppercase tracking-wide">{t("selectedService")}</p>
-                  <Star className="h-5 w-5 text-yellow-500 fill-current" />
-                </div>
-                <h3 className="text-xl font-bold text-blue-900 mb-2">{service}</h3>
-                {brand && model && (
-                  <div className="bg-white px-4 py-2 rounded-full inline-block border border-blue-300">
-                    <p className="text-lg font-semibold text-gray-800">
-                      {brand} {model}
-                    </p>
-                  </div>
-                )}
-                {price && (
-                  <p className="text-2xl font-bold text-green-600 mt-3 bg-green-50 px-4 py-2 rounded-lg inline-block border border-green-200">
-                    {price}
-                  </p>
-                )}
+            <div className="text-center bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg border-2 border-blue-200 mt-4">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <Star className="h-5 w-5 text-yellow-500 fill-current" />
+                <p className="text-sm font-medium text-gray-600 uppercase tracking-wide">{t("selectedService")}</p>
+                <Star className="h-5 w-5 text-yellow-500 fill-current" />
               </div>
-            )}
+              <h3 className="text-xl font-bold text-blue-900 mb-2">{bookingData.service.name}</h3>
+              {bookingData.model && (
+                <div className="bg-white px-4 py-2 rounded-full inline-block border border-blue-300">
+                  <p className="text-lg font-semibold text-gray-800">
+                    {bookingData.model.brands.name} {bookingData.model.name}
+                  </p>
+                </div>
+              )}
+              <p className="text-2xl font-bold text-green-600 mt-3 bg-green-50 px-4 py-2 rounded-lg inline-block border border-green-200">
+                {formatPrice()}
+              </p>
+            </div>
           </CardHeader>
 
           <CardContent>

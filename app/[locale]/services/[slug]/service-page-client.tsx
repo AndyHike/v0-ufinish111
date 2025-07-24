@@ -173,20 +173,25 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
     }
   }
 
-  // Формуємо URL для бронювання
-  const bookingUrl = `/${locale}/book-service?service=${encodeURIComponent(translation.name)}${
-    sourceModel
-      ? `&brand=${encodeURIComponent(sourceModel.brands?.name || "")}&model=${encodeURIComponent(sourceModel.name)}`
-      : modelParam
-        ? `&model=${encodeURIComponent(modelParam)}`
-        : ""
-  }${
-    modelServicePrice !== null && modelServicePrice !== undefined
-      ? `&price=${encodeURIComponent(formatCurrency(modelServicePrice))}`
-      : minPrice !== null && maxPrice !== null
-        ? `&price=${encodeURIComponent(minPrice === maxPrice ? formatCurrency(minPrice) : `${formatCurrency(minPrice)} - ${formatCurrency(maxPrice)}`)}`
-        : ""
-  }`
+  // Формуємо URL для бронювання через slug
+  const bookingUrl = (() => {
+    const params = new URLSearchParams()
+
+    // Завжди передаємо slug послуги
+    if (serviceData.slug) {
+      params.set("service_slug", serviceData.slug)
+    }
+
+    // Якщо є модель з URL або sourceModel, передаємо її slug
+    if (sourceModel?.slug) {
+      params.set("model_slug", sourceModel.slug)
+    } else if (modelParam) {
+      // Якщо modelParam це slug, використовуємо його
+      params.set("model_slug", modelParam)
+    }
+
+    return `/${locale}/book-service?${params.toString()}`
+  })()
 
   return (
     <div className="min-h-screen bg-white">
