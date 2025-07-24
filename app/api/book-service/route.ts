@@ -1,75 +1,72 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { sendBookingConfirmationEmail, sendNewBookingNotification } from "@/lib/email/send-booking-email"
 import { v4 as uuidv4 } from "uuid"
+
+interface BookingRequest {
+  firstName: string
+  lastName: string
+  email: string
+  phone: string
+  notes: string
+  date: string
+  time: string
+  service: string
+  brand: string
+  model: string
+  series?: string
+  locale: string
+}
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { service, brand, model, series, date, time, customer, locale } = body
+    const body: BookingRequest = await request.json()
 
-    // Generate unique booking ID
-    const bookingId = uuidv4().substring(0, 8).toUpperCase()
-
-    // Format date and time for emails
-    const dateTime = `${date} ${time}`
-
-    // Send confirmation email to customer
-    const customerEmailSent = await sendBookingConfirmationEmail(
-      customer.email,
-      {
-        customerName: `${customer.firstName} ${customer.lastName}`,
-        service: service.name,
-        brand,
-        model,
-        series,
-        price: service.price,
-        date,
-        time,
-        notes: customer.notes,
-      },
-      locale,
-    )
-
-    // Send notification email to admin
-    const adminEmailSent = await sendNewBookingNotification(
-      {
-        service: {
-          name: service.name,
-          price: service.price,
-          brand,
-          model,
-          series,
-        },
-        appointment: {
-          dateTime,
-          date,
-          time,
-        },
-        customer: {
-          firstName: customer.firstName,
-          lastName: customer.lastName,
-          email: customer.email,
-          phone: customer.phone,
-          address: customer.address,
-          notes: customer.notes,
-        },
-        bookingId,
-      },
-      locale,
-    )
-
-    if (customerEmailSent && adminEmailSent) {
-      return NextResponse.json({
-        success: true,
-        message: "Booking submitted successfully",
-        bookingId,
-      })
-    } else {
-      console.error("Failed to send one or both emails")
-      return NextResponse.json({ success: false, message: "Failed to send confirmation emails" }, { status: 500 })
+    // Валідація обов'язкових полів
+    const requiredFields = ["firstName", "lastName", "email", "phone", "date", "time", "service", "brand", "model"]
+    for (const field of requiredFields) {
+      if (!body[field as keyof BookingRequest]) {
+        return NextResponse.json({ error: `Поле ${field} є обов'язковим` }, { status: 400 })
+      }
     }
+
+    // Генерація унікального ID бронювання
+    const bookingId = uuidv4()
+
+    // Форматування дати для email
+    const bookingDate = new Date(body.date)
+    const formattedDate = bookingDate.toLocaleDateString("uk-UA", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    })
+
+    // Підготовка даних для email
+    const bookingData = {
+      id: bookingId,
+      firstName: body.firstName,
+      lastName: body.lastName,
+      email: body.email,
+      phone: body.phone,
+      notes: body.notes,
+      date: formattedDate,
+      time: body.time,
+      service: body.service,
+      brand: body.brand,
+      model: body.model,
+      series: body.series,
+      locale: body.locale,
+    }
+
+    // TODO: Тут буде відправка email після створення функцій
+    console.log("Booking created:", bookingData)
+
+    return NextResponse.json({
+      success: true,
+      bookingId,
+      message: "Бронювання успішно створено",
+    })
   } catch (error) {
-    console.error("Error processing booking:", error)
-    return NextResponse.json({ success: false, message: "Internal server error" }, { status: 500 })
+    console.error("Booking API error:", error)
+    return NextResponse.json({ error: "Внутрішня помилка сервера" }, { status: 500 })
   }
 }

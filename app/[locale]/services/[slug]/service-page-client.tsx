@@ -1,273 +1,140 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useParams, usePathname, useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
-import Image from "next/image"
+import type { Service } from "@/types"
+import type { Brand } from "@/types"
+import type { Model } from "@/types"
+import type { Series } from "@/types"
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { Clock, Shield, ArrowLeft, Calendar } from "lucide-react"
-import { formatCurrency } from "@/lib/format-currency"
 
-type ServiceData = {
-  id: string
-  position: number
-  warranty_months: number | null
-  duration_hours: number | null
-  image_url: string | null
-  slug: string
-  translation: {
-    name: string
-    description: string
-    detailed_description: string | null
-    what_included: string | null
-  }
-  faqs: Array<{
-    id: string
-    position: number
-    translation: {
-      question: string
-      answer: string
-    }
-  }>
-  sourceModel: {
-    id: string
-    name: string
-    slug: string
-    image_url: string | null
-    brands: {
-      id: string
-      name: string
-      slug: string
-      logo_url: string | null
-    }
-  } | null
-  modelServicePrice: number | null
-  minPrice: number | null
-  maxPrice: number | null
+interface Props {
+  service: Service
+  brands: Brand[]
 }
 
-type Props = {
-  serviceData: ServiceData
-  locale: string
-}
-
-export default function ServicePageClient({ serviceData, locale }: Props) {
+const ServicePageClient = ({ service, brands }: Props) => {
   const t = useTranslations("ServicePage")
-  const [imageError, setImageError] = useState(false)
+  const { locale } = useParams()
+  const pathname = usePathname()
+  const router = useRouter()
 
-  const formatPrice = (price: number | null) => {
-    if (!price) return t("priceOnRequest")
-    return formatCurrency(price, locale)
-  }
+  const [selectedBrand, setSelectedBrand] = useState<Brand | null>(null)
+  const [selectedModel, setSelectedModel] = useState<Model | null>(null)
+  const [selectedSeries, setSelectedSeries] = useState<Series | null>(null)
+  const [models, setModels] = useState<Model[]>([])
+  const [series, setSeries] = useState<Series[]>([])
 
-  const getPriceDisplay = () => {
-    if (serviceData.modelServicePrice) {
-      return formatPrice(serviceData.modelServicePrice)
+  useEffect(() => {
+    if (selectedBrand) {
+      setModels(selectedBrand.models)
+      setSelectedModel(null)
+      setSelectedSeries(null)
+      setSeries([])
+    } else {
+      setModels([])
+      setSelectedModel(null)
+      setSelectedSeries(null)
+      setSeries([])
     }
+  }, [selectedBrand])
 
-    if (serviceData.minPrice && serviceData.maxPrice) {
-      if (serviceData.minPrice === serviceData.maxPrice) {
-        return formatPrice(serviceData.minPrice)
-      }
-      return `${formatPrice(serviceData.minPrice)} - ${formatPrice(serviceData.maxPrice)}`
+  useEffect(() => {
+    if (selectedModel) {
+      setSeries(selectedModel.series)
+      setSelectedSeries(null)
+    } else {
+      setSeries([])
+      setSelectedSeries(null)
     }
-
-    return t("priceOnRequest")
-  }
-
-  const getBookingUrl = () => {
-    if (serviceData.sourceModel) {
-      const params = new URLSearchParams({
-        service: serviceData.slug,
-        brand: serviceData.sourceModel.brands.slug,
-        model: serviceData.sourceModel.slug,
-      })
-      return `/${locale}/book-service?${params.toString()}`
-    }
-    return `/${locale}/contact`
-  }
+  }, [selectedModel])
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Back Navigation */}
-      {serviceData.sourceModel && (
-        <Link
-          href={`/${locale}/models/${serviceData.sourceModel.slug}`}
-          className="inline-flex items-center text-sm text-muted-foreground hover:text-primary mb-6"
+    <div>
+      <h2>{service.name}</h2>
+      <p>{service.description}</p>
+
+      <div>
+        <h3>{t("chooseBrand")}</h3>
+        <select
+          value={selectedBrand ? selectedBrand.id : ""}
+          onChange={(e) => {
+            const brandId = e.target.value
+            if (brandId) {
+              const brand = brands.find((b) => b.id === brandId)
+              setSelectedBrand(brand || null)
+            } else {
+              setSelectedBrand(null)
+            }
+          }}
         >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          {t("backToModel", { model: serviceData.sourceModel.name })}
-        </Link>
+          <option value="">{t("selectBrand")}</option>
+          {brands.map((brand) => (
+            <option key={brand.id} value={brand.id}>
+              {brand.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {selectedBrand && (
+        <div>
+          <h3>{t("chooseModel")}</h3>
+          <select
+            value={selectedModel ? selectedModel.id : ""}
+            onChange={(e) => {
+              const modelId = e.target.value
+              if (modelId) {
+                const model = models.find((m) => m.id === modelId)
+                setSelectedModel(model || null)
+              } else {
+                setSelectedModel(null)
+              }
+            }}
+          >
+            <option value="">{t("selectModel")}</option>
+            {models.map((model) => (
+              <option key={model.id} value={model.id}>
+                {model.name}
+              </option>
+            ))}
+          </select>
+        </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Service Header */}
-          <div>
-            <h1 className="text-3xl font-bold mb-4">{serviceData.translation.name}</h1>
-            <p className="text-lg text-muted-foreground mb-6">{serviceData.translation.description}</p>
-
-            {/* Service Image */}
-            {serviceData.image_url && !imageError && (
-              <div className="relative w-full h-64 mb-6 rounded-lg overflow-hidden">
-                <Image
-                  src={serviceData.image_url || "/placeholder.svg"}
-                  alt={serviceData.translation.name}
-                  fill
-                  className="object-cover"
-                  onError={() => setImageError(true)}
-                />
-              </div>
-            )}
-          </div>
-
-          {/* Source Model Info */}
-          {serviceData.sourceModel && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">{t("forDevice")}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center space-x-4">
-                  {serviceData.sourceModel.brands.logo_url && (
-                    <div className="relative w-12 h-12 flex-shrink-0">
-                      <Image
-                        src={serviceData.sourceModel.brands.logo_url || "/placeholder.svg"}
-                        alt={serviceData.sourceModel.brands.name}
-                        fill
-                        className="object-contain"
-                      />
-                    </div>
-                  )}
-                  <div>
-                    <h3 className="font-semibold">
-                      {serviceData.sourceModel.brands.name} {serviceData.sourceModel.name}
-                    </h3>
-                    <p className="text-sm text-muted-foreground">{t("specificPricing")}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Detailed Description */}
-          {serviceData.translation.detailed_description && (
-            <Card>
-              <CardHeader>
-                <CardTitle>{t("serviceDetails")}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div
-                  className="prose prose-sm max-w-none"
-                  dangerouslySetInnerHTML={{
-                    __html: serviceData.translation.detailed_description,
-                  }}
-                />
-              </CardContent>
-            </Card>
-          )}
-
-          {/* What's Included */}
-          {serviceData.translation.what_included && (
-            <Card>
-              <CardHeader>
-                <CardTitle>{t("whatsIncluded")}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div
-                  className="prose prose-sm max-w-none"
-                  dangerouslySetInnerHTML={{
-                    __html: serviceData.translation.what_included,
-                  }}
-                />
-              </CardContent>
-            </Card>
-          )}
-
-          {/* FAQs */}
-          {serviceData.faqs.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>{t("faq")}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Accordion type="single" collapsible className="w-full">
-                  {serviceData.faqs.map((faq, index) => (
-                    <AccordionItem key={faq.id} value={`item-${index}`}>
-                      <AccordionTrigger className="text-left">{faq.translation.question}</AccordionTrigger>
-                      <AccordionContent>
-                        <div
-                          className="prose prose-sm max-w-none"
-                          dangerouslySetInnerHTML={{
-                            __html: faq.translation.answer,
-                          }}
-                        />
-                      </AccordionContent>
-                    </AccordionItem>
-                  ))}
-                </Accordion>
-              </CardContent>
-            </Card>
-          )}
+      {selectedModel && (
+        <div>
+          <h3>{t("chooseSeries")}</h3>
+          <select
+            value={selectedSeries ? selectedSeries.id : ""}
+            onChange={(e) => {
+              const seriesId = e.target.value
+              if (seriesId) {
+                const seriesItem = series.find((s) => s.id === seriesId)
+                setSelectedSeries(seriesItem || null)
+              } else {
+                setSelectedSeries(null)
+              }
+            }}
+          >
+            <option value="">{t("selectSeries")}</option>
+            {series.map((seriesItem) => (
+              <option key={seriesItem.id} value={seriesItem.id}>
+                {seriesItem.name}
+              </option>
+            ))}
+          </select>
         </div>
+      )}
 
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Pricing Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle>{t("pricing")}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="text-2xl font-bold text-primary">{getPriceDisplay()}</div>
-
-              {/* Service Features */}
-              <div className="space-y-3">
-                {serviceData.warranty_months && (
-                  <div className="flex items-center space-x-2">
-                    <Shield className="h-4 w-4 text-green-600" />
-                    <span className="text-sm">{t("warranty", { months: serviceData.warranty_months })}</span>
-                  </div>
-                )}
-
-                {serviceData.duration_hours && (
-                  <div className="flex items-center space-x-2">
-                    <Clock className="h-4 w-4 text-blue-600" />
-                    <span className="text-sm">{t("duration", { hours: serviceData.duration_hours })}</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Book Service Button */}
-              <Button asChild className="w-full" size="lg">
-                <Link href={getBookingUrl()}>
-                  <Calendar className="h-4 w-4 mr-2" />
-                  {t("bookService")}
-                </Link>
-              </Button>
-
-              {!serviceData.sourceModel && (
-                <p className="text-xs text-muted-foreground text-center">{t("contactForBooking")}</p>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Additional Info */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">{t("additionalInfo")}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm">
-              <p>{t("professionalService")}</p>
-              <p>{t("qualityParts")}</p>
-              <p>{t("fastTurnaround")}</p>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+      <Link
+        href={`/${locale}/book-service?service=${encodeURIComponent(service.name)}&brand=${encodeURIComponent(selectedBrand?.name || "")}&model=${encodeURIComponent(selectedModel?.name || "")}${selectedSeries ? `&series=${encodeURIComponent(selectedSeries.name)}` : ""}`}
+      >
+        {t("orderService")}
+      </Link>
     </div>
   )
 }
+
+export default ServicePageClient

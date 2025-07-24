@@ -3,417 +3,327 @@
 import type React from "react"
 
 import { useState } from "react"
-import { useTranslations } from "next-intl"
-import { Button } from "@/components/ui/button"
+import { useRouter } from "next/navigation"
+import { Calendar } from "@/components/ui/calendar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Calendar } from "@/components/ui/calendar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { CalendarIcon, ArrowLeft, Clock } from "lucide-react"
-import { format, addDays, isWeekend } from "date-fns"
-import { uk, cs, enUS } from "date-fns/locale"
-import { cn } from "@/lib/utils"
-import Link from "next/link"
+import { Badge } from "@/components/ui/badge"
+import { CalendarIcon, ClockIcon, PhoneIcon as DevicePhoneMobileIcon } from "lucide-react"
 import { toast } from "sonner"
 
-type BookingData = {
-  service: {
-    id: string
-    slug: string
-    name: string
-    description: string
-    price: number | null
-  }
-  brand: {
-    id: string
-    name: string
-    slug: string
-  }
-  model: {
-    id: string
-    name: string
-    slug: string
-  }
-  series: {
-    id: string
-    name: string
-    slug: string
-  } | null
-}
-
-type Props = {
-  bookingData: BookingData
+interface BookServiceClientProps {
+  service: string
+  brand: string
+  model: string
+  series?: string
   locale: string
 }
 
-export default function BookServiceClient({ bookingData, locale }: Props) {
-  const t = useTranslations("BookService")
-  const [selectedDate, setSelectedDate] = useState<Date>()
-  const [selectedTime, setSelectedTime] = useState<string>("")
+interface BookingData {
+  firstName: string
+  lastName: string
+  email: string
+  phone: string
+  notes: string
+  date: Date | null
+  time: string
+}
+
+export default function BookServiceClient({ service, brand, model, series, locale }: BookServiceClientProps) {
+  const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [formData, setFormData] = useState({
+  const [bookingData, setBookingData] = useState<BookingData>({
     firstName: "",
     lastName: "",
     email: "",
     phone: "",
-    address: "",
     notes: "",
+    date: null,
+    time: "",
   })
 
-  // Generate time slots from 9:00 to 19:00 with 30-minute intervals
-  const timeSlots = []
-  for (let hour = 9; hour < 19; hour++) {
-    timeSlots.push(`${hour.toString().padStart(2, "0")}:00`)
-    timeSlots.push(`${hour.toString().padStart(2, "0")}:30`)
+  // Генерація доступних часів (9:00 - 19:00, інтервал 30 хвилин)
+  const generateTimeSlots = () => {
+    const slots = []
+    for (let hour = 9; hour < 19; hour++) {
+      slots.push(`${hour.toString().padStart(2, "0")}:00`)
+      slots.push(`${hour.toString().padStart(2, "0")}:30`)
+    }
+    return slots
   }
 
-  // Get date-fns locale
-  const dateLocale = locale === "uk" ? uk : locale === "cs" ? cs : enUS
+  // Перевірка чи день робочий (пн-пт)
+  const isWorkingDay = (date: Date) => {
+    const day = date.getDay()
+    return day >= 1 && day <= 5 // пн-пт
+  }
 
-  // Disable weekends and past dates, limit to 2 weeks ahead
-  const isDateDisabled = (date: Date) => {
+  // Перевірка чи дата в межах 2 тижнів
+  const isDateInRange = (date: Date) => {
     const today = new Date()
-    const twoWeeksFromNow = addDays(today, 14)
-    return date < today || date > twoWeeksFromNow || isWeekend(date)
+    const twoWeeksFromNow = new Date()
+    twoWeeksFromNow.setDate(today.getDate() + 14)
+
+    return date >= today && date <= twoWeeksFromNow
   }
 
-  const handleInputChange = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
-  }
-
-  const validateForm = () => {
-    if (!formData.firstName.trim()) {
-      toast.error(t("fillRequiredFields"))
-      return false
+  const handleDateSelect = (date: Date | undefined) => {
+    if (date && isWorkingDay(date) && isDateInRange(date)) {
+      setBookingData((prev) => ({ ...prev, date, time: "" }))
     }
-    if (!formData.lastName.trim()) {
-      toast.error(t("fillRequiredFields"))
-      return false
-    }
-    if (!formData.email.trim()) {
-      toast.error(t("fillRequiredFields"))
-      return false
-    }
-    if (!formData.phone.trim()) {
-      toast.error(t("fillRequiredFields"))
-      return false
-    }
-    if (!selectedDate) {
-      toast.error(t("fillRequiredFields"))
-      return false
-    }
-    if (!selectedTime) {
-      toast.error(t("fillRequiredFields"))
-      return false
-    }
-
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(formData.email)) {
-      toast.error(t("invalidEmail"))
-      return false
-    }
-
-    return true
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!validateForm()) {
+    if (!bookingData.date || !bookingData.time) {
+      toast.error("Будь ласка, оберіть дату та час")
+      return
+    }
+
+    if (!bookingData.firstName || !bookingData.lastName || !bookingData.email || !bookingData.phone) {
+      toast.error("Будь ласка, заповніть всі обов'язкові поля")
       return
     }
 
     setIsSubmitting(true)
 
     try {
-      const bookingPayload = {
-        service: {
-          name: bookingData.service.name,
-          price: bookingData.service.price,
-        },
-        brand: bookingData.brand.name,
-        model: bookingData.model.name,
-        series: bookingData.series?.name || null,
-        date: format(selectedDate!, "yyyy-MM-dd"),
-        time: selectedTime,
-        customer: formData,
-        locale,
-      }
-
       const response = await fetch("/api/book-service", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(bookingPayload),
+        body: JSON.stringify({
+          ...bookingData,
+          service,
+          brand,
+          model,
+          series,
+          locale,
+        }),
       })
 
-      if (response.ok) {
-        toast.success(t("bookingSuccess"))
-        // Reset form
-        setFormData({
-          firstName: "",
-          lastName: "",
-          email: "",
-          phone: "",
-          address: "",
-          notes: "",
-        })
-        setSelectedDate(undefined)
-        setSelectedTime("")
-      } else {
-        toast.error(t("bookingError"))
+      if (!response.ok) {
+        throw new Error("Помилка при відправці бронювання")
       }
+
+      const result = await response.json()
+
+      // Перенаправлення на сторінку успіху
+      router.push(`/${locale}/book-service/success?id=${result.bookingId}`)
     } catch (error) {
       console.error("Booking error:", error)
-      toast.error(t("bookingError"))
+      toast.error("Помилка при відправці бронювання. Спробуйте ще раз.")
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  const formatPrice = (price: number | null) => {
-    if (!price) return t("priceOnRequest")
-    return new Intl.NumberFormat(locale === "cs" ? "cs-CZ" : locale === "uk" ? "uk-UA" : "en-US", {
-      style: "currency",
-      currency: "CZK",
-    }).format(price)
-  }
+  const timeSlots = generateTimeSlots()
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <div className="mb-6">
-        <Link
-          href={`/${locale}/services/${bookingData.service.slug}?model=${bookingData.model.slug}`}
-          className="inline-flex items-center text-sm text-muted-foreground hover:text-primary mb-4"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          {t("goBack")}
-        </Link>
+    <div className="max-w-4xl mx-auto space-y-6">
+      {/* Інформація про пристрій */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <DevicePhoneMobileIcon className="h-5 w-5" />
+            Деталі бронювання
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">Бренд</Label>
+              <Badge variant="secondary" className="mt-1">
+                {brand}
+              </Badge>
+            </div>
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">Модель</Label>
+              <Badge variant="secondary" className="mt-1">
+                {model}
+              </Badge>
+            </div>
+            {series && (
+              <div>
+                <Label className="text-sm font-medium text-muted-foreground">Серія</Label>
+                <Badge variant="secondary" className="mt-1">
+                  {series}
+                </Badge>
+              </div>
+            )}
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">Послуга</Label>
+              <Badge variant="outline" className="mt-1">
+                {service}
+              </Badge>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-        <h1 className="text-3xl font-bold mb-2">{t("title")}</h1>
-        <p className="text-muted-foreground">{t("subtitle")}</p>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Service Details */}
-        <div className="lg:col-span-1">
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Календар */}
           <Card>
             <CardHeader>
-              <CardTitle>{t("serviceDetails")}</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <CalendarIcon className="h-5 w-5" />
+                Оберіть дату
+              </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label className="text-sm font-medium">{t("brand")}</Label>
-                <p className="text-sm text-muted-foreground">{bookingData.brand.name}</p>
-              </div>
-              <div>
-                <Label className="text-sm font-medium">{t("model")}</Label>
-                <p className="text-sm text-muted-foreground">{bookingData.model.name}</p>
-              </div>
-              {bookingData.series && (
-                <div>
-                  <Label className="text-sm font-medium">{t("series")}</Label>
-                  <p className="text-sm text-muted-foreground">{bookingData.series.name}</p>
-                </div>
-              )}
-              <div>
-                <Label className="text-sm font-medium">{t("service")}</Label>
-                <p className="text-sm text-muted-foreground">{bookingData.service.name}</p>
-              </div>
-              <div>
-                <Label className="text-sm font-medium">{t("price")}</Label>
-                <p className="text-sm font-semibold">{formatPrice(bookingData.service.price)}</p>
-              </div>
+            <CardContent>
+              <Calendar
+                mode="single"
+                selected={bookingData.date || undefined}
+                onSelect={handleDateSelect}
+                disabled={(date) => !isWorkingDay(date) || !isDateInRange(date)}
+                className="rounded-md border"
+              />
+              <p className="text-sm text-muted-foreground mt-2">
+                Доступні тільки робочі дні (пн-пт) протягом наступних 2 тижнів
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Вибір часу */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ClockIcon className="h-5 w-5" />
+                Оберіть час
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Select
+                value={bookingData.time}
+                onValueChange={(value) => setBookingData((prev) => ({ ...prev, time: value }))}
+                disabled={!bookingData.date}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Оберіть час" />
+                </SelectTrigger>
+                <SelectContent>
+                  {timeSlots.map((time) => (
+                    <SelectItem key={time} value={time}>
+                      {time}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-sm text-muted-foreground mt-2">Робочі години: 9:00 - 19:00</p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Booking Form */}
-        <div className="lg:col-span-2">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Date and Time Selection */}
-            <Card>
-              <CardHeader>
-                <CardTitle>{t("selectDateTime")}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label>{t("selectDate")}</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-full justify-start text-left font-normal",
-                            !selectedDate && "text-muted-foreground",
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {selectedDate ? (
-                            format(selectedDate, "PPP", { locale: dateLocale })
-                          ) : (
-                            <span>{t("pickDate")}</span>
-                          )}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar
-                          mode="single"
-                          selected={selectedDate}
-                          onSelect={setSelectedDate}
-                          disabled={isDateDisabled}
-                          initialFocus
-                          locale={dateLocale}
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
+        {/* Контактна інформація */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Контактна інформація</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="firstName">Ім'я *</Label>
+                <Input
+                  id="firstName"
+                  value={bookingData.firstName}
+                  onChange={(e) => setBookingData((prev) => ({ ...prev, firstName: e.target.value }))}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="lastName">Прізвище *</Label>
+                <Input
+                  id="lastName"
+                  value={bookingData.lastName}
+                  onChange={(e) => setBookingData((prev) => ({ ...prev, lastName: e.target.value }))}
+                  required
+                />
+              </div>
+            </div>
 
-                  <div>
-                    <Label>{t("selectTime")}</Label>
-                    <Select value={selectedTime} onValueChange={setSelectedTime}>
-                      <SelectTrigger>
-                        <SelectValue placeholder={t("pickTime")} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {timeSlots.map((time) => (
-                          <SelectItem key={time} value={time}>
-                            <div className="flex items-center">
-                              <Clock className="h-4 w-4 mr-2" />
-                              {time}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="email">Email *</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={bookingData.email}
+                  onChange={(e) => setBookingData((prev) => ({ ...prev, email: e.target.value }))}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="phone">Телефон *</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  value={bookingData.phone}
+                  onChange={(e) => setBookingData((prev) => ({ ...prev, phone: e.target.value }))}
+                  required
+                />
+              </div>
+            </div>
 
-                <div className="text-xs text-muted-foreground space-y-1">
-                  <p>{t("workingHoursNote")}</p>
-                  <p>{t("availabilityNote")}</p>
-                </div>
-              </CardContent>
-            </Card>
+            <div>
+              <Label htmlFor="notes">Додаткові примітки</Label>
+              <Textarea
+                id="notes"
+                value={bookingData.notes}
+                onChange={(e) => setBookingData((prev) => ({ ...prev, notes: e.target.value }))}
+                placeholder="Опишіть проблему або додайте будь-які примітки..."
+                rows={3}
+              />
+            </div>
+          </CardContent>
+        </Card>
 
-            {/* Customer Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle>{t("customerInfo")}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="firstName">{t("firstName")} *</Label>
-                    <Input
-                      id="firstName"
-                      value={formData.firstName}
-                      onChange={(e) => handleInputChange("firstName", e.target.value)}
-                      placeholder={t("firstNamePlaceholder")}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="lastName">{t("lastName")} *</Label>
-                    <Input
-                      id="lastName"
-                      value={formData.lastName}
-                      onChange={(e) => handleInputChange("lastName", e.target.value)}
-                      placeholder={t("lastNamePlaceholder")}
-                      required
-                    />
-                  </div>
-                </div>
+        {/* Підсумок та кнопка відправки */}
+        {bookingData.date && bookingData.time && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Підсумок бронювання</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <p>
+                  <strong>Пристрій:</strong> {brand} {model} {series && `(${series})`}
+                </p>
+                <p>
+                  <strong>Послуга:</strong> {service}
+                </p>
+                <p>
+                  <strong>Дата:</strong> {bookingData.date.toLocaleDateString("uk-UA")}
+                </p>
+                <p>
+                  <strong>Час:</strong> {bookingData.time}
+                </p>
+                {bookingData.firstName && bookingData.lastName && (
+                  <p>
+                    <strong>Клієнт:</strong> {bookingData.firstName} {bookingData.lastName}
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="email">{t("email")} *</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => handleInputChange("email", e.target.value)}
-                      placeholder={t("emailPlaceholder")}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="phone">{t("phone")} *</Label>
-                    <Input
-                      id="phone"
-                      type="tel"
-                      value={formData.phone}
-                      onChange={(e) => handleInputChange("phone", e.target.value)}
-                      placeholder={t("phonePlaceholder")}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="address">{t("address")}</Label>
-                  <Input
-                    id="address"
-                    value={formData.address}
-                    onChange={(e) => handleInputChange("address", e.target.value)}
-                    placeholder={t("addressPlaceholder")}
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="notes">{t("notes")}</Label>
-                  <Textarea
-                    id="notes"
-                    value={formData.notes}
-                    onChange={(e) => handleInputChange("notes", e.target.value)}
-                    placeholder={t("notesPlaceholder")}
-                    rows={3}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Booking Summary */}
-            {selectedDate && selectedTime && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>{t("bookingSummary")}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <h4 className="font-medium">{t("appointmentDetails")}</h4>
-                    <p className="text-sm text-muted-foreground">
-                      <strong>{t("dateTime")}:</strong> {format(selectedDate, "PPP", { locale: dateLocale })} {t("at")}{" "}
-                      {selectedTime}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      <strong>{t("device")}:</strong> {bookingData.brand.name} {bookingData.model.name}
-                      {bookingData.series && ` (${bookingData.series.name})`}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      <strong>{t("service")}:</strong> {bookingData.service.name}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      <strong>{t("price")}:</strong> {formatPrice(bookingData.service.price)}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Submit Button */}
-            <Button type="submit" className="w-full" size="lg" disabled={isSubmitting}>
-              {isSubmitting ? t("submitting") : t("confirmBooking")}
-            </Button>
-          </form>
-        </div>
-      </div>
+        <Button
+          type="submit"
+          className="w-full"
+          size="lg"
+          disabled={isSubmitting || !bookingData.date || !bookingData.time}
+        >
+          {isSubmitting ? "Відправка..." : "Підтвердити бронювання"}
+        </Button>
+      </form>
     </div>
   )
 }
