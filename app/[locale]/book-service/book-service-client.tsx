@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Calendar, User, MessageSquare, ArrowLeft } from "lucide-react"
+import { Calendar, User, MessageSquare, ArrowLeft, Star } from "lucide-react"
 import Link from "next/link"
 
 interface Props {
@@ -79,31 +79,31 @@ export default function BookServiceClient({ locale, service, brand, model, price
     const newErrors: Record<string, string> = {}
 
     if (!formData.firstName.trim()) {
-      newErrors.firstName = "Ім'я обов'язкове"
+      newErrors.firstName = t("firstNameRequired")
     }
 
     if (!formData.lastName.trim()) {
-      newErrors.lastName = "Прізвище обов'язкове"
+      newErrors.lastName = t("lastNameRequired")
     }
 
     if (!formData.phone.trim()) {
-      newErrors.phone = "Телефон обов'язковий"
+      newErrors.phone = t("phoneRequired")
     } else if (!validatePhone(formData.phone)) {
-      newErrors.phone = "Невірний формат телефону"
+      newErrors.phone = t("phoneInvalid")
     }
 
     if (!formData.email.trim()) {
-      newErrors.email = "Email обов'язковий"
+      newErrors.email = t("emailRequired")
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = "Невірний формат email"
+      newErrors.email = t("emailInvalid")
     }
 
     if (!formData.date) {
-      newErrors.date = "Дата обов'язкова"
+      newErrors.date = t("dateRequired")
     }
 
     if (!formData.time) {
-      newErrors.time = "Час обов'язковий"
+      newErrors.time = t("timeRequired")
     }
 
     setErrors(newErrors)
@@ -142,7 +142,7 @@ export default function BookServiceClient({ locale, service, brand, model, price
       }
     } catch (error) {
       console.error("Error submitting booking:", error)
-      alert("Помилка відправки форми")
+      alert(t("submitError"))
     } finally {
       setIsSubmitting(false)
     }
@@ -171,18 +171,33 @@ export default function BookServiceClient({ locale, service, brand, model, price
         <nav className="mb-6">
           <Link href={`/${locale}`} className="text-blue-600 hover:text-blue-800 flex items-center gap-2 text-sm">
             <ArrowLeft className="h-4 w-4" />
-            На головну
+            {commonT("backToHome")}
           </Link>
         </nav>
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-2xl text-center">Бронювання послуги</CardTitle>
+            <CardTitle className="text-2xl text-center">{t("title")}</CardTitle>
             {serviceInfo && (
-              <div className="text-center">
-                <p className="text-gray-600">Обрана послуга:</p>
-                <p className="font-semibold text-blue-600">{serviceInfo}</p>
-                {price && <p className="text-lg font-bold text-gray-900">{price}</p>}
+              <div className="text-center bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg border-2 border-blue-200 mt-4">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <Star className="h-5 w-5 text-yellow-500 fill-current" />
+                  <p className="text-sm font-medium text-gray-600 uppercase tracking-wide">{t("selectedService")}</p>
+                  <Star className="h-5 w-5 text-yellow-500 fill-current" />
+                </div>
+                <h3 className="text-xl font-bold text-blue-900 mb-2">{service}</h3>
+                {brand && model && (
+                  <div className="bg-white px-4 py-2 rounded-full inline-block border border-blue-300">
+                    <p className="text-lg font-semibold text-gray-800">
+                      {brand} {model}
+                    </p>
+                  </div>
+                )}
+                {price && (
+                  <p className="text-2xl font-bold text-green-600 mt-3 bg-green-50 px-4 py-2 rounded-lg inline-block border border-green-200">
+                    {price}
+                  </p>
+                )}
               </div>
             )}
           </CardHeader>
@@ -193,30 +208,30 @@ export default function BookServiceClient({ locale, service, brand, model, price
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold flex items-center gap-2">
                   <User className="h-5 w-5" />
-                  Особисті дані
+                  {t("personalInfo")}
                 </h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="firstName">Ім'я *</Label>
+                    <Label htmlFor="firstName">{t("firstName")} *</Label>
                     <Input
                       id="firstName"
                       value={formData.firstName}
                       onChange={(e) => handleInputChange("firstName", e.target.value)}
                       className={errors.firstName ? "border-red-500" : ""}
-                      placeholder="Введіть ваше ім'я"
+                      placeholder={t("firstNamePlaceholder")}
                     />
                     {errors.firstName && <p className="text-red-500 text-sm mt-1">{errors.firstName}</p>}
                   </div>
 
                   <div>
-                    <Label htmlFor="lastName">Прізвище *</Label>
+                    <Label htmlFor="lastName">{t("lastName")} *</Label>
                     <Input
                       id="lastName"
                       value={formData.lastName}
                       onChange={(e) => handleInputChange("lastName", e.target.value)}
                       className={errors.lastName ? "border-red-500" : ""}
-                      placeholder="Введіть ваше прізвище"
+                      placeholder={t("lastNamePlaceholder")}
                     />
                     {errors.lastName && <p className="text-red-500 text-sm mt-1">{errors.lastName}</p>}
                   </div>
@@ -224,27 +239,27 @@ export default function BookServiceClient({ locale, service, brand, model, price
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="phone">Телефон *</Label>
+                    <Label htmlFor="phone">{t("phone")} *</Label>
                     <Input
                       id="phone"
                       type="tel"
                       value={formData.phone}
                       onChange={(e) => handleInputChange("phone", e.target.value)}
                       className={errors.phone ? "border-red-500" : ""}
-                      placeholder="+420 123 456 789"
+                      placeholder={t("phonePlaceholder")}
                     />
                     {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
                   </div>
 
                   <div>
-                    <Label htmlFor="email">Email *</Label>
+                    <Label htmlFor="email">{t("email")} *</Label>
                     <Input
                       id="email"
                       type="email"
                       value={formData.email}
                       onChange={(e) => handleInputChange("email", e.target.value)}
                       className={errors.email ? "border-red-500" : ""}
-                      placeholder="example@email.com"
+                      placeholder={t("emailPlaceholder")}
                     />
                     {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
                   </div>
@@ -255,19 +270,19 @@ export default function BookServiceClient({ locale, service, brand, model, price
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold flex items-center gap-2">
                   <Calendar className="h-5 w-5" />
-                  Дата і час
+                  {t("dateTime")}
                 </h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="date">Дата *</Label>
+                    <Label htmlFor="date">{t("date")} *</Label>
                     <select
                       id="date"
                       value={formData.date}
                       onChange={(e) => handleInputChange("date", e.target.value)}
                       className={`w-full px-3 py-2 border rounded-md ${errors.date ? "border-red-500" : "border-gray-300"}`}
                     >
-                      <option value="">Оберіть дату</option>
+                      <option value="">{t("selectDate")}</option>
                       {getAvailableDates().map((date) => (
                         <option key={date.toISOString()} value={date.toISOString().split("T")[0]}>
                           {date.toLocaleDateString(locale, {
@@ -283,14 +298,14 @@ export default function BookServiceClient({ locale, service, brand, model, price
                   </div>
 
                   <div>
-                    <Label htmlFor="time">Час *</Label>
+                    <Label htmlFor="time">{t("time")} *</Label>
                     <select
                       id="time"
                       value={formData.time}
                       onChange={(e) => handleInputChange("time", e.target.value)}
                       className={`w-full px-3 py-2 border rounded-md ${errors.time ? "border-red-500" : "border-gray-300"}`}
                     >
-                      <option value="">Оберіть час</option>
+                      <option value="">{t("selectTime")}</option>
                       {getAvailableTimes().map((time) => (
                         <option key={time} value={time}>
                           {time}
@@ -306,16 +321,16 @@ export default function BookServiceClient({ locale, service, brand, model, price
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold flex items-center gap-2">
                   <MessageSquare className="h-5 w-5" />
-                  Додаткова інформація
+                  {t("additionalInfo")}
                 </h3>
 
                 <div>
-                  <Label htmlFor="comment">Коментар</Label>
+                  <Label htmlFor="comment">{t("comment")}</Label>
                   <Textarea
                     id="comment"
                     value={formData.comment}
                     onChange={(e) => handleInputChange("comment", e.target.value)}
-                    placeholder="Опишіть проблему або додайте коментар"
+                    placeholder={t("commentPlaceholder")}
                     rows={4}
                   />
                 </div>
@@ -329,7 +344,7 @@ export default function BookServiceClient({ locale, service, brand, model, price
                   className="w-full bg-blue-600 hover:bg-blue-700 py-3"
                   size="lg"
                 >
-                  {isSubmitting ? "Відправляємо..." : "Забронювати послугу"}
+                  {isSubmitting ? t("submitting") : t("submitBooking")}
                 </Button>
               </div>
             </form>

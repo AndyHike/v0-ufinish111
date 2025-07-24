@@ -22,28 +22,28 @@ export default function SuccessPageClient({ params }: Props) {
             <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
               <CheckCircle className="w-8 h-8 text-green-600" />
             </div>
-            <CardTitle className="text-2xl text-green-600">Дякуємо за бронювання!</CardTitle>
+            <CardTitle className="text-2xl text-green-600">{t("successTitle")}</CardTitle>
           </CardHeader>
 
           <CardContent className="space-y-6">
             <div className="text-center">
-              <p className="text-gray-600 text-lg">Ваш запит успішно відправлено</p>
+              <p className="text-gray-600 text-lg">{t("successMessage")}</p>
             </div>
 
             <div className="bg-blue-50 p-6 rounded-lg">
-              <h3 className="font-semibold text-blue-900 mb-4">Що далі?</h3>
+              <h3 className="font-semibold text-blue-900 mb-4">{t("whatNext")}</h3>
               <ul className="space-y-3 text-blue-800">
                 <li className="flex items-start">
                   <Mail className="w-5 h-5 mr-3 mt-0.5 flex-shrink-0" />
-                  <span>Ви отримаєте підтвердження на email</span>
+                  <span>{t("emailConfirmation")}</span>
                 </li>
                 <li className="flex items-start">
                   <Phone className="w-5 h-5 mr-3 mt-0.5 flex-shrink-0" />
-                  <span>Наш менеджер зв'яжеться з вами</span>
+                  <span>{t("managerContact")}</span>
                 </li>
                 <li className="flex items-start">
                   <Calendar className="w-5 h-5 mr-3 mt-0.5 flex-shrink-0" />
-                  <span>Підтвердимо час зустрічі</span>
+                  <span>{t("appointmentReminder")}</span>
                 </li>
               </ul>
             </div>
@@ -52,14 +52,14 @@ export default function SuccessPageClient({ params }: Props) {
               <Button asChild className="w-full bg-blue-600 hover:bg-blue-700">
                 <Link href={`/${params.locale}`}>
                   <Home className="w-4 h-4 mr-2" />
-                  На головну
+                  {commonT("backToHome")}
                 </Link>
               </Button>
 
               <Button variant="outline" asChild className="w-full bg-transparent">
                 <Link href={`/${params.locale}/contact`}>
                   <MessageCircle className="w-4 h-4 mr-2" />
-                  Зв'язатися з нами
+                  {commonT("contactUs")}
                 </Link>
               </Button>
             </div>
