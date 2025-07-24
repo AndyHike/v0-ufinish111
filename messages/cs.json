@@ -803,9 +803,8 @@
     "services": "Služby",
     "contact": "Kontakt",
     "about": "O nás"
-  }
-},
-{
+  },
+
   "BookService": {
     "pageTitle": "Rezervace služby",
     "pageDescription": "Rezervujte si opravu mobilního telefonu",
@@ -843,4 +842,5 @@
     "managerContact": "Náš manažer vás bude kontaktovat pro potvrzení",
     "appointmentReminder": "Přijďte ve stanovený čas se svým zařízením"
   }
+
 }

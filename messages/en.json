@@ -602,9 +602,7 @@
     "about": "About",
     "searchPlaceholder": "Search phones, brands, services...",
     "search": "Search"
-  }
-},
-{
+  },
   "BookService": {
     "pageTitle": "Book Service",
     "pageDescription": "Book a mobile phone repair service",
@@ -642,4 +640,5 @@
     "managerContact": "Our manager will contact you for confirmation",
     "appointmentReminder": "Come at the scheduled time with your device"
   }
+
 }
