@@ -253,13 +253,7 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Button size="lg" className="bg-blue-600 hover:bg-blue-700 py-3" asChild>
                 <Link
-                  href={`/${locale}/contact?service=${encodeURIComponent(translation.name)}${
-                    sourceModel
-                      ? `&model=${encodeURIComponent(sourceModel.name)}`
-                      : modelParam
-                        ? `&model=${encodeURIComponent(modelParam)}`
-                        : ""
-                  }`}
+                  href={`/${locale}/booking?service=${encodeURIComponent(serviceData.slug)}&model=${encodeURIComponent(sourceModel?.slug || modelParam || "")}`}
                   onClick={handleOrderClick}
                 >
                   <Phone className="h-4 w-4 mr-2" />
