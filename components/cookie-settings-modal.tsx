@@ -15,10 +15,25 @@ interface CookieSettingsModalProps {
 
 export function CookieSettingsModal({ open, onOpenChange }: CookieSettingsModalProps) {
   const t = useTranslations("cookies")
-  const { consent, updateCategory, saveCurrentSettings } = useCookieConsentContext()
+  const { consent, updateCategory, saveCurrentSettings, acceptAll, acceptNecessary } = useCookieConsentContext()
+
+  console.log("⚙️ CookieSettingsModal render:", { open, consent })
 
   const handleSave = () => {
+    console.log("💾 User clicked Save in modal")
     saveCurrentSettings()
+    onOpenChange(false)
+  }
+
+  const handleAcceptAll = () => {
+    console.log("✅ User clicked Accept All in modal")
+    acceptAll()
+    onOpenChange(false)
+  }
+
+  const handleAcceptNecessary = () => {
+    console.log("⚠️ User clicked Accept Necessary in modal")
+    acceptNecessary()
     onOpenChange(false)
   }
 
@@ -61,7 +76,10 @@ export function CookieSettingsModal({ open, onOpenChange }: CookieSettingsModalP
                 <Switch
                   id={category.id}
                   checked={consent[category.id]}
-                  onCheckedChange={(checked) => updateCategory(category.id, checked)}
+                  onCheckedChange={(checked) => {
+                    console.log(`🔄 Switch changed: ${category.id} = ${checked}`)
+                    updateCategory(category.id, checked)
+                  }}
                   disabled={category.required}
                 />
               </div>
@@ -82,11 +100,16 @@ export function CookieSettingsModal({ open, onOpenChange }: CookieSettingsModalP
             </div>
           ))}
 
-          <div className="flex justify-end gap-3 pt-4">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              {t("settings.cancel")}
+          <div className="flex flex-col gap-2 sm:flex-row sm:justify-end pt-4">
+            <Button variant="outline" onClick={handleAcceptNecessary} className="w-full sm:w-auto bg-transparent">
+              {t("settings.acceptNecessary")}
             </Button>
-            <Button onClick={handleSave}>{t("settings.save")}</Button>
+            <Button onClick={handleAcceptAll} className="w-full sm:w-auto">
+              {t("settings.acceptAll")}
+            </Button>
+            <Button variant="secondary" onClick={handleSave} className="w-full sm:w-auto">
+              {t("settings.save")}
+            </Button>
           </div>
         </div>
       </DialogContent>

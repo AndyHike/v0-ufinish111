@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import type { CookieConsent, CookieConsentState } from "@/types/cookie-consent"
 
 const COOKIE_CONSENT_KEY = "cookie-consent"
@@ -19,8 +19,10 @@ export function useCookieConsent() {
   })
 
   // Функція для очищення cookies при відкликанні згоди
-  const clearCookies = (category: "analytics" | "marketing") => {
+  const clearCookies = useCallback((category: "analytics" | "marketing") => {
     if (typeof document === "undefined") return
+
+    console.log(`🧹 Clearing ${category} cookies...`)
 
     const cookiesToClear =
       category === "analytics"
@@ -56,7 +58,9 @@ export function useCookieConsent() {
         }
       })
     }
-  }
+
+    console.log(`✅ ${category} cookies cleared`)
+  }, [])
 
   // Завантаження збереженої згоди при ініціалізації
   useEffect(() => {
@@ -69,6 +73,7 @@ export function useCookieConsent() {
         const daysDiff = (now.getTime() - consentDate.getTime()) / (1000 * 3600 * 24)
 
         if (daysDiff < CONSENT_EXPIRY_DAYS) {
+          console.log("📋 Loading saved consent:", parsed.consent)
           setState({
             consent: parsed.consent,
             showBanner: false,
@@ -76,54 +81,76 @@ export function useCookieConsent() {
             consentDate: parsed.consentDate,
           })
         } else {
-          // Згода застаріла - показуємо банер
+          console.log("⏰ Consent expired, showing banner")
           setState((prev) => ({ ...prev, showBanner: true }))
         }
-      } catch {
+      } catch (error) {
+        console.error("❌ Error parsing stored consent:", error)
         setState((prev) => ({ ...prev, showBanner: true }))
       }
     } else {
+      console.log("🆕 No stored consent, showing banner")
       setState((prev) => ({ ...prev, showBanner: true }))
     }
   }, [])
 
   // Збереження згоди
-  const saveConsent = (consent: CookieConsent, previousConsent?: CookieConsent) => {
-    const consentData = {
-      consent,
-      consentDate: new Date().toISOString(),
-    }
-
-    // Зберігаємо в localStorage
-    localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(consentData))
-
-    // Очищення при відкликанні згоди
-    if (previousConsent) {
-      if (previousConsent.analytics && !consent.analytics) {
-        clearCookies("analytics")
+  const saveConsent = useCallback(
+    (consent: CookieConsent, previousConsent?: CookieConsent) => {
+      const consentData = {
+        consent,
+        consentDate: new Date().toISOString(),
       }
-      if (previousConsent.marketing && !consent.marketing) {
-        clearCookies("marketing")
+
+      console.log("💾 Saving consent:", { consent, previousConsent })
+
+      // Зберігаємо в localStorage
+      localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(consentData))
+
+      // Перевіряємо чи потрібно очищати cookies
+      let needsReload = false
+
+      if (previousConsent) {
+        if (previousConsent.analytics && !consent.analytics) {
+          clearCookies("analytics")
+        }
+        if (previousConsent.marketing && !consent.marketing) {
+          clearCookies("marketing")
+          needsReload = true // Facebook Pixel потребує перезавантаження
+        }
       }
-    }
 
-    setState({
-      consent,
-      showBanner: false,
-      hasInteracted: true,
-      consentDate: consentData.consentDate,
-    })
+      // Оновлюємо стан
+      setState({
+        consent,
+        showBanner: false,
+        hasInteracted: true,
+        consentDate: consentData.consentDate,
+      })
 
-    // Повідомляємо про зміну згоди
-    window.dispatchEvent(
-      new CustomEvent("cookieConsentChanged", {
-        detail: { consent, previousConsent },
-      }),
-    )
-  }
+      // Повідомляємо про зміну згоди
+      window.dispatchEvent(
+        new CustomEvent("cookieConsentChanged", {
+          detail: { consent, previousConsent },
+        }),
+      )
 
-  const acceptAll = () => {
+      console.log("✅ Consent saved and state updated")
+
+      // Перезавантажуємо сторінку якщо потрібно
+      if (needsReload) {
+        console.log("🔄 Reloading page to clear marketing cookies...")
+        setTimeout(() => {
+          window.location.reload()
+        }, 500)
+      }
+    },
+    [clearCookies],
+  )
+
+  const acceptAll = useCallback(() => {
     const previousConsent = state.consent
+    console.log("✅ Accepting all cookies")
     saveConsent(
       {
         necessary: true,
@@ -132,10 +159,11 @@ export function useCookieConsent() {
       },
       previousConsent,
     )
-  }
+  }, [state.consent, saveConsent])
 
-  const acceptNecessary = () => {
+  const acceptNecessary = useCallback(() => {
     const previousConsent = state.consent
+    console.log("⚠️ Accepting only necessary cookies")
     saveConsent(
       {
         necessary: true,
@@ -144,9 +172,10 @@ export function useCookieConsent() {
       },
       previousConsent,
     )
-  }
+  }, [state.consent, saveConsent])
 
-  const updateCategory = (category: keyof CookieConsent, value: boolean) => {
+  const updateCategory = useCallback((category: keyof CookieConsent, value: boolean) => {
+    console.log(`🔄 Updating ${category} to ${value}`)
     setState((prev) => ({
       ...prev,
       consent: {
@@ -154,16 +183,18 @@ export function useCookieConsent() {
         [category]: category === "necessary" ? true : value,
       },
     }))
-  }
+  }, [])
 
-  const saveCurrentSettings = () => {
+  const saveCurrentSettings = useCallback(() => {
     const previousConsent = { ...state.consent }
+    console.log("💾 Saving current settings")
     saveConsent(state.consent, previousConsent)
-  }
+  }, [state.consent, saveConsent])
 
-  const setShowBanner = (show: boolean) => {
+  const setShowBanner = useCallback((show: boolean) => {
+    console.log(`🎌 Setting banner visibility: ${show}`)
     setState((prev) => ({ ...prev, showBanner: show }))
-  }
+  }, [])
 
   return {
     ...state,

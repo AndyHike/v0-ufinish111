@@ -22,6 +22,8 @@ declare global {
 export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
   const isInitialized = useRef(false)
 
+  console.log("🎯 FacebookPixel render:", { pixelId, consent, initialized: isInitialized.current })
+
   // Повне очищення Facebook ресурсів
   const clearFacebookResources = () => {
     console.log("🧹 Clearing Facebook resources...")
@@ -103,7 +105,10 @@ export function FacebookPixel({ pixelId, consent }: FacebookPixelProps) {
 
     if (consent && !isInitialized.current) {
       console.log("✅ Starting initialization due to consent...")
-      initializeFacebookPixel()
+      // Невелика затримка для забезпечення що DOM готовий
+      setTimeout(() => {
+        initializeFacebookPixel()
+      }, 100)
     } else if (!consent && isInitialized.current) {
       console.log("❌ Clearing resources due to consent withdrawal...")
       clearFacebookResources()
