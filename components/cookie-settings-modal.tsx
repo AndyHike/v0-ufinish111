@@ -1,20 +1,12 @@
 "use client"
 
 import { useTranslations } from "next-intl"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { useCookieConsentContext } from "@/contexts/cookie-consent-context"
-import type { CookieCategoryInfo } from "@/types/cookie-consent"
 
 interface CookieSettingsModalProps {
   open: boolean
@@ -23,39 +15,29 @@ interface CookieSettingsModalProps {
 
 export function CookieSettingsModal({ open, onOpenChange }: CookieSettingsModalProps) {
   const t = useTranslations("cookies")
-  const { consent, updateCategory, acceptAll, acceptNecessary, saveCurrentSettings } = useCookieConsentContext()
+  const { consent, updateCategory, saveCurrentSettings } = useCookieConsentContext()
 
-  const cookieCategories: CookieCategoryInfo[] = [
-    {
-      id: "necessary",
-      name: t("categories.necessary.name"),
-      description: t("categories.necessary.description"),
-      required: true,
-      services: [t("categories.necessary.services")],
-    },
-    {
-      id: "marketing",
-      name: t("categories.marketing.name"),
-      description: t("categories.marketing.description"),
-      required: false,
-      services: ["Facebook Pixel"],
-    },
-  ]
-
-  const handleSaveAndClose = () => {
+  const handleSave = () => {
     saveCurrentSettings()
     onOpenChange(false)
   }
 
-  const handleAcceptAll = () => {
-    acceptAll()
-    onOpenChange(false)
-  }
-
-  const handleAcceptNecessary = () => {
-    acceptNecessary()
-    onOpenChange(false)
-  }
+  const cookieCategories = [
+    {
+      id: "necessary" as const,
+      name: t("categories.necessary.name"),
+      description: t("categories.necessary.description"),
+      required: true,
+      services: [t("categories.necessary.services.0"), t("categories.necessary.services.1")],
+    },
+    {
+      id: "marketing" as const,
+      name: t("categories.marketing.name"),
+      description: t("categories.marketing.description"),
+      required: false,
+      services: [t("categories.marketing.services.0"), t("categories.marketing.services.1")],
+    },
+  ]
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -70,43 +52,43 @@ export function CookieSettingsModal({ open, onOpenChange }: CookieSettingsModalP
             <div key={category.id} className="space-y-3">
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
-                  <Label className="text-base font-medium">
+                  <Label htmlFor={category.id} className="text-base font-medium">
                     {category.name}
-                    {category.required && (
-                      <span className="ml-2 text-xs text-muted-foreground">({t("settings.required")})</span>
-                    )}
+                    {category.required && <span className="text-red-500 ml-1">*</span>}
                   </Label>
                   <p className="text-sm text-muted-foreground">{category.description}</p>
-                  <div className="text-xs text-muted-foreground">
-                    <strong>{t("settings.services")}:</strong> {category.services.join(", ")}
-                  </div>
                 </div>
-
                 <Switch
+                  id={category.id}
                   checked={consent[category.id]}
                   onCheckedChange={(checked) => updateCategory(category.id, checked)}
                   disabled={category.required}
                 />
               </div>
 
+              <div className="ml-4 space-y-1">
+                <p className="text-xs font-medium text-muted-foreground">{t("settings.services")}:</p>
+                <ul className="text-xs text-muted-foreground space-y-1">
+                  {category.services.map((service, index) => (
+                    <li key={index} className="flex items-center gap-2">
+                      <span className="w-1 h-1 bg-muted-foreground rounded-full" />
+                      {service}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
               {category.id !== "marketing" && <Separator />}
             </div>
           ))}
+
+          <div className="flex justify-end gap-3 pt-4">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              {t("settings.cancel")}
+            </Button>
+            <Button onClick={handleSave}>{t("settings.save")}</Button>
+          </div>
         </div>
-
-        <DialogFooter className="flex-col gap-2 sm:flex-row">
-          <Button variant="outline" onClick={handleAcceptNecessary} className="w-full sm:w-auto bg-transparent">
-            {t("settings.acceptNecessary")}
-          </Button>
-
-          <Button onClick={handleAcceptAll} className="w-full sm:w-auto">
-            {t("settings.acceptAll")}
-          </Button>
-
-          <Button variant="secondary" onClick={handleSaveAndClose} className="w-full sm:w-auto">
-            {t("settings.saveAndClose")}
-          </Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

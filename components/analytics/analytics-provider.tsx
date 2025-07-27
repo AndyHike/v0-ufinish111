@@ -1,13 +1,25 @@
 "use client"
 
+import type { ReactNode } from "react"
 import { FacebookPixel } from "./facebook-pixel"
-import { useCookieConsentContext } from "@/contexts/cookie-consent-context"
+import { GoogleAnalytics } from "./google-analytics"
+import { useCookieConsent } from "@/hooks/use-cookie-consent"
 
-export function AnalyticsProvider() {
-  const { consent } = useCookieConsentContext()
-  const pixelId = process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID || "1707859576556389"
+interface AnalyticsProviderProps {
+  children: ReactNode
+}
 
-  console.log("🔄 AnalyticsProvider:", { pixelId, consent: consent.marketing })
+export function AnalyticsProvider({ children }: AnalyticsProviderProps) {
+  const { consent } = useCookieConsent()
 
-  return <FacebookPixel pixelId={pixelId} consent={consent.marketing} />
+  const facebookPixelId = process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID
+  const googleAnalyticsId = process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID
+
+  return (
+    <>
+      {children}
+      {facebookPixelId && <FacebookPixel pixelId={facebookPixelId} consent={consent.marketing} />}
+      {googleAnalyticsId && <GoogleAnalytics gaId={googleAnalyticsId} consent={consent.marketing} />}
+    </>
+  )
 }

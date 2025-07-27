@@ -104,10 +104,6 @@ export function useCookieConsent() {
       }
       if (previousConsent.marketing && !consent.marketing) {
         clearCookies("marketing")
-        // Для Facebook Pixel рекомендується reload
-        setTimeout(() => {
-          window.location.reload()
-        }, 100)
       }
     }
 

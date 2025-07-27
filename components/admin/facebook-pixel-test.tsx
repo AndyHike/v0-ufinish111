@@ -35,6 +35,8 @@ export function FacebookPixelTest() {
   const [pixelStatus, setPixelStatus] = useState<string>("Unknown")
   const [connectionStatus, setConnectionStatus] = useState<string>("Unknown")
 
+  const pixelId = process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID || ""
+
   // Слухаємо події ініціалізації Facebook Pixel
   useEffect(() => {
     const handlePixelInitialized = (event: CustomEvent) => {
@@ -60,11 +62,16 @@ export function FacebookPixelTest() {
 
   // Функція для тестування з'єднання з Facebook
   const testFacebookConnection = async () => {
+    if (!pixelId) {
+      setEventLog((prev) => [...prev, `❌ Facebook Pixel ID not found in environment variables`])
+      setConnectionStatus("Error")
+      return false
+    }
+
     setEventLog((prev) => [...prev, `🔗 Testing connection to Facebook servers...`])
     setConnectionStatus("Testing...")
 
     try {
-      const pixelId = "1823195131746594"
       const testPromises = []
 
       // Тест 1: Основний Facebook Pixel endpoint
@@ -131,6 +138,11 @@ export function FacebookPixelTest() {
   }
 
   const runComprehensivePixelTest = async () => {
+    if (!pixelId) {
+      setEventLog((prev) => [...prev, `❌ Facebook Pixel ID not configured`])
+      return
+    }
+
     setIsLoading(true)
 
     const results = {
@@ -142,7 +154,7 @@ export function FacebookPixelTest() {
       duplicateCookies: false,
       eventsWorking: false,
       connectionWorking: false,
-      pixelId: "",
+      pixelId: pixelId,
       cookies: [],
       allCookies: "",
       fbqFunction: false,
@@ -182,6 +194,7 @@ export function FacebookPixelTest() {
           globalFlag: window.FB_PIXEL_INITIALIZED,
           userAgent: navigator.userAgent.substring(0, 100) + "...",
           timestamp: new Date().toISOString(),
+          pixelId: pixelId,
         }
       }
 
@@ -220,7 +233,6 @@ export function FacebookPixelTest() {
       if (window.fbq && results.pixelInitialized && results.connectionWorking) {
         try {
           const testEventId = Math.random().toString(36).substring(7)
-          const testTimestamp = Date.now()
 
           setEventLog((prev) => [...prev, `🧪 Sending comprehensive test events...`])
 
@@ -277,7 +289,8 @@ export function FacebookPixelTest() {
 
           // Додатково через noscript для максимальної надійності
           const comprehensiveImg = new Image()
-          comprehensiveImg.src = `https://www.facebook.com/tr?id=1823195131746594&ev=Purchase&noscript=1&cd[test]=comprehensive&cd[test_id]=${testEventId}&cd[timestamp]=${testTimestamp}&cd[value]=2.99&cd[currency]=CZK&cd[source]=admin_panel`
+          const testTimestamp = Date.now()
+          comprehensiveImg.src = `https://www.facebook.com/tr?id=${pixelId}&ev=Purchase&noscript=1&cd[test]=comprehensive&cd[test_id]=${testEventId}&cd[timestamp]=${testTimestamp}&cd[value]=2.99&cd[currency]=CZK&cd[source]=admin_panel`
           document.body.appendChild(comprehensiveImg)
 
           setEventLog((prev) => [...prev, `📡 Noscript backup event sent`])
@@ -338,9 +351,8 @@ export function FacebookPixelTest() {
   }
 
   const forceCreateOptimizedCookies = () => {
-    if (typeof document === "undefined") return
+    if (typeof document === "undefined" || !pixelId) return
 
-    const pixelId = "1823195131746594"
     const currentDomain = window.location.hostname
     const baseDomain = currentDomain.replace(/^www\./, "")
 
@@ -386,7 +398,7 @@ export function FacebookPixelTest() {
   }
 
   const testNavigation = () => {
-    if (window.fbq) {
+    if (window.fbq && pixelId) {
       const testPages = ["/", "/contact", "/brands/apple", "/models/iphone-14", "/series/iphone"]
       const currentPage = testPages[Math.floor(Math.random() * testPages.length)]
       const testId = Math.random().toString(36).substring(7)
@@ -444,6 +456,22 @@ export function FacebookPixelTest() {
     }
   }
 
+  if (!pixelId) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <AlertCircle className="h-5 w-5 text-red-500" />
+            Facebook Pixel Configuration Error
+          </CardTitle>
+          <CardDescription>
+            Facebook Pixel ID is not configured. Please set NEXT_PUBLIC_FACEBOOK_PIXEL_ID environment variable.
+          </CardDescription>
+        </CardHeader>
+      </Card>
+    )
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -455,6 +483,7 @@ export function FacebookPixelTest() {
           Advanced testing and debugging for Facebook Pixel implementation
           <br />
           <div className="flex gap-2 mt-2">
+            <Badge variant="outline">Pixel ID: {pixelId}</Badge>
             <Badge variant="outline">Status: {pixelStatus}</Badge>
             <Badge
               variant={connectionStatus === "Connected" ? "default" : "destructive"}
@@ -663,7 +692,7 @@ export function FacebookPixelTest() {
                         Go to <strong>Facebook Events Manager</strong>
                       </li>
                       <li>
-                        Select your Pixel (ID: <strong>1823195131746594</strong>)
+                        Select your Pixel (ID: <strong>{pixelId}</strong>)
                       </li>
                       <li>
                         Click on <strong>"Test Events"</strong> tab
