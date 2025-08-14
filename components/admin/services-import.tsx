@@ -316,10 +316,10 @@ export function ServicesImport() {
       Гарантія: row.warranty,
       "Гарантійний період": row.warrantyPeriod,
       "Тривалість (хвилини)": row.duration,
-      Бренд: brands.find((b) => b.id === row.brandId)?.name || row.brandName,
-      Серія: series.find((s) => s.id === row.seriesId)?.name || row.seriesName,
-      Модель: models.find((m) => m.id === row.modelId)?.name || row.modelName,
-      Послуга: services.find((s) => s.id === row.serviceId)?.name || "",
+      Бренд: (brands || []).find((b) => b.id === row.brandId)?.name || row.brandName,
+      Серія: (series || []).find((s) => s.id === row.seriesId)?.name || row.seriesName,
+      Модель: (models || []).find((m) => m.id === row.modelId)?.name || row.modelName,
+      Послуга: (services || []).find((s) => s.id === row.serviceId)?.name || "",
       Статус: row.status === "valid" ? "Готово" : row.status === "warning" ? "Попередження" : "Помилка",
       Помилки: row.errors.join("; "),
     }))
@@ -339,18 +339,18 @@ export function ServicesImport() {
 
           // Re-validate if needed
           if (field === "brandId") {
-            const brand = brands.find((b) => b.id === value)
+            const brand = (brands || []).find((b) => b.id === value)
             updated.brandName = brand?.name || ""
             // Reset series and model if brand changed
             updated.seriesId = ""
             updated.modelId = ""
           } else if (field === "seriesId") {
-            const seriesItem = series.find((s) => s.id === value)
+            const seriesItem = (series || []).find((s) => s.id === value)
             updated.seriesName = seriesItem?.name || ""
             // Reset model if series changed
             updated.modelId = ""
           } else if (field === "modelId") {
-            const model = models.find((m) => m.id === value)
+            const model = (models || []).find((m) => m.id === value)
             updated.modelName = model?.name || ""
           }
 
@@ -499,7 +499,7 @@ export function ServicesImport() {
                                     <SelectValue placeholder="Виберіть бренд" />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    {brands.map((brand) => (
+                                    {(brands || []).map((brand) => (
                                       <SelectItem key={brand.id} value={brand.id}>
                                         {brand.name}
                                       </SelectItem>
@@ -508,7 +508,9 @@ export function ServicesImport() {
                                 </Select>
                               ) : (
                                 <span className={!row.brandId ? "text-red-500" : ""}>
-                                  {brands.find((b) => b.id === row.brandId)?.name || row.brandName || "Не знайдено"}
+                                  {(brands || []).find((b) => b.id === row.brandId)?.name ||
+                                    row.brandName ||
+                                    "Не знайдено"}
                                 </span>
                               )}
                             </TableCell>
@@ -523,7 +525,7 @@ export function ServicesImport() {
                                     <SelectValue placeholder="Виберіть серію" />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    {series
+                                    {(series || [])
                                       .filter((s) => s.brand_id === row.brandId)
                                       .map((seriesItem) => (
                                         <SelectItem key={seriesItem.id} value={seriesItem.id}>
@@ -534,7 +536,9 @@ export function ServicesImport() {
                                 </Select>
                               ) : (
                                 <span className={!row.seriesId ? "text-red-500" : ""}>
-                                  {series.find((s) => s.id === row.seriesId)?.name || row.seriesName || "Не знайдено"}
+                                  {(series || []).find((s) => s.id === row.seriesId)?.name ||
+                                    row.seriesName ||
+                                    "Не знайдено"}
                                 </span>
                               )}
                             </TableCell>
@@ -549,7 +553,7 @@ export function ServicesImport() {
                                     <SelectValue placeholder="Виберіть модель" />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    {models
+                                    {(models || [])
                                       .filter((m) => m.series_id === row.seriesId)
                                       .map((model) => (
                                         <SelectItem key={model.id} value={model.id}>
@@ -560,7 +564,9 @@ export function ServicesImport() {
                                 </Select>
                               ) : (
                                 <span className={!row.modelId ? "text-red-500" : ""}>
-                                  {models.find((m) => m.id === row.modelId)?.name || row.modelName || "Не знайдено"}
+                                  {(models || []).find((m) => m.id === row.modelId)?.name ||
+                                    row.modelName ||
+                                    "Не знайдено"}
                                 </span>
                               )}
                             </TableCell>
@@ -574,7 +580,7 @@ export function ServicesImport() {
                                     <SelectValue placeholder="Виберіть послугу" />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    {services.map((service) => (
+                                    {(services || []).map((service) => (
                                       <SelectItem key={service.id} value={service.id}>
                                         {service.name}
                                       </SelectItem>
@@ -583,7 +589,7 @@ export function ServicesImport() {
                                 </Select>
                               ) : (
                                 <span className={!row.serviceId ? "text-red-500" : ""}>
-                                  {services.find((s) => s.id === row.serviceId)?.name || "Не знайдено"}
+                                  {(services || []).find((s) => s.id === row.serviceId)?.name || "Не знайдено"}
                                 </span>
                               )}
                             </TableCell>
