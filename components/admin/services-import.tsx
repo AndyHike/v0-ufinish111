@@ -119,7 +119,7 @@ export function ServicesImport() {
 
   // Find best match for brand/series/model
   const findBestMatch = (name: string, items: any[]) => {
-    if (!name) return null
+    if (!name || !Array.isArray(items) || items.length === 0) return null
     const normalizedName = name.toLowerCase().trim()
     return items.find(
       (item) =>
@@ -159,8 +159,6 @@ export function ServicesImport() {
     setLoading(true)
 
     try {
-      await loadReferenceData()
-
       const fileExtension = uploadedFile.name.split(".").pop()?.toLowerCase()
       let parsedData: any[] = []
 
@@ -169,8 +167,12 @@ export function ServicesImport() {
         Papa.parse(uploadedFile, {
           header: true,
           skipEmptyLines: true,
-          complete: (results) => {
+          complete: async (results) => {
             parsedData = results.data as any[]
+            // Переконуємося що дані завантажені перед обробкою
+            if (brands.length === 0) {
+              await loadReferenceData()
+            }
             processData(parsedData)
           },
           error: (error) => {
@@ -185,6 +187,10 @@ export function ServicesImport() {
         const sheetName = workbook.SheetNames[0]
         const worksheet = workbook.Sheets[sheetName]
         parsedData = XLSX.utils.sheet_to_json(worksheet)
+        // Переконуємося що дані завантажені перед обробкою
+        if (brands.length === 0) {
+          await loadReferenceData()
+        }
         processData(parsedData)
       } else {
         throw new Error("Непідтримуваний формат файлу")
@@ -197,6 +203,12 @@ export function ServicesImport() {
 
   // Process parsed data
   const processData = (rawData: any[]) => {
+    if (!Array.isArray(rawData)) {
+      console.error("Invalid data format")
+      setLoading(false)
+      return
+    }
+
     const processedData: ServiceData[] = rawData.map((row, index) => {
       const id = `row-${index}`
       const description = row["Опис"] || row["Description"] || ""
@@ -209,15 +221,15 @@ export function ServicesImport() {
       // Parse category
       const { brandName, seriesName, modelName } = parseCategory(category)
 
-      // Find matches
-      const matchedBrand = findBestMatch(brandName, brands)
+      // Find matches з безпечними перевірками
+      const matchedBrand = findBestMatch(brandName, brands || [])
       const matchedSeries = findBestMatch(
         seriesName,
-        series.filter((s) => !matchedBrand || s.brand_id === matchedBrand.id),
+        (series || []).filter((s) => !matchedBrand || s.brand_id === matchedBrand.id),
       )
       const matchedModel = findBestMatch(
         modelName,
-        models.filter(
+        (models || []).filter(
           (m) =>
             (!matchedBrand || m.brand_id === matchedBrand.id) && (!matchedSeries || m.series_id === matchedSeries.id),
         ),
@@ -225,7 +237,8 @@ export function ServicesImport() {
 
       // Find service by description
       const serviceSlug = createSlug(description)
-      const matchedService = services.find((s) => s.slug === serviceSlug) || findBestMatch(description, services)
+      const matchedService =
+        (services || []).find((s) => s.slug === serviceSlug) || findBestMatch(description, services || [])
 
       // Validate data
       const errors: string[] = []
