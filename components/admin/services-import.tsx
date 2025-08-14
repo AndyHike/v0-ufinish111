@@ -116,13 +116,19 @@ export function ServicesImport() {
         servicesRes.json(),
       ])
 
-      setBrands(Array.isArray(brandsData) ? brandsData : [])
-      setSeries(Array.isArray(seriesData) ? seriesData : [])
-      setModels(Array.isArray(modelsData) ? modelsData : [])
-      setServices(Array.isArray(servicesData) ? servicesData : [])
+      setBrands(Array.isArray(brandsData.brands) ? brandsData.brands : Array.isArray(brandsData) ? brandsData : [])
+      setSeries(Array.isArray(seriesData.series) ? seriesData.series : Array.isArray(seriesData) ? seriesData : [])
+      setModels(Array.isArray(modelsData.models) ? modelsData.models : Array.isArray(modelsData) ? modelsData : [])
+      setServices(
+        Array.isArray(servicesData.services) ? servicesData.services : Array.isArray(servicesData) ? servicesData : [],
+      )
       setDataLoaded(true)
 
-      console.log("Reference data loaded successfully")
+      console.log("Reference data loaded successfully:")
+      console.log("Brands:", brandsData)
+      console.log("Series:", seriesData)
+      console.log("Models:", modelsData)
+      console.log("Services:", servicesData)
     } catch (error) {
       console.error("Error loading reference data:", error)
       setBrands([])
@@ -185,17 +191,33 @@ export function ServicesImport() {
     return isNaN(price) ? 0 : price
   }
 
+  const findServiceBySlug = (slug: string): Service | undefined => {
+    console.log("Looking for service with slug:", slug)
+    console.log("Available services:", services)
+
+    const found = safeFindInArray(services, (s) => {
+      console.log("Comparing:", s.slug, "with", slug)
+      return s.slug === slug
+    })
+
+    console.log("Found service:", found)
+    return found
+  }
+
   const extractSlugFromDescription = (description: string): string => {
     if (!description || typeof description !== "string") return ""
 
-    // Шукаємо slug в квадратних дужках [battery-replacement]
     const slugMatch = description.match(/\[([^\]]+)\]/)
     if (slugMatch && slugMatch[1]) {
-      return slugMatch[1]
+      const extractedSlug = slugMatch[1].trim()
+      console.log("Extracted slug from brackets:", extractedSlug, "from description:", description)
+      return extractedSlug
     }
 
     // Якщо не знайдено в дужках, створюємо slug з тексту
-    return createSlug(description)
+    const createdSlug = createSlug(description)
+    console.log("Created slug from text:", createdSlug, "from description:", description)
+    return createdSlug
   }
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -254,6 +276,7 @@ export function ServicesImport() {
 
   const processData = (rawData: any[]) => {
     console.log("Processing data:", rawData.length, "rows")
+    console.log("Available services for matching:", services.length)
 
     if (!Array.isArray(rawData)) {
       console.error("Invalid data format - not an array")
@@ -262,6 +285,8 @@ export function ServicesImport() {
     }
 
     const processedData: ServiceData[] = rawData.map((row, index) => {
+      console.log(`Processing row ${index + 1}:`, row)
+
       const id = `row-${index}`
       const description = row["Опис"] || row["Description"] || ""
       const category = row["Категорія"] || row["Category"] || ""
@@ -283,8 +308,7 @@ export function ServicesImport() {
       const matchedModel = findBestMatch(modelName, filteredModels)
 
       const serviceSlug = extractSlugFromDescription(description)
-      const matchedService =
-        safeFindInArray(services, (s) => s.slug === serviceSlug) || findBestMatch(description, services)
+      const matchedService = findServiceBySlug(serviceSlug) || findBestMatch(description, services)
 
       const errors: string[] = []
       if (!description) errors.push("Відсутній опис послуги")
@@ -295,6 +319,14 @@ export function ServicesImport() {
       if (!matchedModel) errors.push("Не знайдено модель")
 
       const status = errors.length === 0 ? "valid" : errors.some((e) => e.includes("Не знайдено")) ? "warning" : "error"
+
+      console.log(`Row ${index + 1} processed:`, {
+        description,
+        serviceSlug,
+        matchedService: matchedService?.name,
+        status,
+        errors,
+      })
 
       return {
         id,
