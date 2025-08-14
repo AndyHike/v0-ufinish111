@@ -107,22 +107,6 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // ТИМЧАСОВО: Блокуємо доступ до сторінок авторизації для нових користувачів
-  if (pathname.includes("/auth/") || pathname.includes("/login")) {
-    const sessionId = request.cookies.get("session_id")?.value
-
-    // Якщо користувач вже має валідну сесію, дозволяємо доступ (для адміна)
-    if (sessionId && (await hasValidSession(sessionId))) {
-      // Дозволяємо доступ до auth сторінок для тих хто вже увійшов
-      return intlMiddleware(request)
-    } else {
-      // Для нових користувачів - перенаправляємо на головну
-      const locale = pathname.split("/")[1]
-      const validLocale = supportedLocales.includes(locale) ? locale : await getDefaultLanguage()
-      return NextResponse.redirect(new URL(`/${validLocale}`, request.url))
-    }
-  }
-
   // Check maintenance mode FIRST
   const maintenanceEnabled = await isMaintenanceModeEnabled()
 
@@ -174,8 +158,8 @@ export async function middleware(request: NextRequest) {
         // Get locale from URL
         const locale = pathname.split("/")[1] || "uk"
 
-        // ТИМЧАСОВО: Замість перенаправлення на логін, перенаправляємо на головну
-        return NextResponse.redirect(new URL(`/${locale}`, request.url))
+        // Redirect to login page
+        return NextResponse.redirect(new URL(`/${locale}/auth/signin`, request.url))
       }
 
       // Verify that the session exists in the database and is valid
@@ -189,16 +173,19 @@ export async function middleware(request: NextRequest) {
           .single()
 
         if (error || !session || new Date(session.expires_at) < new Date()) {
-          // Session is invalid or expired, redirect to home instead of login
+          // Session is invalid or expired, redirect to login
           const locale = pathname.split("/")[1] || "uk"
 
           // Clear the invalid session cookie
-          const response = NextResponse.redirect(new URL(`/${locale}`, request.url))
+          const response = NextResponse.redirect(new URL(`/${locale}/auth/signin`, request.url))
           response.cookies.delete("session_id")
           return response
         }
       } catch (error) {
         console.error("Error verifying session in middleware:", error)
+        // On error, redirect to login
+        const locale = pathname.split("/")[1] || "uk"
+        return NextResponse.redirect(new URL(`/${locale}/auth/signin`, request.url))
       }
     }
 
