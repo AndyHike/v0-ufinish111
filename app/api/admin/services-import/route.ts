@@ -1,6 +1,126 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 
+function createSlug(text: string): string {
+  if (!text || typeof text !== "string") return ""
+  return text
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .trim()
+}
+
+async function findOrCreateBrand(supabase: any, brandName: string) {
+  if (!brandName) return null
+
+  // Спочатку шукаємо існуючий бренд
+  const { data: existingBrand } = await supabase
+    .from("brands")
+    .select("id, name, slug")
+    .eq("name", brandName)
+    .maybeSingle()
+
+  if (existingBrand) {
+    return existingBrand
+  }
+
+  // Створюємо новий бренд
+  const slug = createSlug(brandName)
+  const { data: newBrand, error } = await supabase
+    .from("brands")
+    .insert({
+      name: brandName,
+      slug: slug,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .select("id, name, slug")
+    .single()
+
+  if (error) {
+    console.error("Error creating brand:", error)
+    return null
+  }
+
+  return newBrand
+}
+
+async function findOrCreateSeries(supabase: any, seriesName: string, brandId: string) {
+  if (!seriesName || !brandId) return null
+
+  // Спочатку шукаємо існуючу серію
+  const { data: existingSeries } = await supabase
+    .from("series")
+    .select("id, name, slug, brand_id")
+    .eq("name", seriesName)
+    .eq("brand_id", brandId)
+    .maybeSingle()
+
+  if (existingSeries) {
+    return existingSeries
+  }
+
+  // Створюємо нову серію
+  const slug = createSlug(seriesName)
+  const { data: newSeries, error } = await supabase
+    .from("series")
+    .insert({
+      name: seriesName,
+      slug: slug,
+      brand_id: brandId,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .select("id, name, slug, brand_id")
+    .single()
+
+  if (error) {
+    console.error("Error creating series:", error)
+    return null
+  }
+
+  return newSeries
+}
+
+async function findOrCreateModel(supabase: any, modelName: string, brandId: string, seriesId: string) {
+  if (!modelName || !brandId || !seriesId) return null
+
+  // Спочатку шукаємо існуючу модель
+  const { data: existingModel } = await supabase
+    .from("models")
+    .select("id, name, slug, brand_id, series_id")
+    .eq("name", modelName)
+    .eq("brand_id", brandId)
+    .eq("series_id", seriesId)
+    .maybeSingle()
+
+  if (existingModel) {
+    return existingModel
+  }
+
+  // Створюємо нову модель
+  const slug = createSlug(modelName)
+  const { data: newModel, error } = await supabase
+    .from("models")
+    .insert({
+      name: modelName,
+      slug: slug,
+      brand_id: brandId,
+      series_id: seriesId,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .select("id, name, slug, brand_id, series_id")
+    .single()
+
+  if (error) {
+    console.error("Error creating model:", error)
+    return null
+  }
+
+  return newModel
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { data } = await request.json()
@@ -9,6 +129,9 @@ export async function POST(request: NextRequest) {
     let created = 0
     let updated = 0
     let errors = 0
+    let brandsCreated = 0
+    let seriesCreated = 0
+    let modelsCreated = 0
     const errorMessages: string[] = []
 
     console.log(`Starting import of ${data.length} services...`)
@@ -18,23 +141,69 @@ export async function POST(request: NextRequest) {
 
       try {
         // Skip invalid rows
-        if (row.status === "error" || !row.serviceId || !row.modelId) {
+        if (row.status === "error" || !row.serviceId) {
           errors++
           errorMessages.push(`Рядок ${i + 1}: Пропущено через помилки валідації`)
           continue
         }
 
-        // Parse price
-        const price = Number.parseFloat(
-          row.price
-            .toString()
-            .replace(/[^\d,.-]/g, "")
-            .replace(",", "."),
-        )
-        if (isNaN(price) || price <= 0) {
+        let finalModelId = row.modelId
+
+        // Якщо modelId відсутній, спробуємо створити ієрархію
+        if (!finalModelId && row.brandName && row.seriesName && row.modelName) {
+          console.log(`Creating hierarchy for row ${i + 1}: ${row.brandName} > ${row.seriesName} > ${row.modelName}`)
+
+          // Створюємо або знаходимо бренд
+          const brand = await findOrCreateBrand(supabase, row.brandName)
+          if (!brand) {
+            errors++
+            errorMessages.push(`Рядок ${i + 1}: Не вдалося створити бренд "${row.brandName}"`)
+            continue
+          }
+          if (!row.brandId) brandsCreated++
+
+          // Створюємо або знаходимо серію
+          const series = await findOrCreateSeries(supabase, row.seriesName, brand.id)
+          if (!series) {
+            errors++
+            errorMessages.push(`Рядок ${i + 1}: Не вдалося створити серію "${row.seriesName}"`)
+            continue
+          }
+          if (!row.seriesId) seriesCreated++
+
+          // Створюємо або знаходимо модель
+          const model = await findOrCreateModel(supabase, row.modelName, brand.id, series.id)
+          if (!model) {
+            errors++
+            errorMessages.push(`Рядок ${i + 1}: Не вдалося створити модель "${row.modelName}"`)
+            continue
+          }
+          if (!row.modelId) modelsCreated++
+
+          finalModelId = model.id
+          console.log(
+            `Created/found hierarchy for row ${i + 1}: Brand(${brand.id}), Series(${series.id}), Model(${model.id})`,
+          )
+        }
+
+        if (!finalModelId) {
           errors++
-          errorMessages.push(`Рядок ${i + 1}: Некоректна ціна`)
+          errorMessages.push(`Рядок ${i + 1}: Відсутня модель для прив'язки послуги`)
           continue
+        }
+
+        // Parse price - Покращив обробку порожніх цін
+        let price = 0
+        if (row.price && row.price.toString().trim() !== "") {
+          const parsedPrice = Number.parseFloat(
+            row.price
+              .toString()
+              .replace(/[^\d,.-]/g, "")
+              .replace(",", "."),
+          )
+          if (!isNaN(parsedPrice) && parsedPrice >= 0) {
+            price = parsedPrice
+          }
         }
 
         // Parse warranty months
@@ -68,7 +237,7 @@ export async function POST(request: NextRequest) {
           .from("model_services")
           .select("id")
           .eq("service_id", row.serviceId)
-          .eq("model_id", row.modelId)
+          .eq("model_id", finalModelId)
           .maybeSingle()
 
         if (checkError) {
@@ -80,7 +249,7 @@ export async function POST(request: NextRequest) {
 
         const serviceData = {
           service_id: row.serviceId,
-          model_id: row.modelId,
+          model_id: finalModelId,
           price: price,
           warranty_months: warrantyMonths,
           duration_hours: durationHours,
@@ -129,12 +298,16 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(`Import completed: ${created} created, ${updated} updated, ${errors} errors`)
+    console.log(`Hierarchy created: ${brandsCreated} brands, ${seriesCreated} series, ${modelsCreated} models`)
 
     return NextResponse.json({
       success: true,
       created,
       updated,
       errors,
+      brandsCreated,
+      seriesCreated,
+      modelsCreated,
       errorMessages: errorMessages.slice(0, 10), // Limit error messages
     })
   } catch (error) {
