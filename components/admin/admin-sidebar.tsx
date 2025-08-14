@@ -15,8 +15,6 @@ import {
   FileText,
   BarChart3,
   Upload,
-  FolderSyncIcon as Sync,
-  Zap,
 } from "lucide-react"
 
 const sidebarItems = [
@@ -66,34 +64,9 @@ const sidebarItems = [
     icon: BarChart3,
   },
   {
-    title: "Описи",
-    href: "/admin/descriptions",
-    icon: FileText,
-  },
-  {
     title: "Банер",
     href: "/admin/banner",
     icon: Upload,
-  },
-  {
-    title: "Масовий імпорт",
-    href: "/admin/bulk-import",
-    icon: Upload,
-  },
-  {
-    title: "Масові послуги",
-    href: "/admin/bulk-services",
-    icon: Upload,
-  },
-  {
-    title: "RemOnline синхронізація",
-    href: "/admin/remonline-sync",
-    icon: Zap,
-  },
-  {
-    title: "Синхронізація",
-    href: "/admin/sync",
-    icon: Sync,
   },
   {
     title: "Налаштування",
