@@ -122,6 +122,34 @@ export function RemOnlineImport() {
     })
   }
 
+  const parsePrice = (priceStr: string): number | null => {
+    if (!priceStr) return null
+
+    // Замінюємо кому на крапку для правильного парсингу
+    const cleanPrice = priceStr
+      .toString()
+      .replace(/,/g, ".")
+      .replace(/[^\d.-]/g, "")
+    const parsed = Number.parseFloat(cleanPrice)
+
+    // Перевіряємо чи ціна не занадто мала (можливо помилка парсингу)
+    if (isNaN(parsed) || parsed < 0.01) return null
+
+    return Math.round(parsed * 100) / 100 // Округлюємо до 2 знаків після коми
+  }
+
+  const parseNumber = (numStr: string): number | null => {
+    if (!numStr) return null
+
+    const cleanNum = numStr
+      .toString()
+      .replace(/,/g, ".")
+      .replace(/[^\d.-]/g, "")
+    const parsed = Number.parseFloat(cleanNum)
+
+    return isNaN(parsed) ? null : parsed
+  }
+
   const handlePreview = async () => {
     if (!file) {
       toast({
@@ -186,21 +214,25 @@ export function RemOnlineImport() {
         const warrantyPeriod = getColumnValue(["гарантійний період", "warranty period", "період"])
         const durationStr = getColumnValue(["тривалість", "duration", "хвилини", "minutes"])
 
+        const parsedPrice = parsePrice(priceStr)
+        const parsedDuration = parseNumber(durationStr)
+        const parsedWarranty = parseNumber(warranty)
+
         return {
           rowIndex: index + 2,
           description,
           category,
-          standard_price: priceStr ? Number.parseFloat(priceStr) : null,
+          standard_price: parsedPrice,
           warranty,
           warranty_period: warrantyPeriod || "months",
-          duration_minutes: durationStr ? Number.parseFloat(durationStr) : null,
+          duration_minutes: parsedDuration,
           // Додаткові поля для сумісності з компонентом передперегляду
           brand_name: "",
           model_name: "",
           service_name: description,
-          price: priceStr ? Number.parseFloat(priceStr) : null,
-          warranty_months: warranty ? Number.parseFloat(warranty) : null,
-          duration_hours: durationStr ? Number.parseFloat(durationStr) / 60 : null,
+          price: parsedPrice,
+          warranty_months: parsedWarranty,
+          duration_hours: parsedDuration ? parsedDuration / 60 : null,
           detailed_description: description,
           what_included: "",
           benefits: "",
@@ -227,10 +259,10 @@ export function RemOnlineImport() {
   }
 
   const handleProcess = async () => {
-    if (!file) {
+    if (!previewData) {
       toast({
         title: "Помилка",
-        description: "Будь ласка, оберіть файл для обробки",
+        description: "Спочатку зробіть передперегляд даних",
         variant: "destructive",
       })
       return
@@ -238,21 +270,24 @@ export function RemOnlineImport() {
 
     setIsProcessing(true)
     try {
-      // Read file content
-      let fileContent: string
-
-      if (file.name.endsWith(".xlsx") || file.name.endsWith(".xls")) {
-        fileContent = await parseExcelFile(file)
-      } else {
-        fileContent = await file.text()
-      }
-
       const response = await fetch("/api/admin/bulk-import/remonline-services", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ csvData: fileContent }),
+        body: JSON.stringify({
+          services: previewData.map((item) => ({
+            description: item.description,
+            category: item.category,
+            standard_price: item.standard_price,
+            warranty: item.warranty,
+            warranty_period: item.warranty_period,
+            duration_minutes: item.duration_minutes,
+            detailed_description: item.detailed_description,
+            what_included: item.what_included,
+            benefits: item.benefits,
+          })),
+        }),
       })
 
       const result = await response.json()
@@ -410,16 +445,17 @@ export function RemOnlineImport() {
                     <td className="p-2 border-r">
                       <input
                         type="number"
+                        step="0.01"
                         value={item.standard_price || ""}
                         onChange={(e) => {
                           const updated = [...previewData]
-                          const value = e.target.value ? Number.parseFloat(e.target.value) : null
+                          const value = parsePrice(e.target.value)
                           updated[index].standard_price = value
                           updated[index].price = value
                           setPreviewData(updated)
                         }}
                         className="w-full p-1 border rounded text-sm"
-                        placeholder="0"
+                        placeholder="0.00"
                       />
                     </td>
                     <td className="p-2 border-r">
@@ -430,7 +466,7 @@ export function RemOnlineImport() {
                           const updated = [...previewData]
                           updated[index].warranty = e.target.value
                           updated[index].original_warranty_duration = e.target.value
-                          const value = e.target.value ? Number.parseFloat(e.target.value) : null
+                          const value = parseNumber(e.target.value)
                           updated[index].warranty_months = value
                           setPreviewData(updated)
                         }}
@@ -457,7 +493,7 @@ export function RemOnlineImport() {
                         value={item.duration_minutes || ""}
                         onChange={(e) => {
                           const updated = [...previewData]
-                          const value = e.target.value ? Number.parseFloat(e.target.value) : null
+                          const value = parseNumber(e.target.value)
                           updated[index].duration_minutes = value
                           updated[index].original_duration_minutes = e.target.value
                           updated[index].duration_hours = value ? value / 60 : null
