@@ -13,7 +13,6 @@ function createSlug(text: string): string {
 async function findOrCreateBrand(supabase: any, brandName: string) {
   if (!brandName) return null
 
-  // Спочатку шукаємо існуючий бренд
   const { data: existingBrand } = await supabase
     .from("brands")
     .select("id, name, slug")
@@ -24,7 +23,6 @@ async function findOrCreateBrand(supabase: any, brandName: string) {
     return existingBrand
   }
 
-  // Створюємо новий бренд
   const slug = createSlug(brandName)
   const { data: newBrand, error } = await supabase
     .from("brands")
@@ -48,7 +46,6 @@ async function findOrCreateBrand(supabase: any, brandName: string) {
 async function findOrCreateSeries(supabase: any, seriesName: string, brandId: string) {
   if (!seriesName || !brandId) return null
 
-  // Спочатку шукаємо існуючу серію
   const { data: existingSeries } = await supabase
     .from("series")
     .select("id, name, slug, brand_id")
@@ -60,7 +57,6 @@ async function findOrCreateSeries(supabase: any, seriesName: string, brandId: st
     return existingSeries
   }
 
-  // Створюємо нову серію
   const slug = createSlug(seriesName)
   const { data: newSeries, error } = await supabase
     .from("series")
@@ -85,7 +81,6 @@ async function findOrCreateSeries(supabase: any, seriesName: string, brandId: st
 async function findOrCreateModel(supabase: any, modelName: string, brandId: string, seriesId: string) {
   if (!modelName || !brandId || !seriesId) return null
 
-  // Спочатку шукаємо існуючу модель
   const { data: existingModel } = await supabase
     .from("models")
     .select("id, name, slug, brand_id, series_id")
@@ -98,7 +93,6 @@ async function findOrCreateModel(supabase: any, modelName: string, brandId: stri
     return existingModel
   }
 
-  // Створюємо нову модель
   const slug = createSlug(modelName)
   const { data: newModel, error } = await supabase
     .from("models")
@@ -140,7 +134,6 @@ export async function POST(request: NextRequest) {
       const row = data[i]
 
       try {
-        // Skip invalid rows
         if (row.status === "error" || !row.serviceId) {
           errors++
           errorMessages.push(`Рядок ${i + 1}: Пропущено через помилки валідації`)
@@ -149,11 +142,9 @@ export async function POST(request: NextRequest) {
 
         let finalModelId = row.modelId
 
-        // Якщо modelId відсутній, спробуємо створити ієрархію
         if (!finalModelId && row.brandName && row.seriesName && row.modelName) {
           console.log(`Creating hierarchy for row ${i + 1}: ${row.brandName} > ${row.seriesName} > ${row.modelName}`)
 
-          // Створюємо або знаходимо бренд
           const brand = await findOrCreateBrand(supabase, row.brandName)
           if (!brand) {
             errors++
@@ -162,7 +153,6 @@ export async function POST(request: NextRequest) {
           }
           if (!row.brandId) brandsCreated++
 
-          // Створюємо або знаходимо серію
           const series = await findOrCreateSeries(supabase, row.seriesName, brand.id)
           if (!series) {
             errors++
@@ -171,7 +161,6 @@ export async function POST(request: NextRequest) {
           }
           if (!row.seriesId) seriesCreated++
 
-          // Створюємо або знаходимо модель
           const model = await findOrCreateModel(supabase, row.modelName, brand.id, series.id)
           if (!model) {
             errors++
@@ -192,7 +181,6 @@ export async function POST(request: NextRequest) {
           continue
         }
 
-        // Parse price - Покращив обробку порожніх цін
         let price = 0
         if (row.price && row.price.toString().trim() !== "") {
           const parsedPrice = Number.parseFloat(
@@ -206,7 +194,6 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        // Parse warranty months
         let warrantyMonths = 0
         if (row.warrantyPeriod) {
           const warrantyStr = row.warrantyPeriod.toString().toLowerCase()
@@ -219,11 +206,10 @@ export async function POST(request: NextRequest) {
           } else if (warrantyStr.includes("день") || warrantyStr.includes("day")) {
             warrantyMonths = Math.ceil(warrantyNum / 30)
           } else {
-            warrantyMonths = warrantyNum // assume months
+            warrantyMonths = warrantyNum
           }
         }
 
-        // Parse duration hours
         let durationHours = 0
         if (row.duration) {
           const durationMinutes = Number.parseInt(row.duration.toString().replace(/[^\d]/g, ""))
@@ -232,7 +218,6 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        // Check if model service already exists
         const { data: existingService, error: checkError } = await supabase
           .from("model_services")
           .select("id")
@@ -256,11 +241,9 @@ export async function POST(request: NextRequest) {
           detailed_description: row.description,
           benefits: row.warranty || null,
           what_included: null,
-          updated_at: new Date().toISOString(),
         }
 
         if (existingService) {
-          // Update existing service
           const { error: updateError } = await supabase
             .from("model_services")
             .update(serviceData)
@@ -275,7 +258,6 @@ export async function POST(request: NextRequest) {
             console.log(`Updated service for row ${i + 1}`)
           }
         } else {
-          // Create new service
           const { error: insertError } = await supabase.from("model_services").insert({
             ...serviceData,
             created_at: new Date().toISOString(),
@@ -308,7 +290,7 @@ export async function POST(request: NextRequest) {
       brandsCreated,
       seriesCreated,
       modelsCreated,
-      errorMessages: errorMessages.slice(0, 10), // Limit error messages
+      errorMessages: errorMessages.slice(0, 10),
     })
   } catch (error) {
     console.error("Import error:", error)
