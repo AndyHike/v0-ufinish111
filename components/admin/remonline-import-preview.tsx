@@ -6,8 +6,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { CheckCircle, XCircle, AlertCircle, Loader2 } from "lucide-react"
+import { CheckCircle, XCircle, AlertCircle, Loader2, ArrowLeft, Upload, Eye } from "lucide-react"
 import { useTranslations } from "next-intl"
+import { ScrollArea } from "@/components/ui/scroll-area"
 
 interface ImportData {
   rowIndex: number
@@ -41,6 +42,8 @@ function RemOnlineImportPreview({ data, onImport, onCancel }: Props) {
   const t = useTranslations("Admin")
   const [importing, setImporting] = useState(false)
   const [results, setResults] = useState<ImportResults | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
 
   const handleImport = async () => {
     setImporting(true)
@@ -55,7 +58,7 @@ function RemOnlineImportPreview({ data, onImport, onCancel }: Props) {
   }
 
   const formatPrice = (price: number | null) => {
-    if (price === null) return t("priceOnRequest")
+    if (price === null) return "Ціна за запитом"
     return `${price} Kč`
   }
 
@@ -69,6 +72,15 @@ function RemOnlineImportPreview({ data, onImport, onCancel }: Props) {
     return `${hours} год.`
   }
 
+  // Calculate pagination
+  const totalPages = Math.ceil(data.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const currentData = data.slice(startIndex, endIndex)
+
+  // Data validation
+  const validationIssues = data.filter((item) => !item.brand_name || !item.model_name || !item.service_name)
+
   if (results) {
     return (
       <Card>
@@ -79,47 +91,39 @@ function RemOnlineImportPreview({ data, onImport, onCancel }: Props) {
             ) : (
               <AlertCircle className="h-5 w-5 text-yellow-600" />
             )}
-            {t("importSuccess")}
+            Результати імпорту
           </CardTitle>
           <CardDescription>
-            {t("importResultSummary", {
-              success: results.success,
-              total: results.success + results.failed,
-              failed: results.failed,
-            })}
+            Успішно імпортовано: {results.success} з {results.success + results.failed} записів
+            {results.failed > 0 && ` (${results.failed} помилок)`}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="flex items-center gap-2">
               <CheckCircle className="h-4 w-4 text-green-600" />
-              <span>
-                {t("synced")}: {results.success}
-              </span>
+              <span>Успішно: {results.success}</span>
             </div>
             <div className="flex items-center gap-2">
               <XCircle className="h-4 w-4 text-red-600" />
-              <span>
-                {t("failed")}: {results.failed}
-              </span>
+              <span>Помилки: {results.failed}</span>
             </div>
           </div>
 
           {results.errors.length > 0 && (
             <div>
-              <h4 className="font-semibold mb-2">{t("showErrors")}</h4>
-              <div className="space-y-2 max-h-60 overflow-y-auto">
-                {results.errors.slice(0, 10).map((error, index) => (
-                  <Alert key={index} variant="destructive">
-                    <AlertDescription>
-                      Рядок {error.row}: {error.error}
-                    </AlertDescription>
-                  </Alert>
-                ))}
-                {results.errors.length > 10 && (
-                  <p className="text-sm text-gray-500">{t("andMoreErrors", { count: results.errors.length - 10 })}</p>
-                )}
-              </div>
+              <h4 className="font-semibold mb-2">Помилки імпорту:</h4>
+              <ScrollArea className="h-60">
+                <div className="space-y-2">
+                  {results.errors.map((error, index) => (
+                    <Alert key={index} variant="destructive">
+                      <AlertDescription>
+                        Рядок {error.row}: {error.error}
+                      </AlertDescription>
+                    </Alert>
+                  ))}
+                </div>
+              </ScrollArea>
             </div>
           )}
 
@@ -134,14 +138,33 @@ function RemOnlineImportPreview({ data, onImport, onCancel }: Props) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{t("previewData")}</CardTitle>
-        <CardDescription>{t("rowsDetected", { count: data.length })}</CardDescription>
+        <CardTitle className="flex items-center gap-2">
+          <Eye className="h-5 w-5" />
+          Передперегляд даних для імпорту
+        </CardTitle>
+        <CardDescription>
+          Знайдено {data.length} записів для імпорту
+          {validationIssues.length > 0 && (
+            <span className="text-red-600 ml-2">({validationIssues.length} записів з проблемами)</span>
+          )}
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="max-h-96 overflow-auto">
+        {validationIssues.length > 0 && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Знайдено {validationIssues.length} записів з відсутніми обов'язковими полями (brand_name, model_name,
+              service_name). Ці записи будуть пропущені при імпорті.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        <div className="border rounded-lg">
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-12">#</TableHead>
                 <TableHead>Бренд</TableHead>
                 <TableHead>Модель</TableHead>
                 <TableHead>Послуга</TableHead>
@@ -152,33 +175,82 @@ function RemOnlineImportPreview({ data, onImport, onCancel }: Props) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.slice(0, 10).map((item, index) => (
-                <TableRow key={index}>
-                  <TableCell className="font-medium">{item.brand_name}</TableCell>
-                  <TableCell>{item.model_name}</TableCell>
-                  <TableCell>{item.service_name}</TableCell>
-                  <TableCell>{formatPrice(item.price)}</TableCell>
-                  <TableCell>{formatWarranty(item.warranty_months, item.warranty_period)}</TableCell>
-                  <TableCell>{formatDuration(item.duration_hours)}</TableCell>
-                  <TableCell>
-                    <Badge variant="secondary">Готово до імпорту</Badge>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {currentData.map((item, index) => {
+                const hasIssues = !item.brand_name || !item.model_name || !item.service_name
+                return (
+                  <TableRow key={index} className={hasIssues ? "bg-red-50" : ""}>
+                    <TableCell className="font-mono text-sm">{startIndex + index + 1}</TableCell>
+                    <TableCell className="font-medium">
+                      {item.brand_name || <span className="text-red-500">Відсутнє</span>}
+                    </TableCell>
+                    <TableCell>{item.model_name || <span className="text-red-500">Відсутнє</span>}</TableCell>
+                    <TableCell>{item.service_name || <span className="text-red-500">Відсутнє</span>}</TableCell>
+                    <TableCell>{formatPrice(item.price)}</TableCell>
+                    <TableCell>{formatWarranty(item.warranty_months, item.warranty_period)}</TableCell>
+                    <TableCell>{formatDuration(item.duration_hours)}</TableCell>
+                    <TableCell>
+                      <Badge variant={hasIssues ? "destructive" : "secondary"}>
+                        {hasIssues ? "Помилка" : "Готово"}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
             </TableBody>
           </Table>
-          {data.length > 10 && (
-            <p className="text-sm text-gray-500 mt-2 text-center">{t("andMoreRows", { count: data.length - 10 })}</p>
-          )}
         </div>
 
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-muted-foreground">
+              Показано {startIndex + 1}-{Math.min(endIndex, data.length)} з {data.length} записів
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+              >
+                Попередня
+              </Button>
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  const page = i + 1
+                  return (
+                    <Button
+                      key={page}
+                      variant={currentPage === page ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setCurrentPage(page)}
+                    >
+                      {page}
+                    </Button>
+                  )
+                })}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+              >
+                Наступна
+              </Button>
+            </div>
+          </div>
+        )}
+
         <div className="flex gap-2">
-          <Button onClick={handleImport} disabled={importing} className="flex-1">
-            {importing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {importing ? t("saving") : t("uploadAndProcess")}
-          </Button>
           <Button variant="outline" onClick={onCancel} disabled={importing}>
-            {t("cancel")}
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Назад
+          </Button>
+          <Button onClick={handleImport} disabled={importing || data.length === 0} className="flex-1">
+            {importing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Upload className="h-4 w-4 mr-2" />
+            {importing ? "Імпорт..." : `Імпортувати ${data.length} записів`}
           </Button>
         </div>
       </CardContent>
@@ -186,5 +258,4 @@ function RemOnlineImportPreview({ data, onImport, onCancel }: Props) {
   )
 }
 
-// Export the component under the expected named export
 export { RemOnlineImportPreview }
