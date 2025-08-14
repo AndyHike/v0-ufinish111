@@ -55,7 +55,16 @@ function parseCategoryPath(category: string): { brand: string; series: string; m
 }
 
 async function findOrCreateBrand(supabase: any, brandName: string) {
-  const { data: existingBrand } = await supabase.from("brands").select("id, name").eq("name", brandName).single()
+  const { data: existingBrand, error: findError } = await supabase
+    .from("brands")
+    .select("id, name")
+    .eq("name", brandName)
+    .maybeSingle()
+
+  if (findError) {
+    console.error("Error finding brand:", findError)
+    throw new Error(`Помилка пошуку бренду: ${findError.message}`)
+  }
 
   if (existingBrand) {
     return existingBrand
@@ -77,12 +86,17 @@ async function findOrCreateBrand(supabase: any, brandName: string) {
 }
 
 async function findOrCreateSeries(supabase: any, seriesName: string, brandId: number) {
-  const { data: existingSeries } = await supabase
+  const { data: existingSeries, error: findError } = await supabase
     .from("series")
     .select("id, name")
     .eq("name", seriesName)
     .eq("brand_id", brandId)
-    .single()
+    .maybeSingle()
+
+  if (findError) {
+    console.error("Error finding series:", findError)
+    throw new Error(`Помилка пошуку лінійки: ${findError.message}`)
+  }
 
   if (existingSeries) {
     return existingSeries
@@ -104,16 +118,21 @@ async function findOrCreateSeries(supabase: any, seriesName: string, brandId: nu
   return newSeries
 }
 
-async function findOrCreateModel(supabase: any, modelName: string, seriesId: number) {
-  const { data: existingModel } = await supabase
+async function findOrCreateModel(supabase: any, modelName: string, seriesId: number, brandId: number) {
+  const { data: existingModel, error: findError } = await supabase
     .from("models")
-    .select("id, name")
+    .select("id, name, created_at")
     .eq("name", modelName)
     .eq("series_id", seriesId)
-    .single()
+    .maybeSingle()
+
+  if (findError) {
+    console.error("Error finding model:", findError)
+    throw new Error(`Помилка пошуку моделі: ${findError.message}`)
+  }
 
   if (existingModel) {
-    return existingModel
+    return { ...existingModel, isNew: false }
   }
 
   const { data: newModel, error } = await supabase
@@ -122,14 +141,15 @@ async function findOrCreateModel(supabase: any, modelName: string, seriesId: num
       name: modelName,
       slug: createSlug(modelName),
       series_id: seriesId,
+      brand_id: brandId,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })
-    .select("id, name")
+    .select("id, name, created_at")
     .single()
 
   if (error) throw new Error(`Помилка створення моделі: ${error.message}`)
-  return newModel
+  return { ...newModel, isNew: true }
 }
 
 export async function POST(request: NextRequest) {
@@ -155,6 +175,8 @@ export async function POST(request: NextRequest) {
       const service = services[i]
 
       try {
+        console.log(`Processing service ${i + 1}/${services.length}: ${service.description}`)
+
         const categoryInfo = parseCategoryPath(service.category)
         if (!categoryInfo) {
           errors.push(
@@ -169,14 +191,24 @@ export async function POST(request: NextRequest) {
         const series = await findOrCreateSeries(supabase, categoryInfo.series, brand.id)
         seriesFound++
 
-        const model = await findOrCreateModel(supabase, categoryInfo.model, series.id)
+        const model = await findOrCreateModel(supabase, categoryInfo.model, series.id, brand.id)
         modelsFound++
-        if (!model.created_at || new Date(model.created_at).getTime() > Date.now() - 1000) {
+        if (model.isNew) {
           newModelsCreated++
         }
 
         const slug = createSlug(service.description)
-        const { data: baseService } = await supabase.from("services").select("id, slug").eq("slug", slug).single()
+        const { data: baseService, error: serviceError } = await supabase
+          .from("services")
+          .select("id, slug")
+          .eq("slug", slug)
+          .maybeSingle()
+
+        if (serviceError) {
+          console.error("Error finding base service:", serviceError)
+          errors.push(`Рядок ${i + 1}: Помилка пошуку базової послуги - ${serviceError.message}`)
+          continue
+        }
 
         if (!baseService) {
           errors.push(`Рядок ${i + 1}: Базова послуга з slug "${slug}" не знайдена в таблиці services`)
@@ -189,12 +221,18 @@ export async function POST(request: NextRequest) {
 
         const durationHours = service.duration_minutes ? convertToHours(service.duration_minutes.toString()) : null
 
-        const { data: existingModelService } = await supabase
+        const { data: existingModelService, error: modelServiceError } = await supabase
           .from("model_services")
           .select("id")
           .eq("service_id", baseService.id)
           .eq("model_id", model.id)
-          .single()
+          .maybeSingle()
+
+        if (modelServiceError) {
+          console.error("Error finding model service:", modelServiceError)
+          errors.push(`Рядок ${i + 1}: Помилка пошуку послуги моделі - ${modelServiceError.message}`)
+          continue
+        }
 
         const modelServiceData = {
           service_id: baseService.id,
@@ -215,10 +253,12 @@ export async function POST(request: NextRequest) {
             .eq("id", existingModelService.id)
 
           if (updateError) {
+            console.error("Error updating model service:", updateError)
             errors.push(`Рядок ${i + 1}: Помилка оновлення model_services - ${updateError.message}`)
           } else {
             updateCount++
             successCount++
+            console.log(`Updated model service for ${service.description}`)
           }
         } else {
           const { error: insertError } = await supabase.from("model_services").insert({
@@ -227,10 +267,12 @@ export async function POST(request: NextRequest) {
           })
 
           if (insertError) {
+            console.error("Error creating model service:", insertError)
             errors.push(`Рядок ${i + 1}: Помилка створення model_services - ${insertError.message}`)
           } else {
             createCount++
             successCount++
+            console.log(`Created model service for ${service.description}`)
           }
         }
 
@@ -245,9 +287,12 @@ export async function POST(request: NextRequest) {
           status: existingModelService ? "updated" : "created",
         })
       } catch (error) {
+        console.error(`Error processing service ${i + 1}:`, error)
         errors.push(`Рядок ${i + 1}: ${error instanceof Error ? error.message : "Невідома помилка"}`)
       }
     }
+
+    console.log(`Import completed: ${successCount}/${services.length} processed, ${errors.length} errors`)
 
     return NextResponse.json({
       success: true,
