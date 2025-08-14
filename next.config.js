@@ -1,15 +1,28 @@
 const createNextIntlPlugin = require("next-intl/plugin")
 
-module.exports = createNextIntlPlugin({
-  // This is the default Next.js config
+const withNextIntl = createNextIntlPlugin()
+
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
   typescript: {
     ignoreBuildErrors: true,
   },
+  experimental: {
+    serverComponentsExternalPackages: ["@supabase/supabase-js"],
+  },
   images: {
+    domains: ["localhost"],
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "**",
+      },
+    ],
     unoptimized: true,
   },
-  // You can add other Next.js config options here
-})
+}
+
+module.exports = withNextIntl(nextConfig)

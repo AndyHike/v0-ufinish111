@@ -1,5 +1,5 @@
 {
-  "name": "phone-repair-service",
+  "name": "my-v0-project",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -9,15 +9,11 @@
     "start": "next start"
   },
   "dependencies": {
-    "@ai-sdk/openai": "^0.0.66",
     "@auth/core": "latest",
-    "@auth/supabase-adapter": "^1.6.0",
     "@emotion/is-prop-valid": "latest",
     "@formatjs/intl-localematcher": "latest",
     "@hello-pangea/dnd": "latest",
     "@hookform/resolvers": "latest",
-    "@neondatabase/serverless": "^0.10.1",
-    "@next/bundle-analyzer": "^15.0.3",
     "@radix-ui/react-accordion": "latest",
     "@radix-ui/react-alert-dialog": "latest",
     "@radix-ui/react-aspect-ratio": "latest",
@@ -48,9 +44,7 @@
     "@supabase/auth-helpers-nextjs": "latest",
     "@supabase/ssr": "latest",
     "@supabase/supabase-js": "latest",
-    "ai": "^3.4.32",
     "autoprefixer": "^10.4.20",
-    "bcryptjs": "^2.4.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "latest",
@@ -59,7 +53,6 @@
     "embla-carousel-react": "latest",
     "framer-motion": "latest",
     "input-otp": "latest",
-    "jsonwebtoken": "^9.0.2",
     "libphonenumber-js": "latest",
     "lucide-react": "^0.454.0",
     "negotiator": "latest",
@@ -84,17 +77,12 @@
     "uuid": "latest",
     "vaul": "latest",
     "xlsx": "latest",
-    "zod": "^3.23.8"
+    "zod": "latest"
   },
   "devDependencies": {
-    "@types/bcryptjs": "^2.4.6",
-    "@types/jsonwebtoken": "^9.0.7",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@types/xlsx": "^0.0.36",
-    "eslint": "^8.57.1",
-    "eslint-config-next": "15.0.3",
     "postcss": "^8.5",
     "tailwindcss": "^3.4.17",
     "typescript": "^5"
