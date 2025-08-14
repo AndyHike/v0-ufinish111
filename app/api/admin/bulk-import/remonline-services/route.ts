@@ -41,6 +41,97 @@ function convertToHours(minutes: string): number | null {
   return Math.round((minutesNum / 60) * 100) / 100
 }
 
+function parseCategoryPath(category: string): { brand: string; series: string; model: string } | null {
+  if (!category) return null
+
+  const parts = category.split(">").map((part) => part.trim())
+  if (parts.length !== 3) return null
+
+  return {
+    brand: parts[0],
+    series: parts[1],
+    model: parts[2],
+  }
+}
+
+async function findOrCreateBrand(supabase: any, brandName: string) {
+  const { data: existingBrand } = await supabase.from("brands").select("id, name").eq("name", brandName).single()
+
+  if (existingBrand) {
+    return existingBrand
+  }
+
+  const { data: newBrand, error } = await supabase
+    .from("brands")
+    .insert({
+      name: brandName,
+      slug: createSlug(brandName),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .select("id, name")
+    .single()
+
+  if (error) throw new Error(`Помилка створення бренду: ${error.message}`)
+  return newBrand
+}
+
+async function findOrCreateSeries(supabase: any, seriesName: string, brandId: number) {
+  const { data: existingSeries } = await supabase
+    .from("series")
+    .select("id, name")
+    .eq("name", seriesName)
+    .eq("brand_id", brandId)
+    .single()
+
+  if (existingSeries) {
+    return existingSeries
+  }
+
+  const { data: newSeries, error } = await supabase
+    .from("series")
+    .insert({
+      name: seriesName,
+      slug: createSlug(seriesName),
+      brand_id: brandId,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .select("id, name")
+    .single()
+
+  if (error) throw new Error(`Помилка створення лінійки: ${error.message}`)
+  return newSeries
+}
+
+async function findOrCreateModel(supabase: any, modelName: string, seriesId: number) {
+  const { data: existingModel } = await supabase
+    .from("models")
+    .select("id, name")
+    .eq("name", modelName)
+    .eq("series_id", seriesId)
+    .single()
+
+  if (existingModel) {
+    return existingModel
+  }
+
+  const { data: newModel, error } = await supabase
+    .from("models")
+    .insert({
+      name: modelName,
+      slug: createSlug(modelName),
+      series_id: seriesId,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .select("id, name")
+    .single()
+
+  if (error) throw new Error(`Помилка створення моделі: ${error.message}`)
+  return newModel
+}
+
 export async function POST(request: NextRequest) {
   try {
     const supabase = createClient()
@@ -55,12 +146,42 @@ export async function POST(request: NextRequest) {
     let successCount = 0
     let updateCount = 0
     let createCount = 0
+    let brandsFound = 0
+    let seriesFound = 0
+    let modelsFound = 0
+    let newModelsCreated = 0
 
     for (let i = 0; i < services.length; i++) {
       const service = services[i]
 
       try {
+        const categoryInfo = parseCategoryPath(service.category)
+        if (!categoryInfo) {
+          errors.push(
+            `Рядок ${i + 1}: Неправильний формат категорії "${service.category}". Очікується: Бренд > Лінійка > Модель`,
+          )
+          continue
+        }
+
+        const brand = await findOrCreateBrand(supabase, categoryInfo.brand)
+        brandsFound++
+
+        const series = await findOrCreateSeries(supabase, categoryInfo.series, brand.id)
+        seriesFound++
+
+        const model = await findOrCreateModel(supabase, categoryInfo.model, series.id)
+        modelsFound++
+        if (!model.created_at || new Date(model.created_at).getTime() > Date.now() - 1000) {
+          newModelsCreated++
+        }
+
         const slug = createSlug(service.description)
+        const { data: baseService } = await supabase.from("services").select("id, slug").eq("slug", slug).single()
+
+        if (!baseService) {
+          errors.push(`Рядок ${i + 1}: Базова послуга з slug "${slug}" не знайдена в таблиці services`)
+          continue
+        }
 
         const warrantyMonths = service.warranty
           ? convertToWarrantyMonths(service.warranty, service.warranty_period || "months")
@@ -68,41 +189,45 @@ export async function POST(request: NextRequest) {
 
         const durationHours = service.duration_minutes ? convertToHours(service.duration_minutes.toString()) : null
 
-        const { data: existingService } = await supabase.from("services").select("id, slug").eq("slug", slug).single()
+        const { data: existingModelService } = await supabase
+          .from("model_services")
+          .select("id")
+          .eq("service_id", baseService.id)
+          .eq("model_id", model.id)
+          .single()
 
-        const serviceData = {
-          slug,
-          name: service.description,
-          description: service.detailed_description || service.description,
+        const modelServiceData = {
+          service_id: baseService.id,
+          model_id: model.id,
           price: service.standard_price,
           warranty_months: warrantyMonths,
           duration_hours: durationHours,
+          detailed_description: service.detailed_description || service.description,
           what_included: service.what_included || "",
           benefits: service.benefits || "",
-          category: service.category,
           updated_at: new Date().toISOString(),
         }
 
-        if (existingService) {
+        if (existingModelService) {
           const { error: updateError } = await supabase
-            .from("services")
-            .update(serviceData)
-            .eq("id", existingService.id)
+            .from("model_services")
+            .update(modelServiceData)
+            .eq("id", existingModelService.id)
 
           if (updateError) {
-            errors.push(`Рядок ${i + 1}: Помилка оновлення - ${updateError.message}`)
+            errors.push(`Рядок ${i + 1}: Помилка оновлення model_services - ${updateError.message}`)
           } else {
             updateCount++
             successCount++
           }
         } else {
-          const { error: insertError } = await supabase.from("services").insert({
-            ...serviceData,
+          const { error: insertError } = await supabase.from("model_services").insert({
+            ...modelServiceData,
             created_at: new Date().toISOString(),
           })
 
           if (insertError) {
-            errors.push(`Рядок ${i + 1}: Помилка створення - ${insertError.message}`)
+            errors.push(`Рядок ${i + 1}: Помилка створення model_services - ${insertError.message}`)
           } else {
             createCount++
             successCount++
@@ -112,9 +237,12 @@ export async function POST(request: NextRequest) {
         processedServices.push({
           ...service,
           slug,
+          brand: categoryInfo.brand,
+          series: categoryInfo.series,
+          model: categoryInfo.model,
           warranty_months: warrantyMonths,
           duration_hours: durationHours,
-          status: existingService ? "updated" : "created",
+          status: existingModelService ? "updated" : "created",
         })
       } catch (error) {
         errors.push(`Рядок ${i + 1}: ${error instanceof Error ? error.message : "Невідома помилка"}`)
@@ -134,10 +262,10 @@ export async function POST(request: NextRequest) {
         total: services.length,
         with_errors: errors.length,
         services_found: successCount,
-        brands_found: 0, // Поки що не обробляємо бренди
-        series_found: 0, // Поки що не обробляємо серії
-        models_found: 0, // Поки що не обробляємо моделі
-        new_models_needed: 0,
+        brands_found: brandsFound,
+        series_found: seriesFound,
+        models_found: modelsFound,
+        new_models_needed: newModelsCreated,
       },
     })
   } catch (error) {
