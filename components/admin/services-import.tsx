@@ -353,6 +353,14 @@ export function ServicesImport() {
     setActiveTab("preview")
   }
 
+  const getAvailableSeries = (brandId: string): Series[] => {
+    return safeArray(series).filter((s) => s.brand_id === brandId)
+  }
+
+  const getAvailableModels = (seriesId: string): Model[] => {
+    return safeArray(models).filter((m) => m.series_id === seriesId)
+  }
+
   const updateRow = (rowId: string, field: string, value: string) => {
     setData((prevData) =>
       prevData.map((row) => {
@@ -360,37 +368,49 @@ export function ServicesImport() {
 
         const updatedRow = { ...row, [field]: value }
 
-        // Оновлюємо залежні поля при зміні бренду/серії
+        // Каскадне оновлення при зміні бренду
         if (field === "brandId") {
           const brand = safeFindInArray(brands, (b) => b.id === value)
           updatedRow.brandName = brand?.name || ""
+          // Очищуємо серію та модель при зміні бренду
           updatedRow.seriesId = ""
           updatedRow.seriesName = ""
           updatedRow.modelId = ""
           updatedRow.modelName = ""
-        } else if (field === "seriesId") {
+        }
+        // Каскадне оновлення при зміні серії
+        else if (field === "seriesId") {
           const selectedSeries = safeFindInArray(series, (s) => s.id === value)
           updatedRow.seriesName = selectedSeries?.name || ""
+          // Очищуємо модель при зміні серії
           updatedRow.modelId = ""
           updatedRow.modelName = ""
-        } else if (field === "modelId") {
+        }
+        // Оновлення при зміні моделі
+        else if (field === "modelId") {
           const model = safeFindInArray(models, (m) => m.id === value)
           updatedRow.modelName = model?.name || ""
-        } else if (field === "serviceId") {
+        }
+        // Оновлення при зміні послуги
+        else if (field === "serviceId") {
           const service = safeFindInArray(services, (s) => s.id === value)
+          // Зберігаємо тільки ID послуги
           updatedRow.serviceId = service?.id
         }
+        // Обробка порожніх цін
+        else if (field === "price") {
+          updatedRow.price = value === "" ? "0" : value
+        }
 
+        // Перевалідація після змін
         const errors: string[] = []
         if (!updatedRow.description) errors.push("Відсутній опис послуги")
         if (!updatedRow.category) errors.push("Відсутня категорія")
-        if (!updatedRow.serviceId)
-          errors.push(`Не знайдено базову послугу з slug: ${extractSlugFromDescription(updatedRow.description)}`)
-        if (!updatedRow.brandId) errors.push("Не знайдено бренд")
-        if (!updatedRow.modelId) errors.push("Не знайдено модель")
+        if (!updatedRow.serviceId) errors.push("Не обрано базову послугу")
+        if (!updatedRow.brandId) errors.push("Не обрано бренд")
+        if (!updatedRow.modelId) errors.push("Не обрано модель")
 
-        updatedRow.status =
-          errors.length === 0 ? "valid" : errors.some((e) => e.includes("Не знайдено")) ? "warning" : "error"
+        updatedRow.status = errors.length === 0 ? "valid" : "warning"
         updatedRow.errors = errors
 
         return updatedRow
@@ -422,11 +442,12 @@ export function ServicesImport() {
       })
 
       if (!response.ok) {
-        throw new Error("Помилка імпорту")
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Помилка імпорту")
       }
 
       const result = await response.json()
-      alert(`Імпорт завершено! Створено: ${result.created}, Оновлено: ${result.updated}`)
+      alert(`Імпорт завершено успішно!\nСтворено нових послуг: ${result.created}\nОновлено існуючих: ${result.updated}`)
 
       // Очищуємо дані після успішного імпорту
       setData([])
@@ -685,13 +706,11 @@ export function ServicesImport() {
                                         <SelectValue placeholder="Оберіть серію" />
                                       </SelectTrigger>
                                       <SelectContent>
-                                        {safeArray(series)
-                                          .filter((s) => s.brand_id === row.brandId)
-                                          .map((series) => (
-                                            <SelectItem key={series.id} value={series.id}>
-                                              {series.name}
-                                            </SelectItem>
-                                          ))}
+                                        {getAvailableSeries(row.brandId || "").map((seriesItem) => (
+                                          <SelectItem key={seriesItem.id} value={seriesItem.id}>
+                                            {seriesItem.name}
+                                          </SelectItem>
+                                        ))}
                                       </SelectContent>
                                     </Select>
                                   ) : (
@@ -720,13 +739,11 @@ export function ServicesImport() {
                                         <SelectValue placeholder="Оберіть модель" />
                                       </SelectTrigger>
                                       <SelectContent>
-                                        {safeArray(models)
-                                          .filter((m) => m.series_id === row.seriesId)
-                                          .map((model) => (
-                                            <SelectItem key={model.id} value={model.id}>
-                                              {model.name}
-                                            </SelectItem>
-                                          ))}
+                                        {getAvailableModels(row.seriesId || "").map((model) => (
+                                          <SelectItem key={model.id} value={model.id}>
+                                            {model.name}
+                                          </SelectItem>
+                                        ))}
                                       </SelectContent>
                                     </Select>
                                   ) : (
