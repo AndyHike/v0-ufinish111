@@ -182,7 +182,7 @@ export function ServicesImport() {
   }
 
   const parsePrice = (priceStr: string): number => {
-    if (!priceStr) return 0
+    if (!priceStr || priceStr.toString().trim() === "") return 0
     const cleanPrice = priceStr
       .toString()
       .replace(/[^\d,.-]/g, "")
@@ -290,7 +290,7 @@ export function ServicesImport() {
       const id = `row-${index}`
       const description = row["Опис"] || row["Description"] || ""
       const category = row["Категорія"] || row["Category"] || ""
-      const price = row["Стандартна ціна"] || row["Price"] || ""
+      const price = (row["Стандартна ціна"] || row["Price"] || "0").toString()
       const warranty = row["Гарантія"] || row["Warranty"] || ""
       const warrantyPeriod = row["Гарантійний період"] || row["Warranty Period"] || ""
       const duration = row["Тривалість (хвилини)"] || row["Duration"] || ""
@@ -313,7 +313,6 @@ export function ServicesImport() {
       const errors: string[] = []
       if (!description) errors.push("Відсутній опис послуги")
       if (!category) errors.push("Відсутня категорія")
-      if (!price || parsePrice(price) <= 0) errors.push("Некоректна ціна")
       if (!matchedService) errors.push(`Не знайдено базову послугу з slug: ${serviceSlug}`)
       if (!matchedBrand) errors.push("Не знайдено бренд")
       if (!matchedModel) errors.push("Не знайдено модель")
@@ -385,7 +384,6 @@ export function ServicesImport() {
         const errors: string[] = []
         if (!updatedRow.description) errors.push("Відсутній опис послуги")
         if (!updatedRow.category) errors.push("Відсутня категорія")
-        if (!updatedRow.price || parsePrice(updatedRow.price) <= 0) errors.push("Некоректна ціна")
         if (!updatedRow.serviceId)
           errors.push(`Не знайдено базову послугу з slug: ${extractSlugFromDescription(updatedRow.description)}`)
         if (!updatedRow.brandId) errors.push("Не знайдено бренд")
@@ -539,236 +537,318 @@ export function ServicesImport() {
 
               <Card className="border-0 shadow-md">
                 <CardContent className="p-0">
-                  <div className="overflow-x-auto">
-                    <ScrollArea className="h-[600px]">
-                      <Table>
-                        <TableHeader>
-                          <TableRow className="bg-gray-50">
-                            <TableHead className="font-semibold text-gray-700 min-w-[100px]">Статус</TableHead>
-                            <TableHead className="font-semibold text-gray-700 min-w-[200px]">Опис</TableHead>
-                            <TableHead className="font-semibold text-gray-700 min-w-[150px]">Бренд</TableHead>
-                            <TableHead className="font-semibold text-gray-700 min-w-[150px]">Серія</TableHead>
-                            <TableHead className="font-semibold text-gray-700 min-w-[150px]">Модель</TableHead>
-                            <TableHead className="font-semibold text-gray-700 min-w-[150px]">Послуга</TableHead>
-                            <TableHead className="font-semibold text-gray-700 min-w-[100px]">Ціна</TableHead>
-                            <TableHead className="font-semibold text-gray-700 min-w-[100px]">Гарантія</TableHead>
-                            <TableHead className="font-semibold text-gray-700 min-w-[120px]">Період</TableHead>
-                            <TableHead className="font-semibold text-gray-700 min-w-[100px]">Тривалість</TableHead>
-                            <TableHead className="font-semibold text-gray-700 min-w-[80px]">Дії</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {data.map((row, index) => (
-                            <TableRow key={row.id} className={index % 2 === 0 ? "bg-white" : "bg-gray-50/50"}>
-                              <TableCell className="py-4">
-                                <Badge
-                                  variant={
-                                    row.status === "valid"
-                                      ? "default"
-                                      : row.status === "warning"
-                                        ? "secondary"
-                                        : "destructive"
-                                  }
-                                  className={
-                                    row.status === "valid"
-                                      ? "bg-green-100 text-green-800 border-green-200"
-                                      : row.status === "warning"
-                                        ? "bg-yellow-100 text-yellow-800 border-yellow-200"
-                                        : ""
-                                  }
-                                >
-                                  {row.status === "valid"
-                                    ? "Готово"
-                                    : row.status === "warning"
-                                      ? "Попередження"
-                                      : "Помилка"}
-                                </Badge>
-                                {row.errors.length > 0 && (
-                                  <div className="text-xs text-red-600 mt-2 p-2 bg-red-50 rounded border border-red-200">
-                                    {row.errors.join(", ")}
-                                  </div>
-                                )}
-                              </TableCell>
-                              <TableCell className="py-4">
-                                {editingRow === row.id ? (
-                                  <Input
-                                    value={row.description}
-                                    onChange={(e) => updateRow(row.id, "description", e.target.value)}
-                                    className="min-w-[180px]"
-                                  />
-                                ) : (
-                                  <div className="max-w-[200px]">
-                                    <div className="truncate font-medium" title={row.description}>
-                                      {row.description}
-                                    </div>
-                                  </div>
-                                )}
-                              </TableCell>
-                              <TableCell className="py-4">
-                                {editingRow === row.id ? (
-                                  <Select
-                                    value={row.brandId || ""}
-                                    onValueChange={(value) => updateRow(row.id, "brandId", value)}
-                                  >
-                                    <SelectTrigger className="min-w-[140px]">
-                                      <SelectValue placeholder="Оберіть бренд" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {safeArray(brands).map((brand) => (
-                                        <SelectItem key={brand.id} value={brand.id}>
-                                          {brand.name}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                ) : (
-                                  <div className="truncate font-medium">
-                                    {safeFindInArray(brands, (b) => b.id === row.brandId)?.name ||
-                                      row.brandName ||
-                                      "Не знайдено"}
-                                  </div>
-                                )}
-                              </TableCell>
-                              <TableCell className="py-4">
-                                {editingRow === row.id ? (
-                                  <Select
-                                    value={row.seriesId || ""}
-                                    onValueChange={(value) => updateRow(row.id, "seriesId", value)}
-                                    disabled={!row.brandId}
-                                  >
-                                    <SelectTrigger className="min-w-[140px]">
-                                      <SelectValue placeholder="Оберіть серію" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {safeArray(series)
-                                        .filter((s) => s.brand_id === row.brandId)
-                                        .map((series) => (
-                                          <SelectItem key={series.id} value={series.id}>
-                                            {series.name}
-                                          </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                  </Select>
-                                ) : (
-                                  <div className="truncate">
-                                    {safeFindInArray(series, (s) => s.id === row.seriesId)?.name ||
-                                      row.seriesName ||
-                                      "Не знайдено"}
-                                  </div>
-                                )}
-                              </TableCell>
-                              <TableCell className="py-4">
-                                {editingRow === row.id ? (
-                                  <Select
-                                    value={row.modelId || ""}
-                                    onValueChange={(value) => updateRow(row.id, "modelId", value)}
-                                    disabled={!row.seriesId}
-                                  >
-                                    <SelectTrigger className="min-w-[140px]">
-                                      <SelectValue placeholder="Оберіть модель" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {safeArray(models)
-                                        .filter((m) => m.series_id === row.seriesId)
-                                        .map((model) => (
-                                          <SelectItem key={model.id} value={model.id}>
-                                            {model.name}
-                                          </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                  </Select>
-                                ) : (
-                                  <div className="truncate">
-                                    {safeFindInArray(models, (m) => m.id === row.modelId)?.name ||
-                                      row.modelName ||
-                                      "Не знайдено"}
-                                  </div>
-                                )}
-                              </TableCell>
-                              <TableCell className="py-4">
-                                {editingRow === row.id ? (
-                                  <Select
-                                    value={row.serviceId || ""}
-                                    onValueChange={(value) => updateRow(row.id, "serviceId", value)}
-                                  >
-                                    <SelectTrigger className="min-w-[140px]">
-                                      <SelectValue placeholder="Оберіть послугу" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {safeArray(services).map((service) => (
-                                        <SelectItem key={service.id} value={service.id}>
-                                          {service.name}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                ) : (
-                                  <div className="truncate">
-                                    {safeFindInArray(services, (s) => s.id === row.serviceId)?.name || "Не знайдено"}
-                                  </div>
-                                )}
-                              </TableCell>
-                              <TableCell className="py-4">
-                                {editingRow === row.id ? (
-                                  <Input
-                                    value={row.price}
-                                    onChange={(e) => updateRow(row.id, "price", e.target.value)}
-                                    className="w-[90px]"
-                                    placeholder="0.00"
-                                  />
-                                ) : (
-                                  <span className="font-medium">{row.price}</span>
-                                )}
-                              </TableCell>
-                              <TableCell className="py-4">
-                                {editingRow === row.id ? (
-                                  <Input
-                                    value={row.warranty}
-                                    onChange={(e) => updateRow(row.id, "warranty", e.target.value)}
-                                    className="w-[90px]"
-                                  />
-                                ) : (
-                                  row.warranty
-                                )}
-                              </TableCell>
-                              <TableCell className="py-4">
-                                {editingRow === row.id ? (
-                                  <Input
-                                    value={row.warrantyPeriod}
-                                    onChange={(e) => updateRow(row.id, "warrantyPeriod", e.target.value)}
-                                    className="w-[110px]"
-                                  />
-                                ) : (
-                                  row.warrantyPeriod
-                                )}
-                              </TableCell>
-                              <TableCell className="py-4">
-                                {editingRow === row.id ? (
-                                  <Input
-                                    value={row.duration}
-                                    onChange={(e) => updateRow(row.id, "duration", e.target.value)}
-                                    className="w-[90px]"
-                                    placeholder="хв"
-                                  />
-                                ) : (
-                                  row.duration
-                                )}
-                              </TableCell>
-                              <TableCell className="py-4">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => setEditingRow(editingRow === row.id ? null : row.id)}
-                                  className="hover:bg-blue-50 hover:text-blue-600"
-                                >
-                                  <Edit2 className="h-4 w-4" />
-                                </Button>
-                              </TableCell>
+                  <div className="w-full overflow-x-auto">
+                    <div className="min-w-[1400px]">
+                      {" "}
+                      {/* Мінімальна ширина для всіх колонок */}
+                      <ScrollArea className="h-[600px] w-full">
+                        <Table className="w-full">
+                          <TableHeader className="sticky top-0 z-10">
+                            <TableRow className="bg-gray-50 border-b-2 border-gray-200">
+                              <TableHead className="font-semibold text-gray-700 w-[120px] min-w-[120px]">
+                                Статус
+                              </TableHead>
+                              <TableHead className="font-semibold text-gray-700 w-[250px] min-w-[250px]">
+                                Опис
+                              </TableHead>
+                              <TableHead className="font-semibold text-gray-700 w-[150px] min-w-[150px]">
+                                Бренд
+                              </TableHead>
+                              <TableHead className="font-semibold text-gray-700 w-[150px] min-w-[150px]">
+                                Серія
+                              </TableHead>
+                              <TableHead className="font-semibold text-gray-700 w-[150px] min-w-[150px]">
+                                Модель
+                              </TableHead>
+                              <TableHead className="font-semibold text-gray-700 w-[180px] min-w-[180px]">
+                                Послуга
+                              </TableHead>
+                              <TableHead className="font-semibold text-gray-700 w-[100px] min-w-[100px]">
+                                Ціна
+                              </TableHead>
+                              <TableHead className="font-semibold text-gray-700 w-[100px] min-w-[100px]">
+                                Гарантія
+                              </TableHead>
+                              <TableHead className="font-semibold text-gray-700 w-[120px] min-w-[120px]">
+                                Період
+                              </TableHead>
+                              <TableHead className="font-semibold text-gray-700 w-[100px] min-w-[100px]">
+                                Тривалість
+                              </TableHead>
+                              <TableHead className="font-semibold text-gray-700 w-[80px] min-w-[80px]">Дії</TableHead>
                             </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </ScrollArea>
+                          </TableHeader>
+                          <TableBody>
+                            {data.map((row, index) => (
+                              <TableRow
+                                key={row.id}
+                                className={`
+                                  ${index % 2 === 0 ? "bg-white" : "bg-gray-50/50"}
+                                  ${editingRow === row.id ? "bg-blue-50 border-l-4 border-l-blue-500" : ""}
+                                  hover:bg-gray-100 transition-colors
+                                `}
+                              >
+                                <TableCell className="py-3 px-4">
+                                  <Badge
+                                    variant={
+                                      row.status === "valid"
+                                        ? "default"
+                                        : row.status === "warning"
+                                          ? "secondary"
+                                          : "destructive"
+                                    }
+                                    className={`
+                                      text-xs font-medium px-2 py-1
+                                      ${
+                                        row.status === "valid"
+                                          ? "bg-green-100 text-green-800 border-green-200"
+                                          : row.status === "warning"
+                                            ? "bg-yellow-100 text-yellow-800 border-yellow-200"
+                                            : "bg-red-100 text-red-800 border-red-200"
+                                      }
+                                    `}
+                                  >
+                                    {row.status === "valid"
+                                      ? "Готово"
+                                      : row.status === "warning"
+                                        ? "Попередження"
+                                        : "Помилка"}
+                                  </Badge>
+                                  {row.errors.length > 0 && (
+                                    <div className="text-xs text-red-600 mt-2 p-2 bg-red-50 rounded border border-red-200 max-w-[110px]">
+                                      <div className="space-y-1">
+                                        {row.errors.map((error, i) => (
+                                          <div key={i} className="truncate" title={error}>
+                                            • {error}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                </TableCell>
+                                <TableCell className="py-3 px-4">
+                                  {editingRow === row.id ? (
+                                    <Input
+                                      value={row.description}
+                                      onChange={(e) => updateRow(row.id, "description", e.target.value)}
+                                      className="w-full min-w-[230px] text-sm"
+                                      placeholder="Опис послуги"
+                                    />
+                                  ) : (
+                                    <div className="max-w-[230px]">
+                                      <div className="font-medium text-sm leading-tight" title={row.description}>
+                                        {row.description}
+                                      </div>
+                                    </div>
+                                  )}
+                                </TableCell>
+                                <TableCell className="py-3 px-4">
+                                  {editingRow === row.id ? (
+                                    <Select
+                                      value={row.brandId || ""}
+                                      onValueChange={(value) => updateRow(row.id, "brandId", value)}
+                                    >
+                                      <SelectTrigger className="w-full min-w-[130px] text-sm">
+                                        <SelectValue placeholder="Оберіть бренд" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {safeArray(brands).map((brand) => (
+                                          <SelectItem key={brand.id} value={brand.id}>
+                                            {brand.name}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  ) : (
+                                    <div
+                                      className="truncate font-medium text-sm max-w-[130px]"
+                                      title={
+                                        safeFindInArray(brands, (b) => b.id === row.brandId)?.name ||
+                                        row.brandName ||
+                                        "Не знайдено"
+                                      }
+                                    >
+                                      {safeFindInArray(brands, (b) => b.id === row.brandId)?.name ||
+                                        row.brandName ||
+                                        "Не знайдено"}
+                                    </div>
+                                  )}
+                                </TableCell>
+                                <TableCell className="py-3 px-4">
+                                  {editingRow === row.id ? (
+                                    <Select
+                                      value={row.seriesId || ""}
+                                      onValueChange={(value) => updateRow(row.id, "seriesId", value)}
+                                      disabled={!row.brandId}
+                                    >
+                                      <SelectTrigger className="w-full min-w-[130px] text-sm">
+                                        <SelectValue placeholder="Оберіть серію" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {safeArray(series)
+                                          .filter((s) => s.brand_id === row.brandId)
+                                          .map((series) => (
+                                            <SelectItem key={series.id} value={series.id}>
+                                              {series.name}
+                                            </SelectItem>
+                                          ))}
+                                      </SelectContent>
+                                    </Select>
+                                  ) : (
+                                    <div
+                                      className="truncate text-sm max-w-[130px]"
+                                      title={
+                                        safeFindInArray(series, (s) => s.id === row.seriesId)?.name ||
+                                        row.seriesName ||
+                                        "Не знайдено"
+                                      }
+                                    >
+                                      {safeFindInArray(series, (s) => s.id === row.seriesId)?.name ||
+                                        row.seriesName ||
+                                        "Не знайдено"}
+                                    </div>
+                                  )}
+                                </TableCell>
+                                <TableCell className="py-3 px-4">
+                                  {editingRow === row.id ? (
+                                    <Select
+                                      value={row.modelId || ""}
+                                      onValueChange={(value) => updateRow(row.id, "modelId", value)}
+                                      disabled={!row.seriesId}
+                                    >
+                                      <SelectTrigger className="w-full min-w-[130px] text-sm">
+                                        <SelectValue placeholder="Оберіть модель" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {safeArray(models)
+                                          .filter((m) => m.series_id === row.seriesId)
+                                          .map((model) => (
+                                            <SelectItem key={model.id} value={model.id}>
+                                              {model.name}
+                                            </SelectItem>
+                                          ))}
+                                      </SelectContent>
+                                    </Select>
+                                  ) : (
+                                    <div
+                                      className="truncate text-sm max-w-[130px]"
+                                      title={
+                                        safeFindInArray(models, (m) => m.id === row.modelId)?.name ||
+                                        row.modelName ||
+                                        "Не знайдено"
+                                      }
+                                    >
+                                      {safeFindInArray(models, (m) => m.id === row.modelId)?.name ||
+                                        row.modelName ||
+                                        "Не знайдено"}
+                                    </div>
+                                  )}
+                                </TableCell>
+                                <TableCell className="py-3 px-4">
+                                  {editingRow === row.id ? (
+                                    <Select
+                                      value={row.serviceId || ""}
+                                      onValueChange={(value) => updateRow(row.id, "serviceId", value)}
+                                    >
+                                      <SelectTrigger className="w-full min-w-[160px] text-sm">
+                                        <SelectValue placeholder="Оберіть послугу" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {safeArray(services).map((service) => (
+                                          <SelectItem key={service.id} value={service.id}>
+                                            {service.name}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  ) : (
+                                    <div
+                                      className="truncate text-sm max-w-[160px]"
+                                      title={
+                                        safeFindInArray(services, (s) => s.id === row.serviceId)?.name || "Не знайдено"
+                                      }
+                                    >
+                                      {safeFindInArray(services, (s) => s.id === row.serviceId)?.name || "Не знайдено"}
+                                    </div>
+                                  )}
+                                </TableCell>
+                                <TableCell className="py-3 px-4">
+                                  {editingRow === row.id ? (
+                                    <Input
+                                      value={row.price}
+                                      onChange={(e) => updateRow(row.id, "price", e.target.value)}
+                                      className="w-full min-w-[80px] text-sm"
+                                      placeholder="0"
+                                      type="number"
+                                      min="0"
+                                      step="0.01"
+                                    />
+                                  ) : (
+                                    <span className="font-medium text-sm">{row.price || "0"}</span>
+                                  )}
+                                </TableCell>
+                                <TableCell className="py-3 px-4">
+                                  {editingRow === row.id ? (
+                                    <Input
+                                      value={row.warranty}
+                                      onChange={(e) => updateRow(row.id, "warranty", e.target.value)}
+                                      className="w-full min-w-[80px] text-sm"
+                                      placeholder="Гарантія"
+                                    />
+                                  ) : (
+                                    <span className="text-sm">{row.warranty}</span>
+                                  )}
+                                </TableCell>
+                                <TableCell className="py-3 px-4">
+                                  {editingRow === row.id ? (
+                                    <Input
+                                      value={row.warrantyPeriod}
+                                      onChange={(e) => updateRow(row.id, "warrantyPeriod", e.target.value)}
+                                      className="w-full min-w-[100px] text-sm"
+                                      placeholder="Період"
+                                    />
+                                  ) : (
+                                    <span className="text-sm">{row.warrantyPeriod}</span>
+                                  )}
+                                </TableCell>
+                                <TableCell className="py-3 px-4">
+                                  {editingRow === row.id ? (
+                                    <Input
+                                      value={row.duration}
+                                      onChange={(e) => updateRow(row.id, "duration", e.target.value)}
+                                      className="w-full min-w-[80px] text-sm"
+                                      placeholder="хв"
+                                      type="number"
+                                      min="0"
+                                    />
+                                  ) : (
+                                    <span className="text-sm">{row.duration}</span>
+                                  )}
+                                </TableCell>
+                                <TableCell className="py-3 px-4">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setEditingRow(editingRow === row.id ? null : row.id)}
+                                    className={`
+                                      h-8 w-8 p-0 rounded-full transition-all duration-200
+                                      ${
+                                        editingRow === row.id
+                                          ? "bg-green-100 hover:bg-green-200 text-green-700"
+                                          : "hover:bg-blue-50 hover:text-blue-600"
+                                      }
+                                    `}
+                                    title={editingRow === row.id ? "Зберегти зміни" : "Редагувати"}
+                                  >
+                                    <Edit2 className="h-4 w-4" />
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </ScrollArea>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
