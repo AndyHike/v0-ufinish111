@@ -158,18 +158,49 @@ export function ServicesImport() {
     if (safeItems.length === 0) return null
 
     const normalizedName = name.toLowerCase().trim()
-    return safeItems.find((item) => {
-      if (!item || !item.name) return false
-      const itemName = item.name.toLowerCase()
-      const itemSlug = item.slug ? item.slug.toLowerCase() : ""
 
-      return (
-        itemName === normalizedName ||
-        itemSlug === normalizedName ||
-        itemName.includes(normalizedName) ||
-        normalizedName.includes(itemName)
-      )
+    // Спочатку шукаємо точні співпадіння
+    const exactMatch = safeItems.find((item) => {
+      if (!item || !item.name) return false
+      const itemName = item.name.toLowerCase().trim()
+      const itemSlug = item.slug ? item.slug.toLowerCase().trim() : ""
+
+      return itemName === normalizedName || itemSlug === normalizedName
     })
+
+    if (exactMatch) {
+      console.log(`Exact match found for "${name}":`, exactMatch.name)
+      return exactMatch
+    }
+
+    // Якщо точного співпадіння немає, шукаємо часткові співпадіння
+    // але тільки якщо назва з файлу ПОВНІСТЮ міститься в назві з БД
+    const partialMatch = safeItems.find((item) => {
+      if (!item || !item.name) return false
+      const itemName = item.name.toLowerCase().trim()
+
+      // Перевіряємо чи назва з БД містить назву з файлу як окремі слова
+      const nameWords = normalizedName.split(/\s+/)
+      const itemWords = itemName.split(/\s+/)
+
+      // Всі слова з файлу повинні бути присутні в назві з БД в тому ж порядку
+      let fileWordIndex = 0
+      for (let i = 0; i < itemWords.length && fileWordIndex < nameWords.length; i++) {
+        if (itemWords[i] === nameWords[fileWordIndex]) {
+          fileWordIndex++
+        }
+      }
+
+      return fileWordIndex === nameWords.length
+    })
+
+    if (partialMatch) {
+      console.log(`Partial match found for "${name}":`, partialMatch.name)
+      return partialMatch
+    }
+
+    console.log(`No match found for "${name}"`)
+    return null
   }
 
   const createSlug = (text: string): string => {
