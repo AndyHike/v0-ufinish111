@@ -1,21 +1,17 @@
 "use client"
 
 import type React from "react"
-
-import { useState, useCallback } from "react"
-import { Button } from "@/components/ui/button"
+import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Upload, Download, AlertCircle, CheckCircle, Edit2, Save, X } from "lucide-react"
-import * as XLSX from "xlsx"
+import { Upload, AlertCircle, CheckCircle, X } from "lucide-react"
 import Papa from "papaparse"
+import * as XLSX from "xlsx"
 
 interface ServiceData {
   id: string
@@ -25,16 +21,13 @@ interface ServiceData {
   warranty: string
   warrantyPeriod: string
   duration: string
-  // Parsed data
   brandName?: string
   seriesName?: string
   modelName?: string
-  // Selected IDs
   brandId?: string
   seriesId?: string
   modelId?: string
   serviceId?: string
-  // Status
   status: "valid" | "warning" | "error"
   errors: string[]
 }
@@ -75,21 +68,44 @@ export function ServicesImport() {
   const [activeTab, setActiveTab] = useState("upload")
   const [editingRow, setEditingRow] = useState<string | null>(null)
 
-  // Reference data
   const [brands, setBrands] = useState<Brand[]>([])
   const [series, setSeries] = useState<Series[]>([])
   const [models, setModels] = useState<Model[]>([])
   const [services, setServices] = useState<Service[]>([])
+  const [dataLoaded, setDataLoaded] = useState(false)
 
-  // Load reference data
+  // Safe array helper
+  const safeArray = <T,>(arr: T[] | undefined | null): T[] => {
+    return Array.isArray(arr) ? arr : []
+  }
+
+  // Safe find helper
+  const safeFindInArray = <T extends { id: string; name: string }>(
+    items: T[] | undefined | null,
+    predicate: (item: T) => boolean,
+  ): T | undefined => {
+    const safeItems = safeArray(items)
+    return safeItems.find(predicate)
+  }
+
+  useEffect(() => {
+    loadReferenceData()
+  }, [])
+
   const loadReferenceData = useCallback(async () => {
     try {
+      console.log("Loading reference data...")
+
       const [brandsRes, seriesRes, modelsRes, servicesRes] = await Promise.all([
         fetch("/api/admin/brands"),
         fetch("/api/admin/series"),
         fetch("/api/admin/models"),
         fetch("/api/admin/services"),
       ])
+
+      if (!brandsRes.ok || !seriesRes.ok || !modelsRes.ok || !servicesRes.ok) {
+        throw new Error("Failed to fetch reference data")
+      }
 
       const [brandsData, seriesData, modelsData, servicesData] = await Promise.all([
         brandsRes.json(),
@@ -98,18 +114,29 @@ export function ServicesImport() {
         servicesRes.json(),
       ])
 
-      setBrands(brandsData)
-      setSeries(seriesData)
-      setModels(modelsData)
-      setServices(servicesData)
+      setBrands(Array.isArray(brandsData) ? brandsData : [])
+      setSeries(Array.isArray(seriesData) ? seriesData : [])
+      setModels(Array.isArray(modelsData) ? modelsData : [])
+      setServices(Array.isArray(servicesData) ? servicesData : [])
+      setDataLoaded(true)
+
+      console.log("Reference data loaded successfully")
     } catch (error) {
       console.error("Error loading reference data:", error)
+      setBrands([])
+      setSeries([])
+      setModels([])
+      setServices([])
+      setDataLoaded(true)
     }
   }, [])
 
-  // Parse category string "Apple &gt; iPhone &gt; iPhone XS Max"
   const parseCategory = (category: string) => {
-    const parts = category.split("&gt;").map((part) => part.trim())
+    if (!category || typeof category !== "string") {
+      return { brandName: "", seriesName: "", modelName: "" }
+    }
+
+    const parts = category.split(">").map((part) => part.trim())
     return {
       brandName: parts[0] || "",
       seriesName: parts[1] || "",
@@ -117,21 +144,28 @@ export function ServicesImport() {
     }
   }
 
-  // Find best match for brand/series/model
-  const findBestMatch = (name: string, items: any[]) => {
-    if (!name || !Array.isArray(items) || items.length === 0) return null
+  const findBestMatch = (name: string, items: any[]): any | null => {
+    if (!name || typeof name !== "string") return null
+    const safeItems = safeArray(items)
+    if (safeItems.length === 0) return null
+
     const normalizedName = name.toLowerCase().trim()
-    return items.find(
-      (item) =>
-        item.name.toLowerCase() === normalizedName ||
-        item.slug.toLowerCase() === normalizedName ||
-        item.name.toLowerCase().includes(normalizedName) ||
-        normalizedName.includes(item.name.toLowerCase()),
-    )
+    return safeItems.find((item) => {
+      if (!item || !item.name) return false
+      const itemName = item.name.toLowerCase()
+      const itemSlug = item.slug ? item.slug.toLowerCase() : ""
+
+      return (
+        itemName === normalizedName ||
+        itemSlug === normalizedName ||
+        itemName.includes(normalizedName) ||
+        normalizedName.includes(itemName)
+      )
+    })
   }
 
-  // Create slug from text
-  const createSlug = (text: string) => {
+  const createSlug = (text: string): string => {
+    if (!text || typeof text !== "string") return ""
     return text
       .toLowerCase()
       .replace(/[^\w\s-]/g, "")
@@ -139,7 +173,6 @@ export function ServicesImport() {
       .trim()
   }
 
-  // Parse price with comma support
   const parsePrice = (priceStr: string): number => {
     if (!priceStr) return 0
     const cleanPrice = priceStr
@@ -150,30 +183,32 @@ export function ServicesImport() {
     return isNaN(price) ? 0 : price
   }
 
-  // Handle file upload
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const uploadedFile = event.target.files?.[0]
     if (!uploadedFile) return
+
+    if (!dataLoaded) {
+      alert("Завантаження довідкових даних... Спробуйте ще раз через кілька секунд.")
+      return
+    }
 
     setFile(uploadedFile)
     setLoading(true)
 
     try {
       const fileExtension = uploadedFile.name.split(".").pop()?.toLowerCase()
-      let parsedData: any[] = []
 
       if (fileExtension === "csv") {
-        // Parse CSV
         Papa.parse(uploadedFile, {
           header: true,
           skipEmptyLines: true,
-          complete: async (results) => {
-            parsedData = results.data as any[]
-            // Переконуємося що дані завантажені перед обробкою
-            if (brands.length === 0) {
-              await loadReferenceData()
+          complete: (results) => {
+            if (results.data && Array.isArray(results.data)) {
+              processData(results.data)
+            } else {
+              console.error("Invalid CSV data")
+              setLoading(false)
             }
-            processData(parsedData)
           },
           error: (error) => {
             console.error("CSV parsing error:", error)
@@ -181,30 +216,32 @@ export function ServicesImport() {
           },
         })
       } else if (["xlsx", "xls"].includes(fileExtension || "")) {
-        // Parse Excel
         const arrayBuffer = await uploadedFile.arrayBuffer()
         const workbook = XLSX.read(arrayBuffer, { type: "array" })
         const sheetName = workbook.SheetNames[0]
         const worksheet = workbook.Sheets[sheetName]
-        parsedData = XLSX.utils.sheet_to_json(worksheet)
-        // Переконуємося що дані завантажені перед обробкою
-        if (brands.length === 0) {
-          await loadReferenceData()
+        const parsedData = XLSX.utils.sheet_to_json(worksheet)
+
+        if (Array.isArray(parsedData)) {
+          processData(parsedData)
+        } else {
+          throw new Error("Invalid Excel data format")
         }
-        processData(parsedData)
       } else {
         throw new Error("Непідтримуваний формат файлу")
       }
     } catch (error) {
       console.error("File processing error:", error)
+      alert("Помилка обробки файлу: " + (error as Error).message)
       setLoading(false)
     }
   }
 
-  // Process parsed data
   const processData = (rawData: any[]) => {
+    console.log("Processing data:", rawData.length, "rows")
+
     if (!Array.isArray(rawData)) {
-      console.error("Invalid data format")
+      console.error("Invalid data format - not an array")
       setLoading(false)
       return
     }
@@ -218,29 +255,22 @@ export function ServicesImport() {
       const warrantyPeriod = row["Гарантійний період"] || row["Warranty Period"] || ""
       const duration = row["Тривалість (хвилини)"] || row["Duration"] || ""
 
-      // Parse category
       const { brandName, seriesName, modelName } = parseCategory(category)
 
-      // Find matches з безпечними перевірками
-      const matchedBrand = findBestMatch(brandName, brands || [])
-      const matchedSeries = findBestMatch(
-        seriesName,
-        (series || []).filter((s) => !matchedBrand || s.brand_id === matchedBrand.id),
-      )
-      const matchedModel = findBestMatch(
-        modelName,
-        (models || []).filter(
-          (m) =>
-            (!matchedBrand || m.brand_id === matchedBrand.id) && (!matchedSeries || m.series_id === matchedSeries.id),
-        ),
-      )
+      const matchedBrand = findBestMatch(brandName, brands)
+      const filteredSeries = safeArray(series).filter((s) => !matchedBrand || s.brand_id === matchedBrand.id)
+      const matchedSeries = findBestMatch(seriesName, filteredSeries)
 
-      // Find service by description
+      const filteredModels = safeArray(models).filter(
+        (m) =>
+          (!matchedBrand || m.brand_id === matchedBrand.id) && (!matchedSeries || m.series_id === matchedSeries.id),
+      )
+      const matchedModel = findBestMatch(modelName, filteredModels)
+
       const serviceSlug = createSlug(description)
       const matchedService =
-        (services || []).find((s) => s.slug === serviceSlug) || findBestMatch(description, services || [])
+        safeFindInArray(services, (s) => s.slug === serviceSlug) || findBestMatch(description, services)
 
-      // Validate data
       const errors: string[] = []
       if (!description) errors.push("Відсутній опис послуги")
       if (!category) errors.push("Відсутня категорія")
@@ -271,94 +301,10 @@ export function ServicesImport() {
       }
     })
 
+    console.log("Processed data:", processedData.length, "rows")
     setData(processedData)
     setLoading(false)
     setActiveTab("preview")
-  }
-
-  // Handle import
-  const handleImport = async () => {
-    setImporting(true)
-
-    try {
-      const response = await fetch("/api/admin/services-import", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ data }),
-      })
-
-      const result = await response.json()
-
-      if (response.ok) {
-        alert(`Імпорт завершено!\nСтворено: ${result.created}\nОновлено: ${result.updated}\nПомилок: ${result.errors}`)
-        setData([])
-        setFile(null)
-        setActiveTab("upload")
-      } else {
-        throw new Error(result.error || "Помилка імпорту")
-      }
-    } catch (error) {
-      console.error("Import error:", error)
-      alert("Помилка при імпорті: " + (error as Error).message)
-    } finally {
-      setImporting(false)
-    }
-  }
-
-  // Export to Excel
-  const exportToExcel = () => {
-    const exportData = data.map((row) => ({
-      Опис: row.description,
-      Категорія: row.category,
-      "Стандартна ціна": row.price,
-      Гарантія: row.warranty,
-      "Гарантійний період": row.warrantyPeriod,
-      "Тривалість (хвилини)": row.duration,
-      Бренд: (brands || []).find((b) => b.id === row.brandId)?.name || row.brandName,
-      Серія: (series || []).find((s) => s.id === row.seriesId)?.name || row.seriesName,
-      Модель: (models || []).find((m) => m.id === row.modelId)?.name || row.modelName,
-      Послуга: (services || []).find((s) => s.id === row.serviceId)?.name || "",
-      Статус: row.status === "valid" ? "Готово" : row.status === "warning" ? "Попередження" : "Помилка",
-      Помилки: row.errors.join("; "),
-    }))
-
-    const ws = XLSX.utils.json_to_sheet(exportData)
-    const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, "Services")
-    XLSX.writeFile(wb, "services-import-preview.xlsx")
-  }
-
-  // Update row data
-  const updateRowData = (rowId: string, field: string, value: string) => {
-    setData((prev) =>
-      prev.map((row) => {
-        if (row.id === rowId) {
-          const updated = { ...row, [field]: value }
-
-          // Re-validate if needed
-          if (field === "brandId") {
-            const brand = (brands || []).find((b) => b.id === value)
-            updated.brandName = brand?.name || ""
-            // Reset series and model if brand changed
-            updated.seriesId = ""
-            updated.modelId = ""
-          } else if (field === "seriesId") {
-            const seriesItem = (series || []).find((s) => s.id === value)
-            updated.seriesName = seriesItem?.name || ""
-            // Reset model if series changed
-            updated.modelId = ""
-          } else if (field === "modelId") {
-            const model = (models || []).find((m) => m.id === value)
-            updated.modelName = model?.name || ""
-          }
-
-          return updated
-        }
-        return row
-      }),
-    )
   }
 
   const validCount = data.filter((row) => row.status === "valid").length
@@ -367,94 +313,63 @@ export function ServicesImport() {
 
   return (
     <div className="space-y-6">
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="upload">Завантаження</TabsTrigger>
-          <TabsTrigger value="preview" disabled={data.length === 0}>
-            Передперегляд ({data.length})
-          </TabsTrigger>
-        </TabsList>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Upload className="h-5 w-5" />
+            Імпорт послуг
+          </CardTitle>
+          <CardDescription>
+            Завантажте CSV або Excel файл для імпорту послуг
+            {!dataLoaded && " • Завантаження довідкових даних..."}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label htmlFor="file">Виберіть файл</Label>
+            <Input
+              id="file"
+              type="file"
+              accept=".csv,.xlsx,.xls"
+              onChange={handleFileUpload}
+              disabled={loading || !dataLoaded}
+            />
+          </div>
 
-        <TabsContent value="upload" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Upload className="h-5 w-5" />
-                Завантаження файлу
-              </CardTitle>
-              <CardDescription>Підтримуються формати: CSV, Excel (.xlsx, .xls)</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="file">Виберіть файл</Label>
-                <Input id="file" type="file" accept=".csv,.xlsx,.xls" onChange={handleFileUpload} disabled={loading} />
-              </div>
+          {loading && (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>Обробка файлу...</AlertDescription>
+            </Alert>
+          )}
 
-              {loading && (
-                <Alert>
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>Обробка файлу...</AlertDescription>
-                </Alert>
-              )}
-
-              <div className="text-sm text-muted-foreground">
-                <p className="font-medium mb-2">Очікувані колонки:</p>
-                <ul className="list-disc list-inside space-y-1">
-                  <li>Опис - назва послуги</li>
-                  <li>Категорія - у форматі "Бренд &gt; Серія &gt; Модель"</li>
-                  <li>Стандартна ціна - ціна послуги</li>
-                  <li>Гарантія - опис гарантії</li>
-                  <li>Гарантійний період - термін гарантії</li>
-                  <li>Тривалість (хвилини) - час виконання</li>
-                </ul>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="preview" className="space-y-4">
           {data.length > 0 && (
-            <>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <Badge variant="default" className="bg-green-100 text-green-800">
-                    <CheckCircle className="h-3 w-3 mr-1" />
-                    Готово: {validCount}
-                  </Badge>
-                  <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
-                    <AlertCircle className="h-3 w-3 mr-1" />
-                    Попередження: {warningCount}
-                  </Badge>
-                  <Badge variant="destructive">
-                    <X className="h-3 w-3 mr-1" />
-                    Помилки: {errorCount}
-                  </Badge>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" onClick={exportToExcel}>
-                    <Download className="h-4 w-4 mr-2" />
-                    Експорт Excel
-                  </Button>
-                  <Button onClick={handleImport} disabled={importing || validCount === 0}>
-                    {importing ? "Імпорт..." : `Імпортувати (${validCount})`}
-                  </Button>
-                </div>
+            <div className="space-y-4">
+              <div className="flex items-center gap-4">
+                <Badge variant="default" className="bg-green-100 text-green-800">
+                  <CheckCircle className="h-3 w-3 mr-1" />
+                  Готово: {validCount}
+                </Badge>
+                <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+                  <AlertCircle className="h-3 w-3 mr-1" />
+                  Попередження: {warningCount}
+                </Badge>
+                <Badge variant="destructive">
+                  <X className="h-3 w-3 mr-1" />
+                  Помилки: {errorCount}
+                </Badge>
               </div>
 
               <Card>
                 <CardContent className="p-0">
-                  <ScrollArea className="h-[600px]">
+                  <ScrollArea className="h-[400px]">
                     <Table>
                       <TableHeader>
                         <TableRow>
                           <TableHead>Статус</TableHead>
                           <TableHead>Опис</TableHead>
-                          <TableHead>Бренд</TableHead>
-                          <TableHead>Серія</TableHead>
-                          <TableHead>Модель</TableHead>
-                          <TableHead>Послуга</TableHead>
+                          <TableHead>Категорія</TableHead>
                           <TableHead>Ціна</TableHead>
-                          <TableHead>Дії</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -489,122 +404,8 @@ export function ServicesImport() {
                                 {row.description}
                               </div>
                             </TableCell>
-                            <TableCell>
-                              {editingRow === row.id ? (
-                                <Select
-                                  value={row.brandId || ""}
-                                  onValueChange={(value) => updateRowData(row.id, "brandId", value)}
-                                >
-                                  <SelectTrigger className="w-[150px]">
-                                    <SelectValue placeholder="Виберіть бренд" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {(brands || []).map((brand) => (
-                                      <SelectItem key={brand.id} value={brand.id}>
-                                        {brand.name}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              ) : (
-                                <span className={!row.brandId ? "text-red-500" : ""}>
-                                  {(brands || []).find((b) => b.id === row.brandId)?.name ||
-                                    row.brandName ||
-                                    "Не знайдено"}
-                                </span>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              {editingRow === row.id ? (
-                                <Select
-                                  value={row.seriesId || ""}
-                                  onValueChange={(value) => updateRowData(row.id, "seriesId", value)}
-                                  disabled={!row.brandId}
-                                >
-                                  <SelectTrigger className="w-[150px]">
-                                    <SelectValue placeholder="Виберіть серію" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {(series || [])
-                                      .filter((s) => s.brand_id === row.brandId)
-                                      .map((seriesItem) => (
-                                        <SelectItem key={seriesItem.id} value={seriesItem.id}>
-                                          {seriesItem.name}
-                                        </SelectItem>
-                                      ))}
-                                  </SelectContent>
-                                </Select>
-                              ) : (
-                                <span className={!row.seriesId ? "text-red-500" : ""}>
-                                  {(series || []).find((s) => s.id === row.seriesId)?.name ||
-                                    row.seriesName ||
-                                    "Не знайдено"}
-                                </span>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              {editingRow === row.id ? (
-                                <Select
-                                  value={row.modelId || ""}
-                                  onValueChange={(value) => updateRowData(row.id, "modelId", value)}
-                                  disabled={!row.seriesId}
-                                >
-                                  <SelectTrigger className="w-[150px]">
-                                    <SelectValue placeholder="Виберіть модель" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {(models || [])
-                                      .filter((m) => m.series_id === row.seriesId)
-                                      .map((model) => (
-                                        <SelectItem key={model.id} value={model.id}>
-                                          {model.name}
-                                        </SelectItem>
-                                      ))}
-                                  </SelectContent>
-                                </Select>
-                              ) : (
-                                <span className={!row.modelId ? "text-red-500" : ""}>
-                                  {(models || []).find((m) => m.id === row.modelId)?.name ||
-                                    row.modelName ||
-                                    "Не знайдено"}
-                                </span>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              {editingRow === row.id ? (
-                                <Select
-                                  value={row.serviceId || ""}
-                                  onValueChange={(value) => updateRowData(row.id, "serviceId", value)}
-                                >
-                                  <SelectTrigger className="w-[150px]">
-                                    <SelectValue placeholder="Виберіть послугу" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {(services || []).map((service) => (
-                                      <SelectItem key={service.id} value={service.id}>
-                                        {service.name}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              ) : (
-                                <span className={!row.serviceId ? "text-red-500" : ""}>
-                                  {(services || []).find((s) => s.id === row.serviceId)?.name || "Не знайдено"}
-                                </span>
-                              )}
-                            </TableCell>
+                            <TableCell>{row.category}</TableCell>
                             <TableCell>{row.price}</TableCell>
-                            <TableCell>
-                              {editingRow === row.id ? (
-                                <Button size="sm" onClick={() => setEditingRow(null)}>
-                                  <Save className="h-3 w-3" />
-                                </Button>
-                              ) : (
-                                <Button size="sm" variant="outline" onClick={() => setEditingRow(row.id)}>
-                                  <Edit2 className="h-3 w-3" />
-                                </Button>
-                              )}
-                            </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
@@ -612,10 +413,10 @@ export function ServicesImport() {
                   </ScrollArea>
                 </CardContent>
               </Card>
-            </>
+            </div>
           )}
-        </TabsContent>
-      </Tabs>
+        </CardContent>
+      </Card>
     </div>
   )
 }
