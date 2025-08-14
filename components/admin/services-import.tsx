@@ -682,12 +682,13 @@ export function ServicesImport() {
                                     </Select>
                                   ) : (
                                     <div
-                                      className="truncate font-medium text-sm max-w-[130px]"
+                                      className="truncate font-medium text-sm max-w-[130px] cursor-pointer hover:text-blue-600"
                                       title={
                                         safeFindInArray(brands, (b) => b.id === row.brandId)?.name ||
                                         row.brandName ||
                                         "Не знайдено"
                                       }
+                                      onClick={() => setEditingRow(row.id)}
                                     >
                                       {safeFindInArray(brands, (b) => b.id === row.brandId)?.name ||
                                         row.brandName ||
@@ -715,12 +716,13 @@ export function ServicesImport() {
                                     </Select>
                                   ) : (
                                     <div
-                                      className="truncate text-sm max-w-[130px]"
+                                      className="truncate text-sm max-w-[130px] cursor-pointer hover:text-blue-600"
                                       title={
                                         safeFindInArray(series, (s) => s.id === row.seriesId)?.name ||
                                         row.seriesName ||
                                         "Не знайдено"
                                       }
+                                      onClick={() => setEditingRow(row.id)}
                                     >
                                       {safeFindInArray(series, (s) => s.id === row.seriesId)?.name ||
                                         row.seriesName ||
@@ -748,12 +750,13 @@ export function ServicesImport() {
                                     </Select>
                                   ) : (
                                     <div
-                                      className="truncate text-sm max-w-[130px]"
+                                      className="truncate text-sm max-w-[130px] cursor-pointer hover:text-blue-600"
                                       title={
                                         safeFindInArray(models, (m) => m.id === row.modelId)?.name ||
                                         row.modelName ||
                                         "Не знайдено"
                                       }
+                                      onClick={() => setEditingRow(row.id)}
                                     >
                                       {safeFindInArray(models, (m) => m.id === row.modelId)?.name ||
                                         row.modelName ||
@@ -780,10 +783,11 @@ export function ServicesImport() {
                                     </Select>
                                   ) : (
                                     <div
-                                      className="truncate text-sm max-w-[160px]"
+                                      className="truncate text-sm max-w-[160px] cursor-pointer hover:text-blue-600"
                                       title={
                                         safeFindInArray(services, (s) => s.id === row.serviceId)?.name || "Не знайдено"
                                       }
+                                      onClick={() => setEditingRow(row.id)}
                                     >
                                       {safeFindInArray(services, (s) => s.id === row.serviceId)?.name || "Не знайдено"}
                                     </div>
@@ -801,7 +805,12 @@ export function ServicesImport() {
                                       step="0.01"
                                     />
                                   ) : (
-                                    <span className="font-medium text-sm">{row.price || "0"}</span>
+                                    <span
+                                      className="font-medium text-sm cursor-pointer hover:text-blue-600"
+                                      onClick={() => setEditingRow(row.id)}
+                                    >
+                                      {row.price || "0"}
+                                    </span>
                                   )}
                                 </TableCell>
                                 <TableCell className="py-3 px-4">
@@ -813,7 +822,12 @@ export function ServicesImport() {
                                       placeholder="Гарантія"
                                     />
                                   ) : (
-                                    <span className="text-sm">{row.warranty}</span>
+                                    <span
+                                      className="text-sm cursor-pointer hover:text-blue-600"
+                                      onClick={() => setEditingRow(row.id)}
+                                    >
+                                      {row.warranty}
+                                    </span>
                                   )}
                                 </TableCell>
                                 <TableCell className="py-3 px-4">
@@ -825,7 +839,12 @@ export function ServicesImport() {
                                       placeholder="Період"
                                     />
                                   ) : (
-                                    <span className="text-sm">{row.warrantyPeriod}</span>
+                                    <span
+                                      className="text-sm cursor-pointer hover:text-blue-600"
+                                      onClick={() => setEditingRow(row.id)}
+                                    >
+                                      {row.warrantyPeriod}
+                                    </span>
                                   )}
                                 </TableCell>
                                 <TableCell className="py-3 px-4">
@@ -839,26 +858,33 @@ export function ServicesImport() {
                                       min="0"
                                     />
                                   ) : (
-                                    <span className="text-sm">{row.duration}</span>
+                                    <span
+                                      className="text-sm cursor-pointer hover:text-blue-600"
+                                      onClick={() => setEditingRow(row.id)}
+                                    >
+                                      {row.duration}
+                                    </span>
                                   )}
                                 </TableCell>
                                 <TableCell className="py-3 px-4">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => setEditingRow(editingRow === row.id ? null : row.id)}
-                                    className={`
-                                      h-8 w-8 p-0 rounded-full transition-all duration-200
-                                      ${
-                                        editingRow === row.id
-                                          ? "bg-green-100 hover:bg-green-200 text-green-700"
-                                          : "hover:bg-blue-50 hover:text-blue-600"
-                                      }
-                                    `}
-                                    title={editingRow === row.id ? "Зберегти зміни" : "Редагувати"}
-                                  >
-                                    <Edit2 className="h-4 w-4" />
-                                  </Button>
+                                  <div className="flex gap-1">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => setEditingRow(editingRow === row.id ? null : row.id)}
+                                      className={`
+                                        h-8 w-8 p-0 rounded-full transition-all duration-200
+                                        ${
+                                          editingRow === row.id
+                                            ? "bg-green-100 hover:bg-green-200 text-green-700"
+                                            : "hover:bg-blue-50 hover:text-blue-600"
+                                        }
+                                      `}
+                                      title={editingRow === row.id ? "Зберегти зміни" : "Редагувати"}
+                                    >
+                                      <Edit2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
                                 </TableCell>
                               </TableRow>
                             ))}
