@@ -54,7 +54,18 @@ function parseCategoryPath(category: string): { brand: string; series: string; m
   }
 }
 
-async function findOrCreateBrand(supabase: any, brandName: string) {
+async function findOrCreateBrand(supabase: any, brandName: string, selectedBrandId?: string) {
+  if (selectedBrandId) {
+    const { data: selectedBrand, error } = await supabase
+      .from("brands")
+      .select("id, name")
+      .eq("id", selectedBrandId)
+      .maybeSingle()
+
+    if (error) throw new Error(`Помилка отримання вибраного бренду: ${error.message}`)
+    if (selectedBrand) return { ...selectedBrand, isNew: false }
+  }
+
   const { data: existingBrand, error: findError } = await supabase
     .from("brands")
     .select("id, name")
@@ -67,7 +78,7 @@ async function findOrCreateBrand(supabase: any, brandName: string) {
   }
 
   if (existingBrand) {
-    return existingBrand
+    return { ...existingBrand, isNew: false }
   }
 
   const { data: newBrand, error } = await supabase
@@ -82,10 +93,22 @@ async function findOrCreateBrand(supabase: any, brandName: string) {
     .single()
 
   if (error) throw new Error(`Помилка створення бренду: ${error.message}`)
-  return newBrand
+  return { ...newBrand, isNew: true }
 }
 
-async function findOrCreateSeries(supabase: any, seriesName: string, brandId: number) {
+async function findOrCreateSeries(supabase: any, seriesName: string, brandId: number, selectedSeriesId?: string) {
+  if (selectedSeriesId) {
+    const { data: selectedSeries, error } = await supabase
+      .from("series")
+      .select("id, name")
+      .eq("id", selectedSeriesId)
+      .eq("brand_id", brandId)
+      .maybeSingle()
+
+    if (error) throw new Error(`Помилка отримання вибраної серії: ${error.message}`)
+    if (selectedSeries) return { ...selectedSeries, isNew: false }
+  }
+
   const { data: existingSeries, error: findError } = await supabase
     .from("series")
     .select("id, name")
@@ -99,7 +122,7 @@ async function findOrCreateSeries(supabase: any, seriesName: string, brandId: nu
   }
 
   if (existingSeries) {
-    return existingSeries
+    return { ...existingSeries, isNew: false }
   }
 
   const { data: newSeries, error } = await supabase
@@ -115,10 +138,27 @@ async function findOrCreateSeries(supabase: any, seriesName: string, brandId: nu
     .single()
 
   if (error) throw new Error(`Помилка створення лінійки: ${error.message}`)
-  return newSeries
+  return { ...newSeries, isNew: true }
 }
 
-async function findOrCreateModel(supabase: any, modelName: string, seriesId: number, brandId: number) {
+async function findOrCreateModel(
+  supabase: any,
+  modelName: string,
+  seriesId: number,
+  brandId: number,
+  selectedModelId?: string,
+) {
+  if (selectedModelId) {
+    const { data: selectedModel, error } = await supabase
+      .from("models")
+      .select("id, name, created_at")
+      .eq("id", selectedModelId)
+      .maybeSingle()
+
+    if (error) throw new Error(`Помилка отримання вибраної моделі: ${error.message}`)
+    if (selectedModel) return { ...selectedModel, isNew: false }
+  }
+
   const { data: existingModel, error: findError } = await supabase
     .from("models")
     .select("id, name, created_at")
@@ -169,6 +209,8 @@ export async function POST(request: NextRequest) {
     let brandsFound = 0
     let seriesFound = 0
     let modelsFound = 0
+    let newBrandsCreated = 0
+    let newSeriesCreated = 0
     let newModelsCreated = 0
 
     for (let i = 0; i < services.length; i++) {
@@ -177,42 +219,89 @@ export async function POST(request: NextRequest) {
       try {
         console.log(`Processing service ${i + 1}/${services.length}: ${service.description}`)
 
-        const categoryInfo = parseCategoryPath(service.category)
-        if (!categoryInfo) {
-          errors.push(
-            `Рядок ${i + 1}: Неправильний формат категорії "${service.category}". Очікується: Бренд > Лінійка > Модель`,
-          )
-          continue
-        }
+        let brand, series, model, baseService
 
-        const brand = await findOrCreateBrand(supabase, categoryInfo.brand)
-        brandsFound++
+        if (
+          service.selected_brand_id &&
+          service.selected_series_id &&
+          service.selected_model_id &&
+          service.selected_service_id
+        ) {
+          // Використовуємо вибрані ID
+          const { data: selectedBrand } = await supabase
+            .from("brands")
+            .select("id, name")
+            .eq("id", service.selected_brand_id)
+            .single()
 
-        const series = await findOrCreateSeries(supabase, categoryInfo.series, brand.id)
-        seriesFound++
+          const { data: selectedSeries } = await supabase
+            .from("series")
+            .select("id, name")
+            .eq("id", service.selected_series_id)
+            .single()
 
-        const model = await findOrCreateModel(supabase, categoryInfo.model, series.id, brand.id)
-        modelsFound++
-        if (model.isNew) {
-          newModelsCreated++
-        }
+          const { data: selectedModel } = await supabase
+            .from("models")
+            .select("id, name, created_at")
+            .eq("id", service.selected_model_id)
+            .single()
 
-        const slug = createSlug(service.description)
-        const { data: baseService, error: serviceError } = await supabase
-          .from("services")
-          .select("id, slug")
-          .eq("slug", slug)
-          .maybeSingle()
+          const { data: selectedService } = await supabase
+            .from("services")
+            .select("id, slug")
+            .eq("id", service.selected_service_id)
+            .single()
 
-        if (serviceError) {
-          console.error("Error finding base service:", serviceError)
-          errors.push(`Рядок ${i + 1}: Помилка пошуку базової послуги - ${serviceError.message}`)
-          continue
-        }
+          brand = { ...selectedBrand, isNew: false }
+          series = { ...selectedSeries, isNew: false }
+          model = { ...selectedModel, isNew: false }
+          baseService = selectedService
 
-        if (!baseService) {
-          errors.push(`Рядок ${i + 1}: Базова послуга з slug "${slug}" не знайдена в таблиці services`)
-          continue
+          brandsFound++
+          seriesFound++
+          modelsFound++
+        } else {
+          // Парсимо категорію як раніше
+          const categoryInfo = parseCategoryPath(service.category)
+          if (!categoryInfo) {
+            errors.push(
+              `Рядок ${i + 1}: Неправильний формат категорії "${service.category}". Очікується: Бренд > Лінійка > Модель`,
+            )
+            continue
+          }
+
+          brand = await findOrCreateBrand(supabase, categoryInfo.brand, service.selected_brand_id)
+          if (brand.isNew) newBrandsCreated++
+          brandsFound++
+
+          series = await findOrCreateSeries(supabase, categoryInfo.series, brand.id, service.selected_series_id)
+          if (series.isNew) newSeriesCreated++
+          seriesFound++
+
+          model = await findOrCreateModel(supabase, categoryInfo.model, series.id, brand.id, service.selected_model_id)
+          if (model.isNew) newModelsCreated++
+          modelsFound++
+
+          // Знаходимо базову послугу
+          const slug = createSlug(service.description)
+          const { data: foundService, error: serviceError } = await supabase
+            .from("services")
+            .select("id, slug")
+            .eq("slug", slug)
+            .maybeSingle()
+
+          if (serviceError) {
+            console.error("Error finding base service:", serviceError)
+            errors.push(`Рядок ${i + 1}: Помилка пошуку базової послуги - ${serviceError.message}`)
+            continue
+          }
+
+          if (!foundService) {
+            errors.push(`Рядок ${i + 1}: Базова послуга з slug "${slug}" не знайдена в таблиці services`)
+            continue
+          }
+
+          baseService = foundService
         }
 
         const warrantyMonths = service.warranty
@@ -278,10 +367,10 @@ export async function POST(request: NextRequest) {
 
         processedServices.push({
           ...service,
-          slug,
-          brand: categoryInfo.brand,
-          series: categoryInfo.series,
-          model: categoryInfo.model,
+          slug: baseService.slug,
+          brand: brand.name,
+          series: series.name,
+          model: model.name,
           warranty_months: warrantyMonths,
           duration_hours: durationHours,
           status: existingModelService ? "updated" : "created",
@@ -310,6 +399,8 @@ export async function POST(request: NextRequest) {
         brands_found: brandsFound,
         series_found: seriesFound,
         models_found: modelsFound,
+        new_brands_created: newBrandsCreated,
+        new_series_created: newSeriesCreated,
         new_models_needed: newModelsCreated,
       },
     })

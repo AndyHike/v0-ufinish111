@@ -1,16 +1,44 @@
 "use client"
 
 import type React from "react"
-
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useToast } from "@/components/ui/use-toast"
-import { Upload, FileText, Download } from "lucide-react"
+import { Upload, FileText, Download, Edit2, Check } from "lucide-react"
 import { RemOnlineImportPreview } from "./remonline-import-preview"
 import * as XLSX from "xlsx"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+
+type Brand = {
+  id: string
+  name: string
+  slug: string
+}
+
+type Series = {
+  id: string
+  name: string
+  slug: string
+  brand_id: string
+}
+
+type Model = {
+  id: string
+  name: string
+  slug: string
+  brand_id: string
+  series_id: string
+}
+
+type Service = {
+  id: string
+  name: string
+  slug: string
+  description: string
+}
 
 type ParsedService = {
   id: string
@@ -66,6 +94,14 @@ type PreviewData = {
   benefits?: string
   original_warranty_duration?: string
   original_duration_minutes?: string
+  parsed_brand?: string
+  parsed_series?: string
+  parsed_model?: string
+  selected_brand_id?: string
+  selected_series_id?: string
+  selected_model_id?: string
+  selected_service_id?: string
+  editing?: boolean
 }
 
 export function RemOnlineImport() {
@@ -75,6 +111,87 @@ export function RemOnlineImport() {
   const [parsedServices, setParsedServices] = useState<ParsedService[] | null>(null)
   const [importSummary, setImportSummary] = useState<ImportSummary | null>(null)
   const [previewData, setPreviewData] = useState<PreviewData[] | null>(null)
+
+  const [brands, setBrands] = useState<Brand[]>([])
+  const [series, setSeries] = useState<Series[]>([])
+  const [models, setModels] = useState<Model[]>([])
+  const [services, setServices] = useState<Service[]>([])
+  const [isLoadingData, setIsLoadingData] = useState(false)
+
+  useEffect(() => {
+    loadReferenceData()
+  }, [])
+
+  const loadReferenceData = async () => {
+    setIsLoadingData(true)
+    try {
+      const [brandsRes, seriesRes, modelsRes, servicesRes] = await Promise.all([
+        fetch("/api/admin/brands"),
+        fetch("/api/admin/series"),
+        fetch("/api/admin/models"),
+        fetch("/api/admin/services"),
+      ])
+
+      if (brandsRes.ok) setBrands(await brandsRes.json())
+      if (seriesRes.ok) setSeries(await seriesRes.json())
+      if (modelsRes.ok) setModels(await modelsRes.json())
+      if (servicesRes.ok) setServices(await servicesRes.json())
+    } catch (error) {
+      console.error("Error loading reference data:", error)
+    } finally {
+      setIsLoadingData(false)
+    }
+  }
+
+  const parseCategory = (category: string) => {
+    const parts = category.split(">").map((part) => part.trim())
+    return {
+      brand: parts[0] || "",
+      series: parts[1] || "",
+      model: parts[2] || "",
+    }
+  }
+
+  const autoMatchReferences = (description: string, category: string) => {
+    const { brand: parsedBrand, series: parsedSeries, model: parsedModel } = parseCategory(category)
+
+    // Знаходимо найкращі співпадіння
+    const matchedBrand = brands.find(
+      (b) =>
+        b.name.toLowerCase().includes(parsedBrand.toLowerCase()) ||
+        parsedBrand.toLowerCase().includes(b.name.toLowerCase()),
+    )
+
+    const matchedSeries = series.find(
+      (s) =>
+        s.name.toLowerCase().includes(parsedSeries.toLowerCase()) ||
+        parsedSeries.toLowerCase().includes(s.name.toLowerCase()),
+    )
+
+    const matchedModel = models.find(
+      (m) =>
+        m.name.toLowerCase().includes(parsedModel.toLowerCase()) ||
+        parsedModel.toLowerCase().includes(m.name.toLowerCase()),
+    )
+
+    // Знаходимо найкращу послугу за описом
+    const matchedService = services.find(
+      (s) =>
+        description.toLowerCase().includes(s.name.toLowerCase()) ||
+        s.name.toLowerCase().includes(description.toLowerCase()) ||
+        s.description.toLowerCase().includes(description.toLowerCase()),
+    )
+
+    return {
+      parsed_brand: parsedBrand,
+      parsed_series: parsedSeries,
+      parsed_model: parsedModel,
+      selected_brand_id: matchedBrand?.id || "",
+      selected_series_id: matchedSeries?.id || "",
+      selected_model_id: matchedModel?.id || "",
+      selected_service_id: matchedService?.id || "",
+    }
+  }
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0]
@@ -218,6 +335,8 @@ export function RemOnlineImport() {
         const parsedDuration = parseNumber(durationStr)
         const parsedWarranty = parseNumber(warranty)
 
+        const autoMatched = autoMatchReferences(description, category)
+
         return {
           rowIndex: index + 2,
           description,
@@ -238,6 +357,8 @@ export function RemOnlineImport() {
           benefits: "",
           original_warranty_duration: warranty,
           original_duration_minutes: durationStr,
+          ...autoMatched,
+          editing: false,
         }
       })
 
@@ -286,6 +407,10 @@ export function RemOnlineImport() {
             detailed_description: item.detailed_description,
             what_included: item.what_included,
             benefits: item.benefits,
+            selected_brand_id: item.selected_brand_id,
+            selected_series_id: item.selected_series_id,
+            selected_model_id: item.selected_model_id,
+            selected_service_id: item.selected_service_id,
           })),
         }),
       })
@@ -314,6 +439,28 @@ export function RemOnlineImport() {
     }
   }
 
+  const toggleEdit = (index: number) => {
+    if (!previewData) return
+    const updated = [...previewData]
+    updated[index].editing = !updated[index].editing
+    setPreviewData(updated)
+  }
+
+  const updateSelection = (index: number, field: string, value: string) => {
+    if (!previewData) return
+    const updated = [...previewData]
+    updated[index] = { ...updated[index], [field]: value }
+    setPreviewData(updated)
+  }
+
+  const getSeriesForBrand = (brandId: string) => {
+    return series.filter((s) => s.brand_id === brandId)
+  }
+
+  const getModelsForSeries = (seriesId: string) => {
+    return models.filter((m) => m.series_id === seriesId)
+  }
+
   const handleBack = () => {
     setParsedServices(null)
     setImportSummary(null)
@@ -332,9 +479,9 @@ export function RemOnlineImport() {
 
   const downloadTemplate = () => {
     const csvContent = `Опис,Категорія,Стандартна ціна,Гарантія,Гарантійний період,Тривалість (хвилини)
-Заміна екрану iPhone 13,Ремонт екранів,2500,12,months,120
-Заміна батареї Samsung Galaxy S21,Заміна батарей,1800,6,months,90
-Чистка від вологи iPad Pro,Відновлення після потрапляння вологи,3000,3,months,180`
+Заміна екрану iPhone 13,Apple &gt; iPhone &gt; iPhone 13,2500,12,months,120
+Заміна батареї Samsung Galaxy S21,Samsung &gt; Galaxy S &gt; Galaxy S21,1800,6,months,90
+Чистка від вологи iPad Pro,Apple &gt; iPad &gt; iPad Pro,3000,3,months,180`
 
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
     const url = window.URL.createObjectURL(blob)
@@ -359,6 +506,10 @@ export function RemOnlineImport() {
         Гарантія: item.warranty,
         "Гарантійний період": item.warranty_period,
         "Тривалість (хвилини)": item.duration_minutes,
+        Бренд: brands.find((b) => b.id === item.selected_brand_id)?.name || item.parsed_brand,
+        Серія: series.find((s) => s.id === item.selected_series_id)?.name || item.parsed_series,
+        Модель: models.find((m) => m.id === item.selected_model_id)?.name || item.parsed_model,
+        Послуга: services.find((s) => s.id === item.selected_service_id)?.name || "Не знайдено",
       })),
     )
 
@@ -406,10 +557,14 @@ export function RemOnlineImport() {
                   <th className="p-2 text-left border-r">№</th>
                   <th className="p-2 text-left border-r">Опис</th>
                   <th className="p-2 text-left border-r">Категорія</th>
+                  <th className="p-2 text-left border-r">Бренд</th>
+                  <th className="p-2 text-left border-r">Серія</th>
+                  <th className="p-2 text-left border-r">Модель</th>
+                  <th className="p-2 text-left border-r">Послуга</th>
                   <th className="p-2 text-left border-r">Ціна</th>
                   <th className="p-2 text-left border-r">Гарантія</th>
-                  <th className="p-2 text-left border-r">Період</th>
-                  <th className="p-2 text-left">Тривалість (хв)</th>
+                  <th className="p-2 text-left border-r">Тривалість</th>
+                  <th className="p-2 text-left">Дії</th>
                 </tr>
               </thead>
               <tbody>
@@ -431,16 +586,111 @@ export function RemOnlineImport() {
                       />
                     </td>
                     <td className="p-2 border-r">
-                      <input
-                        type="text"
-                        value={item.category}
-                        onChange={(e) => {
-                          const updated = [...previewData]
-                          updated[index].category = e.target.value
-                          setPreviewData(updated)
-                        }}
-                        className="w-full p-1 border rounded text-sm"
-                      />
+                      <div className="text-xs text-muted-foreground">
+                        {item.parsed_brand} → {item.parsed_series} → {item.parsed_model}
+                      </div>
+                    </td>
+                    <td className="p-2 border-r">
+                      {item.editing ? (
+                        <Select
+                          value={item.selected_brand_id}
+                          onValueChange={(value) => updateSelection(index, "selected_brand_id", value)}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Оберіть бренд" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {brands.map((brand) => (
+                              <SelectItem key={brand.id} value={brand.id}>
+                                {brand.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <div className="text-sm">
+                          {brands.find((b) => b.id === item.selected_brand_id)?.name || (
+                            <span className="text-red-500">Не знайдено</span>
+                          )}
+                        </div>
+                      )}
+                    </td>
+                    <td className="p-2 border-r">
+                      {item.editing ? (
+                        <Select
+                          value={item.selected_series_id}
+                          onValueChange={(value) => updateSelection(index, "selected_series_id", value)}
+                          disabled={!item.selected_brand_id}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Оберіть серію" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {getSeriesForBrand(item.selected_brand_id || "").map((serie) => (
+                              <SelectItem key={serie.id} value={serie.id}>
+                                {serie.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <div className="text-sm">
+                          {series.find((s) => s.id === item.selected_series_id)?.name || (
+                            <span className="text-red-500">Не знайдено</span>
+                          )}
+                        </div>
+                      )}
+                    </td>
+                    <td className="p-2 border-r">
+                      {item.editing ? (
+                        <Select
+                          value={item.selected_model_id}
+                          onValueChange={(value) => updateSelection(index, "selected_model_id", value)}
+                          disabled={!item.selected_series_id}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Оберіть модель" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {getModelsForSeries(item.selected_series_id || "").map((model) => (
+                              <SelectItem key={model.id} value={model.id}>
+                                {model.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <div className="text-sm">
+                          {models.find((m) => m.id === item.selected_model_id)?.name || (
+                            <span className="text-red-500">Не знайдено</span>
+                          )}
+                        </div>
+                      )}
+                    </td>
+                    <td className="p-2 border-r">
+                      {item.editing ? (
+                        <Select
+                          value={item.selected_service_id}
+                          onValueChange={(value) => updateSelection(index, "selected_service_id", value)}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Оберіть послугу" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {services.map((service) => (
+                              <SelectItem key={service.id} value={service.id}>
+                                {service.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <div className="text-sm">
+                          {services.find((s) => s.id === item.selected_service_id)?.name || (
+                            <span className="text-red-500">Не знайдено</span>
+                          )}
+                        </div>
+                      )}
                     </td>
                     <td className="p-2 border-r">
                       <input
@@ -474,20 +724,6 @@ export function RemOnlineImport() {
                       />
                     </td>
                     <td className="p-2 border-r">
-                      <select
-                        value={item.warranty_period}
-                        onChange={(e) => {
-                          const updated = [...previewData]
-                          updated[index].warranty_period = e.target.value
-                          setPreviewData(updated)
-                        }}
-                        className="w-full p-1 border rounded text-sm"
-                      >
-                        <option value="months">Місяці</option>
-                        <option value="days">Дні</option>
-                      </select>
-                    </td>
-                    <td className="p-2">
                       <input
                         type="number"
                         value={item.duration_minutes || ""}
@@ -502,6 +738,11 @@ export function RemOnlineImport() {
                         className="w-full p-1 border rounded text-sm"
                         placeholder="0"
                       />
+                    </td>
+                    <td className="p-2">
+                      <Button size="sm" variant="outline" onClick={() => toggleEdit(index)}>
+                        {item.editing ? <Check className="h-3 w-3" /> : <Edit2 className="h-3 w-3" />}
+                      </Button>
                     </td>
                   </tr>
                 ))}
@@ -518,10 +759,16 @@ export function RemOnlineImport() {
       <Alert>
         <FileText className="h-4 w-4" />
         <AlertDescription>
-          Завантажте CSV або Excel файл експорту з RemOnline. Файл повинен містити колонки: Опис, Категорія, Стандартна
-          ціна, Гарантія, Гарантійний період, Тривалість (хвилини).
+          Завантажте CSV або Excel файл експорту з RemOnline. Файл повинен містити колонки: Опис, Категорія (у форматі
+          "Бренд &gt; Серія &gt; Модель"), Стандартна ціна, Гарантія, Гарантійний період, Тривалість (хвилини).
         </AlertDescription>
       </Alert>
+
+      {isLoadingData && (
+        <Alert>
+          <AlertDescription>Завантажуються довідники брендів, серій, моделей та послуг...</AlertDescription>
+        </Alert>
+      )}
 
       <div className="space-y-4">
         <div>
@@ -542,14 +789,14 @@ export function RemOnlineImport() {
         )}
 
         <div className="flex gap-4">
-          <Button onClick={handlePreview} disabled={!file || isProcessing} variant="outline">
+          <Button onClick={handlePreview} disabled={!file || isProcessing || isLoadingData} variant="outline">
             <FileText className="h-4 w-4 mr-2" />
             {isProcessing ? "Завантаження..." : "Передперегляд"}
           </Button>
 
-          <Button onClick={handleProcess} disabled={!file || isProcessing}>
+          <Button onClick={handleProcess} disabled={!previewData || isProcessing}>
             <Upload className="h-4 w-4 mr-2" />
-            {isProcessing ? "Обробка..." : "Обробити файл"}
+            {isProcessing ? "Обробка..." : "Імпортувати"}
           </Button>
 
           <Button variant="outline" onClick={downloadTemplate}>
