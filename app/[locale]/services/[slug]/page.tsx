@@ -40,9 +40,61 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const translation = service.services_translations?.find((t: any) => t.locale === locale)
   const serviceName = translation?.name || "Service"
 
+  // Get price range for this service
+  const { data: priceRange } = await supabase
+    .from("model_services")
+    .select("price")
+    .eq("service_id", service.id)
+    .not("price", "is", null)
+
+  let priceText = ""
+  if (priceRange && priceRange.length > 0) {
+    const prices = priceRange.map((p) => p.price).filter(Boolean)
+    if (prices.length > 0) {
+      const minPrice = Math.min(...prices)
+      priceText =
+        locale === "cs" ? `od ${minPrice} Kč` : locale === "en" ? `from ${minPrice} CZK` : `від ${minPrice} крон`
+    }
+  }
+
+  const metadata = {
+    cs: {
+      title: `${serviceName} Praha 6 Břevnov | ${priceText} | Záruka 6 měsíců | DeviceHelp`,
+      description: `${serviceName} mobilních telefonů v Praze 6 na Břevnově. ${priceText}, záruka 6 měsíců, oprava 2-3 hodiny. iPhone, Samsung, Xiaomi. Bělohorská 209/133. ☎ +420 775 848 259`,
+      keywords: `${serviceName} Praha 6, ${serviceName} Břevnov, ${serviceName} mobil, oprava telefonu Bělohorská, servis Praha6`,
+    },
+    en: {
+      title: `${serviceName} Prague 6 Břevnov | ${priceText} | 6 Month Warranty | DeviceHelp`,
+      description: `${serviceName} for mobile phones in Prague 6 Břevnov. ${priceText}, 6 month warranty, 2-3 hours service. iPhone, Samsung, Xiaomi. Bělohorská 209/133. ☎ +420 775 848 259`,
+      keywords: `${serviceName} Prague 6, ${serviceName} Břevnov, mobile ${serviceName}, phone repair Bělohorská`,
+    },
+    uk: {
+      title: `${serviceName} Прага 6 Бржевнов | ${priceText} | Гарантія 6 місяців | DeviceHelp`,
+      description: `${serviceName} мобільних телефонів в Празі 6 Бржевнов. ${priceText}, гарантія 6 місяців, ремонт 2-3 години. iPhone, Samsung, Xiaomi. Bělohorská 209/133. ☎ +420 775 848 259`,
+      keywords: `${serviceName} Прага 6, ${serviceName} Бржевнов, ${serviceName} мобільний, ремонт телефону Белогорська`,
+    },
+  }
+
+  const currentMetadata = metadata[locale as keyof typeof metadata] || metadata.en
+
   return {
-    title: `${serviceName} | DeviceHelp`,
-    description: translation?.description || `Professional ${serviceName} service`,
+    title: currentMetadata.title,
+    description: currentMetadata.description,
+    keywords: currentMetadata.keywords,
+    openGraph: {
+      title: currentMetadata.title,
+      description: currentMetadata.description,
+      type: "website",
+      locale: locale,
+    },
+    twitter: {
+      card: "summary",
+      title: currentMetadata.title,
+      description: currentMetadata.description,
+    },
+    other: {
+      "seznam-wmt": "kEPWnFjKJyWrp9OtNNXIlOe6oNf9vfv4",
+    },
   }
 }
 

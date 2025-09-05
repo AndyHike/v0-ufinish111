@@ -33,9 +33,82 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     }
   }
 
+  const brandName = model.brands?.name || "Device"
+  const modelName = model.name
+
+  // Language-specific optimized metadata
+  const metadata = {
+    cs: {
+      title: `Oprava ${brandName} ${modelName} Praha 6 Břevnov | Servis mobilů | Záruka 6 měsíců`,
+      description: `Profesionální oprava ${brandName} ${modelName} v Praze 6 na Břevnově. Výměna displeje, baterie, kamery. Záruka 6 měsíců, oprava 2-3 hodiny. Bělohorská 209/133. ☎ +420 775 848 259`,
+      keywords: `oprava ${brandName} ${modelName} Praha 6, servis ${brandName} Břevnov, výměna displeje ${modelName}, oprava telefonu Bělohorská, servis mobilu Praha6`,
+    },
+    en: {
+      title: `${brandName} ${modelName} Repair Prague 6 Břevnov | Mobile Service | 6 Month Warranty`,
+      description: `Professional ${brandName} ${modelName} repair in Prague 6 Břevnov. Screen replacement, battery, camera repair. 6 month warranty, 2-3 hours service. Bělohorská 209/133. ☎ +420 775 848 259`,
+      keywords: `${brandName} ${modelName} repair Prague 6, mobile service Břevnov, screen replacement ${modelName}, phone repair Bělohorská`,
+    },
+    uk: {
+      title: `Ремонт ${brandName} ${modelName} Прага 6 Бржевнов | Сервіс мобільних | Гарантія 6 місяців`,
+      description: `Професійний ремонт ${brandName} ${modelName} в Празі 6 Бржевнов. Заміна екрану, батареї, камери. Гарантія 6 місяців, ремонт 2-3 години. Bělohorská 209/133. ☎ +420 775 848 259`,
+      keywords: `ремонт ${brandName} ${modelName} Прага 6, сервіс мобільних Бржевнов, заміна екрану ${modelName}, ремонт телефону Белогорська`,
+    },
+  }
+
+  const currentMetadata = metadata[locale as keyof typeof metadata] || metadata.en
+
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": ["Service", "LocalBusiness"],
+    name: `${brandName} ${modelName} Repair`,
+    description: currentMetadata.description,
+    provider: {
+      "@type": "LocalBusiness",
+      name: "DeviceHelp",
+      address: {
+        "@type": "PostalAddress",
+        streetAddress: "Bělohorská 209/133",
+        addressLocality: "Praha 6-Břevnov",
+        addressRegion: "Praha",
+        postalCode: "169 00",
+        addressCountry: "CZ",
+      },
+      geo: {
+        "@type": "GeoCoordinates",
+        latitude: "50.0982",
+        longitude: "14.3917",
+      },
+      telephone: "+420775848259",
+      areaServed: ["Praha 6", "Břevnov", "Dejvice", "Vokovice", "Bělohorská", "Praha6"],
+    },
+    areaServed: "Praha 6",
+    serviceType: "Mobile Phone Repair",
+    offers: {
+      "@type": "Offer",
+      warranty: "6 months",
+      priceCurrency: "CZK",
+    },
+  }
+
   return {
-    title: `${model.brands?.name} ${model.name} | DeviceHelp`,
-    description: `Professional repair services for ${model.brands?.name} ${model.name}. Fast, reliable, and affordable.`,
+    title: currentMetadata.title,
+    description: currentMetadata.description,
+    keywords: currentMetadata.keywords,
+    openGraph: {
+      title: currentMetadata.title,
+      description: currentMetadata.description,
+      type: "website",
+      locale: locale,
+    },
+    twitter: {
+      card: "summary",
+      title: currentMetadata.title,
+      description: currentMetadata.description,
+    },
+    other: {
+      "seznam-wmt": "kEPWnFjKJyWrp9OtNNXIlOe6oNf9vfv4",
+      structuredData: structuredData,
+    },
   }
 }
 

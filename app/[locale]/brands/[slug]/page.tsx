@@ -34,23 +34,46 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     }
   }
 
-  // Language-specific title patterns
-  const titlePatterns = {
-    cs: `Oprava zařízení ${brand.name} | DeviceHelp`,
-    en: `Repair of ${brand.name} devices | DeviceHelp`,
-    uk: `Ремонт пристроїв ${brand.name} | DeviceHelp`,
+  const brandName = brand.name
+
+  const metadata = {
+    cs: {
+      title: `Oprava ${brandName} Praha 6 Břevnov | Servis mobilů ${brandName} | Záruka 6 měsíců`,
+      description: `Profesionální oprava mobilních telefonů ${brandName} v Praze 6 na Břevnově. Všechny modely ${brandName}, záruka 6 měsíců, oprava 2-3 hodiny. Bělohorská 209/133. ☎ +420 775 848 259`,
+      keywords: `oprava ${brandName} Praha 6, servis ${brandName} Břevnov, oprava mobilu ${brandName}, servis telefonu Bělohorská, ${brandName} Praha6`,
+    },
+    en: {
+      title: `${brandName} Repair Prague 6 Břevnov | ${brandName} Mobile Service | 6 Month Warranty`,
+      description: `Professional ${brandName} mobile phone repair in Prague 6 Břevnov. All ${brandName} models, 6 month warranty, 2-3 hours service. Bělohorská 209/133. ☎ +420 775 848 259`,
+      keywords: `${brandName} repair Prague 6, ${brandName} service Břevnov, ${brandName} mobile repair, phone service Bělohorská`,
+    },
+    uk: {
+      title: `Ремонт ${brandName} Прага 6 Бржевнов | Сервіс мобільних ${brandName} | Гарантія 6 місяців`,
+      description: `Професійний ремонт мобільних телефонів ${brandName} в Празі 6 Бржевнов. Всі моделі ${brandName}, гарантія 6 місяців, ремонт 2-3 години. Bělohorská 209/133. ☎ +420 775 848 259`,
+      keywords: `ремонт ${brandName} Прага 6, сервіс ${brandName} Бржевнов, ремонт мобільного ${brandName}, сервіс телефону Белогорська`,
+    },
   }
 
-  // Language-specific descriptions
-  const descriptionPatterns = {
-    cs: `Profesionální oprava zařízení ${brand.name}. Rychlé a kvalitní služby pro všechny modely ${brand.name}.`,
-    en: `Professional repair services for ${brand.name} devices. Fast and quality repairs for all ${brand.name} models.`,
-    uk: `Професійний ремонт пристроїв ${brand.name}. Швидкі та якісні послуги для всіх моделей ${brand.name}.`,
-  }
+  const currentMetadata = metadata[locale as keyof typeof metadata] || metadata.en
 
   return {
-    title: titlePatterns[locale as keyof typeof titlePatterns] || titlePatterns.en,
-    description: descriptionPatterns[locale as keyof typeof descriptionPatterns] || descriptionPatterns.en,
+    title: currentMetadata.title,
+    description: currentMetadata.description,
+    keywords: currentMetadata.keywords,
+    openGraph: {
+      title: currentMetadata.title,
+      description: currentMetadata.description,
+      type: "website",
+      locale: locale,
+    },
+    twitter: {
+      card: "summary",
+      title: currentMetadata.title,
+      description: currentMetadata.description,
+    },
+    other: {
+      "seznam-wmt": "kEPWnFjKJyWrp9OtNNXIlOe6oNf9vfv4",
+    },
   }
 }
 

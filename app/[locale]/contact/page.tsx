@@ -9,26 +9,54 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = params
 
   const titlePatterns = {
-    cs: "Kontakt | DeviceHelp - Profesionální oprava mobilních zařízení",
-    en: "Contact | DeviceHelp - Professional Mobile Device Repair",
-    uk: "Контакти | DeviceHelp - Професійний ремонт мобільних пристроїв",
+    cs: "Kontakt Praha 6 Břevnov | DeviceHelp | Bělohorská 209/133 | Oprava mobilů",
+    en: "Contact Prague 6 Břevnov | DeviceHelp | Bělohorská 209/133 | Mobile Repair",
+    uk: "Контакти Прага 6 Бржевнов | DeviceHelp | Bělohorská 209/133 | Ремонт мобільних",
   }
 
   const descriptionPatterns = {
-    cs: "Kontaktujte nás pro opravu vašeho mobilního zařízení. Bělohorská 209/133, Praha 6-Břevnov. Telefon: +420 775 848 259. Rychlá a kvalitní oprava telefonů, tabletů a dalších zařízení.",
-    en: "Contact us for your mobile device repair. Bělohorská 209/133, Prague 6-Břevnov. Phone: +420 775 848 259. Fast and quality repair of phones, tablets and other devices.",
-    uk: "Зв'яжіться з нами для ремонту вашого мобільного пристрою. Bělohorská 209/133, Прага 6-Břevnov. Телефон: +420 775 848 259. Швидкий та якісний ремонт телефонів, планшетів та інших пристроїв.",
+    cs: "Kontaktujte DeviceHelp pro opravu mobilů v Praze 6 Břevnově. Bělohorská 209/133 (Белогорська). Telefon: +420 775 848 259. Servis iPhone, Samsung, Xiaomi. Praha6, Dejvice, Vokovice.",
+    en: "Contact DeviceHelp for mobile repair in Prague 6 Břevnov. Bělohorská 209/133. Phone: +420 775 848 259. iPhone, Samsung, Xiaomi service. Praha6, Dejvice, Vokovice area.",
+    uk: "Зв'яжіться з DeviceHelp для ремонту мобільних в Празі 6 Бржевнов. Bělohorská 209/133 (Белогорська). Телефон: +420 775 848 259. Сервіс iPhone, Samsung, Xiaomi. Praha6, Dejvice, Vokovice.",
+  }
+
+  const keywordPatterns = {
+    cs: "kontakt Praha 6, oprava telefonu Břevnov, servis mobilů Bělohorská, DeviceHelp Praha6, oprava iPhone Břevnov, servis Samsung Praha 6, Белогорська 133",
+    en: "contact Prague 6, phone repair Břevnov, mobile service Bělohorská, DeviceHelp Praha6, iPhone repair Břevnov, Samsung service Prague 6",
+    uk: "контакти Прага 6, ремонт телефону Бржевнов, сервіс мобільних Белогорська, DeviceHelp Praha6, ремонт iPhone Бржевнов, сервіс Samsung Прага 6",
+  }
+
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    name: "DeviceHelp - Oprava mobilních telefonů Praha 6",
+    description: descriptionPatterns[locale as keyof typeof descriptionPatterns],
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: "Bělohorská 209/133",
+      addressLocality: "Praha 6-Břevnov",
+      addressRegion: "Praha",
+      postalCode: "169 00",
+      addressCountry: "CZ",
+    },
+    geo: {
+      "@type": "GeoCoordinates",
+      latitude: "50.0982",
+      longitude: "14.3917",
+    },
+    telephone: "+420775848259",
+    areaServed: ["Praha 6", "Praha6", "Břevnov", "Dejvice", "Vokovice", "Bělohorská", "Белогорська"],
+    serviceType: "Mobile Phone Repair",
+    priceRange: "1500-5000 CZK",
+    openingHours: "Mo-Fr 09:00-18:00",
+    paymentAccepted: ["Cash", "Credit Card"],
+    currenciesAccepted: "CZK",
   }
 
   return {
     title: titlePatterns[locale as keyof typeof titlePatterns] || titlePatterns.en,
     description: descriptionPatterns[locale as keyof typeof descriptionPatterns] || descriptionPatterns.en,
-    keywords:
-      locale === "cs"
-        ? "kontakt, oprava telefonu, servis mobilů, Praha, Břevnov, DeviceHelp"
-        : locale === "uk"
-          ? "контакти, ремонт телефону, сервіс мобільних, Прага, Břevnov, DeviceHelp"
-          : "contact, phone repair, mobile service, Prague, Břevnov, DeviceHelp",
+    keywords: keywordPatterns[locale as keyof typeof keywordPatterns] || keywordPatterns.en,
     openGraph: {
       title: titlePatterns[locale as keyof typeof titlePatterns] || titlePatterns.en,
       description: descriptionPatterns[locale as keyof typeof descriptionPatterns] || descriptionPatterns.en,
@@ -50,9 +78,43 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         "x-default": "https://www.devicehelp.cz/cs/contact",
       },
     },
+    other: {
+      "seznam-wmt": "kEPWnFjKJyWrp9OtNNXIlOe6oNf9vfv4",
+    },
   }
 }
 
 export default function ContactPage() {
-  return <ContactPageClient />
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "LocalBusiness",
+            name: "DeviceHelp - Oprava mobilních telefonů Praha 6",
+            address: {
+              "@type": "PostalAddress",
+              streetAddress: "Bělohorská 209/133",
+              addressLocality: "Praha 6-Břevnov",
+              addressRegion: "Praha",
+              postalCode: "169 00",
+              addressCountry: "CZ",
+            },
+            geo: {
+              "@type": "GeoCoordinates",
+              latitude: "50.0982",
+              longitude: "14.3917",
+            },
+            telephone: "+420775848259",
+            areaServed: ["Praha 6", "Praha6", "Břevnov", "Dejvice", "Vokovice", "Bělohorská", "Белогорська"],
+            serviceType: "Mobile Phone Repair",
+            priceRange: "1500-5000 CZK",
+          }),
+        }}
+      />
+      <ContactPageClient />
+    </>
+  )
 }
