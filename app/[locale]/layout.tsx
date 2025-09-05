@@ -51,6 +51,9 @@ export async function generateMetadata({
         "x-default": `${baseUrl}/cs`,
       },
     },
+    other: {
+      "seznam-wmt": "Q7CNBRe3ETE8uIvlCLcdKwnYRRuGqnDo",
+    },
   }
 }
 
