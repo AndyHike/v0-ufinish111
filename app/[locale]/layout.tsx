@@ -52,7 +52,7 @@ export async function generateMetadata({
       },
     },
     other: {
-      "seznam-wmt": "kEPWnFjKJyWrp9OtNNXIlOe6oNf9vfv4",
+      "seznam-wmt": "OHZeewgzl8d4SZKjkfqXLfx8uP9eR3qz",
     },
   }
 }
