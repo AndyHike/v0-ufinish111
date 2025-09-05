@@ -51,9 +51,6 @@ export async function generateMetadata({
         "x-default": `${baseUrl}/cs`,
       },
     },
-    other: {
-      "seznam-wmt": "Q7CNBRe3ETE8uIvlCLcdKwnYRRuGqnDo",
-    },
   }
 }
 
@@ -75,20 +72,25 @@ export default async function LocaleLayout({
   const user = await getCurrentUser()
 
   return (
-    <NextIntlClientProvider locale={locale} messages={messages}>
-      <SessionProvider>
-        <CookieConsentProvider>
-          <div className="flex min-h-screen flex-col">
-            <Header user={user} />
-            <main className="flex-1">{children}</main>
-            <Footer />
-            <CookieBanner />
-            <Suspense fallback={null}>
-              <AnalyticsProvider />
-            </Suspense>
-          </div>
-        </CookieConsentProvider>
-      </SessionProvider>
-    </NextIntlClientProvider>
+    <>
+      <head>
+        <meta name="seznam-wmt" content="5VWPSjprwBjXXCI2HRoOVfvKcmdPB1Om" />
+      </head>
+      <NextIntlClientProvider locale={locale} messages={messages}>
+        <SessionProvider>
+          <CookieConsentProvider>
+            <div className="flex min-h-screen flex-col">
+              <Header user={user} />
+              <main className="flex-1">{children}</main>
+              <Footer />
+              <CookieBanner />
+              <Suspense fallback={null}>
+                <AnalyticsProvider />
+              </Suspense>
+            </div>
+          </CookieConsentProvider>
+        </SessionProvider>
+      </NextIntlClientProvider>
+    </>
   )
 }

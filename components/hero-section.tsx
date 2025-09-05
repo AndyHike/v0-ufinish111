@@ -104,7 +104,7 @@ export function HeroSection() {
           </div>
         </div>
 
-        {/* Десктопна версія - з анімаціями */}
+        {/* Десктопна версія - з ��німаціями */}
         <div className="hidden md:grid gap-6 lg:grid-cols-[1fr_500px] lg:gap-12 items-center">
           <div className="flex flex-col justify-center space-y-4">
             <div className="space-y-2">

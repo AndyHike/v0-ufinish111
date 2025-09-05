@@ -7,7 +7,7 @@ export function formatImageUrl(url: string | null | undefined): string {
     return "/abstract-geometric-shapes.png"
   }
 
-  // Якщо URL починається з http або https, повертаємо його як є
+  // Якщо URL почина��ться з http або https, повертаємо його як є
   if (url.startsWith("http://") || url.startsWith("https://")) {
     return url
   }
