@@ -31,7 +31,7 @@ export async function generateMetadata({
       description: "Fast and quality mobile phone repair in Prague. Warranty on all repairs.",
     },
     uk: {
-      title: "DeviceHelp - DeviceHelp - Професійний ремонт мобільних телефонів у Празі",
+      title: "DeviceHelp - DeviceHelp - Profesійнý ремонт мобільних телефонів у Празі",
       description: "Швидкий та якісний ремонт мобільних телефонів у Празі. Гарантія на всі ремонти.",
     },
   }
@@ -50,9 +50,6 @@ export async function generateMetadata({
         uk: `${baseUrl}/uk`,
         "x-default": `${baseUrl}/cs`,
       },
-    },
-    other: {
-      "seznam-wmt": "OHZeewgzl8d4SZKjkfqXLfx8uP9eR3qz",
     },
   }
 }
