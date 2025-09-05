@@ -13,8 +13,9 @@ type Props = {
   }
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const { slug, locale } = params
+  const { model: modelSlug } = searchParams
   const supabase = createServerClient()
 
   const { data: service } = await supabase
@@ -40,42 +41,118 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const translation = service.services_translations?.find((t: any) => t.locale === locale)
   const serviceName = translation?.name || "Service"
 
-  // Get price range for this service
-  const { data: priceRange } = await supabase
-    .from("model_services")
-    .select("price")
-    .eq("service_id", service.id)
-    .not("price", "is", null)
+  let modelData = null
+  if (modelSlug) {
+    const { data: model } = await supabase
+      .from("models")
+      .select(`
+        id,
+        name,
+        slug,
+        brands(
+          name,
+          slug
+        )
+      `)
+      .eq("slug", modelSlug)
+      .single()
 
-  let priceText = ""
-  if (priceRange && priceRange.length > 0) {
-    const prices = priceRange.map((p) => p.price).filter(Boolean)
-    if (prices.length > 0) {
-      const minPrice = Math.min(...prices)
-      priceText =
-        locale === "cs" ? `od ${minPrice} Kč` : locale === "en" ? `from ${minPrice} CZK` : `від ${minPrice} крон`
+    if (model) {
+      modelData = model
     }
   }
 
-  const metadata = {
-    cs: {
-      title: `${serviceName} Praha 6 Břevnov | ${priceText} | Záruka 6 měsíců | DeviceHelp`,
-      description: `${serviceName} mobilních telefonů v Praze 6 na Břevnově. ${priceText}, záruka 6 měsíců, oprava 2-3 hodiny. iPhone, Samsung, Xiaomi. Bělohorská 209/133. ☎ +420 775 848 259`,
-      keywords: `${serviceName} Praha 6, ${serviceName} Břevnov, ${serviceName} mobil, oprava telefonu Bělohorská, servis Praha6`,
-    },
-    en: {
-      title: `${serviceName} Prague 6 Břevnov | ${priceText} | 6 Month Warranty | DeviceHelp`,
-      description: `${serviceName} for mobile phones in Prague 6 Břevnov. ${priceText}, 6 month warranty, 2-3 hours service. iPhone, Samsung, Xiaomi. Bělohorská 209/133. ☎ +420 775 848 259`,
-      keywords: `${serviceName} Prague 6, ${serviceName} Břevnov, mobile ${serviceName}, phone repair Bělohorská`,
-    },
-    uk: {
-      title: `${serviceName} Прага 6 Бржевнов | ${priceText} | Гарантія 6 місяців | DeviceHelp`,
-      description: `${serviceName} мобільних телефонів в Празі 6 Бржевнов. ${priceText}, гарантія 6 місяців, ремонт 2-3 години. iPhone, Samsung, Xiaomi. Bělohorská 209/133. ☎ +420 775 848 259`,
-      keywords: `${serviceName} Прага 6, ${serviceName} Бржевнов, ${serviceName} мобільний, ремонт телефону Белогорська`,
-    },
+  let metadata
+
+  if (modelData) {
+    // Model-specific metadata
+    const brandName = modelData.brands?.name || ""
+    const modelName = modelData.name || ""
+    const fullModelName = brandName && modelName ? `${brandName} ${modelName}` : modelName
+
+    metadata = {
+      cs: {
+        title: `${serviceName} ${fullModelName} Praha 6 | Záruka 6 měsíců | DeviceHelp`,
+        description: `Profesionální ${serviceName.toLowerCase()} ${fullModelName} v Praze 6 na Břevnově. Záruka 6 měsíců, oprava 2-3 hodiny. Bělohorská 209/133. ☎ +420 775 848 259`,
+        keywords: `${serviceName} ${fullModelName}, ${serviceName} ${brandName} Praha 6, oprava ${modelName} Břevnov, servis ${brandName} Bělohorská`,
+      },
+      en: {
+        title: `${serviceName} ${fullModelName} Prague 6 | 6 Month Warranty | DeviceHelp`,
+        description: `Professional ${serviceName.toLowerCase()} ${fullModelName} in Prague 6 Břevnov. 6 month warranty, 2-3 hours service. Bělohorská 209/133. ☎ +420 775 848 259`,
+        keywords: `${serviceName} ${fullModelName}, ${serviceName} ${brandName} Prague 6, ${modelName} repair Břevnov`,
+      },
+      uk: {
+        title: `${serviceName} ${fullModelName} Прага 6 | Гарантія 6 місяців | DeviceHelp`,
+        description: `Професійний ${serviceName.toLowerCase()} ${fullModelName} в Празі 6 Бржевнов. Гарантія 6 місяців, ремонт 2-3 години. Bělohorská 209/133. ☎ +420 775 848 259`,
+        keywords: `${serviceName} ${fullModelName}, ${serviceName} ${brandName} Прага 6, ремонт ${modelName} Бржевнов`,
+      },
+    }
+  } else {
+    // Universal service metadata (no specific model)
+    metadata = {
+      cs: {
+        title: `${serviceName} Praha 6 Břevnov | Záruka 6 měsíců | DeviceHelp`,
+        description: `${serviceName} mobilních telefonů v Praze 6 na Břevnově. Záruka 6 měsíců, oprava 2-3 hodiny. iPhone, Samsung, Xiaomi. Bělohorská 209/133. ☎ +420 775 848 259`,
+        keywords: `${serviceName} Praha 6, ${serviceName} Břevnov, ${serviceName} mobil, oprava telefonu Bělohorská, servis Praha6`,
+      },
+      en: {
+        title: `${serviceName} Prague 6 Břevnov | 6 Month Warranty | DeviceHelp`,
+        description: `${serviceName} for mobile phones in Prague 6 Břevnov. 6 month warranty, 2-3 hours service. iPhone, Samsung, Xiaomi. Bělohorská 209/133. ☎ +420 775 848 259`,
+        keywords: `${serviceName} Prague 6, ${serviceName} Břevnov, mobile ${serviceName}, phone repair Bělohorská`,
+      },
+      uk: {
+        title: `${serviceName} Прага 6 Бржевнов | Гарантія 6 місяців | DeviceHelp`,
+        description: `${serviceName} мобільних телефонів в Празі 6 Бржевнов. Гарантія 6 місяців, ремонт 2-3 години. iPhone, Samsung, Xiaomi. Bělohorská 209/133. ☎ +420 775 848 259`,
+        keywords: `${serviceName} Прага 6, ${serviceName} Бржевнов, ${serviceName} мобільний, ремонт телефону Белогорська`,
+      },
+    }
   }
 
   const currentMetadata = metadata[locale as keyof typeof metadata] || metadata.en
+
+  const structuredData = modelData
+    ? {
+        "@context": "https://schema.org",
+        "@type": "Service",
+        name: `${serviceName} ${modelData.brands?.name} ${modelData.name}`,
+        provider: {
+          "@type": "LocalBusiness",
+          name: "DeviceHelp",
+          address: {
+            "@type": "PostalAddress",
+            streetAddress: "Bělohorská 209/133",
+            addressLocality: "Praha 6-Břevnov",
+            addressRegion: "Praha",
+            postalCode: "169 00",
+            addressCountry: "CZ",
+          },
+          telephone: "+420 775 848 259",
+        },
+        areaServed: ["Praha 6", "Břevnov", "Dejvice", "Vokovice"],
+        serviceType: serviceName,
+        warranty: "6 months",
+      }
+    : {
+        "@context": "https://schema.org",
+        "@type": "Service",
+        name: serviceName,
+        provider: {
+          "@type": "LocalBusiness",
+          name: "DeviceHelp",
+          address: {
+            "@type": "PostalAddress",
+            streetAddress: "Bělohorská 209/133",
+            addressLocality: "Praha 6-Břevnov",
+            addressRegion: "Praha",
+            postalCode: "169 00",
+            addressCountry: "CZ",
+          },
+          telephone: "+420 775 848 259",
+        },
+        areaServed: ["Praha 6", "Břevnov", "Dejvice", "Vokovice"],
+        serviceType: serviceName,
+        warranty: "6 months",
+      }
 
   return {
     title: currentMetadata.title,
@@ -94,6 +171,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     },
     other: {
       "seznam-wmt": "kEPWnFjKJyWrp9OtNNXIlOe6oNf9vfv4",
+      "structured-data": JSON.stringify(structuredData),
     },
   }
 }
