@@ -46,6 +46,13 @@ export function CookieSettingsModal({ open, onOpenChange }: CookieSettingsModalP
       services: [t("categories.necessary.services.0"), t("categories.necessary.services.1")],
     },
     {
+      id: "analytics" as const,
+      name: t("categories.analytics.name"),
+      description: t("categories.analytics.description"),
+      required: false,
+      services: [t("categories.analytics.services.0"), t("categories.analytics.services.1")],
+    },
+    {
       id: "marketing" as const,
       name: t("categories.marketing.name"),
       description: t("categories.marketing.description"),

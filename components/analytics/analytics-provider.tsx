@@ -1,18 +1,26 @@
 "use client"
 
 import { FacebookPixel } from "./facebook-pixel"
+import { GoogleTag } from "./google-tag"
 import { useCookieConsentContext } from "@/contexts/cookie-consent-context"
 
 export function AnalyticsProvider() {
   const { consent } = useCookieConsentContext()
   const pixelId = process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID
+  const googleTagId = "AW-17499950988" // Google Ads conversion tracking ID
 
-  console.log("🔄 AnalyticsProvider render:", { pixelId, marketingConsent: consent.marketing })
+  console.log("🔄 AnalyticsProvider render:", {
+    pixelId,
+    googleTagId,
+    analyticsConsent: consent.analytics,
+    marketingConsent: consent.marketing,
+  })
 
-  if (!pixelId) {
-    console.warn("⚠️ NEXT_PUBLIC_FACEBOOK_PIXEL_ID not found")
-    return null
-  }
+  return (
+    <>
+      <GoogleTag tagId={googleTagId} consent={consent.analytics} />
 
-  return <FacebookPixel pixelId={pixelId} consent={consent.marketing} />
+      {pixelId && <FacebookPixel pixelId={pixelId} consent={consent.marketing} />}
+    </>
+  )
 }
