@@ -13,63 +13,58 @@ export function HeroSection() {
   const locale = params.locale as string
 
   return (
-    <section className="hero-section w-full py-8 md:py-24 lg:py-32 bg-white">
+    <section className="hero-section w-full py-4 md:py-16 lg:py-24 bg-white">
       <div className="container px-4 md:px-6">
-        {/* Мобільна версія - спочатку фото, потім кнопки */}
         <div className="md:hidden flex flex-col items-center text-center">
-          <div className="relative w-full h-[300px] rounded-xl overflow-hidden shadow-xl mb-6">
+          <div className="relative w-full h-[250px] rounded-lg overflow-hidden shadow-lg mb-4">
             <Image
               src="/focused-phone-fix.webp"
               alt={t("imageAlt")}
-              width={400}
-              height={300}
+              width={350}
+              height={250}
               priority
               className="hero-image w-full h-full object-cover object-center"
-              sizes="(max-width: 768px) 100vw, 400px"
+              sizes="(max-width: 768px) 100vw, 350px"
               placeholder="blur"
               blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=="
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end">
-              <h1 className="hero-title text-3xl font-bold tracking-tighter text-white p-4 w-full">{t("title")}</h1>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent flex items-end">
+              <h1 className="hero-title text-2xl font-bold tracking-tight text-white p-3 w-full">{t("title")}</h1>
             </div>
           </div>
 
-          <p className="hero-subtitle text-gray-600 mb-8 text-lg">{t("subtitle")}</p>
+          <p className="hero-subtitle text-gray-600 mb-6 text-base leading-relaxed px-2">{t("subtitle")}</p>
 
-          <div className="grid grid-cols-1 gap-4 w-full mb-8">
+          <div className="flex flex-col gap-3 w-full mb-6 px-2">
             <Link href={`/${locale}/brands`} passHref className="w-full">
-              <Button
-                size="lg"
-                className="btn-primary w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg"
-              >
-                <Smartphone className="mr-2 h-5 w-5" />
+              <Button size="lg" className="btn-primary w-full bg-blue-600 hover:bg-blue-700 shadow-md text-base">
+                <Smartphone className="mr-2 h-4 w-4" />
                 {t("repairMyDevice")}
               </Button>
             </Link>
             <Link href={`/${locale}/contact`} passHref className="w-full">
-              <Button size="lg" variant="outline" className="w-full border-2 shadow-sm bg-transparent">
-                <Phone className="mr-2 h-5 w-5" />
+              <Button size="lg" variant="outline" className="w-full border-2 shadow-sm bg-white text-base">
+                <Phone className="mr-2 h-4 w-4" />
                 {t("contactButton")}
               </Button>
             </Link>
           </div>
 
-          <div className="space-y-4 text-left bg-gray-50 p-4 rounded-lg w-full shadow-sm">
+          <div className="space-y-3 text-left bg-gray-50 p-4 rounded-lg w-full shadow-sm">
             {[1, 2, 3].map((i) => (
               <div key={i} className="flex items-center gap-3">
-                <CheckCircle className="h-6 w-6 text-green-500 flex-shrink-0" />
-                <span className="text-gray-700">{t(`feature${i}`)}</span>
+                <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
+                <span className="text-gray-700 text-sm">{t(`feature${i}`)}</span>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Десктопна версія */}
-        <div className="hidden md:grid gap-6 lg:grid-cols-[1fr_500px] lg:gap-12 items-center">
+        <div className="hidden md:grid gap-6 lg:grid-cols-[1fr_450px] lg:gap-10 items-center">
           <div className="flex flex-col justify-center space-y-4">
             <div className="space-y-2">
-              <h1 className="hero-title text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">{t("title")}</h1>
-              <p className="hero-subtitle text-gray-500 md:text-xl dark:text-gray-400">{t("subtitle")}</p>
+              <h1 className="hero-title text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">{t("title")}</h1>
+              <p className="hero-subtitle text-gray-500 md:text-xl">{t("subtitle")}</p>
             </div>
             <div className="space-y-3">
               {[1, 2, 3].map((i) => (
@@ -81,13 +76,13 @@ export function HeroSection() {
             </div>
             <div className="flex flex-col gap-2 sm:flex-row mt-4">
               <Link href={`/${locale}/brands`} passHref>
-                <Button size="lg" className="btn-primary w-full sm:w-auto">
+                <Button size="lg" className="btn-primary w-full sm:w-auto bg-blue-600 hover:bg-blue-700">
                   <Smartphone className="mr-2 h-4 w-4" />
                   {t("repairMyDevice")}
                 </Button>
               </Link>
               <Link href={`/${locale}/contact`} passHref>
-                <Button size="lg" variant="outline" className="w-full sm:w-auto bg-transparent">
+                <Button size="lg" variant="outline" className="w-full sm:w-auto bg-white">
                   {t("contactButton")}
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
@@ -95,15 +90,15 @@ export function HeroSection() {
             </div>
           </div>
 
-          <div className="relative h-[250px] md:h-[350px] w-full rounded-xl overflow-hidden shadow-lg">
+          <div className="relative h-[300px] md:h-[350px] w-full rounded-lg overflow-hidden shadow-lg">
             <Image
               src="/focused-phone-fix.webp"
               alt={t("imageAlt")}
-              width={500}
+              width={450}
               height={350}
               priority
               className="hero-image w-full h-full object-cover object-center"
-              sizes="(max-width: 768px) 100vw, 500px"
+              sizes="(max-width: 1024px) 450px, 500px"
               placeholder="blur"
               blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=="
             />
