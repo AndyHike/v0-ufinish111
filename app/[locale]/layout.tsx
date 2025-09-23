@@ -11,6 +11,9 @@ import { CookieBanner } from "@/components/cookie-banner"
 import { AnalyticsProvider } from "@/components/analytics/analytics-provider"
 import { Suspense } from "react"
 import { SessionProvider } from "@/components/providers/session-provider"
+import { PerformanceProvider } from "@/components/performance-provider"
+import { PerformanceDebug } from "@/components/performance-debug"
+import { ServiceWorkerProvider } from "@/components/service-worker-provider"
 import "@/app/globals.css"
 
 export async function generateStaticParams() {
@@ -120,32 +123,47 @@ export default async function LocaleLayout({
         <style
           dangerouslySetInnerHTML={{
             __html: `
-            body{font-family:'Inter',system-ui,sans-serif;margin:0;padding:0;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
-            .hero-section{background:#fff;padding:1rem 0;min-height:300px}
+            body{font-family:'Inter',system-ui,sans-serif;margin:0;padding:0;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
+            .hero-section{background:#fff;padding:1rem 0;min-height:300px;contain:layout style paint}
             .hero-title{font-size:1.5rem;font-weight:700;line-height:1.2;margin-bottom:0.75rem;color:#111827}
             .hero-subtitle{color:#6b7280;font-size:1rem;margin-bottom:1.5rem;line-height:1.5;font-weight:400}
             .hero-image{width:100%;height:200px;object-fit:cover;border-radius:0.5rem}
             .container{max-width:1200px;margin:0 auto;padding:0 1rem}
-            .btn-primary{background:#2563eb;color:#fff;padding:0.75rem 1.5rem;border-radius:0.5rem;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;border:none;cursor:pointer;transition:background-color 0.2s}
+            .btn-primary{background:#2563eb;color:#fff;padding:0.75rem 1.5rem;border-radius:0.5rem;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;border:none;cursor:pointer;transition:background-color 0.2s;touch-action:manipulation}
             .btn-primary:hover{background:#1d4ed8}
+            .loading-skeleton{background:linear-gradient(90deg,#f0f0f0 25%,#e0e0e0 50%,#f0f0f0 75%);background-size:200% 100%;animation:loading 1.5s infinite}
+            @keyframes loading{0%{background-position:200% 0}100%{background-position:-200% 0}}
+            @media(max-width:767px){body{-webkit-overflow-scrolling:touch;overscroll-behavior:contain}}
             @media(min-width:768px){.hero-section{padding:3rem 0}.hero-title{font-size:2.5rem}.hero-image{height:300px}}
             @media(min-width:1024px){.hero-title{font-size:3rem}.hero-section{padding:4rem 0}}
+            @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0.01ms!important;animation-iteration-count:1!important;transition-duration:0.01ms!important}}
           `,
           }}
         />
+
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#3b82f6" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
       </head>
       <NextIntlClientProvider locale={locale} messages={messages}>
         <SessionProvider>
           <CookieConsentProvider>
-            <div className="flex min-h-screen flex-col">
-              <Header user={user} />
-              <main className="flex-1">{children}</main>
-              <Footer />
-              <CookieBanner />
-              <Suspense fallback={null}>
-                <AnalyticsProvider />
-              </Suspense>
-            </div>
+            <ServiceWorkerProvider>
+              <PerformanceProvider>
+                <div className="flex min-h-screen flex-col">
+                  <Header user={user} />
+                  <main className="flex-1">{children}</main>
+                  <Footer />
+                  <CookieBanner />
+                  <Suspense fallback={null}>
+                    <AnalyticsProvider />
+                  </Suspense>
+                  <PerformanceDebug />
+                </div>
+              </PerformanceProvider>
+            </ServiceWorkerProvider>
           </CookieConsentProvider>
         </SessionProvider>
       </NextIntlClientProvider>

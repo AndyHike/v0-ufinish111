@@ -1,0 +1,67 @@
+{
+  "name": "DeviceHelp - Професійний ремонт телефонів",
+  "short_name": "DeviceHelp",
+  "description": "Професійний ремонт мобільних телефонів у Празі",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "orientation": "portrait-primary",
+  "categories": ["business", "utilities"],
+  "lang": "uk",
+  "dir": "ltr",
+  "icons": [
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot-mobile.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "/screenshot-desktop.png",
+      "sizes": "1920x1080",
+      "type": "image/png",
+      "form_factor": "wide"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Записатися на ремонт",
+      "short_name": "Запис",
+      "description": "Швидкий запис на ремонт телефону",
+      "url": "/book-service",
+      "icons": [
+        {
+          "src": "/shortcut-repair.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Контакти",
+      "short_name": "Контакти",
+      "description": "Наші контакти та адреса",
+      "url": "/contact",
+      "icons": [
+        {
+          "src": "/shortcut-contact.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ]
+}

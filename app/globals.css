@@ -67,7 +67,7 @@
     -webkit-text-size-adjust: 100%;
   }
 
-  /* Critical CSS for hero section performance */
+  /* Enhanced critical CSS for hero section performance */
   .hero-section {
     contain: layout style paint;
     will-change: auto;
@@ -84,7 +84,7 @@
     }
   }
 
-  /* Mobile-specific performance optimizations */
+  /* Enhanced mobile-specific performance optimizations */
   @media (max-width: 768px) {
     .hero-section {
       padding: 1rem 0;
@@ -104,6 +104,12 @@
       height: 200px;
       object-fit: cover;
     }
+
+    /* Optimize scroll performance on mobile */
+    body {
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+    }
   }
 }
 
@@ -118,7 +124,7 @@
     scrollbar-width: none; /* Firefox */
   }
 
-  /* Performance utility classes */
+  /* Enhanced performance utility classes */
   .gpu-accelerated {
     transform: translateZ(0);
     will-change: transform;
@@ -132,7 +138,11 @@
     contain: paint;
   }
 
-  /* Critical loading states */
+  .contain-strict {
+    contain: strict;
+  }
+
+  /* Enhanced critical loading states */
   .loading-skeleton {
     background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
     background-size: 200% 100%;
@@ -146,6 +156,18 @@
     100% {
       background-position: -200% 0;
     }
+  }
+
+  /* Intersection observer optimization */
+  .lazy-load {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+
+  .lazy-load.loaded {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
