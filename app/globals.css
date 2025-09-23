@@ -55,16 +55,27 @@
   }
   body {
     @apply bg-background text-foreground;
-    /* Add font smoothing and performance optimizations */
+    /* Enhanced font performance and loading */
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
     font-feature-settings: "kern" 1;
+    font-display: swap;
   }
 
-  /* Add critical CSS for above-the-fold content */
+  /* Critical CSS for hero section performance */
   .hero-section {
     contain: layout style paint;
+    will-change: auto;
+  }
+
+  /* Optimize font loading with font-display swap */
+  @font-face {
+    font-family: "Inter";
+    src: url("/fonts/inter-var.woff2") format("woff2");
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
   }
 
   /* Optimize animations for better performance */
@@ -79,8 +90,8 @@
   }
 }
 
-/* Приховування скролбару для мобільної версії */
-@layer utilities {
+@layer base {
+  /* Приховування скролбару для мобільної версії */
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
@@ -90,7 +101,7 @@
     scrollbar-width: none; /* Firefox */
   }
 
-  /* Add performance utility classes */
+  /* Performance utility classes */
   .gpu-accelerated {
     transform: translateZ(0);
     will-change: transform;
@@ -102,6 +113,22 @@
 
   .contain-paint {
     contain: paint;
+  }
+
+  /* Critical loading states */
+  .loading-skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+  }
+
+  @keyframes loading {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
   }
 }
 

@@ -92,7 +92,26 @@ export default async function LocaleLayout({
     <>
       <head>
         <meta name="seznam-wmt" content="5VWPSjprwBjXXCI2HRoOVfvKcmdPB1Om" />
+        <link rel="dns-prefetch" href="//fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+
         <link rel="preload" href="/fonts/inter-var.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
+
+        <link rel="preload" href="/focused-phone-fix.webp" as="image" type="image/webp" />
+
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
+            .hero-section{background:#fff;padding:2rem 0}
+            .hero-title{font-size:2rem;font-weight:700;line-height:1.2;margin-bottom:1rem}
+            .hero-subtitle{color:#6b7280;font-size:1.125rem;margin-bottom:2rem}
+            .hero-image{width:100%;height:300px;object-fit:cover;border-radius:0.75rem}
+            @media(min-width:768px){.hero-section{padding:6rem 0}.hero-title{font-size:3rem}.hero-image{height:350px}}
+            .btn-primary{background:linear-gradient(to right,#2563eb,#4f46e5);color:#fff;padding:0.75rem 1.5rem;border-radius:0.5rem;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+          `,
+          }}
+        />
       </head>
       <NextIntlClientProvider locale={locale} messages={messages}>
         <SessionProvider>
