@@ -15,25 +15,15 @@ const nextConfig = {
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     loader: 'default',
     quality: 90,
-    unoptimized: false,
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: '**',
-      },
-    ],
   },
   compress: true,
   poweredByHeader: false,
   output: 'standalone',
   experimental: {
-    optimizePackageImports: ['lucide-react', '@radix-ui/react-icons', 'framer-motion'],
+    optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
     optimizeCss: true,
     staticWorkerRequestDeduping: true,
     serverComponentsExternalPackages: ['sharp'],
-    webVitalsAttribution: ['CLS', 'LCP', 'FCP', 'FID', 'TTFB'],
-    scrollRestoration: true,
-    largePageDataBytes: 128 * 1000, // 128KB for mobile
     turbo: {
       rules: {
         '*.svg': {
@@ -47,15 +37,14 @@ const nextConfig = {
     if (!dev && !isServer) {
       config.optimization.splitChunks = {
         chunks: 'all',
-        minSize: 8000, // Smaller chunks for mobile
-        maxSize: 150000, // Smaller max size for mobile
+        minSize: 10000, // Smaller chunks for mobile
+        maxSize: 200000, // Smaller max size for mobile
         cacheGroups: {
           vendor: {
             test: /[\\/]node_modules[\\/]/,
             name: 'vendors',
             chunks: 'all',
             priority: 10,
-            maxSize: 200000,
           },
           common: {
             name: 'common',
@@ -63,28 +52,18 @@ const nextConfig = {
             chunks: 'all',
             enforce: true,
             priority: 5,
-            maxSize: 100000,
           },
           critical: {
             name: 'critical',
             test: /[\\/](hero-section|header|layout)[\\/]/,
             chunks: 'all',
             priority: 20,
-            maxSize: 80000,
           },
           mobile: {
             name: 'mobile',
             test: /[\\/](button|card|dialog)[\\/]/,
             chunks: 'all',
             priority: 15,
-            maxSize: 60000,
-          },
-          icons: {
-            name: 'icons',
-            test: /[\\/](lucide-react|@radix-ui)[\\/]/,
-            chunks: 'all',
-            priority: 12,
-            maxSize: 50000,
           },
         },
       }
@@ -92,8 +71,6 @@ const nextConfig = {
       config.optimization.concatenateModules = true
       config.optimization.usedExports = true
       config.optimization.sideEffects = false
-      config.optimization.moduleIds = 'deterministic'
-      config.optimization.chunkIds = 'deterministic'
     }
     return config
   },
@@ -105,10 +82,6 @@ const nextConfig = {
           {
             key: 'Cache-Control',
             value: 'public, max-age=31536000, immutable',
-          },
-          {
-            key: 'Link',
-            value: '</fonts/inter-var.woff2>; rel=preload; as=font; type=font/woff2; crossorigin',
           },
         ],
       },
@@ -135,7 +108,7 @@ const nextConfig = {
         ],
       },
       {
-        source: '/:path*',
+        source: '/(.*)',
         headers: [
           {
             key: 'X-Content-Type-Options',
@@ -148,14 +121,6 @@ const nextConfig = {
           {
             key: 'Referrer-Policy',
             value: 'origin-when-cross-origin',
-          },
-          {
-            key: 'X-DNS-Prefetch-Control',
-            value: 'on',
-          },
-          {
-            key: 'Strict-Transport-Security',
-            value: 'max-age=31536000; includeSubDomains',
           },
         ],
       },
