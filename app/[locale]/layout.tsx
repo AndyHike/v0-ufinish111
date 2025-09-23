@@ -92,7 +92,7 @@ export default async function LocaleLayout({
     <>
       <head>
         <meta name="seznam-wmt" content="5VWPSjprwBjXXCI2HRoOVfvKcmdPB1Om" />
-        <link rel="dns-prefetch" href="//fonts.googleapis.com" />
+        <link rel="dns-prefetch" href="//fonts.gstatic.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
 
         <link
@@ -104,21 +104,7 @@ export default async function LocaleLayout({
         />
         <link
           rel="preload"
-          href="https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuI6fAZ9hiA.woff2"
-          as="font"
-          type="font/woff2"
-          crossOrigin="anonymous"
-        />
-        <link
-          rel="preload"
           href="https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuGKYAZ9hiA.woff2"
-          as="font"
-          type="font/woff2"
-          crossOrigin="anonymous"
-        />
-        <link
-          rel="preload"
-          href="https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuFuYAZ9hiA.woff2"
           as="font"
           type="font/woff2"
           crossOrigin="anonymous"
@@ -130,19 +116,17 @@ export default async function LocaleLayout({
           dangerouslySetInnerHTML={{
             __html: `
             @font-face{font-family:'Inter';font-style:normal;font-weight:400;font-display:swap;src:url(https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiA.woff2) format('woff2')}
-            @font-face{font-family:'Inter';font-style:normal;font-weight:500;font-display:swap;src:url(https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuI6fAZ9hiA.woff2) format('woff2')}
             @font-face{font-family:'Inter';font-style:normal;font-weight:600;font-display:swap;src:url(https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuGKYAZ9hiA.woff2) format('woff2')}
-            @font-face{font-family:'Inter';font-style:normal;font-weight:700;font-display:swap;src:url(https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuFuYAZ9hiA.woff2) format('woff2')}
-            body{font-family:'Inter',system-ui,sans-serif;margin:0;padding:0}
-            .hero-section{background:#fff;padding:2rem 0;min-height:400px}
-            .hero-title{font-size:2rem;font-weight:700;line-height:1.2;margin-bottom:1rem;color:#111827}
-            .hero-subtitle{color:#6b7280;font-size:1.125rem;margin-bottom:2rem;line-height:1.6;font-weight:400}
-            .hero-image{width:100%;height:300px;object-fit:cover;border-radius:0.75rem}
+            body{font-family:'Inter',system-ui,sans-serif;margin:0;padding:0;-webkit-font-smoothing:antialiased;text-rendering:optimizeSpeed}
+            .hero-section{background:#fff;padding:1.5rem 0;min-height:350px;contain:layout style}
+            .hero-title{font-size:1.75rem;font-weight:600;line-height:1.2;margin-bottom:0.75rem;color:#111827}
+            .hero-subtitle{color:#6b7280;font-size:1rem;margin-bottom:1.5rem;line-height:1.5;font-weight:400}
+            .hero-image{width:100%;height:250px;object-fit:cover;border-radius:0.75rem;will-change:auto}
             .container{max-width:1200px;margin:0 auto;padding:0 1rem}
-            .btn-primary{background:linear-gradient(to right,#2563eb,#4f46e5);color:#fff;padding:0.75rem 1.5rem;border-radius:0.5rem;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;border:none;cursor:pointer;transition:all 0.2s}
-            .btn-primary:hover{background:linear-gradient(to right,#1d4ed8,#4338ca)}
-            @media(min-width:768px){.hero-section{padding:6rem 0}.hero-title{font-size:3rem}.hero-image{height:350px}}
-            @media(min-width:1024px){.hero-title{font-size:3.5rem}}
+            .btn-primary{background:#2563eb;color:#fff;padding:0.75rem 1.5rem;border-radius:0.5rem;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;border:none;cursor:pointer;transition:background-color 0.2s ease}
+            .btn-primary:hover{background:#1d4ed8}
+            @media(min-width:768px){.hero-section{padding:4rem 0}.hero-title{font-size:2.5rem}.hero-image{height:300px}}
+            @media(min-width:1024px){.hero-title{font-size:3rem}.hero-image{height:350px}}
           `,
           }}
         />

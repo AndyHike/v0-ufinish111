@@ -8,13 +8,13 @@ const nextConfig = {
   },
   images: {
     formats: ['image/webp', 'image/avif'],
-    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
-    minimumCacheTTL: 31536000, // 1 year
+    minimumCacheTTL: 31536000,
     dangerouslyAllowSVG: false,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     loader: 'default',
-    quality: 85,
+    quality: 80,
   },
   compress: true,
   poweredByHeader: false,
@@ -36,8 +36,8 @@ const nextConfig = {
     if (!dev && !isServer) {
       config.optimization.splitChunks = {
         chunks: 'all',
-        minSize: 20000,
-        maxSize: 244000,
+        minSize: 15000,
+        maxSize: 200000,
         cacheGroups: {
           vendor: {
             test: /[\\/]node_modules[\\/]/,
@@ -57,6 +57,12 @@ const nextConfig = {
             test: /[\\/](hero-section|header|layout)[\\/]/,
             chunks: 'all',
             priority: 20,
+          },
+          mobile: {
+            name: 'mobile',
+            test: /[\\/](mobile|responsive)[\\/]/,
+            chunks: 'all',
+            priority: 15,
           },
         },
       }

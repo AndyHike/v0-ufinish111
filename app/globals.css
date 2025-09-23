@@ -79,6 +79,24 @@
       transition-duration: 0.01ms !important;
     }
   }
+
+  /* Mobile-specific optimizations */
+  @media (max-width: 768px) {
+    .hero-section {
+      padding: 1.5rem 0;
+      min-height: 350px;
+    }
+
+    .hero-title {
+      font-size: 1.75rem;
+      line-height: 1.2;
+    }
+
+    .hero-image {
+      height: 250px;
+      transform: translateZ(0);
+    }
+  }
 }
 
 @layer base {
