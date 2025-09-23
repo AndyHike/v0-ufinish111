@@ -13,6 +13,10 @@ import { Suspense } from "react"
 import { SessionProvider } from "@/components/providers/session-provider"
 import "@/app/globals.css"
 
+export async function generateStaticParams() {
+  return [{ locale: "cs" }, { locale: "en" }, { locale: "uk" }]
+}
+
 export async function generateMetadata({
   params: { locale },
 }: {
@@ -51,6 +55,19 @@ export async function generateMetadata({
         "x-default": `${baseUrl}/cs`,
       },
     },
+    openGraph: {
+      title: currentSeo.title,
+      description: currentSeo.description,
+      url: canonicalUrl,
+      siteName: "DeviceHelp",
+      locale: locale,
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: currentSeo.title,
+      description: currentSeo.description,
+    },
   }
 }
 
@@ -75,6 +92,7 @@ export default async function LocaleLayout({
     <>
       <head>
         <meta name="seznam-wmt" content="5VWPSjprwBjXXCI2HRoOVfvKcmdPB1Om" />
+        <link rel="preload" href="/fonts/inter-var.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
       </head>
       <NextIntlClientProvider locale={locale} messages={messages}>
         <SessionProvider>
