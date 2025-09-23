@@ -97,14 +97,7 @@ export default async function LocaleLayout({
 
         <link
           rel="preload"
-          href="https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiA.woff2"
-          as="font"
-          type="font/woff2"
-          crossOrigin="anonymous"
-        />
-        <link
-          rel="preload"
-          href="https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuGKYAZ9hiA.woff2"
+          href="https://fonts.gstatic.com/s/inter/v13/UcC73FwrK3iLTeHuS_fvQtMwCp50KnMa1ZL7.woff2"
           as="font"
           type="font/woff2"
           crossOrigin="anonymous"
@@ -115,15 +108,14 @@ export default async function LocaleLayout({
         <style
           dangerouslySetInnerHTML={{
             __html: `
-            @font-face{font-family:'Inter';font-style:normal;font-weight:400;font-display:swap;src:url(https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiA.woff2) format('woff2')}
-            @font-face{font-family:'Inter';font-style:normal;font-weight:600;font-display:swap;src:url(https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuGKYAZ9hiA.woff2) format('woff2')}
-            body{font-family:'Inter',system-ui,sans-serif;margin:0;padding:0;-webkit-font-smoothing:antialiased;text-rendering:optimizeSpeed}
-            .hero-section{background:#fff;padding:1.5rem 0;min-height:350px;contain:layout style}
-            .hero-title{font-size:1.75rem;font-weight:600;line-height:1.2;margin-bottom:0.75rem;color:#111827}
+            @font-face{font-family:'Inter';font-style:normal;font-weight:400 700;font-display:swap;src:url(https://fonts.gstatic.com/s/inter/v13/UcC73FwrK3iLTeHuS_fvQtMwCp50KnMa1ZL7.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+            body{font-family:'Inter',system-ui,sans-serif;margin:0;padding:0;-webkit-font-smoothing:antialiased;text-rendering:optimizeSpeed;font-feature-settings:'cv02','cv03','cv04','cv11'}
+            .hero-section{background:#fff;padding:1.5rem 0;min-height:350px;contain:layout style paint}
+            .hero-title{font-size:1.75rem;font-weight:600;line-height:1.2;margin-bottom:0.75rem;color:#111827;font-variation-settings:'wght' 600}
             .hero-subtitle{color:#6b7280;font-size:1rem;margin-bottom:1.5rem;line-height:1.5;font-weight:400}
-            .hero-image{width:100%;height:250px;object-fit:cover;border-radius:0.75rem;will-change:auto}
+            .hero-image{width:100%;height:250px;object-fit:cover;border-radius:0.75rem;will-change:auto;content-visibility:auto}
             .container{max-width:1200px;margin:0 auto;padding:0 1rem}
-            .btn-primary{background:#2563eb;color:#fff;padding:0.75rem 1.5rem;border-radius:0.5rem;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;border:none;cursor:pointer;transition:background-color 0.2s ease}
+            .btn-primary{background:#2563eb;color:#fff;padding:0.75rem 1.5rem;border-radius:0.5rem;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;border:none;cursor:pointer;transition:background-color 0.15s ease;transform:translateZ(0)}
             .btn-primary:hover{background:#1d4ed8}
             @media(min-width:768px){.hero-section{padding:4rem 0}.hero-title{font-size:2.5rem}.hero-image{height:300px}}
             @media(min-width:1024px){.hero-title{font-size:3rem}.hero-image{height:350px}}

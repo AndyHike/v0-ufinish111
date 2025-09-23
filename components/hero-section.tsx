@@ -24,9 +24,10 @@ export function HeroSection() {
               height={250}
               priority
               className="hero-image w-full h-full object-cover object-center"
-              sizes="(max-width: 768px) 100vw, 350px"
+              sizes="(max-width: 768px) 350px, 350px"
               placeholder="blur"
               blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=="
+              quality={85}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent flex items-end">
               <h1 className="hero-title text-2xl font-semibold tracking-tight text-white p-3 w-full">{t("title")}</h1>
@@ -36,13 +37,13 @@ export function HeroSection() {
           <p className="hero-subtitle text-gray-600 mb-6 text-base leading-relaxed">{t("subtitle")}</p>
 
           <div className="flex flex-col gap-3 w-full mb-6">
-            <Link href={`/${locale}/brands`} passHref className="w-full">
+            <Link href={`/${locale}/brands`} className="w-full">
               <Button size="lg" className="btn-primary w-full bg-blue-600 hover:bg-blue-700 shadow-md">
                 <Smartphone className="mr-2 h-4 w-4" />
                 {t("repairMyDevice")}
               </Button>
             </Link>
-            <Link href={`/${locale}/contact`} passHref className="w-full">
+            <Link href={`/${locale}/contact`} className="w-full">
               <Button size="lg" variant="outline" className="w-full border-2 bg-white">
                 <Phone className="mr-2 h-4 w-4" />
                 {t("contactButton")}
@@ -75,13 +76,13 @@ export function HeroSection() {
               ))}
             </div>
             <div className="flex flex-col gap-2 sm:flex-row mt-4">
-              <Link href={`/${locale}/brands`} passHref>
+              <Link href={`/${locale}/brands`}>
                 <Button size="lg" className="btn-primary w-full sm:w-auto">
                   <Smartphone className="mr-2 h-4 w-4" />
                   {t("repairMyDevice")}
                 </Button>
               </Link>
-              <Link href={`/${locale}/contact`} passHref>
+              <Link href={`/${locale}/contact`}>
                 <Button size="lg" variant="outline" className="w-full sm:w-auto bg-white">
                   {t("contactButton")}
                   <ArrowRight className="ml-2 h-4 w-4" />
@@ -98,9 +99,10 @@ export function HeroSection() {
               height={350}
               priority
               className="hero-image w-full h-full object-cover object-center"
-              sizes="(max-width: 768px) 100vw, 450px"
+              sizes="(max-width: 1024px) 450px, 450px"
               placeholder="blur"
               blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=="
+              quality={85}
             />
           </div>
         </div>

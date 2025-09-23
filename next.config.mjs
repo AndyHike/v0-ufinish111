@@ -14,36 +14,33 @@ const nextConfig = {
     dangerouslyAllowSVG: false,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     loader: 'default',
-    quality: 80,
+    quality: 85,
   },
   compress: true,
   poweredByHeader: false,
   output: 'standalone',
+  swcMinify: true,
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production',
+  },
   experimental: {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
     optimizeCss: true,
     staticWorkerRequestDeduping: true,
-    turbo: {
-      rules: {
-        '*.svg': {
-          loaders: ['@svgr/webpack'],
-          as: '*.js',
-        },
-      },
-    },
   },
   webpack: (config, { dev, isServer }) => {
     if (!dev && !isServer) {
       config.optimization.splitChunks = {
         chunks: 'all',
-        minSize: 15000,
-        maxSize: 200000,
+        minSize: 20000,
+        maxSize: 150000,
         cacheGroups: {
           vendor: {
             test: /[\\/]node_modules[\\/]/,
             name: 'vendors',
             chunks: 'all',
             priority: 10,
+            maxSize: 100000,
           },
           common: {
             name: 'common',
@@ -51,18 +48,14 @@ const nextConfig = {
             chunks: 'all',
             enforce: true,
             priority: 5,
+            maxSize: 80000,
           },
           critical: {
             name: 'critical',
             test: /[\\/](hero-section|header|layout)[\\/]/,
             chunks: 'all',
             priority: 20,
-          },
-          mobile: {
-            name: 'mobile',
-            test: /[\\/](mobile|responsive)[\\/]/,
-            chunks: 'all',
-            priority: 15,
+            maxSize: 60000,
           },
         },
       }
@@ -70,6 +63,7 @@ const nextConfig = {
       config.optimization.concatenateModules = true
       config.optimization.usedExports = true
       config.optimization.sideEffects = false
+      config.target = ['web', 'es2020']
     }
     return config
   },
@@ -85,7 +79,7 @@ const nextConfig = {
         ],
       },
       {
-        source: '/:path*.webp',
+        source: '/:path*.(webp|avif|jpg|jpeg|png)',
         headers: [
           {
             key: 'Cache-Control',
@@ -99,6 +93,15 @@ const nextConfig = {
           {
             key: 'Cache-Control',
             value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'X-DNS-Prefetch-Control',
+            value: 'on'
           },
         ],
       },
