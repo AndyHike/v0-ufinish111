@@ -8,13 +8,13 @@ const nextConfig = {
   },
   images: {
     formats: ['image/webp', 'image/avif'],
-    deviceSizes: [320, 420, 640, 750, 828, 1080, 1200, 1920],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     minimumCacheTTL: 31536000, // 1 year
     dangerouslyAllowSVG: false,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     loader: 'default',
-    quality: 90,
+    quality: 85,
   },
   compress: true,
   poweredByHeader: false,
@@ -23,7 +23,6 @@ const nextConfig = {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
     optimizeCss: true,
     staticWorkerRequestDeduping: true,
-    serverComponentsExternalPackages: ['sharp'],
     turbo: {
       rules: {
         '*.svg': {
@@ -37,8 +36,8 @@ const nextConfig = {
     if (!dev && !isServer) {
       config.optimization.splitChunks = {
         chunks: 'all',
-        minSize: 10000, // Smaller chunks for mobile
-        maxSize: 200000, // Smaller max size for mobile
+        minSize: 20000,
+        maxSize: 244000,
         cacheGroups: {
           vendor: {
             test: /[\\/]node_modules[\\/]/,
@@ -58,12 +57,6 @@ const nextConfig = {
             test: /[\\/](hero-section|header|layout)[\\/]/,
             chunks: 'all',
             priority: 20,
-          },
-          mobile: {
-            name: 'mobile',
-            test: /[\\/](button|card|dialog)[\\/]/,
-            chunks: 'all',
-            priority: 15,
           },
         },
       }
@@ -92,10 +85,6 @@ const nextConfig = {
             key: 'Cache-Control',
             value: 'public, max-age=31536000, immutable',
           },
-          {
-            key: 'Vary',
-            value: 'Accept',
-          },
         ],
       },
       {
@@ -104,23 +93,6 @@ const nextConfig = {
           {
             key: 'Cache-Control',
             value: 'public, max-age=31536000, immutable',
-          },
-        ],
-      },
-      {
-        source: '/(.*)',
-        headers: [
-          {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
-          },
-          {
-            key: 'X-Frame-Options',
-            value: 'DENY',
-          },
-          {
-            key: 'Referrer-Policy',
-            value: 'origin-when-cross-origin',
           },
         ],
       },

@@ -61,10 +61,6 @@
     text-rendering: optimizeLegibility;
     font-feature-settings: "kern" 1;
     font-display: swap;
-    /* Mobile-specific optimizations */
-    -webkit-tap-highlight-color: transparent;
-    -webkit-touch-callout: none;
-    -webkit-text-size-adjust: 100%;
   }
 
   /* Critical CSS for hero section performance */
@@ -81,28 +77,6 @@
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
-    }
-  }
-
-  /* Mobile-specific performance optimizations */
-  @media (max-width: 768px) {
-    .hero-section {
-      padding: 1rem 0;
-    }
-
-    .hero-title {
-      font-size: 1.5rem;
-      line-height: 1.2;
-    }
-
-    .hero-subtitle {
-      font-size: 0.875rem;
-      line-height: 1.4;
-    }
-
-    .hero-image {
-      height: 200px;
-      object-fit: cover;
     }
   }
 }
