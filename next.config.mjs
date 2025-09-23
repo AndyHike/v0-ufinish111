@@ -13,12 +13,16 @@ const nextConfig = {
     minimumCacheTTL: 31536000, // 1 year
     dangerouslyAllowSVG: false,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+    loader: 'default',
+    quality: 85,
   },
   compress: true,
   poweredByHeader: false,
+  output: 'standalone',
   experimental: {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
     optimizeCss: true,
+    staticWorkerRequestDeduping: true,
     turbo: {
       rules: {
         '*.svg': {
@@ -76,6 +80,15 @@ const nextConfig = {
       },
       {
         source: '/:path*.webp',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      {
+        source: '/_next/static/:path*',
         headers: [
           {
             key: 'Cache-Control',
