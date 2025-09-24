@@ -8,13 +8,13 @@ const nextConfig = {
   },
   images: {
     formats: ['image/webp', 'image/avif'],
-    deviceSizes: [640, 750, 828, 1080, 1200, 1920],
+    deviceSizes: [375, 640, 750, 828, 1080, 1200],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     minimumCacheTTL: 31536000,
     dangerouslyAllowSVG: false,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     loader: 'default',
-    quality: 85,
+    quality: 90,
   },
   compress: true,
   poweredByHeader: false,
@@ -28,20 +28,22 @@ const nextConfig = {
     optimizeCss: true,
     staticWorkerRequestDeduping: true,
     webVitalsAttribution: ['CLS', 'LCP', 'FCP', 'FID', 'TTFB'],
+    esmExternals: 'loose',
+    serverComponentsExternalPackages: ['sharp'],
   },
   webpack: (config, { dev, isServer }) => {
     if (!dev && !isServer) {
       config.optimization.splitChunks = {
         chunks: 'all',
-        minSize: 15000,
-        maxSize: 120000,
+        minSize: 10000,
+        maxSize: 100000,
         cacheGroups: {
           vendor: {
             test: /[\\/]node_modules[\\/]/,
             name: 'vendors',
             chunks: 'all',
             priority: 10,
-            maxSize: 80000,
+            maxSize: 60000,
           },
           common: {
             name: 'common',
@@ -49,14 +51,21 @@ const nextConfig = {
             chunks: 'all',
             enforce: true,
             priority: 5,
-            maxSize: 60000,
+            maxSize: 40000,
           },
           critical: {
             name: 'critical',
             test: /[\\/](hero-section|header|layout)[\\/]/,
             chunks: 'all',
             priority: 20,
-            maxSize: 40000,
+            maxSize: 30000,
+          },
+          icons: {
+            name: 'icons',
+            test: /[\\/]node_modules[\\/](lucide-react|@radix-ui)[\\/]/,
+            chunks: 'all',
+            priority: 15,
+            maxSize: 25000,
           },
         },
       }
@@ -64,7 +73,7 @@ const nextConfig = {
       config.optimization.concatenateModules = true
       config.optimization.usedExports = true
       config.optimization.sideEffects = false
-      config.target = ['web', 'es2020']
+      config.target = ['web', 'es2022']
     }
     return config
   },
@@ -85,6 +94,10 @@ const nextConfig = {
           {
             key: 'Cache-Control',
             value: 'public, max-age=31536000, immutable',
+          },
+          {
+            key: 'Vary',
+            value: 'Accept',
           },
         ],
       },
