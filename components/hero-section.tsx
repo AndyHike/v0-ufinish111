@@ -18,17 +18,17 @@ export function HeroSection() {
         <div className="md:hidden flex flex-col items-center text-center">
           <div className="relative w-full h-[250px] rounded-xl overflow-hidden shadow-lg mb-4">
             <Image
-              src="/focused-phone-fix-mobile.webp"
+              src="/focused-phone-fix.webp"
               alt={t("imageAlt")}
-              width={375}
+              width={350}
               height={250}
               priority
               fetchPriority="high"
               className="hero-image w-full h-full object-cover object-center"
-              sizes="(max-width: 768px) 375px, 375px"
+              sizes="(max-width: 768px) 350px, 350px"
               placeholder="blur"
               blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=="
-              quality={90}
+              quality={85}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent flex items-end">
               <h1 className="hero-title text-2xl font-semibold tracking-tight text-white p-3 w-full">{t("title")}</h1>
@@ -96,15 +96,15 @@ export function HeroSection() {
             <Image
               src="/focused-phone-fix.webp"
               alt={t("imageAlt")}
-              width={475}
+              width={450}
               height={350}
               priority
               fetchPriority="high"
               className="hero-image w-full h-full object-cover object-center"
-              sizes="(max-width: 1024px) 475px, 475px"
+              sizes="(max-width: 1024px) 450px, 450px"
               placeholder="blur"
               blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=="
-              quality={90}
+              quality={85}
             />
           </div>
         </div>
