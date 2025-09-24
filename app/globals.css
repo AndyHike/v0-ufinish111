@@ -95,6 +95,22 @@
     .hero-image {
       height: 250px;
       transform: translateZ(0);
+      content-visibility: auto;
+    }
+
+    .container {
+      padding: 0 1rem;
+    }
+
+    .btn-primary {
+      padding: 0.75rem 1.5rem;
+      font-size: 0.875rem;
+    }
+
+    /* Reduce motion for better mobile performance */
+    * {
+      animation-duration: 0.3s !important;
+      transition-duration: 0.15s !important;
     }
   }
 }

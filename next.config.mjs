@@ -14,7 +14,7 @@ const nextConfig = {
     dangerouslyAllowSVG: false,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     loader: 'default',
-    quality: 90,
+    quality: 85,
   },
   compress: true,
   poweredByHeader: false,
@@ -27,7 +27,7 @@ const nextConfig = {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
     optimizeCss: true,
     staticWorkerRequestDeduping: true,
-    serverComponentsExternalPackages: [],
+    webVitalsAttribution: ['CLS', 'LCP', 'FCP', 'FID', 'TTFB'],
   },
   webpack: (config, { dev, isServer }) => {
     if (!dev && !isServer) {
@@ -64,7 +64,7 @@ const nextConfig = {
       config.optimization.concatenateModules = true
       config.optimization.usedExports = true
       config.optimization.sideEffects = false
-      config.target = ['web', 'es2022']
+      config.target = ['web', 'es2020']
     }
     return config
   },
@@ -103,10 +103,6 @@ const nextConfig = {
           {
             key: 'X-DNS-Prefetch-Control',
             value: 'on'
-          },
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=3600, stale-while-revalidate=86400'
           },
         ],
       },
