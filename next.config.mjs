@@ -14,7 +14,7 @@ const nextConfig = {
     dangerouslyAllowSVG: false,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     loader: 'default',
-    quality: 85,
+    quality: 90,
   },
   compress: true,
   poweredByHeader: false,
@@ -27,20 +27,21 @@ const nextConfig = {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
     optimizeCss: true,
     staticWorkerRequestDeduping: true,
+    serverComponentsExternalPackages: [],
   },
   webpack: (config, { dev, isServer }) => {
     if (!dev && !isServer) {
       config.optimization.splitChunks = {
         chunks: 'all',
-        minSize: 20000,
-        maxSize: 150000,
+        minSize: 15000,
+        maxSize: 120000,
         cacheGroups: {
           vendor: {
             test: /[\\/]node_modules[\\/]/,
             name: 'vendors',
             chunks: 'all',
             priority: 10,
-            maxSize: 100000,
+            maxSize: 80000,
           },
           common: {
             name: 'common',
@@ -48,14 +49,14 @@ const nextConfig = {
             chunks: 'all',
             enforce: true,
             priority: 5,
-            maxSize: 80000,
+            maxSize: 60000,
           },
           critical: {
             name: 'critical',
             test: /[\\/](hero-section|header|layout)[\\/]/,
             chunks: 'all',
             priority: 20,
-            maxSize: 60000,
+            maxSize: 40000,
           },
         },
       }
@@ -63,7 +64,7 @@ const nextConfig = {
       config.optimization.concatenateModules = true
       config.optimization.usedExports = true
       config.optimization.sideEffects = false
-      config.target = ['web', 'es2020']
+      config.target = ['web', 'es2022']
     }
     return config
   },
@@ -102,6 +103,10 @@ const nextConfig = {
           {
             key: 'X-DNS-Prefetch-Control',
             value: 'on'
+          },
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=3600, stale-while-revalidate=86400'
           },
         ],
       },
