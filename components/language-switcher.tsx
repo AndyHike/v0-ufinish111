@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { usePathname, useParams, useSearchParams } from "next/navigation"
+import { usePathname, useParams, useSearchParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Globe } from "lucide-react"
@@ -14,6 +14,7 @@ export function LanguageSwitcher({ className }: LanguageSwitcherProps) {
   const pathname = usePathname()
   const params = useParams()
   const searchParams = useSearchParams()
+  const router = useRouter()
   const currentLocale = params.locale as string
   const [isOpen, setIsOpen] = useState(false)
 
@@ -40,25 +41,15 @@ export function LanguageSwitcher({ className }: LanguageSwitcherProps) {
     // Reconstruct the path with the new locale
     const newPath = segments.join("/")
 
-    // ВИПРАВЛЕНО: Зберігаємо всі URL параметри при зміні мови
+    document.cookie = `NEXT_LOCALE=${newLocale}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`
+
+    // Preserve URL parameters
     const currentParams = new URLSearchParams(searchParams.toString())
     const queryString = currentParams.toString()
-
-    // Формуємо фінальний URL з параметрами
     const finalPath = queryString ? `${newPath}?${queryString}` : newPath
 
-    console.log("Language change:", {
-      currentLocale,
-      newLocale,
-      originalPath: pathname,
-      newPath,
-      searchParams: searchParams.toString(),
-      finalPath,
-    })
-
-    // Use window.location for a full page refresh to ensure all components update
-    window.location.href = finalPath
-
+    // Use router.push for smoother navigation
+    router.push(finalPath)
     setIsOpen(false)
   }
 
