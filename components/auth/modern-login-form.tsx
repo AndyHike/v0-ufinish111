@@ -92,6 +92,7 @@ export function ModernLoginForm({ locale }: ModernLoginFormProps) {
 
       // Redirect to appropriate page after successful login
       router.push(`/${locale}`)
+      router.refresh() // Reload server components to fetch updated user data
     } catch (error) {
       console.error("Verification error:", error)
       setError(t("somethingWentWrong"))
@@ -263,7 +264,7 @@ export function ModernLoginForm({ locale }: ModernLoginFormProps) {
               <Button
                 type="button"
                 variant="outline"
-                className="w-full h-10 border-gray-200 text-gray-700 hover:bg-gray-50 rounded-lg"
+                className="w-full h-10 border-gray-200 text-gray-700 hover:bg-gray-50 rounded-lg bg-transparent"
                 onClick={handleResendCode}
                 disabled={isLoading}
               >

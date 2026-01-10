@@ -20,6 +20,7 @@ export async function getCurrentUser() {
   if (sessionError || !sessionData || new Date(sessionData.expires_at) < new Date()) {
     // Session expired or not found
     cookies().delete("session_id")
+    cookies().delete("user_role") // Also delete user_role cookie when session is invalid
     return null
   }
 
@@ -33,6 +34,7 @@ export async function getCurrentUser() {
   if (userError || !userData) {
     console.error("Error fetching user data:", userError)
     cookies().delete("session_id")
+    cookies().delete("user_role") // Also delete user_role cookie when user not found
     return null
   }
 
