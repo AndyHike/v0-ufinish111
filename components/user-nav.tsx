@@ -22,9 +22,12 @@ export function UserNav({ user }) {
   const router = useRouter()
   const locale = params.locale
 
-  // ТИМЧАСОВО: Прибираємо кнопку входу для нових користувачів
   if (!user) {
-    return null // Не показуємо кнопку входу
+    return (
+      <Button asChild variant="default" size="sm">
+        <Link href={`/${locale}/auth/login`}>{t("login")}</Link>
+      </Button>
+    )
   }
 
   const initials = user.name
