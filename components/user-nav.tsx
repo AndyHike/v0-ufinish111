@@ -13,14 +13,40 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import { LogOut, Settings, UserIcon } from "lucide-react"
+import { LogOut, Settings, UserIcon, Loader2 } from "lucide-react"
 import { logout } from "@/lib/auth/actions"
+import { useCurrentUser } from "@/hooks/use-current-user"
+import { useEffect } from "react"
 
-export function UserNav({ user }) {
+export function UserNav({ user: initialUser }) {
   const t = useTranslations("UserNav")
   const params = useParams()
   const router = useRouter()
   const locale = params.locale
+
+  const { user: clientUser, isLoading, refresh } = useCurrentUser()
+
+  const user = clientUser ?? initialUser
+
+  useEffect(() => {
+    console.log("[v0] UserNav - clientUser:", clientUser ? clientUser.email : "null")
+    console.log("[v0] UserNav - initialUser:", initialUser ? initialUser.email : "null")
+    console.log("[v0] UserNav - final user:", user ? user.email : "null")
+  }, [clientUser, initialUser, user])
+
+  const handleLogout = async () => {
+    await logout()
+    refresh() // Refresh user state after logout
+    router.push(`/${locale}`)
+  }
+
+  if (isLoading) {
+    return (
+      <Button variant="ghost" size="sm" disabled>
+        <Loader2 className="h-4 w-4 animate-spin" />
+      </Button>
+    )
+  }
 
   if (!user) {
     return (
@@ -39,13 +65,6 @@ export function UserNav({ user }) {
         .join("")
     : user.email?.substring(0, 2).toUpperCase()
 
-  const handleLogout = async () => {
-    await logout()
-    router.push(`/${locale}`)
-    router.refresh()
-  }
-
-  // Для тих хто вже увійшов - показуємо повний функціонал
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>

@@ -90,13 +90,10 @@ export function ModernLoginForm({ locale }: ModernLoginFormProps) {
         return
       }
 
-      // Redirect to appropriate page after successful login
-      router.push(`/${locale}`)
-      router.refresh() // Reload server components to fetch updated user data
+      window.location.href = `/${locale}`
     } catch (error) {
       console.error("Verification error:", error)
       setError(t("somethingWentWrong"))
-    } finally {
       setIsLoading(false)
     }
   }
