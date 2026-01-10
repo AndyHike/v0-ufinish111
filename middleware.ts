@@ -1,16 +1,8 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
-import createIntlMiddleware from "next-intl/middleware"
 
 const supportedLocales = ["uk", "cs", "en"]
 const defaultLocale = "uk"
-
-// Create the next-intl middleware
-const intlMiddleware = createIntlMiddleware({
-  locales: supportedLocales,
-  defaultLocale: defaultLocale,
-  localePrefix: "always",
-})
 
 function getDefaultLanguage(): string {
   return process.env.NEXT_PUBLIC_DEFAULT_LOCALE || defaultLocale
@@ -59,7 +51,7 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  if (pathname.includes("/auth/") || pathname.includes("/login")) {
+  if (pathname.includes("/auth/")) {
     const sessionId = request.cookies.get("session_id")?.value
     if (sessionId) {
       return NextResponse.redirect(new URL(`/${locale}`, request.url))
@@ -69,18 +61,17 @@ export async function middleware(request: NextRequest) {
   if (pathname.includes("/profile") || pathname.includes("/admin")) {
     const sessionId = request.cookies.get("session_id")?.value
     if (!sessionId) {
-      return NextResponse.redirect(new URL(`/${locale}`, request.url))
+      return NextResponse.redirect(new URL(`/${locale}/auth/login`, request.url))
     }
   }
 
-  return intlMiddleware(request)
+  // The locale is already in the URL, no need for additional processing
+  return NextResponse.next()
 }
 
 export const config = {
   matcher: [
-    // Match all pathnames except for
-    // - … if they start with `/api`, `/_next` or `/_vercel`
-    // - … the ones containing a dot (e.g. `favicon.ico`)
+    // Match all pathnames except for static files and API routes
     "/((?!api|_next|_vercel|.*\\..*).*)",
   ],
 }
