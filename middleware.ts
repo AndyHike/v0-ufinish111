@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
-const supportedLocales = ["uk", "cs", "en"]
+const supportedLocales = ["cs", "uk", "en"]
 const defaultLocale = "cs"
 
 function getDefaultLanguage(): string {
@@ -31,7 +31,6 @@ export async function middleware(request: NextRequest) {
   if (!pathnameHasLocale) {
     const defaultLanguage = getDefaultLanguage()
     const url = new URL(`/${defaultLanguage}${pathname}`, request.url)
-    // Copy search params
     url.search = request.nextUrl.search
     return NextResponse.redirect(url)
   }

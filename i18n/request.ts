@@ -1,8 +1,7 @@
 import { getRequestConfig } from "next-intl/server"
 
-// Hardcode the locales and defaultLocale to avoid importing from i18n.js
-const locales = ["uk", "cs", "en"]
-const defaultLocale = "uk"
+const locales = ["cs", "uk", "en"]
+const defaultLocale = "cs"
 
 export default getRequestConfig(async ({ locale }) => {
   // Validate that the incoming `locale` parameter is valid
