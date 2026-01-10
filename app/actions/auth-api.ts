@@ -188,6 +188,7 @@ export async function verifyCode(
     // If identifier is a phone number, we need to find the associated email
     let email = identifier
     let userId = null
+    let userRole = "user"
 
     if (!identifier.includes("@")) {
       // It's a phone number, find the associated email
@@ -229,7 +230,7 @@ export async function verifyCode(
       if (!userId) {
         const { data: userData } = await supabase
           .from("users")
-          .select("id")
+          .select("id, role")
           .eq("email", email.toLowerCase())
           .maybeSingle()
 
@@ -241,6 +242,14 @@ export async function verifyCode(
         }
 
         userId = userData.id
+        userRole = userData.role || "user"
+      } else {
+        // Get user role
+        const { data: userData } = await supabase.from("users").select("role").eq("id", userId).maybeSingle()
+
+        if (userData) {
+          userRole = userData.role || "user"
+        }
       }
 
       // Create session
@@ -265,8 +274,14 @@ export async function verifyCode(
 
       console.log("Session created:", session)
 
-      // Set session cookie
       cookies().set("session_id", session.id, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 30 * 24 * 60 * 60, // 30 days
+        path: "/",
+      })
+
+      cookies().set("user_role", userRole, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         maxAge: 30 * 24 * 60 * 60, // 30 days

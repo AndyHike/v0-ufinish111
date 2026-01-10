@@ -28,45 +28,36 @@ export async function middleware(request: NextRequest) {
     (locale) => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`,
   )
 
-  if (pathname === "/") {
-    const defaultLanguage = getDefaultLanguage()
-    const url = new URL(`/${defaultLanguage}`, request.url)
-    return NextResponse.redirect(url)
-  }
-
-  if (!pathnameHasLocale && !pathname.startsWith(`/${defaultLocale}`)) {
+  if (!pathnameHasLocale) {
     const defaultLanguage = getDefaultLanguage()
     const url = new URL(`/${defaultLanguage}${pathname}`, request.url)
+    // Copy search params
+    url.search = request.nextUrl.search
     return NextResponse.redirect(url)
   }
 
+  // Extract locale from pathname
   const locale = pathname.split("/")[1]
 
   const maintenanceEnabled = isMaintenanceModeEnabled()
-  if (maintenanceEnabled) {
+  if (maintenanceEnabled && !pathname.includes("/maintenance") && !pathname.includes("/auth/")) {
     const isAdmin = request.cookies.get("user_role")?.value === "admin"
-    const isMaintenancePage = pathname.includes("/maintenance")
-    const isAuthRoute = pathname.includes("/auth/")
-
-    if (!isAdmin && !isMaintenancePage && !isAuthRoute) {
-      const url = new URL(`/${locale}/maintenance`, request.url)
-      return NextResponse.redirect(url)
+    if (!isAdmin) {
+      return NextResponse.redirect(new URL(`/${locale}/maintenance`, request.url))
     }
   }
 
   if (pathname.includes("/auth/")) {
     const sessionId = request.cookies.get("session_id")?.value
     if (sessionId) {
-      const url = new URL(`/${locale}`, request.url)
-      return NextResponse.redirect(url)
+      return NextResponse.redirect(new URL(`/${locale}`, request.url))
     }
   }
 
   if (pathname.includes("/profile") || pathname.includes("/admin")) {
     const sessionId = request.cookies.get("session_id")?.value
     if (!sessionId) {
-      const url = new URL(`/${locale}/auth/login`, request.url)
-      return NextResponse.redirect(url)
+      return NextResponse.redirect(new URL(`/${locale}/auth/login`, request.url))
     }
   }
 
