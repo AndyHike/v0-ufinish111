@@ -14,6 +14,7 @@ import { verifyPassword } from "@/lib/auth/utils" // Import verifyPassword
 
 export async function logout() {
   cookies().delete("session_id")
+  cookies().delete("user_role")
   return { success: true }
 }
 
@@ -66,6 +67,13 @@ export async function login(formData: FormData) {
 
     // Set session cookie
     cookies().set("session_id", session.id, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 30 * 24 * 60 * 60, // 30 days
+      path: "/",
+    })
+
+    cookies().set("user_role", userData.role, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       maxAge: 30 * 24 * 60 * 60, // 30 days
@@ -261,6 +269,13 @@ export async function verifyLoginCode(email: string, code: string) {
 
     // Set session cookie
     cookies().set("session_id", session.id, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 30 * 24 * 60 * 60, // 30 days
+      path: "/",
+    })
+
+    cookies().set("user_role", userData.role, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       maxAge: 30 * 24 * 60 * 60, // 30 days

@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import createIntlMiddleware from "next-intl/middleware"
-import { createClient } from "@/lib/supabase"
 
 // Create the next-intl middleware
 const intlMiddleware = createIntlMiddleware({
@@ -10,92 +9,16 @@ const intlMiddleware = createIntlMiddleware({
   localePrefix: "always",
 })
 
-async function getDefaultLanguage(): Promise<string> {
-  try {
-    const supabase = createClient()
-    const { data, error } = await supabase.from("app_settings").select("value").eq("key", "default_language").single()
+// Using environment variables instead for configuration
 
-    if (error || !data) {
-      return "uk" // fallback
-    }
-
-    return data.value || "uk"
-  } catch (error) {
-    console.error("Error fetching default language:", error)
-    return "uk" // fallback
-  }
+function getDefaultLanguage(): string {
+  // Use environment variable or fallback to "uk"
+  return process.env.NEXT_PUBLIC_DEFAULT_LOCALE || "uk"
 }
 
-async function isMaintenanceModeEnabled(): Promise<boolean> {
-  try {
-    const supabase = createClient()
-    const { data, error } = await supabase
-      .from("app_settings")
-      .select("value")
-      .eq("key", "maintenance_mode_enabled")
-      .single()
-
-    if (error || !data) {
-      return false
-    }
-
-    return data.value === "true"
-  } catch (error) {
-    console.error("Error checking maintenance mode:", error)
-    return false
-  }
-}
-
-async function isUserAdmin(sessionId: string): Promise<boolean> {
-  try {
-    const supabase = createClient()
-
-    const { data: session, error: sessionError } = await supabase
-      .from("sessions")
-      .select("user_id")
-      .eq("id", sessionId)
-      .single()
-
-    if (sessionError || !session) {
-      return false
-    }
-
-    const { data: user, error: userError } = await supabase
-      .from("users")
-      .select("role")
-      .eq("id", session.user_id)
-      .single()
-
-    if (userError || !user) {
-      return false
-    }
-
-    return user.role === "admin"
-  } catch (error) {
-    console.error("Error checking user admin status:", error)
-    return false
-  }
-}
-
-async function hasValidSession(sessionId: string): Promise<boolean> {
-  try {
-    const supabase = createClient()
-
-    const { data: session, error } = await supabase
-      .from("sessions")
-      .select("id, expires_at")
-      .eq("id", sessionId)
-      .single()
-
-    if (error || !session || new Date(session.expires_at) < new Date()) {
-      return false
-    }
-
-    return true
-  } catch (error) {
-    console.error("Error checking session validity:", error)
-    return false
-  }
+function isMaintenanceModeEnabled(): boolean {
+  // Check environment variable for maintenance mode
+  return process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true"
 }
 
 export async function middleware(request: NextRequest) {
@@ -107,37 +30,30 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // ТИМЧАСОВО: Блокуємо доступ до сторінок авторизації для нових користувачів
   if (pathname.includes("/auth/") || pathname.includes("/login")) {
     const sessionId = request.cookies.get("session_id")?.value
 
-    // Якщо користувач вже має валідну сесію, дозволяємо доступ (для адміна)
-    if (sessionId && (await hasValidSession(sessionId))) {
-      // Дозволяємо доступ до auth сторінок для тих хто вже увійшов
+    // If user already has a session cookie, allow access
+    if (sessionId) {
       return intlMiddleware(request)
     } else {
-      // Для нових користувачів - перенаправляємо на головну
+      // For users without session - redirect to home
       const locale = pathname.split("/")[1]
-      const validLocale = supportedLocales.includes(locale) ? locale : await getDefaultLanguage()
+      const validLocale = supportedLocales.includes(locale) ? locale : getDefaultLanguage()
       return NextResponse.redirect(new URL(`/${validLocale}`, request.url))
     }
   }
 
-  // Check maintenance mode FIRST
-  const maintenanceEnabled = await isMaintenanceModeEnabled()
+  const maintenanceEnabled = isMaintenanceModeEnabled()
 
   if (maintenanceEnabled) {
     const sessionId = request.cookies.get("session_id")?.value
-    let isAdmin = false
 
-    if (sessionId) {
-      isAdmin = await isUserAdmin(sessionId)
-    }
+    // Admin status should be set as a cookie when user logs in
+    const isAdmin = request.cookies.get("user_role")?.value === "admin"
 
-    // Allow access to maintenance page and ALL auth routes for everyone
     const isMaintenancePage = pathname.includes("/maintenance")
     const isAuthRoute = pathname.includes("/auth/")
-    const isAdminRoute = pathname.includes("/admin")
 
     if (!isAdmin) {
       // Allow access to maintenance page and auth routes
@@ -149,7 +65,7 @@ export async function middleware(request: NextRequest) {
         if (supportedLocales.includes(locale)) {
           return NextResponse.redirect(new URL(`/${locale}/maintenance`, request.url))
         } else {
-          const defaultLanguage = await getDefaultLanguage()
+          const defaultLanguage = getDefaultLanguage()
           return NextResponse.redirect(new URL(`/${defaultLanguage}/maintenance`, request.url))
         }
       }
@@ -166,7 +82,7 @@ export async function middleware(request: NextRequest) {
     // Handle internationalization for paths that already have locale prefix
     const response = intlMiddleware(request)
 
-    // Check for protected routes (only if not in maintenance mode or user is admin)
+    // Actual session validation should happen on the page/API route level
     if (pathname.includes("/profile") || pathname.includes("/admin")) {
       const sessionId = request.cookies.get("session_id")?.value
 
@@ -174,31 +90,8 @@ export async function middleware(request: NextRequest) {
         // Get locale from URL
         const locale = pathname.split("/")[1] || "uk"
 
-        // ТИМЧАСОВО: Замість перенаправлення на логін, перенаправляємо на головну
+        // Redirect to home page
         return NextResponse.redirect(new URL(`/${locale}`, request.url))
-      }
-
-      // Verify that the session exists in the database and is valid
-      try {
-        const supabase = createClient()
-
-        const { data: session, error } = await supabase
-          .from("sessions")
-          .select("id, user_id, expires_at")
-          .eq("id", sessionId)
-          .single()
-
-        if (error || !session || new Date(session.expires_at) < new Date()) {
-          // Session is invalid or expired, redirect to home instead of login
-          const locale = pathname.split("/")[1] || "uk"
-
-          // Clear the invalid session cookie
-          const response = NextResponse.redirect(new URL(`/${locale}`, request.url))
-          response.cookies.delete("session_id")
-          return response
-        }
-      } catch (error) {
-        console.error("Error verifying session in middleware:", error)
       }
     }
 
@@ -209,12 +102,12 @@ export async function middleware(request: NextRequest) {
 
   // Special handling for root path
   if (pathname === "/") {
-    const defaultLanguage = await getDefaultLanguage()
+    const defaultLanguage = getDefaultLanguage()
     return NextResponse.redirect(new URL(`/${defaultLanguage}`, request.url))
   }
 
   // For any other path without locale prefix, redirect to default locale + path
-  const defaultLanguage = await getDefaultLanguage()
+  const defaultLanguage = getDefaultLanguage()
   return NextResponse.redirect(new URL(`/${defaultLanguage}${pathname}`, request.url))
 }
 
