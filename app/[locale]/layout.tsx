@@ -2,6 +2,7 @@ import type React from "react"
 import type { Metadata } from "next"
 import { NextIntlClientProvider } from "next-intl"
 import { notFound } from "next/navigation"
+import { Inter } from "next/font/google"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { getCurrentUser } from "@/lib/auth/session"
@@ -12,6 +13,12 @@ import { AnalyticsProvider } from "@/components/analytics/analytics-provider"
 import { Suspense } from "react"
 import { SessionProvider } from "@/components/providers/session-provider"
 import "@/app/globals.css"
+
+const inter = Inter({
+  subsets: ["latin", "latin-ext"],
+  display: "swap",
+  variable: "--font-inter",
+})
 
 export async function generateStaticParams() {
   return [{ locale: "cs" }, { locale: "en" }, { locale: "uk" }]
@@ -89,26 +96,15 @@ export default async function LocaleLayout({
   const user = await getCurrentUser()
 
   return (
-    <>
+    <html lang={locale} className={inter.variable}>
       <head>
         <meta name="seznam-wmt" content="5VWPSjprwBjXXCI2HRoOVfvKcmdPB1Om" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-
-        <link
-          rel="preload"
-          href="https://fonts.gstatic.com/s/inter/v13/UcC73FwrK3iLTeHuS_fvQtMwCp50KnMa1ZL7.woff2"
-          as="font"
-          type="font/woff2"
-          crossOrigin="anonymous"
-        />
-
         <link rel="preload" href="/focused-phone-fix.webp" as="image" type="image/webp" fetchPriority="high" />
 
         <style
           dangerouslySetInnerHTML={{
             __html: `
-            @font-face{font-family:'Inter';font-style:normal;font-weight:400 700;font-display:swap;src:url(https://fonts.gstatic.com/s/inter/v13/UcC73FwrK3iLTeHuS_fvQtMwCp50KnMa1ZL7.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
-            body{font-family:'Inter',system-ui,sans-serif;margin:0;padding:0;-webkit-font-smoothing:antialiased;text-rendering:optimizeSpeed}
+            body{font-family:var(--font-inter),system-ui,sans-serif;margin:0;padding:0;-webkit-font-smoothing:antialiased;text-rendering:optimizeSpeed}
             .hero-section{background:#fff;padding:1.5rem 0;min-height:350px;contain:layout style paint}
             .hero-title{font-size:1.75rem;font-weight:600;line-height:1.2;margin-bottom:0.75rem;color:#111827}
             .hero-subtitle{color:#6b7280;font-size:1rem;margin-bottom:1.5rem;line-height:1.5;font-weight:400}
@@ -122,21 +118,23 @@ export default async function LocaleLayout({
           }}
         />
       </head>
-      <NextIntlClientProvider locale={locale} messages={messages}>
-        <SessionProvider>
-          <CookieConsentProvider>
-            <div className="flex min-h-screen flex-col">
-              <Header user={user} />
-              <main className="flex-1">{children}</main>
-              <Footer />
-              <CookieBanner />
-              <Suspense fallback={null}>
-                <AnalyticsProvider />
-              </Suspense>
-            </div>
-          </CookieConsentProvider>
-        </SessionProvider>
-      </NextIntlClientProvider>
-    </>
+      <body>
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          <SessionProvider>
+            <CookieConsentProvider>
+              <div className="flex min-h-screen flex-col">
+                <Header user={user} />
+                <main className="flex-1">{children}</main>
+                <Footer />
+                <CookieBanner />
+                <Suspense fallback={null}>
+                  <AnalyticsProvider />
+                </Suspense>
+              </div>
+            </CookieConsentProvider>
+          </SessionProvider>
+        </NextIntlClientProvider>
+      </body>
+    </html>
   )
 }

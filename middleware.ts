@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
 const supportedLocales = ["uk", "cs", "en"]
-const defaultLocale = "uk"
+const defaultLocale = "cs"
 
 function getDefaultLanguage(): string {
   return process.env.NEXT_PUBLIC_DEFAULT_LOCALE || defaultLocale
@@ -19,7 +19,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api/") ||
     pathname.includes("/webhooks/") ||
-    pathname.match(/\.(jpg|jpeg|png|gif|svg|ico|css|js|woff|woff2|ttf|eot)$/)
+    pathname.match(/\.(jpg|jpeg|png|gif|svg|ico|css|js|woff|woff2|ttf|eot|webp)$/)
   ) {
     return NextResponse.next()
   }
@@ -30,12 +30,14 @@ export async function middleware(request: NextRequest) {
 
   if (pathname === "/") {
     const defaultLanguage = getDefaultLanguage()
-    return NextResponse.redirect(new URL(`/${defaultLanguage}`, request.url))
+    const url = new URL(`/${defaultLanguage}`, request.url)
+    return NextResponse.redirect(url)
   }
 
-  if (!pathnameHasLocale) {
+  if (!pathnameHasLocale && !pathname.startsWith(`/${defaultLocale}`)) {
     const defaultLanguage = getDefaultLanguage()
-    return NextResponse.redirect(new URL(`/${defaultLanguage}${pathname}`, request.url))
+    const url = new URL(`/${defaultLanguage}${pathname}`, request.url)
+    return NextResponse.redirect(url)
   }
 
   const locale = pathname.split("/")[1]
@@ -47,31 +49,32 @@ export async function middleware(request: NextRequest) {
     const isAuthRoute = pathname.includes("/auth/")
 
     if (!isAdmin && !isMaintenancePage && !isAuthRoute) {
-      return NextResponse.redirect(new URL(`/${locale}/maintenance`, request.url))
+      const url = new URL(`/${locale}/maintenance`, request.url)
+      return NextResponse.redirect(url)
     }
   }
 
   if (pathname.includes("/auth/")) {
     const sessionId = request.cookies.get("session_id")?.value
     if (sessionId) {
-      return NextResponse.redirect(new URL(`/${locale}`, request.url))
+      const url = new URL(`/${locale}`, request.url)
+      return NextResponse.redirect(url)
     }
   }
 
   if (pathname.includes("/profile") || pathname.includes("/admin")) {
     const sessionId = request.cookies.get("session_id")?.value
     if (!sessionId) {
-      return NextResponse.redirect(new URL(`/${locale}/auth/login`, request.url))
+      const url = new URL(`/${locale}/auth/login`, request.url)
+      return NextResponse.redirect(url)
     }
   }
 
-  // The locale is already in the URL, no need for additional processing
   return NextResponse.next()
 }
 
 export const config = {
   matcher: [
-    // Match all pathnames except for static files and API routes
-    "/((?!api|_next|_vercel|.*\\..*).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff|woff2|ttf|eot)).*)",
   ],
 }
