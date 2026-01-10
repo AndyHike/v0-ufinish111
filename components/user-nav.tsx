@@ -24,9 +24,11 @@ export function UserNav({ user }) {
 
   if (!user) {
     return (
-      <Button asChild variant="default" size="sm">
-        <Link href={`/${locale}/auth/login`}>{t("login")}</Link>
-      </Button>
+      <Link href={`/${locale}/auth/login`}>
+        <Button variant="outline" size="sm">
+          {t("login")}
+        </Button>
+      </Link>
     )
   }
 
