@@ -28,8 +28,6 @@ export async function POST(request: Request) {
 
     const body = await request.json()
 
-    console.log("Creating discount with data:", body)
-
     const discount = await createDiscount({
       name: body.name,
       code: body.code.toUpperCase(),

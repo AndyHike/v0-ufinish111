@@ -163,7 +163,9 @@ export async function findDiscountByCode(code: string): Promise<Discount | null>
 export async function createDiscount(
   discount: Omit<Discount, "id" | "currentUses" | "createdAt" | "updatedAt">,
 ): Promise<Discount> {
-  const sql = getSql() // Отримуємо SQL клієнт під час виконання
+  const sql = getSql()
+
+  const serviceIdsArray = discount.serviceIds || []
 
   const result = await sql`
     INSERT INTO discounts (
@@ -178,7 +180,7 @@ export async function createDiscount(
       ${discount.description || null},
       ${discount.discountType},
       ${discount.discountValue},
-      ${discount.serviceIds},
+      ${serviceIdsArray}::uuid[],
       ${discount.scopeType},
       ${discount.brandId || null},
       ${discount.seriesId || null},

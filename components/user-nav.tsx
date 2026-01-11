@@ -16,7 +16,6 @@ import { Button } from "@/components/ui/button"
 import { LogOut, Settings, UserIcon, Loader2 } from "lucide-react"
 import { logout } from "@/lib/auth/actions"
 import { useCurrentUser } from "@/hooks/use-current-user"
-import { useEffect } from "react"
 
 export function UserNav({ user: initialUser }) {
   const t = useTranslations("UserNav")
@@ -27,12 +26,6 @@ export function UserNav({ user: initialUser }) {
   const { user: clientUser, isLoading, refresh } = useCurrentUser()
 
   const user = clientUser ?? initialUser
-
-  useEffect(() => {
-    console.log("[v0] UserNav - clientUser:", clientUser ? clientUser.email : "null")
-    console.log("[v0] UserNav - initialUser:", initialUser ? initialUser.email : "null")
-    console.log("[v0] UserNav - final user:", user ? user.email : "null")
-  }, [clientUser, initialUser, user])
 
   const handleLogout = async () => {
     await logout()
