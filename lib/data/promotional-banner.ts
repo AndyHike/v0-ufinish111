@@ -2,7 +2,7 @@ import { createClient } from "@/utils/supabase/server"
 
 export type PromotionalBannerData = {
   id: string
-  is_active: boolean
+  enabled: boolean
   color: string
   text_cs: string
   text_en: string
@@ -19,10 +19,13 @@ export async function getPromotionalBanner(): Promise<PromotionalBannerData | nu
     const { data, error } = await supabase
       .from("promotional_banners")
       .select("*")
-      .eq("is_active", true)
+      .eq("enabled", true)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle()
+
+    console.log("[v0] getPromotionalBanner - data:", data)
+    console.log("[v0] getPromotionalBanner - error:", error)
 
     if (error) {
       throw error
@@ -30,7 +33,7 @@ export async function getPromotionalBanner(): Promise<PromotionalBannerData | nu
 
     return data
   } catch (error) {
-    console.error("Error fetching promotional banner:", error)
+    console.error("[v0] Error fetching promotional banner:", error)
     return null
   }
 }

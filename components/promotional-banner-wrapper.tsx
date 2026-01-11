@@ -16,12 +16,12 @@ export function PromotionalBannerWrapper({ data, locale }: PromotionalBannerWrap
     setIsMounted(true)
     console.log("[v0] PromotionalBannerWrapper mounted:", {
       hasData: !!data,
-      is_active: data?.is_active,
+      enabled: data?.enabled, // Changed from is_active to enabled to match DB schema
       locale,
     })
   }, [data, locale])
 
-  if (!isMounted || !data || !data.is_active) {
+  if (!isMounted || !data || !data.enabled) {
     return null
   }
 
