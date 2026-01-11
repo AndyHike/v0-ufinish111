@@ -1,8 +1,9 @@
 "use client"
 
-import { useTranslations } from "next-intl"
 import Link from "next/link"
-import { useParams, useRouter } from "next/navigation"
+import { useParams } from "next/navigation"
+import { useTranslations } from "next-intl"
+import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,45 +13,52 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
-import { LogOut, Settings, UserIcon } from "lucide-react"
-import { logout } from "@/lib/auth/actions"
+import { User, LogOut, Settings } from "lucide-react"
+import { logout } from "@/app/actions/auth"
 
-export function UserNav({ user }) {
+interface UserNavProps {
+  user: {
+    email: string
+    role?: string
+  } | null
+}
+
+export function UserNav({ user }: UserNavProps) {
   const t = useTranslations("UserNav")
   const params = useParams()
-  const router = useRouter()
-  const locale = params.locale
+  const locale = params.locale as string
 
-  const handleLogout = async () => {
-    await logout()
-    router.push(`/${locale}`)
-    router.refresh()
-  }
-
+  // Якщо користувача немає - показуємо кнопку входу
   if (!user) {
     return (
-      <Link href={`/${locale}/auth/login`}>
+      <Link href={`/${locale}/login`}>
         <Button variant="outline" size="sm">
+          <User className="mr-2 h-4 w-4" />
           {t("login")}
         </Button>
       </Link>
     )
   }
 
-  const initials = user.name
-    ? user.name
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase()
-    : user.email?.substring(0, 2).toUpperCase()
+  // Якщо користувач є - показуємо аватар з dropdown
+  const initials = user.email.split("@")[0].substring(0, 2).toUpperCase()
+
+  const isAdmin = user.role === "admin"
+
+  const handleLogout = async () => {
+    try {
+      await logout()
+      window.location.href = `/${locale}`
+    } catch (error) {
+      console.error("Logout error:", error)
+    }
+  }
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-          <Avatar className="h-8 w-8">
+        <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+          <Avatar className="h-9 w-9">
             <AvatarFallback>{initials}</AvatarFallback>
           </Avatar>
         </Button>
@@ -58,29 +66,22 @@ export function UserNav({ user }) {
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{user.name || t("account")}</p>
-            <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+            <p className="text-sm font-medium leading-none">{user.email}</p>
+            {isAdmin && <p className="text-xs leading-none text-muted-foreground">{t("adminRole")}</p>}
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <Link href={`/${locale}/profile`}>
-          <DropdownMenuItem>
-            <UserIcon className="mr-2 h-4 w-4" />
-            <span>{t("profile")}</span>
-          </DropdownMenuItem>
-        </Link>
-        {user.role === "admin" && (
-          <Link href={`/${locale}/admin`}>
-            <DropdownMenuItem>
+        {isAdmin && (
+          <DropdownMenuItem asChild>
+            <Link href={`/${locale}/admin`}>
               <Settings className="mr-2 h-4 w-4" />
-              <span>{t("adminPanel")}</span>
-            </DropdownMenuItem>
-          </Link>
+              {t("adminPanel")}
+            </Link>
+          </DropdownMenuItem>
         )}
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
+        <DropdownMenuItem onClick={handleLogout}>
           <LogOut className="mr-2 h-4 w-4" />
-          <span>{t("logout")}</span>
+          {t("logout")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

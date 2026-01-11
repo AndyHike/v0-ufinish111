@@ -12,8 +12,6 @@ import { CookieBanner } from "@/components/cookie-banner"
 import { AnalyticsProvider } from "@/components/analytics/analytics-provider"
 import { Suspense } from "react"
 import { SessionProvider } from "@/components/providers/session-provider"
-import { PromotionalBannerSimple } from "@/components/promotional-banner-simple"
-import { getPromotionalBanner } from "@/lib/data/promotional-banner"
 import "@/app/globals.css"
 
 const inter = Inter({
@@ -96,12 +94,6 @@ export default async function LocaleLayout({
   }
 
   const user = await getCurrentUser()
-  let promotionalBanner = null
-  try {
-    promotionalBanner = await getPromotionalBanner()
-  } catch (error) {
-    console.error("Failed to load promotional banner:", error)
-  }
 
   return (
     <html lang={locale} className={inter.variable}>
@@ -131,7 +123,6 @@ export default async function LocaleLayout({
           <SessionProvider>
             <CookieConsentProvider>
               <div className="flex min-h-screen flex-col">
-                <PromotionalBannerSimple initialData={promotionalBanner} locale={locale} />
                 <Header user={user} />
                 <main className="flex-1">{children}</main>
                 <Footer />
