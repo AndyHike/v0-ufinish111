@@ -1,12 +1,18 @@
 import { neon } from "@neondatabase/serverless"
 import type { Discount, ApplicableDiscount } from "./types"
 
-const sql = neon(process.env.DATABASE_URL!)
+function getSql() {
+  if (!process.env.DATABASE_URL) {
+    throw new Error("DATABASE_URL is not set")
+  }
+  return neon(process.env.DATABASE_URL)
+}
 
 /**
  * Отримати всі активні знижки
  */
 export async function getActiveDiscounts(): Promise<Discount[]> {
+  const sql = getSql() // Отримуємо SQL клієнт під час виконання
   const result = await sql`
     SELECT 
       id,
@@ -43,6 +49,7 @@ export async function getActiveDiscounts(): Promise<Discount[]> {
  * Знайти знижки для конкретної послуги та моделі
  */
 export async function findApplicableDiscounts(serviceId: string, modelId: string): Promise<ApplicableDiscount[]> {
+  const sql = getSql() // Отримуємо SQL клієнт під час виконання
   const result = await sql`
     SELECT 
       d.id,
@@ -122,6 +129,7 @@ export async function findApplicableDiscounts(serviceId: string, modelId: string
  * Знайти знижку за кодом
  */
 export async function findDiscountByCode(code: string): Promise<Discount | null> {
+  const sql = getSql() // Отримуємо SQL клієнт під час виконання
   const result = await sql`
     SELECT 
       id,
@@ -157,6 +165,7 @@ export async function findDiscountByCode(code: string): Promise<Discount | null>
 export async function createDiscount(
   discount: Omit<Discount, "id" | "currentUses" | "createdAt" | "updatedAt">,
 ): Promise<Discount> {
+  const sql = getSql() // Отримуємо SQL клієнт під час виконання
   const result = await sql`
     INSERT INTO discounts (
       name, code, description,
@@ -210,6 +219,7 @@ export async function createDiscount(
  * Оновити знижку
  */
 export async function updateDiscount(id: string, updates: Partial<Discount>): Promise<Discount> {
+  const sql = getSql() // Отримуємо SQL клієнт під час виконання
   const result = await sql`
     UPDATE discounts
     SET
@@ -250,5 +260,6 @@ export async function updateDiscount(id: string, updates: Partial<Discount>): Pr
  * Видалити знижку
  */
 export async function deleteDiscount(id: string): Promise<void> {
+  const sql = getSql() // Отримуємо SQL клієнт під час виконання
   await sql`DELETE FROM discounts WHERE id = ${id}`
 }

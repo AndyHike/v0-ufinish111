@@ -2,6 +2,8 @@ import { NextResponse } from "next/server"
 import { updateDiscount, deleteDiscount } from "@/lib/discounts/queries"
 import { getSession } from "@/lib/auth/session"
 
+export const dynamic = "force-dynamic"
+
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getSession()
