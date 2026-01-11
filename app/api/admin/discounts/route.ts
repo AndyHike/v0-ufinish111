@@ -28,14 +28,16 @@ export async function POST(request: Request) {
 
     const body = await request.json()
 
+    console.log("Creating discount with data:", body)
+
     const discount = await createDiscount({
       name: body.name,
       code: body.code.toUpperCase(),
       description: body.description,
       discountType: body.discountType,
       discountValue: body.discountValue,
+      serviceIds: body.serviceIds, // Масив ID послуг
       scopeType: body.scopeType,
-      serviceId: body.serviceId,
       brandId: body.brandId,
       seriesId: body.seriesId,
       modelId: body.modelId,
@@ -49,6 +51,12 @@ export async function POST(request: Request) {
     return NextResponse.json(discount)
   } catch (error) {
     console.error("Error creating discount:", error)
-    return NextResponse.json({ error: "Failed to create discount" }, { status: 500 })
+    return NextResponse.json(
+      {
+        error: "Failed to create discount",
+        details: error instanceof Error ? error.message : String(error),
+      },
+      { status: 500 },
+    )
   }
 }

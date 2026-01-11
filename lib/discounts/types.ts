@@ -1,5 +1,5 @@
 export type DiscountType = "percentage" | "fixed"
-export type DiscountScopeType = "service" | "brand" | "series" | "model" | "all_services" | "all_models"
+export type DiscountScopeType = "brand" | "series" | "model" | "all_models"
 
 export interface Discount {
   id: string
@@ -8,8 +8,8 @@ export interface Discount {
   description?: string
   discountType: DiscountType
   discountValue: number
+  serviceIds: string[] // Масив ID послуг
   scopeType: DiscountScopeType
-  serviceId?: string
   brandId?: string
   seriesId?: string
   modelId?: string

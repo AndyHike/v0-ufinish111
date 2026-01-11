@@ -21,8 +21,8 @@ export async function getActiveDiscounts(): Promise<Discount[]> {
       description,
       discount_type as "discountType",
       discount_value as "discountValue",
+      service_ids as "serviceIds",
       scope_type as "scopeType",
-      service_id as "serviceId",
       brand_id as "brandId",
       series_id as "seriesId",
       model_id as "modelId",
@@ -50,6 +50,7 @@ export async function getActiveDiscounts(): Promise<Discount[]> {
  */
 export async function findApplicableDiscounts(serviceId: string, modelId: string): Promise<ApplicableDiscount[]> {
   const sql = getSql() // Отримуємо SQL клієнт під час виконання
+
   const result = await sql`
     SELECT 
       d.id,
@@ -58,8 +59,8 @@ export async function findApplicableDiscounts(serviceId: string, modelId: string
       d.description,
       d.discount_type as "discountType",
       d.discount_value as "discountValue",
+      d.service_ids as "serviceIds",
       d.scope_type as "scopeType",
-      d.service_id as "serviceId",
       d.brand_id as "brandId",
       d.series_id as "seriesId",
       d.model_id as "modelId",
@@ -72,29 +73,26 @@ export async function findApplicableDiscounts(serviceId: string, modelId: string
       d.created_at as "createdAt",
       d.updated_at as "updatedAt",
       CASE 
-        WHEN d.scope_type = 'service' THEN s.name
         WHEN d.scope_type = 'brand' THEN b.name
         WHEN d.scope_type = 'series' THEN ser.name
         WHEN d.scope_type = 'model' THEN m.name
-        ELSE d.name
+        ELSE 'Всі моделі'
       END as "applicableTo"
     FROM discounts d
-    LEFT JOIN services s ON d.service_id = s.id
     LEFT JOIN brands b ON d.brand_id = b.id
     LEFT JOIN series ser ON d.series_id = ser.id
-    LEFT JOIN models m ON d.model_id = m.id
-    LEFT JOIN models target_model ON target_model.id = ${modelId}
+    LEFT JOIN models model_target ON d.model_id = model_target.id
+    LEFT JOIN models m ON m.id = ${modelId}
     WHERE d.is_active = true
       AND (d.starts_at IS NULL OR d.starts_at <= NOW())
       AND (d.expires_at IS NULL OR d.expires_at > NOW())
       AND (d.max_uses IS NULL OR d.current_uses < d.max_uses)
+      AND ${serviceId} = ANY(d.service_ids)
       AND (
-        d.scope_type = 'all_services' OR
         d.scope_type = 'all_models' OR
-        (d.scope_type = 'service' AND d.service_id = ${serviceId}) OR
         (d.scope_type = 'model' AND d.model_id = ${modelId}) OR
-        (d.scope_type = 'series' AND d.series_id = target_model.series_id) OR
-        (d.scope_type = 'brand' AND d.brand_id = target_model.brand_id)
+        (d.scope_type = 'series' AND d.series_id = m.series_id) OR
+        (d.scope_type = 'brand' AND d.brand_id = m.brand_id)
       )
     ORDER BY d.discount_value DESC
   `
@@ -107,8 +105,8 @@ export async function findApplicableDiscounts(serviceId: string, modelId: string
       description: row.description,
       discountType: row.discountType,
       discountValue: row.discountValue,
+      serviceIds: row.serviceIds,
       scopeType: row.scopeType,
-      serviceId: row.serviceId,
       brandId: row.brandId,
       seriesId: row.seriesId,
       modelId: row.modelId,
@@ -138,8 +136,8 @@ export async function findDiscountByCode(code: string): Promise<Discount | null>
       description,
       discount_type as "discountType",
       discount_value as "discountValue",
+      service_ids as "serviceIds",
       scope_type as "scopeType",
-      service_id as "serviceId",
       brand_id as "brandId",
       series_id as "seriesId",
       model_id as "modelId",
@@ -166,11 +164,12 @@ export async function createDiscount(
   discount: Omit<Discount, "id" | "currentUses" | "createdAt" | "updatedAt">,
 ): Promise<Discount> {
   const sql = getSql() // Отримуємо SQL клієнт під час виконання
+
   const result = await sql`
     INSERT INTO discounts (
       name, code, description,
       discount_type, discount_value,
-      scope_type, service_id, brand_id, series_id, model_id,
+      service_ids, scope_type, brand_id, series_id, model_id,
       is_active, starts_at, expires_at,
       max_uses, max_uses_per_user
     ) VALUES (
@@ -179,8 +178,8 @@ export async function createDiscount(
       ${discount.description || null},
       ${discount.discountType},
       ${discount.discountValue},
+      ${discount.serviceIds},
       ${discount.scopeType},
-      ${discount.serviceId || null},
       ${discount.brandId || null},
       ${discount.seriesId || null},
       ${discount.modelId || null},
@@ -197,8 +196,8 @@ export async function createDiscount(
       description,
       discount_type as "discountType",
       discount_value as "discountValue",
+      service_ids as "serviceIds",
       scope_type as "scopeType",
-      service_id as "serviceId",
       brand_id as "brandId",
       series_id as "seriesId",
       model_id as "modelId",
@@ -238,8 +237,8 @@ export async function updateDiscount(id: string, updates: Partial<Discount>): Pr
       description,
       discount_type as "discountType",
       discount_value as "discountValue",
+      service_ids as "serviceIds",
       scope_type as "scopeType",
-      service_id as "serviceId",
       brand_id as "brandId",
       series_id as "seriesId",
       model_id as "modelId",

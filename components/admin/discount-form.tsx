@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
+import { Checkbox } from "@/components/ui/checkbox"
 import type { DiscountScopeType, DiscountType } from "@/lib/discounts/types"
 
 type Brand = {
@@ -49,8 +50,8 @@ export function DiscountForm({ initialData, onSubmit, onCancel, submitting }: Di
     description: initialData?.description || "",
     discountType: (initialData?.discountType as DiscountType) || "percentage",
     discountValue: initialData?.discountValue || "",
-    scopeType: (initialData?.scopeType as DiscountScopeType) || "all_services",
-    serviceId: initialData?.serviceId || "",
+    serviceIds: (initialData?.serviceIds as string[]) || [],
+    scopeType: (initialData?.scopeType as DiscountScopeType) || "all_models",
     brandId: initialData?.brandId || "",
     seriesId: initialData?.seriesId || "",
     modelId: initialData?.modelId || "",
@@ -141,15 +142,29 @@ export function DiscountForm({ initialData, onSubmit, onCancel, submitting }: Di
     setFormData({
       ...formData,
       scopeType: value,
-      serviceId: "",
       brandId: "",
       seriesId: "",
       modelId: "",
     })
   }
 
+  function toggleService(serviceId: string) {
+    setFormData((prev) => ({
+      ...prev,
+      serviceIds: prev.serviceIds.includes(serviceId)
+        ? prev.serviceIds.filter((id) => id !== serviceId)
+        : [...prev.serviceIds, serviceId],
+    }))
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+
+    if (formData.serviceIds.length === 0) {
+      alert("Будь ласка, оберіть хоча б одну послугу")
+      return
+    }
+
     setLoading(true)
 
     try {
@@ -210,6 +225,45 @@ export function DiscountForm({ initialData, onSubmit, onCancel, submitting }: Di
           />
         </div>
 
+        <div className="col-span-2 border rounded-lg p-4 bg-blue-50">
+          <Label className="text-base font-semibold mb-3 block">Оберіть послуги (одну або декілька) *</Label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-60 overflow-y-auto">
+            {services.map((service) => (
+              <div key={service.id} className="flex items-center space-x-2">
+                <Checkbox
+                  id={`service-${service.id}`}
+                  checked={formData.serviceIds.includes(service.id)}
+                  onCheckedChange={() => toggleService(service.id)}
+                />
+                <Label htmlFor={`service-${service.id}`} className="text-sm font-normal cursor-pointer">
+                  {service.name}
+                </Label>
+              </div>
+            ))}
+          </div>
+          {formData.serviceIds.length > 0 && (
+            <p className="text-xs text-blue-700 mt-2">Обрано послуг: {formData.serviceIds.length}</p>
+          )}
+        </div>
+
+        <div className="col-span-2">
+          <Label htmlFor="scopeType">Застосування знижки *</Label>
+          <Select value={formData.scopeType} onValueChange={handleScopeTypeChange}>
+            <SelectTrigger id="scopeType">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all_models">Всі моделі (для обраних послуг)</SelectItem>
+              <SelectItem value="brand">Всі моделі бренду</SelectItem>
+              <SelectItem value="series">Всі моделі серії</SelectItem>
+              <SelectItem value="model">Конкретна модель</SelectItem>
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground mt-1">
+            Знижка буде застосована до обраних послуг на вказаному рівні
+          </p>
+        </div>
+
         <div>
           <Label htmlFor="discountType">Тип знижки *</Label>
           <Select
@@ -247,44 +301,6 @@ export function DiscountForm({ initialData, onSubmit, onCancel, submitting }: Di
             </p>
           )}
         </div>
-
-        <div className="col-span-2">
-          <Label htmlFor="scopeType">Застосування знижки *</Label>
-          <Select value={formData.scopeType} onValueChange={handleScopeTypeChange}>
-            <SelectTrigger id="scopeType">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all_services">Всі послуги</SelectItem>
-              <SelectItem value="all_models">Всі моделі</SelectItem>
-              <SelectItem value="service">Конкретна послуга</SelectItem>
-              <SelectItem value="brand">Всі пристрої бренду</SelectItem>
-              <SelectItem value="series">Всі моделі серії</SelectItem>
-              <SelectItem value="model">Конкретна модель</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {formData.scopeType === "service" && (
-          <div className="col-span-2">
-            <Label htmlFor="serviceId">Оберіть послугу *</Label>
-            <Select
-              value={formData.serviceId}
-              onValueChange={(value) => setFormData({ ...formData, serviceId: value })}
-            >
-              <SelectTrigger id="serviceId">
-                <SelectValue placeholder="Оберіть послугу" />
-              </SelectTrigger>
-              <SelectContent>
-                {services.map((service) => (
-                  <SelectItem key={service.id} value={service.id}>
-                    {service.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
 
         {(formData.scopeType === "brand" || formData.scopeType === "series" || formData.scopeType === "model") && (
           <div className="col-span-2">

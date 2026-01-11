@@ -20,7 +20,6 @@ export function useCurrentUser() {
   const router = useRouter()
 
   const fetchUser = async () => {
-    console.log("[v0] useCurrentUser - Fetching user...")
     try {
       const response = await fetch("/api/user/current", {
         cache: "no-store",
@@ -31,14 +30,12 @@ export function useCurrentUser() {
       })
       if (response.ok) {
         const data = await response.json()
-        console.log("[v0] useCurrentUser - User fetched:", data.user ? data.user.email : "null")
         setUser(data.user)
       } else {
-        console.log("[v0] useCurrentUser - Response not OK:", response.status)
         setUser(null)
       }
     } catch (error) {
-      console.error("[v0] Failed to fetch user:", error)
+      console.error("Failed to fetch user:", error)
       setUser(null)
     } finally {
       setIsLoading(false)
