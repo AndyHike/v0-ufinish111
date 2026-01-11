@@ -5,7 +5,7 @@ import type { Discount, ApplicableDiscount } from "./types"
  * Отримати всі активні знижки
  */
 export async function getActiveDiscounts(): Promise<Discount[]> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { data, error } = await supabase
     .from("discounts")
@@ -47,7 +47,7 @@ export async function getActiveDiscounts(): Promise<Discount[]> {
  * Знайти знижки для конкретної послуги та моделі
  */
 export async function findApplicableDiscounts(serviceId: string, modelId: string): Promise<ApplicableDiscount[]> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   // Спочатку отримаємо модель щоб знати brand_id та series_id
   const { data: model } = await supabase.from("models").select("brand_id, series_id, name").eq("id", modelId).single()
@@ -121,7 +121,7 @@ export async function findApplicableDiscounts(serviceId: string, modelId: string
  * Знайти знижку за кодом
  */
 export async function findDiscountByCode(code: string): Promise<Discount | null> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { data, error } = await supabase.from("discounts").select("*").ilike("code", code).single()
 
@@ -156,7 +156,7 @@ export async function findDiscountByCode(code: string): Promise<Discount | null>
 export async function createDiscount(
   discount: Omit<Discount, "id" | "currentUses" | "createdAt" | "updatedAt">,
 ): Promise<Discount> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { data, error } = await supabase
     .from("discounts")
@@ -212,7 +212,7 @@ export async function createDiscount(
  * Оновити знижку
  */
 export async function updateDiscount(id: string, updates: Partial<Discount>): Promise<Discount> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const updateData: any = {}
   if (updates.name !== undefined) updateData.name = updates.name
@@ -257,7 +257,7 @@ export async function updateDiscount(id: string, updates: Partial<Discount>): Pr
  * Видалити знижку
  */
 export async function deleteDiscount(id: string): Promise<void> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { error } = await supabase.from("discounts").delete().eq("id", id)
 
