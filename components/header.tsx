@@ -1,6 +1,7 @@
 "use client"
 
 import type React from "react"
+import { Suspense } from "react"
 
 import Link from "next/link"
 import { usePathname, useParams, useRouter } from "next/navigation"
@@ -20,6 +21,7 @@ import {
   Building2,
   Layers,
   Wrench,
+  Globe,
 } from "lucide-react"
 import { LanguageSwitcher } from "@/components/language-switcher"
 import { UserNav } from "@/components/user-nav"
@@ -391,7 +393,15 @@ export function Header({ user }) {
 
           {/* Мова та користувач */}
           <div className="flex items-center gap-2 flex-shrink-0">
-            <LanguageSwitcher className="flex" />
+            <Suspense
+              fallback={
+                <Button variant="ghost" size="icon" className="flex">
+                  <Globe className="h-5 w-5" />
+                </Button>
+              }
+            >
+              <LanguageSwitcher className="flex" />
+            </Suspense>
             <UserNav user={user} />
           </div>
         </div>
