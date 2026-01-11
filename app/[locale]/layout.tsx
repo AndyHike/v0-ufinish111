@@ -12,7 +12,7 @@ import { CookieBanner } from "@/components/cookie-banner"
 import { AnalyticsProvider } from "@/components/analytics/analytics-provider"
 import { Suspense } from "react"
 import { SessionProvider } from "@/components/providers/session-provider"
-import { PromotionalBannerWrapper } from "@/components/promotional-banner-wrapper"
+import { PromotionalBannerSimple } from "@/components/promotional-banner-simple"
 import { getPromotionalBanner } from "@/lib/data/promotional-banner"
 import "@/app/globals.css"
 
@@ -99,20 +99,8 @@ export default async function LocaleLayout({
   let promotionalBanner = null
   try {
     promotionalBanner = await getPromotionalBanner()
-    console.log(
-      "[v0] Layout: Promotional banner loaded:",
-      promotionalBanner
-        ? {
-            is_active: promotionalBanner.is_active,
-            has_text_cs: !!promotionalBanner.text_cs,
-            has_text_en: !!promotionalBanner.text_en,
-            has_text_uk: !!promotionalBanner.text_uk,
-            color: promotionalBanner.color,
-          }
-        : "No banner found",
-    )
   } catch (error) {
-    console.error("[v0] Layout: Failed to load promotional banner:", error)
+    console.error("Failed to load promotional banner:", error)
   }
 
   return (
@@ -143,7 +131,7 @@ export default async function LocaleLayout({
           <SessionProvider>
             <CookieConsentProvider>
               <div className="flex min-h-screen flex-col">
-                <PromotionalBannerWrapper data={promotionalBanner} locale={locale} />
+                <PromotionalBannerSimple initialData={promotionalBanner} locale={locale} />
                 <Header user={user} />
                 <main className="flex-1">{children}</main>
                 <Footer />

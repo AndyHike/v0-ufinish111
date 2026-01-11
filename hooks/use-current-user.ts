@@ -17,7 +17,6 @@ interface User {
 export function useCurrentUser() {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [shouldRefreshRouter, setShouldRefreshRouter] = useState(false)
   const router = useRouter()
 
   const fetchUser = async () => {
@@ -47,17 +46,9 @@ export function useCurrentUser() {
     fetchUser()
   }, [])
 
-  useEffect(() => {
-    if (shouldRefreshRouter) {
-      router.refresh()
-      setShouldRefreshRouter(false)
-    }
-  }, [shouldRefreshRouter, router])
-
   const refresh = () => {
     setIsLoading(true)
     fetchUser()
-    setShouldRefreshRouter(true)
   }
 
   return { user, isLoading, refresh }
