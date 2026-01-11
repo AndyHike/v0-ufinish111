@@ -7,7 +7,6 @@ import { getInfoBanner } from "@/lib/data/info-banner"
 import { Suspense } from "react"
 
 export const revalidate = 7200 // Revalidate every 2 hours instead of 1
-export const dynamic = "force-static"
 
 function BrandsSectionSkeleton() {
   return (

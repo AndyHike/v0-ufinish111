@@ -274,20 +274,22 @@ export async function verifyCode(
 
       console.log("Session created:", session)
 
-      cookies().set("session_id", session.id, {
+      const cookieStore = cookies()
+
+      cookieStore.set("session_id", session.id, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         maxAge: 30 * 24 * 60 * 60, // 30 days
         path: "/",
-        sameSite: "lax", // Add sameSite for better cookie handling
+        sameSite: "lax",
       })
 
-      cookies().set("user_role", userRole, {
+      cookieStore.set("user_role", userRole, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         maxAge: 30 * 24 * 60 * 60, // 30 days
         path: "/",
-        sameSite: "lax", // Add sameSite for better cookie handling
+        sameSite: "lax",
       })
 
       revalidatePath("/", "layout")
