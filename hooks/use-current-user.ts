@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "use router"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 
 interface User {
