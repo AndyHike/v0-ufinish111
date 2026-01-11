@@ -12,11 +12,15 @@ import { CookieBanner } from "@/components/cookie-banner"
 import { AnalyticsProvider } from "@/components/analytics/analytics-provider"
 import { Suspense } from "react"
 import { SessionProvider } from "@/components/providers/session-provider"
+import { ThemeProvider } from "@/components/theme-provider"
+import { Toaster } from "@/components/ui/toaster"
+import { DynamicFavicon } from "@/components/dynamic-favicon"
 import "@/app/globals.css"
 
 const inter = Inter({
-  subsets: ["latin", "latin-ext"],
+  subsets: ["latin", "latin-ext", "cyrillic"],
   display: "swap",
+  preload: true,
   variable: "--font-inter",
 })
 
@@ -96,8 +100,12 @@ export default async function LocaleLayout({
   const user = await getCurrentUser()
 
   return (
-    <html lang={locale} className={inter.variable}>
+    <html lang={locale} className={inter.variable} suppressHydrationWarning>
       <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://devicehelp.cz" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <meta name="seznam-wmt" content="5VWPSjprwBjXXCI2HRoOVfvKcmdPB1Om" />
         <link rel="preload" href="/focused-phone-fix.webp" as="image" type="image/webp" fetchPriority="high" />
 
@@ -118,22 +126,26 @@ export default async function LocaleLayout({
           }}
         />
       </head>
-      <body>
-        <NextIntlClientProvider locale={locale} messages={messages}>
-          <SessionProvider>
-            <CookieConsentProvider>
-              <div className="flex min-h-screen flex-col">
-                <Header user={user} />
-                <main className="flex-1">{children}</main>
-                <Footer />
-                <CookieBanner />
-                <Suspense fallback={null}>
-                  <AnalyticsProvider />
-                </Suspense>
-              </div>
-            </CookieConsentProvider>
-          </SessionProvider>
-        </NextIntlClientProvider>
+      <body className={inter.className}>
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
+          <NextIntlClientProvider locale={locale} messages={messages}>
+            <SessionProvider>
+              <CookieConsentProvider>
+                <DynamicFavicon />
+                <div className="flex min-h-screen flex-col">
+                  <Header user={user} />
+                  <main className="flex-1">{children}</main>
+                  <Footer />
+                  <CookieBanner />
+                  <Suspense fallback={null}>
+                    <AnalyticsProvider />
+                  </Suspense>
+                </div>
+                <Toaster />
+              </CookieConsentProvider>
+            </SessionProvider>
+          </NextIntlClientProvider>
+        </ThemeProvider>
       </body>
     </html>
   )
