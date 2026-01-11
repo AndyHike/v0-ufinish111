@@ -9,14 +9,11 @@ interface GoogleTagProps {
 }
 
 export function GoogleTag({ tagId, consent }: GoogleTagProps) {
-  console.log("🏷️ GoogleTag render:", { tagId, consent })
-
   useEffect(() => {
     const handleConsentChange = (event: CustomEvent) => {
       const { consent: newConsent, previousConsent } = event.detail
 
       if (previousConsent?.analytics && !newConsent.analytics) {
-        console.log("🔄 Analytics consent revoked, reloading page to clear Google Tag...")
         setTimeout(() => {
           window.location.reload()
         }, 500)
@@ -31,11 +28,8 @@ export function GoogleTag({ tagId, consent }: GoogleTagProps) {
   }, [])
 
   if (!consent) {
-    console.log("❌ Google Tag blocked - no analytics consent")
     return null
   }
-
-  console.log("✅ Google Tag loading - analytics consent granted")
 
   return (
     <>
@@ -46,7 +40,6 @@ export function GoogleTag({ tagId, consent }: GoogleTagProps) {
           function gtag(){dataLayer.push(arguments);}
           gtag('js', new Date());
           gtag('config', '${tagId}');
-          console.log('🏷️ Google Tag initialized with ID: ${tagId}');
         `}
       </Script>
     </>

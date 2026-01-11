@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { createContext, useContext, useEffect } from "react"
+import { createContext, useContext } from "react"
 import { useCookieConsent } from "@/hooks/use-cookie-consent"
 import type { CookieConsent } from "@/types/cookie-consent"
 
@@ -21,11 +21,6 @@ const CookieConsentContext = createContext<CookieConsentContextType | undefined>
 
 export function CookieConsentProvider({ children }: { children: React.ReactNode }) {
   const cookieConsent = useCookieConsent()
-
-  // Логування змін consent для діагностики
-  useEffect(() => {
-    console.log("🔄 CookieConsentProvider - consent changed:", cookieConsent.consent)
-  }, [cookieConsent.consent])
 
   return <CookieConsentContext.Provider value={cookieConsent}>{children}</CookieConsentContext.Provider>
 }

@@ -9,17 +9,9 @@ export function AnalyticsProvider() {
   const pixelId = process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID
   const googleTagId = "AW-17499950988" // Google Ads conversion tracking ID
 
-  console.log("🔄 AnalyticsProvider render:", {
-    pixelId,
-    googleTagId,
-    analyticsConsent: consent.analytics,
-    marketingConsent: consent.marketing,
-  })
-
   return (
     <>
       <GoogleTag tagId={googleTagId} consent={consent.analytics} />
-
       {pixelId && <FacebookPixel pixelId={pixelId} consent={consent.marketing} />}
     </>
   )

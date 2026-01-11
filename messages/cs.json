@@ -24,6 +24,7 @@
   }
   },
   "Footer": {
+    "cookieSettings": "Nastavení cookies",
     "siteTitle": "Oprava Telefonů",
     "description": "Profesionální oprava mobilních telefonů s garancí kvality.",
     "quickLinks": "Rychlé odkazy",
@@ -43,6 +44,7 @@
   },
 
   "UserNav": {
+    "adminPanel": "Adminstrátorský panel",
     "login": "Přihlásit se",
     "profile": "Profil",
     "orders": "Objednávky",

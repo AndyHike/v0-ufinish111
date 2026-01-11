@@ -13,29 +13,7 @@ export function CookieBanner() {
   const { showBanner, acceptAll, acceptNecessary, setShowBanner } = useCookieConsentContext()
   const [showSettings, setShowSettings] = useState(false)
 
-  console.log("🎌 CookieBanner render:", { showBanner })
-
   if (!showBanner) return null
-
-  const handleAcceptAll = () => {
-    console.log("✅ User clicked Accept All")
-    acceptAll()
-  }
-
-  const handleAcceptNecessary = () => {
-    console.log("⚠️ User clicked Accept Necessary")
-    acceptNecessary()
-  }
-
-  const handleShowSettings = () => {
-    console.log("⚙️ User clicked Settings")
-    setShowSettings(true)
-  }
-
-  const handleCloseBanner = () => {
-    console.log("❌ User closed banner")
-    setShowBanner(false)
-  }
 
   return (
     <>
@@ -49,20 +27,25 @@ export function CookieBanner() {
               </div>
 
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                <Button variant="outline" size="sm" onClick={handleShowSettings} className="gap-2 bg-transparent">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowSettings(true)}
+                  className="gap-2 bg-transparent"
+                >
                   <Settings className="h-4 w-4" />
                   {t("banner.customize")}
                 </Button>
 
-                <Button variant="outline" size="sm" onClick={handleAcceptNecessary}>
+                <Button variant="outline" size="sm" onClick={acceptNecessary}>
                   {t("banner.acceptNecessary")}
                 </Button>
 
-                <Button size="sm" onClick={handleAcceptAll}>
+                <Button size="sm" onClick={acceptAll}>
                   {t("banner.acceptAll")}
                 </Button>
 
-                <Button variant="ghost" size="sm" onClick={handleCloseBanner} className="p-2">
+                <Button variant="ghost" size="sm" onClick={() => setShowBanner(false)} className="p-2">
                   <X className="h-4 w-4" />
                 </Button>
               </div>

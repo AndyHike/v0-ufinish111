@@ -20,7 +20,6 @@ export function PromotionalBanner({ data, locale }: PromotionalBannerProps) {
     return null
   }
 
-  // Get text and button text based on locale
   const text = data[`text_${locale}` as keyof PromotionalBannerData] as string
   const buttonText = data[`button_text_${locale}` as keyof PromotionalBannerData] as string
 

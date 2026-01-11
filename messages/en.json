@@ -24,6 +24,7 @@
     "login": "Login"
   },
   "Footer": {
+  "cookieSettings": "Cookie Settings",
     "siteTitle": "Phone Repair",
     "description": "Professional mobile phone repair with quality guarantee.",
     "quickLinks": "Quick Links",
@@ -42,6 +43,7 @@
     "company": "Company"
   },
   "UserNav": {
+    "adminPanel":"Admin Panel",
     "login": "Login",
     "profile": "Profile",
     "orders": "Orders",
