@@ -1,160 +1,153 @@
-import { neon } from "@neondatabase/serverless"
+import { createClient } from "@/lib/supabase/server"
 import type { Discount, ApplicableDiscount } from "./types"
-
-function getSql() {
-  if (!process.env.DATABASE_URL) {
-    throw new Error("DATABASE_URL is not set")
-  }
-  return neon(process.env.DATABASE_URL)
-}
 
 /**
  * Отримати всі активні знижки
  */
 export async function getActiveDiscounts(): Promise<Discount[]> {
-  const sql = getSql() // Отримуємо SQL клієнт під час виконання
-  const result = await sql`
-    SELECT 
-      id,
-      name,
-      code,
-      description,
-      discount_type as "discountType",
-      discount_value as "discountValue",
-      service_ids as "serviceIds",
-      scope_type as "scopeType",
-      brand_id as "brandId",
-      series_id as "seriesId",
-      model_id as "modelId",
-      is_active as "isActive",
-      starts_at as "startsAt",
-      expires_at as "expiresAt",
-      max_uses as "maxUses",
-      current_uses as "currentUses",
-      max_uses_per_user as "maxUsesPerUser",
-      created_at as "createdAt",
-      updated_at as "updatedAt"
-    FROM discounts
-    WHERE is_active = true
-      AND (starts_at IS NULL OR starts_at <= NOW())
-      AND (expires_at IS NULL OR expires_at > NOW())
-      AND (max_uses IS NULL OR current_uses < max_uses)
-    ORDER BY created_at DESC
-  `
+  const supabase = createClient()
 
-  return result as Discount[]
+  const { data, error } = await supabase
+    .from("discounts")
+    .select("*")
+    .eq("is_active", true)
+    .or(`starts_at.is.null,starts_at.lte.${new Date().toISOString()}`)
+    .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
+    .order("created_at", { ascending: false })
+
+  if (error) {
+    console.error("Error fetching active discounts:", error)
+    throw new Error("Failed to fetch active discounts")
+  }
+
+  return (data || []).map((row) => ({
+    id: row.id,
+    name: row.name,
+    code: row.code,
+    description: row.description,
+    discountType: row.discount_type,
+    discountValue: row.discount_value,
+    serviceIds: row.service_ids,
+    scopeType: row.scope_type,
+    brandId: row.brand_id,
+    seriesId: row.series_id,
+    modelId: row.model_id,
+    isActive: row.is_active,
+    startsAt: row.starts_at,
+    expiresAt: row.expires_at,
+    maxUses: row.max_uses,
+    currentUses: row.current_uses,
+    maxUsesPerUser: row.max_uses_per_user,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }))
 }
 
 /**
  * Знайти знижки для конкретної послуги та моделі
  */
 export async function findApplicableDiscounts(serviceId: string, modelId: string): Promise<ApplicableDiscount[]> {
-  const sql = getSql() // Отримуємо SQL клієнт під час виконання
+  const supabase = createClient()
 
-  const result = await sql`
-    SELECT 
-      d.id,
-      d.name,
-      d.code,
-      d.description,
-      d.discount_type as "discountType",
-      d.discount_value as "discountValue",
-      d.service_ids as "serviceIds",
-      d.scope_type as "scopeType",
-      d.brand_id as "brandId",
-      d.series_id as "seriesId",
-      d.model_id as "modelId",
-      d.is_active as "isActive",
-      d.starts_at as "startsAt",
-      d.expires_at as "expiresAt",
-      d.max_uses as "maxUses",
-      d.current_uses as "currentUses",
-      d.max_uses_per_user as "maxUsesPerUser",
-      d.created_at as "createdAt",
-      d.updated_at as "updatedAt",
-      CASE 
-        WHEN d.scope_type = 'brand' THEN b.name
-        WHEN d.scope_type = 'series' THEN ser.name
-        WHEN d.scope_type = 'model' THEN m.name
-        ELSE 'Всі моделі'
-      END as "applicableTo"
-    FROM discounts d
-    LEFT JOIN brands b ON d.brand_id = b.id
-    LEFT JOIN series ser ON d.series_id = ser.id
-    LEFT JOIN models model_target ON d.model_id = model_target.id
-    LEFT JOIN models m ON m.id = ${modelId}
-    WHERE d.is_active = true
-      AND (d.starts_at IS NULL OR d.starts_at <= NOW())
-      AND (d.expires_at IS NULL OR d.expires_at > NOW())
-      AND (d.max_uses IS NULL OR d.current_uses < d.max_uses)
-      AND ${serviceId} = ANY(d.service_ids)
-      AND (
-        d.scope_type = 'all_models' OR
-        (d.scope_type = 'model' AND d.model_id = ${modelId}) OR
-        (d.scope_type = 'series' AND d.series_id = m.series_id) OR
-        (d.scope_type = 'brand' AND d.brand_id = m.brand_id)
-      )
-    ORDER BY d.discount_value DESC
-  `
+  // Спочатку отримаємо модель щоб знати brand_id та series_id
+  const { data: model } = await supabase.from("models").select("brand_id, series_id, name").eq("id", modelId).single()
 
-  return result.map((row) => ({
+  if (!model) return []
+
+  // Отримаємо всі активні знижки
+  const { data: discounts, error } = await supabase
+    .from("discounts")
+    .select(`
+      *,
+      brands:brand_id(name),
+      series:series_id(name),
+      models:model_id(name)
+    `)
+    .eq("is_active", true)
+    .or(`starts_at.is.null,starts_at.lte.${new Date().toISOString()}`)
+    .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
+    .contains("service_ids", [serviceId])
+
+  if (error) {
+    console.error("Error finding applicable discounts:", error)
+    return []
+  }
+
+  // Фільтруємо знижки по scope
+  const applicable = (discounts || []).filter((d) => {
+    if (d.scope_type === "all_models") return true
+    if (d.scope_type === "model" && d.model_id === modelId) return true
+    if (d.scope_type === "series" && d.series_id === model.series_id) return true
+    if (d.scope_type === "brand" && d.brand_id === model.brand_id) return true
+    return false
+  })
+
+  return applicable.map((row) => ({
     discount: {
       id: row.id,
       name: row.name,
       code: row.code,
       description: row.description,
-      discountType: row.discountType,
-      discountValue: row.discountValue,
-      serviceIds: row.serviceIds,
-      scopeType: row.scopeType,
-      brandId: row.brandId,
-      seriesId: row.seriesId,
-      modelId: row.modelId,
-      isActive: row.isActive,
-      startsAt: row.startsAt,
-      expiresAt: row.expiresAt,
-      maxUses: row.maxUses,
-      currentUses: row.currentUses,
-      maxUsesPerUser: row.maxUsesPerUser,
-      createdAt: row.createdAt,
-      updatedAt: row.updatedAt,
+      discountType: row.discount_type,
+      discountValue: row.discount_value,
+      serviceIds: row.service_ids,
+      scopeType: row.scope_type,
+      brandId: row.brand_id,
+      seriesId: row.series_id,
+      modelId: row.model_id,
+      isActive: row.is_active,
+      startsAt: row.starts_at,
+      expiresAt: row.expires_at,
+      maxUses: row.max_uses,
+      currentUses: row.current_uses,
+      maxUsesPerUser: row.max_uses_per_user,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
     },
-    applicableTo: row.applicableTo,
-  })) as ApplicableDiscount[]
+    applicableTo:
+      row.scope_type === "all_models"
+        ? "Всі моделі"
+        : row.scope_type === "brand" && row.brands
+          ? row.brands.name
+          : row.scope_type === "series" && row.series
+            ? row.series.name
+            : row.scope_type === "model" && row.models
+              ? row.models.name
+              : "N/A",
+  }))
 }
 
 /**
  * Знайти знижку за кодом
  */
 export async function findDiscountByCode(code: string): Promise<Discount | null> {
-  const sql = getSql() // Отримуємо SQL клієнт під час виконання
-  const result = await sql`
-    SELECT 
-      id,
-      name,
-      code,
-      description,
-      discount_type as "discountType",
-      discount_value as "discountValue",
-      service_ids as "serviceIds",
-      scope_type as "scopeType",
-      brand_id as "brandId",
-      series_id as "seriesId",
-      model_id as "modelId",
-      is_active as "isActive",
-      starts_at as "startsAt",
-      expires_at as "expiresAt",
-      max_uses as "maxUses",
-      current_uses as "currentUses",
-      max_uses_per_user as "maxUsesPerUser",
-      created_at as "createdAt",
-      updated_at as "updatedAt"
-    FROM discounts
-    WHERE UPPER(code) = UPPER(${code})
-    LIMIT 1
-  `
+  const supabase = createClient()
 
-  return (result[0] as Discount) || null
+  const { data, error } = await supabase.from("discounts").select("*").ilike("code", code).single()
+
+  if (error || !data) return null
+
+  return {
+    id: data.id,
+    name: data.name,
+    code: data.code,
+    description: data.description,
+    discountType: data.discount_type,
+    discountValue: data.discount_value,
+    serviceIds: data.service_ids,
+    scopeType: data.scope_type,
+    brandId: data.brand_id,
+    seriesId: data.series_id,
+    modelId: data.model_id,
+    isActive: data.is_active,
+    startsAt: data.starts_at,
+    expiresAt: data.expires_at,
+    maxUses: data.max_uses,
+    currentUses: data.current_uses,
+    maxUsesPerUser: data.max_uses_per_user,
+    createdAt: data.created_at,
+    updatedAt: data.updated_at,
+  }
 }
 
 /**
@@ -163,104 +156,113 @@ export async function findDiscountByCode(code: string): Promise<Discount | null>
 export async function createDiscount(
   discount: Omit<Discount, "id" | "currentUses" | "createdAt" | "updatedAt">,
 ): Promise<Discount> {
-  const sql = getSql()
+  const supabase = createClient()
 
-  const serviceIdsArray = discount.serviceIds || []
+  const { data, error } = await supabase
+    .from("discounts")
+    .insert({
+      name: discount.name,
+      code: discount.code,
+      description: discount.description || null,
+      discount_type: discount.discountType,
+      discount_value: discount.discountValue,
+      service_ids: discount.serviceIds || [],
+      scope_type: discount.scopeType,
+      brand_id: discount.brandId || null,
+      series_id: discount.seriesId || null,
+      model_id: discount.modelId || null,
+      is_active: discount.isActive,
+      starts_at: discount.startsAt || null,
+      expires_at: discount.expiresAt || null,
+      max_uses: discount.maxUses || null,
+      max_uses_per_user: discount.maxUsesPerUser || null,
+    })
+    .select()
+    .single()
 
-  const result = await sql`
-    INSERT INTO discounts (
-      name, code, description,
-      discount_type, discount_value,
-      service_ids, scope_type, brand_id, series_id, model_id,
-      is_active, starts_at, expires_at,
-      max_uses, max_uses_per_user
-    ) VALUES (
-      ${discount.name},
-      ${discount.code},
-      ${discount.description || null},
-      ${discount.discountType},
-      ${discount.discountValue},
-      ${serviceIdsArray}::uuid[],
-      ${discount.scopeType},
-      ${discount.brandId || null},
-      ${discount.seriesId || null},
-      ${discount.modelId || null},
-      ${discount.isActive},
-      ${discount.startsAt || null},
-      ${discount.expiresAt || null},
-      ${discount.maxUses || null},
-      ${discount.maxUsesPerUser || null}
-    )
-    RETURNING 
-      id,
-      name,
-      code,
-      description,
-      discount_type as "discountType",
-      discount_value as "discountValue",
-      service_ids as "serviceIds",
-      scope_type as "scopeType",
-      brand_id as "brandId",
-      series_id as "seriesId",
-      model_id as "modelId",
-      is_active as "isActive",
-      starts_at as "startsAt",
-      expires_at as "expiresAt",
-      max_uses as "maxUses",
-      current_uses as "currentUses",
-      max_uses_per_user as "maxUsesPerUser",
-      created_at as "createdAt",
-      updated_at as "updatedAt"
-  `
+  if (error) {
+    console.error("Error creating discount:", error)
+    throw new Error(`Failed to create discount: ${error.message}`)
+  }
 
-  return result[0] as Discount
+  return {
+    id: data.id,
+    name: data.name,
+    code: data.code,
+    description: data.description,
+    discountType: data.discount_type,
+    discountValue: data.discount_value,
+    serviceIds: data.service_ids,
+    scopeType: data.scope_type,
+    brandId: data.brand_id,
+    seriesId: data.series_id,
+    modelId: data.model_id,
+    isActive: data.is_active,
+    startsAt: data.starts_at,
+    expiresAt: data.expires_at,
+    maxUses: data.max_uses,
+    currentUses: data.current_uses,
+    maxUsesPerUser: data.max_uses_per_user,
+    createdAt: data.created_at,
+    updatedAt: data.updated_at,
+  }
 }
 
 /**
  * Оновити знижку
  */
 export async function updateDiscount(id: string, updates: Partial<Discount>): Promise<Discount> {
-  const sql = getSql() // Отримуємо SQL клієнт під час виконання
-  const result = await sql`
-    UPDATE discounts
-    SET
-      name = COALESCE(${updates.name || null}, name),
-      description = COALESCE(${updates.description || null}, description),
-      discount_type = COALESCE(${updates.discountType || null}, discount_type),
-      discount_value = COALESCE(${updates.discountValue || null}, discount_value),
-      is_active = COALESCE(${updates.isActive ?? null}, is_active),
-      expires_at = COALESCE(${updates.expiresAt || null}, expires_at),
-      max_uses = COALESCE(${updates.maxUses || null}, max_uses)
-    WHERE id = ${id}
-    RETURNING 
-      id,
-      name,
-      code,
-      description,
-      discount_type as "discountType",
-      discount_value as "discountValue",
-      service_ids as "serviceIds",
-      scope_type as "scopeType",
-      brand_id as "brandId",
-      series_id as "seriesId",
-      model_id as "modelId",
-      is_active as "isActive",
-      starts_at as "startsAt",
-      expires_at as "expiresAt",
-      max_uses as "maxUses",
-      current_uses as "currentUses",
-      max_uses_per_user as "maxUsesPerUser",
-      created_at as "createdAt",
-      updated_at as "updatedAt"
-  `
+  const supabase = createClient()
 
-  return result[0] as Discount
+  const updateData: any = {}
+  if (updates.name !== undefined) updateData.name = updates.name
+  if (updates.description !== undefined) updateData.description = updates.description
+  if (updates.discountType !== undefined) updateData.discount_type = updates.discountType
+  if (updates.discountValue !== undefined) updateData.discount_value = updates.discountValue
+  if (updates.isActive !== undefined) updateData.is_active = updates.isActive
+  if (updates.expiresAt !== undefined) updateData.expires_at = updates.expiresAt
+  if (updates.maxUses !== undefined) updateData.max_uses = updates.maxUses
+
+  const { data, error } = await supabase.from("discounts").update(updateData).eq("id", id).select().single()
+
+  if (error) {
+    console.error("Error updating discount:", error)
+    throw new Error("Failed to update discount")
+  }
+
+  return {
+    id: data.id,
+    name: data.name,
+    code: data.code,
+    description: data.description,
+    discountType: data.discount_type,
+    discountValue: data.discount_value,
+    serviceIds: data.service_ids,
+    scopeType: data.scope_type,
+    brandId: data.brand_id,
+    seriesId: data.series_id,
+    modelId: data.model_id,
+    isActive: data.is_active,
+    startsAt: data.starts_at,
+    expiresAt: data.expires_at,
+    maxUses: data.max_uses,
+    currentUses: data.current_uses,
+    maxUsesPerUser: data.max_uses_per_user,
+    createdAt: data.created_at,
+    updatedAt: data.updated_at,
+  }
 }
 
 /**
  * Видалити знижку
  */
 export async function deleteDiscount(id: string): Promise<void> {
-  const sql = getSql() // Отримуємо SQL клієнт під час виконання
-  await sql`DELETE FROM discounts WHERE id = ${id}`
+  const supabase = createClient()
+
+  const { error } = await supabase.from("discounts").delete().eq("id", id)
+
+  if (error) {
+    console.error("Error deleting discount:", error)
+    throw new Error("Failed to delete discount")
+  }
 }

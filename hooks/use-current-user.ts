@@ -44,12 +44,6 @@ export function useCurrentUser() {
 
   useEffect(() => {
     fetchUser()
-
-    const interval = setInterval(() => {
-      fetchUser()
-    }, 3000) // Check every 3 seconds
-
-    return () => clearInterval(interval)
   }, [])
 
   const refresh = () => {
