@@ -16,6 +16,7 @@ import {
   BarChart3,
   Upload,
   FileUp,
+  Megaphone,
 } from "lucide-react"
 
 const sidebarItems = [
@@ -73,6 +74,11 @@ const sidebarItems = [
     title: "Банер",
     href: "/admin/banner",
     icon: Upload,
+  },
+  {
+    title: "Акційний банер",
+    href: "/admin/promotional-banner",
+    icon: Megaphone,
   },
   {
     title: "Налаштування",
