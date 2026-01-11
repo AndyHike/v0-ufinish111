@@ -204,7 +204,7 @@ export function DiscountRequestModal({ isOpen, onClose, locale, promotionText }:
                     placeholder={t.phonePlaceholder}
                     required
                     autoComplete="tel"
-                    pattern="[\+]?[0-9\s\-$$$$]+"
+                    pattern="[\+]?[0-9\s\-()]+"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                   />

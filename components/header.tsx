@@ -49,7 +49,7 @@ export function Header({ user }) {
   const [showResults, setShowResults] = useState(false)
   const [hasSearched, setHasSearched] = useState(false)
   const [isFirstSearch, setIsFirstSearch] = useState(true)
-  const [lastSearchQuery, setLastSearchQuery] = useState("") // Для уникнення дублювання
+  const lastSearchQueryRef = useRef("")
   const searchTimeoutRef = useRef<NodeJS.Timeout>()
   const searchInputRef = useRef<HTMLInputElement>(null)
   const { settings } = useSiteSettings()
@@ -71,7 +71,7 @@ export function Header({ user }) {
   // ВИПРАВЛЕНО: Функція для відправки події пошуку (тільки при реальному пошуку)
   const trackSearchEvent = (query: string, resultsCount: number) => {
     // Уникаємо дублювання - відправляємо тільки якщо запит змінився
-    if (typeof window !== "undefined" && window.fbq && query !== lastSearchQuery && query.length >= 3) {
+    if (typeof window !== "undefined" && window.fbq && query !== lastSearchQueryRef.current && query.length >= 3) {
       window.fbq("track", "Search", {
         search_string: query,
         content_category: "site_search",
@@ -81,7 +81,7 @@ export function Header({ user }) {
           page_url: window.location.href,
         },
       })
-      setLastSearchQuery(query)
+      lastSearchQueryRef.current = query
     }
   }
 
