@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/utils/supabase/server"
+import { getPriceWithDiscount } from "@/lib/discounts/get-applicable-discounts"
 
 export async function GET(request: NextRequest, { params }: { params: { slug: string } }) {
   try {
@@ -117,6 +118,9 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
     // Отримуємо дані для конкретної моделі якщо вказана
     let sourceModel = null
     let modelServiceData = null
+    let discountedPrice = null
+    let hasDiscount = false
+    let discount = null
 
     if (modelSlug) {
       console.log(`[API] Fetching model-specific data for model: ${modelSlug}`)
@@ -183,9 +187,20 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
             benefits: modelService.benefits,
           }
 
+          if (price !== null) {
+            const discountInfo = await getPriceWithDiscount(service.id, model.id, price)
+            if (discountInfo.hasDiscount) {
+              discountedPrice = discountInfo.discountedPrice
+              hasDiscount = true
+              discount = discountInfo.discount
+            }
+          }
+
           console.log("[API] Found and converted model-specific service data:", {
             original_price: modelService.price,
             converted_price: price,
+            discounted_price: discountedPrice,
+            has_discount: hasDiscount,
             original_warranty_months: modelService.warranty_months,
             converted_warranty_months: warrantyMonths,
             original_duration_hours: modelService.duration_hours,
@@ -250,6 +265,9 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
       modelServicePrice: modelServiceData?.price !== undefined ? modelServiceData.price : null,
       minPrice: modelServiceData ? null : minPrice, // Не показуємо діапазон якщо є конкретна модель
       maxPrice: modelServiceData ? null : maxPrice,
+      discountedPrice,
+      hasDiscount,
+      discount,
     }
 
     console.log("[API] Final service result:", {
@@ -259,6 +277,8 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
       duration_source: modelServiceData?.duration_hours !== null ? "model_services" : "services",
       warranty_period: result.warranty_period,
       modelServicePrice: result.modelServicePrice,
+      discountedPrice: result.discountedPrice,
+      hasDiscount: result.hasDiscount,
       minPrice: result.minPrice,
       maxPrice: result.maxPrice,
       hasModelServiceData: !!modelServiceData,

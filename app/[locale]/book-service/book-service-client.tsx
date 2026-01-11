@@ -43,6 +43,8 @@ interface BookingData {
     }
   } | null
   price: number | { min: number; max: number } | null
+  discountedPrice?: number | null
+  hasDiscount?: boolean
 }
 
 export default function BookServiceClient({ locale, serviceSlug, modelSlug }: Props) {
@@ -67,7 +69,6 @@ export default function BookServiceClient({ locale, serviceSlug, modelSlug }: Pr
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
-  // Завантажуємо дані через API endpoint (аналогічно до service page)
   useEffect(() => {
     if (!serviceSlug) {
       setError("Service not specified")
@@ -77,7 +78,6 @@ export default function BookServiceClient({ locale, serviceSlug, modelSlug }: Pr
 
     const fetchData = async () => {
       try {
-        // Використовуємо існуючий API endpoint services/[slug]
         const params = new URLSearchParams({
           locale,
         })
@@ -94,7 +94,6 @@ export default function BookServiceClient({ locale, serviceSlug, modelSlug }: Pr
 
         const serviceData = await response.json()
 
-        // Трансформуємо дані в потрібний формат
         const transformedData: BookingData = {
           service: {
             id: serviceData.id,
@@ -115,6 +114,8 @@ export default function BookServiceClient({ locale, serviceSlug, modelSlug }: Pr
                   ? serviceData.minPrice
                   : { min: serviceData.minPrice, max: serviceData.maxPrice }
                 : null,
+          discountedPrice: serviceData.discountedPrice,
+          hasDiscount: serviceData.hasDiscount,
         }
 
         setBookingData(transformedData)
@@ -129,7 +130,6 @@ export default function BookServiceClient({ locale, serviceSlug, modelSlug }: Pr
     fetchData()
   }, [serviceSlug, modelSlug, locale])
 
-  // Генеруємо доступні дати (наступні 14 днів, тільки робочі дні)
   const getAvailableDates = () => {
     const dates = []
     const today = new Date()
@@ -138,7 +138,6 @@ export default function BookServiceClient({ locale, serviceSlug, modelSlug }: Pr
       const date = new Date(today)
       date.setDate(today.getDate() + i)
 
-      // Пропускаємо вихідні (субота = 6, неділя = 0)
       if (date.getDay() !== 0 && date.getDay() !== 6) {
         dates.push(date)
       }
@@ -149,7 +148,6 @@ export default function BookServiceClient({ locale, serviceSlug, modelSlug }: Pr
     return dates
   }
 
-  // Генеруємо доступний час (9:00 - 19:00)
   const getAvailableTimes = () => {
     const times = []
     for (let hour = 9; hour <= 18; hour++) {
@@ -159,7 +157,6 @@ export default function BookServiceClient({ locale, serviceSlug, modelSlug }: Pr
     return times
   }
 
-  // Валідація телефону - тільки цифри, пробіли, дефіси та плюс
   const validatePhone = (phone: string) => {
     const phoneRegex = /^[\d\s\-+()]+$/
     return phoneRegex.test(phone) && phone.replace(/[\s\-+()]/g, "").length >= 9
@@ -239,7 +236,6 @@ export default function BookServiceClient({ locale, serviceSlug, modelSlug }: Pr
   }
 
   const handleInputChange = (field: string, value: string) => {
-    // Для телефону дозволяємо тільки цифри, пробіли, дефіси, плюс та дужки
     if (field === "phone") {
       const cleanValue = value.replace(/[^\d\s\-+()]/g, "")
       setFormData((prev) => ({ ...prev, [field]: cleanValue }))
@@ -254,6 +250,10 @@ export default function BookServiceClient({ locale, serviceSlug, modelSlug }: Pr
 
   const formatPrice = () => {
     if (!bookingData?.price) return t("priceOnRequest")
+
+    if (bookingData.hasDiscount && bookingData.discountedPrice) {
+      return formatCurrency(bookingData.discountedPrice)
+    }
 
     if (typeof bookingData.price === "number") {
       return formatCurrency(bookingData.price)
@@ -301,7 +301,6 @@ export default function BookServiceClient({ locale, serviceSlug, modelSlug }: Pr
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-2xl mx-auto px-4">
-        {/* Breadcrumb */}
         <nav className="mb-6">
           <Link
             href={`/${locale}`}
@@ -316,7 +315,6 @@ export default function BookServiceClient({ locale, serviceSlug, modelSlug }: Pr
           <CardHeader className="pb-6">
             <CardTitle className="text-2xl font-semibold text-center text-gray-900">{t("title")}</CardTitle>
 
-            {/* Service Info - Clean and minimal */}
             <div className="mt-6 p-6 bg-gray-50 rounded-lg border">
               <div className="text-center">
                 <h3 className="text-lg font-medium text-gray-900 mb-2">{bookingData.service.name}</h3>
@@ -331,7 +329,21 @@ export default function BookServiceClient({ locale, serviceSlug, modelSlug }: Pr
 
                 <div className="flex items-center justify-center gap-4 text-sm text-gray-600">
                   <div className="flex items-center gap-1">
-                    <span className="font-semibold text-lg text-gray-900">{formatPrice()}</span>
+                    {bookingData.hasDiscount && bookingData.discountedPrice && typeof bookingData.price === "number" ? (
+                      <div className="flex flex-col items-center gap-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-400 line-through text-sm">
+                            {formatCurrency(bookingData.price)}
+                          </span>
+                          <span className="font-semibold text-xl text-green-600">
+                            {formatCurrency(bookingData.discountedPrice)}
+                          </span>
+                        </div>
+                        <span className="px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded">Знижка!</span>
+                      </div>
+                    ) : (
+                      <span className="font-semibold text-lg text-gray-900">{formatPrice()}</span>
+                    )}
                   </div>
 
                   {bookingData.service.duration_hours && (
@@ -354,7 +366,6 @@ export default function BookServiceClient({ locale, serviceSlug, modelSlug }: Pr
 
           <CardContent className="pt-0">
             <form onSubmit={handleSubmit} className="space-y-8">
-              {/* Особисті дані */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2 pb-2 border-b border-gray-200">
                   <User className="h-5 w-5 text-gray-600" />
@@ -424,7 +435,6 @@ export default function BookServiceClient({ locale, serviceSlug, modelSlug }: Pr
                 </div>
               </div>
 
-              {/* Дата і час */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2 pb-2 border-b border-gray-200">
                   <Calendar className="h-5 w-5 text-gray-600" />
@@ -487,7 +497,6 @@ export default function BookServiceClient({ locale, serviceSlug, modelSlug }: Pr
                 </div>
               </div>
 
-              {/* Додаткова інформація */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2 pb-2 border-b border-gray-200">
                   <MessageSquare className="h-5 w-5 text-gray-600" />
@@ -509,7 +518,6 @@ export default function BookServiceClient({ locale, serviceSlug, modelSlug }: Pr
                 </div>
               </div>
 
-              {/* Кнопка відправки */}
               <div className="pt-6 border-t border-gray-200">
                 <Button
                   type="submit"
