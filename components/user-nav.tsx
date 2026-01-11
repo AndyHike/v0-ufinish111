@@ -31,7 +31,7 @@ export function UserNav({ user }: UserNavProps) {
   // Якщо користувача немає - показуємо кнопку входу
   if (!user) {
     return (
-      <Link href={`/${locale}/login`}>
+      <Link href={`/${locale}/auth/login`}>
         <Button variant="outline" size="sm">
           <User className="mr-2 h-4 w-4" />
           {t("login")}
