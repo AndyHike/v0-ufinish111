@@ -104,15 +104,17 @@ export default async function LocaleLayout({
   children: React.ReactNode
   params: { locale: string }
 }) {
-  let messages
-  try {
-    messages = await getMessages(locale)
-  } catch (error) {
-    console.error(`Failed to load messages for locale ${locale}:`, error)
+  const [messages, user] = await Promise.all([
+    getMessages(locale).catch((error) => {
+      console.error(`Failed to load messages for locale ${locale}:`, error)
+      return null
+    }),
+    getCurrentUser(),
+  ])
+
+  if (!messages) {
     notFound()
   }
-
-  const user = await getCurrentUser()
 
   return (
     <html lang={locale} className={inter.variable} suppressHydrationWarning>
@@ -120,6 +122,7 @@ export default async function LocaleLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://devicehelp.cz" />
+        <link rel="dns-prefetch" href="https://xnwoqomipsesacphoczp.supabase.co" />
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <meta name="seznam-wmt" content="5VWPSjprwBjXXCI2HRoOVfvKcmdPB1Om" />
         <link rel="preload" href="/focused-phone-fix.webp" as="image" type="image/webp" fetchPriority="high" />

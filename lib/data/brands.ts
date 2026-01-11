@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/server"
+import { cache } from "react"
 
 export type Brand = {
   id: string
@@ -16,7 +17,7 @@ export type Brand = {
     | null
 }
 
-export async function getBrands(): Promise<Brand[]> {
+export const getBrands = cache(async (): Promise<Brand[]> => {
   try {
     const supabase = createClient()
 
@@ -25,16 +26,20 @@ export async function getBrands(): Promise<Brand[]> {
       .select("id, name, slug, logo_url, position, series(id, name, position, slug)")
       .order("position", { ascending: true, nullsLast: true })
       .order("name", { ascending: true })
-      .limit(12) // Limit to 12 brands for better performance
+      .limit(12)
 
     if (error) {
-      console.error("Error fetching brands:", error)
+      if (process.env.NODE_ENV === "development") {
+        console.error("Error fetching brands:", error)
+      }
       return []
     }
 
     return data || []
   } catch (error) {
-    console.error("Unexpected error fetching brands:", error)
+    if (process.env.NODE_ENV === "development") {
+      console.error("Unexpected error fetching brands:", error)
+    }
     return []
   }
-}
+})

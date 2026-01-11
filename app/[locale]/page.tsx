@@ -6,7 +6,7 @@ import { getBrands } from "@/lib/data/brands"
 import { getInfoBanner } from "@/lib/data/info-banner"
 import { Suspense } from "react"
 
-export const revalidate = 7200 // Revalidate every 2 hours instead of 1
+export const revalidate = 3600 // Revalidate every hour
 
 function BrandsSectionSkeleton() {
   return (
@@ -36,21 +36,32 @@ function ContactSectionSkeleton() {
 }
 
 export default async function HomePage() {
-  const [brandsData, infoBannerData] = await Promise.allSettled([getBrands(), getInfoBanner()])
+  const infoBannerPromise = getInfoBanner()
+  const brandsPromise = getBrands()
 
-  const brands = brandsData.status === "fulfilled" ? brandsData.value : []
-  const infoBanner = infoBannerData.status === "fulfilled" ? infoBannerData.value : null
-
+  // Don't await here - let hero render immediately
   return (
     <>
-      {infoBanner && <InfoBanner data={infoBanner} />}
+      <Suspense fallback={null}>
+        <InfoBannerAsync promise={infoBannerPromise} />
+      </Suspense>
       <HeroSection />
       <Suspense fallback={<BrandsSectionSkeleton />}>
-        <BrandsSection data={brands} />
+        <BrandsSectionAsync promise={brandsPromise} />
       </Suspense>
       <Suspense fallback={<ContactSectionSkeleton />}>
         <ContactSection />
       </Suspense>
     </>
   )
+}
+
+async function InfoBannerAsync({ promise }: { promise: Promise<any> }) {
+  const infoBanner = await promise
+  return infoBanner ? <InfoBanner data={infoBanner} /> : null
+}
+
+async function BrandsSectionAsync({ promise }: { promise: Promise<any> }) {
+  const brands = await promise
+  return <BrandsSection data={brands} />
 }
