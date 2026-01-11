@@ -96,7 +96,12 @@ export default async function LocaleLayout({
   }
 
   const user = await getCurrentUser()
-  const promotionalBanner = await getPromotionalBanner()
+  let promotionalBanner = null
+  try {
+    promotionalBanner = await getPromotionalBanner()
+  } catch (error) {
+    console.error("Failed to load promotional banner:", error)
+  }
 
   return (
     <html lang={locale} className={inter.variable}>
@@ -126,7 +131,7 @@ export default async function LocaleLayout({
           <SessionProvider>
             <CookieConsentProvider>
               <div className="flex min-h-screen flex-col">
-                {promotionalBanner && <PromotionalBanner data={promotionalBanner} locale={locale} />}
+                {promotionalBanner?.is_active && <PromotionalBanner data={promotionalBanner} locale={locale} />}
                 <Header user={user} />
                 <main className="flex-1">{children}</main>
                 <Footer />

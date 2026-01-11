@@ -330,16 +330,11 @@ export default function BookServiceClient({ locale, serviceSlug, modelSlug }: Pr
                 <div className="flex items-center justify-center gap-4 text-sm text-gray-600">
                   <div className="flex items-center gap-1">
                     {bookingData.hasDiscount && bookingData.discountedPrice && typeof bookingData.price === "number" ? (
-                      <div className="flex flex-col items-center gap-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-gray-400 line-through text-sm">
-                            {formatCurrency(bookingData.price)}
-                          </span>
-                          <span className="font-semibold text-xl text-green-600">
-                            {formatCurrency(bookingData.discountedPrice)}
-                          </span>
-                        </div>
-                        <span className="px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded">Знижка!</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-400 line-through text-sm">{formatCurrency(bookingData.price)}</span>
+                        <span className="font-semibold text-xl text-green-600">
+                          {formatCurrency(bookingData.discountedPrice)}
+                        </span>
                       </div>
                     ) : (
                       <span className="font-semibold text-lg text-gray-900">{formatPrice()}</span>
@@ -356,7 +351,9 @@ export default function BookServiceClient({ locale, serviceSlug, modelSlug }: Pr
                   {bookingData.service.warranty_months && (
                     <div className="flex items-center gap-1">
                       <Shield className="h-4 w-4" />
-                      <span>{bookingData.service.warranty_months} міс.</span>
+                      <span>
+                        {bookingData.service.warranty_months} {t("months")}
+                      </span>
                     </div>
                   )}
                 </div>

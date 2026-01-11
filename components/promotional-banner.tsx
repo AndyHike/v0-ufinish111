@@ -16,7 +16,7 @@ export function PromotionalBanner({ data, locale }: PromotionalBannerProps) {
   const [isVisible, setIsVisible] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
-  if (!isVisible || !data.is_active) {
+  if (!data.is_active || !isVisible) {
     return null
   }
 
