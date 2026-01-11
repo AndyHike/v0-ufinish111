@@ -29,16 +29,24 @@ const colorMap: Record<string, string> = {
 }
 
 export function PromotionalBannerSimple({ initialData, locale }: PromotionalBannerProps) {
-  const [isVisible, setIsVisible] = useState(false)
+  const [isVisible, setIsVisible] = useState(true)
+  const [isMounted, setIsMounted] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
-  // Load banner visibility from localStorage after mount
   useEffect(() => {
-    const isDismissed = localStorage.getItem("promo-banner-dismissed") === "true"
-    setIsVisible(!isDismissed && !!initialData?.enabled)
-  }, [initialData?.enabled])
+    setIsMounted(true)
+  }, [])
 
-  if (!initialData || !isVisible) {
+  useEffect(() => {
+    if (isMounted) {
+      const isDismissed = localStorage.getItem("promo-banner-dismissed") === "true"
+      if (isDismissed) {
+        setIsVisible(false)
+      }
+    }
+  }, [isMounted])
+
+  if (!isMounted || !initialData?.enabled || !isVisible) {
     return null
   }
 
