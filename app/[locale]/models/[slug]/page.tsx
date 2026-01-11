@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { createServerClient } from "@/utils/supabase/server"
 import ModelPageClient from "./model-page-client"
+import { getPriceWithDiscount } from "@/lib/discounts/get-applicable-discounts"
 
 type Props = {
   params: {
@@ -177,63 +178,82 @@ export default async function ModelPage({ params }: Props) {
 
     console.log(`[MODEL PAGE] Found ${modelServices?.length || 0} model services`)
 
-    const servicesWithTranslations =
-      modelServices
-        ?.map((ms) => {
-          const service = ms.services
-          if (!service) return null
+    const servicesWithTranslations = await Promise.all(
+      (modelServices || []).map(async (ms) => {
+        const service = ms.services
+        if (!service) return null
 
-          const translation = service.services_translations?.find((t: any) => t.locale === locale)
-          if (!translation) return null
+        const translation = service.services_translations?.find((t: any) => t.locale === locale)
+        if (!translation) return null
 
-          // ВИПРАВЛЕНО: Використовуємо пріоритетну логіку - model_services має пріоритет над services
-          const warrantyMonths =
-            ms.warranty_months !== null && ms.warranty_months !== undefined
-              ? Number.parseInt(ms.warranty_months.toString())
-              : service.warranty_months !== null && service.warranty_months !== undefined
-                ? Number.parseInt(service.warranty_months.toString())
-                : null
+        // ВИПРАВЛЕНО: Використовуємо пріоритетну логіку - model_services має пріоритет над services
+        const warrantyMonths =
+          ms.warranty_months !== null && ms.warranty_months !== undefined
+            ? Number.parseInt(ms.warranty_months.toString())
+            : service.warranty_months !== null && service.warranty_months !== undefined
+              ? Number.parseInt(service.warranty_months.toString())
+              : null
 
-          const durationHours =
-            ms.duration_hours !== null && ms.duration_hours !== undefined
-              ? Number.parseFloat(ms.duration_hours.toString())
-              : service.duration_hours !== null && service.duration_hours !== undefined
-                ? Number.parseFloat(service.duration_hours.toString())
-                : null
+        const durationHours =
+          ms.duration_hours !== null && ms.duration_hours !== undefined
+            ? Number.parseFloat(ms.duration_hours.toString())
+            : service.duration_hours !== null && service.duration_hours !== undefined
+              ? Number.parseFloat(service.duration_hours.toString())
+              : null
 
-          const price = ms.price !== null && ms.price !== undefined ? Number.parseFloat(ms.price.toString()) : null
+        const price = ms.price !== null && ms.price !== undefined ? Number.parseFloat(ms.price.toString()) : null
 
-          console.log(`[MODEL PAGE] Service ${service.id} data:`, {
-            name: translation.name,
-            model_service_warranty: ms.warranty_months,
-            service_warranty: service.warranty_months,
-            final_warranty: warrantyMonths,
-            model_service_duration: ms.duration_hours,
-            service_duration: service.duration_hours,
-            final_duration: durationHours,
-            price: price,
-            warranty_period: ms.warranty_period || "months",
-          })
+        let discountedPrice = null
+        let hasDiscount = false
+        let discount = null
 
-          return {
-            id: service.id,
-            slug: service.slug,
-            name: translation.name,
-            description: translation.description,
-            price: price,
-            position: service.position,
-            warranty_months: warrantyMonths,
-            duration_hours: durationHours,
-            warranty_period: ms.warranty_period || "months",
-            image_url: service.image_url,
-            detailed_description: ms.detailed_description || translation.description,
-            what_included: ms.what_included,
-            benefits: ms.benefits,
+        if (price !== null) {
+          const discountInfo = await getPriceWithDiscount(service.id, model.id, price)
+          if (discountInfo.hasDiscount) {
+            discountedPrice = discountInfo.discountedPrice
+            hasDiscount = true
+            discount = discountInfo.discount
           }
-        })
-        .filter(Boolean) || []
+        }
 
-    console.log(`[MODEL PAGE] Final services count: ${servicesWithTranslations.length}`)
+        console.log(`[MODEL PAGE] Service ${service.id} data:`, {
+          name: translation.name,
+          model_service_warranty: ms.warranty_months,
+          service_warranty: service.warranty_months,
+          final_warranty: warrantyMonths,
+          model_service_duration: ms.duration_hours,
+          service_duration: service.duration_hours,
+          final_duration: durationHours,
+          price: price,
+          discounted_price: discountedPrice,
+          has_discount: hasDiscount,
+          warranty_period: ms.warranty_period || "months",
+        })
+
+        return {
+          id: service.id,
+          slug: service.slug,
+          name: translation.name,
+          description: translation.description,
+          price: price,
+          position: service.position,
+          warranty_months: warrantyMonths,
+          duration_hours: durationHours,
+          warranty_period: ms.warranty_period || "months",
+          image_url: service.image_url,
+          detailed_description: ms.detailed_description || translation.description,
+          what_included: ms.what_included,
+          benefits: ms.benefits,
+          discounted_price: discountedPrice,
+          has_discount: hasDiscount,
+          discount: discount,
+        }
+      }),
+    )
+
+    const filteredServices = servicesWithTranslations.filter(Boolean)
+
+    console.log(`[MODEL PAGE] Final services count: ${filteredServices.length}`)
 
     const modelData = {
       id: model.id,
@@ -242,7 +262,7 @@ export default async function ModelPage({ params }: Props) {
       image_url: model.image_url,
       brands: model.brands,
       series: model.series,
-      services: servicesWithTranslations,
+      services: filteredServices,
     }
 
     return <ModelPageClient modelData={modelData} locale={locale} />

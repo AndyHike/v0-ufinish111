@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { createServerClient } from "@/utils/supabase/server"
 import ServicePageClient from "./service-page-client"
+import { getPriceWithDiscount } from "@/lib/discounts/get-applicable-discounts"
 
 type Props = {
   params: {
@@ -249,6 +250,9 @@ export default async function ServicePage({ params, searchParams }: Props) {
     let modelServicePrice = null
     let modelWarrantyMonths = null
     let modelDurationHours = null
+    let discountedPrice = null
+    let hasDiscount = false
+    let discount = null
 
     if (modelSlug) {
       const { data: model } = await supabase
@@ -289,8 +293,19 @@ export default async function ServicePage({ params, searchParams }: Props) {
           modelWarrantyMonths = modelService.warranty_months
           modelDurationHours = modelService.duration_hours
 
+          if (modelServicePrice !== null) {
+            const discountInfo = await getPriceWithDiscount(service.id, model.id, modelServicePrice)
+            if (discountInfo.hasDiscount) {
+              discountedPrice = discountInfo.discountedPrice
+              hasDiscount = true
+              discount = discountInfo.discount
+            }
+          }
+
           console.log("Model-specific service data found:", {
             price: modelServicePrice,
+            discounted_price: discountedPrice,
+            has_discount: hasDiscount,
             warranty_months: modelWarrantyMonths,
             duration_hours: modelDurationHours,
             source: "model_services table",
@@ -329,6 +344,7 @@ export default async function ServicePage({ params, searchParams }: Props) {
           : service.warranty_months,
       duration_hours:
         modelDurationHours !== null && modelDurationHours !== undefined ? modelDurationHours : service.duration_hours,
+      warranty_period: "months",
       image_url: service.image_url,
       slug: service.slug,
       translation: {
@@ -336,12 +352,16 @@ export default async function ServicePage({ params, searchParams }: Props) {
         description: translation.description,
         detailed_description: translation.detailed_description,
         what_included: translation.what_included,
+        benefits: null,
       },
       faqs: faqsWithTranslations,
       sourceModel,
       modelServicePrice,
       minPrice,
       maxPrice,
+      discountedPrice,
+      hasDiscount,
+      discount,
     }
 
     console.log("Final service data:", {
@@ -350,6 +370,8 @@ export default async function ServicePage({ params, searchParams }: Props) {
       warranty_source: modelWarrantyMonths !== null ? "model_services" : "services",
       duration_source: modelDurationHours !== null ? "model_services" : "services",
       modelServicePrice: serviceData.modelServicePrice,
+      discountedPrice: serviceData.discountedPrice,
+      hasDiscount: serviceData.hasDiscount,
       hasSourceModel: !!sourceModel,
     })
 

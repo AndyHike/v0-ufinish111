@@ -9,6 +9,7 @@ import { Phone, MessageCircle, Clock, Shield, CheckCircle, ChevronDown, ArrowLef
 import { formatCurrency } from "@/lib/format-currency"
 import { formatImageUrl } from "@/utils/image-url"
 import { useEffect, useRef } from "react"
+import { ServicePriceDisplay } from "@/components/service-price-display"
 
 interface ServiceData {
   id: string
@@ -48,6 +49,9 @@ interface ServiceData {
   modelServicePrice: number | null
   minPrice: number | null
   maxPrice: number | null
+  discountedPrice?: number | null
+  hasDiscount?: boolean
+  discount?: any
 }
 
 interface Props {
@@ -61,7 +65,17 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
   const searchParams = useSearchParams()
   const viewContentSent = useRef(false)
 
-  const { translation, faqs, sourceModel, modelServicePrice, minPrice, maxPrice } = serviceData
+  const {
+    translation,
+    faqs,
+    sourceModel,
+    modelServicePrice,
+    minPrice,
+    maxPrice,
+    discountedPrice,
+    hasDiscount,
+    discount,
+  } = serviceData
   const modelParam = searchParams.get("model")
 
   const backUrl = sourceModel ? `/${locale}/models/${sourceModel.slug}` : `/${locale}`
@@ -120,23 +134,6 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
   const formatDuration = (hours: number | null) => {
     if (hours === null || hours === undefined) return t("contactForTime")
     return t("fromHours", { hours })
-  }
-
-  const renderPrice = () => {
-    if (modelParam) {
-      if (modelServicePrice === null || modelServicePrice === undefined) {
-        return t("priceOnRequest")
-      }
-      return formatCurrency(modelServicePrice)
-    }
-
-    if (minPrice !== null && maxPrice !== null && minPrice !== undefined && maxPrice !== undefined) {
-      return minPrice === maxPrice
-        ? formatCurrency(minPrice)
-        : `${formatCurrency(minPrice)} - ${formatCurrency(maxPrice)}`
-    }
-
-    return t("priceOnRequest")
   }
 
   const handleOrderClick = () => {
@@ -239,7 +236,24 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
 
             {/* Ціна */}
             <div>
-              <div className="text-2xl lg:text-3xl font-bold text-gray-900 mb-1">{renderPrice()}</div>
+              {modelParam && serviceData.modelServicePrice !== null && serviceData.modelServicePrice !== undefined ? (
+                <ServicePriceDisplay
+                  originalPrice={serviceData.modelServicePrice}
+                  discountedPrice={discountedPrice || undefined}
+                  hasDiscount={hasDiscount}
+                  discount={discount}
+                  size="lg"
+                  showBadge={true}
+                />
+              ) : minPrice !== null && maxPrice !== null ? (
+                <div className="text-2xl lg:text-3xl font-bold text-gray-900 mb-1">
+                  {minPrice === maxPrice
+                    ? formatCurrency(minPrice)
+                    : `${formatCurrency(minPrice)} - ${formatCurrency(maxPrice)}`}
+                </div>
+              ) : (
+                <div className="text-2xl lg:text-3xl font-bold text-gray-900 mb-1">{t("priceOnRequest")}</div>
+              )}
               {(sourceModel || modelParam) && (
                 <p className="text-gray-600 text-sm">
                   {sourceModel

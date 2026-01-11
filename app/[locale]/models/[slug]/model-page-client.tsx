@@ -3,9 +3,9 @@
 import Link from "next/link"
 import { useTranslations } from "next-intl"
 import { Clock, Shield, ArrowRight } from "lucide-react"
-import { formatCurrency } from "@/lib/format-currency"
 import { formatImageUrl } from "@/utils/image-url"
 import { useEffect, useRef } from "react"
+import { ServicePriceDisplay } from "@/components/service-price-display"
 
 interface ModelData {
   id: string
@@ -37,6 +37,9 @@ interface ModelData {
     detailed_description: string | null
     what_included: string | null
     benefits: string | null
+    discounted_price?: number | null
+    has_discount?: boolean
+    discount?: any
   }>
 }
 
@@ -212,11 +215,18 @@ export default function ModelPageClient({ modelData, locale }: Props) {
 
                       {/* Price and CTA */}
                       <div className="flex items-center justify-between">
-                        <div className="text-xl font-bold text-gray-900">
-                          {service.price !== null && service.price !== undefined
-                            ? formatCurrency(service.price)
-                            : t("priceOnRequest")}
-                        </div>
+                        {service.price !== null && service.price !== undefined ? (
+                          <ServicePriceDisplay
+                            originalPrice={service.price}
+                            discountedPrice={service.discounted_price || undefined}
+                            hasDiscount={service.has_discount}
+                            discount={service.discount}
+                            size="md"
+                            showBadge={true}
+                          />
+                        ) : (
+                          <div className="text-xl font-bold text-gray-900">{t("priceOnRequest")}</div>
+                        )}
                         <div className="flex items-center text-blue-600 font-semibold group-hover:text-blue-700">
                           <span className="mr-1 text-sm">{commonT("details")}</span>
                           <ArrowRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
