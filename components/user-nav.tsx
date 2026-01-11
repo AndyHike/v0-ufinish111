@@ -15,27 +15,17 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { LogOut, Settings, UserIcon } from "lucide-react"
 import { logout } from "@/lib/auth/actions"
-import { useState, useEffect } from "react"
 
 export function UserNav({ user }) {
   const t = useTranslations("UserNav")
   const params = useParams()
   const router = useRouter()
   const locale = params.locale
-  const [isMounted, setIsMounted] = useState(false)
-
-  useEffect(() => {
-    setIsMounted(true)
-  }, [])
 
   const handleLogout = async () => {
     await logout()
     router.push(`/${locale}`)
     router.refresh()
-  }
-
-  if (!isMounted) {
-    return <div className="w-[70px] h-[36px]" />
   }
 
   if (!user) {
