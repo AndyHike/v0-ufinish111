@@ -79,7 +79,7 @@ export function Header({ user }) {
             page_url: window.location.href,
           },
         })
-      }, 0)
+      }, 100)
     }
   }
 
@@ -92,7 +92,6 @@ export function Header({ user }) {
       return
     }
 
-    // Показуємо спінер тільки при першому пошуку
     if (isFirstSearch) {
       setIsSearching(true)
     }
@@ -106,7 +105,6 @@ export function Header({ user }) {
         setSearchResults(data.results || [])
         setShowResults(true)
 
-        // ВИПРАВЛЕНО: Відправляємо подію пошуку тільки для запитів >= 3 символи
         if (query.length >= 3) {
           trackSearchEvent(query, data.results.length)
         }
@@ -142,14 +140,13 @@ export function Header({ user }) {
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (searchQuery.trim()) {
-      // ВИПРАВЛЕНО: Відправляємо подію пошуку при submit
       trackSearchEvent(searchQuery.trim(), searchResults.length)
 
-      // Якщо є результати, перейти до першого
+      // If there are results, go to the first one
       if (searchResults.length > 0) {
         handleResultClick(searchResults[0])
       } else {
-        // Якщо немає результатів, перейти на сторінку брендів
+        // If there are no results, go to the brands page
         router.push(`/${locale}/brands`)
         setShowResults(false)
       }
@@ -157,19 +154,20 @@ export function Header({ user }) {
   }
 
   const handleResultClick = (result: SearchResult) => {
-    // ВИПРАВЛЕНО: Відстеження кліку на результат пошуку з детальними параметрами
     if (typeof window !== "undefined" && window.fbq) {
-      window.fbq("track", "ViewContent", {
-        content_type: result.type,
-        content_name: result.name,
-        content_category: "search_result",
-        custom_parameters: {
-          search_query: searchQuery,
-          result_position: searchResults.findIndex((r) => r.id === result.id) + 1,
-          result_type: result.type,
-          total_results: searchResults.length,
-        },
-      })
+      setTimeout(() => {
+        window.fbq("track", "ViewContent", {
+          content_type: result.type,
+          content_name: result.name,
+          content_category: "search_result",
+          custom_parameters: {
+            search_query: searchQuery,
+            result_position: searchResults.findIndex((r) => r.id === result.id) + 1,
+            result_type: result.type,
+            total_results: searchResults.length,
+          },
+        })
+      }, 100)
     }
 
     router.push(result.url)

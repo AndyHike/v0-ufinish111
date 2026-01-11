@@ -13,32 +13,19 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import { LogOut, Settings, UserIcon, Loader2 } from "lucide-react"
+import { LogOut, Settings, UserIcon } from "lucide-react"
 import { logout } from "@/lib/auth/actions"
-import { useCurrentUser } from "@/hooks/use-current-user"
 
-export function UserNav({ user: initialUser }) {
+export function UserNav({ user }) {
   const t = useTranslations("UserNav")
   const params = useParams()
   const router = useRouter()
   const locale = params.locale
 
-  const { user: clientUser, isLoading, refresh } = useCurrentUser()
-
-  const user = clientUser ?? initialUser
-
   const handleLogout = async () => {
     await logout()
-    refresh() // Refresh user state after logout
     router.push(`/${locale}`)
-  }
-
-  if (isLoading) {
-    return (
-      <Button variant="ghost" size="sm" disabled>
-        <Loader2 className="h-4 w-4 animate-spin" />
-      </Button>
-    )
+    router.refresh()
   }
 
   if (!user) {
@@ -56,6 +43,7 @@ export function UserNav({ user: initialUser }) {
         .split(" ")
         .map((n) => n[0])
         .join("")
+        .toUpperCase()
     : user.email?.substring(0, 2).toUpperCase()
 
   return (
