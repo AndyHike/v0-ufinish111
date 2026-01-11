@@ -44,20 +44,26 @@ export function roundToNearest90(price: number): number {
 /**
  * Перевірка чи знижка активна
  */
-export function isDiscountActive(discount: Discount): boolean {
-  if (!discount.isActive) return false
+export function isDiscountActive(discount: any): boolean {
+  const isActive = discount.isActive ?? discount.is_active
+  const startsAt = discount.startsAt ?? discount.starts_at
+  const expiresAt = discount.expiresAt ?? discount.expires_at
+  const maxUses = discount.maxUses ?? discount.max_uses
+  const currentUses = discount.currentUses ?? discount.current_uses
+
+  if (!isActive) return false
 
   const now = new Date()
 
-  if (discount.startsAt && new Date(discount.startsAt) > now) {
+  if (startsAt && new Date(startsAt) > now) {
     return false
   }
 
-  if (discount.expiresAt && new Date(discount.expiresAt) < now) {
+  if (expiresAt && new Date(expiresAt) < now) {
     return false
   }
 
-  if (discount.maxUses && discount.currentUses >= discount.maxUses) {
+  if (maxUses && currentUses >= maxUses) {
     return false
   }
 
