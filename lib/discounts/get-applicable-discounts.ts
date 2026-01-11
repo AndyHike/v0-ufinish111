@@ -8,7 +8,7 @@ import { calculateDiscount, isDiscountActive } from "./utils"
 export async function getApplicableDiscounts(serviceId: string, modelId: string): Promise<DiscountCalculation | null> {
   const supabase = await createServerClient()
 
-  console.log("[DISCOUNT] Starting getApplicableDiscounts", { serviceId, modelId })
+  console.log("[v0] [DISCOUNT] Starting getApplicableDiscounts", { serviceId, modelId })
 
   const { data: model } = await supabase
     .from("models")
@@ -17,81 +17,98 @@ export async function getApplicableDiscounts(serviceId: string, modelId: string)
     .single()
 
   if (!model) {
-    console.log("[DISCOUNT] Model not found")
+    console.log("[v0] [DISCOUNT] Model not found")
     return null
   }
 
-  console.log("[DISCOUNT] Model found:", model)
+  console.log("[v0] [DISCOUNT] Model found:", model)
 
   const { data: discounts, error } = await supabase.from("discounts").select("*").eq("is_active", true)
 
   if (error) {
-    console.error("[DISCOUNT] Error fetching discounts:", error)
+    console.error("[v0] [DISCOUNT] Error fetching discounts:", error)
     return null
   }
 
-  console.log("[DISCOUNT] Found discounts:", discounts?.length || 0)
+  console.log("[v0] [DISCOUNT] Raw discounts from DB:", JSON.stringify(discounts, null, 2))
 
   if (!discounts || discounts.length === 0) {
-    console.log("[DISCOUNT] No discounts found in database")
+    console.log("[v0] [DISCOUNT] No discounts found in database")
     return null
   }
 
   const applicableDiscounts = discounts.filter((discount) => {
-    // Перевіряємо чи знижка активна
-    const isActive = isDiscountActive(discount as any)
-    console.log(`[DISCOUNT] Checking discount ${discount.id} (${discount.name}):`, {
-      isActive,
-      serviceIds: discount.service_ids,
-      includesService: discount.service_ids?.includes(serviceId),
-      scopeType: discount.scope_type,
-      brandMatch: discount.brand_id === model.brand_id,
-      seriesMatch: discount.series_id === model.series_id,
-      modelMatch: discount.model_id === modelId,
+    console.log(`[v0] [DISCOUNT] Checking discount ${discount.id}:`, {
+      name: discount.name,
+      service_ids: discount.service_ids,
+      service_ids_type: typeof discount.service_ids,
+      service_ids_isArray: Array.isArray(discount.service_ids),
+      looking_for_service: serviceId,
     })
 
-    if (!isActive) return false
-
-    // Перевіряємо чи послуга включена в знижку
-    if (!discount.service_ids || !Array.isArray(discount.service_ids) || discount.service_ids.length === 0) {
-      console.log(`[DISCOUNT] Discount ${discount.id} has no service_ids`)
+    const isActive = isDiscountActive(discount as any)
+    if (!isActive) {
+      console.log(`[v0] [DISCOUNT] Discount ${discount.id} is not active`)
       return false
     }
 
-    if (!discount.service_ids.includes(serviceId)) {
-      console.log(`[DISCOUNT] Service ${serviceId} not in discount ${discount.id} service_ids`)
+    let serviceIds: string[] = []
+    if (Array.isArray(discount.service_ids)) {
+      serviceIds = discount.service_ids
+    } else if (typeof discount.service_ids === "string") {
+      // PostgreSQL може повертати як строку {uuid1,uuid2}
+      serviceIds = discount.service_ids.replace(/[{}]/g, "").split(",")
+    }
+
+    console.log(`[v0] [DISCOUNT] Parsed service_ids:`, serviceIds)
+
+    if (serviceIds.length === 0) {
+      console.log(`[v0] [DISCOUNT] Discount ${discount.id} has no service_ids`)
       return false
     }
 
-    // Перевіряємо scope
+    if (!serviceIds.includes(serviceId)) {
+      console.log(`[v0] [DISCOUNT] Service ${serviceId} not in discount ${discount.id} service_ids`)
+      return false
+    }
+
+    console.log(`[v0] [DISCOUNT] Service ${serviceId} IS in discount ${discount.id} service_ids!`)
+
     if (discount.scope_type === "all_models") {
-      console.log(`[DISCOUNT] Discount ${discount.id} applies to all models - MATCH`)
+      console.log(`[v0] [DISCOUNT] Discount ${discount.id} applies to all models - MATCH!`)
       return true
     }
     if (discount.scope_type === "brand" && discount.brand_id === model.brand_id) {
-      console.log(`[DISCOUNT] Discount ${discount.id} applies to brand ${model.brand_id} - MATCH`)
+      console.log(`[v0] [DISCOUNT] Discount ${discount.id} applies to brand ${model.brand_id} - MATCH!`)
       return true
     }
     if (discount.scope_type === "series" && discount.series_id === model.series_id) {
-      console.log(`[DISCOUNT] Discount ${discount.id} applies to series ${model.series_id} - MATCH`)
+      console.log(`[v0] [DISCOUNT] Discount ${discount.id} applies to series ${model.series_id} - MATCH!`)
       return true
     }
     if (discount.scope_type === "model" && discount.model_id === modelId) {
-      console.log(`[DISCOUNT] Discount ${discount.id} applies to model ${modelId} - MATCH`)
+      console.log(`[v0] [DISCOUNT] Discount ${discount.id} applies to model ${modelId} - MATCH!`)
       return true
     }
 
-    console.log(`[DISCOUNT] Discount ${discount.id} does not match scope`)
+    console.log(`[v0] [DISCOUNT] Discount ${discount.id} scope mismatch:`, {
+      scope_type: discount.scope_type,
+      discount_brand_id: discount.brand_id,
+      model_brand_id: model.brand_id,
+      discount_series_id: discount.series_id,
+      model_series_id: model.series_id,
+      discount_model_id: discount.model_id,
+      model_id: modelId,
+    })
     return false
   })
 
-  console.log(`[DISCOUNT] Applicable discounts found: ${applicableDiscounts.length}`)
+  console.log(`[v0] [DISCOUNT] Applicable discounts found: ${applicableDiscounts.length}`)
 
   if (applicableDiscounts.length === 0) return null
 
-  // Повертаємо першу застосовну знижку
   const selectedDiscount = applicableDiscounts[0]
-  console.log(`[DISCOUNT] Selected discount:`, selectedDiscount)
+  console.log(`[v0] [DISCOUNT] Selected discount:`, selectedDiscount)
 
   return selectedDiscount as any
 }
