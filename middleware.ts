@@ -20,12 +20,7 @@ function getDefaultLanguage(): string {
   return process.env.NEXT_PUBLIC_DEFAULT_LOCALE || defaultLocale
 }
 
-function isMaintenanceModeEnabled(): boolean {
-  return process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true"
-}
-
 function isPublicAuthRoute(pathname: string): boolean {
-  // Remove locale prefix from pathname for checking
   const pathWithoutLocale = pathname.replace(/^\/(cs|uk|en)/, "")
   return PUBLIC_AUTH_ROUTES.some((route) => pathWithoutLocale.startsWith(route))
 }
@@ -33,7 +28,6 @@ function isPublicAuthRoute(pathname: string): boolean {
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
 
-  // Skip middleware for static files, API routes, and webhooks
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api/") ||
@@ -48,7 +42,7 @@ export async function middleware(request: NextRequest) {
     (locale) => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`,
   )
 
-  // If no locale, redirect to URL with locale
+  // If no locale, redirect with locale - single response
   if (!pathnameHasLocale) {
     const savedLocale = request.cookies.get("NEXT_LOCALE")?.value
     const preferredLocale = savedLocale && supportedLocales.includes(savedLocale) ? savedLocale : getDefaultLanguage()
@@ -59,36 +53,34 @@ export async function middleware(request: NextRequest) {
     const response = NextResponse.redirect(url)
     response.cookies.set("NEXT_LOCALE", preferredLocale, {
       path: "/",
-      maxAge: 60 * 60 * 24 * 365, // 1 year
+      maxAge: 31536000, // 1 year
       sameSite: "strict",
       secure: process.env.NODE_ENV === "production",
-      httpOnly: false, // Allow JS access for locale switching
+      httpOnly: false,
     })
     return response
   }
 
-  // Extract locale from pathname
   const locale = pathname.split("/")[1]
-
-  // Update locale cookie if changed
-  const savedLocale = request.cookies.get("NEXT_LOCALE")?.value
   const response = NextResponse.next()
 
+  const savedLocale = request.cookies.get("NEXT_LOCALE")?.value
   if (savedLocale !== locale && supportedLocales.includes(locale)) {
     response.cookies.set("NEXT_LOCALE", locale, {
       path: "/",
-      maxAge: 60 * 60 * 24 * 365, // 1 year
+      maxAge: 31536000,
       sameSite: "strict",
       secure: process.env.NODE_ENV === "production",
-      httpOnly: false, // Allow JS access for locale switching
+      httpOnly: false,
     })
   }
 
-  const maintenanceEnabled = isMaintenanceModeEnabled()
-  if (maintenanceEnabled && !pathname.includes("/maintenance") && !isPublicAuthRoute(pathname)) {
-    const isAdmin = request.cookies.get("user_role")?.value === "admin"
-    if (!isAdmin) {
-      return NextResponse.redirect(new URL(`/${locale}/maintenance`, request.url))
+  if (process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true") {
+    if (!pathname.includes("/maintenance") && !isPublicAuthRoute(pathname)) {
+      const isAdmin = request.cookies.get("user_role")?.value === "admin"
+      if (!isAdmin) {
+        return NextResponse.redirect(new URL(`/${locale}/maintenance`, request.url))
+      }
     }
   }
 
@@ -96,7 +88,6 @@ export async function middleware(request: NextRequest) {
     const sessionId = request.cookies.get("session_id")?.value
     if (!sessionId) {
       const loginUrl = new URL(`/${locale}/auth/login`, request.url)
-      // Add redirect parameter to return after login
       loginUrl.searchParams.set("redirect", pathname)
       return NextResponse.redirect(loginUrl)
     }

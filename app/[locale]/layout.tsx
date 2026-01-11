@@ -23,6 +23,8 @@ const inter = Inter({
   display: "swap",
   preload: true,
   variable: "--font-inter",
+  adjustFontFallback: true,
+  fallback: ["system-ui", "arial"],
 })
 
 export async function generateStaticParams() {
@@ -109,7 +111,7 @@ export default async function LocaleLayout({
       console.error(`Failed to load messages for locale ${locale}:`, error)
       return null
     }),
-    getCurrentUser(),
+    getCurrentUser().catch(() => null), // Don't block on auth errors
   ])
 
   if (!messages) {
@@ -121,8 +123,8 @@ export default async function LocaleLayout({
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://xnwoqomipsesacphoczp.supabase.co" />
         <link rel="dns-prefetch" href="https://devicehelp.cz" />
-        <link rel="dns-prefetch" href="https://xnwoqomipsesacphoczp.supabase.co" />
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <meta name="seznam-wmt" content="5VWPSjprwBjXXCI2HRoOVfvKcmdPB1Om" />
         <link rel="preload" href="/focused-phone-fix.webp" as="image" type="image/webp" fetchPriority="high" />
@@ -130,11 +132,12 @@ export default async function LocaleLayout({
         <style
           dangerouslySetInnerHTML={{
             __html: `
-            body{font-family:var(--font-inter),system-ui,sans-serif;margin:0;padding:0;-webkit-font-smoothing:antialiased;text-rendering:optimizeSpeed}
+            *{box-sizing:border-box}
+            body{font-family:var(--font-inter),system-ui,sans-serif;margin:0;padding:0;-webkit-font-smoothing:antialiased;text-rendering:optimizeSpeed;line-height:1.5}
             .hero-section{background:#fff;padding:1.5rem 0;min-height:350px;contain:layout style paint}
             .hero-title{font-size:1.75rem;font-weight:600;line-height:1.2;margin-bottom:0.75rem;color:#111827}
             .hero-subtitle{color:#6b7280;font-size:1rem;margin-bottom:1.5rem;line-height:1.5;font-weight:400}
-            .hero-image{width:100%;height:250px;object-fit:cover;border-radius:0.75rem;transform:translateZ(0)}
+            .hero-image{width:100%;height:250px;object-fit:cover;border-radius:0.75rem;transform:translateZ(0);content-visibility:auto}
             .container{max-width:1200px;margin:0 auto;padding:0 1rem}
             .btn-primary{background:#2563eb;color:#fff;padding:0.75rem 1.5rem;border-radius:0.5rem;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;border:none;cursor:pointer;transition:background-color 0.15s ease}
             .btn-primary:hover{background:#1d4ed8}
