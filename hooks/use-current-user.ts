@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState } from "use router"
 import { useRouter } from "next/navigation"
 
 interface User {
@@ -17,6 +17,7 @@ interface User {
 export function useCurrentUser() {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [shouldRefreshRouter, setShouldRefreshRouter] = useState(false)
   const router = useRouter()
 
   const fetchUser = async () => {
@@ -46,10 +47,17 @@ export function useCurrentUser() {
     fetchUser()
   }, [])
 
+  useEffect(() => {
+    if (shouldRefreshRouter) {
+      router.refresh()
+      setShouldRefreshRouter(false)
+    }
+  }, [shouldRefreshRouter, router])
+
   const refresh = () => {
     setIsLoading(true)
     fetchUser()
-    router.refresh()
+    setShouldRefreshRouter(true)
   }
 
   return { user, isLoading, refresh }
