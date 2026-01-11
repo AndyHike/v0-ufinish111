@@ -12,6 +12,18 @@ import { syncClientToRemonline, updateRemonlineIdForUser } from "@/lib/services/
 import { hash } from "@/lib/auth/utils"
 import { revalidatePath } from "next/cache"
 
+function setSecureCookie(name: string, value: string, maxAge: number = 30 * 24 * 60 * 60) {
+  const isProduction = process.env.NODE_ENV === "production"
+
+  cookies().set(name, value, {
+    httpOnly: true,
+    secure: isProduction,
+    maxAge,
+    path: "/",
+    sameSite: "strict", // Changed from "lax" to "strict" for better security
+  })
+}
+
 // Check if user exists in our database
 export async function checkUserExists(identifier: string): Promise<{
   success: boolean
@@ -24,7 +36,9 @@ export async function checkUserExists(identifier: string): Promise<{
   }
 }> {
   try {
-    console.log(`Checking if user exists with identifier: ${identifier}`)
+    if (process.env.NODE_ENV === "development") {
+      console.log(`Checking if user exists with identifier: ${identifier}`)
+    }
 
     const supabase = createClient()
 
@@ -48,7 +62,9 @@ export async function checkUserExists(identifier: string): Promise<{
         .maybeSingle()
 
       if (error) {
-        console.error("Error checking user by email:", error)
+        if (process.env.NODE_ENV === "development") {
+          console.error("Error checking user by email:", error)
+        }
         return {
           success: false,
           message: "Error checking user. Please try again later.",
@@ -72,7 +88,9 @@ export async function checkUserExists(identifier: string): Promise<{
         .maybeSingle()
 
       if (error) {
-        console.error("Error checking user by phone:", error)
+        if (process.env.NODE_ENV === "development") {
+          console.error("Error checking user by phone:", error)
+        }
         return {
           success: false,
           message: "Error checking user. Please try again later.",
@@ -106,7 +124,9 @@ export async function checkUserExists(identifier: string): Promise<{
       message: "User not found",
     }
   } catch (error) {
-    console.error("Check user error:", error)
+    if (process.env.NODE_ENV === "development") {
+      console.error("Check user error:", error)
+    }
     return {
       success: false,
       message: "Failed to check if user exists. Please try again later.",
@@ -120,7 +140,9 @@ export async function sendVerificationCode(
   type: "login" | "registration",
 ): Promise<{ success: boolean; message?: string; email?: string }> {
   try {
-    console.log(`Sending verification code for ${type} to identifier: ${identifier}`)
+    if (process.env.NODE_ENV === "development") {
+      console.log(`Sending verification code for ${type} to identifier: ${identifier}`)
+    }
 
     // If identifier is an email, use it directly
     // If it's a phone number, we need to find the associated email
@@ -139,16 +161,18 @@ export async function sendVerificationCode(
       email = userResult.userData.email
     }
 
-    console.log(`Will send verification code to email: ${email}`)
-
     // Generate verification code
     const code = generateVerificationCode()
-    console.log(`Generated code: ${code}`)
+    if (process.env.NODE_ENV === "development") {
+      console.log(`Generated code: ${code}`)
+    }
 
     // Save code to database
     const saved = await saveVerificationCode(email, code, type)
     if (!saved) {
-      console.error("Failed to save verification code to database")
+      if (process.env.NODE_ENV === "development") {
+        console.error("Failed to save verification code to database")
+      }
       return {
         success: false,
         message: "Failed to generate verification code",
@@ -158,17 +182,23 @@ export async function sendVerificationCode(
     // Send email with code
     try {
       await sendVerificationCodeEmail(email, code, "uk", type === "login")
-      console.log(`Verification code sent to ${email}`)
+      if (process.env.NODE_ENV === "development") {
+        console.log(`Verification code sent to ${email}`)
+      }
       return { success: true, email }
     } catch (emailError) {
-      console.error("Failed to send verification email:", emailError)
+      if (process.env.NODE_ENV === "development") {
+        console.error("Failed to send verification email:", emailError)
+      }
       return {
         success: false,
         message: "Failed to send verification email",
       }
     }
   } catch (error) {
-    console.error("Send verification code error:", error)
+    if (process.env.NODE_ENV === "development") {
+      console.error("Send verification code error:", error)
+    }
     return {
       success: false,
       message: "Failed to send verification code. Please try again later.",
@@ -183,7 +213,9 @@ export async function verifyCode(
   type: "login" | "registration",
 ): Promise<{ success: boolean; message?: string }> {
   try {
-    console.log(`Verifying code for ${identifier}: ${code}`)
+    if (process.env.NODE_ENV === "development") {
+      console.log(`Verifying code for ${identifier}: ${code}`)
+    }
 
     // If identifier is a phone number, we need to find the associated email
     let email = identifier
@@ -213,14 +245,14 @@ export async function verifyCode(
     // Verify code
     const verification = await verifyCodeLib(email, code, type)
     if (!verification.valid) {
-      console.error("Invalid verification code:", verification.message)
+      if (process.env.NODE_ENV === "development") {
+        console.error("Invalid verification code:", verification.message)
+      }
       return {
         success: false,
         message: verification.message || "Invalid verification code",
       }
     }
-
-    console.log("Code verified successfully")
 
     if (type === "login") {
       // For login, create session
@@ -265,39 +297,26 @@ export async function verifyCode(
         .single()
 
       if (sessionError) {
-        console.error("Failed to create session:", sessionError)
+        if (process.env.NODE_ENV === "development") {
+          console.error("Failed to create session:", sessionError)
+        }
         return {
           success: false,
           message: "Failed to create session",
         }
       }
 
-      console.log("Session created:", session)
-
-      const cookieStore = cookies()
-
-      cookieStore.set("session_id", session.id, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        maxAge: 30 * 24 * 60 * 60, // 30 days
-        path: "/",
-        sameSite: "lax",
-      })
-
-      cookieStore.set("user_role", userRole, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        maxAge: 30 * 24 * 60 * 60, // 30 days
-        path: "/",
-        sameSite: "lax",
-      })
+      setSecureCookie("session_id", session.id)
+      setSecureCookie("user_role", userRole)
 
       revalidatePath("/", "layout")
     }
 
     return { success: true }
   } catch (error) {
-    console.error("Verify code error:", error)
+    if (process.env.NODE_ENV === "development") {
+      console.error("Verify code error:", error)
+    }
     return {
       success: false,
       message: "Failed to verify code. Please try again later.",
@@ -314,7 +333,9 @@ export async function createUser(userData: {
   address?: string
 }): Promise<{ success: boolean; message?: string }> {
   try {
-    console.log("Creating user in database:", userData)
+    if (process.env.NODE_ENV === "development") {
+      console.log("Creating user in database:", userData)
+    }
 
     const supabase = createClient()
 
@@ -326,7 +347,9 @@ export async function createUser(userData: {
       .maybeSingle()
 
     if (existingUser) {
-      console.log("User already exists in database:", existingUser)
+      if (process.env.NODE_ENV === "development") {
+        console.log("User already exists in database:", existingUser)
+      }
 
       // Create session
       const { data: session, error: sessionError } = await supabase
@@ -334,27 +357,23 @@ export async function createUser(userData: {
         .insert([
           {
             user_id: existingUser.id,
-            expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
+            expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
           },
         ])
         .select("id")
         .single()
 
       if (sessionError) {
-        console.error("Failed to create session:", sessionError)
+        if (process.env.NODE_ENV === "development") {
+          console.error("Failed to create session:", sessionError)
+        }
         return {
           success: false,
           message: "Failed to create session",
         }
       }
 
-      // Set session cookie
-      cookies().set("session_id", session.id, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        maxAge: 30 * 24 * 60 * 60, // 30 days
-        path: "/",
-      })
+      setSecureCookie("session_id", session.id)
 
       // Sync with RemOnline in the background
       syncClientToRemonline(userData)
@@ -364,7 +383,9 @@ export async function createUser(userData: {
           }
         })
         .catch((error) => {
-          console.error("Error syncing with RemOnline:", error)
+          if (process.env.NODE_ENV === "development") {
+            console.error("Error syncing with RemOnline:", error)
+          }
         })
 
       return { success: true }
@@ -383,13 +404,15 @@ export async function createUser(userData: {
         first_name: userData.first_name,
         last_name: userData.last_name,
         password_hash: passwordHash,
-        email_verified: true, // Since we verified with code
+        email_verified: true,
       })
       .select("id")
       .single()
 
     if (error) {
-      console.error("Failed to create user in database:", error)
+      if (process.env.NODE_ENV === "development") {
+        console.error("Failed to create user in database:", error)
+      }
       return {
         success: false,
         message: "Failed to create user account",
@@ -402,15 +425,16 @@ export async function createUser(userData: {
       first_name: userData.first_name,
       last_name: userData.last_name,
       phone: userData.phone[0] || null,
-      email: userData.email.toLowerCase(), // Додаємо email в profiles
+      email: userData.email.toLowerCase(),
       address: userData.address || null,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })
 
     if (profileError) {
-      console.error("Failed to create profile in database:", profileError)
-      // Видаляємо користувача, якщо не вдалося створити профіль
+      if (process.env.NODE_ENV === "development") {
+        console.error("Failed to create profile in database:", profileError)
+      }
       await supabase.from("users").delete().eq("id", newUser.id)
       return {
         success: false,
@@ -424,27 +448,23 @@ export async function createUser(userData: {
       .insert([
         {
           user_id: newUser.id,
-          expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
+          expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
         },
       ])
       .select("id")
       .single()
 
     if (sessionError) {
-      console.error("Failed to create session:", sessionError)
+      if (process.env.NODE_ENV === "development") {
+        console.error("Failed to create session:", sessionError)
+      }
       return {
         success: false,
         message: "Failed to create session",
       }
     }
 
-    // Set session cookie
-    cookies().set("session_id", session.id, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 30 * 24 * 60 * 60, // 30 days
-      path: "/",
-    })
+    setSecureCookie("session_id", session.id)
 
     // Sync with RemOnline in the background
     syncClientToRemonline({
@@ -460,12 +480,16 @@ export async function createUser(userData: {
         }
       })
       .catch((error) => {
-        console.error("Error syncing with RemOnline:", error)
+        if (process.env.NODE_ENV === "development") {
+          console.error("Error syncing with RemOnline:", error)
+        }
       })
 
     return { success: true }
   } catch (error) {
-    console.error("Create user error:", error)
+    if (process.env.NODE_ENV === "development") {
+      console.error("Create user error:", error)
+    }
     return {
       success: false,
       message: "Failed to create user. Please try again later.",

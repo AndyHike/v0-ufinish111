@@ -32,9 +32,8 @@ export async function getCurrentUser() {
     .single()
 
   if (userError || !userData) {
-    console.error("Error fetching user data:", userError)
     cookies().delete("session_id")
-    cookies().delete("user_role") // Also delete user_role cookie when user not found
+    cookies().delete("user_role")
     return null
   }
 
@@ -45,10 +44,6 @@ export async function getCurrentUser() {
     .eq("id", userData.id)
     .single()
 
-  // Debug log
-  console.log("User data:", userData)
-  console.log("Profile data in session:", profileData)
-
   // Combine first_name and last_name for full name
   const fullName = [profileData?.first_name || userData.first_name, profileData?.last_name || userData.last_name]
     .filter(Boolean)
@@ -58,7 +53,7 @@ export async function getCurrentUser() {
     id: userData.id,
     email: userData.email,
     role: userData.role,
-    name: fullName, // For backward compatibility
+    name: fullName,
     first_name: profileData?.first_name || userData.first_name || null,
     last_name: profileData?.last_name || userData.last_name || null,
     phone: profileData?.phone || null,

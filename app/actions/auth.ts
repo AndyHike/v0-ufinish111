@@ -4,6 +4,7 @@ import { redirect } from "next/navigation"
 import { cookies } from "next/headers"
 import { createClient } from "@supabase/supabase-js"
 import { hash, verifyPassword } from "@/utils/auth"
+import { revalidatePath } from "next/cache"
 
 // Create a Supabase client for server-side operations
 function createServerClient() {
@@ -15,10 +16,28 @@ function createServerClient() {
   })
 }
 
+function setSecureCookie(name: string, value: string, maxAge: number = 30 * 24 * 60 * 60) {
+  const isProduction = process.env.NODE_ENV === "production"
+
+  cookies().set(name, value, {
+    httpOnly: true,
+    secure: isProduction,
+    maxAge,
+    path: "/",
+    sameSite: "strict",
+  })
+}
+
 // Validate password strength
 function validatePassword(password: string): { valid: boolean; message?: string } {
   if (password.length < 8) {
     return { valid: false, message: "Password must be at least 8 characters long" }
+  }
+  if (!/[A-Za-z]/.test(password)) {
+    return { valid: false, message: "Password must contain at least one letter" }
+  }
+  if (!/[0-9]/.test(password)) {
+    return { valid: false, message: "Password must contain at least one number" }
   }
   return { valid: true }
 }
@@ -66,14 +85,16 @@ export async function register(formData: FormData) {
       .single()
 
     if (userError) {
-      console.error("Error creating user:", userError)
+      if (process.env.NODE_ENV === "development") {
+        console.error("Error creating user:", userError)
+      }
       return { success: false, message: "Failed to create user account" }
     }
 
     // Check if profiles table has a phone column
     const { data: profileColumns, error: columnsError } = await supabase.from("profiles").select("*").limit(1)
 
-    if (columnsError) {
+    if (columnsError && process.env.NODE_ENV === "development") {
       console.error("Error checking profile columns:", columnsError)
     }
 
@@ -97,7 +118,9 @@ export async function register(formData: FormData) {
     const { error: profileError } = await supabase.from("profiles").insert([profileData])
 
     if (profileError) {
-      console.error("Error creating profile:", profileError)
+      if (process.env.NODE_ENV === "development") {
+        console.error("Error creating profile:", profileError)
+      }
       // Delete user if profile creation fails
       await supabase.from("users").delete().eq("id", userData.id)
       return { success: false, message: "Failed to create user profile" }
@@ -116,21 +139,22 @@ export async function register(formData: FormData) {
       .single()
 
     if (sessionError) {
-      console.error("Error creating session:", sessionError)
+      if (process.env.NODE_ENV === "development") {
+        console.error("Error creating session:", sessionError)
+      }
       return { success: false, message: "Failed to create session" }
     }
 
-    // Set a cookie with the session ID
-    cookies().set("session_id", session.id, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 30 * 24 * 60 * 60, // 30 days
-      path: "/",
-    })
+    setSecureCookie("session_id", session.id)
+    setSecureCookie("user_role", "user")
+
+    revalidatePath("/", "layout")
 
     return { success: true }
   } catch (error) {
-    console.error("Registration error:", error)
+    if (process.env.NODE_ENV === "development") {
+      console.error("Registration error:", error)
+    }
     return { success: false, message: "An unexpected error occurred" }
   }
 }
@@ -179,26 +203,25 @@ export async function login(formData: FormData) {
       .single()
 
     if (sessionError) {
-      console.error("Error creating session:", sessionError)
+      if (process.env.NODE_ENV === "development") {
+        console.error("Error creating session:", sessionError)
+      }
       return { success: false, message: "loginFailed" }
     }
 
-    // Set session cookie
-    cookies().set("session_id", session.id, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 30 * 24 * 60 * 60, // 30 days
-      path: "/",
-    })
+    setSecureCookie("session_id", session.id)
+    setSecureCookie("user_role", userData.role || "user")
+
+    revalidatePath("/", "layout")
 
     return { success: true, role: userData.role }
   } catch (error) {
-    console.error("Login error:", error)
+    if (process.env.NODE_ENV === "development") {
+      console.error("Login error:", error)
+    }
     return { success: false, message: "unexpectedError" }
   }
 }
-
-// Update the logout function to also remove the session from the database
 
 // Logout user
 export async function logout() {
@@ -210,8 +233,11 @@ export async function logout() {
     await supabase.from("sessions").delete().eq("id", sessionId)
   }
 
-  // Delete the cookie
   cookies().delete("session_id")
+  cookies().delete("user_role")
+
+  revalidatePath("/", "layout")
+
   return { success: true }
 }
 
@@ -243,7 +269,9 @@ export async function registerWithRedirect(formData: FormData, locale: string) {
 
     return result
   } catch (error) {
-    console.error("Registration redirect error:", error)
+    if (process.env.NODE_ENV === "development") {
+      console.error("Registration redirect error:", error)
+    }
     return { success: false, message: "An unexpected error occurred during registration" }
   }
 }

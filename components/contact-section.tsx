@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, type FormEvent } from "react"
+import { useState, type FormEvent } from "react"
 import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,7 +11,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export function ContactSection() {
   const t = useTranslations("Contact")
-  const [isMounted, setIsMounted] = useState(false)
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [phone, setPhone] = useState("")
@@ -19,26 +18,6 @@ export function ContactSection() {
   const [isLoading, setIsLoading] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
   const [activeTab, setActiveTab] = useState("form")
-
-  useEffect(() => {
-    setIsMounted(true)
-  }, [])
-
-  if (!isMounted) {
-    return (
-      <section className="relative py-12 md:py-20 bg-white">
-        <div className="container relative z-10 px-4 md:px-6 pb-16 md:pb-0">
-          <div className="text-center max-w-3xl mx-auto mb-8 md:mb-12">
-            <h2 className="text-2xl md:text-3xl font-bold tracking-tighter md:text-4xl mb-3">{t("title")}</h2>
-            <p className="text-gray-500 md:text-lg">{t("subtitle")}</p>
-          </div>
-          <div className="flex items-center justify-center min-h-[400px]">
-            <div className="animate-pulse text-gray-400">Loading...</div>
-          </div>
-        </div>
-      </section>
-    )
-  }
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()

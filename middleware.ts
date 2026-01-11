@@ -60,7 +60,9 @@ export async function middleware(request: NextRequest) {
     response.cookies.set("NEXT_LOCALE", preferredLocale, {
       path: "/",
       maxAge: 60 * 60 * 24 * 365, // 1 year
-      sameSite: "lax",
+      sameSite: "strict",
+      secure: process.env.NODE_ENV === "production",
+      httpOnly: false, // Allow JS access for locale switching
     })
     return response
   }
@@ -76,7 +78,9 @@ export async function middleware(request: NextRequest) {
     response.cookies.set("NEXT_LOCALE", locale, {
       path: "/",
       maxAge: 60 * 60 * 24 * 365, // 1 year
-      sameSite: "lax",
+      sameSite: "strict",
+      secure: process.env.NODE_ENV === "production",
+      httpOnly: false, // Allow JS access for locale switching
     })
   }
 
@@ -91,7 +95,10 @@ export async function middleware(request: NextRequest) {
   if (!isPublicAuthRoute(pathname) && (pathname.includes("/profile") || pathname.includes("/admin"))) {
     const sessionId = request.cookies.get("session_id")?.value
     if (!sessionId) {
-      return NextResponse.redirect(new URL(`/${locale}/auth/login`, request.url))
+      const loginUrl = new URL(`/${locale}/auth/login`, request.url)
+      // Add redirect parameter to return after login
+      loginUrl.searchParams.set("redirect", pathname)
+      return NextResponse.redirect(loginUrl)
     }
   }
 

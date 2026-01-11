@@ -42,7 +42,7 @@ export function UserNav({ user }: UserNavProps) {
   // Якщо користувача немає - показуємо кнопку входу
   if (!user) {
     return (
-      <Link href={`/${locale}/auth/login`}>
+      <Link href={`/${locale}/auth/login`} suppressHydrationWarning>
         <Button variant="outline" size="sm">
           <User className="mr-2 h-4 w-4" />
           {t("login")}
@@ -57,7 +57,7 @@ export function UserNav({ user }: UserNavProps) {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
+      <DropdownMenuTrigger asChild suppressHydrationWarning>
         <Button variant="ghost" className="relative h-9 w-9 rounded-full">
           <Avatar className="h-9 w-9">
             <AvatarFallback>{initials}</AvatarFallback>
