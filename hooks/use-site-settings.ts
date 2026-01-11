@@ -8,16 +8,25 @@ interface SiteSettings {
   siteFavicon: string
 }
 
+const DEFAULT_SETTINGS: SiteSettings = {
+  defaultLanguage: "uk",
+  siteLogo: "", // Empty initially to match server
+  siteFavicon: "/favicon.ico",
+}
+
 export function useSiteSettings() {
-  const [settings, setSettings] = useState<SiteSettings>({
-    defaultLanguage: "uk",
-    siteLogo: "/placeholder-logo.png",
-    siteFavicon: "/favicon.ico",
-  })
+  const [settings, setSettings] = useState<SiteSettings>(DEFAULT_SETTINGS)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [isMounted, setIsMounted] = useState(false)
 
   useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (!isMounted) return
+
     const fetchSettings = async () => {
       try {
         const response = await fetch("/api/site-settings")
@@ -35,7 +44,12 @@ export function useSiteSettings() {
     }
 
     fetchSettings()
-  }, [])
+  }, [isMounted])
 
-  return { settings, loading, error, refetch: () => window.location.reload() }
+  return {
+    settings: isMounted ? settings : DEFAULT_SETTINGS,
+    loading,
+    error,
+    refetch: () => window.location.reload(),
+  }
 }

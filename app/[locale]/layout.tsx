@@ -99,8 +99,19 @@ export default async function LocaleLayout({
   let promotionalBanner = null
   try {
     promotionalBanner = await getPromotionalBanner()
+    if (promotionalBanner) {
+      console.log("[v0] Layout: Promotional banner loaded:", {
+        is_active: promotionalBanner.is_active,
+        has_text_cs: !!promotionalBanner.text_cs,
+        has_text_en: !!promotionalBanner.text_en,
+        has_text_uk: !!promotionalBanner.text_uk,
+        color: promotionalBanner.color,
+      })
+    } else {
+      console.log("[v0] Layout: No promotional banner found")
+    }
   } catch (error) {
-    console.error("Failed to load promotional banner:", error)
+    console.error("[v0] Layout: Failed to load promotional banner:", error)
   }
 
   return (

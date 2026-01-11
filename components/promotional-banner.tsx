@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -15,6 +15,29 @@ interface PromotionalBannerProps {
 export function PromotionalBanner({ data, locale }: PromotionalBannerProps) {
   const [isVisible, setIsVisible] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isMounted, setIsMounted] = useState(false)
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (isMounted) {
+      console.log("[v0] PromotionalBanner mounted:", {
+        is_active: data.is_active,
+        locale: locale,
+        hasText: !!data[`text_${locale}` as keyof PromotionalBannerData],
+        text: data[`text_${locale}` as keyof PromotionalBannerData],
+        buttonText: data[`button_text_${locale}` as keyof PromotionalBannerData],
+        color: data.color,
+        isVisible: isVisible,
+      })
+    }
+  }, [isMounted, data, locale, isVisible])
+
+  if (!isMounted) {
+    return null
+  }
 
   if (!isVisible) {
     return null
@@ -22,6 +45,11 @@ export function PromotionalBanner({ data, locale }: PromotionalBannerProps) {
 
   const text = data[`text_${locale}` as keyof PromotionalBannerData] as string
   const buttonText = data[`button_text_${locale}` as keyof PromotionalBannerData] as string
+
+  if (!text || !buttonText) {
+    console.log("[v0] PromotionalBanner: Missing text or buttonText for locale", locale)
+    return null
+  }
 
   return (
     <>

@@ -399,7 +399,7 @@ export function Header({ user }) {
         </div>
       </header>
 
-      <MobileNav navigation={navigation} isActive={isActive} />
+      <MobileNav />
     </>
   )
 }
