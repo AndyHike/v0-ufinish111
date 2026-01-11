@@ -13,15 +13,16 @@ export function PromotionalBannerWrapper({ data, locale }: PromotionalBannerWrap
   const [isMounted, setIsMounted] = useState(false)
 
   useEffect(() => {
-    setIsMounted(true)
-    console.log("[v0] PromotionalBannerWrapper mounted:", {
-      hasData: !!data,
-      enabled: data?.enabled, // Changed from is_active to enabled to match DB schema
-      locale,
+    requestAnimationFrame(() => {
+      setIsMounted(true)
     })
-  }, [data, locale])
+  }, [])
 
-  if (!isMounted || !data || !data.enabled) {
+  if (!data || !data.enabled) {
+    return null
+  }
+
+  if (!isMounted) {
     return null
   }
 

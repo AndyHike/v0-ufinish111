@@ -119,31 +119,21 @@ export function DiscountRequestModal({ isOpen, onClose, locale, promotionText }:
         setIsSuccess(true)
 
         // Facebook Pixel tracking
-        if (typeof window !== "undefined" && window.fbq) {
-          window.fbq("track", "Lead", {
-            content_name: "Discount Request",
-            value: 150,
-            currency: "CZK",
-            custom_parameters: {
-              form_type: "promotional_banner",
-              has_device: !!device,
-              has_service: !!service,
-              promotion: promotionText,
-            },
-          })
-        }
-
-        // Reset form after 3 seconds
         setTimeout(() => {
-          setName("")
-          setEmail("")
-          setPhone("")
-          setDevice("")
-          setService("")
-          setMessage("")
-          setIsSuccess(false)
-          onClose()
-        }, 3000)
+          if (typeof window !== "undefined" && window.fbq) {
+            window.fbq("track", "Lead", {
+              content_name: "Discount Request",
+              value: 150,
+              currency: "CZK",
+              custom_parameters: {
+                form_type: "promotional_banner",
+                has_device: !!device,
+                has_service: !!service,
+                promotion: promotionText,
+              },
+            })
+          }
+        }, 0)
       }
     } catch (err) {
       console.error("Error submitting form:", err)
