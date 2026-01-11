@@ -15,6 +15,7 @@ import { SessionProvider } from "@/components/providers/session-provider"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
 import { DynamicFavicon } from "@/components/dynamic-favicon"
+import { Analytics } from "@vercel/analytics/react"
 import "@/app/globals.css"
 
 const inter = Inter({
@@ -79,6 +80,20 @@ export async function generateMetadata({
       title: currentSeo.title,
       description: currentSeo.description,
     },
+    icons: {
+      icon: [
+        {
+          url: "https://xnwoqomipsesacphoczp.supabase.co/storage/v1/object/public/site-assets/favicon/1750418444610-hgnxmfio3rv.PNG",
+          type: "image/png",
+        },
+      ],
+      apple: [
+        {
+          url: "https://xnwoqomipsesacphoczp.supabase.co/storage/v1/object/public/site-assets/favicon/1750418444610-hgnxmfio3rv.PNG",
+          type: "image/png",
+        },
+      ],
+    },
   }
 }
 
@@ -142,6 +157,7 @@ export default async function LocaleLayout({
                   </Suspense>
                 </div>
                 <Toaster />
+                <Analytics />
               </CookieConsentProvider>
             </SessionProvider>
           </NextIntlClientProvider>
