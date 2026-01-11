@@ -20,6 +20,13 @@ export function ServicePriceDisplay({
   size = "md",
   showBadge = true,
 }: ServicePriceDisplayProps) {
+  console.log("[v0] ServicePriceDisplay:", {
+    originalPrice,
+    discountedPrice,
+    hasDiscount,
+    discount,
+  })
+
   const sizeClasses = {
     sm: "text-base",
     md: "text-xl",

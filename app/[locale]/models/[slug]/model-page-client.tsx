@@ -53,6 +53,19 @@ export default function ModelPageClient({ modelData, locale }: Props) {
   const commonT = useTranslations("Common")
   const viewContentSent = useRef(false)
 
+  useEffect(() => {
+    console.log("[v0] Model services loaded:", modelData.services.length)
+    modelData.services.forEach((service) => {
+      if (service.has_discount) {
+        console.log(`[v0] Service "${service.name}" has discount:`, {
+          originalPrice: service.price,
+          discountedPrice: service.discounted_price,
+          discount: service.discount,
+        })
+      }
+    })
+  }, [modelData])
+
   // МІНІМАЛЬНА структура Facebook Pixel для моделі
   useEffect(() => {
     if (typeof window !== "undefined" && window.fbq && !viewContentSent.current) {
