@@ -15,6 +15,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { User, LogOut, Settings } from "lucide-react"
 import { logout } from "@/app/actions/auth"
+import { useEffect, useState } from "react"
 
 interface UserNavProps {
   user: {
@@ -28,19 +29,37 @@ export function UserNav({ user }: UserNavProps) {
   const params = useParams()
   const locale = params.locale as string
   const router = useRouter()
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
+
+  useEffect(() => {
+    const channel = new BroadcastChannel("auth_channel")
+
+    channel.onmessage = (event) => {
+      if (event.data === "logout") {
+        window.location.href = `/${locale}`
+      }
+    }
+
+    return () => {
+      channel.close()
+    }
+  }, [locale])
 
   const handleLogout = async () => {
     try {
+      setIsLoggingOut(true)
       await logout()
-      router.refresh()
-      router.push(`/${locale}`)
+      const channel = new BroadcastChannel("auth_channel")
+      channel.postMessage("logout")
+      channel.close()
+      window.location.href = `/${locale}`
     } catch (error) {
       console.error("Logout error:", error)
+      setIsLoggingOut(false)
     }
   }
 
-  // Якщо користувача немає - показуємо кнопку входу
-  if (!user) {
+  if (!user || isLoggingOut) {
     return (
       <Link href={`/${locale}/auth/login`} suppressHydrationWarning>
         <Button variant="outline" size="sm">
@@ -51,7 +70,6 @@ export function UserNav({ user }: UserNavProps) {
     )
   }
 
-  // Якщо користувач є - показуємо аватар з dropdown
   const initials = user.email.split("@")[0].substring(0, 2).toUpperCase()
   const isAdmin = user.role === "admin"
 
@@ -80,7 +98,7 @@ export function UserNav({ user }: UserNavProps) {
             </Link>
           </DropdownMenuItem>
         )}
-        <DropdownMenuItem onClick={handleLogout}>
+        <DropdownMenuItem onClick={handleLogout} disabled={isLoggingOut}>
           <LogOut className="mr-2 h-4 w-4" />
           {t("logout")}
         </DropdownMenuItem>

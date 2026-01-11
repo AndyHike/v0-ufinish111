@@ -241,6 +241,7 @@ export function Header({ user }) {
                         src={settings.siteLogo || "/placeholder.svg"}
                         alt="DeviceHelp"
                         className="h-8 w-8 object-contain"
+                        suppressHydrationWarning
                         onError={(e) => {
                           const target = e.target as HTMLImageElement
                           target.style.display = "none"
@@ -291,6 +292,7 @@ export function Header({ user }) {
                   src={settings.siteLogo || "/placeholder.svg"}
                   alt="DeviceHelp"
                   className="h-8 w-8 object-contain"
+                  suppressHydrationWarning
                   onError={(e) => {
                     const target = e.target as HTMLImageElement
                     target.style.display = "none"
