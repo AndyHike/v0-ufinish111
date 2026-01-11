@@ -24,6 +24,7 @@ export function DiscountRequestModal({ isOpen, onClose, locale, promotionText }:
   const [message, setMessage] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
+  const [error, setError] = useState("")
 
   const translations = {
     cs: {
@@ -46,6 +47,7 @@ export function DiscountRequestModal({ isOpen, onClose, locale, promotionText }:
       successTitle: "Žádost odeslána!",
       successMessage: "Brzy vás budeme kontaktovat s informacemi o slevě.",
       close: "Zavřít",
+      errorMessage: "Chyba při odesílání. Zkuste to znovu.",
     },
     en: {
       title: "Get Discount",
@@ -67,6 +69,7 @@ export function DiscountRequestModal({ isOpen, onClose, locale, promotionText }:
       successTitle: "Request Sent!",
       successMessage: "We will contact you soon with discount information.",
       close: "Close",
+      errorMessage: "Error sending. Please try again.",
     },
     uk: {
       title: "Отримати знижку",
@@ -88,6 +91,7 @@ export function DiscountRequestModal({ isOpen, onClose, locale, promotionText }:
       successTitle: "Заявку надіслано!",
       successMessage: "Ми скоро зв'яжемося з вами з інформацією про знижку.",
       close: "Закрити",
+      errorMessage: "Помилка надсилання. Спробуйте ще раз.",
     },
   }
 
@@ -96,6 +100,7 @@ export function DiscountRequestModal({ isOpen, onClose, locale, promotionText }:
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
+    setError("")
 
     try {
       const response = await fetch("/api/discount-request", {
@@ -134,9 +139,13 @@ export function DiscountRequestModal({ isOpen, onClose, locale, promotionText }:
             })
           }
         }, 0)
+      } else {
+        const data = await response.json()
+        setError(data.details || t.errorMessage)
       }
     } catch (err) {
-      console.error("Error submitting form:", err)
+      console.error("[v0] Error submitting form:", err)
+      setError(t.errorMessage)
     } finally {
       setIsLoading(false)
     }
@@ -167,6 +176,8 @@ export function DiscountRequestModal({ isOpen, onClose, locale, promotionText }:
                   id="discount-name"
                   placeholder={t.namePlaceholder}
                   required
+                  autoComplete="name"
+                  minLength={2}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                 />
@@ -180,6 +191,7 @@ export function DiscountRequestModal({ isOpen, onClose, locale, promotionText }:
                     type="email"
                     placeholder={t.emailPlaceholder}
                     required
+                    autoComplete="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                   />
@@ -191,6 +203,8 @@ export function DiscountRequestModal({ isOpen, onClose, locale, promotionText }:
                     type="tel"
                     placeholder={t.phonePlaceholder}
                     required
+                    autoComplete="tel"
+                    pattern="[\+]?[0-9\s\-$$$$]+"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                   />
@@ -228,6 +242,8 @@ export function DiscountRequestModal({ isOpen, onClose, locale, promotionText }:
                   className="min-h-[80px]"
                 />
               </div>
+
+              {error && <div className="text-sm text-red-500 bg-red-50 p-3 rounded-md">{error}</div>}
 
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? (

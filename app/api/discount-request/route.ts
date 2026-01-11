@@ -1,6 +1,6 @@
 export const dynamic = "force-dynamic"
 
-import { createClient } from "@/lib/supabase"
+import { createClient } from "@/utils/supabase/server"
 import { type NextRequest, NextResponse } from "next/server"
 import { sendEmail } from "@/lib/email/send-email"
 
@@ -31,7 +31,7 @@ ${message || "Не вказано"}
     ])
 
     if (dbError) {
-      console.error("Database error:", dbError)
+      console.error("[v0] Database error:", dbError)
       throw dbError
     }
 
@@ -60,7 +60,13 @@ ${message ? `<p><strong>Zpráva:</strong><br/>${message}</p>` : ""}
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error("Error processing discount request:", error)
-    return NextResponse.json({ error: "Failed to process discount request" }, { status: 500 })
+    console.error("[v0] Error processing discount request:", error)
+    return NextResponse.json(
+      {
+        error: "Failed to process discount request",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 },
+    )
   }
 }
