@@ -35,11 +35,15 @@ export function ServicePriceDisplay({
   }
 
   if (!hasDiscount || !discountedPrice) {
-    return <div className={`font-bold text-gray-900 ${sizeClasses[size]}`}>{formatCurrency(originalPrice)}</div>
+    return (
+      <div className={`font-bold text-gray-900 ${sizeClasses[size]}`} suppressHydrationWarning>
+        {formatCurrency(originalPrice)}
+      </div>
+    )
   }
 
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1" suppressHydrationWarning>
       <div className="flex items-center gap-2 flex-wrap">
         <div className={`font-bold text-gray-900 ${sizeClasses[size]}`}>{formatCurrency(discountedPrice)}</div>
         {showBadge && discount && (

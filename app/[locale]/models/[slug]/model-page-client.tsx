@@ -55,30 +55,33 @@ export default function ModelPageClient({ modelData, locale }: Props) {
   const viewContentSent = useRef(false)
 
   useEffect(() => {
-    console.log("[v0] Model services loaded:", modelData.services.length)
-    modelData.services.forEach((service) => {
-      if (service.has_discount) {
-        console.log(`[v0] Service "${service.name}" has discount:`, {
-          originalPrice: service.price,
-          discountedPrice: service.discounted_price,
-          discount: service.discount,
-          actualDiscountPercentage: service.actual_discount_percentage, // Added actual percentage to console log
-        })
-      }
-    })
+    if (process.env.NODE_ENV === "development") {
+      console.log("[v0] Model services loaded:", modelData.services.length)
+      modelData.services.forEach((service) => {
+        if (service.has_discount) {
+          console.log(`[v0] Service "${service.name}" has discount:`, {
+            originalPrice: service.price,
+            discountedPrice: service.discounted_price,
+            discount: service.discount,
+            actualDiscountPercentage: service.actual_discount_percentage,
+          })
+        }
+      })
+    }
   }, [modelData])
 
-  // МІНІМАЛЬНА структура Facebook Pixel для моделі
   useEffect(() => {
-    if (typeof window !== "undefined" && window.fbq && !viewContentSent.current) {
-      // Розраховуємо середню ціну послуг
+    if (viewContentSent.current) return
+
+    const sendFbqEvent = () => {
+      if (typeof window === "undefined" || !window.fbq) return
+
       const servicesWithPrice = modelData.services.filter((s) => s.price !== null && s.price !== undefined)
       const avgPrice =
         servicesWithPrice.length > 0
           ? servicesWithPrice.reduce((sum, s) => sum + (s.price || 0), 0) / servicesWithPrice.length
           : 0
 
-      // ТІЛЬКИ НАЙВАЖЛИВІШІ ДАНІ
       const brandName = modelData.brands?.name || "Unknown"
       const modelName = modelData.name
       const contentName = `${brandName} ${modelName}`
@@ -90,18 +93,22 @@ export default function ModelPageClient({ modelData, locale }: Props) {
         content_category: "device_models",
         value: Math.round(avgPrice) || 0,
         currency: "CZK",
-        // БЕЗ custom_parameters
       })
 
-      console.log("📊 Model ViewContent:", {
-        brand: brandName,
-        model: modelName,
-        avg_price: Math.round(avgPrice) || 0,
-        services_count: modelData.services.length,
-      })
+      if (process.env.NODE_ENV === "development") {
+        console.log("📊 Model ViewContent:", {
+          brand: brandName,
+          model: modelName,
+          avg_price: Math.round(avgPrice) || 0,
+          services_count: modelData.services.length,
+        })
+      }
 
       viewContentSent.current = true
     }
+
+    const timeoutId = setTimeout(sendFbqEvent, 100)
+    return () => clearTimeout(timeoutId)
   }, [modelData])
 
   const formatWarranty = (months: number | null, period: string | null) => {
@@ -115,10 +122,9 @@ export default function ModelPageClient({ modelData, locale }: Props) {
   }
 
   const handleServiceClick = (service: any) => {
-    // ВИДАЛЕНО: ViewContent при кліку на послугу
-    // Це створювало дублювання з service-page-client.tsx
-    // Тепер тільки навігація без додаткових подій
-    console.log("🔗 Navigating to service:", service.name)
+    if (process.env.NODE_ENV === "development") {
+      console.log("🔗 Navigating to service:", service.name)
+    }
   }
 
   return (

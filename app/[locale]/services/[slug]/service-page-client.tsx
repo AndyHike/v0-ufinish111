@@ -84,10 +84,14 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
   const whatIncludedList = translation.what_included?.split("\n").filter((item) => item.trim()) || []
   const benefitsList = translation.benefits?.split("\n").filter((item) => item.trim()) || []
 
-  // МІНІМАЛЬНА структура Facebook Pixel - тільки найважливіші дані
   useEffect(() => {
-    if (typeof window !== "undefined" && window.fbq && !viewContentSent.current) {
-      // Визначаємо правильну ціну
+    // Перевіряємо чи ми на клієнті ТА чи не відправляли подію раніше
+    if (viewContentSent.current) return
+
+    // Виконуємо тільки після монтування компонента на клієнті
+    const sendFbqEvent = () => {
+      if (typeof window === "undefined" || !window.fbq) return
+
       const actualPrice =
         modelParam && modelServicePrice !== null && modelServicePrice !== undefined
           ? modelServicePrice
@@ -97,12 +101,9 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
               : (minPrice + maxPrice) / 2
             : null
 
-      // ТІЛЬКИ НАЙВАЖЛИВІШІ ДАНІ
       const brandName = sourceModel?.brands?.name || "Unknown"
       const modelName = sourceModel?.name || modelParam || "Unknown"
       const serviceName = translation.name
-
-      // Формуємо точне визначення
       const contentName = `${serviceName} - ${brandName} ${modelName}`
 
       window.fbq("track", "ViewContent", {
@@ -112,19 +113,24 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
         content_category: "repair_services",
         value: actualPrice || 0,
         currency: "CZK",
-        // БЕЗ custom_parameters - тільки основні дані
       })
 
-      console.log("📊 Service ViewContent:", {
-        service: serviceName,
-        brand: brandName,
-        model: modelName,
-        price: actualPrice || 0,
-      })
+      if (process.env.NODE_ENV === "development") {
+        console.log("📊 Service ViewContent:", {
+          service: serviceName,
+          brand: brandName,
+          model: modelName,
+          price: actualPrice || 0,
+        })
+      }
 
       viewContentSent.current = true
     }
-  }, [serviceData, translation.name, modelParam, sourceModel, modelServicePrice, minPrice, maxPrice])
+
+    // Додаємо невеликий таймаут щоб гарантувати що fbq завантажився
+    const timeoutId = setTimeout(sendFbqEvent, 100)
+    return () => clearTimeout(timeoutId)
+  }, [serviceData.id, translation.name, modelParam, sourceModel, modelServicePrice, minPrice, maxPrice])
 
   const formatWarranty = (months: number | null, period: string) => {
     if (months === null || months === undefined) return t("contactForWarranty")
@@ -137,30 +143,31 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
   }
 
   const handleOrderClick = () => {
-    // МІНІМАЛЬНА подія InitiateCheckout
-    if (typeof window !== "undefined" && window.fbq) {
-      const actualPrice =
-        modelParam && modelServicePrice !== null && modelServicePrice !== undefined
-          ? modelServicePrice
-          : minPrice !== null && maxPrice !== null
-            ? minPrice === maxPrice
-              ? minPrice
-              : (minPrice + maxPrice) / 2
-            : null
+    if (typeof window === "undefined" || !window.fbq) return
 
-      const brandName = sourceModel?.brands?.name || "Unknown"
-      const modelName = sourceModel?.name || modelParam || "Unknown"
-      const contentName = `${translation.name} - ${brandName} ${modelName}`
+    const actualPrice =
+      modelParam && modelServicePrice !== null && modelServicePrice !== undefined
+        ? modelServicePrice
+        : minPrice !== null && maxPrice !== null
+          ? minPrice === maxPrice
+            ? minPrice
+            : (minPrice + maxPrice) / 2
+          : null
 
-      window.fbq("track", "InitiateCheckout", {
-        content_type: "product",
-        content_id: `service_${serviceData.id}`,
-        content_name: contentName,
-        content_category: "repair_services",
-        value: actualPrice || 0,
-        currency: "CZK",
-      })
+    const brandName = sourceModel?.brands?.name || "Unknown"
+    const modelName = sourceModel?.name || modelParam || "Unknown"
+    const contentName = `${translation.name} - ${brandName} ${modelName}`
 
+    window.fbq("track", "InitiateCheckout", {
+      content_type: "product",
+      content_id: `service_${serviceData.id}`,
+      content_name: contentName,
+      content_category: "repair_services",
+      value: actualPrice || 0,
+      currency: "CZK",
+    })
+
+    if (process.env.NODE_ENV === "development") {
       console.log("📊 InitiateCheckout:", {
         service: translation.name,
         brand: brandName,
@@ -170,20 +177,16 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
     }
   }
 
-  // Формуємо URL для бронювання через slug (аналогічно до model-page-client.tsx)
   const bookingUrl = (() => {
     const params = new URLSearchParams()
 
-    // Завжди передаємо slug послуги
     if (serviceData.slug) {
       params.set("service_slug", serviceData.slug)
     }
 
-    // Якщо є модель, передаємо її slug
     if (sourceModel?.slug) {
       params.set("model_slug", sourceModel.slug)
     } else if (modelParam) {
-      // modelParam це slug моделі з URL
       params.set("model_slug", modelParam)
     }
 
