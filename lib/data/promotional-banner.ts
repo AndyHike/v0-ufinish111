@@ -2,7 +2,7 @@ import { createClient } from "@/utils/supabase/server"
 
 export type PromotionalBannerData = {
   id: string
-  enabled: boolean
+  is_active: boolean
   color: string
   text_cs: string
   text_en: string
@@ -19,16 +19,12 @@ export async function getPromotionalBanner(): Promise<PromotionalBannerData | nu
     const { data, error } = await supabase
       .from("promotional_banners")
       .select("*")
-      .eq("enabled", true)
+      .eq("is_active", true)
       .order("created_at", { ascending: false })
       .limit(1)
-      .single()
+      .maybeSingle()
 
     if (error) {
-      if (error.code === "PGRST116") {
-        // No enabled banner found
-        return null
-      }
       throw error
     }
 
