@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { AlertCircle, X } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { cn } from "@/lib/utils"
@@ -11,7 +11,17 @@ interface InfoBannerClientProps {
 }
 
 export function InfoBannerClient({ data }: InfoBannerClientProps) {
+  const [isMounted, setIsMounted] = useState(false)
   const [isVisible, setIsVisible] = useState(true)
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
+  // Don't render on server or before hydration
+  if (!isMounted) {
+    return null
+  }
 
   if (!isVisible) {
     return null
