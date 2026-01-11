@@ -61,7 +61,13 @@ export async function getPriceWithDiscount(
   serviceId: string,
   modelId: string,
   originalPrice: number,
-): Promise<{ originalPrice: number; discountedPrice: number; hasDiscount: boolean; discount?: Discount }> {
+): Promise<{
+  originalPrice: number
+  discountedPrice: number
+  hasDiscount: boolean
+  discount?: Discount
+  actualDiscountPercentage?: number
+}> {
   const discount = await getApplicableDiscounts(serviceId, modelId)
 
   if (!discount) {
@@ -101,5 +107,6 @@ export async function getPriceWithDiscount(
     discountedPrice: calculation.roundedFinalPrice,
     hasDiscount: true,
     discount: discountForCalc,
+    actualDiscountPercentage: calculation.actualDiscountPercentage,
   }
 }

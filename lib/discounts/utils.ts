@@ -15,11 +15,14 @@ export function calculateDiscount(price: number, discount: Discount): DiscountCa
   const finalPrice = Math.max(0, price - discountAmount)
   const roundedFinalPrice = roundToNearest90(finalPrice)
 
+  const actualDiscountPercentage = ((price - roundedFinalPrice) / price) * 100
+
   return {
     originalPrice: price,
     discountAmount,
     finalPrice,
     roundedFinalPrice,
+    actualDiscountPercentage,
     discount,
   }
 }
@@ -73,7 +76,11 @@ export function isDiscountActive(discount: any): boolean {
 /**
  * Форматування знижки для відображення
  */
-export function formatDiscountValue(discount: Discount): string {
+export function formatDiscountValue(discount: Discount, actualPercentage?: number): string {
+  if (actualPercentage !== undefined) {
+    return `${Math.round(actualPercentage)}%`
+  }
+
   if (discount.discountType === "percentage") {
     return `${discount.discountValue}%`
   }

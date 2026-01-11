@@ -39,6 +39,7 @@ export interface DiscountCalculation {
   discountAmount: number
   finalPrice: number
   roundedFinalPrice: number // округлено до найближчих 90
+  actualDiscountPercentage: number // реальний відсоток знижки після округлення
   discount: Discount
 }
 

@@ -40,6 +40,7 @@ interface ModelData {
     discounted_price?: number | null
     has_discount?: boolean
     discount?: any
+    actual_discount_percentage?: number | null // Added actual discount percentage to interface
   }>
 }
 
@@ -61,6 +62,7 @@ export default function ModelPageClient({ modelData, locale }: Props) {
           originalPrice: service.price,
           discountedPrice: service.discounted_price,
           discount: service.discount,
+          actualDiscountPercentage: service.actual_discount_percentage, // Added actual percentage to console log
         })
       }
     })
@@ -234,6 +236,7 @@ export default function ModelPageClient({ modelData, locale }: Props) {
                             discountedPrice={service.discounted_price || undefined}
                             hasDiscount={service.has_discount}
                             discount={service.discount}
+                            actualDiscountPercentage={service.actual_discount_percentage || undefined} // Pass actual percentage to display component
                             size="md"
                             showBadge={true}
                           />

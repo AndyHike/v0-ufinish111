@@ -8,6 +8,7 @@ interface ServicePriceDisplayProps {
   discountedPrice?: number
   hasDiscount?: boolean
   discount?: Discount
+  actualDiscountPercentage?: number
   size?: "sm" | "md" | "lg"
   showBadge?: boolean
 }
@@ -17,16 +18,10 @@ export function ServicePriceDisplay({
   discountedPrice,
   hasDiscount = false,
   discount,
+  actualDiscountPercentage,
   size = "md",
   showBadge = true,
 }: ServicePriceDisplayProps) {
-  console.log("[v0] ServicePriceDisplay:", {
-    originalPrice,
-    discountedPrice,
-    hasDiscount,
-    discount,
-  })
-
   const sizeClasses = {
     sm: "text-base",
     md: "text-xl",
@@ -49,7 +44,7 @@ export function ServicePriceDisplay({
         <div className={`font-bold text-gray-900 ${sizeClasses[size]}`}>{formatCurrency(discountedPrice)}</div>
         {showBadge && discount && (
           <Badge variant="destructive" className="text-xs">
-            -{formatDiscountValue(discount)}
+            -{formatDiscountValue(discount, actualDiscountPercentage)}
           </Badge>
         )}
       </div>

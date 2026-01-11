@@ -206,6 +206,7 @@ export default async function ModelPage({ params }: Props) {
         let discountedPrice = null
         let hasDiscount = false
         let discount = null
+        let actualDiscountPercentage = null // Added actual discount percentage
 
         if (price !== null) {
           const discountInfo = await getPriceWithDiscount(service.id, model.id, price)
@@ -213,6 +214,7 @@ export default async function ModelPage({ params }: Props) {
             discountedPrice = discountInfo.discountedPrice
             hasDiscount = true
             discount = discountInfo.discount
+            actualDiscountPercentage = discountInfo.actualDiscountPercentage // Get actual percentage after rounding
           }
         }
 
@@ -227,6 +229,7 @@ export default async function ModelPage({ params }: Props) {
           price: price,
           discounted_price: discountedPrice,
           has_discount: hasDiscount,
+          actual_discount_percentage: actualDiscountPercentage, // Log actual percentage
           warranty_period: ms.warranty_period || "months",
         })
 
@@ -247,6 +250,7 @@ export default async function ModelPage({ params }: Props) {
           discounted_price: discountedPrice,
           has_discount: hasDiscount,
           discount: discount,
+          actual_discount_percentage: actualDiscountPercentage, // Pass actual percentage to client
         }
       }),
     )
