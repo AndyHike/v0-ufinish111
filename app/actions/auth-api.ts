@@ -10,6 +10,7 @@ import {
 import { sendVerificationCode as sendVerificationCodeEmail } from "@/lib/email/send-email"
 import { syncClientToRemonline, updateRemonlineIdForUser } from "@/lib/services/remonline-sync"
 import { hash } from "@/lib/auth/utils"
+import { revalidatePath } from "next/cache"
 
 // Check if user exists in our database
 export async function checkUserExists(identifier: string): Promise<{
@@ -82,8 +83,7 @@ export async function checkUserExists(identifier: string): Promise<{
         userData = {
           id: data.users.id,
           email: data.users.email,
-          first_name: data.users.first_name,
-          last_name: data.users.last_name,
+          name: `${data.users.first_name} ${data.users.last_name}`.trim(),
           phone: data.phone,
         }
       }
@@ -95,8 +95,8 @@ export async function checkUserExists(identifier: string): Promise<{
         userData: {
           id: userData.id,
           email: userData.email,
-          name: `${userData.first_name} ${userData.last_name}`.trim(),
-          phone: isEmail ? userData.profiles?.phone : userData.phone,
+          name: userData.name,
+          phone: userData.phone,
         },
       }
     }
@@ -279,6 +279,7 @@ export async function verifyCode(
         secure: process.env.NODE_ENV === "production",
         maxAge: 30 * 24 * 60 * 60, // 30 days
         path: "/",
+        sameSite: "lax", // Add sameSite for better cookie handling
       })
 
       cookies().set("user_role", userRole, {
@@ -286,7 +287,10 @@ export async function verifyCode(
         secure: process.env.NODE_ENV === "production",
         maxAge: 30 * 24 * 60 * 60, // 30 days
         path: "/",
+        sameSite: "lax", // Add sameSite for better cookie handling
       })
+
+      revalidatePath("/", "layout")
     }
 
     return { success: true }

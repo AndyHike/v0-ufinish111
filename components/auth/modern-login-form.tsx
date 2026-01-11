@@ -90,7 +90,11 @@ export function ModernLoginForm({ locale }: ModernLoginFormProps) {
         return
       }
 
-      window.location.href = `/${locale}`
+      router.refresh()
+
+      await new Promise((resolve) => setTimeout(resolve, 100))
+
+      router.push(`/${locale}`)
     } catch (error) {
       console.error("Verification error:", error)
       setError(t("somethingWentWrong"))

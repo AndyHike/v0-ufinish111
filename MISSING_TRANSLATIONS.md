@@ -5,44 +5,44 @@
 ## Footer.cookieSettings
 
 ### cs (Czech)
-```json
+\`\`\`json
 "Footer": {
   "cookieSettings": "Nastavení cookies"
 }
-```
+\`\`\`
 
 ### en (English)
-```json
+\`\`\`json
 "Footer": {
   "cookieSettings": "Cookie Settings"
 }
-```
+\`\`\`
 
 ### uk (Ukrainian)
-```json
+\`\`\`json
 "Footer": {
   "cookieSettings": "Налаштування cookies"
 }
-```
+\`\`\`
 
 ## UserNav.adminPanel
 
 ### cs (Czech)
-```json
+\`\`\`json
 "UserNav": {
   "adminPanel": "Adminstrátorský panel"
 }
-```
+\`\`\`
 
 ### en (English)
-```json
+\`\`\`json
 "UserNav": {
   "adminPanel": "Admin Panel"
 }
-```
+\`\`\`
 
 ### uk (Ukrainian)
-```json
+\`\`\`json
 "UserNav": {
   "adminPanel": "Панель адміністратора"
 }
