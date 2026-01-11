@@ -5,7 +5,6 @@ import { notFound } from "next/navigation"
 import { Inter } from "next/font/google"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
-import { getCurrentUser } from "@/lib/auth/session"
 import { getMessages } from "@/lib/get-messages"
 import { CookieConsentProvider } from "@/contexts/cookie-consent-context"
 import { CookieBanner } from "@/components/cookie-banner"
@@ -106,13 +105,10 @@ export default async function LocaleLayout({
   children: React.ReactNode
   params: { locale: string }
 }) {
-  const [messages, user] = await Promise.all([
-    getMessages(locale).catch((error) => {
-      console.error(`Failed to load messages for locale ${locale}:`, error)
-      return null
-    }),
-    getCurrentUser().catch(() => null), // Don't block on auth errors
-  ])
+  const messages = await getMessages(locale).catch((error) => {
+    console.error(`Failed to load messages for locale ${locale}:`, error)
+    return null
+  })
 
   if (!messages) {
     notFound()
@@ -154,7 +150,9 @@ export default async function LocaleLayout({
               <CookieConsentProvider>
                 <DynamicFavicon />
                 <div className="flex min-h-screen flex-col">
-                  <Header user={user} />
+                  <Suspense fallback={<HeaderSkeleton />}>
+                    <Header />
+                  </Suspense>
                   <main className="flex-1">{children}</main>
                   <Footer />
                   <CookieBanner />
@@ -170,5 +168,25 @@ export default async function LocaleLayout({
         </ThemeProvider>
       </body>
     </html>
+  )
+}
+
+function HeaderSkeleton() {
+  return (
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="container flex h-16 items-center justify-between px-2 md:px-4">
+        <div className="flex items-center gap-2">
+          <div className="h-8 w-8 rounded bg-muted animate-pulse" />
+          <div className="h-5 w-24 rounded bg-muted animate-pulse" />
+        </div>
+        <div className="hidden md:flex flex-1 max-w-md mx-6">
+          <div className="h-10 w-full rounded bg-muted animate-pulse" />
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="h-5 w-16 rounded bg-muted animate-pulse" />
+          <div className="h-8 w-8 rounded-full bg-muted animate-pulse" />
+        </div>
+      </div>
+    </header>
   )
 }

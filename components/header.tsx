@@ -1,8 +1,8 @@
 "use client"
 
 import type React from "react"
-import { Suspense } from "react"
-
+import { Suspense, useEffect, useState } from "react"
+import { useRef } from "react"
 import Link from "next/link"
 import { usePathname, useParams, useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
@@ -25,7 +25,6 @@ import {
 } from "lucide-react"
 import { LanguageSwitcher } from "@/components/language-switcher"
 import { UserNav } from "@/components/user-nav"
-import { useState, useEffect, useRef } from "react"
 import { MobileNav } from "@/components/mobile-nav"
 import { useSiteSettings } from "@/hooks/use-site-settings"
 
@@ -38,12 +37,28 @@ interface SearchResult {
   breadcrumb?: string | null
 }
 
-export function Header({ user }) {
+export function Header() {
   const t = useTranslations("Header")
   const pathname = usePathname()
   const params = useParams()
   const locale = params.locale as string
   const router = useRouter()
+
+  const [user, setUser] = useState<any>(null)
+  const [userLoaded, setUserLoaded] = useState(false)
+
+  useEffect(() => {
+    fetch("/api/user/current")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        setUser(data?.user || null)
+        setUserLoaded(true)
+      })
+      .catch(() => {
+        setUser(null)
+        setUserLoaded(true)
+      })
+  }, [])
 
   const [searchQuery, setSearchQuery] = useState("")
   const [searchResults, setSearchResults] = useState<SearchResult[]>([])
@@ -402,7 +417,7 @@ export function Header({ user }) {
             >
               <LanguageSwitcher className="flex" />
             </Suspense>
-            <UserNav user={user} />
+            {userLoaded ? <UserNav user={user} /> : <div className="h-8 w-8 rounded-full bg-muted animate-pulse" />}
           </div>
         </div>
       </header>

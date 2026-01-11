@@ -32,17 +32,15 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api/") ||
     pathname.includes("/webhooks/") ||
-    pathname.match(/\.(jpg|jpeg|png|gif|svg|ico|css|js|woff|woff2|ttf|eot|webp)$/)
+    /\.(jpg|jpeg|png|gif|svg|ico|css|js|woff|woff2|ttf|eot|webp)$/.test(pathname)
   ) {
     return NextResponse.next()
   }
 
-  // Check if pathname has locale
   const pathnameHasLocale = supportedLocales.some(
     (locale) => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`,
   )
 
-  // If no locale, redirect with locale - single response
   if (!pathnameHasLocale) {
     const savedLocale = request.cookies.get("NEXT_LOCALE")?.value
     const preferredLocale = savedLocale && supportedLocales.includes(savedLocale) ? savedLocale : getDefaultLanguage()
@@ -53,7 +51,7 @@ export async function middleware(request: NextRequest) {
     const response = NextResponse.redirect(url)
     response.cookies.set("NEXT_LOCALE", preferredLocale, {
       path: "/",
-      maxAge: 31536000, // 1 year
+      maxAge: 31536000,
       sameSite: "strict",
       secure: process.env.NODE_ENV === "production",
       httpOnly: false,
@@ -75,21 +73,21 @@ export async function middleware(request: NextRequest) {
     })
   }
 
+  if (pathname.includes("/profile") || pathname.includes("/admin")) {
+    const sessionId = request.cookies.get("session_id")?.value
+    if (!sessionId) {
+      const loginUrl = new URL(`/${locale}/auth/login`, request.url)
+      loginUrl.searchParams.set("redirect", pathname)
+      return NextResponse.redirect(loginUrl)
+    }
+  }
+
   if (process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true") {
     if (!pathname.includes("/maintenance") && !isPublicAuthRoute(pathname)) {
       const isAdmin = request.cookies.get("user_role")?.value === "admin"
       if (!isAdmin) {
         return NextResponse.redirect(new URL(`/${locale}/maintenance`, request.url))
       }
-    }
-  }
-
-  if (!isPublicAuthRoute(pathname) && (pathname.includes("/profile") || pathname.includes("/admin"))) {
-    const sessionId = request.cookies.get("session_id")?.value
-    if (!sessionId) {
-      const loginUrl = new URL(`/${locale}/auth/login`, request.url)
-      loginUrl.searchParams.set("redirect", pathname)
-      return NextResponse.redirect(loginUrl)
     }
   }
 
