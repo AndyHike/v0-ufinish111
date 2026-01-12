@@ -15,7 +15,7 @@ import {
   FileText,
   BarChart3,
   Upload,
-  FileUp,
+  ArrowLeftRight,
   Megaphone,
 } from "lucide-react"
 
@@ -46,9 +46,9 @@ const sidebarItems = [
     icon: FileText,
   },
   {
-    title: "Імпорт послуг",
-    href: "/admin/services-import",
-    icon: FileUp,
+    title: "Імпорт/Експорт",
+    href: "/admin/import-export",
+    icon: ArrowLeftRight,
   },
   {
     title: "Користувачі",

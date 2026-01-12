@@ -10,20 +10,20 @@ React Error #418 - це помилка **hydration mismatch** (невідпов�
 
 У production режимі помилки мінімізовані. Для детальної інформації:
 
-```bash
+\`\`\`bash
 npm run dev
 # або
 yarn dev
-```
+\`\`\`
 
 ### 2. Відкрийте консоль браузера
 
 React покаже **точний компонент і текст**, де відбувається mismatch:
 
-```
+\`\`\`
 Warning: Text content did not match. Server: "Login" Client: "Avatar"
     at UserNav (components/user-nav.tsx:25)
-```
+\`\`\`
 
 ### 3. Увімкніть React DevTools
 
@@ -33,7 +33,7 @@ Warning: Text content did not match. Server: "Login" Client: "Avatar"
 
 ### ❌ Неправильно: Перевірка `isMounted`
 
-```tsx
+\`\`\`tsx
 const [isMounted, setIsMounted] = useState(false)
 
 useEffect(() => {
@@ -45,28 +45,28 @@ if (!isMounted) {
 }
 
 return <div>Real content</div>
-```
+\`\`\`
 
 ### ✅ Правильно: Використовуйте `suppressHydrationWarning`
 
-```tsx
+\`\`\`tsx
 // Для компонентів які залежать від клієнтського стану
 <div suppressHydrationWarning>
   {typeof window !== 'undefined' && <ClientOnlyComponent />}
 </div>
-```
+\`\`\`
 
 ### ❌ Неправильно: Використання Date.now(), Math.random()
 
-```tsx
+\`\`\`tsx
 // ❌ Сервер і клієнт генерують різні значення
 <div id={`item-${Math.random()}`}>Content</div>
 <div>{new Date().toLocaleTimeString()}</div>
-```
+\`\`\`
 
 ### ✅ Правильно: Генеруйте значення один раз
 
-```tsx
+\`\`\`tsx
 // ✅ Передайте значення через props з сервера
 <div id={`item-${stableId}`}>Content</div>
 
@@ -76,19 +76,19 @@ const [time, setTime] = useState<string>()
 useEffect(() => {
   setTime(new Date().toLocaleTimeString())
 }, [])
-```
+\`\`\`
 
 ### ❌ Неправильно: Використання localStorage/sessionStorage
 
-```tsx
+\`\`\`tsx
 // ❌ На сервері немає доступу до localStorage
 const theme = localStorage.getItem('theme') || 'light'
 return <div className={theme}>Content</div>
-```
+\`\`\`
 
 ### ✅ Правильно: Перевірте наявність window
 
-```tsx
+\`\`\`tsx
 const [theme, setTheme] = useState('light')
 
 useEffect(() => {
@@ -97,14 +97,14 @@ useEffect(() => {
     setTheme(savedTheme)
   }
 }, [])
-```
+\`\`\`
 
 ## Виправлені проблеми в цьому проекті
 
 ### 1. ContactSection - видалено `isMounted`
 
 **Було:**
-```tsx
+\`\`\`tsx
 const [isMounted, setIsMounted] = useState(false)
 
 useEffect(() => {
@@ -114,10 +114,10 @@ useEffect(() => {
 if (!isMounted) {
   return <div>Loading...</div> // ❌ Mismatch!
 }
-```
+\`\`\`
 
 **Стало:**
-```tsx
+\`\`\`tsx
 // Компонент рендериться одразу без перевірки isMounted
 export function ContactSection() {
   const [name, setName] = useState("")
@@ -125,38 +125,38 @@ export function ContactSection() {
   
   return <section>...</section> // ✅ Однаковий рендер
 }
-```
+\`\`\`
 
 ### 2. InfoBannerClient - додано suppressHydrationWarning
 
 **Було:**
-```tsx
+\`\`\`tsx
 const [isMounted, setIsMounted] = useState(false)
 
 if (!isMounted) {
   return null // ❌ Сервер: null, Клієнт: <Alert>
 }
-```
+\`\`\`
 
 **Стало:**
-```tsx
+\`\`\`tsx
 <Alert suppressHydrationWarning>
   {/* Контент */}
 </Alert>
-```
+\`\`\`
 
 ### 3. UserNav - додано suppressHydrationWarning
 
 **Було:**
-```tsx
+\`\`\`tsx
 if (!user) {
   return <Button>Login</Button>
 }
 return <Avatar>...</Avatar>
-```
+\`\`\`
 
 **Стало:**
-```tsx
+\`\`\`tsx
 if (!user) {
   return (
     <Link href="..." suppressHydrationWarning>
@@ -171,7 +171,7 @@ return (
     </DropdownMenuTrigger>
   </DropdownMenu>
 )
-```
+\`\`\`
 
 ## Інструменти для дебагу
 

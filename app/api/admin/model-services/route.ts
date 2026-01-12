@@ -6,8 +6,36 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams
     const modelId = searchParams.get("model_id")
     const locale = searchParams.get("locale") || "uk"
+    const exportMode = searchParams.get("export") === "true"
 
-    console.log(`[GET] /api/admin/model-services - Request params: modelId=${modelId}, locale=${locale}`)
+    console.log(
+      `[GET] /api/admin/model-services - Request params: modelId=${modelId}, locale=${locale}, export=${exportMode}`,
+    )
+
+    if (exportMode) {
+      const supabase = createClient()
+
+      const { data: modelServicesData, error } = await supabase
+        .from("model_services")
+        .select(`
+          id,
+          model_id,
+          service_id,
+          price,
+          warranty_months,
+          duration_hours,
+          detailed_description,
+          benefits
+        `)
+        .order("created_at", { ascending: false })
+
+      if (error) {
+        console.error("[GET] /api/admin/model-services - Error fetching all model services:", error)
+        return NextResponse.json({ error: "Failed to fetch model services", details: error }, { status: 500 })
+      }
+
+      return NextResponse.json({ services: modelServicesData })
+    }
 
     if (!modelId) {
       console.error("[GET] /api/admin/model-services - Missing model_id parameter")
@@ -16,7 +44,6 @@ export async function GET(request: NextRequest) {
 
     const supabase = createClient()
 
-    // First, fetch all services with their translations
     console.log(`[GET] /api/admin/model-services - Fetching services for locale ${locale}`)
     const { data: servicesData, error: servicesError } = await supabase
       .from("services")
@@ -42,7 +69,6 @@ export async function GET(request: NextRequest) {
 
     console.log(`[GET] /api/admin/model-services - Found ${servicesData.length} services`)
 
-    // Then fetch model services with all the new columns
     console.log(`[GET] /api/admin/model-services - Fetching model services for model ${modelId}`)
     const { data: modelServicesData, error: modelServicesError } = await supabase
       .from("model_services")
@@ -70,7 +96,6 @@ export async function GET(request: NextRequest) {
 
     console.log(`[GET] /api/admin/model-services - Found ${modelServicesData.length} model services`)
 
-    // Create a map of service data with filtered translations for the requested locale
     const servicesMap = new Map()
     servicesData.forEach((service) => {
       const translations = service.services_translations.filter((translation: any) => translation.locale === locale)
@@ -80,7 +105,6 @@ export async function GET(request: NextRequest) {
         slug: service.slug,
         position: service.position,
         image_url: service.image_url,
-        // Default values from services table (used as fallback)
         default_warranty_months: service.warranty_months,
         default_duration_hours: service.duration_hours,
         name: translations[0]?.name || "",
@@ -88,7 +112,6 @@ export async function GET(request: NextRequest) {
       })
     })
 
-    // Transform and combine the data
     const transformedData = modelServicesData
       .map((modelService) => {
         const serviceInfo = servicesMap.get(modelService.service_id)
@@ -96,7 +119,7 @@ export async function GET(request: NextRequest) {
           console.warn(
             `[GET] /api/admin/model-services - Service not found for model service: ${JSON.stringify(modelService)}`,
           )
-          return null // Skip if service not found
+          return null
         }
 
         return {
@@ -104,7 +127,6 @@ export async function GET(request: NextRequest) {
           model_id: modelService.model_id,
           service_id: modelService.service_id,
           price: modelService.price,
-          // Use model-specific values or fall back to service defaults
           warranty_months: modelService.warranty_months ?? serviceInfo.default_warranty_months,
           duration_hours: modelService.duration_hours ?? serviceInfo.default_duration_hours,
           warranty_period: modelService.warranty_period || "months",
@@ -114,9 +136,8 @@ export async function GET(request: NextRequest) {
           services: serviceInfo,
         }
       })
-      .filter((item) => item !== null) // Remove null items
+      .filter((item) => item !== null)
 
-    // Sort by service position
     transformedData.sort((a, b) => {
       return (a.services.position || 0) - (b.services.position || 0)
     })
@@ -141,7 +162,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "modelId and serviceId are required" }, { status: 400 })
     }
 
-    // Check if the model service already exists
     console.log(
       `[POST] /api/admin/model-services - Checking if model service exists: modelId=${body.modelId}, serviceId=${body.serviceId}`,
     )
@@ -160,7 +180,6 @@ export async function POST(request: Request) {
       )
     }
 
-    // Prepare the data with all new columns
     const serviceData = {
       price: body.price,
       warranty_months: body.warranty_months,
@@ -174,7 +193,6 @@ export async function POST(request: Request) {
     let result
 
     if (existingData) {
-      // Update existing record
       console.log(`[POST] /api/admin/model-services - Updating existing model service with ID ${existingData.id}`)
       const { data, error } = await supabase
         .from("model_services")
@@ -191,7 +209,6 @@ export async function POST(request: Request) {
       console.log("[POST] /api/admin/model-services - Successfully updated model service:", data)
       result = data
     } else {
-      // Insert new record
       console.log("[POST] /api/admin/model-services - Creating new model service")
       const { data, error } = await supabase
         .from("model_services")
