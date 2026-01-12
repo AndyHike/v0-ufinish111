@@ -12,16 +12,16 @@
     "admin": "Admin",
     "logout": "Odhlásit se",
     "login": "Přihlásit se",
-     "searchPlaceholder": "Hledat modely, značky, služby...",
-  "searchLoading": "Hledání...",
-  "searchResultsFound": "Nalezeno {count} výsledků",
-  "searchNoResults": "Pro {query} nebyly nalezeny žádné výsledky",
-  "searchResultTypes": {
-    "model": "Model",
-    "brand": "Značka",
-    "series": "Série",
-    "service": "Služba"
-  }
+    "searchPlaceholder": "Hledat modely, značky, služby...",
+    "searchLoading": "Hledání...",
+    "searchResultsFound": "Nalezeno {count} výsledků",
+    "searchNoResults": "Pro {query} nebyly nalezeny žádné výsledky",
+    "searchResultTypes": {
+      "model": "Model",
+      "brand": "Značka",
+      "series": "Série",
+      "service": "Služba"
+    }
   },
   "Footer": {
     "cookieSettings": "Nastavení cookies",
@@ -42,7 +42,6 @@
     "tagline": "Profesionální opravy mobilních telefonů",
     "company": "Společnost"
   },
-
   "UserNav": {
     "adminPanel": "Adminstrátorský panel",
     "login": "Přihlásit se",
@@ -807,6 +806,8 @@
     "about": "O nás"
   },
   "BookService": {
+    "pageTitle": "Rezervace služby",
+    "pageDescription": "Rezervujte si službu opravy mobilního telefonu",
     "title": "Rezervace služby",
     "selectedService": "Vybraná služba",
     "personalInfo": "Osobní údaje",
@@ -820,10 +821,10 @@
     "phonePlaceholder": "+420 123 456 789",
     "phoneRequired": "Telefon je povinný",
     "phoneInvalid": "Neplatný formát telefonu",
-    "email": "Email",
-    "emailPlaceholder": "example@email.com",
-    "emailRequired": "Email je povinný",
-    "emailInvalid": "Neplatný formát emailu",
+    "email": "E-mail",
+    "emailPlaceholder": "priklad@email.cz",
+    "emailRequired": "E-mail je povinný",
+    "emailInvalid": "Neplatný formát e-mailu",
     "dateTime": "Datum a čas",
     "date": "Datum",
     "selectDate": "Vyberte datum",
@@ -837,16 +838,38 @@
     "submitBooking": "Rezervovat službu",
     "submitting": "Odesílání...",
     "submitError": "Chyba při odesílání formuláře",
-    "successTitle": "Děkujeme za rezervaci!",
+    "successTitle": "Děkujeme za vaši rezervaci!",
     "successMessage": "Váš požadavek byl úspěšně odeslán",
-    "whatNext": "Co bude dál?",
-    "emailConfirmation": "Obdržíte potvrzení na email",
+    "whatNext": "Co dál?",
+    "emailConfirmation": "Obdržíte potvrzení e-mailem",
     "managerContact": "Náš manažer vás bude kontaktovat",
     "appointmentReminder": "Potvrdíme čas schůzky",
-    "nextSteps": "Co bude dál?",
-"step1": "Obdržíte potvrzení na email",
-"step2": "Náš manažer vás bude kontaktovat",
-"step3": "Potvrdíme čas schůzky",
-"workingHours": "Pracovní doba"
+    "nextSteps": "Co dál?",
+    "step1": "Obdržíte potvrzení e-mailem",
+    "step2": "Náš manažer vás bude kontaktovat",
+    "step3": "Potvrdíme čas schůzky",
+    "workingHours": "Pracovní doba",
+    "months": "měs.",
+    "priceOnRequest": "Na vyžádání",
+    "forSpecificModel": "pro vybraný model"
+  },
+  "StandaloneBooking": {
+    "pageTitle": "Objednat opravu",
+    "pageDescription": "Vyberte model zařízení a službu pro rezervaci opravy",
+    "title": "Objednat opravu",
+    "subtitle": "Vyberte model vašeho zařízení a potřebnou službu",
+    "stepBrand": "Značka",
+    "stepSeries": "Série",
+    "stepModel": "Model",
+    "stepService": "Služba",
+    "selectBrand": "Vyberte značku",
+    "selectSeries": "Vyberte sérii",
+    "selectModel": "Vyberte model",
+    "selectService": "Vyberte službu",
+    "back": "Zpět",
+    "proceedToBooking": "Pokračovat k rezervaci",
+    "noSeries": "Žádné série nenalezeny",
+    "noModels": "Žádné modely nenalezeny",
+    "noServices": "Pro tento model nebyly nalezeny žádné služby"
   }
 }

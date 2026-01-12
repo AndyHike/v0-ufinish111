@@ -16,15 +16,15 @@
     "searchResultsFound": "{count} results found",
     "searchNoResults": "No results found for \"{query}\"",
     "searchResultTypes": {
-    "model": "Model",
-    "brand": "Brand",
-    "series": "Series",
-    "service": "Service"
-  },
+      "model": "Model",
+      "brand": "Brand",
+      "series": "Series",
+      "service": "Service"
+    },
     "login": "Login"
   },
   "Footer": {
-  "cookieSettings": "Cookie Settings",
+    "cookieSettings": "Cookie Settings",
     "siteTitle": "Phone Repair",
     "description": "Professional mobile phone repair with quality guarantee.",
     "quickLinks": "Quick Links",
@@ -43,7 +43,7 @@
     "company": "Company"
   },
   "UserNav": {
-    "adminPanel":"Admin Panel",
+    "adminPanel": "Admin Panel",
     "login": "Login",
     "profile": "Profile",
     "orders": "Orders",
@@ -605,9 +605,10 @@
     "searchPlaceholder": "Search phones, brands, services...",
     "search": "Search"
   },
-
   "BookService": {
-    "title": "Book Service",
+    "pageTitle": "Book a Service",
+    "pageDescription": "Book a mobile phone repair service",
+    "title": "Book a Service",
     "selectedService": "Selected Service",
     "personalInfo": "Personal Information",
     "firstName": "First Name",
@@ -626,28 +627,49 @@
     "emailInvalid": "Invalid email format",
     "dateTime": "Date & Time",
     "date": "Date",
-    "selectDate": "Select Date",
+    "selectDate": "Select a date",
     "dateRequired": "Date is required",
     "time": "Time",
-    "selectTime": "Select Time",
+    "selectTime": "Select a time",
     "timeRequired": "Time is required",
     "additionalInfo": "Additional Information",
     "comment": "Comment",
     "commentPlaceholder": "Describe the problem or add a comment",
     "submitBooking": "Book Service",
     "submitting": "Submitting...",
-    "submitError": "Form submission error",
-    "successTitle": "Thank you for booking!",
-    "successMessage": "Your request has been sent successfully",
+    "submitError": "Error submitting form",
+    "successTitle": "Thank you for your booking!",
+    "successMessage": "Your request has been successfully sent",
     "whatNext": "What's next?",
-    "emailConfirmation": "You will receive confirmation via email",
+    "emailConfirmation": "You will receive a confirmation email",
     "managerContact": "Our manager will contact you",
     "appointmentReminder": "We will confirm the appointment time",
     "nextSteps": "What's next?",
-"step1": "You will receive confirmation via email",
-"step2": "Our manager will contact you",
-"step3": "We will confirm the appointment time",
-"workingHours": "Working hours"
+    "step1": "You will receive a confirmation email",
+    "step2": "Our manager will contact you",
+    "step3": "We will confirm the appointment time",
+    "workingHours": "Working Hours",
+    "months": "mo.",
+    "priceOnRequest": "On Request",
+    "forSpecificModel": "for selected model"
+  },
+  "StandaloneBooking": {
+    "pageTitle": "Book a Repair",
+    "pageDescription": "Select your device model and service to book a repair",
+    "title": "Book a Repair",
+    "subtitle": "Select your device model and the service you need",
+    "stepBrand": "Brand",
+    "stepSeries": "Series",
+    "stepModel": "Model",
+    "stepService": "Service",
+    "selectBrand": "Select Brand",
+    "selectSeries": "Select Series",
+    "selectModel": "Select Model",
+    "selectService": "Select Service",
+    "back": "Back",
+    "proceedToBooking": "Proceed to Booking",
+    "noSeries": "No series found",
+    "noModels": "No models found",
+    "noServices": "No services found for this model"
   }
-
 }
