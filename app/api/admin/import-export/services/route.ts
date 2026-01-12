@@ -111,7 +111,6 @@ export async function POST(request: NextRequest) {
           continue
         }
 
-        // Парсимо ціну
         const price =
           Number.parseFloat(
             row.price
@@ -120,25 +119,21 @@ export async function POST(request: NextRequest) {
               .replace(",", "."),
           ) || 0
 
-        // Парсимо гарантію
+        // Parse warranty period (can be number or text like "6 міс.")
         let warrantyMonths = 0
         if (row.warrantyPeriod) {
           const warrantyStr = row.warrantyPeriod.toString().toLowerCase()
           const warrantyNum = Number.parseInt(warrantyStr.replace(/[^\d]/g, ""))
-          if (warrantyStr.includes("рік") || warrantyStr.includes("year")) {
-            warrantyMonths = warrantyNum * 12
-          } else if (warrantyStr.includes("місяц") || warrantyStr.includes("month")) {
-            warrantyMonths = warrantyNum
-          } else {
+          if (!Number.isNaN(warrantyNum)) {
             warrantyMonths = warrantyNum
           }
         }
 
-        // Парсимо тривалість
+        // Parse duration in minutes and convert to hours
         const durationMinutes = Number.parseInt(row.duration?.toString().replace(/[^\d]/g, "") || "0")
         const durationHours = Math.round((durationMinutes / 60) * 100) / 100
 
-        // Перевіряємо чи існує послуга
+        // Check if service exists
         const { data: existing } = await supabase
           .from("model_services")
           .select("id")
@@ -152,8 +147,8 @@ export async function POST(request: NextRequest) {
           price,
           warranty_months: warrantyMonths,
           duration_hours: durationHours,
-          detailed_description: row.description,
-          benefits: row.warranty || null,
+          detailed_description: row.serviceName, // Use Найменування as detailed description
+          benefits: row.warranty || null, // Use Гарантія as benefits
         }
 
         if (existing) {

@@ -128,12 +128,24 @@ export function ImportExport() {
       case "services":
         templateData = [
           {
+            Найменування: "Оправа baterie iPhone 11",
+            Опис: "[battery-replacement]",
+            "Одиниця виміру": "pcs",
             Категорія: "Apple > iPhone > iPhone 11",
-            Опис: "[rear-camera-repair] Заміна задньої камери",
-            "Стандартна ціна": "1500",
-            "Тривалість (хвилини)": "60",
-            Гарантія: "Гарантія на запчастини та роботу",
-            "Гарантійний період": "3 місяці",
+            Гарантія: "6 міс.",
+            "Гарантійний період": "6",
+            "Тривалість (хви)": "120",
+            "Стандартна ціна": "1490",
+          },
+          {
+            Найменування: "Оправа заднього скла iPhone 11",
+            Опис: "[rear-glass-repair]",
+            "Одиниця виміру": "pcs",
+            Категорія: "Apple > iPhone > iPhone 11",
+            Гарантія: "6 міс.",
+            "Гарантійний період": "6",
+            "Тривалість (хви)": "120",
+            "Стандартна ціна": "1290",
           },
         ]
         fileName = "template-services.xlsx"
@@ -197,13 +209,18 @@ export function ImportExport() {
               const brand = referenceData.brands.find((b) => b.id === model?.brand_id)
               const series = referenceData.series.find((s) => s.id === model?.series_id)
 
+              // Extract service name from detailed_description or use service name
+              const serviceName = ms.detailed_description || service?.name || ""
+
               return {
+                Найменування: serviceName,
+                Опис: `[${service?.slug || ""}]`,
+                "Одиниця виміру": "pcs",
                 Категорія: `${brand?.name || ""} > ${series?.name || ""} > ${model?.name || ""}`,
-                Опис: `[${service?.slug || ""}] ${ms.detailed_description || service?.name || ""}`,
+                Гарантія: ms.benefits || "6 міс.",
+                "Гарантійний період": ms.warranty_months || "",
+                "Тривалість (хви)": Math.round((ms.duration_hours || 0) * 60),
                 "Стандартна ціна": ms.price || 0,
-                "Тривалість (хвилини)": Math.round((ms.duration_hours || 0) * 60),
-                Гарантія: ms.benefits || "",
-                "Гарантійний період": ms.warranty_months ? `${ms.warranty_months} місяців` : "",
               }
             }) || []
           fileName = `export-services-${new Date().toISOString().split("T")[0]}.xlsx`
@@ -254,12 +271,14 @@ export function ImportExport() {
   const processServicesImport = (rawData: any[]): ImportRow[] => {
     return rawData.map((row, index) => {
       const id = `row-${index}`
-      const category = row["Категорія"] || ""
+      const serviceName = row["Найменування"] || ""
       const description = row["Опис"] || ""
-      const price = row["Стандартна ціна"] || "0"
-      const duration = row["Тривалість (хвилини)"] || ""
+      const unit = row["Одиниця виміру"] || "pcs"
+      const category = row["Категорія"] || ""
       const warranty = row["Гарантія"] || ""
       const warrantyPeriod = row["Гарантійний період"] || ""
+      const duration = row["Тривалість (хви)"] || ""
+      const price = row["Стандартна ціна"] || "0"
 
       const { brandName, seriesName, modelName } = parseCategory(category)
       const serviceSlug = extractSlug(description)
@@ -277,6 +296,7 @@ export function ImportExport() {
       const warnings: string[] = []
       const suggestedActions: any[] = []
 
+      if (!serviceName) errors.push("Відсутнє найменування")
       if (!category) errors.push("Відсутня категорія")
       if (!description) errors.push("Відсутній опис")
       if (!serviceSlug) errors.push("Відсутній slug послуги в описі (формат: [slug])")
@@ -321,12 +341,14 @@ export function ImportExport() {
         warnings,
         suggestedActions,
         data: {
-          category,
+          serviceName,
           description,
-          price,
-          duration,
+          unit,
+          category,
           warranty,
           warrantyPeriod,
+          duration,
+          price,
           brandName,
           seriesName,
           modelName,
