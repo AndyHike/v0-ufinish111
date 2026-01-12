@@ -4,6 +4,7 @@ import Link from "next/link"
 import { createServerClient } from "@/utils/supabase/server"
 import { ArrowLeft } from "lucide-react"
 import { formatImageUrl } from "@/utils/image-url"
+import { ContactCTABanner } from "@/components/contact-cta-banner"
 
 type Props = {
   params: {
@@ -95,6 +96,9 @@ export default async function BrandsPage({ params }: Props) {
             <p className="text-muted-foreground">{t("noBrandsAvailable") || "Бренди недоступні"}</p>
           </div>
         )}
+
+        {/* Contact CTA Banner */}
+        <ContactCTABanner locale={locale} />
       </div>
     </div>
   )

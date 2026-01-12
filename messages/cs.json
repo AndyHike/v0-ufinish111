@@ -715,9 +715,9 @@
     "viewAll": "Zobrazit vše",
     "orderStatuses": {
       "new": "Nový",
-      "in progress": "Zpracování",
+      "in progress": "V řešení",
       "ready": "Připraveno",
-      "completed": "Dokončeno",
+      "completed": "Vydáno",
       "cancelled": "Zrušeno",
       "dokončeno": "Dokončeno"
     },
@@ -734,7 +734,10 @@
     "next": "Další",
     "previous": "Předchozí",
     "submit": "Odeslat",
-    "reset": "Resetovat"
+    "reset": "Resetovat",
+    "cantFindWhatYouLooking": "Nenašli jste, co hledáte?",
+    "contactUsWellHelp": "Kontaktujte nás a my vám pomůžeme",
+    "contactUsDescription": "Náš tým je připraven odpovědět na všechny vaše dotazy a pomoci vám s výběrem správné služby"
   },
   "Profile": {
     "userProfile": "Profil uživatele",

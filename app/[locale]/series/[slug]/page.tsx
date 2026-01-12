@@ -5,6 +5,7 @@ import { notFound } from "next/navigation"
 import { createServerClient } from "@/utils/supabase/server"
 import { ArrowLeft, Smartphone } from "lucide-react"
 import { formatImageUrl } from "@/utils/image-url"
+import { ContactCTABanner } from "@/components/contact-cta-banner"
 
 type Props = {
   params: {
@@ -174,6 +175,8 @@ export default async function SeriesPage({ params }: Props) {
             </div>
           )}
         </div>
+
+        <ContactCTABanner locale={locale} />
       </div>
     </div>
   )

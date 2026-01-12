@@ -86,14 +86,28 @@ export async function generateMetadata({
         {
           url: "https://xnwoqomipsesacphoczp.supabase.co/storage/v1/object/public/site-assets/favicon/1750418444610-hgnxmfio3rv.PNG",
           type: "image/png",
+          sizes: "32x32",
+        },
+        {
+          url: "https://xnwoqomipsesacphoczp.supabase.co/storage/v1/object/public/site-assets/favicon/1750418444610-hgnxmfio3rv.PNG",
+          type: "image/png",
+          sizes: "16x16",
+        },
+        {
+          url: "https://xnwoqomipsesacphoczp.supabase.co/storage/v1/object/public/site-assets/favicon/1750418444610-hgnxmfio3rv.PNG",
+          type: "image/png",
+          sizes: "192x192",
         },
       ],
       apple: [
         {
           url: "https://xnwoqomipsesacphoczp.supabase.co/storage/v1/object/public/site-assets/favicon/1750418444610-hgnxmfio3rv.PNG",
           type: "image/png",
+          sizes: "180x180",
         },
       ],
+      shortcut:
+        "https://xnwoqomipsesacphoczp.supabase.co/storage/v1/object/public/site-assets/favicon/1750418444610-hgnxmfio3rv.PNG",
     },
   }
 }

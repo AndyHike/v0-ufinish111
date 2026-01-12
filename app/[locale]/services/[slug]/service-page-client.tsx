@@ -10,6 +10,7 @@ import { formatCurrency } from "@/lib/format-currency"
 import { formatImageUrl } from "@/utils/image-url"
 import { useEffect, useRef } from "react"
 import { ServicePriceDisplay } from "@/components/service-price-display"
+import { ContactCTABanner } from "@/components/contact-cta-banner"
 
 interface ServiceData {
   id: string
@@ -381,6 +382,8 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
               </Link>
             </Button>
           </section>
+
+          <ContactCTABanner locale={locale} variant="compact" />
         </div>
       </div>
     </div>

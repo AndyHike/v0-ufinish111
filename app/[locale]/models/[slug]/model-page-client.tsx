@@ -6,6 +6,7 @@ import { Clock, Shield, ArrowRight } from "lucide-react"
 import { formatImageUrl } from "@/utils/image-url"
 import { useEffect, useRef } from "react"
 import { ServicePriceDisplay } from "@/components/service-price-display"
+import { ContactCTABanner } from "@/components/contact-cta-banner"
 
 interface ModelData {
   id: string
@@ -277,6 +278,8 @@ export default function ModelPageClient({ modelData, locale }: Props) {
             </div>
           )}
         </div>
+
+        {modelData.services.length > 0 && <ContactCTABanner locale={locale} variant="compact" />}
       </div>
     </div>
   )
