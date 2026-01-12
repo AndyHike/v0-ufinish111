@@ -85,8 +85,9 @@ export default function StandaloneBookingClient({ locale }: Props) {
     const fetchSeries = async () => {
       setLoading(true)
       try {
-        const response = await fetch(`/api/brands/${selectedBrand.id}/series?locale=${locale}`)
+        const response = await fetch(`/api/admin/series?brand_id=${selectedBrand.id}`)
         const data = await response.json()
+        console.log("[v0] Series loaded:", data)
         setSeries(data)
       } catch (error) {
         console.error("Error fetching series:", error)
@@ -96,7 +97,7 @@ export default function StandaloneBookingClient({ locale }: Props) {
     }
 
     fetchSeries()
-  }, [selectedBrand, locale])
+  }, [selectedBrand])
 
   // Завантаження моделей після вибору серії
   useEffect(() => {
@@ -105,8 +106,9 @@ export default function StandaloneBookingClient({ locale }: Props) {
     const fetchModels = async () => {
       setLoading(true)
       try {
-        const response = await fetch(`/api/series/${selectedSeries.id}/models?locale=${locale}`)
+        const response = await fetch(`/api/admin/models?series_id=${selectedSeries.id}`)
         const data = await response.json()
+        console.log("[v0] Models loaded:", data)
         setModels(data)
       } catch (error) {
         console.error("Error fetching models:", error)
@@ -116,7 +118,7 @@ export default function StandaloneBookingClient({ locale }: Props) {
     }
 
     fetchModels()
-  }, [selectedSeries, locale])
+  }, [selectedSeries])
 
   // Завантаження послуг після вибору моделі
   useEffect(() => {
