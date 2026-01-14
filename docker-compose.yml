@@ -15,8 +15,12 @@ services:
         NEXT_PUBLIC_FACEBOOK_PIXEL_ID: ${NEXT_PUBLIC_FACEBOOK_PIXEL_ID}
     container_name: devicehelp-nextjs
     restart: unless-stopped
+    
+    # 👇 ГОЛОВНА ЗМІНА ТУТ:
+    # Зліва 8090 (зовнішній вільний порт), справа 3000 (внутрішній)
     ports:
-      - "3000:3000"
+      - "8090:3000"
+      
     environment:
       # Database
       - POSTGRES_URL=${POSTGRES_URL}
@@ -71,26 +75,8 @@ services:
       retries: 3
       start_period: 40s
 
-  # Nginx reverse proxy (опціонально)
-  nginx:
-    image: nginx:alpine
-    container_name: devicehelp-nginx
-    restart: unless-stopped
-    ports:
-      - "8090:80"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/ssl:/etc/nginx/ssl:ro
-      - ./nginx/logs:/var/log/nginx
-    depends_on:
-      - nextjs
-    networks:
-      - devicehelp-network
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/api/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+# Я видалив блок Nginx повністю, щоб він не викликав помилок
+# і не займав порт 8090.
 
 networks:
   devicehelp-network:
