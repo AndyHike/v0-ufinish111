@@ -1,6 +1,12 @@
+// 👇 1. Імпортуємо плагін перекладів (Це те, чого не вистачало!)
+import createNextIntlPlugin from 'next-intl/plugin';
+
+// Створюємо обгортку (вона сама знайде файл i18n.ts у папці src)
+const withNextIntl = createNextIntlPlugin();
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // 1. Ігноруємо суворі перевірки (це те, що дозволяє запустити код від AI)
+  // Ігноруємо помилки
   eslint: {
     ignoreDuringBuilds: true,
   },
@@ -8,7 +14,7 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
 
-  // 2. Налаштування картинок (Виправлено: прибрано помилкову строку 'quality')
+  // Налаштування картинок
   images: {
     formats: ['image/webp', 'image/avif'],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920],
@@ -19,10 +25,7 @@ const nextConfig = {
     loader: 'default',
   },
 
-  // 3. Це критично для Docker (робить сайт легким контейнером)
   output: 'standalone',
-
-  // 4. Стиснення (swcMinify прибрали, бо воно тепер вбудоване, залишили compress)
   compress: true,
   poweredByHeader: false,
   
@@ -30,14 +33,11 @@ const nextConfig = {
     removeConsole: process.env.NODE_ENV === 'production',
   },
 
-  // 5. Експериментальні функції (Прибрали неіснуючі опції)
   experimental: {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
-    // optimizeCss: false, // Я навіть прибрав цей рядок, щоб не плутати Next.js. Без пакету 'critters' він не потрібен.
     webVitalsAttribution: ['CLS', 'LCP', 'FCP', 'FID', 'TTFB'],
   },
 
-  // 6. Хедери для кешування (Це важливо для швидкості, залишили без змін)
   async headers() {
     return [
       {
@@ -54,15 +54,11 @@ const nextConfig = {
       },
        {
         source: '/:path*',
-        headers: [
-          {
-            key: 'X-DNS-Prefetch-Control',
-            value: 'on'
-          },
-        ],
+        headers: [{ key: 'X-DNS-Prefetch-Control', value: 'on' }],
       },
     ]
   },
 }
 
-export default nextConfig
+// 👇 2. Обгортаємо конфігурацію в withNextIntl
+export default withNextIntl(nextConfig);
