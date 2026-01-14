@@ -77,8 +77,7 @@ services:
     container_name: devicehelp-nginx
     restart: unless-stopped
     ports:
-      - "80:80"
-      - "443:443"
+      - "8090:80"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/ssl:/etc/nginx/ssl:ro
