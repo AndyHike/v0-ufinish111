@@ -14,7 +14,7 @@ FROM base AS deps
 COPY package.json package-lock.json* ./
 
 # Встановлюємо залежності
-RUN npm ci
+RUN npm install
 
 # Етап збірки
 FROM base AS builder
