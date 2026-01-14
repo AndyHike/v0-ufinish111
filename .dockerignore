@@ -1,0 +1,61 @@
+# Залежності
+node_modules
+npm-debug.log
+yarn-error.log
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Next.js
+.next
+out
+dist
+build
+
+# Тестування
+coverage
+.nyc_output
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+*~
+
+# Операційна система
+.DS_Store
+Thumbs.db
+
+# Env файли
+.env
+.env.local
+.env*.local
+.env.development
+.env.test
+.env.production
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Документація
+README.md
+*.md
+docs
+
+# CI/CD
+.github
+.gitlab-ci.yml
+.travis.yml
+
+# Різне
+*.log
+.vercel
+.turbo
