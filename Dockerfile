@@ -37,12 +37,27 @@ ARG NEXT_PUBLIC_FACEBOOK_PIXEL_ID
 
 # Відключаємо телеметрію Next.js
 ENV NEXT_TELEMETRY_DISABLED 1
-ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhud29xb21pcHNlc2FjcGhvY3pwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUxODk3NzEsImV4cCI6MjA2MDc2NTc3MX0.cTWJV3GXDS_LCS_UPqSP1Uni76PzzjOaoSLljNCUGmM
+# --- БЛОК SUPABASE ---
+
+# 1. Ваші реальні дані (URL та ANON KEY)
 ENV NEXT_PUBLIC_SUPABASE_URL=https://xnwoqomipsesacphoczp.supabase.co
-# 👇 ДОДАЙТЕ ЦЮ "СТРАХОВКУ" (Дублюємо значення в інші назви)
+ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhud29xb21pcHNlc2FjcGhvY3pwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUxODk3NzEsImV4cCI6MjA2MDc2NTc3MX0.cTWJV3GXDS_LCS_UPqSP1Uni76PzzjOaoSLljNCUGmM
+
+# 2. АЛЬТЕРНАТИВНІ НАЗВИ (Дублюємо ключ для сумісності)
+# Якщо код шукає просто SUPABASE_KEY або SUPABASE_URL
 ENV SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
 ENV SUPABASE_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
 ENV NEXT_PUBLIC_SUPABASE_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+# 3. ЗАГЛУШКА ДЛЯ СЕРВІСНОГО КЛЮЧА (Найважливіше!)
+# Часто збірка падає, бо шукає цей ключ. Ми даємо фейковий, щоб заспокоїти перевірку.
+# Реальний ключ підтягнеться з Portainer вже при запуску.
+ENV SUPABASE_SERVICE_ROLE_KEY=placeholder_key_for_build_process_only
+
+# ---------------------
+
+# Тільки після цього запускаємо збірку
+RUN npm run build
 # Збираємо проект
 RUN npm run build
 
