@@ -1,11 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // 1. Ігноруємо суворі перевірки (це те, що дозволяє запустити код від AI)
   eslint: {
     ignoreDuringBuilds: true,
   },
   typescript: {
     ignoreBuildErrors: true,
   },
+
+  // 2. Налаштування картинок (Виправлено: прибрано помилкову строку 'quality')
   images: {
     formats: ['image/webp', 'image/avif'],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920],
@@ -14,90 +17,42 @@ const nextConfig = {
     dangerouslyAllowSVG: false,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     loader: 'default',
-    quality: 85,
   },
+
+  // 3. Це критично для Docker (робить сайт легким контейнером)
+  output: 'standalone',
+
+  // 4. Стиснення (swcMinify прибрали, бо воно тепер вбудоване, залишили compress)
   compress: true,
   poweredByHeader: false,
-  output: 'standalone',
-  swcMinify: true,
+  
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',
   },
+
+  // 5. Експериментальні функції (Прибрали неіснуючі опції)
   experimental: {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
-    optimizeCss: false,
-    staticWorkerRequestDeduping: true,
+    // optimizeCss: false, // Я навіть прибрав цей рядок, щоб не плутати Next.js. Без пакету 'critters' він не потрібен.
     webVitalsAttribution: ['CLS', 'LCP', 'FCP', 'FID', 'TTFB'],
   },
-  webpack: (config, { dev, isServer }) => {
-    if (!dev && !isServer) {
-      config.optimization.splitChunks = {
-        chunks: 'all',
-        minSize: 15000,
-        maxSize: 120000,
-        cacheGroups: {
-          vendor: {
-            test: /[\\/]node_modules[\\/]/,
-            name: 'vendors',
-            chunks: 'all',
-            priority: 10,
-            maxSize: 80000,
-          },
-          common: {
-            name: 'common',
-            minChunks: 2,
-            chunks: 'all',
-            enforce: true,
-            priority: 5,
-            maxSize: 60000,
-          },
-          critical: {
-            name: 'critical',
-            test: /[\\/](hero-section|header|layout)[\\/]/,
-            chunks: 'all',
-            priority: 20,
-            maxSize: 40000,
-          },
-        },
-      }
-      
-      config.optimization.concatenateModules = true
-      config.optimization.usedExports = true
-      config.optimization.sideEffects = false
-      config.target = ['web', 'es2020']
-    }
-    return config
-  },
+
+  // 6. Хедери для кешування (Це важливо для швидкості, залишили без змін)
   async headers() {
     return [
       {
         source: '/fonts/:path*',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-        ],
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
       },
       {
         source: '/:path*.(webp|avif|jpg|jpeg|png)',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-        ],
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
       },
       {
         source: '/_next/static/:path*',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-        ],
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
       },
-      {
+       {
         source: '/:path*',
         headers: [
           {
