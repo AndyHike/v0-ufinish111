@@ -230,12 +230,17 @@ export async function verifyLoginCode(email: string, code: string) {
   }
 
   try {
+    console.log("[v0] Verifying login code for:", email)
+
     // Verify the code
     const verification = await verifyCode(email.toLowerCase(), code, "login")
 
     if (!verification.valid) {
+      console.log("[v0] Code verification failed:", verification.message)
       return { success: false, message: verification.message || "Invalid verification code" }
     }
+
+    console.log("[v0] Code verified, fetching user data...")
 
     const supabase = createClient()
 
@@ -247,8 +252,11 @@ export async function verifyLoginCode(email: string, code: string) {
       .maybeSingle()
 
     if (userError || !userData) {
+      console.log("[v0] User not found:", userError)
       return { success: false, message: "User not found" }
     }
+
+    console.log("[v0] User found, creating session...")
 
     // Generate session
     const { data: session, error: sessionError } = await supabase
@@ -263,9 +271,11 @@ export async function verifyLoginCode(email: string, code: string) {
       .single()
 
     if (sessionError) {
-      console.error("Error creating session:", sessionError)
+      console.error("[v0] Error creating session:", sessionError)
       return { success: false, message: "Failed to create session" }
     }
+
+    console.log("[v0] Session created:", session.id, "Setting cookies...")
 
     // Set session cookie
     cookies().set("session_id", session.id, {
@@ -273,6 +283,7 @@ export async function verifyLoginCode(email: string, code: string) {
       secure: process.env.NODE_ENV === "production",
       maxAge: 30 * 24 * 60 * 60, // 30 days
       path: "/",
+      sameSite: "lax", // Changed from default
     })
 
     cookies().set("user_role", userData.role, {
@@ -280,11 +291,14 @@ export async function verifyLoginCode(email: string, code: string) {
       secure: process.env.NODE_ENV === "production",
       maxAge: 30 * 24 * 60 * 60, // 30 days
       path: "/",
+      sameSite: "lax", // Changed from default
     })
+
+    console.log("[v0] Cookies set successfully")
 
     return { success: true, role: userData.role }
   } catch (error) {
-    console.error("Error verifying login code:", error)
+    console.error("[v0] Error verifying login code:", error)
     return { success: false, message: "An unexpected error occurred" }
   }
 }

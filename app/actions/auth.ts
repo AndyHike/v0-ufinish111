@@ -24,7 +24,7 @@ function setSecureCookie(name: string, value: string, maxAge: number = 30 * 24 *
     secure: isProduction,
     maxAge,
     path: "/",
-    sameSite: "strict",
+    sameSite: "lax", // Changed from "strict"
   })
 }
 

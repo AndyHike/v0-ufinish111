@@ -20,8 +20,12 @@ function setSecureCookie(name: string, value: string, maxAge: number = 30 * 24 *
     secure: isProduction,
     maxAge,
     path: "/",
-    sameSite: "strict", // Changed from "lax" to "strict" for better security
+    sameSite: "lax", // Changed from "strict" to "lax" for better cross-origin support
   })
+
+  if (process.env.NODE_ENV === "development") {
+    console.log(`[v0] Cookie set: ${name}=${value}, secure=${isProduction}, sameSite=lax`)
+  }
 }
 
 // Check if user exists in our database
@@ -214,7 +218,7 @@ export async function verifyCode(
 ): Promise<{ success: boolean; message?: string }> {
   try {
     if (process.env.NODE_ENV === "development") {
-      console.log(`Verifying code for ${identifier}: ${code}`)
+      console.log(`[v0] Verifying code for ${identifier}: ${code}`)
     }
 
     // If identifier is a phone number, we need to find the associated email
@@ -246,12 +250,16 @@ export async function verifyCode(
     const verification = await verifyCodeLib(email, code, type)
     if (!verification.valid) {
       if (process.env.NODE_ENV === "development") {
-        console.error("Invalid verification code:", verification.message)
+        console.error("[v0] Invalid verification code:", verification.message)
       }
       return {
         success: false,
         message: verification.message || "Invalid verification code",
       }
+    }
+
+    if (process.env.NODE_ENV === "development") {
+      console.log(`[v0] Code verified successfully for email: ${email}`)
     }
 
     if (type === "login") {
@@ -298,7 +306,7 @@ export async function verifyCode(
 
       if (sessionError) {
         if (process.env.NODE_ENV === "development") {
-          console.error("Failed to create session:", sessionError)
+          console.error("[v0] Failed to create session:", sessionError)
         }
         return {
           success: false,
@@ -306,8 +314,16 @@ export async function verifyCode(
         }
       }
 
+      if (process.env.NODE_ENV === "development") {
+        console.log(`[v0] Session created: ${session.id}, setting cookies...`)
+      }
+
       setSecureCookie("session_id", session.id)
       setSecureCookie("user_role", userRole)
+
+      if (process.env.NODE_ENV === "development") {
+        console.log(`[v0] Cookies set successfully for user ${userId}`)
+      }
 
       revalidatePath("/", "layout")
     }

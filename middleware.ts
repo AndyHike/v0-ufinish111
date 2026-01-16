@@ -75,9 +75,13 @@ export async function middleware(request: NextRequest) {
 
   if (pathname.includes("/profile") || pathname.includes("/admin")) {
     const sessionId = request.cookies.get("session_id")?.value
+
+    console.log("[v0] Checking auth for:", pathname, "Session ID:", sessionId ? "exists" : "missing")
+
     if (!sessionId) {
       const loginUrl = new URL(`/${locale}/auth/login`, request.url)
       loginUrl.searchParams.set("redirect", pathname)
+      console.log("[v0] No session, redirecting to login")
       return NextResponse.redirect(loginUrl)
     }
   }
