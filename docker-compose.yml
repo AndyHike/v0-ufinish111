@@ -65,9 +65,4 @@ services:
       - 'NEXT_PUBLIC_FACEBOOK_PIXEL_ID=${NEXT_PUBLIC_FACEBOOK_PIXEL_ID}'
 
     # Healthcheck: Допомагає Coolify зрозуміти, коли перемикати трафік на новий контейнер
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
+ 
