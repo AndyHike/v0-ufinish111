@@ -1,86 +1,73 @@
 version: '3.8'
 
 services:
-  # Next.js додаток
   nextjs:
     build:
       context: .
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
-        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
-        NEXT_PUBLIC_MAINTENANCE_MODE: ${NEXT_PUBLIC_MAINTENANCE_MODE:-false}
-        NEXT_PUBLIC_DEFAULT_LOCALE: ${NEXT_PUBLIC_DEFAULT_LOCALE:-uk}
-        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
-        NEXT_PUBLIC_FACEBOOK_PIXEL_ID: ${NEXT_PUBLIC_FACEBOOK_PIXEL_ID}
-    container_name: devicehelp-nextjs
+        # Ці змінні потрібні ПІД ЧАС збірки (Next.js вшиває їх у фронтенд)
+        NEXT_PUBLIC_SUPABASE_URL: '${NEXT_PUBLIC_SUPABASE_URL}'
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: '${NEXT_PUBLIC_SUPABASE_ANON_KEY}'
+        NEXT_PUBLIC_MAINTENANCE_MODE: '${NEXT_PUBLIC_MAINTENANCE_MODE:-false}'
+        NEXT_PUBLIC_DEFAULT_LOCALE: '${NEXT_PUBLIC_DEFAULT_LOCALE:-uk}'
+        NEXT_PUBLIC_APP_URL: '${NEXT_PUBLIC_APP_URL}'
+        NEXT_PUBLIC_FACEBOOK_PIXEL_ID: '${NEXT_PUBLIC_FACEBOOK_PIXEL_ID}'
+    
     restart: unless-stopped
     
-    # 👇 ГОЛОВНА ЗМІНА ТУТ:
-    # Зліва 8090 (зовнішній вільний порт), справа 3000 (внутрішній)
-    ports:
-      - "8090:3000"
-      
+    # ПОРТИ: Видалено '8090:3000'. Coolify сам знайде порт 3000 всередині мережі Docker.
+    
     environment:
-      # Database
-      - POSTGRES_URL=${POSTGRES_URL}
-      - POSTGRES_PRISMA_URL=${POSTGRES_PRISMA_URL}
-      - POSTGRES_URL_NON_POOLING=${POSTGRES_URL_NON_POOLING}
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DATABASE=${POSTGRES_DATABASE}
-      - POSTGRES_HOST=${POSTGRES_HOST}
+      # База даних (Postgres)
+      - 'POSTGRES_URL=${POSTGRES_URL}'
+      - 'POSTGRES_PRISMA_URL=${POSTGRES_PRISMA_URL}'
+      - 'POSTGRES_URL_NON_POOLING=${POSTGRES_URL_NON_POOLING}'
+      - 'POSTGRES_USER=${POSTGRES_USER}'
+      - 'POSTGRES_PASSWORD=${POSTGRES_PASSWORD}'
+      - 'POSTGRES_DATABASE=${POSTGRES_DATABASE}'
+      - 'POSTGRES_HOST=${POSTGRES_HOST}'
       
       # Supabase
-      - SUPABASE_URL=${SUPABASE_URL}
-      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
-      - SUPABASE_JWT_SECRET=${SUPABASE_JWT_SECRET}
-      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
-      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
-      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - 'SUPABASE_URL=${SUPABASE_URL}'
+      - 'NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}'
+      - 'SUPABASE_JWT_SECRET=${SUPABASE_JWT_SECRET}'
+      - 'NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}'
+      - 'SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}'
+      - 'SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}'
       
-      # RemOnline API
-      - REMONLINE_API_TOKEN=${REMONLINE_API_TOKEN}
-      - REMONLINE_API_KEY=${REMONLINE_API_KEY}
-      - REMONLINE_WEBHOOK_SECRET=${REMONLINE_WEBHOOK_SECRET}
-      - REMONLINE_ORDER_WEBHOOK_SECRET=${REMONLINE_ORDER_WEBHOOK_SECRET}
-      - REMONLINE_DELETE_ACCOUNT_WEBHOOK_SECRET=${REMONLINE_DELETE_ACCOUNT_WEBHOOK_SECRET}
+      # Remonline
+      - 'REMONLINE_API_TOKEN=${REMONLINE_API_TOKEN}'
+      - 'REMONLINE_API_KEY=${REMONLINE_API_KEY}'
+      - 'REMONLINE_WEBHOOK_SECRET=${REMONLINE_WEBHOOK_SECRET}'
+      - 'REMONLINE_ORDER_WEBHOOK_SECRET=${REMONLINE_ORDER_WEBHOOK_SECRET}'
+      - 'REMONLINE_DELETE_ACCOUNT_WEBHOOK_SECRET=${REMONLINE_DELETE_ACCOUNT_WEBHOOK_SECRET}'
       
       # Email
-      - EMAIL_SERVER_HOST=${EMAIL_SERVER_HOST}
-      - EMAIL_SERVER_PORT=${EMAIL_SERVER_PORT}
-      - EMAIL_SERVER_SECURE=${EMAIL_SERVER_SECURE}
-      - EMAIL_SERVER_USER=${EMAIL_SERVER_USER}
-      - EMAIL_SERVER_PASSWORD=${EMAIL_SERVER_PASSWORD}
-      - EMAIL_FROM=${EMAIL_FROM}
-      - NOTIFICATION_EMAIL=${NOTIFICATION_EMAIL}
+      - 'EMAIL_SERVER_HOST=${EMAIL_SERVER_HOST}'
+      - 'EMAIL_SERVER_PORT=${EMAIL_SERVER_PORT}'
+      - 'EMAIL_SERVER_SECURE=${EMAIL_SERVER_SECURE}'
+      - 'EMAIL_SERVER_USER=${EMAIL_SERVER_USER}'
+      - 'EMAIL_SERVER_PASSWORD=${EMAIL_SERVER_PASSWORD}'
+      - 'EMAIL_FROM=${EMAIL_FROM}'
+      - 'NOTIFICATION_EMAIL=${NOTIFICATION_EMAIL}'
       
       # App Settings
-      - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
-      - NEXT_PUBLIC_MAINTENANCE_MODE=${NEXT_PUBLIC_MAINTENANCE_MODE:-false}
-      - NEXT_PUBLIC_DEFAULT_LOCALE=${NEXT_PUBLIC_DEFAULT_LOCALE:-uk}
-      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      - 'NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}'
+      - 'NEXT_PUBLIC_MAINTENANCE_MODE=${NEXT_PUBLIC_MAINTENANCE_MODE:-false}'
+      - 'NEXT_PUBLIC_DEFAULT_LOCALE=${NEXT_PUBLIC_DEFAULT_LOCALE:-uk}'
+      - 'NEXTAUTH_SECRET=${NEXTAUTH_SECRET}'
       
       # Analytics
-      - GOOGLE_ANALYTICS_PROPERTY_ID=${GOOGLE_ANALYTICS_PROPERTY_ID}
-      - GOOGLE_ANALYTICS_PRIVATE_KEY=${GOOGLE_ANALYTICS_PRIVATE_KEY}
-      - GOOGLE_ANALYTICS_CLIENT_EMAIL=${GOOGLE_ANALYTICS_CLIENT_EMAIL}
-      - NEXT_PUBLIC_FACEBOOK_PIXEL_ID=${NEXT_PUBLIC_FACEBOOK_PIXEL_ID}
-    networks:
-      - devicehelp-network
+      - 'GOOGLE_ANALYTICS_PROPERTY_ID=${GOOGLE_ANALYTICS_PROPERTY_ID}'
+      - 'GOOGLE_ANALYTICS_PRIVATE_KEY=${GOOGLE_ANALYTICS_PRIVATE_KEY}'
+      - 'GOOGLE_ANALYTICS_CLIENT_EMAIL=${GOOGLE_ANALYTICS_CLIENT_EMAIL}'
+      - 'NEXT_PUBLIC_FACEBOOK_PIXEL_ID=${NEXT_PUBLIC_FACEBOOK_PIXEL_ID}'
+
+    # Healthcheck: Допомагає Coolify зрозуміти, коли перемикати трафік на новий контейнер
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
-
-# Я видалив блок Nginx повністю, щоб він не викликав помилок
-# і не займав порт 8090.
-
-networks:
-  devicehelp-network:
-    driver: bridge
-
-volumes:
-  nginx-logs:
+      start_period: 60s
