@@ -749,7 +749,6 @@ export function ImportExport() {
                           <SelectValue placeholder="Всі бренди" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Всі бренди</SelectItem>
                           {referenceData.brands.map((brand) => (
                             <SelectItem key={brand.id} value={brand.id}>
                               {brand.name}
@@ -773,7 +772,6 @@ export function ImportExport() {
                             <SelectValue placeholder="Всі серії" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="">Всі серії</SelectItem>
                             {referenceData.series
                               .filter((s) => s.brand_id === exportBrandId)
                               .map((series) => (
@@ -794,7 +792,6 @@ export function ImportExport() {
                             <SelectValue placeholder="Всі моделі" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="">Всі моделі</SelectItem>
                             {referenceData.models
                               .filter((m) => m.series_id === exportSeriesId)
                               .map((model) => (
