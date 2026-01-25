@@ -77,6 +77,12 @@ export async function GET(request: NextRequest) {
       throw error
     }
 
+    console.log("[v0] Export API - Retrieved model services:", modelServices?.length || 0)
+    if (modelServices && modelServices.length > 0) {
+      console.log("[v0] First service warranty_months:", modelServices[0].warranty_months)
+      console.log("[v0] First service object keys:", Object.keys(modelServices[0]))
+    }
+
     // Get all service translations
     const { data: allTranslations, error: translationsError } = await supabase
       .from("services_translations")

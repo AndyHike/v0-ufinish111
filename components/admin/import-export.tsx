@@ -78,10 +78,10 @@ export function ImportExport() {
       ])
 
       setReferenceData({
-        brands: Array.isArray(brandsData.brands) ? brandsData.brands : [],
-        series: Array.isArray(seriesData.series) ? seriesData.series : [],
-        models: Array.isArray(modelsData.models) ? modelsData.models : [],
-        services: Array.isArray(servicesData.services) ? servicesData.services : [],
+        brands: Array.isArray(brandsData) ? brandsData : Array.isArray(brandsData.brands) ? brandsData.brands : [],
+        series: Array.isArray(seriesData) ? seriesData : Array.isArray(seriesData.series) ? seriesData.series : [],
+        models: Array.isArray(modelsData) ? modelsData : Array.isArray(modelsData.models) ? modelsData.models : [],
+        services: Array.isArray(servicesData) ? servicesData : Array.isArray(servicesData.services) ? servicesData.services : [],
       })
       setDataLoaded(true)
     } catch (error) {
