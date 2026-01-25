@@ -239,10 +239,9 @@ export function ImportExport() {
             "Послуга (CS)": row.service_cs || "",
             "Опис (CS)": row.description_cs || "",
             Ціна: row.price || "",
-            "Гарантія (міс)": row.warranty_months || "",
-            "Тривалість (год)": row.duration_hours || "",
+            "Гарантія (місяці)": row.warranty_months || "",
+            "Тривалість (годин)": row.duration_hours || "",
             "Детальний опис": row.detailed_description || "",
-            Переваги: row.benefits || "",
           }))
           
           // Set filename based on filter
@@ -735,88 +734,96 @@ export function ImportExport() {
               <CardContent className="pt-6 space-y-4">
                 {importType === "services" && (
                   <div className="space-y-3">
-                    <div className="space-y-2">
-                      <Label htmlFor="export-brand">Фільтр за брендом (необов'язково)</Label>
-                      <Select
-                        value={exportBrandId}
-                        onValueChange={(value) => {
-                          setExportBrandId(value)
-                          setExportSeriesId("")
-                          setExportModelId("")
-                        }}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Всі бренди" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {referenceData.brands.map((brand) => (
-                            <SelectItem key={brand.id} value={brand.id}>
-                              {brand.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {exportBrandId && (
-                      <div className="space-y-2">
-                        <Label htmlFor="export-series">Фільтр за серією (необов'язково)</Label>
-                        <Select
-                          value={exportSeriesId}
-                          onValueChange={(value) => {
-                            setExportSeriesId(value)
-                            setExportModelId("")
-                          }}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Всі серії" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {referenceData.series
-                              .filter((s) => s.brand_id === exportBrandId)
-                              .map((series) => (
-                                <SelectItem key={series.id} value={series.id}>
-                                  {series.name}
+                    {!dataLoaded ? (
+                      <p className="text-sm text-muted-foreground">Завантаження даних...</p>
+                    ) : referenceData.brands.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">Бренди не знайдені. Спочатку імпортуйте бренди.</p>
+                    ) : (
+                      <>
+                        <div className="space-y-2">
+                          <Label htmlFor="export-brand">Фільтр за брендом (необов'язково)</Label>
+                          <Select
+                            value={exportBrandId}
+                            onValueChange={(value) => {
+                              setExportBrandId(value)
+                              setExportSeriesId("")
+                              setExportModelId("")
+                            }}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Всі бренди" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {referenceData.brands.map((brand) => (
+                                <SelectItem key={brand.id} value={brand.id}>
+                                  {brand.name}
                                 </SelectItem>
                               ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
+                            </SelectContent>
+                          </Select>
+                        </div>
 
-                    {exportSeriesId && (
-                      <div className="space-y-2">
-                        <Label htmlFor="export-model">Фільтр за моделлю (необов'язково)</Label>
-                        <Select value={exportModelId} onValueChange={setExportModelId}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Всі моделі" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {referenceData.models
-                              .filter((m) => m.series_id === exportSeriesId)
-                              .map((model) => (
-                                <SelectItem key={model.id} value={model.id}>
-                                  {model.name}
-                                </SelectItem>
-                              ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
+                        {exportBrandId && (
+                          <div className="space-y-2">
+                            <Label htmlFor="export-series">Фільтр за серією (необов'язково)</Label>
+                            <Select
+                              value={exportSeriesId}
+                              onValueChange={(value) => {
+                                setExportSeriesId(value)
+                                setExportModelId("")
+                              }}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Всі серії" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {referenceData.series
+                                  .filter((s) => s.brand_id === exportBrandId)
+                                  .map((series) => (
+                                    <SelectItem key={series.id} value={series.id}>
+                                      {series.name}
+                                    </SelectItem>
+                                  ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
 
-                    {(exportBrandId || exportSeriesId || exportModelId) && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setExportBrandId("")
-                          setExportSeriesId("")
-                          setExportModelId("")
-                        }}
-                        className="w-full"
-                      >
-                        Скинути фільтри
-                      </Button>
+                        {exportSeriesId && (
+                          <div className="space-y-2">
+                            <Label htmlFor="export-model">Фільтр за моделлю (необов'язково)</Label>
+                            <Select value={exportModelId} onValueChange={setExportModelId}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Всі моделі" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {referenceData.models
+                                  .filter((m) => m.series_id === exportSeriesId)
+                                  .map((model) => (
+                                    <SelectItem key={model.id} value={model.id}>
+                                      {model.name}
+                                    </SelectItem>
+                                  ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+
+                        {(exportBrandId || exportSeriesId || exportModelId) && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setExportBrandId("")
+                              setExportSeriesId("")
+                              setExportModelId("")
+                            }}
+                            className="w-full"
+                          >
+                            Скинути фільтри
+                          </Button>
+                        )}
+                      </>
                     )}
                   </div>
                 )}

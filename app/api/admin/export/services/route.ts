@@ -40,7 +40,6 @@ export async function GET(request: NextRequest) {
         warranty_months,
         duration_hours,
         detailed_description,
-        benefits,
         models!inner(
           id,
           name,
@@ -117,7 +116,6 @@ export async function GET(request: NextRequest) {
         warranty_months: ms.warranty_months || "",
         duration_hours: ms.duration_hours || "",
         detailed_description: ms.detailed_description || "",
-        benefits: ms.benefits || "",
       }
     })
 
