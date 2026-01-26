@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Download, AlertCircle, CheckCircle, X, FileUp, FileDown, AlertTriangle } from "lucide-react"
 import Papa from "papaparse"
 import * as XLSX from "xlsx"
@@ -50,6 +51,11 @@ export function ImportExport() {
     services: [],
   })
   const [dataLoaded, setDataLoaded] = useState(false)
+  
+  // Export filters
+  const [exportBrandId, setExportBrandId] = useState<string>("")
+  const [exportSeriesId, setExportSeriesId] = useState<string>("")
+  const [exportModelId, setExportModelId] = useState<string>("")
 
   useEffect(() => {
     loadReferenceData()
@@ -72,10 +78,10 @@ export function ImportExport() {
       ])
 
       setReferenceData({
-        brands: Array.isArray(brandsData.brands) ? brandsData.brands : [],
-        series: Array.isArray(seriesData.series) ? seriesData.series : [],
-        models: Array.isArray(modelsData.models) ? modelsData.models : [],
-        services: Array.isArray(servicesData.services) ? servicesData.services : [],
+        brands: Array.isArray(brandsData) ? brandsData : Array.isArray(brandsData.brands) ? brandsData.brands : [],
+        series: Array.isArray(seriesData) ? seriesData : Array.isArray(seriesData.series) ? seriesData.series : [],
+        models: Array.isArray(modelsData) ? modelsData : Array.isArray(modelsData.models) ? modelsData.models : [],
+        services: Array.isArray(servicesData) ? servicesData : Array.isArray(servicesData.services) ? servicesData.services : [],
       })
       setDataLoaded(true)
     } catch (error) {
@@ -199,31 +205,61 @@ export function ImportExport() {
           break
 
         case "services":
-          const response = await fetch("/api/admin/model-services?export=true")
-          const data = await response.json()
+          // Build URL with filters
+          const params = new URLSearchParams()
+          if (exportModelId) params.append("modelId", exportModelId)
+          else if (exportSeriesId) params.append("seriesId", exportSeriesId)
+          else if (exportBrandId) params.append("brandId", exportBrandId)
+          
+          const exportUrl = `/api/admin/export/services?${params.toString()}`
+          
+          // Fetch CSV from export endpoint
+          const response = await fetch(exportUrl)
+          if (!response.ok) {
+            throw new Error("Помилка експорту")
+          }
+          
+          const csvText = await response.text()
+          const parsedData = Papa.parse(csvText, { header: true })
+          
+          exportData = parsedData.data.filter((row: any) => {
+            // Filter out empty rows
+            return Object.values(row).some(val => val !== "")
+          })
 
-          exportData =
-            data.services?.map((ms: any) => {
-              const model = referenceData.models.find((m) => m.id === ms.model_id)
-              const service = referenceData.services.find((s) => s.id === ms.service_id)
-              const brand = referenceData.brands.find((b) => b.id === model?.brand_id)
-              const series = referenceData.series.find((s) => s.id === model?.series_id)
-
-              // Extract service name from detailed_description or use service name
-              const serviceName = ms.detailed_description || service?.name || ""
-
-              return {
-                Найменування: serviceName,
-                Опис: `[${service?.slug || ""}]`,
-                "Одиниця виміру": "pcs",
-                Категорія: `${brand?.name || ""} > ${series?.name || ""} > ${model?.name || ""}`,
-                Гарантія: ms.benefits || "6 міс.",
-                "Гарантійний період": ms.warranty_months || "",
-                "Тривалість (хви)": Math.round((ms.duration_hours || 0) * 60),
-                "Стандартна ціна": ms.price || 0,
-              }
-            }) || []
-          fileName = `export-services-${new Date().toISOString().split("T")[0]}.xlsx`
+          // Translate headers to Ukrainian for Excel export
+          exportData = exportData.map((row: any) => ({
+            Бренд: row.brand || "",
+            Серія: row.series || "",
+            Модель: row.model || "",
+            "Послуга (UK)": row.service_uk || "",
+            "Опис (UK)": row.description_uk || "",
+            "Послуга (EN)": row.service_en || "",
+            "Опис (EN)": row.description_en || "",
+            "Послуга (CS)": row.service_cs || "",
+            "Опис (CS)": row.description_cs || "",
+            Ціна: row.price || "",
+            "Гарантія (місяці)": row.warranty_months || "",
+            "Тривалість (годин)": row.duration_hours || "",
+            "Детальний опис": row.detailed_description || "",
+          }))
+          
+          // Set filename based on filter
+          let filterName = ""
+          if (exportModelId) {
+            const model = referenceData.models.find((m) => m.id === exportModelId)
+            filterName = model?.name || "model"
+          } else if (exportSeriesId) {
+            const series = referenceData.series.find((s) => s.id === exportSeriesId)
+            filterName = series?.name || "series"
+          } else if (exportBrandId) {
+            const brand = referenceData.brands.find((b) => b.id === exportBrandId)
+            filterName = brand?.name || "brand"
+          }
+          
+          fileName = filterName 
+            ? `export-services-${filterName.replace(/[^a-z0-9]/gi, "_").toLowerCase()}-${new Date().toISOString().split("T")[0]}.xlsx`
+            : `export-services-${new Date().toISOString().split("T")[0]}.xlsx`
           break
       }
 
@@ -695,10 +731,109 @@ export function ImportExport() {
                   в Excel
                 </CardDescription>
               </CardHeader>
-              <CardContent className="pt-6">
+              <CardContent className="pt-6 space-y-4">
+                {importType === "services" && (
+                  <div className="space-y-3">
+                    {!dataLoaded ? (
+                      <p className="text-sm text-muted-foreground">Завантаження даних...</p>
+                    ) : referenceData.brands.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">Бренди не знайдені. Спочатку імпортуйте бренди.</p>
+                    ) : (
+                      <>
+                        <div className="space-y-2">
+                          <Label htmlFor="export-brand">Фільтр за брендом (необов'язково)</Label>
+                          <Select
+                            value={exportBrandId}
+                            onValueChange={(value) => {
+                              setExportBrandId(value)
+                              setExportSeriesId("")
+                              setExportModelId("")
+                            }}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Всі бренди" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {referenceData.brands.map((brand) => (
+                                <SelectItem key={brand.id} value={brand.id}>
+                                  {brand.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {exportBrandId && (
+                          <div className="space-y-2">
+                            <Label htmlFor="export-series">Фільтр за серією (необов'язково)</Label>
+                            <Select
+                              value={exportSeriesId}
+                              onValueChange={(value) => {
+                                setExportSeriesId(value)
+                                setExportModelId("")
+                              }}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Всі серії" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {referenceData.series
+                                  .filter((s) => s.brand_id === exportBrandId)
+                                  .map((series) => (
+                                    <SelectItem key={series.id} value={series.id}>
+                                      {series.name}
+                                    </SelectItem>
+                                  ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+
+                        {exportSeriesId && (
+                          <div className="space-y-2">
+                            <Label htmlFor="export-model">Фільтр за моделлю (необов'язково)</Label>
+                            <Select value={exportModelId} onValueChange={setExportModelId}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Всі моделі" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {referenceData.models
+                                  .filter((m) => m.series_id === exportSeriesId)
+                                  .map((model) => (
+                                    <SelectItem key={model.id} value={model.id}>
+                                      {model.name}
+                                    </SelectItem>
+                                  ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+
+                        {(exportBrandId || exportSeriesId || exportModelId) && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setExportBrandId("")
+                              setExportSeriesId("")
+                              setExportModelId("")
+                            }}
+                            className="w-full"
+                          >
+                            Скинути фільтри
+                          </Button>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
+                
                 <Button onClick={handleExport} className="w-full" variant="default">
                   <Download className="h-4 w-4 mr-2" />
                   Експортувати в Excel
+                  {importType === "services" && exportModelId && " (модель)"}
+                  {importType === "services" && exportSeriesId && !exportModelId && " (серія)"}
+                  {importType === "services" && exportBrandId && !exportSeriesId && " (бренд)"}
                 </Button>
               </CardContent>
             </Card>

@@ -65,4 +65,3 @@ services:
       - 'NEXT_PUBLIC_FACEBOOK_PIXEL_ID=${NEXT_PUBLIC_FACEBOOK_PIXEL_ID}'
 
     # Healthcheck: Допомагає Coolify зрозуміти, коли перемикати трафік на новий контейнер
- 
