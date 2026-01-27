@@ -349,28 +349,28 @@ export function ServicesImport() {
       const missingSeries = !matchedSeries && !!seriesName && !!matchedBrand
       const missingModel = !matchedModel && !!modelName && !!matchedBrand && !!matchedSeries
 
-      const errors: string[] = []
-      if (!description) errors.push("Відсутній опис послуги")
-      if (!category) errors.push("Відсутня категорія")
-      if (!matchedService) errors.push("Не знайдено базову послугу - обов'язково потрібна")
+      // Критичні помилки
+      const criticalErrors: string[] = []
+      if (!description) criticalErrors.push("Відсутній опис послуги")
+      if (!category) criticalErrors.push("Відсутня категорія")
+      if (!matchedService) criticalErrors.push("Не знайдено базову послугу - обов'язково потрібна")
       
       // Попередження через відсутні елементи (можна створити або вибрати)
-      if (missingBrand) errors.push(`Бренд "${brandName}" не знайдено`)
-      if (missingSeries) errors.push(`Серія "${seriesName}" не знайдено`)
-      if (missingModel) errors.push(`Модель "${modelName}" не знайдено`)
+      const warnings: string[] = []
+      if (missingBrand) warnings.push(`Бренд "${brandName}" не знайдено`)
+      if (missingSeries) warnings.push(`Серія "${seriesName}" не знайдено`)
+      if (missingModel) warnings.push(`Модель "${modelName}" не знайдено`)
 
-      // Статус залежить від наявності помилок
-      // Якщо є відсутні елементи, але користувач дозволить створення - статус буде warning
-      const hasWarning = (missingBrand || missingSeries || missingModel)
-      const status = errors.length === 0 ? (hasWarning ? "warning" : "valid") : "error"
+      // Об'єднуємо помилки і попередження
+      const errors = [...criticalErrors, ...warnings]
 
-      console.log(`Row ${index + 1} processed:`, {
-        description,
-        serviceSlug,
-        matchedService: matchedService?.name,
-        status,
-        errors,
-      })
+      // Статус залежить від типу помилок
+      let status: "valid" | "warning" | "error" = "valid"
+      if (criticalErrors.length > 0) {
+        status = "error"
+      } else if (warnings.length > 0) {
+        status = "warning"
+      }
 
       return {
         id,
@@ -459,25 +459,38 @@ export function ServicesImport() {
         }
 
         // Перевалідація після змін
-        const errors: string[] = []
-        if (!updatedRow.description) errors.push("Відсутній опис послуги")
-        if (!updatedRow.category) errors.push("Відсутня категорія")
-        if (!updatedRow.serviceId) errors.push("Не обрано базову послугу")
+        const criticalErrors: string[] = []
+        if (!updatedRow.description) criticalErrors.push("Відсутній опис послуги")
+        if (!updatedRow.category) criticalErrors.push("Відсутня категорія")
+        if (!updatedRow.serviceId) criticalErrors.push("Не обрано базову послугу")
 
         const missingBrand = !updatedRow.brandId && !!updatedRow.brandName
         const missingSeries = !updatedRow.seriesId && !!updatedRow.seriesName && !!updatedRow.brandId
         const missingModel = !updatedRow.modelId && !!updatedRow.modelName && !!updatedRow.brandId && !!updatedRow.seriesId
 
-        // Добавляємо помилки тільки якщо немає можливості створити
-        if (missingBrand && !updatedRow.createMissing)
-          errors.push(`Бренд "${updatedRow.brandName}" - виберіть існуючий`)
-        if (missingSeries && !updatedRow.createMissing)
-          errors.push(`Серія "${updatedRow.seriesName}" - виберіть існуючу`)
-        if (missingModel && !updatedRow.createMissing)
-          errors.push(`Модель "${updatedRow.modelName}" - виберіть існуючу`)
+        // Попередження через відсутні елементи
+        const warnings: string[] = []
+        if (missingBrand) warnings.push(`Бренд "${updatedRow.brandName}" не знайдено`)
+        if (missingSeries) warnings.push(`Серія "${updatedRow.seriesName}" не знайдено`)
+        if (missingModel) warnings.push(`Модель "${updatedRow.modelName}" не знайдено`)
 
-        const hasWarning = (missingBrand || missingSeries || missingModel) && updatedRow.createMissing
-        updatedRow.status = errors.length === 0 ? "valid" : hasWarning ? "warning" : "error"
+        // Якщо користувач вибрав не створювати і є відсутні елементи - це помилка
+        const hasUnhandledMissing = (missingBrand || missingSeries || missingModel) && !updatedRow.createMissing
+
+        // Об'єднуємо помилки
+        const errors = [...criticalErrors, ...warnings]
+
+        // Розраховуємо статус
+        let status: "valid" | "warning" | "error" = "valid"
+        if (criticalErrors.length > 0) {
+          status = "error"
+        } else if (warnings.length > 0 && updatedRow.createMissing) {
+          status = "warning"
+        } else if (hasUnhandledMissing) {
+          status = "error"
+        }
+
+        updatedRow.status = status
         updatedRow.errors = errors
         updatedRow.missingBrand = missingBrand
         updatedRow.missingSeries = missingSeries
