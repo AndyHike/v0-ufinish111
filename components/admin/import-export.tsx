@@ -39,6 +39,7 @@ interface ReferenceData {
 }
 
 export function ImportExport() {
+  const [importType, setImportType] = useState<ImportType>("services")
   const [editingRowId, setEditingRowId] = useState<string | null>(null)
   const [file, setFile] = useState<File | null>(null)
   const [rows, setRows] = useState<ImportRow[]>([])
