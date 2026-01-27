@@ -10,11 +10,11 @@ function createSlug(text: string): string {
 }
 
 async function findOrCreate(supabase: any, table: string, data: any, uniqueFields: string[]): Promise<any> {
-  const query = supabase.from(table).select("*")
+  let query = supabase.from(table).select("*")
 
   for (const field of uniqueFields) {
     if (data[field]) {
-      query.eq(field, data[field])
+      query = query.eq(field, data[field])
     }
   }
 
@@ -152,7 +152,10 @@ export async function POST(request: NextRequest) {
         }
 
         if (existing) {
-          const { error } = await supabase.from("model_services").update(serviceData).eq("id", existing.id)
+          const { error } = await supabase
+            .from("model_services")
+            .update(serviceData)
+            .eq("id", existing.id)
 
           if (error) {
             errors++
@@ -161,10 +164,12 @@ export async function POST(request: NextRequest) {
             updated++
           }
         } else {
-          const { error } = await supabase.from("model_services").insert({
-            ...serviceData,
-            created_at: new Date().toISOString(),
-          })
+          const { error } = await supabase
+            .from("model_services")
+            .insert({
+              ...serviceData,
+              created_at: new Date().toISOString(),
+            })
 
           if (error) {
             errors++
