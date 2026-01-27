@@ -53,20 +53,14 @@ export function ImportExport() {
   })
   const [dataLoaded, setDataLoaded] = useState(false)
   
-  // Modal states
-  const [modal, setModal] = useState<{
-    open: boolean
-    title: string
-    message: string
-    confirmText?: string
-    cancelText?: string
-    onConfirm?: () => void
-    isConfirm?: boolean
-  }>({
-    open: false,
-    title: "",
-    message: "",
-  })
+  // Import result state
+  const [importResult, setImportResult] = useState<{
+    success?: boolean
+    created?: number
+    updated?: number
+    errors?: number
+    errorMessages?: string[]
+  } | null>(null)
   
   // Export filters
   const [exportBrandId, setExportBrandId] = useState<string>("")
@@ -565,12 +559,9 @@ export function ImportExport() {
     if (!uploadedFile) return
 
     if (!dataLoaded) {
-      setModal({
-        open: true,
-        title: "Помилка",
-        message: "Завантаження довідкових даних... Спробуйте ще раз.",
-        confirmText: "OK",
-        isConfirm: false,
+      setImportResult({
+        success: false,
+        errorMessages: ["Завантаження довідкових даних... Спробуйте ще раз."],
       })
       return
     }
@@ -624,12 +615,9 @@ export function ImportExport() {
       setRows(processedRows)
     } catch (error) {
       console.error("File processing error:", error)
-      setModal({
-        open: true,
-        title: "Помилка обробки файлу",
-        message: (error as Error).message,
-        confirmText: "OK",
-        isConfirm: false,
+      setImportResult({
+        success: false,
+        errorMessages: [(error as Error).message],
       })
     } finally {
       setLoading(false)
@@ -637,112 +625,61 @@ export function ImportExport() {
   }
 
   const handleImport = async (createMissing = false) => {
-    // Включаємо всі рядки без критичних помилок (valid + warning якщо createMissing=true)
     const validRows = rows.filter((row) => {
-      if (row.status === "error") return false // Виключаємо критичні помилки
-      if (row.status === "valid") return true // Включаємо валідні
-      if (row.status === "warning" && createMissing) return true // Включаємо попередження якщо дозволено створення
+      if (row.status === "error") return false
+      if (row.status === "valid") return true
+      if (row.status === "warning" && createMissing) return true
       return false
     })
 
     if (validRows.length === 0) {
-      setModal({
-        open: true,
-        title: "Нема записів для імпорту",
-        message: "Не знайдено валідних записів. Будь ласка, виправте помилки перед імпортом.",
-        confirmText: "OK",
-        isConfirm: false,
+      setImportResult({
+        success: false,
+        errorMessages: ["Не знайдено валідних записів. Будь ласка, виправте помилки перед імпортом."],
       })
       return
     }
 
-    const warningRows = validRows.filter((row) => row.status === "warning")
-    
-    // Показуємо підтвердження перед імпортом
-    const confirmMessage = 
-      warningRows.length > 0
-        ? `Буде імпортовано ${validRows.length} записів.\n\n${warningRows.length} з них мають попередження:\nВідсутні бренди, серії або моделі будуть створені автоматично.\n\nПродовжити?`
-        : `Буде імпортовано ${validRows.length} записів?\n\nПродовжити?`
-
-    setModal({
-      open: true,
-      title: "Підтвердження імпорту",
-      message: confirmMessage,
-      confirmText: "Імпортувати",
-      cancelText: "Скасувати",
-      isConfirm: true,
-      onConfirm: async () => {
-        setModal({ open: false, title: "", message: "" })
-        await performImport(validRows, createMissing)
-      },
-    })
+    await performImport(validRows, createMissing)
   }
 
   const performImport = async (validRows: ImportRow[], createMissing: boolean) => {
     setImporting(true)
+    setImportResult(null)
 
     try {
       const dataToSend = validRows.map((r) => r.data)
-      
-      console.log("[v0] Sending import request:", {
-        rowCount: dataToSend.length,
-        createMissing,
-        rows: dataToSend.map((d, i) => ({
-          index: i,
-          brandId: d.brandId,
-          seriesId: d.seriesId,
-          modelId: d.modelId,
-          serviceId: d.serviceId,
-          price: d.price,
-        })),
-      })
 
       const response = await fetch(`/api/admin/import-export/${importType}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          data: validRows.map((r) => r.data),
+          data: dataToSend,
           createMissing,
         }),
       })
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || "Помилка імпорту")
-      }
-
       const result = await response.json()
 
-      let message = `Імпорт завершено успішно!\n\n`
-      message += `✓ Створено нових: ${result.created}\n`
-      message += `↻ Оновлено існуючих: ${result.updated}`
-      if (result.errors > 0) message += `\n✗ Помилок: ${result.errors}`
+      if (!response.ok) {
+        throw new Error(result.error || "Помилка імпорту")
+      }
 
-      setModal({
-        open: true,
-        title: "Імпорт завершено",
-        message,
-        confirmText: "OK",
-        isConfirm: false,
-      })
-
-      await loadReferenceData()
-
-      setRows([])
-      setFile(null)
+      setImportResult(result)
+      
+      if (result.created > 0 || result.updated > 0) {
+        await loadReferenceData()
+        setRows([])
+        setFile(null)
+      }
     } catch (error) {
       console.error("Import error:", error)
-      setModal({
-        open: true,
-        title: "Помилка імпорту",
-        message: (error as Error).message,
-        confirmText: "OK",
-        isConfirm: false,
+      setImportResult({
+        success: false,
+        errorMessages: [(error as Error).message],
       })
     } finally {
       setImporting(false)
-    }
-  }
 
   const validCount = rows.filter((r) => r.status === "valid").length
   const warningCount = rows.filter((r) => r.status === "warning").length
@@ -1192,37 +1129,39 @@ export function ImportExport() {
         </Card>
       )}
 
-      {/* Custom Modal Dialog */}
-      {modal.open && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg max-w-sm w-full mx-4 p-6 space-y-4">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900">{modal.title}</h2>
-              <p className="text-gray-600 text-sm mt-2 whitespace-pre-wrap">{modal.message}</p>
-            </div>
-            <div className="flex gap-3 justify-end">
-              {modal.isConfirm && (
-                <Button
-                  onClick={() => setModal({ open: false, title: "", message: "" })}
-                  variant="outline"
-                >
-                  {modal.cancelText || "Скасувати"}
-                </Button>
-              )}
-              <Button
-                onClick={() => {
-                  modal.onConfirm?.()
-                  if (!modal.isConfirm) {
-                    setModal({ open: false, title: "", message: "" })
-                  }
-                }}
-                variant="default"
-              >
-                {modal.confirmText || "OK"}
-              </Button>
-            </div>
-          </div>
-        </div>
+      {/* Import Result Display */}
+      {importResult && (
+        <Card className="mt-6 border-2">
+          <CardHeader>
+            <CardTitle className={importResult.success === false ? "text-red-600" : "text-green-600"}>
+              {importResult.success === false ? "❌ Помилка" : "✅ Результат імпорту"}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {importResult.created !== undefined && (
+              <div>✓ Створено нових: <span className="font-bold">{importResult.created}</span></div>
+            )}
+            {importResult.updated !== undefined && (
+              <div>↻ Оновлено існуючих: <span className="font-bold">{importResult.updated}</span></div>
+            )}
+            {importResult.errors !== undefined && importResult.errors > 0 && (
+              <div>✗ Помилок: <span className="font-bold text-red-600">{importResult.errors}</span></div>
+            )}
+            {importResult.errorMessages && importResult.errorMessages.length > 0 && (
+              <div className="mt-4 bg-red-50 border border-red-200 rounded p-3">
+                <div className="font-semibold text-red-800 mb-2">Деталі помилок:</div>
+                <ul className="space-y-1">
+                  {importResult.errorMessages.map((msg, i) => (
+                    <li key={i} className="text-sm text-red-700">• {msg}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            <Button onClick={() => setImportResult(null)} className="mt-4 w-full">
+              Закрити
+            </Button>
+          </CardContent>
+        </Card>
       )}
     </div>
   )
