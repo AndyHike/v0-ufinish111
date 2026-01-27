@@ -39,7 +39,7 @@ interface ReferenceData {
 }
 
 export function ImportExport() {
-  const [importType, setImportType] = useState<ImportType>("services")
+  const [editingRowId, setEditingRowId] = useState<string | null>(null)
   const [file, setFile] = useState<File | null>(null)
   const [rows, setRows] = useState<ImportRow[]>([])
   const [loading, setLoading] = useState(false)
@@ -875,44 +875,180 @@ export function ImportExport() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-24">Статус</TableHead>
-                    <TableHead>Дані</TableHead>
-                    <TableHead>Повідомлення</TableHead>
+                    <TableHead className="w-12">Статус</TableHead>
+                    <TableHead>Бренд</TableHead>
+                    <TableHead>Серія</TableHead>
+                    <TableHead>Модель</TableHead>
+                    <TableHead>Послуга</TableHead>
+                    <TableHead className="w-20">Ціна</TableHead>
+                    <TableHead className="w-24">Гарантія</TableHead>
+                    <TableHead className="w-20">Період</TableHead>
+                    <TableHead className="w-20">Час (хв)</TableHead>
+                    <TableHead className="w-32">Дії</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {rows.map((row) => (
-                    <TableRow key={row.id}>
-                      <TableCell>
-                        {row.status === "valid" && <CheckCircle className="h-4 w-4 text-green-600" />}
-                        {row.status === "warning" && <AlertTriangle className="h-4 w-4 text-yellow-600" />}
-                        {row.status === "error" && <X className="h-4 w-4 text-red-600" />}
-                      </TableCell>
-                      <TableCell className="font-mono text-sm">
-                        {importType === "services" && (
-                          <div>
-                            <div>{row.data.category}</div>
-                            <div className="text-muted-foreground text-xs">{row.data.description}</div>
-                          </div>
-                        )}
-                        {importType === "brands" && row.data.name}
-                        {importType === "series" && `${row.data.name} (${row.data.brandName})`}
-                        {importType === "models" && `${row.data.name} (${row.data.brandName} > ${row.data.seriesName})`}
-                      </TableCell>
-                      <TableCell>
-                        {row.errors.map((err, i) => (
-                          <div key={i} className="text-red-600 text-sm">
-                            {err}
-                          </div>
-                        ))}
-                        {row.warnings.map((warn, i) => (
-                          <div key={i} className="text-yellow-600 text-sm">
-                            {warn}
-                          </div>
-                        ))}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {rows.map((row) => {
+                    if (importType !== "services") {
+                      return (
+                        <TableRow key={row.id}>
+                          <TableCell>
+                            {row.status === "valid" && <CheckCircle className="h-4 w-4 text-green-600" />}
+                            {row.status === "warning" && <AlertTriangle className="h-4 w-4 text-yellow-600" />}
+                            {row.status === "error" && <X className="h-4 w-4 text-red-600" />}
+                          </TableCell>
+                          <TableCell className="font-mono text-sm">
+                            {importType === "brands" && row.data.name}
+                            {importType === "series" && `${row.data.name} (${row.data.brandName})`}
+                            {importType === "models" && `${row.data.name} (${row.data.brandName} > ${row.data.seriesName})`}
+                          </TableCell>
+                          <TableCell>
+                            {row.errors.map((err, i) => (
+                              <div key={i} className="text-red-600 text-sm">
+                                {err}
+                              </div>
+                            ))}
+                            {row.warnings.map((warn, i) => (
+                              <div key={i} className="text-yellow-600 text-sm">
+                                {warn}
+                              </div>
+                            ))}
+                          </TableCell>
+                        </TableRow>
+                      )
+                    }
+
+                    // Services view with editable fields
+                    return (
+                      <TableRow key={row.id}>
+                        <TableCell>
+                          {row.status === "valid" && <CheckCircle className="h-4 w-4 text-green-600" />}
+                          {row.status === "warning" && <AlertTriangle className="h-4 w-4 text-yellow-600" />}
+                          {row.status === "error" && <X className="h-4 w-4 text-red-600" />}
+                        </TableCell>
+                        <TableCell>
+                          {editingRowId === row.id ? (
+                            <Select value={row.data.brandId || ""} onValueChange={(val) => {
+                              row.data.brandId = val
+                              const brand = referenceData.brands.find(b => b.id === val)
+                              row.data.brandName = brand?.name || ""
+                              row.data.seriesId = ""
+                              row.data.modelId = ""
+                              setRows([...rows])
+                            }}>
+                              <SelectTrigger className="w-full text-xs">
+                                <SelectValue placeholder="Бренд" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {referenceData.brands.map(b => (
+                                  <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <span className="text-sm">{row.data.brandName || "❌"}</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {editingRowId === row.id ? (
+                            <Select value={row.data.seriesId || ""} onValueChange={(val) => {
+                              row.data.seriesId = val
+                              const series = referenceData.series.find(s => s.id === val)
+                              row.data.seriesName = series?.name || ""
+                              row.data.modelId = ""
+                              setRows([...rows])
+                            }} disabled={!row.data.brandId}>
+                              <SelectTrigger className="w-full text-xs">
+                                <SelectValue placeholder="Серія" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {referenceData.series.filter(s => !row.data.brandId || s.brand_id === row.data.brandId).map(s => (
+                                  <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <span className="text-sm">{row.data.seriesName || "❌"}</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {editingRowId === row.id ? (
+                            <Select value={row.data.modelId || ""} onValueChange={(val) => {
+                              row.data.modelId = val
+                              const model = referenceData.models.find(m => m.id === val)
+                              row.data.modelName = model?.name || ""
+                              setRows([...rows])
+                            }} disabled={!row.data.seriesId}>
+                              <SelectTrigger className="w-full text-xs">
+                                <SelectValue placeholder="Модель" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {referenceData.models.filter(m => !row.data.seriesId || m.series_id === row.data.seriesId).map(m => (
+                                  <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <span className="text-sm">{row.data.modelName || "❌"}</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {editingRowId === row.id ? (
+                            <Select value={row.data.serviceId || ""} onValueChange={(val) => {
+                              row.data.serviceId = val
+                              const svc = referenceData.services.find(s => s.id === val)
+                              row.data.serviceSlug = svc?.slug || ""
+                              setRows([...rows])
+                            }}>
+                              <SelectTrigger className="w-full text-xs">
+                                <SelectValue placeholder="Послуга" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {referenceData.services.map(s => (
+                                  <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <span className="text-sm" title={row.data.serviceSlug}>{row.data.serviceSlug || "❌"}</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {editingRowId === row.id ? (
+                            <Input type="number" value={row.data.price} onChange={(e) => { row.data.price = e.target.value; setRows([...rows]) }} className="w-full text-xs" min="0" step="0.01" />
+                          ) : (
+                            <span className="text-sm font-medium">{row.data.price}</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {editingRowId === row.id ? (
+                            <Input value={row.data.warranty} onChange={(e) => { row.data.warranty = e.target.value; setRows([...rows]) }} className="w-full text-xs" />
+                          ) : (
+                            <span className="text-sm">{row.data.warranty}</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {editingRowId === row.id ? (
+                            <Input value={row.data.warrantyPeriod} onChange={(e) => { row.data.warrantyPeriod = e.target.value; setRows([...rows]) }} className="w-full text-xs" />
+                          ) : (
+                            <span className="text-sm">{row.data.warrantyPeriod}</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {editingRowId === row.id ? (
+                            <Input type="number" value={row.data.duration} onChange={(e) => { row.data.duration = e.target.value; setRows([...rows]) }} className="w-full text-xs" min="0" />
+                          ) : (
+                            <span className="text-sm">{row.data.duration}</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Button size="sm" variant={editingRowId === row.id ? "default" : "outline"} onClick={() => setEditingRowId(editingRowId === row.id ? null : row.id)} className="text-xs">
+                            {editingRowId === row.id ? "✓" : "✎"}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
                 </TableBody>
               </Table>
             </ScrollArea>
