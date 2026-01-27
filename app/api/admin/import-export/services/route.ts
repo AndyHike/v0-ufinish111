@@ -10,7 +10,7 @@ function createSlug(text: string): string {
 }
 
 export async function POST(request: NextRequest) {
-  const supabase = createClient()
+  const supabase = await createClient()
   let created = 0
   let updated = 0
   let errors = 0
@@ -18,6 +18,8 @@ export async function POST(request: NextRequest) {
 
   try {
     const { data, createMissing } = await request.json()
+
+    console.log("[v0] Supabase initialized:", !!supabase)
 
     if (!data || !Array.isArray(data)) {
       return NextResponse.json({ error: "Invalid data format" }, { status: 400 })
