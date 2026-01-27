@@ -354,13 +354,15 @@ export function ServicesImport() {
       if (!category) errors.push("Відсутня категорія")
       if (!matchedService) errors.push("Не знайдено базову послугу - обов'язково потрібна")
       
-      // Попередження через відсутні елементи (можна створити)
+      // Попередження через відсутні елементи (можна створити або вибрати)
       if (missingBrand) errors.push(`Бренд "${brandName}" не знайдено`)
       if (missingSeries) errors.push(`Серія "${seriesName}" не знайдено`)
       if (missingModel) errors.push(`Модель "${modelName}" не знайдено`)
 
-      const hasWarning = missingBrand || missingSeries || missingModel
-      const status = errors.length === 0 ? "valid" : hasWarning ? "warning" : "error"
+      // Статус залежить від наявності помилок
+      // Якщо є відсутні елементи, але користувач дозволить створення - статус буде warning
+      const hasWarning = (missingBrand || missingSeries || missingModel)
+      const status = errors.length === 0 ? (hasWarning ? "warning" : "valid") : "error"
 
       console.log(`Row ${index + 1} processed:`, {
         description,
@@ -466,14 +468,15 @@ export function ServicesImport() {
         const missingSeries = !updatedRow.seriesId && !!updatedRow.seriesName && !!updatedRow.brandId
         const missingModel = !updatedRow.modelId && !!updatedRow.modelName && !!updatedRow.brandId && !!updatedRow.seriesId
 
+        // Добавляємо помилки тільки якщо немає можливості створити
         if (missingBrand && !updatedRow.createMissing)
-          errors.push(`Бренд "${updatedRow.brandName}" - вибрати або дозволити створення`)
+          errors.push(`Бренд "${updatedRow.brandName}" - виберіть існуючий`)
         if (missingSeries && !updatedRow.createMissing)
-          errors.push(`Серія "${updatedRow.seriesName}" - вибрати або дозволити створення`)
+          errors.push(`Серія "${updatedRow.seriesName}" - виберіть існуючу`)
         if (missingModel && !updatedRow.createMissing)
-          errors.push(`Модель "${updatedRow.modelName}" - вибрати або дозволити створення`)
+          errors.push(`Модель "${updatedRow.modelName}" - виберіть існуючу`)
 
-        const hasWarning = (missingBrand || missingSeries || missingModel) && !updatedRow.createMissing
+        const hasWarning = (missingBrand || missingSeries || missingModel) && updatedRow.createMissing
         updatedRow.status = errors.length === 0 ? "valid" : hasWarning ? "warning" : "error"
         updatedRow.errors = errors
         updatedRow.missingBrand = missingBrand
@@ -486,14 +489,25 @@ export function ServicesImport() {
   }
 
   const handleImport = async () => {
-    const validRows = data.filter((row) => row.status === "valid")
+    // Фільтруємо рядки для імпорту:
+    // 1. Валідні рядки (status: "valid")
+    // 2. Рядки з попередженнями, але з createMissing: true
+    const rowsToImport = data.filter((row) => {
+      if (row.status === "error") return false // Помилки - виключаємо
+      if (row.status === "valid") return true // Валідні - включаємо
+      if (row.status === "warning") {
+        // Для попередження - включаємо тільки якщо користувач вибрав створення
+        return row.createMissing === true
+      }
+      return false
+    })
 
-    if (validRows.length === 0) {
-      alert("Немає валідних записів для імпорту")
+    if (rowsToImport.length === 0) {
+      alert("Немає записів для імпорту. Будь ласка, виправте помилки або дозвольте створення відсутніх елементів.")
       return
     }
 
-    if (!confirm(`Імпортувати ${validRows.length} послуг?`)) {
+    if (!confirm(`Імпортувати ${rowsToImport.length} послуг?`)) {
       return
     }
 
@@ -505,7 +519,7 @@ export function ServicesImport() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ data: validRows }),
+        body: JSON.stringify({ data: rowsToImport }),
       })
 
       if (!response.ok) {
