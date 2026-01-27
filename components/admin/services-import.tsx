@@ -32,6 +32,10 @@ interface ServiceData {
   serviceId?: string
   status: "valid" | "warning" | "error"
   errors: string[]
+  missingBrand?: boolean
+  missingSeries?: boolean
+  missingModel?: boolean
+  createMissing?: boolean
 }
 
 interface Brand {
@@ -341,14 +345,22 @@ export function ServicesImport() {
       const serviceSlug = extractSlugFromDescription(description)
       const matchedService = findServiceBySlug(serviceSlug) || findBestMatch(description, services)
 
+      const missingBrand = !matchedBrand && !!brandName
+      const missingSeries = !matchedSeries && !!seriesName && !!matchedBrand
+      const missingModel = !matchedModel && !!modelName && !!matchedBrand && !!matchedSeries
+
       const errors: string[] = []
       if (!description) errors.push("Відсутній опис послуги")
       if (!category) errors.push("Відсутня категорія")
-      if (!matchedService) errors.push(`Не знайдено базову послугу з slug: ${serviceSlug}`)
-      if (!matchedBrand) errors.push("Не знайдено бренд")
-      if (!matchedModel) errors.push("Не знайдено модель")
+      if (!matchedService) errors.push("Не знайдено базову послугу - обов'язково потрібна")
+      
+      // Попередження через відсутні елементи (можна створити)
+      if (missingBrand) errors.push(`Бренд "${brandName}" не знайдено`)
+      if (missingSeries) errors.push(`Серія "${seriesName}" не знайдено`)
+      if (missingModel) errors.push(`Модель "${modelName}" не знайдено`)
 
-      const status = errors.length === 0 ? "valid" : errors.some((e) => e.includes("Не знайдено")) ? "warning" : "error"
+      const hasWarning = missingBrand || missingSeries || missingModel
+      const status = errors.length === 0 ? "valid" : hasWarning ? "warning" : "error"
 
       console.log(`Row ${index + 1} processed:`, {
         description,
@@ -375,6 +387,10 @@ export function ServicesImport() {
         serviceId: matchedService?.id,
         status,
         errors,
+        missingBrand,
+        missingSeries,
+        missingModel,
+        createMissing: true, // За замовчуванням - створювати
       }
     })
 
@@ -392,12 +408,20 @@ export function ServicesImport() {
     return safeArray(models).filter((m) => m.series_id === seriesId)
   }
 
-  const updateRow = (rowId: string, field: string, value: string) => {
+  const updateRow = (rowId: string, field: string, value: string | boolean) => {
     setData((prevData) =>
       prevData.map((row) => {
         if (row.id !== rowId) return row
 
-        const updatedRow = { ...row, [field]: value }
+        const updatedRow = { ...row }
+
+        // Обробка checkbox для createMissing
+        if (field === "createMissing") {
+          updatedRow.createMissing = value as boolean
+          return updatedRow
+        }
+
+        updatedRow[field as keyof ServiceData] = value as any
 
         // Каскадне оновлення при зміні бренду
         if (field === "brandId") {
@@ -425,12 +449,11 @@ export function ServicesImport() {
         // Оновлення при зміні послуги
         else if (field === "serviceId") {
           const service = safeFindInArray(services, (s) => s.id === value)
-          // Зберігаємо тільки ID послуги
           updatedRow.serviceId = service?.id
         }
         // Обробка порожніх цін
         else if (field === "price") {
-          updatedRow.price = value === "" ? "0" : value
+          updatedRow.price = value === "" ? "0" : (value as string)
         }
 
         // Перевалідація після змін
@@ -438,11 +461,24 @@ export function ServicesImport() {
         if (!updatedRow.description) errors.push("Відсутній опис послуги")
         if (!updatedRow.category) errors.push("Відсутня категорія")
         if (!updatedRow.serviceId) errors.push("Не обрано базову послугу")
-        if (!updatedRow.brandId) errors.push("Не обрано бренд")
-        if (!updatedRow.modelId) errors.push("Не обрано модель")
 
-        updatedRow.status = errors.length === 0 ? "valid" : "warning"
+        const missingBrand = !updatedRow.brandId && !!updatedRow.brandName
+        const missingSeries = !updatedRow.seriesId && !!updatedRow.seriesName && !!updatedRow.brandId
+        const missingModel = !updatedRow.modelId && !!updatedRow.modelName && !!updatedRow.brandId && !!updatedRow.seriesId
+
+        if (missingBrand && !updatedRow.createMissing)
+          errors.push(`Бренд "${updatedRow.brandName}" - вибрати або дозволити створення`)
+        if (missingSeries && !updatedRow.createMissing)
+          errors.push(`Серія "${updatedRow.seriesName}" - вибрати або дозволити створення`)
+        if (missingModel && !updatedRow.createMissing)
+          errors.push(`Модель "${updatedRow.modelName}" - вибрати або дозволити створення`)
+
+        const hasWarning = (missingBrand || missingSeries || missingModel) && !updatedRow.createMissing
+        updatedRow.status = errors.length === 0 ? "valid" : hasWarning ? "warning" : "error"
         updatedRow.errors = errors
+        updatedRow.missingBrand = missingBrand
+        updatedRow.missingSeries = missingSeries
+        updatedRow.missingModel = missingModel
 
         return updatedRow
       }),
@@ -478,7 +514,28 @@ export function ServicesImport() {
       }
 
       const result = await response.json()
-      alert(`Імпорт завершено успішно!\nСтворено нових послуг: ${result.created}\nОновлено існуючих: ${result.updated}`)
+      
+      let messageText = `✅ Імпорт завершено!\n\n`
+      messageText += `📊 Результати:\n`
+      messageText += `  ✓ Створено послуг: ${result.created}\n`
+      messageText += `  ↻ Оновлено послуг: ${result.updated}`
+      
+      if (result.skipped > 0) {
+        messageText += `\n  ⊘ Пропущено: ${result.skipped}`
+      }
+      
+      if (result.errors > 0) {
+        messageText += `\n  ✗ Помилок: ${result.errors}`
+      }
+      
+      if (result.brandsCreated > 0 || result.seriesCreated > 0 || result.modelsCreated > 0) {
+        messageText += `\n\n📦 Створено нових елементів:`
+        if (result.brandsCreated > 0) messageText += `\n  🏢 Брендів: ${result.brandsCreated}`
+        if (result.seriesCreated > 0) messageText += `\n  📋 Серій: ${result.seriesCreated}`
+        if (result.modelsCreated > 0) messageText += `\n  🔧 Моделей: ${result.modelsCreated}`
+      }
+      
+      alert(messageText)
 
       // Очищуємо дані після успішного імпорту
       setData([])
@@ -626,6 +683,9 @@ export function ServicesImport() {
                               </TableHead>
                               <TableHead className="font-semibold text-gray-700 w-[100px] min-w-[100px]">
                                 Тривалість
+                              </TableHead>
+                              <TableHead className="font-semibold text-gray-700 w-[130px] min-w-[130px]">
+                                Створити?
                               </TableHead>
                               <TableHead className="font-semibold text-gray-700 w-[80px] min-w-[80px]">Дії</TableHead>
                             </TableRow>
@@ -895,6 +955,22 @@ export function ServicesImport() {
                                     >
                                       {row.duration}
                                     </span>
+                                  )}
+                                </TableCell>
+                                <TableCell className="py-3 px-4">
+                                  {(row.missingBrand || row.missingSeries || row.missingModel) && (
+                                    <label className="flex items-center gap-2 cursor-pointer hover:bg-blue-50 p-1 rounded transition-colors">
+                                      <input
+                                        type="checkbox"
+                                        checked={row.createMissing === true}
+                                        onChange={(e) => updateRow(row.id, "createMissing", e.target.checked)}
+                                        className="w-4 h-4 text-blue-600 rounded focus:ring-2"
+                                        title={`${row.missingBrand ? "Бренд, " : ""}${row.missingSeries ? "Серія, " : ""}${row.missingModel ? "Модель" : ""}`}
+                                      />
+                                      <span className="text-xs text-blue-600 font-medium">
+                                        {row.createMissing ? "✓ Створить" : "Пропустити"}
+                                      </span>
+                                    </label>
                                   )}
                                 </TableCell>
                                 <TableCell className="py-3 px-4">

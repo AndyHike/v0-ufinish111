@@ -123,10 +123,12 @@ export async function POST(request: NextRequest) {
     let created = 0
     let updated = 0
     let errors = 0
+    let skipped = 0
     let brandsCreated = 0
     let seriesCreated = 0
     let modelsCreated = 0
     const errorMessages: string[] = []
+    const warnings: string[] = []
 
     console.log(`Starting import of ${data.length} services...`)
 
@@ -136,13 +138,31 @@ export async function POST(request: NextRequest) {
       try {
         if (row.status === "error" || !row.serviceId) {
           errors++
-          errorMessages.push(`Рядок ${i + 1}: Пропущено через помилки валідації`)
+          errorMessages.push(`Рядок ${i + 1}: Пропущено через критичні помилки валідації`)
+          continue
+        }
+
+        // Перевіряємо чи користувач вибрав створювати відсутні елементи
+        const shouldCreateMissing = row.createMissing === true
+
+        // Якщо є відсутні елементи і користувач вибрав їх пропустити
+        if (
+          !shouldCreateMissing &&
+          (row.missingBrand || row.missingSeries || row.missingModel)
+        ) {
+          skipped++
+          const missingParts = []
+          if (row.missingBrand) missingParts.push(`бренд "${row.brandName}"`)
+          if (row.missingSeries) missingParts.push(`серія "${row.seriesName}"`)
+          if (row.missingModel) missingParts.push(`модель "${row.modelName}"`)
+          warnings.push(`Рядок ${i + 1}: Пропущено - немає ${missingParts.join(", ")}`)
           continue
         }
 
         let finalModelId = row.modelId
 
-        if (!finalModelId && row.brandName && row.seriesName && row.modelName) {
+        // Створюємо відсутні елементи якщо це потрібно
+        if (!finalModelId && shouldCreateMissing && row.brandName && row.seriesName && row.modelName) {
           console.log(`Creating hierarchy for row ${i + 1}: ${row.brandName} > ${row.seriesName} > ${row.modelName}`)
 
           const brand = await findOrCreateBrand(supabase, row.brandName)
@@ -151,7 +171,10 @@ export async function POST(request: NextRequest) {
             errorMessages.push(`Рядок ${i + 1}: Не вдалося створити бренд "${row.brandName}"`)
             continue
           }
-          if (!row.brandId) brandsCreated++
+          if (!row.brandId) {
+            brandsCreated++
+            warnings.push(`Рядок ${i + 1}: Створено новий бренд "${row.brandName}"`)
+          }
 
           const series = await findOrCreateSeries(supabase, row.seriesName, brand.id)
           if (!series) {
@@ -159,7 +182,10 @@ export async function POST(request: NextRequest) {
             errorMessages.push(`Рядок ${i + 1}: Не вдалося створити серію "${row.seriesName}"`)
             continue
           }
-          if (!row.seriesId) seriesCreated++
+          if (!row.seriesId) {
+            seriesCreated++
+            warnings.push(`Рядок ${i + 1}: Створено нову серію "${row.seriesName}"`)
+          }
 
           const model = await findOrCreateModel(supabase, row.modelName, brand.id, series.id)
           if (!model) {
@@ -167,7 +193,10 @@ export async function POST(request: NextRequest) {
             errorMessages.push(`Рядок ${i + 1}: Не вдалося створити модель "${row.modelName}"`)
             continue
           }
-          if (!row.modelId) modelsCreated++
+          if (!row.modelId) {
+            modelsCreated++
+            warnings.push(`Рядок ${i + 1}: Створено нову модель "${row.modelName}"`)
+          }
 
           finalModelId = model.id
           console.log(
@@ -279,18 +308,20 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log(`Import completed: ${created} created, ${updated} updated, ${errors} errors`)
+    console.log(`Import completed: ${created} created, ${updated} updated, ${skipped} skipped, ${errors} errors`)
     console.log(`Hierarchy created: ${brandsCreated} brands, ${seriesCreated} series, ${modelsCreated} models`)
 
     return NextResponse.json({
       success: true,
       created,
       updated,
+      skipped,
       errors,
       brandsCreated,
       seriesCreated,
       modelsCreated,
       errorMessages: errorMessages.slice(0, 10),
+      warnings: warnings.slice(0, 10),
     })
   } catch (error) {
     console.error("Import error:", error)
