@@ -683,6 +683,19 @@ export function ImportExport() {
 
     try {
       const dataToSend = validRows.map((r) => r.data)
+      
+      console.log("[v0] Sending import request:", {
+        rowCount: dataToSend.length,
+        createMissing,
+        rows: dataToSend.map((d, i) => ({
+          index: i,
+          brandId: d.brandId,
+          seriesId: d.seriesId,
+          modelId: d.modelId,
+          serviceId: d.serviceId,
+          price: d.price,
+        })),
+      })
 
       const response = await fetch(`/api/admin/import-export/${importType}`, {
         method: "POST",

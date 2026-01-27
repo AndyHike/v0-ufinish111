@@ -47,15 +47,34 @@ export async function POST(request: NextRequest) {
     const { data, createMissing } = await request.json()
     const supabase = createClient()
 
+    console.log("[DEBUG] Import request received:", {
+      dataLength: data?.length || 0,
+      createMissing,
+      firstRow: data?.[0],
+    })
+
     let created = 0
     let updated = 0
     let errors = 0
     const errorMessages: string[] = []
 
-    for (let i = 0; i < data.length; i++) {
+    console.log("[DEBUG] === IMPORT START ===")
+    for (let i = 0; i < (data?.length || 0); i++) {
       const row = data[i]
 
       try {
+        console.log(`[DEBUG] Row ${i + 1} INPUT:`, {
+          brandId: row.brandId,
+          seriesId: row.seriesId,
+          modelId: row.modelId,
+          serviceId: row.serviceId,
+          price: row.price,
+          brandName: row.brandName,
+          seriesName: row.seriesName,
+          modelName: row.modelName,
+          serviceSlug: row.serviceSlug,
+        })
+
         let brandId = row.brandId
         let seriesId = row.seriesId
         let modelId = row.modelId
@@ -107,7 +126,9 @@ export async function POST(request: NextRequest) {
 
         if (!modelId || !row.serviceId) {
           errors++
-          errorMessages.push(`Рядок ${i + 1}: Відсутня модель або послуга`)
+          const errorMsg = `Рядок ${i + 1}: Відсутня ${!modelId ? "модель" : "послуга"} (modelId: ${modelId}, serviceId: ${row.serviceId})`
+          console.log("[DEBUG]", errorMsg)
+          errorMessages.push(errorMsg)
           continue
         }
 
@@ -151,26 +172,40 @@ export async function POST(request: NextRequest) {
           benefits: row.warranty || null, // Use Гарантія as benefits
         }
 
+        console.log("[DEBUG] Service data to insert/update:", serviceData)
+
         if (existing) {
+          console.log("[DEBUG] Updating existing record:", existing.id)
           const { error } = await supabase.from("model_services").update(serviceData).eq("id", existing.id)
 
           if (error) {
             errors++
-            errorMessages.push(`Рядок ${i + 1}: ${error.message}`)
+            const errorMsg = `Рядок ${i + 1} (update): ${error.message}`
+            console.error("[DEBUG] Update error:", errorMsg)
+            errorMessages.push(errorMsg)
           } else {
             updated++
+            console.log("[DEBUG] Record updated successfully")
           }
         } else {
-          const { error } = await supabase.from("model_services").insert({
-            ...serviceData,
-            created_at: new Date().toISOString(),
-          })
+          console.log("[DEBUG] Inserting new record")
+          const { error, data: insertedData } = await supabase
+            .from("model_services")
+            .insert({
+              ...serviceData,
+              created_at: new Date().toISOString(),
+            })
+            .select()
+            .single()
 
           if (error) {
             errors++
-            errorMessages.push(`Рядок ${i + 1}: ${error.message}`)
+            const errorMsg = `Рядок ${i + 1} (insert): ${error.message}`
+            console.error("[DEBUG] Insert error:", errorMsg, error)
+            errorMessages.push(errorMsg)
           } else {
             created++
+            console.log("[DEBUG] Record inserted successfully:", insertedData?.id)
           }
         }
       } catch (error) {
@@ -178,6 +213,14 @@ export async function POST(request: NextRequest) {
         errorMessages.push(`Рядок ${i + 1}: ${(error as Error).message}`)
       }
     }
+
+    console.log("[DEBUG] === IMPORT COMPLETE ===", {
+      total: data?.length,
+      created,
+      updated,
+      errors,
+      errorMessages,
+    })
 
     return NextResponse.json({
       success: true,
