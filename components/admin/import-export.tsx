@@ -682,6 +682,8 @@ export function ImportExport() {
     setImporting(true)
 
     try {
+      const dataToSend = validRows.map((r) => r.data)
+
       const response = await fetch(`/api/admin/import-export/${importType}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -998,12 +1000,15 @@ export function ImportExport() {
                         <TableCell>
                           {editingRowId === row.id ? (
                             <Select value={row.data.brandId || ""} onValueChange={(val) => {
-                              row.data.brandId = val
-                              const brand = referenceData.brands.find(b => b.id === val)
-                              row.data.brandName = brand?.name || ""
-                              row.data.seriesId = ""
-                              row.data.modelId = ""
-                              setRows([...rows])
+                              const updated = rows.map(r => {
+                                if (r.id !== row.id) return r
+                                const brand = referenceData.brands.find(b => b.id === val)
+                                return {
+                                  ...r,
+                                  data: { ...r.data, brandId: val, brandName: brand?.name || "", seriesId: "", modelId: "" }
+                                }
+                              })
+                              setRows(updated)
                             }}>
                               <SelectTrigger className="w-full text-xs">
                                 <SelectValue placeholder="Бренд" />
@@ -1021,11 +1026,15 @@ export function ImportExport() {
                         <TableCell>
                           {editingRowId === row.id ? (
                             <Select value={row.data.seriesId || ""} onValueChange={(val) => {
-                              row.data.seriesId = val
-                              const series = referenceData.series.find(s => s.id === val)
-                              row.data.seriesName = series?.name || ""
-                              row.data.modelId = ""
-                              setRows([...rows])
+                              const updated = rows.map(r => {
+                                if (r.id !== row.id) return r
+                                const series = referenceData.series.find(s => s.id === val)
+                                return {
+                                  ...r,
+                                  data: { ...r.data, seriesId: val, seriesName: series?.name || "", modelId: "" }
+                                }
+                              })
+                              setRows(updated)
                             }} disabled={!row.data.brandId}>
                               <SelectTrigger className="w-full text-xs">
                                 <SelectValue placeholder="Серія" />
@@ -1043,10 +1052,15 @@ export function ImportExport() {
                         <TableCell>
                           {editingRowId === row.id ? (
                             <Select value={row.data.modelId || ""} onValueChange={(val) => {
-                              row.data.modelId = val
-                              const model = referenceData.models.find(m => m.id === val)
-                              row.data.modelName = model?.name || ""
-                              setRows([...rows])
+                              const updated = rows.map(r => {
+                                if (r.id !== row.id) return r
+                                const model = referenceData.models.find(m => m.id === val)
+                                return {
+                                  ...r,
+                                  data: { ...r.data, modelId: val, modelName: model?.name || "" }
+                                }
+                              })
+                              setRows(updated)
                             }} disabled={!row.data.seriesId}>
                               <SelectTrigger className="w-full text-xs">
                                 <SelectValue placeholder="Модель" />
@@ -1064,10 +1078,15 @@ export function ImportExport() {
                         <TableCell>
                           {editingRowId === row.id ? (
                             <Select value={row.data.serviceId || ""} onValueChange={(val) => {
-                              row.data.serviceId = val
-                              const svc = referenceData.services.find(s => s.id === val)
-                              row.data.serviceSlug = svc?.slug || ""
-                              setRows([...rows])
+                              const updated = rows.map(r => {
+                                if (r.id !== row.id) return r
+                                const svc = referenceData.services.find(s => s.id === val)
+                                return {
+                                  ...r,
+                                  data: { ...r.data, serviceId: val, serviceSlug: svc?.slug || "" }
+                                }
+                              })
+                              setRows(updated)
                             }}>
                               <SelectTrigger className="w-full text-xs">
                                 <SelectValue placeholder="Послуга" />
@@ -1084,28 +1103,52 @@ export function ImportExport() {
                         </TableCell>
                         <TableCell>
                           {editingRowId === row.id ? (
-                            <Input type="number" value={row.data.price} onChange={(e) => { row.data.price = e.target.value; setRows([...rows]) }} className="w-full text-xs" min="0" step="0.01" />
+                            <Input type="number" value={row.data.price} onChange={(e) => {
+                              const updated = rows.map(r => ({
+                                ...r,
+                                data: r.id === row.id ? { ...r.data, price: e.target.value } : r.data
+                              }))
+                              setRows(updated)
+                            }} className="w-full text-xs" min="0" step="0.01" />
                           ) : (
                             <span className="text-sm font-medium">{row.data.price}</span>
                           )}
                         </TableCell>
                         <TableCell>
                           {editingRowId === row.id ? (
-                            <Input value={row.data.warranty} onChange={(e) => { row.data.warranty = e.target.value; setRows([...rows]) }} className="w-full text-xs" />
+                            <Input value={row.data.warranty} onChange={(e) => {
+                              const updated = rows.map(r => ({
+                                ...r,
+                                data: r.id === row.id ? { ...r.data, warranty: e.target.value } : r.data
+                              }))
+                              setRows(updated)
+                            }} className="w-full text-xs" />
                           ) : (
                             <span className="text-sm">{row.data.warranty}</span>
                           )}
                         </TableCell>
                         <TableCell>
                           {editingRowId === row.id ? (
-                            <Input value={row.data.warrantyPeriod} onChange={(e) => { row.data.warrantyPeriod = e.target.value; setRows([...rows]) }} className="w-full text-xs" />
+                            <Input value={row.data.warrantyPeriod} onChange={(e) => {
+                              const updated = rows.map(r => ({
+                                ...r,
+                                data: r.id === row.id ? { ...r.data, warrantyPeriod: e.target.value } : r.data
+                              }))
+                              setRows(updated)
+                            }} className="w-full text-xs" />
                           ) : (
                             <span className="text-sm">{row.data.warrantyPeriod}</span>
                           )}
                         </TableCell>
                         <TableCell>
                           {editingRowId === row.id ? (
-                            <Input type="number" value={row.data.duration} onChange={(e) => { row.data.duration = e.target.value; setRows([...rows]) }} className="w-full text-xs" min="0" />
+                            <Input type="number" value={row.data.duration} onChange={(e) => {
+                              const updated = rows.map(r => ({
+                                ...r,
+                                data: r.id === row.id ? { ...r.data, duration: e.target.value } : r.data
+                              }))
+                              setRows(updated)
+                            }} className="w-full text-xs" min="0" />
                           ) : (
                             <span className="text-sm">{row.data.duration}</span>
                           )}
