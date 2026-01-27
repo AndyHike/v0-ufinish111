@@ -53,6 +53,21 @@ export function ImportExport() {
   })
   const [dataLoaded, setDataLoaded] = useState(false)
   
+  // Modal states
+  const [modal, setModal] = useState<{
+    open: boolean
+    title: string
+    message: string
+    confirmText?: string
+    cancelText?: string
+    onConfirm?: () => void
+    isConfirm?: boolean
+  }>({
+    open: false,
+    title: "",
+    message: "",
+  })
+  
   // Export filters
   const [exportBrandId, setExportBrandId] = useState<string>("")
   const [exportSeriesId, setExportSeriesId] = useState<string>("")
@@ -270,7 +285,13 @@ export function ImportExport() {
       XLSX.writeFile(wb, fileName)
     } catch (error) {
       console.error("Export error:", error)
-      alert("Помилка експорту: " + (error as Error).message)
+      setModal({
+        open: true,
+        title: "Помилка експорту",
+        message: (error as Error).message,
+        confirmText: "OK",
+        isConfirm: false,
+      })
     }
   }
 
@@ -544,7 +565,13 @@ export function ImportExport() {
     if (!uploadedFile) return
 
     if (!dataLoaded) {
-      alert("Завантаження довідкових даних... Спробуйте ще раз.")
+      setModal({
+        open: true,
+        title: "Помилка",
+        message: "Завантаження довідкових даних... Спробуйте ще раз.",
+        confirmText: "OK",
+        isConfirm: false,
+      })
       return
     }
 
@@ -597,32 +624,61 @@ export function ImportExport() {
       setRows(processedRows)
     } catch (error) {
       console.error("File processing error:", error)
-      alert("Помилка обробки файлу: " + (error as Error).message)
+      setModal({
+        open: true,
+        title: "Помилка обробки файлу",
+        message: (error as Error).message,
+        confirmText: "OK",
+        isConfirm: false,
+      })
     } finally {
       setLoading(false)
     }
   }
 
   const handleImport = async (createMissing = false) => {
-    const validRows = rows.filter((row) => (createMissing ? row.status !== "error" : row.status === "valid"))
+    // Включаємо всі рядки без критичних помилок (valid + warning якщо createMissing=true)
+    const validRows = rows.filter((row) => {
+      if (row.status === "error") return false // Виключаємо критичні помилки
+      if (row.status === "valid") return true // Включаємо валідні
+      if (row.status === "warning" && createMissing) return true // Включаємо попередження якщо дозволено створення
+      return false
+    })
 
     if (validRows.length === 0) {
-      alert("Немає валідних записів для імпорту")
+      setModal({
+        open: true,
+        title: "Нема записів для імпорту",
+        message: "Не знайдено валідних записів. Будь ласка, виправте помилки перед імпортом.",
+        confirmText: "OK",
+        isConfirm: false,
+      })
       return
     }
 
     const warningRows = validRows.filter((row) => row.status === "warning")
-    if (warningRows.length > 0 && createMissing) {
-      const confirmed = confirm(
-        `Знайдено ${warningRows.length} записів з попередженнями.\n` +
-          `Відсутні бренди, серії або моделі будуть створені автоматично.\n\n` +
-          `Продовжити?`,
-      )
-      if (!confirmed) return
-    } else if (!confirm(`Імпортувати ${validRows.length} записів?`)) {
-      return
-    }
+    
+    // Показуємо підтвердження перед імпортом
+    const confirmMessage = 
+      warningRows.length > 0
+        ? `Буде імпортовано ${validRows.length} записів.\n\n${warningRows.length} з них мають попередження:\nВідсутні бренди, серії або моделі будуть створені автоматично.\n\nПродовжити?`
+        : `Буде імпортовано ${validRows.length} записів?\n\nПродовжити?`
 
+    setModal({
+      open: true,
+      title: "Підтвердження імпорту",
+      message: confirmMessage,
+      confirmText: "Імпортувати",
+      cancelText: "Скасувати",
+      isConfirm: true,
+      onConfirm: async () => {
+        setModal({ open: false, title: "", message: "" })
+        await performImport(validRows, createMissing)
+      },
+    })
+  }
+
+  const performImport = async (validRows: ImportRow[], createMissing: boolean) => {
     setImporting(true)
 
     try {
@@ -642,12 +698,18 @@ export function ImportExport() {
 
       const result = await response.json()
 
-      let message = `Імпорт завершено успішно!\n`
-      message += `Створено нових: ${result.created}\n`
-      message += `Оновлено існуючих: ${result.updated}\n`
-      if (result.errors > 0) message += `Помилок: ${result.errors}`
+      let message = `Імпорт завершено успішно!\n\n`
+      message += `✓ Створено нових: ${result.created}\n`
+      message += `↻ Оновлено існуючих: ${result.updated}`
+      if (result.errors > 0) message += `\n✗ Помилок: ${result.errors}`
 
-      alert(message)
+      setModal({
+        open: true,
+        title: "Імпорт завершено",
+        message,
+        confirmText: "OK",
+        isConfirm: false,
+      })
 
       await loadReferenceData()
 
@@ -655,7 +717,13 @@ export function ImportExport() {
       setFile(null)
     } catch (error) {
       console.error("Import error:", error)
-      alert("Помилка імпорту: " + (error as Error).message)
+      setModal({
+        open: true,
+        title: "Помилка імпорту",
+        message: (error as Error).message,
+        confirmText: "OK",
+        isConfirm: false,
+      })
     } finally {
       setImporting(false)
     }
@@ -1066,6 +1134,39 @@ export function ImportExport() {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Custom Modal Dialog */}
+      {modal.open && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg max-w-sm w-full mx-4 p-6 space-y-4">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">{modal.title}</h2>
+              <p className="text-gray-600 text-sm mt-2 whitespace-pre-wrap">{modal.message}</p>
+            </div>
+            <div className="flex gap-3 justify-end">
+              {modal.isConfirm && (
+                <Button
+                  onClick={() => setModal({ open: false, title: "", message: "" })}
+                  variant="outline"
+                >
+                  {modal.cancelText || "Скасувати"}
+                </Button>
+              )}
+              <Button
+                onClick={() => {
+                  modal.onConfirm?.()
+                  if (!modal.isConfirm) {
+                    setModal({ open: false, title: "", message: "" })
+                  }
+                }}
+                variant="default"
+              >
+                {modal.confirmText || "OK"}
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
