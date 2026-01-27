@@ -680,6 +680,8 @@ export function ImportExport() {
       })
     } finally {
       setImporting(false)
+    }
+  }
 
   const validCount = rows.filter((r) => r.status === "valid").length
   const warningCount = rows.filter((r) => r.status === "warning").length
