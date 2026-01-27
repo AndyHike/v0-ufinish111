@@ -13,11 +13,21 @@ function createSlug(text: string): string {
 async function findOrCreateBrand(supabase: any, brandName: string) {
   if (!brandName) return null
 
-  const { data: existingBrand } = await supabase
+  // Спочатку шукаємо точне співпадіння
+  let { data: existingBrand } = await supabase
     .from("brands")
     .select("id, name, slug")
     .eq("name", brandName)
     .maybeSingle()
+
+  // Якщо не знайшли, шукаємо case-insensitive
+  if (!existingBrand) {
+    const { data: allBrands } = await supabase
+      .from("brands")
+      .select("id, name, slug")
+
+    existingBrand = allBrands?.find((b: any) => b.name.toLowerCase() === brandName.toLowerCase()) || null
+  }
 
   if (existingBrand) {
     return existingBrand
@@ -46,12 +56,23 @@ async function findOrCreateBrand(supabase: any, brandName: string) {
 async function findOrCreateSeries(supabase: any, seriesName: string, brandId: string) {
   if (!seriesName || !brandId) return null
 
-  const { data: existingSeries } = await supabase
+  // Спочатку шукаємо точне співпадіння
+  let { data: existingSeries } = await supabase
     .from("series")
     .select("id, name, slug, brand_id")
     .eq("name", seriesName)
     .eq("brand_id", brandId)
     .maybeSingle()
+
+  // Якщо не знайшли, шукаємо case-insensitive
+  if (!existingSeries) {
+    const { data: allSeries } = await supabase
+      .from("series")
+      .select("id, name, slug, brand_id")
+      .eq("brand_id", brandId)
+
+    existingSeries = allSeries?.find((s: any) => s.name.toLowerCase() === seriesName.toLowerCase()) || null
+  }
 
   if (existingSeries) {
     return existingSeries
@@ -81,13 +102,25 @@ async function findOrCreateSeries(supabase: any, seriesName: string, brandId: st
 async function findOrCreateModel(supabase: any, modelName: string, brandId: string, seriesId: string) {
   if (!modelName || !brandId || !seriesId) return null
 
-  const { data: existingModel } = await supabase
+  // Спочатку шукаємо точне співпадіння
+  let { data: existingModel } = await supabase
     .from("models")
     .select("id, name, slug, brand_id, series_id")
     .eq("name", modelName)
     .eq("brand_id", brandId)
     .eq("series_id", seriesId)
     .maybeSingle()
+
+  // Якщо не знайшли, шукаємо case-insensitive
+  if (!existingModel) {
+    const { data: allModels } = await supabase
+      .from("models")
+      .select("id, name, slug, brand_id, series_id")
+      .eq("brand_id", brandId)
+      .eq("series_id", seriesId)
+
+    existingModel = allModels?.find((m: any) => m.name.toLowerCase() === modelName.toLowerCase()) || null
+  }
 
   if (existingModel) {
     return existingModel
