@@ -9,108 +9,127 @@ function createSlug(text: string): string {
     .trim()
 }
 
-async function findOrCreate(supabase: any, table: string, data: any, uniqueFields: string[]): Promise<any> {
-  let query = supabase.from(table).select("*")
-
-  for (const field of uniqueFields) {
-    if (data[field]) {
-      query = query.eq(field, data[field])
-    }
-  }
-
-  const { data: existing } = await query.maybeSingle()
-
-  if (existing) {
-    return existing
-  }
-
-  const { data: created, error } = await supabase
-    .from(table)
-    .insert({
-      ...data,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    })
-    .select()
-    .single()
-
-  if (error) {
-    console.error(`Error creating ${table}:`, error)
-    return null
-  }
-
-  return created
-}
-
 export async function POST(request: NextRequest) {
+  const supabase = createClient()
+  let created = 0
+  let updated = 0
+  let errors = 0
+  const errorMessages: string[] = []
+
   try {
     const { data, createMissing } = await request.json()
-    const supabase = createClient()
 
-    let created = 0
-    let updated = 0
-    let errors = 0
-    const errorMessages: string[] = []
+    if (!data || !Array.isArray(data)) {
+      return NextResponse.json({ error: "Invalid data format" }, { status: 400 })
+    }
 
-    for (let i = 0; i < (data?.length || 0); i++) {
+    for (let i = 0; i < data.length; i++) {
       const row = data[i]
 
       try {
-        let brandId = row.brandId
-        let seriesId = row.seriesId
-        let modelId = row.modelId
+        let brandId = row.brandId || null
+        let seriesId = row.seriesId || null
+        let modelId = row.modelId || null
 
-        // Створюємо відсутні бренди, серії, моделі якщо потрібно
+        // Create missing brands, series, models if needed
         if (createMissing) {
+          // Create brand if missing
           if (!brandId && row.brandName) {
-            const brand = await findOrCreate(
-              supabase,
-              "brands",
-              {
-                name: row.brandName,
-                slug: createSlug(row.brandName),
-              },
-              ["name"],
-            )
-            brandId = brand?.id
+            const { data: existingBrand } = await supabase
+              .from("brands")
+              .select("id")
+              .eq("name", row.brandName)
+              .maybeSingle()
+
+            if (existingBrand) {
+              brandId = existingBrand.id
+            } else {
+              const { data: newBrand, error: brandError } = await supabase
+                .from("brands")
+                .insert({
+                  name: row.brandName,
+                  slug: createSlug(row.brandName),
+                })
+                .select("id")
+                .single()
+
+              if (brandError) {
+                throw new Error(`Brand creation error: ${brandError.message}`)
+              }
+              brandId = newBrand?.id
+            }
           }
 
+          // Create series if missing
           if (!seriesId && row.seriesName && brandId) {
-            const series = await findOrCreate(
-              supabase,
-              "series",
-              {
-                name: row.seriesName,
-                slug: createSlug(row.seriesName),
-                brand_id: brandId,
-              },
-              ["name", "brand_id"],
-            )
-            seriesId = series?.id
+            const { data: existingSeries } = await supabase
+              .from("series")
+              .select("id")
+              .eq("name", row.seriesName)
+              .eq("brand_id", brandId)
+              .maybeSingle()
+
+            if (existingSeries) {
+              seriesId = existingSeries.id
+            } else {
+              const { data: newSeries, error: seriesError } = await supabase
+                .from("series")
+                .insert({
+                  name: row.seriesName,
+                  slug: createSlug(row.seriesName),
+                  brand_id: brandId,
+                })
+                .select("id")
+                .single()
+
+              if (seriesError) {
+                throw new Error(`Series creation error: ${seriesError.message}`)
+              }
+              seriesId = newSeries?.id
+            }
           }
 
+          // Create model if missing
           if (!modelId && row.modelName && brandId && seriesId) {
-            const model = await findOrCreate(
-              supabase,
-              "models",
-              {
-                name: row.modelName,
-                slug: createSlug(row.modelName),
-                brand_id: brandId,
-                series_id: seriesId,
-              },
-              ["name", "brand_id", "series_id"],
-            )
-            modelId = model?.id
+            const { data: existingModel } = await supabase
+              .from("models")
+              .select("id")
+              .eq("name", row.modelName)
+              .eq("series_id", seriesId)
+              .maybeSingle()
+
+            if (existingModel) {
+              modelId = existingModel.id
+            } else {
+              const { data: newModel, error: modelError } = await supabase
+                .from("models")
+                .insert({
+                  name: row.modelName,
+                  slug: createSlug(row.modelName),
+                  brand_id: brandId,
+                  series_id: seriesId,
+                })
+                .select("id")
+                .single()
+
+              if (modelError) {
+                throw new Error(`Model creation error: ${modelError.message}`)
+              }
+              modelId = newModel?.id
+            }
           }
         }
 
+        // Validate required fields
         if (!modelId || !row.serviceId) {
           errors++
-          errorMessages.push(`Рядок ${i + 1}: Відсутня ${!modelId ? "модель" : "послуга"}`)
+          errorMessages.push(
+            `Рядок ${i + 1}: Відсутня ${!modelId ? "модель" : "послуга"}`
+          )
           continue
         }
 
+        // Parse price
         const price =
           Number.parseFloat(
             row.price
@@ -119,7 +138,7 @@ export async function POST(request: NextRequest) {
               .replace(",", "."),
           ) || 0
 
-        // Parse warranty period (can be number or text like "6 міс.")
+        // Parse warranty period
         let warrantyMonths = 0
         if (row.warrantyPeriod) {
           const warrantyStr = row.warrantyPeriod.toString().toLowerCase()
@@ -130,16 +149,22 @@ export async function POST(request: NextRequest) {
         }
 
         // Parse duration in minutes and convert to hours
-        const durationMinutes = Number.parseInt(row.duration?.toString().replace(/[^\d]/g, "") || "0")
+        const durationMinutes = Number.parseInt(
+          row.duration?.toString().replace(/[^\d]/g, "") || "0"
+        )
         const durationHours = Math.round((durationMinutes / 60) * 100) / 100
 
         // Check if service exists
-        const { data: existing } = await supabase
+        const { data: existing, error: checkError } = await supabase
           .from("model_services")
           .select("id")
           .eq("service_id", row.serviceId)
           .eq("model_id", modelId)
           .maybeSingle()
+
+        if (checkError) {
+          throw new Error(`Check error: ${checkError.message}`)
+        }
 
         const serviceData = {
           service_id: row.serviceId,
@@ -147,40 +172,46 @@ export async function POST(request: NextRequest) {
           price,
           warranty_months: warrantyMonths,
           duration_hours: durationHours,
-          detailed_description: row.serviceName,
+          detailed_description: row.serviceName || "",
           benefits: row.warranty || null,
         }
 
         if (existing) {
-          const { error } = await supabase
+          const { error: updateError } = await supabase
             .from("model_services")
             .update(serviceData)
             .eq("id", existing.id)
 
-          if (error) {
+          if (updateError) {
             errors++
-            errorMessages.push(`Рядок ${i + 1} (оновлення): ${error.message}`)
+            errorMessages.push(
+              `Рядок ${i + 1} (оновлення): ${updateError.message}`
+            )
           } else {
             updated++
           }
         } else {
-          const { error } = await supabase
+          const { error: insertError } = await supabase
             .from("model_services")
             .insert({
               ...serviceData,
               created_at: new Date().toISOString(),
             })
 
-          if (error) {
+          if (insertError) {
             errors++
-            errorMessages.push(`Рядок ${i + 1} (вставка): ${error.message}`)
+            errorMessages.push(
+              `Рядок ${i + 1} (вставка): ${insertError.message}`
+            )
           } else {
             created++
           }
         }
       } catch (error) {
         errors++
-        errorMessages.push(`Рядок ${i + 1}: ${(error as Error).message}`)
+        const errorMessage =
+          error instanceof Error ? error.message : String(error)
+        errorMessages.push(`Рядок ${i + 1}: ${errorMessage}`)
       }
     }
 
@@ -193,6 +224,11 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error("Import error:", error)
-    return NextResponse.json({ error: "Помилка імпорту: " + (error as Error).message }, { status: 500 })
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error"
+    return NextResponse.json(
+      { error: "Помилка імпорту: " + errorMessage },
+      { status: 500 }
+    )
   }
 }
