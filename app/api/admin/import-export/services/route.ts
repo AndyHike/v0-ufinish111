@@ -47,12 +47,6 @@ export async function POST(request: NextRequest) {
     const { data, createMissing } = await request.json()
     const supabase = createClient()
 
-    console.log("[v0] Import request:", {
-      dataLength: data.length,
-      createMissing,
-      sampleRow: data[0],
-    })
-
     let created = 0
     let updated = 0
     let errors = 0
@@ -61,14 +55,7 @@ export async function POST(request: NextRequest) {
     for (let i = 0; i < data.length; i++) {
       const row = data[i]
 
-      console.log(`[v0] Processing row ${i + 1}:`, {
-        modelId: row.modelId,
-        serviceId: row.serviceId,
-        modelName: row.modelName,
-        serviceSlug: row.serviceSlug,
-        brandName: row.brandName,
-        seriesName: row.seriesName,
-      })
+      try {
         let brandId = row.brandId
         let seriesId = row.seriesId
         let modelId = row.modelId
