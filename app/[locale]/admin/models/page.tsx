@@ -451,17 +451,19 @@ export default function ModelsPage() {
                                 <TableCell>{model.series?.name || t("noSeries")}</TableCell>
                                 <TableCell>
                                   {model.image_url ? (
-                                    <div className="h-10 w-10 overflow-hidden rounded-md">
+                                    <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-md">
                                       <Image
-                                        src={model.image_url || "/placeholder.svg"}
+                                        src={model.image_url}
                                         alt={model.name}
                                         width={40}
                                         height={40}
-                                        className="h-full w-full object-contain"
+                                        className="h-full w-full object-cover"
+                                        quality={75}
+                                        priority={false}
                                       />
                                     </div>
                                   ) : (
-                                    <span className="text-muted-foreground">{t("noImage") || "No image"}</span>
+                                    <span className="text-sm text-muted-foreground">{t("noImage") || "—"}</span>
                                   )}
                                 </TableCell>
                                 <TableCell>{new Date(model.created_at).toLocaleDateString()}</TableCell>
@@ -532,7 +534,7 @@ export default function ModelsPage() {
           }
         }}
       >
-        <DialogContent onOpenAutoFocus={(e) => e.preventDefault()} onCloseAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto" onOpenAutoFocus={(e) => e.preventDefault()} onCloseAutoFocus={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle>{t("editModel")}</DialogTitle>
             <DialogDescription>{t("editModelDescription")}</DialogDescription>
@@ -597,10 +599,15 @@ export default function ModelsPage() {
               </div>
               <div className="grid gap-2">
                 <Label>{t("modelImage")}</Label>
-                <ImageUpload
-                  onImageUploaded={(url) => setEditModel({ ...editModel, image_url: url })}
-                  currentImageUrl={editModel.image_url}
-                />
+                <div className="max-h-48 overflow-y-auto">
+                  <ImageUpload
+                    onImageUploaded={(url) => setEditModel({ ...editModel, image_url: url })}
+                    currentImageUrl={editModel.image_url}
+                    maxWidth={800}
+                    maxHeight={800}
+                    quality={0.75}
+                  />
+                </div>
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="edit-position">{t("position") || "Position"}</Label>

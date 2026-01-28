@@ -172,26 +172,21 @@ export function ImageUpload({
         </div>
       )}
 
-      {previewUrl && (
-        <div className="relative mt-2 rounded-md border border-border p-2">
-          <div className="aspect-square h-32 w-32 overflow-hidden rounded-md">
+      {previewUrl && previewUrl !== "/placeholder.svg" && (
+        <div className="mt-2 rounded-md border border-border p-2">
+          <div className="h-32 w-32 overflow-hidden rounded-md flex-shrink-0">
             <Image
-              src={previewUrl || "/placeholder.svg"}
+              src={previewUrl}
               alt="Preview"
               width={128}
               height={128}
               className="h-full w-full object-contain"
               onError={() => {
-                setPreviewUrl("/placeholder.svg")
-                toast({
-                  title: t("warning"),
-                  description: "Помилка при завантаженні превью",
-                  variant: "default",
-                })
+                console.error("[v0] Image preview failed to load:", previewUrl)
               }}
             />
           </div>
-          <p className="mt-2 text-xs text-muted-foreground break-all">{previewUrl}</p>
+          <p className="mt-2 text-xs text-muted-foreground break-all truncate">{previewUrl}</p>
         </div>
       )}
     </div>

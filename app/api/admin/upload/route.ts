@@ -13,8 +13,8 @@ export async function POST(request: Request) {
     // Get the form data
     const formData = await request.formData()
     const file = formData.get("file") as File
-    const uploadType = (formData.get("type") as string) || "default"
-    const slug = formData.get("slug") as string // Додаємо slug для послуг
+    const uploadType = (formData.get("type") as string) || "model"
+    const slug = formData.get("slug") as string
 
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 })
@@ -25,21 +25,24 @@ export async function POST(request: Request) {
       logo: ["image/png", "image/jpeg", "image/jpg", "image/svg+xml"],
       favicon: ["image/x-icon", "image/vnd.microsoft.icon", "image/png", "image/svg+xml"],
       service: ["image/png", "image/jpeg", "image/jpg", "image/webp"],
+      model: ["image/png", "image/jpeg", "image/jpg", "image/webp"],
       default: ["image/png", "image/jpeg", "image/jpg", "image/webp"],
     }
 
     const maxSizes = {
-      logo: 5 * 1024 * 1024, // 5MB
-      favicon: 1024 * 1024, // 1MB
-      service: 5 * 1024 * 1024, // 5MB для послуг
-      default: 2 * 1024 * 1024, // 2MB
+      logo: 5 * 1024 * 1024,
+      favicon: 1024 * 1024,
+      service: 5 * 1024 * 1024,
+      model: 5 * 1024 * 1024,
+      default: 2 * 1024 * 1024,
     }
 
     const allowedFileTypes = allowedTypes[uploadType as keyof typeof allowedTypes] || allowedTypes.default
     const maxFileSize = maxSizes[uploadType as keyof typeof maxSizes] || maxSizes.default
 
-    // Validate file type
-    if (!allowedFileTypes.includes(file.type)) {
+    // Validate file type - accept WebP (which is what we send after compression)
+    const isValidType = allowedFileTypes.includes(file.type) || file.type === "image/webp"
+    if (!isValidType) {
       return NextResponse.json({ error: "Invalid file type" }, { status: 400 })
     }
 
@@ -54,13 +57,13 @@ export async function POST(request: Request) {
 
     // Generate filename based on upload type
     let fileName: string
-    const fileExtension = file.name.split(".").pop()
+    const fileExtension = file.name.split(".").pop() || "webp"
 
-    if (uploadType === "service" && slug) {
-      // Для послуг використовуємо slug як назву файлу
+    if (uploadType === "model" && slug) {
+      fileName = `models/${slug}.${fileExtension}`
+    } else if (uploadType === "service" && slug) {
       fileName = `services/${slug}.${fileExtension}`
     } else {
-      // Для інших типів використовуємо timestamp + random
       const timestamp = Date.now()
       fileName = `${uploadType}/${timestamp}-${Math.random().toString(36).substring(2, 15)}.${fileExtension}`
     }
@@ -77,15 +80,15 @@ export async function POST(request: Request) {
       })
     }
 
-    // Якщо файл з таким ім'ям вже існує, видаляємо його
-    if (uploadType === "service" && slug) {
+    // Delete old file if exists
+    if ((uploadType === "model" || uploadType === "service") && slug) {
       await supabase.storage.from(bucketName).remove([fileName])
     }
 
     const { data, error } = await supabase.storage.from(bucketName).upload(fileName, buffer, {
       contentType: file.type,
       cacheControl: "3600",
-      upsert: true, // Дозволяємо перезаписувати файли
+      upsert: true,
     })
 
     if (error) {

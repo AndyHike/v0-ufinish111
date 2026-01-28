@@ -103,14 +103,15 @@ export function ModelsList() {
             <TableRow key={model.id}>
               <TableCell>
                 <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 overflow-hidden rounded-md">
+                  <div className="h-8 w-8 flex-shrink-0 overflow-hidden rounded-md">
                     <Image
-                      src={model.image || "/placeholder.svg?height=32&width=32&query=phone model"}
+                      src={model.image || "/placeholder.svg"}
                       alt={model.name}
                       width={32}
                       height={32}
-                      className="h-full w-full object-contain"
-                      unoptimized
+                      className="h-full w-full object-cover"
+                      quality={75}
+                      priority={false}
                     />
                   </div>
                   <span className="font-medium">{model.name}</span>
