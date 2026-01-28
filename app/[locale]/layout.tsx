@@ -164,7 +164,9 @@ export default async function LocaleLayout({
             <SessionProvider>
               <CookieConsentProvider>
                 <DynamicFavicon />
-                <AnalyticsTracker />
+                <Suspense fallback={null}>
+                  <AnalyticsTracker />
+                </Suspense>
                 <div className="flex min-h-screen flex-col">
                   <Suspense fallback={<HeaderSkeleton />}>
                     <Header />
