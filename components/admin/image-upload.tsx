@@ -9,6 +9,7 @@ import { Upload, Loader2, AlertCircle } from "lucide-react"
 import Image from "next/image"
 import { useTranslations } from "next-intl"
 import { compressImage, formatFileSize, isSupportedImageFormat } from "@/lib/image-compression"
+import { formatImageUrl } from "@/utils/image-url"
 
 interface ImageUploadProps {
   onImageUploaded: (imageUrl: string) => void
@@ -31,10 +32,14 @@ export function ImageUpload({
   const [isCompressing, setIsCompressing] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentImageUrl || null)
   const [compressionInfo, setCompressionInfo] = useState<{ original: string; compressed: string } | null>(null)
+  const [previewError, setPreviewError] = useState(false)
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+
+    // Clear previous error
+    setPreviewError(false)
 
     // Check file type
     if (!isSupportedImageFormat(file)) {
@@ -172,21 +177,23 @@ export function ImageUpload({
         </div>
       )}
 
-      {previewUrl && previewUrl !== "/placeholder.svg" && (
+      {previewUrl && previewUrl !== "/placeholder.svg" && !previewError && (
         <div className="mt-2 rounded-md border border-border p-2">
           <div className="h-32 w-32 overflow-hidden rounded-md flex-shrink-0">
             <Image
-              src={previewUrl}
+              src={formatImageUrl(previewUrl)}
               alt="Preview"
               width={128}
               height={128}
               className="h-full w-full object-contain"
+              quality={80}
               onError={() => {
-                console.error("[v0] Image preview failed to load:", previewUrl)
+                console.log("[v0] Image preview failed to load:", previewUrl)
+                setPreviewError(true)
               }}
             />
           </div>
-          <p className="mt-2 text-xs text-muted-foreground break-all truncate">{previewUrl}</p>
+          <p className="mt-2 text-xs text-muted-foreground break-all truncate line-clamp-2">{previewUrl}</p>
         </div>
       )}
     </div>

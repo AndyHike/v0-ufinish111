@@ -25,7 +25,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useToast } from "@/components/ui/use-toast"
+import { formatImageUrl } from "@/utils/image-url"
 import { Plus, Pencil, Trash, MoveVertical, MoreHorizontal, DollarSign } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
@@ -453,13 +453,16 @@ export default function ModelsPage() {
                                   {model.image_url ? (
                                     <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-md">
                                       <Image
-                                        src={model.image_url}
+                                        src={formatImageUrl(model.image_url)}
                                         alt={model.name}
                                         width={40}
                                         height={40}
                                         className="h-full w-full object-cover"
                                         quality={75}
                                         priority={false}
+                                        onError={() => {
+                                          console.log("[v0] Image failed to load:", formatImageUrl(model.image_url))
+                                        }}
                                       />
                                     </div>
                                   ) : (

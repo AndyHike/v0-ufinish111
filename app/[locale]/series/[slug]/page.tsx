@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { getTranslations } from "next-intl/server"
 import Link from "next/link"
+import Image from "next/image"
 import { notFound } from "next/navigation"
 import { createServerClient } from "@/utils/supabase/server"
 import { ArrowLeft, Smartphone } from "lucide-react"
@@ -117,14 +118,15 @@ export default async function SeriesPage({ params }: Props) {
         <div className="mb-12 rounded-xl bg-white p-8 shadow-sm">
           <div className="flex flex-col items-center gap-6 md:flex-row">
             {series.brands?.logo_url && (
-              <div className="relative h-24 w-24 overflow-hidden rounded-lg bg-slate-50 p-3">
-                <img
-                  src={formatImageUrl(series.brands.logo_url) || "/placeholder.svg"}
+              <div className="relative h-24 w-24 overflow-hidden rounded-lg bg-slate-50 p-3 flex-shrink-0">
+                <Image
+                  src={formatImageUrl(series.brands.logo_url)}
                   alt={series.brands.name}
                   width={96}
                   height={96}
                   className="h-full w-full object-contain"
-                  style={{ display: "block" }}
+                  quality={80}
+                  priority={true}
                 />
               </div>
             )}
@@ -149,15 +151,17 @@ export default async function SeriesPage({ params }: Props) {
                   href={`/${locale}/models/${model.slug || model.id}`}
                   className="group flex flex-col items-center rounded-lg bg-white p-4 shadow-sm hover:shadow"
                 >
-                  <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-lg bg-slate-50 p-2 sm:h-24 sm:w-24">
+                  <div className="mb-4 relative h-24 w-24 flex-shrink-0 rounded-lg bg-slate-50 p-2 sm:h-28 sm:w-28 overflow-hidden flex items-center justify-center">
                     {model.image_url ? (
-                      <img
-                        src={formatImageUrl(model.image_url) || "/placeholder.svg"}
+                      <Image
+                        src={formatImageUrl(model.image_url)}
                         alt={model.name}
-                        width={96}
-                        height={96}
+                        width={112}
+                        height={112}
                         className="h-full w-full object-contain"
-                        style={{ display: "block" }}
+                        quality={75}
+                        priority={false}
+                        sizes="(max-width: 640px) 96px, 112px"
                       />
                     ) : (
                       <Smartphone className="h-8 w-8 text-slate-400" />
