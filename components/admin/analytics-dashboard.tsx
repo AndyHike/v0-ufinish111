@@ -1,174 +1,166 @@
-'use client';
+'use client'
 
-import { useEffect, useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-
-interface DailyStats {
-  date: string;
-  views: number;
-  visitors: number;
-}
-
-interface PopularPage {
-  page_path: string;
-  view_count: number;
-  unique_visitors: number;
-}
-
-interface RealtimeStats {
-  onlineCount: number;
-  totalViews: number;
-  totalUniqueVisitors: number;
-  popularPages: PopularPage[];
-  trendData: DailyStats[];
-}
-
-const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+import { useEffect, useState } from 'react'
+import { getTodayStats, getWeeklyStats, type StatsOverview, type DailyStats } from '@/lib/analytics/queries'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 
 export function AnalyticsDashboard() {
-  const [stats, setStats] = useState<RealtimeStats | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<StatsOverview | null>(null)
+  const [weeklyData, setWeeklyData] = useState<DailyStats[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await fetch('/api/admin/analytics/dashboard');
-        if (response.ok) {
-          const data = await response.json();
-          setStats(data);
-        }
+        const [todayStats, weekly] = await Promise.all([
+          getTodayStats(),
+          getWeeklyStats(),
+        ])
+        setStats(todayStats)
+        setWeeklyData(weekly)
       } catch (error) {
-        console.error('Failed to fetch analytics:', error);
+        console.error('[v0] Failed to fetch analytics:', error)
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    };
+    }
 
-    fetchStats();
+    fetchStats()
+    const interval = setInterval(fetchStats, 30 * 1000) // Refresh every 30 seconds
 
-    // Refresh every 30 seconds
-    const interval = setInterval(fetchStats, 30000);
-    return () => clearInterval(interval);
-  }, []);
+    return () => clearInterval(interval)
+  }, [])
 
   if (loading) {
-    return (
-      <div className="space-y-6">
-        <div className="grid gap-4 md:grid-cols-3">
-          {[1, 2, 3].map((i) => (
-            <Card key={i}>
-              <CardHeader className="pb-3">
-                <Skeleton className="h-4 w-24" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-8 w-16" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-    );
+    return <div className="text-center py-8">Loading analytics...</div>
   }
 
-  if (!stats) {
-    return (
-      <Card>
-        <CardContent className="pt-6">
-          <p className="text-center text-muted-foreground">Failed to load analytics data</p>
-        </CardContent>
-      </Card>
-    );
-  }
+  // Aggregate weekly data for chart
+  const chartData = weeklyData.reduce((acc, stat) => {
+    const existing = acc.find((item) => item.date === stat.date)
+    if (existing) {
+      existing.views += stat.view_count
+      existing.visitors += stat.unique_visitors
+    } else {
+      acc.push({
+        date: stat.date,
+        views: stat.view_count,
+        visitors: stat.unique_visitors,
+      })
+    }
+    return acc
+  }, [] as Array<{ date: string; views: number; visitors: number }>)
 
   return (
     <div className="space-y-6">
-      {/* Real-time Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-3">
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Online Now</CardTitle>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Online Now
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{stats.onlineCount}</div>
-            <p className="text-xs text-muted-foreground mt-1">Active visitors</p>
+            <div className="text-2xl font-bold">{stats?.onlineNow || 0}</div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Unique Visitors Today</CardTitle>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Page Views Today
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{stats.totalUniqueVisitors}</div>
-            <p className="text-xs text-muted-foreground mt-1">Total today</p>
+            <div className="text-2xl font-bold">
+              {stats?.totalPageViewsToday || 0}
+            </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Page Views Today</CardTitle>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Unique Visitors
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{stats.totalViews}</div>
-            <p className="text-xs text-muted-foreground mt-1">Total interactions</p>
+            <div className="text-2xl font-bold">
+              {stats?.uniqueVisitorsToday || 0}
+            </div>
           </CardContent>
         </Card>
       </div>
+
+      {/* 7-Day Trend Chart */}
+      <Card>
+        <CardHeader>
+          <CardTitle>7-Day Traffic Trend</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {chartData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="date"
+                  tick={{ fontSize: 12 }}
+                  stroke="currentColor"
+                />
+                <YAxis tick={{ fontSize: 12 }} stroke="currentColor" />
+                <Tooltip />
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey="views"
+                  stroke="#3b82f6"
+                  name="Page Views"
+                  dot={{ fill: '#3b82f6', r: 4 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="visitors"
+                  stroke="#10b981"
+                  name="Unique Visitors"
+                  dot={{ fill: '#10b981', r: 4 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              No data yet
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Popular Pages */}
       <Card>
         <CardHeader>
-          <CardTitle>Top Pages Today</CardTitle>
-          <CardDescription>Most viewed pages in the last 24 hours</CardDescription>
+          <CardTitle>Popular Pages Today</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {stats.popularPages.length > 0 ? (
-              stats.popularPages.map((page, idx) => (
-                <div key={idx} className="flex items-center justify-between border-b pb-3 last:border-0">
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate">{page.page_path}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {page.unique_visitors} unique visitors
-                    </p>
-                  </div>
-                  <div className="text-right ml-4">
-                    <p className="font-bold text-lg">{page.view_count}</p>
-                    <p className="text-xs text-muted-foreground">views</p>
-                  </div>
+          {stats?.popularPages && stats.popularPages.length > 0 ? (
+            <div className="space-y-2">
+              {stats.popularPages.map((page, index) => (
+                <div
+                  key={index}
+                  className="flex justify-between items-center p-2 bg-muted rounded"
+                >
+                  <span className="text-sm truncate">{page.path}</span>
+                  <span className="text-sm font-semibold">{page.views} views</span>
                 </div>
-              ))
-            ) : (
-              <p className="text-center text-muted-foreground py-8">No page view data available</p>
-            )}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-4 text-muted-foreground">
+              No page views yet
+            </div>
+          )}
         </CardContent>
       </Card>
-
-      {/* Trend Chart */}
-      {stats.trendData.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>7-Day Traffic Trend</CardTitle>
-            <CardDescription>Page views and unique visitors over the last week</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={stats.trendData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Line type="monotone" dataKey="views" stroke="#3b82f6" name="Page Views" />
-                <Line type="monotone" dataKey="visitors" stroke="#10b981" name="Unique Visitors" />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      )}
     </div>
-  );
+  )
 }

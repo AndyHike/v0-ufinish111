@@ -1,137 +1,109 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-if (!supabaseUrl || !supabaseServiceKey) {
-  throw new Error('Supabase credentials not configured');
-}
-
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
 
 export interface DailyStats {
-  date: string;
-  page_path: string;
-  view_count: number;
-  unique_visitors: number;
+  date: string
+  page_path: string
+  view_count: number
+  unique_visitors: number
 }
 
-export interface PopularPage {
-  page_path: string;
-  view_count: number;
-  unique_visitors: number;
+export interface StatsOverview {
+  onlineNow: number
+  totalPageViewsToday: number
+  uniqueVisitorsToday: number
+  popularPages: Array<{ path: string; views: number }>
 }
 
-/**
- * Get today's statistics
- */
-export async function getTodayStats(): Promise<{
-  totalViews: number;
-  totalUniqueVisitors: number;
-} | null> {
-  const today = new Date().toISOString().split('T')[0];
+export async function getTodayStats(): Promise<StatsOverview> {
+  const today = new Date().toISOString().split('T')[0]
 
-  const { data, error } = await supabase
-    .from('daily_stats')
-    .select('view_count, unique_visitors')
-    .eq('date', today);
+  try {
+    const { data, error } = await supabase
+      .from('daily_stats')
+      .select('*')
+      .eq('date', today)
 
-  if (error) {
-    console.error('Error fetching today stats:', error);
-    return null;
+    if (error) throw error
+
+    const stats = data as DailyStats[]
+
+    const totalPageViews = stats.reduce((sum, s) => sum + s.view_count, 0)
+    const totalUniqueVisitors = stats.reduce(
+      (sum, s) => sum + s.unique_visitors,
+      0
+    )
+    const popularPages = stats
+      .sort((a, b) => b.view_count - a.view_count)
+      .slice(0, 5)
+      .map((s) => ({ path: s.page_path, views: s.view_count }))
+
+    return {
+      onlineNow: 0, // Will be populated from in-memory session manager
+      totalPageViewsToday: totalPageViews,
+      uniqueVisitorsToday: totalUniqueVisitors,
+      popularPages,
+    }
+  } catch (error) {
+    console.error('[Analytics] Error fetching today stats:', error)
+    return {
+      onlineNow: 0,
+      totalPageViewsToday: 0,
+      uniqueVisitorsToday: 0,
+      popularPages: [],
+    }
   }
-
-  const stats = data || [];
-  return {
-    totalViews: stats.reduce((sum, s) => sum + (s.view_count || 0), 0),
-    totalUniqueVisitors: stats.reduce((sum, s) => sum + (s.unique_visitors || 0), 0),
-  };
 }
 
-/**
- * Get popular pages for today
- */
-export async function getPopularPages(limit: number = 10): Promise<PopularPage[]> {
-  const today = new Date().toISOString().split('T')[0];
+export async function getWeeklyStats(): Promise<DailyStats[]> {
+  try {
+    const now = new Date()
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .split('T')[0]
 
-  const { data, error } = await supabase
-    .from('daily_stats')
-    .select('page_path, view_count, unique_visitors')
-    .eq('date', today)
-    .order('view_count', { ascending: false })
-    .limit(limit);
+    const { data, error } = await supabase
+      .from('daily_stats')
+      .select('*')
+      .gte('date', sevenDaysAgo)
+      .order('date', { ascending: true })
 
-  if (error) {
-    console.error('Error fetching popular pages:', error);
-    return [];
+    if (error) throw error
+
+    return data as DailyStats[]
+  } catch (error) {
+    console.error('[Analytics] Error fetching weekly stats:', error)
+    return []
   }
-
-  return data || [];
 }
 
-/**
- * Get stats for the last N days
- */
-export async function getStatsTrend(days: number = 7): Promise<DailyStats[]> {
-  const startDate = new Date();
-  startDate.setDate(startDate.getDate() - days);
-  const startDateStr = startDate.toISOString().split('T')[0];
+export async function getPageStats(
+  pagePath: string,
+  days: number = 7
+): Promise<DailyStats[]> {
+  try {
+    const cutoffDate = new Date(
+      Date.now() - days * 24 * 60 * 60 * 1000
+    )
+      .toISOString()
+      .split('T')[0]
 
-  const { data, error } = await supabase
-    .from('daily_stats')
-    .select('date, page_path, view_count, unique_visitors')
-    .gte('date', startDateStr)
-    .order('date', { ascending: true });
+    const { data, error } = await supabase
+      .from('daily_stats')
+      .select('*')
+      .eq('page_path', pagePath)
+      .gte('date', cutoffDate)
+      .order('date', { ascending: true })
 
-  if (error) {
-    console.error('Error fetching stats trend:', error);
-    return [];
+    if (error) throw error
+
+    return data as DailyStats[]
+  } catch (error) {
+    console.error('[Analytics] Error fetching page stats:', error)
+    return []
   }
-
-  return data || [];
-}
-
-/**
- * Get aggregated daily summary for chart
- */
-export async function getDailySummary(days: number = 7): Promise<
-  Array<{
-    date: string;
-    views: number;
-    visitors: number;
-  }>
-> {
-  const startDate = new Date();
-  startDate.setDate(startDate.getDate() - days);
-  const startDateStr = startDate.toISOString().split('T')[0];
-
-  const { data, error } = await supabase
-    .from('daily_stats')
-    .select('date, view_count, unique_visitors')
-    .gte('date', startDateStr)
-    .order('date', { ascending: true });
-
-  if (error) {
-    console.error('Error fetching daily summary:', error);
-    return [];
-  }
-
-  const grouped = new Map<
-    string,
-    { views: number; visitors: number }
-  >();
-
-  (data || []).forEach((stat) => {
-    const existing = grouped.get(stat.date) || { views: 0, visitors: 0 };
-    grouped.set(stat.date, {
-      views: existing.views + (stat.view_count || 0),
-      visitors: existing.visitors + (stat.unique_visitors || 0),
-    });
-  });
-
-  return Array.from(grouped.entries()).map(([date, { views, visitors }]) => ({
-    date,
-    views,
-    visitors,
-  }));
 }

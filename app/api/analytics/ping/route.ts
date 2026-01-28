@@ -1,153 +1,133 @@
-import { createClient } from '@supabase/supabase-js';
-import crypto from 'crypto';
+import { createClient } from '@supabase/supabase-js'
+import crypto from 'crypto'
 
-// Initialize Upstash Redis client
-const UPSTASH_REDIS_URL = process.env.UPSTASH_REDIS_REST_URL;
-const UPSTASH_REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
 
-// Initialize Supabase client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+// In-memory session manager for real-time tracking
+class SessionManager {
+  private sessions = new Map<string, { lastSeen: Date }>()
+  private cleanupInterval: NodeJS.Timeout | null = null
 
-if (!supabaseUrl || !supabaseServiceKey) {
-  throw new Error('Supabase credentials not configured');
-}
-
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-/**
- * Mask IP address to first 3 octets for privacy
- */
-function maskIp(ip: string): string {
-  const parts = ip.split('.');
-  if (parts.length === 4) {
-    return `${parts[0]}.${parts[1]}.${parts[2]}.0`;
-  }
-  // IPv6 - return first 48 bits
-  return ip.substring(0, 12);
-}
-
-/**
- * Generate anonymized visitor hash
- */
-function generateVisitorHash(ip: string, userAgent: string, date: string): string {
-  const salt = process.env.ANALYTICS_SALT || 'analytics-salt';
-  const maskedIp = maskIp(ip);
-  const data = `${maskedIp}|${userAgent}|${date}|${salt}`;
-  return crypto.createHash('sha256').update(data).digest('hex');
-}
-
-/**
- * Call Upstash Redis API
- */
-async function redisCommand(command: string[]): Promise<any> {
-  if (!UPSTASH_REDIS_URL || !UPSTASH_REDIS_TOKEN) {
-    return null;
+  constructor() {
+    this.startCleanup()
   }
 
-  try {
-    const response = await fetch(UPSTASH_REDIS_URL, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${UPSTASH_REDIS_TOKEN}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(command),
-    });
+  private startCleanup() {
+    this.cleanupInterval = setInterval(() => {
+      const now = Date.now()
+      const TTL = 2 * 60 * 1000 // 2 minutes in milliseconds
 
-    if (!response.ok) {
-      console.error('Redis error:', await response.text());
-      return null;
+      for (const [key, session] of this.sessions.entries()) {
+        if (now - session.lastSeen.getTime() > TTL) {
+          this.sessions.delete(key)
+        }
+      }
+    }, 60 * 1000) // Cleanup every minute
+  }
+
+  addSession(key: string): boolean {
+    const isNew = !this.sessions.has(key)
+    this.sessions.set(key, { lastSeen: new Date() })
+    return isNew
+  }
+
+  getActiveSessions(): number {
+    return this.sessions.size
+  }
+
+  getActivePages(): Map<string, number> {
+    const pages = new Map<string, number>()
+    for (const key of this.sessions.keys()) {
+      const [, path] = key.split('::')
+      pages.set(path, (pages.get(path) || 0) + 1)
     }
+    return pages
+  }
 
-    return await response.json();
-  } catch (error) {
-    console.error('Redis command failed:', error);
-    return null;
+  destroy() {
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval)
+    }
   }
 }
 
-/**
- * Track active session in Redis
- */
-async function trackActiveSession(
-  visitorHash: string,
-  pagePath: string
-): Promise<void> {
-  const sessionKey = `session:${visitorHash}`;
-  const activeKey = 'active_sessions';
-  const pageKey = `pages:${pagePath}`;
+// Global session manager instance
+const sessionManager = new SessionManager()
 
-  try {
-    // Set session with 2-minute TTL
-    await redisCommand(['SETEX', sessionKey, '120', pagePath]);
-
-    // Add to active sessions set with HyperLogLog for counting
-    await redisCommand(['PFADD', activeKey, visitorHash]);
-
-    // Add to page-specific tracking
-    await redisCommand(['PFADD', pageKey, visitorHash]);
-
-    // Store page activity timestamp
-    await redisCommand(['ZADD', 'page_activity', Date.now().toString(), pagePath]);
-  } catch (error) {
-    console.error('Failed to track active session:', error);
+function maskIP(ip: string): string {
+  const parts = ip.split('.')
+  if (parts.length === 4) {
+    return `${parts[0]}.${parts[1]}.${parts[2]}.0`
   }
+  // For IPv6, mask last 64 bits
+  return ip.substring(0, ip.lastIndexOf(':') + 1) + '0000:0000'
 }
 
-/**
- * Main analytics ping endpoint
- */
+function generateVisitorHash(
+  maskedIP: string,
+  userAgent: string,
+  date: string,
+  salt: string
+): string {
+  const data = `${maskedIP}::${userAgent}::${date}::${salt}`
+  return crypto.createHash('sha256').update(data).digest('hex')
+}
+
 export async function POST(request: Request) {
   try {
-    const { pagePath, referrer } = await request.json();
+    const { pagePath } = await request.json()
 
-    if (!pagePath) {
-      return new Response(
-        JSON.stringify({ error: 'Missing pagePath' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
+    if (!pagePath || typeof pagePath !== 'string') {
+      return Response.json(
+        { error: 'Invalid pagePath' },
+        { status: 400 }
+      )
     }
 
-    // Get client IP
-    const ip =
-      (request.headers.get('x-forwarded-for')?.split(',')[0] || '').trim() ||
-      request.headers.get('x-real-ip') ||
-      'unknown';
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || 
+               request.headers.get('x-real-ip') || 
+               '0.0.0.0'
+    const userAgent = request.headers.get('user-agent') || 'unknown'
+    const salt = process.env.ANALYTICS_SALT || 'default-salt'
 
-    const userAgent = request.headers.get('user-agent') || 'unknown';
-    const today = new Date().toISOString().split('T')[0];
+    // Get current date
+    const now = new Date()
+    const date = now.toISOString().split('T')[0]
 
-    // Generate visitor hash
-    const visitorHash = generateVisitorHash(ip, userAgent, today);
+    // Generate anonymized visitor hash
+    const maskedIP = maskIP(ip)
+    const visitorHash = generateVisitorHash(maskedIP, userAgent, date, salt)
 
-    // Track in Redis for real-time stats
-    await trackActiveSession(visitorHash, pagePath);
+    // Track in-memory session
+    const sessionKey = `${visitorHash}::${pagePath}`
+    const isNewSession = sessionManager.addSession(sessionKey)
 
-    // Increment page views in Supabase
-    const { error } = await supabase.rpc('increment_page_view', {
-      p_date: today,
+    // Persist to database
+    await supabase.rpc('increment_page_view', {
+      p_date: date,
       p_path: pagePath,
       p_visitor_hash: visitorHash,
-    });
+    })
 
-    if (error) {
-      console.error('Supabase RPC error:', error);
-      return new Response(
-        JSON.stringify({ error: 'Failed to record analytics' }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
-
-    return new Response(
-      JSON.stringify({ success: true }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    );
+    return Response.json(
+      {
+        success: true,
+        isNewSession,
+        activeSessions: sessionManager.getActiveSessions(),
+      },
+      { status: 200 }
+    )
   } catch (error) {
-    console.error('Analytics ping error:', error);
-    return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
+    console.error('[Analytics] Error:', error)
+    return Response.json(
+      { error: 'Failed to track analytics' },
+      { status: 500 }
+    )
   }
 }
+
+// Export session manager for stats endpoint
+export { sessionManager }
