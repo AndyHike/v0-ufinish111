@@ -243,7 +243,7 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
           </div>
 
           {/* Права колонка - основна інформація (3 колонки з 5) */}
-          <div className="lg:col-span-3 space-y-4"
+          <div className="lg:col-span-3 space-y-4">
             <div>
               <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">{translation.name}</h1>
               <p className="text-gray-600 leading-relaxed">
