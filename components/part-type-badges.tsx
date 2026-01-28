@@ -9,9 +9,9 @@ interface PartTypeBadgesProps {
 }
 
 /**
- * Компонент для відображення бейджів типів деталей
- * Розбирає рядок part_type на окремі бейджі з унікальними фонами
- * Значення беруться прямо з БД без переводів
+ * Компонент для відображення типів деталей
+ * Розбирає рядок part_type на окремі елементи
+ * Показує просто текст з кольором, без фону
  */
 export function PartTypeBadges({ partTypeString, className = "", containerClassName = "" }: PartTypeBadgesProps) {
   const configs = getPartTypeConfigsFromString(partTypeString)
@@ -26,7 +26,7 @@ export function PartTypeBadges({ partTypeString, className = "", containerClassN
       {configs.map((config, index) => (
         <span
           key={`${config.variant}-${index}`}
-          className={`inline-flex items-center rounded px-2 py-1 text-xs font-bold transition-opacity hover:opacity-80 ${config.bgClass} ${config.textClass} ${className}`}
+          className={`text-xs font-semibold ${config.textClass} ${className}`}
           data-testid={`part-type-badge-${config.variant}`}
         >
           {config.label}
