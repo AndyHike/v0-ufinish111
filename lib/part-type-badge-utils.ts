@@ -53,6 +53,12 @@ export const PART_TYPE_CONFIGS: Record<string, PartTypeConfig> = {
     textClass: "text-white font-bold",
     label: "Refurbished",
   },
+  default: {
+    variant: "default",
+    bgClass: "bg-gray-300",
+    textClass: "text-gray-900 font-semibold",
+    label: "Part",
+  },
 }
 
 /**
@@ -76,7 +82,21 @@ export function parsePartTypes(partTypeString: string | null | undefined): strin
  */
 export function getPartTypeConfig(partType: string): PartTypeConfig {
   const normalized = partType.toLowerCase().trim()
-  return PART_TYPE_CONFIGS[normalized] || PART_TYPE_CONFIGS.default || {
+  
+  // Перевіримо точне збіг
+  if (PART_TYPE_CONFIGS[normalized]) {
+    return PART_TYPE_CONFIGS[normalized]
+  }
+  
+  // Перевіримо чи містить слово з конфіга
+  for (const key of Object.keys(PART_TYPE_CONFIGS)) {
+    if (normalized.includes(key) || key.includes(normalized)) {
+      return PART_TYPE_CONFIGS[key]
+    }
+  }
+  
+  // Повернемо default конфіг
+  return PART_TYPE_CONFIGS.default || {
     variant: "default",
     bgClass: "bg-gray-300",
     textClass: "text-gray-900 font-semibold",
