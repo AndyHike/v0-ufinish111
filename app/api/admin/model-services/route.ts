@@ -25,7 +25,8 @@ export async function GET(request: NextRequest) {
           warranty_months,
           duration_hours,
           detailed_description,
-          benefits
+          benefits,
+          part_type
         `)
         .order("created_at", { ascending: false })
 
@@ -82,7 +83,8 @@ export async function GET(request: NextRequest) {
         warranty_period,
         detailed_description,
         what_included,
-        benefits
+        benefits,
+        part_type
       `)
       .eq("model_id", modelId)
 
@@ -133,6 +135,7 @@ export async function GET(request: NextRequest) {
           detailed_description: modelService.detailed_description,
           what_included: modelService.what_included,
           benefits: modelService.benefits,
+          part_type: modelService.part_type,
           services: serviceInfo,
         }
       })
@@ -188,6 +191,7 @@ export async function POST(request: Request) {
       detailed_description: body.detailed_description,
       what_included: body.what_included,
       benefits: body.benefits,
+      part_type: body.part_type,
     }
 
     let result
