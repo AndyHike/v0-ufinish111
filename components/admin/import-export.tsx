@@ -331,6 +331,7 @@ export function ImportExport() {
       const warrantyPeriod = row["Гарантійний період"] || ""
       const duration = row["Тривалість (хви)"] || ""
       const price = row["Стандартна ціна"] || "0"
+      const partType = row["Тип деталі"] || ""
 
       const { brandName, seriesName, modelName } = parseCategory(category)
       const serviceSlug = extractSlug(description)
@@ -401,6 +402,7 @@ export function ImportExport() {
           warrantyPeriod,
           duration,
           price,
+          partType,
           brandName,
           seriesName,
           modelName,
@@ -907,6 +909,7 @@ export function ImportExport() {
                     <TableHead className="w-24">Гарантія</TableHead>
                     <TableHead className="w-20">Період</TableHead>
                     <TableHead className="w-20">Час (хв)</TableHead>
+                    <TableHead className="w-28">Тип деталі</TableHead>
                     <TableHead className="w-32">Дії</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -1103,6 +1106,19 @@ export function ImportExport() {
                             }} className="w-full text-xs" min="0" />
                           ) : (
                             <span className="text-sm">{row.data.duration}</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {editingRowId === row.id ? (
+                            <Input value={row.data.partType} onChange={(e) => {
+                              const updated = rows.map(r => ({
+                                ...r,
+                                data: r.id === row.id ? { ...r.data, partType: e.target.value } : r.data
+                              }))
+                              setRows(updated)
+                            }} className="w-full text-xs" placeholder="напр. оригінал, OLED" />
+                          ) : (
+                            <span className="text-sm">{row.data.partType || "—"}</span>
                           )}
                         </TableCell>
                         <TableCell>

@@ -176,6 +176,7 @@ export async function POST(request: NextRequest) {
           duration_hours: durationHours,
           detailed_description: row.serviceName || "",
           benefits: row.warranty || null,
+          part_type: row.partType || null,
         }
 
         if (existing) {
