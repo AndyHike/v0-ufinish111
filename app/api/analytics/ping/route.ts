@@ -1,5 +1,19 @@
+import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
-import { pageStats, activeSessions } from '@/app/api/admin/analytics/stats/route'
+import crypto from 'crypto'
+
+function maskIP(ip: string): string {
+  const parts = ip.split('.')
+  if (parts.length === 4) {
+    return `${parts[0]}.${parts[1]}.${parts[2]}.0`
+  }
+  return ip.substring(0, ip.lastIndexOf(':') + 1) + '0000'
+}
+
+function generateVisitorHash(maskedIP: string, userAgent: string, date: string, salt: string): string {
+  const data = `${maskedIP}::${userAgent}::${date}::${salt}`
+  return crypto.createHash('sha256').update(data).digest('hex')
+}
 
 export async function POST(request: Request) {
   try {
@@ -10,38 +24,30 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing page parameter' }, { status: 400 })
     }
 
+    const supabase = createClient()
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || request.headers.get('x-real-ip') || '0.0.0.0'
+    const userAgent = request.headers.get('user-agent') || 'unknown'
+    const salt = process.env.ANALYTICS_SALT || 'default-salt'
     const today = new Date().toISOString().split('T')[0]
 
-    // Track page view in analytics
-    const existingStat = pageStats.find((s) => s.date === today && s.path === page)
-    if (existingStat) {
-      existingStat.views += 1
-    } else {
-      pageStats.push({
-        path: page,
-        date: today,
-        views: 1,
-        uniqueVisitors: 1,
-      })
-    }
+    const maskedIP = maskIP(ip)
+    const visitorHash = generateVisitorHash(maskedIP, userAgent, today, salt)
 
-    // Update active session
-    if (sessionId) {
-      activeSessions.set(sessionId, {
-        sessionId,
-        lastSeen: Date.now(),
-      })
-    }
-
-    return NextResponse.json({
-      success: true,
-      tracked: true,
+    // Insert page view
+    const { error } = await supabase.from('page_views').insert({
+      page_path: page,
+      visitor_hash: visitorHash,
+      session_id: sessionId,
+      created_at: new Date().toISOString(),
     })
+
+    if (error) {
+      console.error('[v0] Supabase insert error:', error)
+    }
+
+    return NextResponse.json({ success: true, tracked: true })
   } catch (error) {
     console.error('[v0] Analytics ping error:', error)
-    return NextResponse.json(
-      { error: 'Failed to track page view' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Failed to track page view' }, { status: 500 })
   }
 }
