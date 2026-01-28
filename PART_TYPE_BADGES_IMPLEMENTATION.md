@@ -53,11 +53,11 @@
 ### Парсинг даних
 
 Рядок `part_type` зберігається в БД у форматі, розділеній комами:
-```
+\`\`\`
 "original,oled"
 "premium"
 "lcd,refurbished"
-```
+\`\`\`
 
 ### Компонент PartTypeBadges
 
@@ -79,39 +79,39 @@
 ## Локалізація
 
 Компонент автоматично шукає переклади за ключами:
-```
+\`\`\`
 Common.partType.original
 Common.partType.oled
 Common.partType.ips
 Common.partType.lcd
 Common.partType.premium
 Common.partType.refurbished
-```
+\`\`\`
 
 Якщо перекладу немає, використовується текст з конфіга.
 
 ## Приклади використання
 
 ### Просто відображення
-```tsx
+\`\`\`tsx
 <PartTypeBadges partTypeString="original,oled" />
-```
+\`\`\`
 
 ### З кастомним стилем контейнера
-```tsx
+\`\`\`tsx
 <PartTypeBadges 
   partTypeString="premium" 
   containerClassName="flex-col gap-1" 
 />
-```
+\`\`\`
 
 ### З кастомним стилем бейджа
-```tsx
+\`\`\`tsx
 <PartTypeBadges 
   partTypeString="original" 
   className="text-sm" 
 />
-```
+\`\`\`
 
 ## Тестування
 
