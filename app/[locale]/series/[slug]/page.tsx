@@ -6,6 +6,7 @@ import { notFound } from "next/navigation"
 import { createServerClient } from "@/utils/supabase/server"
 import { ArrowLeft, Smartphone } from "lucide-react"
 import { ContactCTABanner } from "@/components/contact-cta-banner"
+import { Breadcrumb } from "@/components/breadcrumb"
 
 type Props = {
   params: {
@@ -104,14 +105,15 @@ export default async function SeriesPage({ params }: Props) {
   return (
     <div className="container px-4 py-12 md:px-6 md:py-24">
       <div className="mx-auto max-w-6xl">
-        {/* Кнопка повернення до бренду */}
-        <Link
-          href={`/${locale}/brands/${series.brands?.slug || series.brand_id}`}
-          className="mb-8 inline-flex items-center gap-2 rounded-md bg-slate-50 px-3 py-1 text-sm font-medium text-muted-foreground hover:text-primary"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          {t("backToBrand", { brand: series.brands?.name }) || `До ${series.brands?.name}`}
-        </Link>
+        {/* Breadcrumb */}
+        <div className="mb-8">
+          <Breadcrumb
+            items={[
+              { label: series.brands?.name || "Brand", href: `/${locale}/brands/${series.brands?.slug || series.brand_id}` },
+              { label: series.name, href: `/${locale}/series/${series.slug}` },
+            ]}
+          />
+        </div>
 
         {/* Заголовок серії */}
         <div className="mb-12 rounded-xl bg-white p-8 shadow-sm">

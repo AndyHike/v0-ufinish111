@@ -8,6 +8,7 @@ import { useEffect, useRef } from "react"
 import { ServicePriceDisplay } from "@/components/service-price-display"
 import { ContactCTABanner } from "@/components/contact-cta-banner"
 import { PartTypeBadges } from "@/components/part-type-badges"
+import { Breadcrumb } from "@/components/breadcrumb"
 
 interface ModelData {
   id: string
@@ -134,24 +135,15 @@ export default function ModelPageClient({ modelData, locale }: Props) {
     <div className="min-h-screen bg-white">
       <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
         {/* Breadcrumb */}
-        <nav className="mb-6 text-sm text-gray-500">
-          <Link href={`/${locale}/brands/${modelData.brands?.slug}`} className="hover:text-blue-600 transition-colors">
-            {modelData.brands?.name}
-          </Link>
-          {modelData.series && (
-            <>
-              <span className="mx-2">/</span>
-              <Link
-                href={`/${locale}/series/${modelData.series.slug}`}
-                className="hover:text-blue-600 transition-colors"
-              >
-                {modelData.series.name}
-              </Link>
-            </>
-          )}
-          <span className="mx-2">/</span>
-          <span className="text-gray-900">{modelData.name}</span>
-        </nav>
+        <div className="mb-6">
+          <Breadcrumb
+            items={[
+              ...(modelData.brands ? [{ label: modelData.brands.name, href: `/${locale}/brands/${modelData.brands.slug}` }] : []),
+              ...(modelData.series ? [{ label: modelData.series.name, href: `/${locale}/series/${modelData.series.slug}` }] : []),
+              { label: modelData.name, href: `/${locale}/models/${modelData.slug}` },
+            ]}
+          />
+        </div>
 
         {/* Компактний Hero блок - горизонтальний банер */}
         <div className="bg-gray-50 rounded-2xl p-6 mb-8 border border-gray-100">
