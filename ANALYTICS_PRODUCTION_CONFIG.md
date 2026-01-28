@@ -10,12 +10,12 @@
 
 Всі змінні **уже налаштовані** в Vercel:
 
-```
+\`\`\`
 ✅ NEXT_PUBLIC_SUPABASE_URL - Публічна URL Supabase
 ✅ NEXT_PUBLIC_SUPABASE_ANON_KEY - Публічний ключ
 ✅ SUPABASE_SERVICE_ROLE_KEY - Service role ключ
 ✅ ANALYTICS_SALT - Сіль для анонімізації IP
-```
+\`\`\`
 
 **Як перевірити:**
 - Відкрийте Vars (ліва панель v0)
@@ -55,20 +55,20 @@
 Відстежує перегляд сторінки
 
 **Запит:**
-```json
+\`\`\`json
 {
   "page": "/about",
   "sessionId": "session-123"
 }
-```
+\`\`\`
 
 **Відповідь:**
-```json
+\`\`\`json
 {
   "success": true,
   "tracked": true
 }
-```
+\`\`\`
 
 **Що відбувається:**
 1. IP адреса маскується (IPv4: `10.0.0.0` → `10.0.0.0`)
@@ -81,7 +81,7 @@
 Повертає аналітику для дашбоарду
 
 **Відповідь:**
-```json
+\`\`\`json
 {
   "onlineNow": 5,
   "totalPageViewsToday": 142,
@@ -95,7 +95,7 @@
     { "date": "2024-01-23", "views": 142 }
   ]
 }
-```
+\`\`\`
 
 **Розрахунки:**
 - `onlineNow` - Користувачі з сесіями в останні 2 хвилини
@@ -115,9 +115,9 @@
 - Користує `keepalive: true` для надійності
 
 **Місце розташування:**
-```
+\`\`\`
 /components/analytics/analytics-tracker.tsx
-```
+\`\`\`
 
 Підключено в `/app/[locale]/layout.tsx`
 
@@ -145,7 +145,7 @@
 
 ### Як працює:
 
-```
+\`\`\`
 1. IP адреса: 192.168.1.123 → маска → 192.168.1.0
 2. User-Agent: Mozilla/5.0... → без змін
 3. Дата: 2024-01-23
@@ -154,7 +154,7 @@
 5. Data = "192.168.1.0::Mozilla/5.0...::2024-01-23::$SALT"
 6. visitor_hash = SHA-256(Data)
 7. Результат: "a3c8f2d9e1b4..."
-```
+\`\`\`
 
 **Переваги:**
 - ✅ IP не зберігається в БД
@@ -169,20 +169,20 @@
 
 ### Генерування даних:
 
-```bash
+\`\`\`bash
 # 1. Відкрийте сайт
 # 2. Перейдіть на кілька сторінок
 # 3. Почекайте 60+ секунд
 # 4. Откройте /admin
-```
+\`\`\`
 
 ### Перевірка в Supabase:
 
-```sql
+\`\`\`sql
 SELECT COUNT(*) FROM page_views;
 SELECT DISTINCT page_path FROM page_views;
 SELECT visitor_hash, COUNT(*) FROM page_views GROUP BY visitor_hash;
-```
+\`\`\`
 
 ---
 
@@ -191,23 +191,23 @@ SELECT visitor_hash, COUNT(*) FROM page_views GROUP BY visitor_hash;
 ### На Vercel:
 
 1. **Переконайтесь, що змінні встановлені:**
-   ```
+   \`\`\`
    Vercel Dashboard → Settings → Environment Variables
-   ```
+   \`\`\`
 
 2. **Дайте дозвіл на читання БД:**
    - Supabase Dashboard → RLS Policies
    - Перевірте `authenticated` role має дозвіл на read
 
 3. **Deploy:**
-   ```bash
+   \`\`\`bash
    git push origin main
-   ```
+   \`\`\`
 
 4. **Перевірте logs:**
-   ```
+   \`\`\`
    Vercel → Deployments → Logs
-   ```
+   \`\`\`
 
 ---
 

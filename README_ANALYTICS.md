@@ -39,7 +39,7 @@ A comprehensive, **production-ready analytics system** that tracks page views an
 ## Files Created
 
 ### Core Implementation
-```
+\`\`\`
 /scripts/setup-analytics.sql
   └─ Database migration, tables, indexes, RPC function
 
@@ -57,10 +57,10 @@ A comprehensive, **production-ready analytics system** that tracks page views an
 
 /lib/analytics/queries.ts
   └─ Supabase query utilities for fetching analytics data
-```
+\`\`\`
 
 ### Documentation
-```
+\`\`\`
 /ANALYTICS_SYSTEM_GUIDE.md
   └─ Complete technical documentation (174 lines)
 
@@ -72,16 +72,16 @@ A comprehensive, **production-ready analytics system** that tracks page views an
 
 /ANALYTICS_DEPLOYMENT_CHECKLIST.md
   └─ Pre-launch verification checklist
-```
+\`\`\`
 
 ### Modified Files
-```
+\`\`\`
 /app/[locale]/layout.tsx
   └─ Added AnalyticsTracker component integration
 
 /app/[locale]/admin/page.tsx
   └─ Added AnalyticsDashboard to admin dashboard
-```
+\`\`\`
 
 ---
 
@@ -125,7 +125,7 @@ A comprehensive, **production-ready analytics system** that tracks page views an
 ## API Endpoints
 
 ### Track Page View (Frontend)
-```
+\`\`\`
 POST /api/analytics/ping
 Content-Type: application/json
 
@@ -139,10 +139,10 @@ Response:
   "isNewSession": true,
   "activeSessions": 42
 }
-```
+\`\`\`
 
 ### Fetch Analytics (Admin)
-```
+\`\`\`
 GET /api/admin/analytics/stats
 
 Response:
@@ -156,7 +156,7 @@ Response:
   "weekly": [...],
   "activePages": [...]
 }
-```
+\`\`\`
 
 ---
 
@@ -177,13 +177,13 @@ Response:
 - ✅ Dashboard in `/app/[locale]/admin/page.tsx`
 
 ### If You Want to Add Analytics Elsewhere
-```tsx
+\`\`\`tsx
 import { AnalyticsDashboard } from '@/components/admin/analytics-dashboard'
 
 export default function CustomPage() {
   return <AnalyticsDashboard />
 }
-```
+\`\`\`
 
 ---
 
@@ -238,12 +238,12 @@ export default function CustomPage() {
 ## Next Steps
 
 ### 1. Deploy to Production
-```bash
+\`\`\`bash
 git add .
 git commit -m "Add GDPR-compliant analytics system"
 git push origin main
 # Vercel auto-deploys
-```
+\`\`\`
 
 ### 2. Generate Test Traffic
 - Visit different pages on your site
@@ -264,7 +264,7 @@ git push origin main
 
 ## File Structure Summary
 
-```
+\`\`\`
 System Architecture:
 ├── Frontend Tracking
 │   └── /components/analytics/analytics-tracker.tsx
@@ -299,7 +299,7 @@ System Architecture:
         ├── Real-time metrics
         ├── Popular pages
         └── 7-day trend chart
-```
+\`\`\`
 
 ---
 

@@ -207,11 +207,12 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
           </Link>
         </nav>
 
-        {/* Компактний двоколонковий макет */}
-        <div className="grid lg:grid-cols-5 gap-6 mb-8">
-          {/* Ліва колонка - збільшене фото (2 колонки з 5) */}
-          <div className="lg:col-span-2">
-            <div className="relative aspect-[5/4] bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl overflow-hidden">
+        {/* Адаптивний макет - мобільний/планшет одна колонка, великі екрани дві */}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
+          {/* Ліва колонка - зображення (контрольована висота) */}
+          <div className="lg:col-span-2 flex flex-col">
+            <div className="relative w-full bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl overflow-hidden flex-shrink-0"
+                 style={{ aspectRatio: "5/4", maxHeight: "500px" }}>
               {/* Part Type Badges - верхній лівий кут */}
               {serviceData.part_type && (
                 <div className="absolute top-2 left-2 z-10">
@@ -242,7 +243,7 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
           </div>
 
           {/* Права колонка - основна інформація (3 колонки з 5) */}
-          <div className="lg:col-span-3 space-y-4">
+          <div className="lg:col-span-3 space-y-4"
             <div>
               <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">{translation.name}</h1>
               <p className="text-gray-600 leading-relaxed">

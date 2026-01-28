@@ -453,9 +453,9 @@ export function ServicesImport() {
           const service = safeFindInArray(services, (s) => s.id === value)
           updatedRow.serviceId = service?.id
         }
-        // Обробка порожніх цін
+        // Обробка порожніх цін - залишаємо порожнім для null в БД
         else if (field === "price") {
-          updatedRow.price = value === "" ? "0" : (value as string)
+          updatedRow.price = (value as string)
         }
 
         // Перевалідація після змін

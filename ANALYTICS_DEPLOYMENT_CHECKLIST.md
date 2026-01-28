@@ -88,10 +88,10 @@
 ## Deployment Steps
 
 1. **Push to Production**
-   ```bash
+   \`\`\`bash
    git push origin main
    # Vercel auto-deploys
-   ```
+   \`\`\`
 
 2. **Verify Environment Variables**
    - [ ] Check Vercel dashboard → Project Settings → Environment Variables
