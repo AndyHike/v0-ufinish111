@@ -11,6 +11,7 @@ import { formatImageUrl } from "@/utils/image-url"
 import { useEffect, useRef } from "react"
 import { ServicePriceDisplay } from "@/components/service-price-display"
 import { ContactCTABanner } from "@/components/contact-cta-banner"
+import { PartTypeBadges } from "@/components/part-type-badges"
 
 interface ServiceData {
   id: string
@@ -53,6 +54,7 @@ interface ServiceData {
   discountedPrice?: number | null
   hasDiscount?: boolean
   discount?: any
+  part_type?: string | null
 }
 
 interface Props {
@@ -209,7 +211,17 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
         <div className="grid lg:grid-cols-5 gap-6 mb-8">
           {/* Ліва колонка - збільшене фото (2 колонки з 5) */}
           <div className="lg:col-span-2">
-            <div className="aspect-[5/4] bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl overflow-hidden">
+            <div className="relative aspect-[5/4] bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl overflow-hidden">
+              {/* Part Type Badges - верхній лівий кут */}
+              {serviceData.part_type && (
+                <div className="absolute top-2 left-2 z-10">
+                  <PartTypeBadges
+                    partTypeString={serviceData.part_type}
+                    containerClassName="flex-col gap-1"
+                  />
+                </div>
+              )}
+
               {serviceData.image_url ? (
                 <img
                   src={formatImageUrl(serviceData.image_url) || "/placeholder.svg"}
