@@ -36,3 +36,6 @@ export async function createClient() {
 
   return cachedClient
 }
+
+// Export for compatibility
+export const createServerClient = createClient
