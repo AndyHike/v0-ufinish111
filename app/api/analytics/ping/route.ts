@@ -20,11 +20,13 @@ export async function POST(request: Request) {
     const body = await request.json()
     const { page, sessionId } = body
 
+    console.log('[v0] Analytics ping received:', { page, sessionId })
+
     if (!page) {
       return NextResponse.json({ error: 'Missing page parameter' }, { status: 400 })
     }
 
-    const supabase = createClient()
+    const supabase = await createClient()
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || request.headers.get('x-real-ip') || '0.0.0.0'
     const userAgent = request.headers.get('user-agent') || 'unknown'
     const salt = process.env.ANALYTICS_SALT || 'default-salt'
@@ -33,8 +35,10 @@ export async function POST(request: Request) {
     const maskedIP = maskIP(ip)
     const visitorHash = generateVisitorHash(maskedIP, userAgent, today, salt)
 
+    console.log('[v0] Inserting analytics:', { page_path: page, visitor_hash: visitorHash })
+
     // Insert page view
-    const { error } = await supabase.from('page_views').insert({
+    const { data, error } = await supabase.from('page_views').insert({
       page_path: page,
       visitor_hash: visitorHash,
       session_id: sessionId,
@@ -43,11 +47,13 @@ export async function POST(request: Request) {
 
     if (error) {
       console.error('[v0] Supabase insert error:', error)
+      return NextResponse.json({ error: error.message }, { status: 400 })
     }
 
+    console.log('[v0] Analytics tracked successfully')
     return NextResponse.json({ success: true, tracked: true })
   } catch (error) {
     console.error('[v0] Analytics ping error:', error)
-    return NextResponse.json({ error: 'Failed to track page view' }, { status: 500 })
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Failed to track page view' }, { status: 500 })
   }
 }

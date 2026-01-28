@@ -3,10 +3,12 @@ import { NextResponse } from 'next/server'
 
 export async function GET() {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     const now = new Date()
     const today = now.toISOString().split('T')[0]
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+
+    console.log('[v0] Fetching analytics for date range:', { today, sevenDaysAgo })
 
     // Get today's page views
     const { data: todayViews, error: todayError } = await supabase
@@ -15,7 +17,12 @@ export async function GET() {
       .gte('created_at', `${today}T00:00:00`)
       .lte('created_at', `${today}T23:59:59`)
 
-    if (todayError) throw todayError
+    if (todayError) {
+      console.error('[v0] Error fetching today views:', todayError)
+      throw todayError
+    }
+
+    console.log('[v0] Today views fetched:', todayViews?.length)
 
     // Get 7-day stats
     const { data: weekViews, error: weekError } = await supabase
@@ -24,7 +31,12 @@ export async function GET() {
       .gte('created_at', `${sevenDaysAgo}T00:00:00`)
       .lte('created_at', `${today}T23:59:59`)
 
-    if (weekError) throw weekError
+    if (weekError) {
+      console.error('[v0] Error fetching week views:', weekError)
+      throw weekError
+    }
+
+    console.log('[v0] Week views fetched:', weekViews?.length)
 
     // Get active sessions (last 2 minutes)
     const twoMinutesAgo = new Date(now.getTime() - 2 * 60 * 1000).toISOString()
@@ -33,7 +45,10 @@ export async function GET() {
       .select('session_id')
       .gt('created_at', twoMinutesAgo)
 
-    if (sessionError) throw sessionError
+    if (sessionError) {
+      console.error('[v0] Error fetching sessions:', sessionError)
+      throw sessionError
+    }
 
     // Calculate stats
     const totalPageViews = todayViews?.length || 0
@@ -62,6 +77,8 @@ export async function GET() {
       .map(([date, views]) => ({ date, views }))
       .sort((a, b) => a.date.localeCompare(b.date))
 
+    console.log('[v0] Analytics calculated:', { onlineNow, totalPageViews, uniqueVisitors })
+
     return NextResponse.json({
       onlineNow,
       totalPageViewsToday: totalPageViews,
@@ -74,6 +91,7 @@ export async function GET() {
     return NextResponse.json(
       {
         error: 'Failed to fetch analytics',
+        details: error instanceof Error ? error.message : 'Unknown error',
         onlineNow: 0,
         totalPageViewsToday: 0,
         uniqueVisitorsToday: 0,
