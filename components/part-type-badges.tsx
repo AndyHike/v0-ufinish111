@@ -23,19 +23,16 @@ export function PartTypeBadges({ partTypeString, className = "", containerClassN
       className={`flex flex-wrap gap-2 ${containerClassName}`}
       data-testid="part-type-badges"
     >
-      {configs.map((config, index) => {
-        console.log("[v0] Badge config:", config)
-        return (
-          <span
-            key={`${config.variant}-${index}`}
-            className={`inline-flex items-center rounded px-2 py-1 text-xs font-bold ${config.bgClass} ${config.textClass} ${className}`}
-            data-testid={`part-type-badge-${config.variant}`}
-            style={{ backgroundColor: getBackgroundColor(config.bgClass) }}
-          >
-            {config.label}
-          </span>
-        )
-      })}
+      {configs.map((config, index) => (
+        <span
+          key={`${config.variant}-${index}`}
+          className={`inline-flex items-center rounded px-2 py-1 text-xs font-bold ${config.bgClass} ${config.textClass} ${className}`}
+          data-testid={`part-type-badge-${config.variant}`}
+          style={{ backgroundColor: getBackgroundColor(config.bgClass) }}
+        >
+          {config.label}
+        </span>
+      ))}
     </div>
   )
 }
