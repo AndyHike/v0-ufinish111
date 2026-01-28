@@ -1,23 +1,16 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 
 export function AnalyticsTracker() {
   const pathname = usePathname()
-  const sessionIdRef = useRef<string>('')
 
   useEffect(() => {
-    // Generate session ID on first load
-    if (!sessionIdRef.current) {
-      sessionIdRef.current = `session-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
-      console.log('[v0] Session ID created:', sessionIdRef.current)
-    }
-
     const trackPageView = async () => {
       try {
-        console.log('[v0] Tracking page view:', { page: pathname, sessionId: sessionIdRef.current })
-        
+        console.log('[v0] Tracking page view:', pathname)
+
         const response = await fetch('/api/analytics/ping', {
           method: 'POST',
           headers: {
@@ -25,7 +18,6 @@ export function AnalyticsTracker() {
           },
           body: JSON.stringify({
             page: pathname,
-            sessionId: sessionIdRef.current,
           }),
           keepalive: true,
         })
@@ -34,7 +26,8 @@ export function AnalyticsTracker() {
           const error = await response.text()
           console.error('[v0] Analytics ping failed:', response.status, error)
         } else {
-          console.log('[v0] Analytics ping successful')
+          const result = await response.json()
+          console.log('[v0] Analytics ping successful. Online now:', result.onlineNow)
         }
       } catch (error) {
         console.error('[v0] Analytics tracking error:', error)
