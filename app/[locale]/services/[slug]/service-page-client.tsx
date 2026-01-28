@@ -212,7 +212,7 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
           {/* Ліва колонка - зображення (контрольована висота) */}
           <div className="lg:col-span-2 flex flex-col">
             <div className="relative w-full bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl overflow-hidden flex-shrink-0"
-                 style={{ aspectRatio: "5/4", maxHeight: "500px" }}>
+                 style={{ aspectRatio: "4/3", maxHeight: "300px" }}>
               {/* Part Type Badges - верхній лівий кут */}
               {serviceData.part_type && (
                 <div className="absolute top-2 left-2 z-10">
