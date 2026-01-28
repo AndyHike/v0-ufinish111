@@ -52,7 +52,7 @@
 
 ### Admin Dashboard (`/admin`)
 
-```
+\`\`\`
 ┌─────────────────────────────────────────────────┐
 │          ANALYTICS DASHBOARD                     │
 │     Real-time traffic and visitor metrics        │
@@ -75,28 +75,28 @@
 │  │ /about      ████             │
 │  │ /contact    ██               │
 │  └─────────────────────────────┘
-```
+\`\`\`
 
 ---
 
 ## 🚀 ЯК ПОЧАТИ:
 
 1. **Відвідайте сайт**
-   ```
+   \`\`\`
    http://localhost:3000
-   ```
+   \`\`\`
 
 2. **Перейдіть на кілька сторінок**
-   ```
+   \`\`\`
    / → /about → /contact
-   ```
+   \`\`\`
 
 3. **Почекайте 60+ секунд** (для heartbeat)
 
 4. **Відкрийте admin**
-   ```
+   \`\`\`
    http://localhost:3000/[locale]/admin
-   ```
+   \`\`\`
 
 5. **Бачите метрики!** 📈
 
@@ -105,31 +105,31 @@
 ## 📁 ФАЙЛИ ПРОЕКТУ:
 
 ### API Routes:
-```
+\`\`\`
 /app/api/analytics/ping/route.ts         → Track page views
 /app/api/admin/analytics/stats/route.ts  → Get metrics
-```
+\`\`\`
 
 ### Components:
-```
+\`\`\`
 /components/analytics/analytics-tracker.tsx  → Frontend tracking
 /components/admin/analytics-dashboard.tsx    → Beautiful dashboard
-```
+\`\`\`
 
 ### Pages:
-```
+\`\`\`
 /app/[locale]/admin/page.tsx  → Admin dashboard
-```
+\`\`\`
 
 ### Database:
-```
+\`\`\`
 /scripts/analytics-production-setup.sql  → SQL migration
-```
+\`\`\`
 
 ### Docs:
-```
+\`\`\`
 /ANALYTICS_PRODUCTION_CONFIG.md  → Production guide
-```
+\`\`\`
 
 ---
 

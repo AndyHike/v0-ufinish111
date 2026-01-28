@@ -243,7 +243,7 @@ export async function POST(request: NextRequest) {
           continue
         }
 
-        let price = 0
+        let price: number | null = null
         if (row.price && row.price.toString().trim() !== "") {
           const parsedPrice = Number.parseFloat(
             row.price

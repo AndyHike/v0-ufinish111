@@ -26,13 +26,13 @@ This comprehensive analytics system tracks page views and unique visitors withou
 - Returns active session count for real-time "Online Now" metric
 
 **Response:**
-```json
+\`\`\`json
 {
   "success": true,
   "isNewSession": true,
   "activeSessions": 42
 }
-```
+\`\`\`
 
 ### 3. Frontend Tracker (`/components/analytics/analytics-tracker.tsx`)
 - **Client Component**: Tracks route changes via `usePathname()`
@@ -69,26 +69,26 @@ Required:
 Tracks a page view. Called automatically by AnalyticsTracker component.
 
 **Request:**
-```json
+\`\`\`json
 {
   "pagePath": "/en/services/screen-repair"
 }
-```
+\`\`\`
 
 **Response:**
-```json
+\`\`\`json
 {
   "success": true,
   "isNewSession": true,
   "activeSessions": 42
 }
-```
+\`\`\`
 
 ### GET `/api/admin/analytics/stats`
 Fetches all analytics data for admin dashboard. Includes real-time sessions + historical data.
 
 **Response:**
-```json
+\`\`\`json
 {
   "today": {
     "onlineNow": 42,
@@ -112,7 +112,7 @@ Fetches all analytics data for admin dashboard. Includes real-time sessions + hi
     { "path": "/en/services", "activeUsers": 8 }
   ]
 }
-```
+\`\`\`
 
 ## Integration
 
@@ -122,7 +122,7 @@ The AnalyticsTracker is automatically included in `/app/[locale]/layout.tsx`. It
 ### 2. Admin Dashboard
 Include the AnalyticsDashboard component in your admin pages:
 
-```tsx
+\`\`\`tsx
 import { AnalyticsDashboard } from '@/components/admin/analytics-dashboard'
 
 export default function AdminPage() {
@@ -133,7 +133,7 @@ export default function AdminPage() {
     </div>
   )
 }
-```
+\`\`\`
 
 ## GDPR Compliance
 
@@ -155,13 +155,13 @@ export default function AdminPage() {
 
 Enable console logs to see analytics flow:
 
-```typescript
+\`\`\`typescript
 // In analytics-tracker.tsx during development
 console.log('[v0] Analytics tracking:', { pathname, success })
 
 // In ping/route.ts
 console.log('[Analytics] Tracking:', { pagePath, visitorHash, activeSessions })
-```
+\`\`\`
 
 ## Future Enhancements
 

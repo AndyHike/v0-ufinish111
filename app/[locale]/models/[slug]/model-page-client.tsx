@@ -190,7 +190,7 @@ export default function ModelPageClient({ modelData, locale }: Props) {
           <h2 className="text-2xl font-bold text-gray-900 mb-6">{t("availableServices")}</h2>
 
           {modelData.services.length > 0 ? (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
               {modelData.services.map((service) => (
                 <Link
                   key={service.id}

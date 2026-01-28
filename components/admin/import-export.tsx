@@ -330,7 +330,7 @@ export function ImportExport() {
       const warranty = row["Гарантія"] || ""
       const warrantyPeriod = row["Гарантійний період"] || ""
       const duration = row["Тривалість (хви)"] || ""
-      const price = row["Стандартна ціна"] || "0"
+      const price = row["Стандартна ціна"] || ""
       const partType = row["Тип деталі"] || ""
 
       const { brandName, seriesName, modelName } = parseCategory(category)

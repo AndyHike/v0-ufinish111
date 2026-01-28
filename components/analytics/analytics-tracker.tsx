@@ -1,10 +1,11 @@
 'use client'
 
 import { useEffect } from 'react'
-import { usePathname } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 
 export function AnalyticsTracker() {
   const pathname = usePathname()
+  const searchParams = useSearchParams()
 
   useEffect(() => {
     // Skip tracking for admin pages
@@ -15,7 +16,9 @@ export function AnalyticsTracker() {
 
     const trackPageView = async () => {
       try {
-        console.log('[v0] Tracking page view:', pathname)
+        //構築 URL з query параметрами
+        const fullPath = searchParams.toString() ? `${pathname}?${searchParams.toString()}` : pathname
+        console.log('[v0] Tracking page view:', fullPath)
 
         const response = await fetch('/api/analytics/ping', {
           method: 'POST',
@@ -23,7 +26,7 @@ export function AnalyticsTracker() {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            page: pathname,
+            page: fullPath,
           }),
           keepalive: true,
         })
@@ -46,7 +49,7 @@ export function AnalyticsTracker() {
     const interval = setInterval(trackPageView, 60 * 1000)
 
     return () => clearInterval(interval)
-  }, [pathname])
+  }, [pathname, searchParams])
 
   return null
 }

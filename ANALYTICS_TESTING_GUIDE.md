@@ -3,10 +3,10 @@
 ## Quick Start Testing
 
 ### 1. Verify Environment Setup
-```bash
+\`\`\`bash
 # Check that ANALYTICS_SALT is set in Vercel dashboard
 # Vars section should show ANALYTICS_SALT with a value
-```
+\`\`\`
 
 ### 2. Generate Test Traffic
 1. Open your site in a browser
@@ -32,24 +32,24 @@
 3. Interact with the site
 4. You should see POST requests to `/api/analytics/ping` with 200 status
 5. Click request → Preview to see response:
-```json
+\`\`\`json
 {
   "success": true,
   "isNewSession": true,
   "activeSessions": 1
 }
-```
+\`\`\`
 
 ### Monitor Log Output
 Add temporary logging to see the flow (remove after testing):
 
-```typescript
+\`\`\`typescript
 // In /components/analytics/analytics-tracker.tsx
 console.log('[v0] Analytics tracking:', { pathname, response })
 
 // In /app/api/analytics/ping/route.ts
 console.log('[Analytics] Tracking:', { pagePath, visitorHash, activeSessions })
-```
+\`\`\`
 
 ## Database Verification
 
@@ -59,7 +59,7 @@ console.log('[Analytics] Tracking:', { pagePath, visitorHash, activeSessions })
 2. SQL Editor → New Query
 3. Run these queries:
 
-```sql
+\`\`\`sql
 -- Check daily stats for today
 SELECT * FROM daily_stats 
 WHERE date = CURRENT_DATE 
@@ -74,7 +74,7 @@ LIMIT 10;
 SELECT COUNT(DISTINCT visitor_hash) as unique_visitors
 FROM page_view_hashes 
 WHERE date = CURRENT_DATE;
-```
+\`\`\`
 
 ### Expected Results:
 - `daily_stats`: Should have 1+ rows with increasing `view_count`
@@ -89,7 +89,7 @@ WHERE date = CURRENT_DATE;
 3. The session should be removed from memory (in-memory only, DB persists)
 
 ### Load Testing
-```bash
+\`\`\`bash
 # Simulate 10 concurrent users hitting the analytics endpoint
 # (Replace URL with your actual domain)
 for i in {1..10}; do
@@ -97,21 +97,21 @@ for i in {1..10}; do
     -H "Content-Type: application/json" \
     -d '{"pagePath":"/test"}'
 done
-```
+\`\`\`
 
 ## Debugging
 
 ### If analytics aren't appearing:
 
 1. **Check AnalyticsTracker is loaded**
-   ```typescript
+   \`\`\`typescript
    // In browser console
    fetch('/api/analytics/ping', {
      method: 'POST',
      headers: { 'Content-Type': 'application/json' },
      body: JSON.stringify({ pagePath: '/test' })
    }).then(r => r.json()).then(console.log)
-   ```
+   \`\`\`
 
 2. **Verify ANALYTICS_SALT environment variable**
    - Should be set in Vercel project Vars
@@ -119,14 +119,14 @@ done
    - Used for hashing, not revealed in logs
 
 3. **Check Supabase RPC function**
-   ```sql
+   \`\`\`sql
    -- Test the RPC function directly
    SELECT increment_page_view(
      CURRENT_DATE,
      '/test-path',
      'test-hash-12345'
    );
-   ```
+   \`\`\`
 
 4. **Review server logs**
    - Check Vercel deployment logs for errors
