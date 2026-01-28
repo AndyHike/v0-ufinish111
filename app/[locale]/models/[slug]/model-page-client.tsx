@@ -7,6 +7,7 @@ import { formatImageUrl } from "@/utils/image-url"
 import { useEffect, useRef } from "react"
 import { ServicePriceDisplay } from "@/components/service-price-display"
 import { ContactCTABanner } from "@/components/contact-cta-banner"
+import { PartTypeBadges } from "@/components/part-type-badges"
 
 interface ModelData {
   id: string
@@ -38,6 +39,7 @@ interface ModelData {
     detailed_description: string | null
     what_included: string | null
     benefits: string | null
+    part_type: string | null
     discounted_price?: number | null
     has_discount?: boolean
     discount?: any
@@ -197,8 +199,18 @@ export default function ModelPageClient({ modelData, locale }: Props) {
                   onClick={() => handleServiceClick(service)}
                 >
                   <div className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg hover:border-blue-300 transition-all duration-300 group-hover:-translate-y-1">
-                    {/* Service Image */}
-                    <div className="h-48 bg-white border-b border-gray-100 p-4 flex items-center justify-center">
+                    {/* Service Image with Part Type Badges */}
+                    <div className="relative h-48 bg-white border-b border-gray-100 p-4 flex items-center justify-center">
+                      {/* Part Type Badges - верхній лівий кут */}
+                      {service.part_type && (
+                        <div className="absolute top-2 left-2 z-10">
+                          <PartTypeBadges
+                            partTypeString={service.part_type}
+                            containerClassName="flex-col gap-1"
+                          />
+                        </div>
+                      )}
+
                       {service.image_url ? (
                         <img
                           src={formatImageUrl(service.image_url) || "/placeholder.svg"}

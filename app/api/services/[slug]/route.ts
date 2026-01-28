@@ -156,7 +156,8 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
             warranty_period,
             detailed_description,
             what_included,
-            benefits
+            benefits,
+            part_type
           `)
           .eq("model_id", model.id)
           .eq("service_id", service.id)
@@ -185,6 +186,7 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
             detailed_description: modelService.detailed_description,
             what_included: modelService.what_included,
             benefits: modelService.benefits,
+            part_type: modelService.part_type || null,
           }
 
           if (price !== null) {
@@ -268,6 +270,7 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
       discountedPrice,
       hasDiscount,
       discount,
+      part_type: modelServiceData?.part_type || null,
     }
 
     console.log("[API] Final service result:", {

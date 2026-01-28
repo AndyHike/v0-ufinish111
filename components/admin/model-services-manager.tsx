@@ -42,6 +42,7 @@ type ModelService = {
   detailed_description: string | null
   what_included: string | null
   benefits: string | null
+  part_type: string | null
   services: Service
 }
 
@@ -67,6 +68,7 @@ export function ModelServicesManager({ modelId, locale }: ModelServicesManagerPr
     detailed_description: "",
     what_included: "",
     benefits: "",
+    part_type: "",
   })
   const [editingServiceId, setEditingServiceId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -169,6 +171,7 @@ export function ModelServicesManager({ modelId, locale }: ModelServicesManagerPr
       detailed_description: "",
       what_included: "",
       benefits: "",
+      part_type: "",
     })
   }
 
@@ -201,6 +204,7 @@ export function ModelServicesManager({ modelId, locale }: ModelServicesManagerPr
       detailed_description: formData.detailed_description.trim() || null,
       what_included: formData.what_included.trim() || null,
       benefits: formData.benefits.trim() || null,
+      part_type: formData.part_type.trim() || null,
     }
 
     // Validate price if provided
@@ -282,6 +286,7 @@ export function ModelServicesManager({ modelId, locale }: ModelServicesManagerPr
       detailed_description: formData.detailed_description.trim() || null,
       what_included: formData.what_included.trim() || null,
       benefits: formData.benefits.trim() || null,
+      part_type: formData.part_type.trim() || null,
     }
 
     // Validate price if provided
@@ -396,6 +401,7 @@ export function ModelServicesManager({ modelId, locale }: ModelServicesManagerPr
       detailed_description: modelService.detailed_description || "",
       what_included: modelService.what_included || "",
       benefits: modelService.benefits || "",
+      part_type: modelService.part_type || "",
     })
     setIsDialogOpen(true)
   }
@@ -478,6 +484,7 @@ export function ModelServicesManager({ modelId, locale }: ModelServicesManagerPr
                   <TableHead className="text-right">Ціна</TableHead>
                   <TableHead>Гарантія</TableHead>
                   <TableHead>Тривалість</TableHead>
+                  <TableHead>Тип деталі</TableHead>
                   <TableHead className="w-[100px]">Дії</TableHead>
                 </TableRow>
               </TableHeader>
@@ -489,6 +496,13 @@ export function ModelServicesManager({ modelId, locale }: ModelServicesManagerPr
                     <TableCell className="text-right">{renderPrice(modelService.price)}</TableCell>
                     <TableCell>{renderWarranty(modelService.warranty_months, modelService.warranty_period)}</TableCell>
                     <TableCell>{renderDuration(modelService.duration_hours)}</TableCell>
+                    <TableCell>
+                      {modelService.part_type ? (
+                        <span className="text-sm font-medium text-blue-600">{modelService.part_type}</span>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">Не вказано</span>
+                      )}
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center justify-end gap-2">
                         <Button
@@ -639,6 +653,23 @@ export function ModelServicesManager({ modelId, locale }: ModelServicesManagerPr
                 placeholder="Переваги послуги (по одному пункту на рядок)"
                 rows={3}
               />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="part_type">
+                Тип деталі/Характеристики (наприклад: "original,oled" або "premium,refurbished")
+              </Label>
+              <Input
+                id="part_type"
+                type="text"
+                value={formData.part_type}
+                onChange={(e) => setFormData((prev) => ({ ...prev, part_type: e.target.value }))}
+                placeholder="Введіть типи через кому (наприклад: original, oled, ips, lcd, premium, refurbished)"
+              />
+              <p className="text-xs text-muted-foreground">
+                Введіть один або більше типів через кому. Допустимі типи: original, oled, ips, lcd, premium,
+                refurbished
+              </p>
             </div>
           </div>
           <DialogFooter>

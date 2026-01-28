@@ -58,6 +58,7 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
         detailed_description,
         what_included,
         benefits,
+        part_type,
         services (
           id,
           slug,
@@ -111,6 +112,7 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
           detailed_description: ms.detailed_description,
           what_included: ms.what_included,
           benefits: ms.benefits,
+          part_type: ms.part_type || null,
         }
       })
       .filter(Boolean)

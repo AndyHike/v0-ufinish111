@@ -159,6 +159,7 @@ export default async function ModelPage({ params }: Props) {
         detailed_description,
         what_included,
         benefits,
+        part_type,
         services(
           id,
           slug,
@@ -247,6 +248,7 @@ export default async function ModelPage({ params }: Props) {
           detailed_description: ms.detailed_description || translation.description,
           what_included: ms.what_included,
           benefits: ms.benefits,
+          part_type: ms.part_type || null,
           discounted_price: discountedPrice,
           has_discount: hasDiscount,
           discount: discount,
