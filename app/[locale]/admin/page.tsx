@@ -1,5 +1,4 @@
-import { AdminStats } from "@/components/admin/admin-stats"
-import { RecentActivity } from "@/components/admin/recent-activity"
+import { AnalyticsDashboard } from "@/components/admin/analytics-dashboard"
 import { getTranslations } from "next-intl/server"
 import type { Metadata } from "next"
 
@@ -16,10 +15,12 @@ export async function generateMetadata({
 
 export default async function AdminPage() {
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Dashboard</h1>
-      <AdminStats />
-      <RecentActivity />
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-4xl font-bold tracking-tight">Analytics Dashboard</h1>
+        <p className="text-muted-foreground mt-2">Real-time traffic and visitor metrics</p>
+      </div>
+      <AnalyticsDashboard />
     </div>
   )
 }

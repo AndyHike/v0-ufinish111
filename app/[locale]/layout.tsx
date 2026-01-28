@@ -9,6 +9,7 @@ import { getMessages } from "@/lib/get-messages"
 import { CookieConsentProvider } from "@/contexts/cookie-consent-context"
 import { CookieBanner } from "@/components/cookie-banner"
 import { AnalyticsProvider } from "@/components/analytics/analytics-provider"
+import { AnalyticsTracker } from "@/components/analytics/analytics-tracker"
 import { Suspense } from "react"
 import { SessionProvider } from "@/components/providers/session-provider"
 import { ThemeProvider } from "@/components/theme-provider"
@@ -163,6 +164,7 @@ export default async function LocaleLayout({
             <SessionProvider>
               <CookieConsentProvider>
                 <DynamicFavicon />
+                <AnalyticsTracker />
                 <div className="flex min-h-screen flex-col">
                   <Suspense fallback={<HeaderSkeleton />}>
                     <Header />
