@@ -10,7 +10,7 @@ import Image from "next/image"
 import { useTranslations } from "next-intl"
 
 interface ImageUploadProps {
-  onImageUploaded: (imageUrl: string) => void
+  onImageUploaded: (imageUrl: string, webpUrl?: string | null) => void
   currentImageUrl?: string | null
 }
 
@@ -19,6 +19,13 @@ export function ImageUpload({ onImageUploaded, currentImageUrl }: ImageUploadPro
   const { toast } = useToast()
   const [isUploading, setIsUploading] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentImageUrl || null)
+  const [compressionInfo, setCompressionInfo] = useState<{
+    percentage: number
+    saved: number
+    originalSize: number
+    optimizedSize: number
+    webpSize: number
+  } | null>(null)
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -61,8 +68,15 @@ export function ImageUpload({ onImageUploaded, currentImageUrl }: ImageUploadPro
       }
 
       const data = await response.json()
-      setPreviewUrl(data.url)
-      onImageUploaded(data.url)
+      setPreviewUrl(data.webpUrl || data.url) // Use WebP if available
+      onImageUploaded(data.url, data.webpUrl)
+      setCompressionInfo({
+        percentage: data.compression?.percentage || 0,
+        saved: data.compression?.saved || 0,
+        originalSize: data.originalSize || 0,
+        optimizedSize: data.optimizedSize || 0,
+        webpSize: data.webpSize || 0,
+      })
 
       toast({
         title: t("success"),
@@ -122,6 +136,25 @@ export function ImageUpload({ onImageUploaded, currentImageUrl }: ImageUploadPro
             />
           </div>
           <p className="mt-2 text-xs text-muted-foreground break-all">{previewUrl}</p>
+          
+          {compressionInfo && (
+            <div className="mt-3 rounded-md bg-muted p-2 text-xs space-y-1">
+              <div className="text-muted-foreground">
+                {t("imageOptimization") || "Image Optimization"}: <span className="font-semibold text-foreground">{compressionInfo.percentage}% {t("saved") || "saved"}</span>
+              </div>
+              <div className="text-muted-foreground">
+                {t("originalSize") || "Original"}: {(compressionInfo.originalSize / 1024).toFixed(1)}KB
+              </div>
+              <div className="text-muted-foreground">
+                JPEG: {(compressionInfo.optimizedSize / 1024).toFixed(1)}KB
+              </div>
+              {compressionInfo.webpSize > 0 && (
+                <div className="text-muted-foreground">
+                  WebP: {(compressionInfo.webpSize / 1024).toFixed(1)}KB
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
