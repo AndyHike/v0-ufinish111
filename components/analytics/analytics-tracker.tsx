@@ -7,6 +7,12 @@ export function AnalyticsTracker() {
   const pathname = usePathname()
 
   useEffect(() => {
+    // Skip tracking for admin pages
+    if (pathname.includes('/admin')) {
+      console.log('[v0] Admin page detected. Skipping analytics tracking.')
+      return
+    }
+
     const trackPageView = async () => {
       try {
         console.log('[v0] Tracking page view:', pathname)

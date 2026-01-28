@@ -55,6 +55,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing page parameter' }, { status: 400 })
     }
 
+    // Skip tracking for admin pages
+    if (page.includes('/admin')) {
+      console.log('[v0] Admin page detected. Skipping analytics tracking.')
+      return NextResponse.json({ skipped: true, reason: 'Admin page' })
+    }
+
     const supabase = await createClient()
 
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0] ||
