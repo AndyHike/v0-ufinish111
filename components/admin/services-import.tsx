@@ -325,7 +325,7 @@ export function ServicesImport() {
       const id = `row-${index}`
       const description = row["Опис"] || row["Description"] || ""
       const category = row["Категорія"] || row["Category"] || ""
-      const price = (row["Стандартна ціна"] || row["Price"] || "0").toString()
+      const price = (row["Стандартна ціна"] || row["Price"] || "").toString()
       const warranty = row["Гарантія"] || row["Warranty"] || ""
       const warrantyPeriod = row["Гарантійний період"] || row["Warranty Period"] || ""
       const duration = row["Тривалість (хвилини)"] || row["Duration"] || ""
@@ -867,7 +867,7 @@ export function ServicesImport() {
                                       className="font-medium text-sm cursor-pointer hover:text-blue-600 hover:underline"
                                       onClick={() => setEditingRow(row.id)}
                                     >
-                                      {row.price || "0"}
+                                      {row.price || "-"}
                                     </span>
                                   )}
                                 </TableCell>
