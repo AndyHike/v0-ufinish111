@@ -5,7 +5,6 @@ import Image from "next/image"
 import { notFound } from "next/navigation"
 import { createServerClient } from "@/utils/supabase/server"
 import { ArrowLeft, Smartphone } from "lucide-react"
-import { formatImageUrl } from "@/utils/image-url"
 import { ContactCTABanner } from "@/components/contact-cta-banner"
 
 type Props = {
@@ -120,7 +119,7 @@ export default async function SeriesPage({ params }: Props) {
             {series.brands?.logo_url && (
               <div className="relative h-24 w-24 overflow-hidden rounded-lg bg-slate-50 p-3 flex-shrink-0">
                 <Image
-                  src={formatImageUrl(series.brands.logo_url)}
+                  src={series.brands.logo_url}
                   alt={series.brands.name}
                   width={96}
                   height={96}
@@ -154,7 +153,7 @@ export default async function SeriesPage({ params }: Props) {
                   <div className="mb-4 relative h-24 w-24 flex-shrink-0 rounded-lg bg-slate-50 p-2 sm:h-28 sm:w-28 overflow-hidden flex items-center justify-center">
                     {model.image_url ? (
                       <Image
-                        src={formatImageUrl(model.image_url)}
+                        src={model.image_url}
                         alt={model.name}
                         width={112}
                         height={112}

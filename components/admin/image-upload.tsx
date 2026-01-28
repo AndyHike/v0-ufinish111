@@ -9,7 +9,6 @@ import { Upload, Loader2, AlertCircle } from "lucide-react"
 import Image from "next/image"
 import { useTranslations } from "next-intl"
 import { compressImage, formatFileSize, isSupportedImageFormat } from "@/lib/image-compression"
-import { formatImageUrl } from "@/utils/image-url"
 
 interface ImageUploadProps {
   onImageUploaded: (imageUrl: string) => void
@@ -181,7 +180,7 @@ export function ImageUpload({
         <div className="mt-2 rounded-md border border-border p-2">
           <div className="h-32 w-32 overflow-hidden rounded-md flex-shrink-0">
             <Image
-              src={formatImageUrl(previewUrl)}
+              src={previewUrl}
               alt="Preview"
               width={128}
               height={128}
