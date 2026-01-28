@@ -43,14 +43,14 @@ export function AddModelDialog({ isOpen, onClose, onModelAdded }: AddModelDialog
   const { data: session } = useSession()
   const [brands, setBrands] = useState<Brand[]>([])
   const [series, setSeries] = useState<Series[]>([])
-  const [newModel, setNewModel] = useState({ name: "", brandId: "", seriesId: "", imageUrl: "", imageWebpUrl: "" })
+  const [newModel, setNewModel] = useState({ name: "", brandId: "", seriesId: "", imageUrl: "" })
   const dialogRef = useRef<HTMLDivElement>(null)
 
   const { execute, isLoading } = useAsyncAction({
     successMessage: t("modelAddedSuccess"),
     errorMessage: t("modelAddedError"),
     onSuccess: () => {
-      setNewModel({ name: "", brandId: "", seriesId: "", imageUrl: "", imageWebpUrl: "" })
+      setNewModel({ name: "", brandId: "", seriesId: "", imageUrl: "" })
       onModelAdded()
       onClose()
     },
@@ -210,7 +210,7 @@ export function AddModelDialog({ isOpen, onClose, onModelAdded }: AddModelDialog
           <div className="grid gap-2">
             <Label>{t("modelImage")}</Label>
             <ImageUpload
-              onImageUploaded={(url, webpUrl) => setNewModel({ ...newModel, imageUrl: url, imageWebpUrl: webpUrl || "" })}
+              onImageUploaded={(url) => setNewModel({ ...newModel, imageUrl: url })}
               currentImageUrl={newModel.imageUrl}
             />
           </div>

@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
 import { getSession } from "@/lib/auth/session"
-import sharp from "sharp"
 
 export async function POST(request: Request) {
   try {
@@ -51,78 +50,19 @@ export async function POST(request: Request) {
 
     // Convert file to buffer
     const arrayBuffer = await file.arrayBuffer()
-    let buffer = Buffer.from(arrayBuffer)
-
-    // Process image with Sharp for optimization
-    let processedBuffer = buffer
-    let webpBuffer: Buffer | null = null
-    let originalSize = buffer.length
-    let optimizedSize = 0
-    let webpSize = 0
-
-    try {
-      // For image uploads, optimize with Sharp
-      if (
-        file.type === "image/jpeg" ||
-        file.type === "image/png" ||
-        file.type === "image/webp" ||
-        file.type === "image/jpg"
-      ) {
-        // Create Sharp instance
-        const image = sharp(buffer)
-
-        // Get metadata for resizing
-        const metadata = await image.metadata()
-        const maxWidth = 2000
-        const maxHeight = 2000
-
-        // Resize if needed and compress JPEG/PNG
-        const optimized = await image
-          .rotate() // Auto-rotate based on EXIF
-          .resize(maxWidth, maxHeight, {
-            fit: "inside",
-            withoutEnlargement: true,
-          })
-          .jpeg({ quality: 78, progressive: true }) // Optimize to JPEG
-          .toBuffer()
-
-        processedBuffer = optimized
-        optimizedSize = optimized.length
-
-        // Generate WebP version
-        webpBuffer = await sharp(buffer)
-          .rotate()
-          .resize(maxWidth, maxHeight, {
-            fit: "inside",
-            withoutEnlargement: true,
-          })
-          .webp({ quality: 75 })
-          .toBuffer()
-
-        webpSize = webpBuffer.length
-      }
-    } catch (error) {
-      console.error("Error processing image with Sharp:", error)
-      // Fallback to original buffer if Sharp processing fails
-      processedBuffer = buffer
-      optimizedSize = buffer.length
-    }
+    const buffer = Buffer.from(arrayBuffer)
 
     // Generate filename based on upload type
     let fileName: string
-    let fileNameWebp: string | null = null
-    const fileExtension = "jpg" // Always save optimized as JPG
-    const timestamp = Date.now()
-    const randomStr = Math.random().toString(36).substring(2, 15)
+    const fileExtension = file.name.split(".").pop()
 
     if (uploadType === "service" && slug) {
       // Для послуг використовуємо slug як назву файлу
       fileName = `services/${slug}.${fileExtension}`
-      fileNameWebp = `services/${slug}.webp`
     } else {
       // Для інших типів використовуємо timestamp + random
-      fileName = `${uploadType}/${timestamp}-${randomStr}.${fileExtension}`
-      fileNameWebp = `${uploadType}/${timestamp}-${randomStr}.webp`
+      const timestamp = Date.now()
+      fileName = `${uploadType}/${timestamp}-${Math.random().toString(36).substring(2, 15)}.${fileExtension}`
     }
 
     // Upload to Supabase Storage
@@ -139,54 +79,24 @@ export async function POST(request: Request) {
 
     // Якщо файл з таким ім'ям вже існує, видаляємо його
     if (uploadType === "service" && slug) {
-      await supabase.storage.from(bucketName).remove([fileName, fileNameWebp || ""])
+      await supabase.storage.from(bucketName).remove([fileName])
     }
 
-    // Upload optimized JPEG
-    const { data: jpegData, error: jpegError } = await supabase.storage
-      .from(bucketName)
-      .upload(fileName, processedBuffer, {
-        contentType: "image/jpeg",
-        cacheControl: "86400", // 24 hours
-        upsert: true,
-      })
+    const { data, error } = await supabase.storage.from(bucketName).upload(fileName, buffer, {
+      contentType: file.type,
+      cacheControl: "3600",
+      upsert: true, // Дозволяємо перезаписувати файли
+    })
 
-    if (jpegError) {
-      console.error("Error uploading JPEG:", jpegError)
+    if (error) {
+      console.error("Error uploading file:", error)
       return NextResponse.json({ error: "Failed to upload file" }, { status: 500 })
     }
 
-    // Upload WebP version if available
-    let webpUrl = null
-    if (webpBuffer) {
-      const { data: webpData, error: webpError } = await supabase.storage
-        .from(bucketName)
-        .upload(fileNameWebp!, webpBuffer, {
-          contentType: "image/webp",
-          cacheControl: "86400",
-          upsert: true,
-        })
+    // Get the public URL
+    const { data: publicUrl } = supabase.storage.from(bucketName).getPublicUrl(fileName)
 
-      if (!webpError && webpData) {
-        const { data: webpPublicUrl } = supabase.storage.from(bucketName).getPublicUrl(fileNameWebp!)
-        webpUrl = webpPublicUrl.publicUrl
-      }
-    }
-
-    // Get the public URLs
-    const { data: jpegPublicUrl } = supabase.storage.from(bucketName).getPublicUrl(fileName)
-
-    return NextResponse.json({
-      url: jpegPublicUrl.publicUrl,
-      webpUrl: webpUrl,
-      originalSize: originalSize,
-      optimizedSize: optimizedSize,
-      webpSize: webpSize,
-      compression: {
-        percentage: originalSize > 0 ? Math.round(((originalSize - optimizedSize) / originalSize) * 100) : 0,
-        saved: originalSize - optimizedSize,
-      },
-    })
+    return NextResponse.json({ url: publicUrl.publicUrl })
   } catch (error) {
     console.error("Error handling file upload:", error)
     return NextResponse.json({ error: "Failed to process file" }, { status: 500 })
