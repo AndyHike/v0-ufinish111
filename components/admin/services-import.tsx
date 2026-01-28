@@ -32,6 +32,10 @@ interface ServiceData {
   serviceId?: string
   status: "valid" | "warning" | "error"
   errors: string[]
+  missingBrand?: boolean
+  missingSeries?: boolean
+  missingModel?: boolean
+  createMissing?: boolean
 }
 
 interface Brand {
@@ -341,22 +345,32 @@ export function ServicesImport() {
       const serviceSlug = extractSlugFromDescription(description)
       const matchedService = findServiceBySlug(serviceSlug) || findBestMatch(description, services)
 
-      const errors: string[] = []
-      if (!description) errors.push("Відсутній опис послуги")
-      if (!category) errors.push("Відсутня категорія")
-      if (!matchedService) errors.push(`Не знайдено базову послугу з slug: ${serviceSlug}`)
-      if (!matchedBrand) errors.push("Не знайдено бренд")
-      if (!matchedModel) errors.push("Не знайдено модель")
+      const missingBrand = !matchedBrand && !!brandName
+      const missingSeries = !matchedSeries && !!seriesName && !!matchedBrand
+      const missingModel = !matchedModel && !!modelName && !!matchedBrand && !!matchedSeries
 
-      const status = errors.length === 0 ? "valid" : errors.some((e) => e.includes("Не знайдено")) ? "warning" : "error"
+      // Критичні помилки
+      const criticalErrors: string[] = []
+      if (!description) criticalErrors.push("Відсутній опис послуги")
+      if (!category) criticalErrors.push("Відсутня категорія")
+      if (!matchedService) criticalErrors.push("Не знайдено базову послугу - обов'язково потрібна")
+      
+      // Попередження через відсутні елементи (можна створити або вибрати)
+      const warnings: string[] = []
+      if (missingBrand) warnings.push(`Бренд "${brandName}" не знайдено`)
+      if (missingSeries) warnings.push(`Серія "${seriesName}" не знайдено`)
+      if (missingModel) warnings.push(`Модель "${modelName}" не знайдено`)
 
-      console.log(`Row ${index + 1} processed:`, {
-        description,
-        serviceSlug,
-        matchedService: matchedService?.name,
-        status,
-        errors,
-      })
+      // Об'єднуємо помилки і попередження
+      const errors = [...criticalErrors, ...warnings]
+
+      // Статус залежить від типу помилок
+      let status: "valid" | "warning" | "error" = "valid"
+      if (criticalErrors.length > 0) {
+        status = "error"
+      } else if (warnings.length > 0) {
+        status = "warning"
+      }
 
       return {
         id,
@@ -375,6 +389,10 @@ export function ServicesImport() {
         serviceId: matchedService?.id,
         status,
         errors,
+        missingBrand,
+        missingSeries,
+        missingModel,
+        createMissing: true, // За замовчуванням - створювати
       }
     })
 
@@ -392,12 +410,20 @@ export function ServicesImport() {
     return safeArray(models).filter((m) => m.series_id === seriesId)
   }
 
-  const updateRow = (rowId: string, field: string, value: string) => {
+  const updateRow = (rowId: string, field: string, value: string | boolean) => {
     setData((prevData) =>
       prevData.map((row) => {
         if (row.id !== rowId) return row
 
-        const updatedRow = { ...row, [field]: value }
+        const updatedRow = { ...row }
+
+        // Обробка checkbox для createMissing
+        if (field === "createMissing") {
+          updatedRow.createMissing = value as boolean
+          return updatedRow
+        }
+
+        updatedRow[field as keyof ServiceData] = value as any
 
         // Каскадне оновлення при зміні бренду
         if (field === "brandId") {
@@ -425,24 +451,50 @@ export function ServicesImport() {
         // Оновлення при зміні послуги
         else if (field === "serviceId") {
           const service = safeFindInArray(services, (s) => s.id === value)
-          // Зберігаємо тільки ID послуги
           updatedRow.serviceId = service?.id
         }
         // Обробка порожніх цін
         else if (field === "price") {
-          updatedRow.price = value === "" ? "0" : value
+          updatedRow.price = value === "" ? "0" : (value as string)
         }
 
         // Перевалідація після змін
-        const errors: string[] = []
-        if (!updatedRow.description) errors.push("Відсутній опис послуги")
-        if (!updatedRow.category) errors.push("Відсутня категорія")
-        if (!updatedRow.serviceId) errors.push("Не обрано базову послугу")
-        if (!updatedRow.brandId) errors.push("Не обрано бренд")
-        if (!updatedRow.modelId) errors.push("Не обрано модель")
+        const criticalErrors: string[] = []
+        if (!updatedRow.description) criticalErrors.push("Відсутній опис послуги")
+        if (!updatedRow.category) criticalErrors.push("Відсутня категорія")
+        if (!updatedRow.serviceId) criticalErrors.push("Не обрано базову послугу")
 
-        updatedRow.status = errors.length === 0 ? "valid" : "warning"
+        const missingBrand = !updatedRow.brandId && !!updatedRow.brandName
+        const missingSeries = !updatedRow.seriesId && !!updatedRow.seriesName && !!updatedRow.brandId
+        const missingModel = !updatedRow.modelId && !!updatedRow.modelName && !!updatedRow.brandId && !!updatedRow.seriesId
+
+        // Попередження через відсутні елементи
+        const warnings: string[] = []
+        if (missingBrand) warnings.push(`Бренд "${updatedRow.brandName}" не знайдено`)
+        if (missingSeries) warnings.push(`Серія "${updatedRow.seriesName}" не знайдено`)
+        if (missingModel) warnings.push(`Модель "${updatedRow.modelName}" не знайдено`)
+
+        // Якщо користувач вибрав не створювати і є відсутні елементи - це помилка
+        const hasUnhandledMissing = (missingBrand || missingSeries || missingModel) && !updatedRow.createMissing
+
+        // Об'єднуємо помилки
+        const errors = [...criticalErrors, ...warnings]
+
+        // Розраховуємо статус
+        let status: "valid" | "warning" | "error" = "valid"
+        if (criticalErrors.length > 0) {
+          status = "error"
+        } else if (warnings.length > 0 && updatedRow.createMissing) {
+          status = "warning"
+        } else if (hasUnhandledMissing) {
+          status = "error"
+        }
+
+        updatedRow.status = status
         updatedRow.errors = errors
+        updatedRow.missingBrand = missingBrand
+        updatedRow.missingSeries = missingSeries
+        updatedRow.missingModel = missingModel
 
         return updatedRow
       }),
@@ -450,14 +502,25 @@ export function ServicesImport() {
   }
 
   const handleImport = async () => {
-    const validRows = data.filter((row) => row.status === "valid")
+    // Фільтруємо рядки для імпорту:
+    // 1. Валідні рядки (status: "valid")
+    // 2. Рядки з попередженнями, але з createMissing: true
+    const rowsToImport = data.filter((row) => {
+      if (row.status === "error") return false // Помилки - виключаємо
+      if (row.status === "valid") return true // Валідні - включаємо
+      if (row.status === "warning") {
+        // Для попередження - включаємо тільки якщо користувач вибрав створення
+        return row.createMissing === true
+      }
+      return false
+    })
 
-    if (validRows.length === 0) {
-      alert("Немає валідних записів для імпорту")
+    if (rowsToImport.length === 0) {
+      alert("Немає записів для імпорту. Будь ласка, виправте помилки або дозвольте створення відсутніх елементів.")
       return
     }
 
-    if (!confirm(`Імпортувати ${validRows.length} послуг?`)) {
+    if (!confirm(`Імпортувати ${rowsToImport.length} послуг?`)) {
       return
     }
 
@@ -469,7 +532,7 @@ export function ServicesImport() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ data: validRows }),
+        body: JSON.stringify({ data: rowsToImport }),
       })
 
       if (!response.ok) {
@@ -478,7 +541,28 @@ export function ServicesImport() {
       }
 
       const result = await response.json()
-      alert(`Імпорт завершено успішно!\nСтворено нових послуг: ${result.created}\nОновлено існуючих: ${result.updated}`)
+      
+      let messageText = `✅ Імпорт завершено!\n\n`
+      messageText += `📊 Результати:\n`
+      messageText += `  ✓ Створено послуг: ${result.created}\n`
+      messageText += `  ↻ Оновлено послуг: ${result.updated}`
+      
+      if (result.skipped > 0) {
+        messageText += `\n  ⊘ Пропущено: ${result.skipped}`
+      }
+      
+      if (result.errors > 0) {
+        messageText += `\n  ✗ Помилок: ${result.errors}`
+      }
+      
+      if (result.brandsCreated > 0 || result.seriesCreated > 0 || result.modelsCreated > 0) {
+        messageText += `\n\n📦 Створено нових елементів:`
+        if (result.brandsCreated > 0) messageText += `\n  🏢 Брендів: ${result.brandsCreated}`
+        if (result.seriesCreated > 0) messageText += `\n  📋 Серій: ${result.seriesCreated}`
+        if (result.modelsCreated > 0) messageText += `\n  🔧 Моделей: ${result.modelsCreated}`
+      }
+      
+      alert(messageText)
 
       // Очищуємо дані після успішного імпорту
       setData([])
@@ -598,34 +682,31 @@ export function ServicesImport() {
                           <TableHeader className="sticky top-0 z-10">
                             <TableRow className="bg-gray-50 border-b-2 border-gray-200">
                               <TableHead className="font-semibold text-gray-700 w-[120px] min-w-[120px]">
-                                Статус
-                              </TableHead>
-                              <TableHead className="font-semibold text-gray-700 w-[250px] min-w-[250px]">
-                                Опис
-                              </TableHead>
-                              <TableHead className="font-semibold text-gray-700 w-[150px] min-w-[150px]">
                                 Бренд
                               </TableHead>
-                              <TableHead className="font-semibold text-gray-700 w-[150px] min-w-[150px]">
+                              <TableHead className="font-semibold text-gray-700 w-[120px] min-w-[120px]">
                                 Серія
                               </TableHead>
-                              <TableHead className="font-semibold text-gray-700 w-[150px] min-w-[150px]">
+                              <TableHead className="font-semibold text-gray-700 w-[140px] min-w-[140px]">
                                 Модель
                               </TableHead>
                               <TableHead className="font-semibold text-gray-700 w-[180px] min-w-[180px]">
                                 Послуга
                               </TableHead>
-                              <TableHead className="font-semibold text-gray-700 w-[100px] min-w-[100px]">
+                              <TableHead className="font-semibold text-gray-700 w-[80px] min-w-[80px]">
                                 Ціна
                               </TableHead>
-                              <TableHead className="font-semibold text-gray-700 w-[100px] min-w-[100px]">
+                              <TableHead className="font-semibold text-gray-700 w-[110px] min-w-[110px]">
                                 Гарантія
                               </TableHead>
-                              <TableHead className="font-semibold text-gray-700 w-[120px] min-w-[120px]">
+                              <TableHead className="font-semibold text-gray-700 w-[100px] min-w-[100px]">
                                 Період
                               </TableHead>
                               <TableHead className="font-semibold text-gray-700 w-[100px] min-w-[100px]">
-                                Тривалість
+                                Час
+                              </TableHead>
+                              <TableHead className="font-semibold text-gray-700 w-[130px] min-w-[130px]">
+                                Створити?
                               </TableHead>
                               <TableHead className="font-semibold text-gray-700 w-[80px] min-w-[80px]">Дії</TableHead>
                             </TableRow>
@@ -641,66 +722,12 @@ export function ServicesImport() {
                                 `}
                               >
                                 <TableCell className="py-3 px-4">
-                                  <Badge
-                                    variant={
-                                      row.status === "valid"
-                                        ? "default"
-                                        : row.status === "warning"
-                                          ? "secondary"
-                                          : "destructive"
-                                    }
-                                    className={`
-                                      text-xs font-medium px-2 py-1
-                                      ${
-                                        row.status === "valid"
-                                          ? "bg-green-100 text-green-800 border-green-200"
-                                          : row.status === "warning"
-                                            ? "bg-yellow-100 text-yellow-800 border-yellow-200"
-                                            : "bg-red-100 text-red-800 border-red-200"
-                                      }
-                                    `}
-                                  >
-                                    {row.status === "valid"
-                                      ? "Готово"
-                                      : row.status === "warning"
-                                        ? "Попередження"
-                                        : "Помилка"}
-                                  </Badge>
-                                  {row.errors.length > 0 && (
-                                    <div className="text-xs text-red-600 mt-2 p-2 bg-red-50 rounded border border-red-200 max-w-[110px]">
-                                      <div className="space-y-1">
-                                        {row.errors.map((error, i) => (
-                                          <div key={i} className="truncate" title={error}>
-                                            • {error}
-                                          </div>
-                                        ))}
-                                      </div>
-                                    </div>
-                                  )}
-                                </TableCell>
-                                <TableCell className="py-3 px-4">
-                                  {editingRow === row.id ? (
-                                    <Input
-                                      value={row.description}
-                                      onChange={(e) => updateRow(row.id, "description", e.target.value)}
-                                      className="w-full min-w-[230px] text-sm"
-                                      placeholder="Опис послуги"
-                                    />
-                                  ) : (
-                                    <div className="max-w-[230px]">
-                                      <div className="font-medium text-sm leading-tight" title={row.description}>
-                                        {row.description}
-                                      </div>
-                                    </div>
-                                  )}
-                                </TableCell>
-                                <TableCell className="py-3 px-4">
                                   {editingRow === row.id ? (
                                     <Select
                                       value={row.brandId || ""}
                                       onValueChange={(value) => updateRow(row.id, "brandId", value)}
                                     >
-                                      <SelectTrigger className="w-full min-w-[130px] text-sm">
+                                      <SelectTrigger className="w-full min-w-[110px] text-sm">
                                         <SelectValue placeholder="Оберіть бренд" />
                                       </SelectTrigger>
                                       <SelectContent>
@@ -713,17 +740,17 @@ export function ServicesImport() {
                                     </Select>
                                   ) : (
                                     <div
-                                      className="truncate font-medium text-sm max-w-[130px] cursor-pointer hover:text-blue-600"
+                                      className="truncate font-medium text-sm max-w-[110px] cursor-pointer hover:text-blue-600 hover:underline"
                                       title={
                                         safeFindInArray(brands, (b) => b.id === row.brandId)?.name ||
                                         row.brandName ||
-                                        "Не знайдено"
+                                        "❌ Не знайдено"
                                       }
                                       onClick={() => setEditingRow(row.id)}
                                     >
                                       {safeFindInArray(brands, (b) => b.id === row.brandId)?.name ||
                                         row.brandName ||
-                                        "Не знайдено"}
+                                        "❌ Не знайдено"}
                                     </div>
                                   )}
                                 </TableCell>
@@ -734,7 +761,7 @@ export function ServicesImport() {
                                       onValueChange={(value) => updateRow(row.id, "seriesId", value)}
                                       disabled={!row.brandId}
                                     >
-                                      <SelectTrigger className="w-full min-w-[130px] text-sm">
+                                      <SelectTrigger className="w-full min-w-[110px] text-sm">
                                         <SelectValue placeholder="Оберіть серію" />
                                       </SelectTrigger>
                                       <SelectContent>
@@ -747,17 +774,17 @@ export function ServicesImport() {
                                     </Select>
                                   ) : (
                                     <div
-                                      className="truncate text-sm max-w-[130px] cursor-pointer hover:text-blue-600"
+                                      className="truncate text-sm max-w-[110px] cursor-pointer hover:text-blue-600 hover:underline"
                                       title={
                                         safeFindInArray(series, (s) => s.id === row.seriesId)?.name ||
                                         row.seriesName ||
-                                        "Не знайдено"
+                                        "❌ Не знайдено"
                                       }
                                       onClick={() => setEditingRow(row.id)}
                                     >
                                       {safeFindInArray(series, (s) => s.id === row.seriesId)?.name ||
                                         row.seriesName ||
-                                        "Не знайдено"}
+                                        "❌ Не знайдено"}
                                     </div>
                                   )}
                                 </TableCell>
@@ -768,7 +795,7 @@ export function ServicesImport() {
                                       onValueChange={(value) => updateRow(row.id, "modelId", value)}
                                       disabled={!row.seriesId}
                                     >
-                                      <SelectTrigger className="w-full min-w-[130px] text-sm">
+                                      <SelectTrigger className="w-full min-w-[120px] text-sm">
                                         <SelectValue placeholder="Оберіть модель" />
                                       </SelectTrigger>
                                       <SelectContent>
@@ -781,17 +808,17 @@ export function ServicesImport() {
                                     </Select>
                                   ) : (
                                     <div
-                                      className="truncate text-sm max-w-[130px] cursor-pointer hover:text-blue-600"
+                                      className="truncate text-sm max-w-[120px] cursor-pointer hover:text-blue-600 hover:underline"
                                       title={
                                         safeFindInArray(models, (m) => m.id === row.modelId)?.name ||
                                         row.modelName ||
-                                        "Не знайдено"
+                                        "❌ Не знайдено"
                                       }
                                       onClick={() => setEditingRow(row.id)}
                                     >
                                       {safeFindInArray(models, (m) => m.id === row.modelId)?.name ||
                                         row.modelName ||
-                                        "Не знайдено"}
+                                        "❌ Не знайдено"}
                                     </div>
                                   )}
                                 </TableCell>
@@ -814,13 +841,13 @@ export function ServicesImport() {
                                     </Select>
                                   ) : (
                                     <div
-                                      className="truncate text-sm max-w-[160px] cursor-pointer hover:text-blue-600"
+                                      className="truncate text-sm max-w-[160px] cursor-pointer hover:text-blue-600 hover:underline"
                                       title={
-                                        safeFindInArray(services, (s) => s.id === row.serviceId)?.name || "Не знайдено"
+                                        safeFindInArray(services, (s) => s.id === row.serviceId)?.name || "❌ Не знайдено"
                                       }
                                       onClick={() => setEditingRow(row.id)}
                                     >
-                                      {safeFindInArray(services, (s) => s.id === row.serviceId)?.name || "Не знайдено"}
+                                      {safeFindInArray(services, (s) => s.id === row.serviceId)?.name || "❌ Не знайдено"}
                                     </div>
                                   )}
                                 </TableCell>
@@ -829,7 +856,7 @@ export function ServicesImport() {
                                     <Input
                                       value={row.price}
                                       onChange={(e) => updateRow(row.id, "price", e.target.value)}
-                                      className="w-full min-w-[80px] text-sm"
+                                      className="w-full text-sm"
                                       placeholder="0"
                                       type="number"
                                       min="0"
@@ -837,7 +864,7 @@ export function ServicesImport() {
                                     />
                                   ) : (
                                     <span
-                                      className="font-medium text-sm cursor-pointer hover:text-blue-600"
+                                      className="font-medium text-sm cursor-pointer hover:text-blue-600 hover:underline"
                                       onClick={() => setEditingRow(row.id)}
                                     >
                                       {row.price || "0"}
@@ -849,12 +876,12 @@ export function ServicesImport() {
                                     <Input
                                       value={row.warranty}
                                       onChange={(e) => updateRow(row.id, "warranty", e.target.value)}
-                                      className="w-full min-w-[80px] text-sm"
+                                      className="w-full text-sm"
                                       placeholder="Гарантія"
                                     />
                                   ) : (
                                     <span
-                                      className="text-sm cursor-pointer hover:text-blue-600"
+                                      className="text-sm cursor-pointer hover:text-blue-600 hover:underline"
                                       onClick={() => setEditingRow(row.id)}
                                     >
                                       {row.warranty}
@@ -866,12 +893,12 @@ export function ServicesImport() {
                                     <Input
                                       value={row.warrantyPeriod}
                                       onChange={(e) => updateRow(row.id, "warrantyPeriod", e.target.value)}
-                                      className="w-full min-w-[100px] text-sm"
+                                      className="w-full text-sm"
                                       placeholder="Період"
                                     />
                                   ) : (
                                     <span
-                                      className="text-sm cursor-pointer hover:text-blue-600"
+                                      className="text-sm cursor-pointer hover:text-blue-600 hover:underline"
                                       onClick={() => setEditingRow(row.id)}
                                     >
                                       {row.warrantyPeriod}
@@ -883,18 +910,34 @@ export function ServicesImport() {
                                     <Input
                                       value={row.duration}
                                       onChange={(e) => updateRow(row.id, "duration", e.target.value)}
-                                      className="w-full min-w-[80px] text-sm"
+                                      className="w-full text-sm"
                                       placeholder="хв"
                                       type="number"
                                       min="0"
                                     />
                                   ) : (
                                     <span
-                                      className="text-sm cursor-pointer hover:text-blue-600"
+                                      className="text-sm cursor-pointer hover:text-blue-600 hover:underline"
                                       onClick={() => setEditingRow(row.id)}
                                     >
                                       {row.duration}
                                     </span>
+                                  )}
+                                </TableCell>
+                                <TableCell className="py-3 px-4">
+                                  {(row.missingBrand || row.missingSeries || row.missingModel) && (
+                                    <label className="flex items-center gap-2 cursor-pointer p-2 rounded transition-colors hover:bg-blue-50">
+                                      <input
+                                        type="checkbox"
+                                        checked={row.createMissing === true}
+                                        onChange={(e) => updateRow(row.id, "createMissing", e.target.checked)}
+                                        className="w-4 h-4 text-blue-600 rounded focus:ring-2"
+                                        title={`${row.missingBrand ? "Бренд: " + row.brandName + ", " : ""}${row.missingSeries ? "Серія: " + row.seriesName + ", " : ""}${row.missingModel ? "Модель: " + row.modelName : ""}`}
+                                      />
+                                      <span className="text-xs text-blue-600 font-medium whitespace-nowrap">
+                                        {row.createMissing ? "✓ Буде створено" : "⊗ Буде пропущено"}
+                                      </span>
+                                    </label>
                                   )}
                                 </TableCell>
                                 <TableCell className="py-3 px-4">

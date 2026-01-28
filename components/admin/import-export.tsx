@@ -40,6 +40,7 @@ interface ReferenceData {
 
 export function ImportExport() {
   const [importType, setImportType] = useState<ImportType>("services")
+  const [editingRowId, setEditingRowId] = useState<string | null>(null)
   const [file, setFile] = useState<File | null>(null)
   const [rows, setRows] = useState<ImportRow[]>([])
   const [loading, setLoading] = useState(false)
@@ -51,6 +52,15 @@ export function ImportExport() {
     services: [],
   })
   const [dataLoaded, setDataLoaded] = useState(false)
+  
+  // Import result state
+  const [importResult, setImportResult] = useState<{
+    success?: boolean
+    created?: number
+    updated?: number
+    errors?: number
+    errorMessages?: string[]
+  } | null>(null)
   
   // Export filters
   const [exportBrandId, setExportBrandId] = useState<string>("")
@@ -269,7 +279,13 @@ export function ImportExport() {
       XLSX.writeFile(wb, fileName)
     } catch (error) {
       console.error("Export error:", error)
-      alert("Помилка експорту: " + (error as Error).message)
+      setModal({
+        open: true,
+        title: "Помилка експорту",
+        message: (error as Error).message,
+        confirmText: "OK",
+        isConfirm: false,
+      })
     }
   }
 
@@ -315,6 +331,7 @@ export function ImportExport() {
       const warrantyPeriod = row["Гарантійний період"] || ""
       const duration = row["Тривалість (хви)"] || ""
       const price = row["Стандартна ціна"] || "0"
+      const partType = row["Тип деталі"] || ""
 
       const { brandName, seriesName, modelName } = parseCategory(category)
       const serviceSlug = extractSlug(description)
@@ -385,6 +402,7 @@ export function ImportExport() {
           warrantyPeriod,
           duration,
           price,
+          partType,
           brandName,
           seriesName,
           modelName,
@@ -543,7 +561,10 @@ export function ImportExport() {
     if (!uploadedFile) return
 
     if (!dataLoaded) {
-      alert("Завантаження довідкових даних... Спробуйте ще раз.")
+      setImportResult({
+        success: false,
+        errorMessages: ["Завантаження довідкових даних... Спробуйте ще раз."],
+      })
       return
     }
 
@@ -596,65 +617,69 @@ export function ImportExport() {
       setRows(processedRows)
     } catch (error) {
       console.error("File processing error:", error)
-      alert("Помилка обробки файлу: " + (error as Error).message)
+      setImportResult({
+        success: false,
+        errorMessages: [(error as Error).message],
+      })
     } finally {
       setLoading(false)
     }
   }
 
   const handleImport = async (createMissing = false) => {
-    const validRows = rows.filter((row) => (createMissing ? row.status !== "error" : row.status === "valid"))
+    const validRows = rows.filter((row) => {
+      if (row.status === "error") return false
+      if (row.status === "valid") return true
+      if (row.status === "warning" && createMissing) return true
+      return false
+    })
 
     if (validRows.length === 0) {
-      alert("Немає валідних записів для імпорту")
+      setImportResult({
+        success: false,
+        errorMessages: ["Не знайдено валідних записів. Будь ласка, виправте помилки перед імпортом."],
+      })
       return
     }
 
-    const warningRows = validRows.filter((row) => row.status === "warning")
-    if (warningRows.length > 0 && createMissing) {
-      const confirmed = confirm(
-        `Знайдено ${warningRows.length} записів з попередженнями.\n` +
-          `Відсутні бренди, серії або моделі будуть створені автоматично.\n\n` +
-          `Продовжити?`,
-      )
-      if (!confirmed) return
-    } else if (!confirm(`Імпортувати ${validRows.length} записів?`)) {
-      return
-    }
+    await performImport(validRows, createMissing)
+  }
 
+  const performImport = async (validRows: ImportRow[], createMissing: boolean) => {
     setImporting(true)
+    setImportResult(null)
 
     try {
+      const dataToSend = validRows.map((r) => r.data)
+
       const response = await fetch(`/api/admin/import-export/${importType}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          data: validRows.map((r) => r.data),
+          data: dataToSend,
           createMissing,
         }),
       })
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || "Помилка імпорту")
-      }
-
       const result = await response.json()
 
-      let message = `Імпорт завершено успішно!\n`
-      message += `Створено нових: ${result.created}\n`
-      message += `Оновлено існуючих: ${result.updated}\n`
-      if (result.errors > 0) message += `Помилок: ${result.errors}`
+      if (!response.ok) {
+        throw new Error(result.error || "Помилка імпорту")
+      }
 
-      alert(message)
-
-      await loadReferenceData()
-
-      setRows([])
-      setFile(null)
+      setImportResult(result)
+      
+      if (result.created > 0 || result.updated > 0) {
+        await loadReferenceData()
+        setRows([])
+        setFile(null)
+      }
     } catch (error) {
       console.error("Import error:", error)
-      alert("Помилка імпорту: " + (error as Error).message)
+      setImportResult({
+        success: false,
+        errorMessages: [(error as Error).message],
+      })
     } finally {
       setImporting(false)
     }
@@ -875,44 +900,235 @@ export function ImportExport() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-24">Статус</TableHead>
-                    <TableHead>Дані</TableHead>
-                    <TableHead>Повідомлення</TableHead>
+                    <TableHead className="w-12">Статус</TableHead>
+                    <TableHead>Бренд</TableHead>
+                    <TableHead>Серія</TableHead>
+                    <TableHead>Модель</TableHead>
+                    <TableHead>Послуга</TableHead>
+                    <TableHead className="w-20">Ціна</TableHead>
+                    <TableHead className="w-24">Гарантія</TableHead>
+                    <TableHead className="w-20">Період</TableHead>
+                    <TableHead className="w-20">Час (хв)</TableHead>
+                    <TableHead className="w-28">Тип деталі</TableHead>
+                    <TableHead className="w-32">Дії</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {rows.map((row) => (
-                    <TableRow key={row.id}>
-                      <TableCell>
-                        {row.status === "valid" && <CheckCircle className="h-4 w-4 text-green-600" />}
-                        {row.status === "warning" && <AlertTriangle className="h-4 w-4 text-yellow-600" />}
-                        {row.status === "error" && <X className="h-4 w-4 text-red-600" />}
-                      </TableCell>
-                      <TableCell className="font-mono text-sm">
-                        {importType === "services" && (
-                          <div>
-                            <div>{row.data.category}</div>
-                            <div className="text-muted-foreground text-xs">{row.data.description}</div>
-                          </div>
-                        )}
-                        {importType === "brands" && row.data.name}
-                        {importType === "series" && `${row.data.name} (${row.data.brandName})`}
-                        {importType === "models" && `${row.data.name} (${row.data.brandName} > ${row.data.seriesName})`}
-                      </TableCell>
-                      <TableCell>
-                        {row.errors.map((err, i) => (
-                          <div key={i} className="text-red-600 text-sm">
-                            {err}
-                          </div>
-                        ))}
-                        {row.warnings.map((warn, i) => (
-                          <div key={i} className="text-yellow-600 text-sm">
-                            {warn}
-                          </div>
-                        ))}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {rows.map((row) => {
+                    if (importType !== "services") {
+                      return (
+                        <TableRow key={row.id}>
+                          <TableCell>
+                            {row.status === "valid" && <CheckCircle className="h-4 w-4 text-green-600" />}
+                            {row.status === "warning" && <AlertTriangle className="h-4 w-4 text-yellow-600" />}
+                            {row.status === "error" && <X className="h-4 w-4 text-red-600" />}
+                          </TableCell>
+                          <TableCell className="font-mono text-sm">
+                            {importType === "brands" && row.data.name}
+                            {importType === "series" && `${row.data.name} (${row.data.brandName})`}
+                            {importType === "models" && `${row.data.name} (${row.data.brandName} > ${row.data.seriesName})`}
+                          </TableCell>
+                          <TableCell>
+                            {row.errors.map((err, i) => (
+                              <div key={i} className="text-red-600 text-sm">
+                                {err}
+                              </div>
+                            ))}
+                            {row.warnings.map((warn, i) => (
+                              <div key={i} className="text-yellow-600 text-sm">
+                                {warn}
+                              </div>
+                            ))}
+                          </TableCell>
+                        </TableRow>
+                      )
+                    }
+
+                    // Services view with editable fields
+                    return (
+                      <TableRow key={row.id}>
+                        <TableCell>
+                          {row.status === "valid" && <CheckCircle className="h-4 w-4 text-green-600" />}
+                          {row.status === "warning" && <AlertTriangle className="h-4 w-4 text-yellow-600" />}
+                          {row.status === "error" && <X className="h-4 w-4 text-red-600" />}
+                        </TableCell>
+                        <TableCell>
+                          {editingRowId === row.id ? (
+                            <Select value={row.data.brandId || ""} onValueChange={(val) => {
+                              const updated = rows.map(r => {
+                                if (r.id !== row.id) return r
+                                const brand = referenceData.brands.find(b => b.id === val)
+                                return {
+                                  ...r,
+                                  data: { ...r.data, brandId: val, brandName: brand?.name || "", seriesId: "", modelId: "" }
+                                }
+                              })
+                              setRows(updated)
+                            }}>
+                              <SelectTrigger className="w-full text-xs">
+                                <SelectValue placeholder="Бренд" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {referenceData.brands.map(b => (
+                                  <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <span className="text-sm">{row.data.brandName || "❌"}</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {editingRowId === row.id ? (
+                            <Select value={row.data.seriesId || ""} onValueChange={(val) => {
+                              const updated = rows.map(r => {
+                                if (r.id !== row.id) return r
+                                const series = referenceData.series.find(s => s.id === val)
+                                return {
+                                  ...r,
+                                  data: { ...r.data, seriesId: val, seriesName: series?.name || "", modelId: "" }
+                                }
+                              })
+                              setRows(updated)
+                            }} disabled={!row.data.brandId}>
+                              <SelectTrigger className="w-full text-xs">
+                                <SelectValue placeholder="Серія" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {referenceData.series.filter(s => !row.data.brandId || s.brand_id === row.data.brandId).map(s => (
+                                  <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <span className="text-sm">{row.data.seriesName || "❌"}</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {editingRowId === row.id ? (
+                            <Select value={row.data.modelId || ""} onValueChange={(val) => {
+                              const updated = rows.map(r => {
+                                if (r.id !== row.id) return r
+                                const model = referenceData.models.find(m => m.id === val)
+                                return {
+                                  ...r,
+                                  data: { ...r.data, modelId: val, modelName: model?.name || "" }
+                                }
+                              })
+                              setRows(updated)
+                            }} disabled={!row.data.seriesId}>
+                              <SelectTrigger className="w-full text-xs">
+                                <SelectValue placeholder="Модель" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {referenceData.models.filter(m => !row.data.seriesId || m.series_id === row.data.seriesId).map(m => (
+                                  <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <span className="text-sm">{row.data.modelName || "❌"}</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {editingRowId === row.id ? (
+                            <Select value={row.data.serviceId || ""} onValueChange={(val) => {
+                              const updated = rows.map(r => {
+                                if (r.id !== row.id) return r
+                                const svc = referenceData.services.find(s => s.id === val)
+                                return {
+                                  ...r,
+                                  data: { ...r.data, serviceId: val, serviceSlug: svc?.slug || "" }
+                                }
+                              })
+                              setRows(updated)
+                            }}>
+                              <SelectTrigger className="w-full text-xs">
+                                <SelectValue placeholder="Послуга" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {referenceData.services.map(s => (
+                                  <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <span className="text-sm" title={row.data.serviceSlug}>{row.data.serviceSlug || "❌"}</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {editingRowId === row.id ? (
+                            <Input type="number" value={row.data.price} onChange={(e) => {
+                              const updated = rows.map(r => ({
+                                ...r,
+                                data: r.id === row.id ? { ...r.data, price: e.target.value } : r.data
+                              }))
+                              setRows(updated)
+                            }} className="w-full text-xs" min="0" step="0.01" />
+                          ) : (
+                            <span className="text-sm font-medium">{row.data.price}</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {editingRowId === row.id ? (
+                            <Input value={row.data.warranty} onChange={(e) => {
+                              const updated = rows.map(r => ({
+                                ...r,
+                                data: r.id === row.id ? { ...r.data, warranty: e.target.value } : r.data
+                              }))
+                              setRows(updated)
+                            }} className="w-full text-xs" />
+                          ) : (
+                            <span className="text-sm">{row.data.warranty}</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {editingRowId === row.id ? (
+                            <Input value={row.data.warrantyPeriod} onChange={(e) => {
+                              const updated = rows.map(r => ({
+                                ...r,
+                                data: r.id === row.id ? { ...r.data, warrantyPeriod: e.target.value } : r.data
+                              }))
+                              setRows(updated)
+                            }} className="w-full text-xs" />
+                          ) : (
+                            <span className="text-sm">{row.data.warrantyPeriod}</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {editingRowId === row.id ? (
+                            <Input type="number" value={row.data.duration} onChange={(e) => {
+                              const updated = rows.map(r => ({
+                                ...r,
+                                data: r.id === row.id ? { ...r.data, duration: e.target.value } : r.data
+                              }))
+                              setRows(updated)
+                            }} className="w-full text-xs" min="0" />
+                          ) : (
+                            <span className="text-sm">{row.data.duration}</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {editingRowId === row.id ? (
+                            <Input value={row.data.partType} onChange={(e) => {
+                              const updated = rows.map(r => ({
+                                ...r,
+                                data: r.id === row.id ? { ...r.data, partType: e.target.value } : r.data
+                              }))
+                              setRows(updated)
+                            }} className="w-full text-xs" placeholder="напр. оригінал, OLED" />
+                          ) : (
+                            <span className="text-sm">{row.data.partType || "—"}</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Button size="sm" variant={editingRowId === row.id ? "default" : "outline"} onClick={() => setEditingRowId(editingRowId === row.id ? null : row.id)} className="text-xs">
+                            {editingRowId === row.id ? "✓" : "✎"}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
                 </TableBody>
               </Table>
             </ScrollArea>
@@ -927,6 +1143,41 @@ export function ImportExport() {
                 </Button>
               )}
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Import Result Display */}
+      {importResult && (
+        <Card className="mt-6 border-2">
+          <CardHeader>
+            <CardTitle className={importResult.success === false ? "text-red-600" : "text-green-600"}>
+              {importResult.success === false ? "❌ Помилка" : "✅ Результат імпорту"}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {importResult.created !== undefined && (
+              <div>✓ Створено нових: <span className="font-bold">{importResult.created}</span></div>
+            )}
+            {importResult.updated !== undefined && (
+              <div>↻ Оновлено існуючих: <span className="font-bold">{importResult.updated}</span></div>
+            )}
+            {importResult.errors !== undefined && importResult.errors > 0 && (
+              <div>✗ Помилок: <span className="font-bold text-red-600">{importResult.errors}</span></div>
+            )}
+            {importResult.errorMessages && importResult.errorMessages.length > 0 && (
+              <div className="mt-4 bg-red-50 border border-red-200 rounded p-3">
+                <div className="font-semibold text-red-800 mb-2">Деталі помилок:</div>
+                <ul className="space-y-1">
+                  {importResult.errorMessages.map((msg, i) => (
+                    <li key={i} className="text-sm text-red-700">• {msg}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            <Button onClick={() => setImportResult(null)} className="mt-4 w-full">
+              Закрити
+            </Button>
           </CardContent>
         </Card>
       )}
