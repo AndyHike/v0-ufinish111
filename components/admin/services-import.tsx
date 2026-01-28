@@ -216,14 +216,14 @@ export function ServicesImport() {
       .trim()
   }
 
-  const parsePrice = (priceStr: string): number => {
-    if (!priceStr || priceStr.toString().trim() === "") return 0
+  const parsePrice = (priceStr: string): string | null => {
+    if (!priceStr || priceStr.toString().trim() === "") return null
     const cleanPrice = priceStr
       .toString()
       .replace(/[^\d,.-]/g, "")
       .replace(",", ".")
     const price = Number.parseFloat(cleanPrice)
-    return isNaN(price) ? 0 : price
+    return isNaN(price) || price === 0 ? null : cleanPrice
   }
 
   const findServiceBySlug = (slug: string): Service | undefined => {
@@ -325,7 +325,9 @@ export function ServicesImport() {
       const id = `row-${index}`
       const description = row["Опис"] || row["Description"] || ""
       const category = row["Категорія"] || row["Category"] || ""
-      const price = (row["Стандартна ціна"] || row["Price"] || "").toString()
+      // Обрізуємо пробіли та залишаємо пусто якщо немає значення
+      const priceValue = (row["Стандартна ціна"] || row["Price"] || "").toString().trim()
+      const price = priceValue === "" || priceValue === "0" ? "" : priceValue
       const warranty = row["Гарантія"] || row["Warranty"] || ""
       const warrantyPeriod = row["Гарантійний період"] || row["Warranty Period"] || ""
       const duration = row["Тривалість (хвилини)"] || row["Duration"] || ""
