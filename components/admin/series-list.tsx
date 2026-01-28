@@ -193,6 +193,25 @@ export function SeriesList({ brandId }: SeriesListProps) {
     setIsEditSeriesSubmitting(true)
 
     try {
+      // If position changed, reorder the items
+      let updatedSeries = series
+      if (editSeries.position && editSeries.position !== series.find((s) => s.id === editSeries.id)?.position) {
+        const currentIndex = series.findIndex((s) => s.id === editSeries.id)
+        const newIndex = editSeries.position - 1
+
+        if (currentIndex !== -1 && newIndex !== -1 && newIndex !== currentIndex) {
+          updatedSeries = [...series]
+          const [item] = updatedSeries.splice(currentIndex, 1)
+          updatedSeries.splice(newIndex, 0, item)
+
+          // Update all positions
+          updatedSeries = updatedSeries.map((s, idx) => ({
+            ...s,
+            position: idx + 1,
+          }))
+        }
+      }
+
       const response = await fetch(`/api/admin/series/${editSeries.id}`, {
         method: "PUT",
         headers: {
@@ -210,7 +229,13 @@ export function SeriesList({ brandId }: SeriesListProps) {
         throw new Error("Failed to update series")
       }
 
-      await fetchSeries()
+      // If position changed, update all affected series
+      if (editSeries.position && editSeries.position !== series.find((s) => s.id === editSeries.id)?.position) {
+        await updateSeriesPositions(updatedSeries)
+        setSeries(updatedSeries)
+      } else {
+        await fetchSeries()
+      }
 
       // Close the dialog first, then show toast
       setIsEditDialogOpen(false)
@@ -672,6 +697,24 @@ export function SeriesList({ brandId }: SeriesListProps) {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-position">{t("position") || "Position"}</Label>
+                <Input
+                  id="edit-position"
+                  type="number"
+                  min="1"
+                  max={series.length}
+                  value={editSeries.position || ""}
+                  onChange={(e) => {
+                    const newPosition = e.target.value ? parseInt(e.target.value, 10) : null
+                    if (newPosition === null || (newPosition >= 1 && newPosition <= series.length)) {
+                      setEditSeries({ ...editSeries, position: newPosition })
+                    }
+                  }}
+                  placeholder={t("enterPosition") || "Enter position"}
+                />
+                <p className="text-xs text-muted-foreground">{t("positionInfo") || `1-${series.length}`}</p>
               </div>
             </div>
           )}

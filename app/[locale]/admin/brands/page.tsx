@@ -213,6 +213,25 @@ export default function BrandsPage() {
         logoUrl = await uploadBrandLogo(selectedFile)
       }
 
+      // If position changed, reorder the items
+      let updatedBrands = brands
+      if (editBrand.position && editBrand.position !== brands.find((b) => b.id === editBrand.id)?.position) {
+        const currentIndex = brands.findIndex((b) => b.id === editBrand.id)
+        const newIndex = editBrand.position - 1
+
+        if (currentIndex !== -1 && newIndex !== -1 && newIndex !== currentIndex) {
+          updatedBrands = [...brands]
+          const [item] = updatedBrands.splice(currentIndex, 1)
+          updatedBrands.splice(newIndex, 0, item)
+
+          // Update all positions
+          updatedBrands = updatedBrands.map((b, idx) => ({
+            ...b,
+            position: idx + 1,
+          }))
+        }
+      }
+
       const response = await fetch(`/api/admin/brands/${editBrand.id}`, {
         method: "PUT",
         headers: {
@@ -221,7 +240,7 @@ export default function BrandsPage() {
         body: JSON.stringify({
           name: editBrand.name,
           logo_url: logoUrl,
-          position: editBrand.position || 999, // Fallback position if none exists
+          position: editBrand.position || 999,
         }),
       })
 
@@ -229,7 +248,14 @@ export default function BrandsPage() {
         throw new Error("Failed to update brand")
       }
 
-      await fetchBrands() // Refresh the brands list
+      // If position changed, update all affected brands
+      if (editBrand.position && editBrand.position !== brands.find((b) => b.id === editBrand.id)?.position) {
+        await updateBrandPositions(updatedBrands)
+        setBrands(updatedBrands)
+      } else {
+        await fetchBrands()
+      }
+
       setIsEditDialogOpen(false)
       setSelectedFile(null)
       setImagePreview(null)
@@ -766,6 +792,27 @@ export default function BrandsPage() {
                   onChange={(e) => setEditBrand({ ...editBrand, logo_url: e.target.value })}
                   placeholder={t("logoUrlPlaceholder")}
                 />
+              </div>
+
+              <div className="grid gap-2">
+                <label htmlFor="edit-position" className="text-sm font-medium">
+                  {t("position") || "Position"}
+                </label>
+                <Input
+                  id="edit-position"
+                  type="number"
+                  min="1"
+                  max={brands.length}
+                  value={editBrand.position || ""}
+                  onChange={(e) => {
+                    const newPosition = e.target.value ? parseInt(e.target.value, 10) : null
+                    if (newPosition === null || (newPosition >= 1 && newPosition <= brands.length)) {
+                      setEditBrand({ ...editBrand, position: newPosition })
+                    }
+                  }}
+                  placeholder={t("enterPosition") || "Enter position"}
+                />
+                <p className="text-xs text-muted-foreground">{t("positionInfo") || `1-${brands.length}`}</p>
               </div>
 
               <div className="grid gap-2">

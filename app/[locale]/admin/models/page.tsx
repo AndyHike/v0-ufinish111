@@ -204,6 +204,25 @@ export default function ModelsPage() {
     if (!editModel) return
 
     await executeEditModel(async () => {
+      // If position changed, reorder the items
+      let updatedModels = models
+      if (editModel.position && editModel.position !== models.find((m) => m.id === editModel.id)?.position) {
+        const currentIndex = models.findIndex((m) => m.id === editModel.id)
+        const newIndex = editModel.position - 1
+
+        if (currentIndex !== -1 && newIndex !== -1 && newIndex !== currentIndex) {
+          updatedModels = [...models]
+          const [item] = updatedModels.splice(currentIndex, 1)
+          updatedModels.splice(newIndex, 0, item)
+
+          // Update all positions
+          updatedModels = updatedModels.map((m, idx) => ({
+            ...m,
+            position: idx + 1,
+          }))
+        }
+      }
+
       const response = await fetch(`/api/admin/models/${editModel.id}`, {
         method: "PUT",
         headers: {
@@ -214,6 +233,7 @@ export default function ModelsPage() {
           brandId: editModel.brand_id,
           seriesId: editModel.series_id,
           imageUrl: editModel.image_url,
+          position: editModel.position || 1,
           userId: session?.user?.id,
         }),
       })
@@ -222,9 +242,40 @@ export default function ModelsPage() {
         throw new Error("Failed to update model")
       }
 
-      await fetchModels()
+      // If position changed, update all affected models
+      if (editModel.position && editModel.position !== models.find((m) => m.id === editModel.id)?.position) {
+        await updateModelPositions(updatedModels)
+        setModels(updatedModels)
+      } else {
+        await fetchModels()
+      }
+
       return response.json()
     })
+  }
+
+  async function updateModelPositions(updatedModels: Model[]) {
+    try {
+      const response = await fetch("/api/admin/models/reorder", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          models: updatedModels.map((model, index) => ({
+            id: model.id,
+            position: index + 1, // Ensure positions are sequential
+          })),
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to update model positions")
+      }
+    } catch (error) {
+      console.error("Error updating model positions:", error)
+      throw error
+    }
   }
 
   async function handleDeleteModel() {
@@ -550,6 +601,25 @@ export default function ModelsPage() {
                   onImageUploaded={(url) => setEditModel({ ...editModel, image_url: url })}
                   currentImageUrl={editModel.image_url}
                 />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-position">{t("position") || "Position"}</Label>
+                <Input
+                  id="edit-position"
+                  type="number"
+                  min="1"
+                  max={models.length}
+                  value={editModel.position || ""}
+                  onChange={(e) => {
+                    const newPosition = e.target.value ? parseInt(e.target.value, 10) : null
+                    if (newPosition === null || (newPosition >= 1 && newPosition <= models.length)) {
+                      setEditModel({ ...editModel, position: newPosition || 1 })
+                    }
+                  }}
+                  placeholder={t("enterPosition") || "Enter position"}
+                  disabled={isEditLoading}
+                />
+                <p className="text-xs text-muted-foreground">{t("positionInfo") || `1-${models.length}`}</p>
               </div>
             </div>
           )}
