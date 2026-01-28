@@ -131,14 +131,19 @@ export async function POST(request: NextRequest) {
           continue
         }
 
-        // Parse price
-        const price =
-          Number.parseFloat(
+        // Parse price - null if empty or invalid
+        let price: number | null = null
+        if (row.price && row.price.toString().trim() !== "") {
+          const parsedPrice = Number.parseFloat(
             row.price
-              ?.toString()
+              .toString()
               .replace(/[^\d,.-]/g, "")
               .replace(",", "."),
-          ) || 0
+          )
+          if (!isNaN(parsedPrice) && parsedPrice > 0) {
+            price = parsedPrice
+          }
+        }
 
         // Parse warranty period
         let warrantyMonths = 0
