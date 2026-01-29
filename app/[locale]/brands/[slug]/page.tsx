@@ -8,10 +8,41 @@ import { formatImageUrl } from "@/utils/image-url"
 import { ContactCTABanner } from "@/components/contact-cta-banner"
 import { Breadcrumb } from "@/components/breadcrumb"
 
+// ISR Configuration
+export const revalidate = 3600 // Regenerate every 1 hour
+export const dynamicParams = true // Allow new slugs on-the-fly
+
 type Props = {
   params: {
     locale: string
     slug: string
+  }
+}
+
+// Pre-render popular brands at build time
+export async function generateStaticParams() {
+  const supabase = createServerClient()
+  
+  try {
+    const { data: brands } = await supabase
+      .from("brands")
+      .select("slug")
+      .order("position", { ascending: true })
+      .limit(50) // Pre-render top 50 brands
+    
+    const locales = ["cs", "uk", "en"]
+    
+    return (
+      brands?.flatMap((brand) =>
+        locales.map((locale) => ({
+          locale,
+          slug: brand.slug,
+        }))
+      ) || []
+    )
+  } catch (error) {
+    console.error("[v0] Error in generateStaticParams (brands):", error)
+    return []
   }
 }
 

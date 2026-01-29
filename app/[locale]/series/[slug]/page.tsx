@@ -8,10 +8,41 @@ import { ArrowLeft, Smartphone } from "lucide-react"
 import { ContactCTABanner } from "@/components/contact-cta-banner"
 import { Breadcrumb } from "@/components/breadcrumb"
 
+// ISR Configuration
+export const revalidate = 3600 // Regenerate every 1 hour
+export const dynamicParams = true // Allow new slugs on-the-fly
+
 type Props = {
   params: {
     locale: string
     slug: string
+  }
+}
+
+// Pre-render popular series at build time
+export async function generateStaticParams() {
+  const supabase = createServerClient()
+  
+  try {
+    const { data: seriesList } = await supabase
+      .from("series")
+      .select("slug")
+      .order("position", { ascending: true })
+      .limit(50) // Pre-render top 50 series
+    
+    const locales = ["cs", "uk", "en"]
+    
+    return (
+      seriesList?.flatMap((series) =>
+        locales.map((locale) => ({
+          locale,
+          slug: series.slug,
+        }))
+      ) || []
+    )
+  } catch (error) {
+    console.error("[v0] Error in generateStaticParams (series):", error)
+    return []
   }
 }
 

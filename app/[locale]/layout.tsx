@@ -13,6 +13,7 @@ import { AnalyticsTracker } from "@/components/analytics/analytics-tracker"
 import { Suspense } from "react"
 import { SessionProvider } from "@/components/providers/session-provider"
 import { ThemeProvider } from "@/components/theme-provider"
+import { GlobalDataProvider } from "@/providers/global-data-provider"
 import { Toaster } from "@/components/ui/toaster"
 import { DynamicFavicon } from "@/components/dynamic-favicon"
 import { Analytics } from "@vercel/analytics/react"
@@ -163,23 +164,25 @@ export default async function LocaleLayout({
           <NextIntlClientProvider locale={locale} messages={messages}>
             <SessionProvider>
               <CookieConsentProvider>
-                <DynamicFavicon />
-                <Suspense fallback={null}>
-                  <AnalyticsTracker />
-                </Suspense>
-                <div className="flex min-h-screen flex-col">
-                  <Suspense fallback={<HeaderSkeleton />}>
-                    <Header />
-                  </Suspense>
-                  <main className="flex-1">{children}</main>
-                  <Footer />
-                  <CookieBanner />
+                <GlobalDataProvider>
+                  <DynamicFavicon />
                   <Suspense fallback={null}>
-                    <AnalyticsProvider />
+                    <AnalyticsTracker />
                   </Suspense>
-                </div>
-                <Toaster />
-                <Analytics />
+                  <div className="flex min-h-screen flex-col">
+                    <Suspense fallback={<HeaderSkeleton />}>
+                      <Header />
+                    </Suspense>
+                    <main className="flex-1">{children}</main>
+                    <Footer />
+                    <CookieBanner />
+                    <Suspense fallback={null}>
+                      <AnalyticsProvider />
+                    </Suspense>
+                  </div>
+                  <Toaster />
+                  <Analytics />
+                </GlobalDataProvider>
               </CookieConsentProvider>
             </SessionProvider>
           </NextIntlClientProvider>
