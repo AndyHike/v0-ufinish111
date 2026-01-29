@@ -37,21 +37,37 @@ export default function SeriesPageClient({ initialData, locale, slug }: Props) {
 
   useEffect(() => {
     setMounted(true)
+    console.log("[v0] SeriesPageClient mounted - initialData:", initialData)
+    console.log("[v0] SeriesPageClient - SWR data:", data)
     // Зберігаємо в контекст для наступних навігацій
-    if (data) {
+    if (data?.series) {
+      console.log("[v0] SeriesPageClient - Caching series:", data.series.slug)
       setCachedSeries(slug, data)
     }
   }, [data, slug, setCachedSeries])
 
-  if (!mounted || !data?.series) {
+  if (!mounted) {
+    return (
+      <div className="container px-4 py-12 md:px-6 md:py-24">
+        <div className="mx-auto max-w-6xl space-y-4">
+          <div className="h-6 w-48 rounded bg-slate-200 animate-pulse" />
+          <div className="h-32 rounded bg-slate-200 animate-pulse" />
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
+            {[...Array(10)].map((_, i) => (
+              <div key={i} className="h-40 rounded bg-slate-200 animate-pulse" />
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!data?.series) {
+    console.warn("[v0] SeriesPageClient - No data available:", { data, initialData })
     return null
   }
 
-  const { series, models } = data || { series: null, models: [] }
-
-  if (!series) {
-    return null
-  }
+  const { series, models } = data
 
   return (
     <div className="container px-4 py-12 md:px-6 md:py-24">

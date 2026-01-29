@@ -37,22 +37,38 @@ export default function BrandPageClient({ initialData, locale, slug }: Props) {
 
   useEffect(() => {
     setMounted(true)
+    console.log("[v0] BrandPageClient mounted - initialData:", initialData)
+    console.log("[v0] BrandPageClient - SWR data:", data)
     // Зберігаємо в контекст для наступних навігацій
-    if (data) {
+    if (data?.brand) {
+      console.log("[v0] BrandPageClient - Caching brand:", data.brand.slug)
       setCachedBrand(slug, data)
     }
   }, [data, slug, setCachedBrand])
 
-  if (!mounted || !data?.brand) {
+  if (!mounted) {
+    return (
+      <div className="container px-4 py-12 md:px-6 md:py-24">
+        <div className="mx-auto max-w-6xl space-y-4">
+          <div className="h-6 w-48 rounded bg-slate-200 animate-pulse" />
+          <div className="h-32 rounded bg-slate-200 animate-pulse" />
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
+            {[...Array(10)].map((_, i) => (
+              <div key={i} className="h-40 rounded bg-slate-200 animate-pulse" />
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!data?.brand) {
+    console.warn("[v0] BrandPageClient - No data available:", { data, initialData })
     return null
   }
 
-  const { brand, modelsWithoutSeries } = data || { brand: null, modelsWithoutSeries: [] }
-  
-  if (!brand) {
-    return null
-  }
-  
+  const { brand, modelsWithoutSeries } = data
+
   const hasModelsWithoutSeries = modelsWithoutSeries && modelsWithoutSeries.length > 0
 
   return (
