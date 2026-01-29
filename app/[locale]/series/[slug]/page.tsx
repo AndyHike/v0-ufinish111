@@ -8,6 +8,7 @@ import { createClient } from "@/utils/supabase/client"
 import { ArrowLeft, Smartphone } from "lucide-react"
 import { ContactCTABanner } from "@/components/contact-cta-banner"
 import { Breadcrumb } from "@/components/breadcrumb"
+import SeriesPageClient from "./series-page-client"
 
 // ISR Configuration
 export const revalidate = 3600 // Regenerate every 1 hour
@@ -135,87 +136,10 @@ export default async function SeriesPage({ params }: Props) {
     .eq("series_id", series.id)
     .order("position", { ascending: true })
 
-  return (
-    <div className="container px-4 py-12 md:px-6 md:py-24">
-      <div className="mx-auto max-w-6xl">
-        {/* Breadcrumb */}
-        <div className="mb-8">
-          <Breadcrumb
-            items={[
-              { label: series.brands?.name || "Brand", href: `/${locale}/brands/${series.brands?.slug || series.brand_id}` },
-              { label: series.name, href: `/${locale}/series/${series.slug}` },
-            ]}
-          />
-        </div>
+  const initialData = {
+    series,
+    models: models || [],
+  }
 
-        {/* Заголовок серії */}
-        <div className="mb-12 rounded-xl bg-white p-8 shadow-sm">
-          <div className="flex flex-col items-center gap-6 md:flex-row">
-            {series.brands?.logo_url && (
-              <div className="relative h-24 w-24 overflow-hidden rounded-lg bg-slate-50 p-3 flex-shrink-0">
-                <Image
-                  src={series.brands.logo_url}
-                  alt={series.brands.name}
-                  width={96}
-                  height={96}
-                  className="h-full w-full object-contain"
-                  quality={80}
-                  priority={true}
-                />
-              </div>
-            )}
-            <div>
-              <h1 className="text-center text-3xl font-bold tracking-tight md:text-left md:text-4xl">{series.name}</h1>
-              <p className="mt-3 max-w-[900px] text-center text-muted-foreground md:text-left">
-                {t("seriesPageDescription", { series: series.name, brand: series.brands?.name })}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Розділ моделей */}
-        <div>
-          <h2 className="mb-6 border-b pb-2 text-2xl font-bold">{t("availableModels") || "Доступні моделі"}</h2>
-
-          {models && models.length > 0 ? (
-            <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-              {models.map((model) => (
-                <Link
-                  key={model.id}
-                  href={`/${locale}/models/${model.slug || model.id}`}
-                  className="group flex flex-col items-center rounded-lg bg-white p-4 shadow-sm hover:shadow"
-                >
-                  <div className="mb-4 relative h-24 w-24 flex-shrink-0 rounded-lg bg-slate-50 p-2 sm:h-28 sm:w-28 overflow-hidden flex items-center justify-center">
-                    {model.image_url ? (
-                      <Image
-                        src={model.image_url}
-                        alt={model.name}
-                        width={112}
-                        height={112}
-                        className="h-full w-full object-contain"
-                        quality={75}
-                        priority={false}
-                        sizes="(max-width: 640px) 96px, 112px"
-                      />
-                    ) : (
-                      <Smartphone className="h-8 w-8 text-slate-400" />
-                    )}
-                  </div>
-                  <h3 className="text-center text-base font-medium group-hover:text-primary sm:text-lg">
-                    {model.name}
-                  </h3>
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-8 text-center">
-              <p className="text-muted-foreground">{t("noModelsAvailable") || "Моделі недоступні"}</p>
-            </div>
-          )}
-        </div>
-
-        <ContactCTABanner locale={locale} />
-      </div>
-    </div>
-  )
+  return <SeriesPageClient initialData={initialData} locale={locale} slug={slug} />
 }

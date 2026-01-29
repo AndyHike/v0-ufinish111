@@ -4,11 +4,13 @@ import Link from "next/link"
 import { useTranslations } from "next-intl"
 import { Clock, Shield, ArrowRight } from "lucide-react"
 import { formatImageUrl } from "@/utils/image-url"
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import { ServicePriceDisplay } from "@/components/service-price-display"
 import { ContactCTABanner } from "@/components/contact-cta-banner"
 import { PartTypeBadges } from "@/components/part-type-badges"
 import { Breadcrumb } from "@/components/breadcrumb"
+import { useGlobalData } from "@/hooks/use-global-data"
+import useSWR from "swr"
 
 interface ModelData {
   id: string
@@ -53,15 +55,38 @@ interface Props {
   locale: string
 }
 
+const fetcher = (url: string) => fetch(url).then((res) => res.json())
+
 export default function ModelPageClient({ modelData, locale }: Props) {
   const t = useTranslations("Models")
   const commonT = useTranslations("Common")
   const viewContentSent = useRef(false)
+  const { setCachedModel } = useGlobalData()
+  const [mounted, setMounted] = useState(false)
+
+  // SWR для кешування та фонового оновлення
+  const { data: currentModelData = modelData, isLoading } = useSWR(
+    `/api/models/${currentModelData.slug}?locale=${locale}`,
+    fetcher,
+    {
+      fallbackData: modelData,
+      revalidateOnFocus: false,
+      dedupingInterval: 60000, // 1 minute
+    }
+  )
+
+  useEffect(() => {
+    setMounted(true)
+    // Зберігаємо в контекст для наступних навігацій
+    if (currentModelData && currentModelData.slug) {
+      setCachedModel(currentModelData.slug, currentModelData)
+    }
+  }, [currentModelData, setCachedModel])
 
   useEffect(() => {
     if (process.env.NODE_ENV === "development") {
-      console.log("[v0] Model services loaded:", modelData.services.length)
-      modelData.services.forEach((service) => {
+      console.log("[v0] Model services loaded:", currentModelData.services.length)
+      currentModelData.services.forEach((service) => {
         if (service.has_discount) {
           console.log(`[v0] Service "${service.name}" has discount:`, {
             originalPrice: service.price,
@@ -72,7 +97,7 @@ export default function ModelPageClient({ modelData, locale }: Props) {
         }
       })
     }
-  }, [modelData])
+  }, [currentModelData])
 
   useEffect(() => {
     if (viewContentSent.current) return
@@ -80,19 +105,19 @@ export default function ModelPageClient({ modelData, locale }: Props) {
     const sendFbqEvent = () => {
       if (typeof window === "undefined" || !window.fbq) return
 
-      const servicesWithPrice = modelData.services.filter((s) => s.price !== null && s.price !== undefined)
+      const servicesWithPrice = currentModelData.services.filter((s) => s.price !== null && s.price !== undefined)
       const avgPrice =
         servicesWithPrice.length > 0
           ? servicesWithPrice.reduce((sum, s) => sum + (s.price || 0), 0) / servicesWithPrice.length
           : 0
 
-      const brandName = modelData.brands?.name || "Unknown"
-      const modelName = modelData.name
+      const brandName = currentModelData.brands?.name || "Unknown"
+      const modelName = currentModelData.name
       const contentName = `${brandName} ${modelName}`
 
       window.fbq("track", "ViewContent", {
         content_type: "product",
-        content_id: `model_${modelData.id}`,
+        content_id: `model_${currentModelData.id}`,
         content_name: contentName,
         content_category: "device_models",
         value: Math.round(avgPrice) || 0,
@@ -104,7 +129,7 @@ export default function ModelPageClient({ modelData, locale }: Props) {
           brand: brandName,
           model: modelName,
           avg_price: Math.round(avgPrice) || 0,
-          services_count: modelData.services.length,
+          services_count: currentModelData.services.length,
         })
       }
 
@@ -138,9 +163,9 @@ export default function ModelPageClient({ modelData, locale }: Props) {
         <div className="mb-6">
           <Breadcrumb
             items={[
-              ...(modelData.brands ? [{ label: modelData.brands.name, href: `/${locale}/brands/${modelData.brands.slug}` }] : []),
-              ...(modelData.series ? [{ label: modelData.series.name, href: `/${locale}/series/${modelData.series.slug}` }] : []),
-              { label: modelData.name, href: `/${locale}/models/${modelData.slug}` },
+              ...(currentModelData.brands ? [{ label: currentModelData.brands.name, href: `/${locale}/brands/${currentModelData.brands.slug}` }] : []),
+              ...(currentModelData.series ? [{ label: currentModelData.series.name, href: `/${locale}/series/${currentModelData.series.slug}` }] : []),
+              { label: currentModelData.name, href: `/${locale}/models/${currentModelData.slug}` },
             ]}
           />
         </div>
@@ -152,8 +177,8 @@ export default function ModelPageClient({ modelData, locale }: Props) {
             <div className="flex-shrink-0">
               <div className="relative h-20 w-20 overflow-hidden rounded-xl bg-white shadow-sm">
                 <img
-                  src={formatImageUrl(modelData.image_url) || "/placeholder.svg?height=80&width=80&query=phone"}
-                  alt={modelData.name}
+                  src={formatImageUrl(currentModelData.image_url) || "/placeholder.svg?height=80&width=80&query=phone"}
+                  alt={currentModelData.name}
                   className="h-full w-full object-contain p-2"
                 />
               </div>
@@ -162,16 +187,16 @@ export default function ModelPageClient({ modelData, locale }: Props) {
             {/* Інформація про модель */}
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
-                {modelData.brands?.logo_url && (
+                {currentModelData.brands?.logo_url && (
                   <img
-                    src={formatImageUrl(modelData.brands.logo_url) || "/placeholder.svg"}
-                    alt={modelData.brands.name}
+                    src={formatImageUrl(currentModelData.brands.logo_url) || "/placeholder.svg"}
+                    alt={currentModelData.brands.name}
                     className="h-4 w-4 object-contain"
                   />
                 )}
-                <span className="text-gray-600 font-medium">{modelData.brands?.name}</span>
+                <span className="text-gray-600 font-medium">{currentModelData.brands?.name}</span>
               </div>
-              <h1 className="text-2xl font-bold text-gray-900 mb-1">{modelData.name}</h1>
+              <h1 className="text-2xl font-bold text-gray-900 mb-1">{currentModelData.name}</h1>
               <p className="text-gray-600">{t("professionalRepair")}</p>
             </div>
           </div>
@@ -181,12 +206,12 @@ export default function ModelPageClient({ modelData, locale }: Props) {
         <div>
           <h2 className="text-2xl font-bold text-gray-900 mb-6">{t("availableServices")}</h2>
 
-          {modelData.services.length > 0 ? (
+          {currentModelData.services.length > 0 ? (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {modelData.services.map((service) => (
+              {currentModelData.services.map((service) => (
                 <Link
                   key={service.id}
-                  href={`/${locale}/services/${service.slug}?model=${modelData.slug}`}
+                  href={`/${locale}/services/${service.slug}?model=${currentModelData.slug}`}
                   className="group block"
                   onClick={() => handleServiceClick(service)}
                 >
@@ -273,7 +298,7 @@ export default function ModelPageClient({ modelData, locale }: Props) {
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">{t("servicesInDevelopment")}</h3>
                 <p className="text-gray-600 mb-6">{t("servicesNotAddedYet")}</p>
                 <Link
-                  href={`/${locale}/contact?model=${encodeURIComponent(modelData.name)}`}
+                  href={`/${locale}/contact?model=${encodeURIComponent(currentModelData.name)}`}
                   className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   {commonT("contactUs")}
@@ -283,7 +308,7 @@ export default function ModelPageClient({ modelData, locale }: Props) {
           )}
         </div>
 
-        {modelData.services.length > 0 && <ContactCTABanner locale={locale} variant="compact" />}
+        {currentModelData.services.length > 0 && <ContactCTABanner locale={locale} variant="compact" />}
       </div>
     </div>
   )
