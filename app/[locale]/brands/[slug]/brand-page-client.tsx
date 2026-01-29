@@ -43,11 +43,16 @@ export default function BrandPageClient({ initialData, locale, slug }: Props) {
     }
   }, [data, slug, setCachedBrand])
 
-  if (!mounted || !data) {
+  if (!mounted || !data?.brand) {
     return null
   }
 
-  const { brand, modelsWithoutSeries } = data
+  const { brand, modelsWithoutSeries } = data || { brand: null, modelsWithoutSeries: [] }
+  
+  if (!brand) {
+    return null
+  }
+  
   const hasModelsWithoutSeries = modelsWithoutSeries && modelsWithoutSeries.length > 0
 
   return (

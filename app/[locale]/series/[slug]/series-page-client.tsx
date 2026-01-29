@@ -43,11 +43,15 @@ export default function SeriesPageClient({ initialData, locale, slug }: Props) {
     }
   }, [data, slug, setCachedSeries])
 
-  if (!mounted || !data) {
+  if (!mounted || !data?.series) {
     return null
   }
 
-  const { series, models } = data
+  const { series, models } = data || { series: null, models: [] }
+
+  if (!series) {
+    return null
+  }
 
   return (
     <div className="container px-4 py-12 md:px-6 md:py-24">
@@ -69,7 +73,7 @@ export default function SeriesPageClient({ initialData, locale, slug }: Props) {
               <div className="relative h-24 w-24 overflow-hidden rounded-lg bg-slate-50 p-3 flex-shrink-0">
                 <Image
                   src={series.brands.logo_url}
-                  alt={series.brands.name}
+                  alt={series.brands?.name || "Brand"}
                   width={96}
                   height={96}
                   className="h-full w-full object-contain"
