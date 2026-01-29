@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { createServerClient } from "@/utils/supabase/server"
+import { createClient } from "@/utils/supabase/client"
 import ModelPageClient from "./model-page-client"
 import { getPriceWithDiscount } from "@/lib/discounts/get-applicable-discounts"
 
@@ -17,7 +18,8 @@ type Props = {
 
 // Pre-render popular models at build time
 export async function generateStaticParams() {
-  const supabase = createServerClient()
+  // Use public client for build-time static generation
+  const supabase = createClient()
   
   try {
     const { data: models } = await supabase

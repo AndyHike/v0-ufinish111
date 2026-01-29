@@ -4,6 +4,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { notFound } from "next/navigation"
 import { createServerClient } from "@/utils/supabase/server"
+import { createClient } from "@/utils/supabase/client"
 import { ArrowLeft, Smartphone } from "lucide-react"
 import { ContactCTABanner } from "@/components/contact-cta-banner"
 import { Breadcrumb } from "@/components/breadcrumb"
@@ -21,7 +22,8 @@ type Props = {
 
 // Pre-render popular series at build time
 export async function generateStaticParams() {
-  const supabase = createServerClient()
+  // Use public client for build-time static generation
+  const supabase = createClient()
   
   try {
     const { data: seriesList } = await supabase
