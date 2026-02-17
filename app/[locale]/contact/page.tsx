@@ -9,21 +9,21 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = params
 
   const titlePatterns = {
-    cs: "Kontakt Praha 6 Břevnov | DeviceHelp | Bělohorská 209/133 | Oprava mobilů",
-    en: "Contact Prague 6 Břevnov | DeviceHelp | Bělohorská 209/133 | Mobile Repair",
-    uk: "Контакти Прага 6 Бржевнов | DeviceHelp | Bělohorská 209/133 | Ремонт мобільних",
+    cs: "Oprava mobilů Břevnov Praha 6 | DeviceHelp | Bělohorská 209/133 | Kontakt",
+    en: "Mobile Phone Repair Břevnov Prague 6 | DeviceHelp | Bělohorská 209/133 | Contact",
+    uk: "Ремонт мобільних Бржевнов Прага 6 | DeviceHelp | Bělohorská 209/133 | Контакти",
   }
 
   const descriptionPatterns = {
-    cs: "Kontaktujte DeviceHelp pro opravu mobilů v Praze 6 Břevnově. Bělohorská 209/133 (Белогорська). Telefon: +420 775 848 259. Servis iPhone, Samsung, Xiaomi. Praha6, Dejvice, Vokovice.",
-    en: "Contact DeviceHelp for mobile repair in Prague 6 Břevnov. Bělohorská 209/133. Phone: +420 775 848 259. iPhone, Samsung, Xiaomi service. Praha6, Dejvice, Vokovice area.",
-    uk: "Зв'яжіться з DeviceHelp для ремонту мобільних в Празі 6 Бржевнов. Bělohorská 209/133 (Белогорська). Телефон: +420 775 848 259. Сервіс iPhone, Samsung, Xiaomi. Praha6, Dejvice, Vokovice.",
+    cs: "Oprava mobilů Břevnov, Praha 6. Servis iPhone, Samsung, Xiaomi. Bělohorská 209/133. Telefon: +420 775 848 259. Rychlá oprava, garance 6 měsíců. Dostupné Pn-Pá 09:00-18:00, So 10:00-16:00. Dejvice, Vokovice, Praha 6.",
+    en: "Mobile phone repair in Břevnov, Prague 6. iPhone, Samsung, Xiaomi service. Bělohorská 209/133. Phone: +420 775 848 259. Fast repair, 6-month warranty. Available Mon-Fri 09:00-18:00, Sat 10:00-16:00. Dejvice, Vokovice, Prague 6.",
+    uk: "Ремонт мобільних в Бржевнові, Прага 6. Сервіс iPhone, Samsung, Xiaomi. Bělohorská 209/133. Телефон: +420 775 848 259. Швидкий ремонт, гарантія 6 місяців. Пн-Пт 09:00-18:00, Сб 10:00-16:00. Dejvice, Vokovice, Прага 6.",
   }
 
   const keywordPatterns = {
-    cs: "kontakt Praha 6, oprava telefonu Břevnov, servis mobilů Bělohorská, DeviceHelp Praha6, oprava iPhone Břevnov, servis Samsung Praha 6, Белогорська 133",
-    en: "contact Prague 6, phone repair Břevnov, mobile service Bělohorská, DeviceHelp Praha6, iPhone repair Břevnov, Samsung service Prague 6",
-    uk: "контакти Прага 6, ремонт телефону Бржевнов, сервіс мобільних Белогорська, DeviceHelp Praha6, ремонт iPhone Бржевнов, сервіс Samsung Прага 6",
+    cs: "oprava mobilu brevnov, servis praha 6, oprava iphone praha 6, oprava samsung brevnov, servis mobilů bělohorská, servis telefonu praha 6, rychlá oprava brevnov, ремонт мобилей praha",
+    en: "mobile repair brevnov, phone service prague 6, iphone repair prague 6, samsung repair brevnov, mobile service belohorska, phone service prague 6, fast repair brevnov",
+    uk: "ремонт мобільних бржевнов, сервіс прага 6, ремонт iphone прага 6, ремонт samsung бржевнов, сервіс мобільних білогорська, сервіс телефонів прага 6, швидкий ремонт бржевнов",
   }
 
   const structuredData = {
@@ -94,6 +94,7 @@ export default function ContactPage() {
             "@context": "https://schema.org",
             "@type": "LocalBusiness",
             name: "DeviceHelp - Oprava mobilních telefonů Praha 6",
+            description: "Profesionální oprava mobilních telefonů v Praze 6 Břevnov - iPhone, Samsung, Xiaomi a dalších značek. Rychlá oprava s garancí 6 měsíců. Bělohorská 209/133, Praha 6-Břevnov.",
             address: {
               "@type": "PostalAddress",
               streetAddress: "Bělohorská 209/133",
@@ -108,9 +109,45 @@ export default function ContactPage() {
               longitude: "14.3917",
             },
             telephone: "+420775848259",
-            areaServed: ["Praha 6", "Praha6", "Břevnov", "Dejvice", "Vokovice", "Bělohorská", "Белогорська"],
+            email: "info@devicehelp.cz",
+            areaServed: [
+              {
+                "@type": "City",
+                name: "Praha 6-Břevnov",
+              },
+              {
+                "@type": "City",
+                name: "Dejvice",
+              },
+              {
+                "@type": "City",
+                name: "Vokovice",
+              },
+            ],
             serviceType: "Mobile Phone Repair",
             priceRange: "1500-5000 CZK",
+            paymentAccepted: ["Cash", "Credit Card"],
+            currenciesAccepted: "CZK",
+            openingHoursSpecification: [
+              {
+                "@type": "OpeningHoursSpecification",
+                dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+                opens: "09:00",
+                closes: "18:00",
+              },
+              {
+                "@type": "OpeningHoursSpecification",
+                dayOfWeek: ["Saturday"],
+                opens: "10:00",
+                closes: "16:00",
+              },
+              {
+                "@type": "OpeningHoursSpecification",
+                dayOfWeek: ["Sunday"],
+                opens: "10:00",
+                closes: "16:00",
+              },
+            ],
           }),
         }}
       />

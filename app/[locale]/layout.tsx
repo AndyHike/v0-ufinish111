@@ -133,6 +133,61 @@ export default async function LocaleLayout({
   return (
     <html lang={locale} className={inter.variable} suppressHydrationWarning>
       <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "LocalBusiness",
+              name: "DeviceHelp",
+              description: locale === "cs" 
+                ? "Profesionální oprava mobilních telefonů v Praze 6 Břevnov. iPhone, Samsung, Xiaomi. Garancia 6 měsíců." 
+                : locale === "en"
+                ? "Professional mobile phone repair in Prague 6 Břevnov. iPhone, Samsung, Xiaomi. 6-month warranty."
+                : "Професійний ремонт мобільних телефонів в Празі 6 Бржевнов. iPhone, Samsung, Xiaomi. Гарантія 6 місяців.",
+              address: {
+                "@type": "PostalAddress",
+                streetAddress: "Bělohorská 209/133",
+                addressLocality: "Praha 6-Břevnov",
+                addressRegion: "Praha",
+                postalCode: "169 00",
+                addressCountry: "CZ",
+              },
+              geo: {
+                "@type": "GeoCoordinates",
+                latitude: "50.0982",
+                longitude: "14.3917",
+              },
+              telephone: "+420775848259",
+              email: "info@devicehelp.cz",
+              areaServed: ["Praha 6", "Břevnov", "Dejvice", "Vokovice"],
+              serviceType: "Mobile Phone Repair",
+              priceRange: "1500-5000 CZK",
+              paymentAccepted: ["Cash", "Credit Card"],
+              currenciesAccepted: "CZK",
+              openingHoursSpecification: [
+                {
+                  "@type": "OpeningHoursSpecification",
+                  dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+                  opens: "09:00",
+                  closes: "18:00",
+                },
+                {
+                  "@type": "OpeningHoursSpecification",
+                  dayOfWeek: ["Saturday"],
+                  opens: "10:00",
+                  closes: "16:00",
+                },
+                {
+                  "@type": "OpeningHoursSpecification",
+                  dayOfWeek: ["Sunday"],
+                  opens: "10:00",
+                  closes: "16:00",
+                },
+              ],
+            }),
+          }}
+        />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://xnwoqomipsesacphoczp.supabase.co" />
