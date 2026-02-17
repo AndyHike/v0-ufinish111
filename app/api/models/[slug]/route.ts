@@ -15,8 +15,8 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
       .from("models")
       .select(`
         *,
-        brand:brands(id, name, slug, logo_url),
-        series:series(id, name, slug)
+        brands(id, name, slug, logo_url),
+        series(id, name, slug)
       `)
       .eq("slug", slug)
       .single()
@@ -27,8 +27,8 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
         .from("models")
         .select(`
           *,
-          brand:brands(id, name, slug, logo_url),
-          series:series(id, name, slug)
+          brands(id, name, slug, logo_url),
+          series(id, name, slug)
         `)
         .eq("id", slug)
         .single()

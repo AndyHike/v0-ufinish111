@@ -1,16 +1,51 @@
 import type { Metadata } from "next"
 import { getTranslations } from "next-intl/server"
 import Link from "next/link"
+import Image from "next/image"
 import { notFound } from "next/navigation"
 import { createServerClient } from "@/utils/supabase/server"
+import { createClient } from "@/utils/supabase/client"
 import { ArrowLeft, Smartphone } from "lucide-react"
-import { formatImageUrl } from "@/utils/image-url"
 import { ContactCTABanner } from "@/components/contact-cta-banner"
+import { Breadcrumb } from "@/components/breadcrumb"
+import SeriesPageClient from "./series-page-client"
+
+// ISR Configuration
+export const revalidate = 3600 // Regenerate every 1 hour
+export const dynamicParams = true // Allow new slugs on-the-fly
 
 type Props = {
   params: {
     locale: string
     slug: string
+  }
+}
+
+// Pre-render popular series at build time
+export async function generateStaticParams() {
+  // Use public client for build-time static generation
+  const supabase = createClient()
+  
+  try {
+    const { data: seriesList } = await supabase
+      .from("series")
+      .select("slug")
+      .order("position", { ascending: true })
+      .limit(50) // Pre-render top 50 series
+    
+    const locales = ["cs", "uk", "en"]
+    
+    return (
+      seriesList?.flatMap((series) =>
+        locales.map((locale) => ({
+          locale,
+          slug: series.slug,
+        }))
+      ) || []
+    )
+  } catch (error) {
+    console.error("[v0] Error in generateStaticParams (series):", error)
+    return []
   }
 }
 
@@ -101,83 +136,10 @@ export default async function SeriesPage({ params }: Props) {
     .eq("series_id", series.id)
     .order("position", { ascending: true })
 
-  return (
-    <div className="container px-4 py-12 md:px-6 md:py-24">
-      <div className="mx-auto max-w-6xl">
-        {/* Кнопка повернення до бренду */}
-        <Link
-          href={`/${locale}/brands/${series.brands?.slug || series.brand_id}`}
-          className="mb-8 inline-flex items-center gap-2 rounded-md bg-slate-50 px-3 py-1 text-sm font-medium text-muted-foreground hover:text-primary"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          {t("backToBrand", { brand: series.brands?.name }) || `До ${series.brands?.name}`}
-        </Link>
+  const initialData = {
+    series,
+    models: models || [],
+  }
 
-        {/* Заголовок серії */}
-        <div className="mb-12 rounded-xl bg-white p-8 shadow-sm">
-          <div className="flex flex-col items-center gap-6 md:flex-row">
-            {series.brands?.logo_url && (
-              <div className="relative h-24 w-24 overflow-hidden rounded-lg bg-slate-50 p-3">
-                <img
-                  src={formatImageUrl(series.brands.logo_url) || "/placeholder.svg"}
-                  alt={series.brands.name}
-                  width={96}
-                  height={96}
-                  className="h-full w-full object-contain"
-                  style={{ display: "block" }}
-                />
-              </div>
-            )}
-            <div>
-              <h1 className="text-center text-3xl font-bold tracking-tight md:text-left md:text-4xl">{series.name}</h1>
-              <p className="mt-3 max-w-[900px] text-center text-muted-foreground md:text-left">
-                {t("seriesPageDescription", { series: series.name, brand: series.brands?.name })}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Розділ моделей */}
-        <div>
-          <h2 className="mb-6 border-b pb-2 text-2xl font-bold">{t("availableModels") || "Доступні моделі"}</h2>
-
-          {models && models.length > 0 ? (
-            <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-              {models.map((model) => (
-                <Link
-                  key={model.id}
-                  href={`/${locale}/models/${model.slug || model.id}`}
-                  className="group flex flex-col items-center rounded-lg bg-white p-4 shadow-sm hover:shadow"
-                >
-                  <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-lg bg-slate-50 p-2 sm:h-24 sm:w-24">
-                    {model.image_url ? (
-                      <img
-                        src={formatImageUrl(model.image_url) || "/placeholder.svg"}
-                        alt={model.name}
-                        width={96}
-                        height={96}
-                        className="h-full w-full object-contain"
-                        style={{ display: "block" }}
-                      />
-                    ) : (
-                      <Smartphone className="h-8 w-8 text-slate-400" />
-                    )}
-                  </div>
-                  <h3 className="text-center text-base font-medium group-hover:text-primary sm:text-lg">
-                    {model.name}
-                  </h3>
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-8 text-center">
-              <p className="text-muted-foreground">{t("noModelsAvailable") || "Моделі недоступні"}</p>
-            </div>
-          )}
-        </div>
-
-        <ContactCTABanner locale={locale} />
-      </div>
-    </div>
-  )
+  return <SeriesPageClient initialData={initialData} locale={locale} slug={slug} />
 }

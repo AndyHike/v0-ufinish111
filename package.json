@@ -76,6 +76,7 @@
     "react-resizable-panels": "latest",
     "recharts": "latest",
     "sonner": "latest",
+    "swr": "2.3.8",
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",
     "uuid": "latest",

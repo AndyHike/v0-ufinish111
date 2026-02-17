@@ -1,13 +1,46 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { createServerClient } from "@/utils/supabase/server"
+import { createClient } from "@/utils/supabase/client"
 import ModelPageClient from "./model-page-client"
 import { getPriceWithDiscount } from "@/lib/discounts/get-applicable-discounts"
+
+// ISR Configuration
+export const revalidate = 3600 // Regenerate every 1 hour
+export const dynamicParams = true // Allow new slugs on-the-fly
 
 type Props = {
   params: {
     locale: string
     slug: string
+  }
+}
+
+// Pre-render popular models at build time
+export async function generateStaticParams() {
+  // Use public client for build-time static generation
+  const supabase = createClient()
+  
+  try {
+    const { data: models } = await supabase
+      .from("models")
+      .select("slug")
+      .order("position", { ascending: true })
+      .limit(100) // Pre-render top 100 models
+    
+    const locales = ["cs", "uk", "en"]
+    
+    return (
+      models?.flatMap((model) =>
+        locales.map((locale) => ({
+          locale,
+          slug: model.slug,
+        }))
+      ) || []
+    )
+  } catch (error) {
+    console.error("[v0] Error in generateStaticParams (models):", error)
+    return []
   }
 }
 

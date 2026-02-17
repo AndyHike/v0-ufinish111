@@ -15,6 +15,7 @@ import { LogoUpload } from "@/components/admin/logo-upload"
 import { FaviconUpload } from "@/components/admin/favicon-upload"
 import { InfoBannerManager } from "@/components/admin/info-banner-manager"
 import { LanguageSelector } from "@/components/admin/language-selector"
+import { CacheManagementPanel } from "@/components/admin/cache-management-panel"
 
 export default async function AdminSettingsPage() {
   const user = await getCurrentUser()
@@ -31,12 +32,13 @@ export default async function AdminSettingsPage() {
       </div>
 
       <Tabs defaultValue="general" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="general">General</TabsTrigger>
           <TabsTrigger value="branding">Branding</TabsTrigger>
           <TabsTrigger value="cookies">Cookies & Analytics</TabsTrigger>
           <TabsTrigger value="legal">Legal</TabsTrigger>
           <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
+          <TabsTrigger value="cache">Cache</TabsTrigger>
           <TabsTrigger value="integrations">Integrations</TabsTrigger>
         </TabsList>
 
@@ -101,6 +103,12 @@ export default async function AdminSettingsPage() {
         <TabsContent value="maintenance" className="space-y-6">
           <Suspense fallback={<Skeleton className="h-32" />}>
             <MaintenanceModeToggle />
+          </Suspense>
+        </TabsContent>
+
+        <TabsContent value="cache" className="space-y-6">
+          <Suspense fallback={<Skeleton className="h-64" />}>
+            <CacheManagementPanel />
           </Suspense>
         </TabsContent>
 

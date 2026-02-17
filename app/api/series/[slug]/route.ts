@@ -7,20 +7,18 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
     const supabase = createClient()
 
     // Спочатку спробуємо знайти за слагом
-    let { data, error } = await supabase
+    let { data: seriesData, error } = await supabase
       .from("series")
-      .select("*, brand:brands(id, name, slug), models(id, name, slug, image_url)")
+      .select("*, brands(id, name, slug, logo_url)")
       .eq("slug", slug)
-      .order("name", { foreignTable: "models" })
       .single()
 
-    // Якщо не знайдено за слагом, спробуємо знайти за ID (для зворотної сумісності)
+    // Якщо не знайдено за слагом, спробуємо знайти за ID
     if (error && error.code === "PGRST116") {
       const { data: dataById, error: errorById } = await supabase
         .from("series")
-        .select("*, brand:brands(id, name, slug), models(id, name, slug, image_url)")
+        .select("*, brands(id, name, slug, logo_url)")
         .eq("id", slug)
-        .order("name", { foreignTable: "models" })
         .single()
 
       if (errorById) {
@@ -28,13 +26,25 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
         return NextResponse.json({ error: "Series not found" }, { status: 404 })
       }
 
-      data = dataById
+      seriesData = dataById
     } else if (error) {
       console.error("Error fetching series:", error)
       return NextResponse.json({ error: "Failed to fetch series" }, { status: 500 })
     }
 
-    return NextResponse.json(data)
+    // Fetch models for this series
+    const { data: models, error: modelsError } = await supabase
+      .from("models")
+      .select("id, name, slug, image_url, created_at")
+      .eq("series_id", seriesData.id)
+      .order("position", { ascending: true })
+
+    const responseData = {
+      series: seriesData,
+      models: models || [],
+    }
+
+    return NextResponse.json(responseData)
   } catch (error) {
     console.error("Unexpected error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
