@@ -64,7 +64,7 @@ export default function ModelPageClient({ modelData, locale }: Props) {
 
   // SWR для кешування та фонового оновлення
   const { data: currentModelData = modelData, isLoading } = useSWR(
-    `/api/models/${currentModelData.slug}?locale=${locale}`,
+    `/api/models/${modelData.slug}?locale=${locale}`,
     fetcher,
     {
       fallbackData: modelData,
