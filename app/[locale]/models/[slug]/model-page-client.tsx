@@ -9,7 +9,6 @@ import { ServicePriceDisplay } from "@/components/service-price-display"
 import { ContactCTABanner } from "@/components/contact-cta-banner"
 import { PartTypeBadges } from "@/components/part-type-badges"
 import { Breadcrumb } from "@/components/breadcrumb"
-import { useGlobalData } from "@/hooks/use-global-data"
 import useSWR from "swr"
 
 interface ModelData {
@@ -61,7 +60,6 @@ export default function ModelPageClient({ modelData, locale }: Props) {
   const t = useTranslations("Models")
   const commonT = useTranslations("Common")
   const viewContentSent = useRef(false)
-  const { setCachedModel } = useGlobalData()
   const [mounted, setMounted] = useState(false)
 
   // SWR для кешування та фонового оновлення
@@ -77,11 +75,7 @@ export default function ModelPageClient({ modelData, locale }: Props) {
 
   useEffect(() => {
     setMounted(true)
-    // Зберігаємо в контекст для наступних навігацій
-    if (currentModelData && currentModelData.slug) {
-      setCachedModel(currentModelData.slug, currentModelData)
-    }
-  }, [currentModelData, setCachedModel])
+  }, [])
 
   useEffect(() => {
     if (process.env.NODE_ENV === "development") {
