@@ -3,7 +3,6 @@ import { getTranslations } from "next-intl/server"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { createServerClient } from "@/utils/supabase/server"
-import { createClient } from "@/utils/supabase/client"
 import { ChevronRight, Smartphone, ArrowLeft } from "lucide-react"
 import { formatImageUrl } from "@/utils/image-url"
 import { ContactCTABanner } from "@/components/contact-cta-banner"
@@ -23,8 +22,8 @@ type Props = {
 
 // Pre-render popular brands at build time
 export async function generateStaticParams() {
-  // Use public client for build-time static generation
-  const supabase = createClient()
+  // Use server client for build-time static generation
+  const supabase = await createServerClient()
   
   try {
     const { data: brands } = await supabase
