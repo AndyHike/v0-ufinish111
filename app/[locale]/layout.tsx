@@ -33,10 +33,11 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({
-  params: { locale },
+  params,
 }: {
-  params: { locale: string }
+  params: Promise<{ locale: string }>
 }): Promise<Metadata> {
+  const { locale } = await params
   const baseUrl = "https://devicehelp.cz"
   const canonicalUrl = `${baseUrl}/${locale}`
 
@@ -116,11 +117,12 @@ export async function generateMetadata({
 
 export default async function LocaleLayout({
   children,
-  params: { locale },
+  params,
 }: {
   children: React.ReactNode
-  params: { locale: string }
+  params: Promise<{ locale: string }>
 }) {
+  const { locale } = await params
   const messages = await getMessages(locale).catch((error) => {
     console.error(`Failed to load messages for locale ${locale}:`, error)
     return null
@@ -161,7 +163,6 @@ export default async function LocaleLayout({
               telephone: "+420775848259",
               email: "info@devicehelp.cz",
               areaServed: ["Praha 6", "Břevnov", "Dejvice", "Vokovice"],
-              serviceType: "Mobile Phone Repair",
               priceRange: "1500-5000 CZK",
               paymentAccepted: ["Cash", "Credit Card"],
               currenciesAccepted: "CZK",

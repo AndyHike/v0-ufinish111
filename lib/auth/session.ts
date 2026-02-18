@@ -10,7 +10,7 @@ export const getCurrentUser = cache(async () => {
     return null
   }
 
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { data, error } = await supabase
     .from("sessions")
