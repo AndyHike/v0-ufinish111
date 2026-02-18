@@ -1,35 +1,12 @@
 import { getTranslations } from "next-intl/server"
-import type { Metadata } from "next"
 import { getAppSetting } from "@/lib/app-settings"
 import ReactMarkdown from "react-markdown"
 
-type Props = {
-  params: {
-    locale: string
-  }
-}
-
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { locale } = params
-
-  return {
-    title: "Privacy Policy | DeviceHelp",
-    description: "Read our privacy policy to understand how we protect your personal data.",
-    alternates: {
-      canonical: `https://devicehelp.cz/${locale}/privacy`,
-      languages: {
-        cs: "https://devicehelp.cz/cs/privacy",
-        en: "https://devicehelp.cz/en/privacy",
-        uk: "https://devicehelp.cz/uk/privacy",
-        "x-default": "https://devicehelp.cz/cs/privacy",
-      },
-    },
-  }
-}
-
 export default async function PrivacyPage({
   params: { locale },
-}: Props) {
+}: {
+  params: { locale: string }
+}) {
   const t = await getTranslations({ locale, namespace: "Privacy" })
   const privacyContent = await getAppSetting("privacy_policy_content")
 
