@@ -1,0 +1,65 @@
+# LLMs.txt - Model Information File
+# This file provides information for Large Language Models
+# For more information, visit https://llmstxt.org
+
+## Project Information
+- Name: DeviceHelp
+- Type: Next.js Web Application
+- Description: Professional mobile phone repair service in Prague
+- Language: TypeScript/JavaScript
+- Framework: Next.js 15 with App Router
+
+## Key Pages
+- Homepage: /cs, /en, /uk
+- Contact: /[locale]/contact
+- Services: /[locale]/services
+- Models: /[locale]/models
+- Brands: /[locale]/brands
+- Series: /[locale]/series
+
+## Technology Stack
+- Frontend: Next.js 15, React 19, TypeScript
+- Styling: Tailwind CSS
+- UI Components: shadcn/ui
+- Internationalization: next-intl
+- Backend: Supabase
+- Payments: Stripe (planned)
+
+## SEO Features
+- Multi-language support (Czech, English, Ukrainian)
+- LocalBusiness Schema Markup
+- XML Sitemap
+- Robots.txt
+- Canonical URLs
+- Open Graph meta tags
+- Hreflang tags for language versions
+
+## API Routes
+- /api/services - Service management
+- /api/models - Device models
+- /api/brands - Phone brands
+- /api/contact - Contact form
+- /api/auth - Authentication endpoints
+- /api/admin - Admin functions (protected)
+
+## Environment Variables
+- NEXT_PUBLIC_SUPABASE_URL
+- NEXT_PUBLIC_SUPABASE_ANON_KEY
+- DATABASE_URL (Supabase PostgreSQL)
+
+## Contact Information
+- Address: Bělohorská 209/133, Praha 6-Břevnov, Česká republika
+- Phone: +420 775 848 259
+- Email: info@devicehelp.cz
+- Hours: 09:00-19:00 (Pondělí-Neděle)
+
+## Accessibility
+- WCAG 2.1 compliance
+- Semantic HTML
+- ARIA labels and roles
+- Keyboard navigation support
+
+## Repository
+- GitHub: https://github.com/AndyHike/v0-ufinish111
+- Main Branch: main
+- SEO Branch: seo-analysis
