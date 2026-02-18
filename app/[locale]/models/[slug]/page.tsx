@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { createServerClient } from "@/utils/supabase/server"
+import { createClient as createPublicClient } from "@/lib/supabase"
 import ModelPageClient from "./model-page-client"
 import { getPriceWithDiscount } from "@/lib/discounts/get-applicable-discounts"
 
@@ -17,8 +18,8 @@ type Props = {
 
 // Pre-render popular models at build time
 export async function generateStaticParams() {
-  // Use server client for build-time static generation
-  const supabase = await createServerClient()
+  // Use public client for build-time static generation (no cookies needed)
+  const supabase = createPublicClient()
   
   try {
     const { data: models } = await supabase
@@ -41,6 +42,7 @@ export async function generateStaticParams() {
     console.error("[v0] Error in generateStaticParams (models):", error)
     return []
   }
+}
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -179,7 +181,7 @@ export default async function ModelPage({ params }: Props) {
 
     console.log(`[MODEL PAGE] Found model: ${model.id} - ${model.name}`)
 
-    // Отримуємо послуги для моделі з правильною логікою пріоритетів
+    // Отримуємо послуги для моделі з правильною логікою ��ріоритетів
     const { data: modelServices } = await supabase
       .from("model_services")
       .select(`

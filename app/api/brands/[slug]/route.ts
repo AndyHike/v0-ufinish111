@@ -4,7 +4,7 @@ import { createClient } from "@/utils/supabase/server"
 export async function GET(request: NextRequest, { params }: { params: { slug: string } }) {
   try {
     const slug = params.slug
-    const supabase = createClient()
+    const supabase = await createClient()
 
     // Спочатку спробуємо знайти за слагом
     let { data: brand, error } = await supabase

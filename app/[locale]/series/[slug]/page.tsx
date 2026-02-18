@@ -4,6 +4,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { notFound } from "next/navigation"
 import { createServerClient } from "@/utils/supabase/server"
+import { createClient as createPublicClient } from "@/lib/supabase"
 import { ArrowLeft, Smartphone } from "lucide-react"
 import { ContactCTABanner } from "@/components/contact-cta-banner"
 import { Breadcrumb } from "@/components/breadcrumb"
@@ -22,8 +23,8 @@ type Props = {
 
 // Pre-render popular series at build time
 export async function generateStaticParams() {
-  // Use server client for build-time static generation
-  const supabase = await createServerClient()
+  // Use public client for build-time static generation (no cookies needed)
+  const supabase = createPublicClient()
   
   try {
     const { data: seriesList } = await supabase
@@ -46,6 +47,7 @@ export async function generateStaticParams() {
     console.error("[v0] Error in generateStaticParams (series):", error)
     return []
   }
+}
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

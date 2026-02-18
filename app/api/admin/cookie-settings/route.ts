@@ -4,7 +4,7 @@ import { getCurrentUser } from "@/lib/auth/session"
 
 export async function GET() {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
 
     const { data: settings, error } = await supabase
       .from("app_settings")
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const supabase = createClient()
+    const supabase = await createClient()
 
     for (const [key, value] of Object.entries(body)) {
       const { data: existing } = await supabase.from("app_settings").select("key").eq("key", key).single()
