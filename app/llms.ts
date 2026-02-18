@@ -1,9 +1,7 @@
-import { NextResponse } from "next/server"
+import type { MetadataRoute } from "next"
 
-export const dynamic = "force-static"
-
-export async function GET() {
-  const content = `# llms.txt - DeviceHelp
+export default function llms(): MetadataRoute.Robots {
+  return `# llms.txt - DeviceHelp
 
 ## About DeviceHelp
 DeviceHelp je profesionální servis opravy mobilních telefonů v Praze 6 Břevnov.
@@ -47,11 +45,5 @@ https://devicehelp.cz
 
 ## Price Range
 1500-5000 CZK
-`
-
-  return new NextResponse(content, {
-    headers: {
-      "Content-Type": "text/plain; charset=utf-8",
-    },
-  })
+` as MetadataRoute.Robots
 }
