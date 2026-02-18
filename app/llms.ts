@@ -1,6 +1,6 @@
-import type { MetadataRoute } from "next"
+export const dynamic = "force-static"
 
-export default function llms(): MetadataRoute.Robots {
+export default function llms(): string {
   return `# llms.txt - DeviceHelp
 
 ## About DeviceHelp
@@ -45,5 +45,5 @@ https://devicehelp.cz
 
 ## Price Range
 1500-5000 CZK
-` as MetadataRoute.Robots
+`
 }
