@@ -28,10 +28,14 @@ function isPublicAuthRoute(pathname: string): boolean {
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
 
+  // Skip middleware for static files, API routes, webhooks, images, and special files
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api/") ||
     pathname.includes("/webhooks/") ||
+    pathname === "/robots.txt" ||
+    pathname === "/sitemap.xml" ||
+    pathname === "/llms.txt" ||
     /\.(jpg|jpeg|png|gif|svg|ico|css|js|woff|woff2|ttf|eot|webp)$/.test(pathname)
   ) {
     return NextResponse.next()
