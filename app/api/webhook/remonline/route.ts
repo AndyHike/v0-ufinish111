@@ -20,7 +20,7 @@ const WebhookSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient()
+    const supabase = createClient()
     const body = await request.json()
 
     // Validate webhook secret to ensure it's from Remonline

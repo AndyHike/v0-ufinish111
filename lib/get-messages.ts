@@ -1,7 +1,12 @@
 export async function getMessages(locale: string) {
-  // Return hardcoded messages directly - don't attempt to import JSON
-  // This prevents missing file errors during static generation
-  return {
+  try {
+    // Try to import the messages from the JSON files
+    return (await import(`../messages/${locale}.json`)).default
+  } catch (error) {
+    console.error(`Failed to load messages for locale ${locale}:`, error)
+
+    // Fallback to hardcoded messages if JSON import fails
+    return {
       Admin: {
         modelServices: "Послуги для {model}",
         modelServicesDescription: "Керування послугами та цінами для {model} від {brand}",
@@ -208,7 +213,7 @@ export async function getMessages(locale: string) {
           name: locale === "uk" ? "Іван Сидоренко" : locale === "cs" ? "Petr Dvořák" : "John Smith",
           content:
             locale === "uk"
-              ? "Відмінний сервіс за розумною ціною. Рекомендую всім, хто має п��облеми з телефоном."
+              ? "Відмінний сервіс за розумною ціною. Рекомендую всім, хто має проблеми з телефоном."
               : locale === "cs"
                 ? "Vynikající služby za rozumnou cenu. Doporučuji všem, kteří mají problémy s telefonem."
                 : "Excellent service at a reasonable price. I recommend to anyone having phone issues.",
@@ -276,4 +281,5 @@ export async function getMessages(locale: string) {
               : "Thank you for your message. We will contact you as soon as possible.",
       },
     }
+  }
 }

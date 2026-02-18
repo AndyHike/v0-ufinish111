@@ -13,7 +13,7 @@ type Props = {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { locale } = await Promise.resolve(params)
+  const { locale } = params
 
   const titlePatterns = {
     cs: "Značky zařízení | DeviceHelp",

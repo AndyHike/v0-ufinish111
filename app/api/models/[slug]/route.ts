@@ -3,7 +3,7 @@ import { createClient } from "@/utils/supabase/server"
 
 export async function GET(request: NextRequest, { params }: { params: { slug: string } }) {
   try {
-    const supabase = await createClient()
+    const supabase = createClient()
     const { slug } = params
     const { searchParams } = new URL(request.url)
     const locale = searchParams.get("locale") || "uk"

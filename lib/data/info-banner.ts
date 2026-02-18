@@ -8,7 +8,7 @@ export type InfoBannerData = {
 
 export async function getInfoBanner(): Promise<InfoBannerData> {
   try {
-    const supabase = await createClient()
+    const supabase = createClient()
 
     const { data, error } = await supabase.from("settings").select("*").eq("key", "info_banner").single()
 

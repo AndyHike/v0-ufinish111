@@ -71,16 +71,6 @@ const nextConfig = {
       },
     ]
   },
-
-  async redirects() {
-    return [
-      {
-        source: '/',
-        destination: '/cs',
-        permanent: true,
-      },
-    ]
-  },
 }
 
 // 👇 2. Обгортаємо конфігурацію в withNextIntl

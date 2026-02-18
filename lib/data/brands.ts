@@ -19,7 +19,7 @@ export type Brand = {
 
 export const getBrands = cache(async (): Promise<Brand[]> => {
   try {
-    const supabase = await createClient()
+    const supabase = createClient()
 
     const { data, error } = await supabase
       .from("brands")

@@ -3,7 +3,7 @@ import { getTranslations } from "next-intl/server"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { createServerClient } from "@/utils/supabase/server"
-import { createClient as createPublicClient } from "@/lib/supabase"
+import { createClient } from "@/utils/supabase/client"
 import { ChevronRight, Smartphone, ArrowLeft } from "lucide-react"
 import { formatImageUrl } from "@/utils/image-url"
 import { ContactCTABanner } from "@/components/contact-cta-banner"
@@ -23,8 +23,8 @@ type Props = {
 
 // Pre-render popular brands at build time
 export async function generateStaticParams() {
-  // Use public client for build-time static generation (no cookies needed)
-  const supabase = createPublicClient()
+  // Use public client for build-time static generation
+  const supabase = createClient()
   
   try {
     const { data: brands } = await supabase
@@ -50,9 +50,9 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug, locale } = await Promise.resolve(params)
+  const { slug, locale } = params
 
-  const supabase = await createServerClient()
+  const supabase = createServerClient()
 
   // First try to find by slug
   let { data: brand } = await supabase.from("brands").select("*").eq("slug", slug).single()

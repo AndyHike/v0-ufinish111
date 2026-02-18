@@ -4,7 +4,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { notFound } from "next/navigation"
 import { createServerClient } from "@/utils/supabase/server"
-import { createClient as createPublicClient } from "@/lib/supabase"
+import { createClient } from "@/utils/supabase/client"
 import { ArrowLeft, Smartphone } from "lucide-react"
 import { ContactCTABanner } from "@/components/contact-cta-banner"
 import { Breadcrumb } from "@/components/breadcrumb"
@@ -23,8 +23,8 @@ type Props = {
 
 // Pre-render popular series at build time
 export async function generateStaticParams() {
-  // Use public client for build-time static generation (no cookies needed)
-  const supabase = createPublicClient()
+  // Use public client for build-time static generation
+  const supabase = createClient()
   
   try {
     const { data: seriesList } = await supabase
@@ -50,9 +50,9 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug, locale } = await Promise.resolve(params)
+  const { slug, locale } = params
 
-  const supabase = await createServerClient()
+  const supabase = createServerClient()
 
   // Спочатку спробуємо знайти за слагом
   let { data: series } = await supabase.from("series").select("*, brands(name)").eq("slug", slug).single()

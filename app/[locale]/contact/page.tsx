@@ -6,7 +6,7 @@ interface Props {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { locale } = await Promise.resolve(params)
+  const { locale } = params
 
   const titlePatterns = {
     cs: "Oprava mobilů Břevnov Praha 6 | DeviceHelp | Bělohorská 209/133 | Kontakt",
@@ -70,12 +70,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description: descriptionPatterns[locale as keyof typeof descriptionPatterns] || descriptionPatterns.en,
     },
     alternates: {
-      canonical: `https://devicehelp.cz/${locale}/contact`,
+      canonical: `https://www.devicehelp.cz/${locale}/contact`,
       languages: {
-        cs: "https://devicehelp.cz/cs/contact",
-        en: "https://devicehelp.cz/en/contact",
-        uk: "https://devicehelp.cz/uk/contact",
-        "x-default": "https://devicehelp.cz/cs/contact",
+        cs: "https://www.devicehelp.cz/cs/contact",
+        en: "https://www.devicehelp.cz/en/contact",
+        uk: "https://www.devicehelp.cz/uk/contact",
+        "x-default": "https://www.devicehelp.cz/cs/contact",
       },
     },
     other: {
@@ -93,12 +93,8 @@ export default function ContactPage() {
           __html: JSON.stringify({
             "@context": "https://schema.org",
             "@type": "LocalBusiness",
-            "@id": "https://devicehelp.cz",
             name: "DeviceHelp - Oprava mobilních telefonů Praha 6",
             description: "Profesionální oprava mobilních telefonů v Praze 6 Břevnov - iPhone, Samsung, Xiaomi a dalších značek. Rychlá oprava s garancí 6 měsíců. Bělohorská 209/133, Praha 6-Břevnov.",
-            url: "https://devicehelp.cz",
-            telephone: "+420775848259",
-            email: "info@devicehelp.cz",
             address: {
               "@type": "PostalAddress",
               streetAddress: "Bělohorská 209/133",
@@ -109,9 +105,11 @@ export default function ContactPage() {
             },
             geo: {
               "@type": "GeoCoordinates",
-              latitude: 50.0982,
-              longitude: 14.3917,
+              latitude: "50.0982",
+              longitude: "14.3917",
             },
+            telephone: "+420775848259",
+            email: "info@devicehelp.cz",
             areaServed: [
               {
                 "@type": "City",
@@ -126,6 +124,7 @@ export default function ContactPage() {
                 name: "Vokovice",
               },
             ],
+            serviceType: "Mobile Phone Repair",
             priceRange: "1500-5000 CZK",
             paymentAccepted: ["Cash", "Credit Card"],
             currenciesAccepted: "CZK",
@@ -136,10 +135,6 @@ export default function ContactPage() {
                 opens: "09:00",
                 closes: "19:00",
               },
-            ],
-            sameAs: [
-              "https://www.facebook.com/devicehelp",
-              "https://www.instagram.com/devicehelp",
             ],
           }),
         }}
