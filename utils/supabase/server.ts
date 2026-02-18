@@ -27,6 +27,6 @@ export async function createClient() {
   )
 }
 
-// Експортуємо createServerClient для сумісності з існуючим кодом
+// Export aliases for compatibility
 export const createServerClient = createClient
 export const createServerSupabaseClient = createClient

@@ -48,7 +48,6 @@ export async function generateStaticParams() {
     return []
   }
 }
-}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug, locale } = await Promise.resolve(params)
