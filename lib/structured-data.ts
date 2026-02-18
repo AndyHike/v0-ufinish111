@@ -1,16 +1,16 @@
 export function generateLocalBusinessSchema(locale: string) {
   const businessData = {
     cs: {
-      name: "DeviceHelp - Oprava mobilních telefonů Praha 6",
-      description: "Profesionální oprava mobilních telefonů v Praze 6 Břevnov",
+      name: "DeviceHelp - Oprava mobilních telefonů Praha 6 Břevnov",
+      description: "Profesionální servis mobilních telefonů. Oprava iPhone, Samsung, Xiaomi. Střídavá garance 6 měsíců. Bělohorská 209/133, Praha 6.",
     },
     en: {
-      name: "DeviceHelp - Mobile Phone Repair Prague 6",
-      description: "Professional mobile phone repair in Prague 6 Břevnov",
+      name: "DeviceHelp - Mobile Phone Repair Prague 6 Břevnov",
+      description: "Professional mobile phone repair service. iPhone, Samsung, Xiaomi repair. 6-month warranty. Bělohorská 209/133, Prague 6.",
     },
     uk: {
-      name: "DeviceHelp - Ремонт мобільних телефонів Прага 6",
-      description: "Професійний ремонт мобільних телефонів в Празі 6 Бржевнов",
+      name: "DeviceHelp - Ремонт мобільних телефонів Прага 6 Бржевнов",
+      description: "Професійний сервіс ремонту мобільних телефонів. Ремонт iPhone, Samsung, Xiaomi. Гарантія 6 місяців. Bělohorská 209/133, Прага 6.",
     },
   }
 
@@ -35,9 +35,33 @@ export function generateLocalBusinessSchema(locale: string) {
       longitude: "14.3917",
     },
     telephone: "+420775848259",
-    areaServed: ["Praha 6", "Břevnov", "Dejvice", "Vokovice", "Bělohorská"],
+    email: "info@devicehelp.cz",
+    areaServed: [
+      {
+        "@type": "City",
+        name: "Praha 6-Břevnov",
+      },
+      {
+        "@type": "City",
+        name: "Dejvice",
+      },
+      {
+        "@type": "City",
+        name: "Vokovice",
+      },
+    ],
     serviceType: "Mobile Phone Repair",
     priceRange: "1500-5000 CZK",
+    paymentAccepted: ["Cash", "Credit Card"],
+    currenciesAccepted: "CZK",
+    openingHoursSpecification: [
+      {
+        "@type": "OpeningHoursSpecification",
+        dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+        opens: "09:00",
+        closes: "19:00",
+      },
+    ],
   }
 }
 
