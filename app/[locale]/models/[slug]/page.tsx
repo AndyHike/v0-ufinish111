@@ -116,7 +116,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       areaServed: ["Praha 6", "Břevnov", "Dejvice", "Vokovice", "Bělohorská", "Praha6"],
     },
     areaServed: "Praha 6",
-    serviceType: "Mobile Phone Repair",
     offers: {
       "@type": "Offer",
       warranty: "6 months",

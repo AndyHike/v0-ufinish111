@@ -161,7 +161,6 @@ export default async function LocaleLayout({
               telephone: "+420775848259",
               email: "info@devicehelp.cz",
               areaServed: ["Praha 6", "Břevnov", "Dejvice", "Vokovice"],
-              serviceType: "Mobile Phone Repair",
               priceRange: "1500-5000 CZK",
               paymentAccepted: ["Cash", "Credit Card"],
               currenciesAccepted: "CZK",
