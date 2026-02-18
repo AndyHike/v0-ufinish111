@@ -46,7 +46,7 @@ export default async function BrandsPage({ params }: Props) {
   const { locale } = params
   const t = await getTranslations({ locale, namespace: "Brands" })
 
-  const supabase = createServerClient()
+  const supabase = await createServerClient()
 
   const { data: brands, error } = await supabase
     .from("brands")

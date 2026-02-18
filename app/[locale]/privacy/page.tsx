@@ -40,8 +40,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function PrivacyPage({
-  params: { locale },
-}: Props) {
+  params,
+}: {
+  params: { locale: string }
+}) {
+  const { locale } = params
   const t = await getTranslations({ locale, namespace: "Privacy" })
   const privacyContent = await getAppSetting("privacy_policy_content")
 

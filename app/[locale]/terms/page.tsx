@@ -40,8 +40,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function TermsPage({
-  params: { locale },
-}: Props) {
+  params,
+}: {
+  params: { locale: string }
+}) {
+  const { locale } = params
   const t = await getTranslations({ locale, namespace: "Terms" })
   const termsContent = await getAppSetting("terms_of_service_content")
 
