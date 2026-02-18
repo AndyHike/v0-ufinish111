@@ -30,6 +30,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: titlePatterns[locale as keyof typeof titlePatterns] || titlePatterns.en,
     description: descriptionPatterns[locale as keyof typeof descriptionPatterns] || descriptionPatterns.en,
+    alternates: {
+      canonical: `https://devicehelp.cz/${locale}/brands`,
+      languages: {
+        cs: "https://devicehelp.cz/cs/brands",
+        en: "https://devicehelp.cz/en/brands",
+        uk: "https://devicehelp.cz/uk/brands",
+        "x-default": "https://devicehelp.cz/cs/brands",
+      },
+    },
   }
 }
 
