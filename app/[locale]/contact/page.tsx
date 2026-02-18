@@ -47,7 +47,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     telephone: "+420775848259",
     areaServed: ["Praha 6", "Praha6", "Břevnov", "Dejvice", "Vokovice", "Bělohorská", "Белогорська"],
     priceRange: "1500-5000 CZK",
-    openingHours: "Mo-Fr 09:00-18:00",
+    openingHours: "Mo-Su 09:00-19:00",
     paymentAccepted: ["Cash", "Credit Card"],
     currenciesAccepted: "CZK",
   }
@@ -69,12 +69,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description: descriptionPatterns[locale as keyof typeof descriptionPatterns] || descriptionPatterns.en,
     },
     alternates: {
-      canonical: `https://www.devicehelp.cz/${locale}/contact`,
+      canonical: `https://devicehelp.cz/${locale}/contact`,
       languages: {
-        cs: "https://www.devicehelp.cz/cs/contact",
-        en: "https://www.devicehelp.cz/en/contact",
-        uk: "https://www.devicehelp.cz/uk/contact",
-        "x-default": "https://www.devicehelp.cz/cs/contact",
+        cs: "https://devicehelp.cz/cs/contact",
+        en: "https://devicehelp.cz/en/contact",
+        uk: "https://devicehelp.cz/uk/contact",
+        "x-default": "https://devicehelp.cz/cs/contact",
       },
     },
     other: {
