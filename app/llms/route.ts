@@ -1,7 +1,9 @@
+import { NextResponse } from "next/server"
+
 export const dynamic = "force-static"
 
-export default function llms(): string {
-  return `# llms.txt - DeviceHelp
+export async function GET() {
+  const content = `# llms.txt - DeviceHelp
 
 ## About DeviceHelp
 DeviceHelp je profesionální servis opravy mobilních telefonů v Praze 6 Břevnov.
@@ -46,4 +48,10 @@ https://devicehelp.cz
 ## Price Range
 1500-5000 CZK
 `
+
+  return new NextResponse(content, {
+    headers: {
+      "Content-Type": "text/plain; charset=utf-8",
+    },
+  })
 }
