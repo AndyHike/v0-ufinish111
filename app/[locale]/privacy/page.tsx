@@ -12,9 +12,21 @@ type Props = {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = params
 
+  const titlePatterns = {
+    cs: "Zásady ochrany osobních údajů | DeviceHelp",
+    en: "Privacy Policy | DeviceHelp",
+    uk: "Політика конфіденційності | DeviceHelp",
+  }
+
+  const descriptionPatterns = {
+    cs: "Přečtěte si naše zásady ochrany osobních údajů, abyste pochopili, jak chráníme vaše osobní údaje.",
+    en: "Read our privacy policy to understand how we protect your personal data.",
+    uk: "Прочитайте нашу політику конфіденційності, щоб зрозуміти, як ми захищаємо ваші особисті дані.",
+  }
+
   return {
-    title: "Privacy Policy | DeviceHelp",
-    description: "Read our privacy policy to understand how we protect your personal data.",
+    title: titlePatterns[locale as keyof typeof titlePatterns] || titlePatterns.en,
+    description: descriptionPatterns[locale as keyof typeof descriptionPatterns] || descriptionPatterns.en,
     alternates: {
       canonical: `https://devicehelp.cz/${locale}/privacy`,
       languages: {
