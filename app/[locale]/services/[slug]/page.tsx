@@ -130,7 +130,6 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
           telephone: "+420 775 848 259",
         },
         areaServed: ["Praha 6", "Břevnov", "Dejvice", "Vokovice"],
-        serviceType: serviceName,
         warranty: "6 months",
       }
     : {
@@ -151,7 +150,6 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
           telephone: "+420 775 848 259",
         },
         areaServed: ["Praha 6", "Břevnov", "Dejvice", "Vokovice"],
-        serviceType: serviceName,
         warranty: "6 months",
       }
 

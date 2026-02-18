@@ -1,12 +1,50 @@
 import { getTranslations } from "next-intl/server"
+import type { Metadata } from "next"
 import { getAppSetting } from "@/lib/app-settings"
 import ReactMarkdown from "react-markdown"
 
+type Props = {
+  params: {
+    locale: string
+  }
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { locale } = params
+
+  const titlePatterns = {
+    cs: "Podmínky služby | DeviceHelp",
+    en: "Terms of Service | DeviceHelp",
+    uk: "Умови надання послуг | DeviceHelp",
+  }
+
+  const descriptionPatterns = {
+    cs: "Přečtěte si naše podmínky služby, abyste pochopili pravidla a předpisy upravující používání našich služeb.",
+    en: "Read our terms of service to understand the rules and regulations governing the use of our services.",
+    uk: "Прочитайте наші умови надання послуг, щоб зрозуміти правила та положення, що регулюють використання наших послуг.",
+  }
+
+  return {
+    title: titlePatterns[locale as keyof typeof titlePatterns] || titlePatterns.en,
+    description: descriptionPatterns[locale as keyof typeof descriptionPatterns] || descriptionPatterns.en,
+    alternates: {
+      canonical: `https://devicehelp.cz/${locale}/terms`,
+      languages: {
+        cs: "https://devicehelp.cz/cs/terms",
+        en: "https://devicehelp.cz/en/terms",
+        uk: "https://devicehelp.cz/uk/terms",
+        "x-default": "https://devicehelp.cz/cs/terms",
+      },
+    },
+  }
+}
+
 export default async function TermsPage({
-  params: { locale },
+  params,
 }: {
   params: { locale: string }
 }) {
+  const { locale } = params
   const t = await getTranslations({ locale, namespace: "Terms" })
   const termsContent = await getAppSetting("terms_of_service_content")
 
