@@ -1,12 +1,47 @@
 import { getTranslations } from "next-intl/server"
+import type { Metadata } from "next"
 import { getAppSetting } from "@/lib/app-settings"
 import ReactMarkdown from "react-markdown"
 
+type Props = {
+  params: {
+    locale: string
+  }
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { locale } = params
+
+  const titlePatterns = {
+    cs: "Zásady ochrany osobních údajů | DeviceHelp",
+    en: "Privacy Policy | DeviceHelp",
+    uk: "Політика конфіденційності | DeviceHelp",
+  }
+
+  const descriptionPatterns = {
+    cs: "Přečtěte si naše zásady ochrany osobních údajů, abyste pochopili, jak chráníme vaše osobní údaje.",
+    en: "Read our privacy policy to understand how we protect your personal data.",
+    uk: "Прочитайте нашу політику конфіденційності, щоб зрозуміти, як ми захищаємо ваші особисті дані.",
+  }
+
+  return {
+    title: titlePatterns[locale as keyof typeof titlePatterns] || titlePatterns.en,
+    description: descriptionPatterns[locale as keyof typeof descriptionPatterns] || descriptionPatterns.en,
+    alternates: {
+      canonical: `https://devicehelp.cz/${locale}/privacy`,
+      languages: {
+        cs: "https://devicehelp.cz/cs/privacy",
+        en: "https://devicehelp.cz/en/privacy",
+        uk: "https://devicehelp.cz/uk/privacy",
+        "x-default": "https://devicehelp.cz/cs/privacy",
+      },
+    },
+  }
+}
+
 export default async function PrivacyPage({
   params: { locale },
-}: {
-  params: { locale: string }
-}) {
+}: Props) {
   const t = await getTranslations({ locale, namespace: "Privacy" })
   const privacyContent = await getAppSetting("privacy_policy_content")
 
