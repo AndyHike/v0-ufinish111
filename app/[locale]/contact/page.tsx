@@ -2,11 +2,11 @@ import type { Metadata } from "next"
 import ContactPageClient from "./ContactPageClient"
 
 interface Props {
-  params: { locale: string }
+  params: Promise<{ locale: string }>
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { locale } = params
+  const { locale } = await params
 
   const titlePatterns = {
     cs: "Oprava mobilů Břevnov Praha 6 | DeviceHelp | Bělohorská 209/133 | Kontakt",
