@@ -8,14 +8,6 @@ export default function robots(): MetadataRoute.Robots {
         allow: '/',
         disallow: ['/admin', '/api', '/auth'],
       },
-      {
-        userAgent: 'GPTBot',
-        disallow: '/',
-      },
-      {
-        userAgent: 'ChatGPT-User',
-        disallow: '/',
-      },
     ],
     sitemap: 'https://devicehelp.cz/sitemap.xml',
   }
