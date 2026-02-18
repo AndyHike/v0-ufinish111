@@ -50,6 +50,7 @@ export function generateLocalBusinessSchema(locale: string) {
         name: "Vokovice",
       },
     ],
+    serviceType: "Mobile Phone Repair",
     priceRange: "1500-5000 CZK",
     paymentAccepted: ["Cash", "Credit Card"],
     currenciesAccepted: "CZK",

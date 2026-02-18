@@ -23,12 +23,8 @@ type Props = {
 
 // Pre-render popular brands at build time
 export async function generateStaticParams() {
-  // Import public client function dynamically to avoid server-only issues
-  const { default: publicSupabase } = await import("@supabase/supabase-js")
-  const supabase = publicSupabase.createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+  // Use public client for build-time static generation
+  const supabase = createClient()
   
   try {
     const { data: brands } = await supabase
