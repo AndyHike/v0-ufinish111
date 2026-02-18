@@ -1,6 +1,8 @@
-import { MetadataRoute } from 'next'
+import { NextResponse } from "next/server"
 
-export default function llmstxt(): MetadataRoute.Robots {
+export const dynamic = "force-static"
+
+export async function GET() {
   const content = `# llms.txt - DeviceHelp
 
 ## About DeviceHelp
@@ -46,5 +48,10 @@ https://devicehelp.cz
 ## Price Range
 1500-5000 CZK
 `
-  return content as MetadataRoute.Robots
+
+  return new NextResponse(content, {
+    headers: {
+      "Content-Type": "text/plain; charset=utf-8",
+    },
+  })
 }
