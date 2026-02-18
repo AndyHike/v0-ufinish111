@@ -1,4 +1,14 @@
 import type React from "react"
+import type { Metadata } from "next"
+
+// Додаємо canonical URL для root path
+export const metadata: Metadata = {
+  generator: 'v0.app',
+  metadataBase: new URL('https://devicehelp.cz'),
+  alternates: {
+    canonical: 'https://devicehelp.cz/cs',
+  },
+}
 
 // Цей Layout є лише обгорткою-пустушкою, щоб задовольнити Next.js.
 // Справжні теги <html> та <body> знаходяться в app/[locale]/layout.tsx
@@ -11,9 +21,4 @@ export default function RootLayout({
   return <>{children}</>
 }
 
-
 import './globals.css'
-
-export const metadata = {
-      generator: 'v0.app'
-    };
