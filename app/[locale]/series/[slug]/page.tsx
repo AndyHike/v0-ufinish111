@@ -50,9 +50,9 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug, locale } = params
+  const { slug, locale } = await Promise.resolve(params)
 
-  const supabase = createServerClient()
+  const supabase = await createServerClient()
 
   // Спочатку спробуємо знайти за слагом
   let { data: series } = await supabase.from("series").select("*, brands(name)").eq("slug", slug).single()

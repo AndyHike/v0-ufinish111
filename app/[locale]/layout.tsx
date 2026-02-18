@@ -33,10 +33,11 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({
-  params: { locale },
+  params,
 }: {
-  params: { locale: string }
+  params: Promise<{ locale: string }>
 }): Promise<Metadata> {
+  const { locale } = await params
   const baseUrl = "https://devicehelp.cz"
   const canonicalUrl = `${baseUrl}/${locale}`
 
@@ -112,73 +113,16 @@ export async function generateMetadata({
         "https://xnwoqomipsesacphoczp.supabase.co/storage/v1/object/public/site-assets/favicon/1750418444610-hgnxmfio3rv.PNG",
     },
   }
-
-  const currentSeo = seoData[locale as keyof typeof seoData] || seoData.cs
-
-  return {
-    title: currentSeo.title,
-    description: currentSeo.description,
-    metadataBase: new URL(baseUrl),
-    alternates: {
-      canonical: canonicalUrl,
-      languages: {
-        cs: `${baseUrl}/cs`,
-        en: `${baseUrl}/en`,
-        uk: `${baseUrl}/uk`,
-        "x-default": `${baseUrl}/cs`,
-      },
-    },
-    openGraph: {
-      title: currentSeo.title,
-      description: currentSeo.description,
-      url: canonicalUrl,
-      siteName: "DeviceHelp",
-      locale: locale,
-      type: "website",
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: currentSeo.title,
-      description: currentSeo.description,
-    },
-    icons: {
-      icon: [
-        {
-          url: "https://xnwoqomipsesacphoczp.supabase.co/storage/v1/object/public/site-assets/favicon/1750418444610-hgnxmfio3rv.PNG",
-          type: "image/png",
-          sizes: "32x32",
-        },
-        {
-          url: "https://xnwoqomipsesacphoczp.supabase.co/storage/v1/object/public/site-assets/favicon/1750418444610-hgnxmfio3rv.PNG",
-          type: "image/png",
-          sizes: "16x16",
-        },
-        {
-          url: "https://xnwoqomipsesacphoczp.supabase.co/storage/v1/object/public/site-assets/favicon/1750418444610-hgnxmfio3rv.PNG",
-          type: "image/png",
-          sizes: "192x192",
-        },
-      ],
-      apple: [
-        {
-          url: "https://xnwoqomipsesacphoczp.supabase.co/storage/v1/object/public/site-assets/favicon/1750418444610-hgnxmfio3rv.PNG",
-          type: "image/png",
-          sizes: "180x180",
-        },
-      ],
-      shortcut:
-        "https://xnwoqomipsesacphoczp.supabase.co/storage/v1/object/public/site-assets/favicon/1750418444610-hgnxmfio3rv.PNG",
-    },
-  }
 }
 
 export default async function LocaleLayout({
   children,
-  params: { locale },
+  params,
 }: {
   children: React.ReactNode
-  params: { locale: string }
+  params: Promise<{ locale: string }>
 }) {
+  const { locale } = await params
   const messages = await getMessages(locale).catch((error) => {
     console.error(`Failed to load messages for locale ${locale}:`, error)
     return null

@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase"
 
 async function isMaintenanceModeEnabled(): Promise<boolean> {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     const { data, error } = await supabase
       .from("app_settings")
       .select("value")
@@ -27,11 +27,12 @@ async function isMaintenanceModeEnabled(): Promise<boolean> {
 
 export default async function SignInLayout({
   children,
-  params: { locale },
+  params,
 }: {
   children: React.ReactNode
-  params: { locale: string }
+  params: Promise<{ locale: string }>
 }) {
+  const { locale } = await params
   const messages = await getMessages(locale)
   const maintenanceMode = await isMaintenanceModeEnabled()
 

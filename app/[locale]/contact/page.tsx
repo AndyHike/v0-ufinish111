@@ -6,7 +6,7 @@ interface Props {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { locale } = params
+  const { locale } = await Promise.resolve(params)
 
   const titlePatterns = {
     cs: "Oprava mobilů Břevnov Praha 6 | DeviceHelp | Bělohorská 209/133 | Kontakt",

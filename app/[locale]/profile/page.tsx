@@ -17,7 +17,7 @@ export default async function ProfilePage() {
   await syncUserProfile(session.user.id)
 
   // Get user profile data from database
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .select("first_name, last_name, phone, address, created_at")

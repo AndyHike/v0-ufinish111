@@ -2,11 +2,11 @@ import type { MetadataRoute } from "next"
 import { createClient } from "@/lib/supabase"
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = "https://www.devicehelp.cz"
+  const baseUrl = "https://devicehelp.cz"
   const locales = ["cs", "en", "uk"] as const
   const defaultLocale = "cs"
 
-  const supabase = createClient()
+  const supabase = await createClient()
   const sitemapEntries: MetadataRoute.Sitemap = []
 
   // Helper function to create sitemap entry with hreflang alternates
