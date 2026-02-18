@@ -50,8 +50,66 @@ export async function generateMetadata({
       description: "Fast and quality mobile phone repair in Prague. Warranty on all repairs.",
     },
     uk: {
-      title: "DeviceHelp - DeviceHelp - Profesійнý ремонт мобільних телефонів у Празі",
+      title: "DeviceHelp - Profesionální oprava mobilních telefonů v Praze",
       description: "Швидкий та якісний ремонт мобільних телефонів у Празі. Гарантія на всі ремонти.",
+    },
+  }
+
+  const currentSeo = seoData[locale as keyof typeof seoData] || seoData.cs
+
+  return {
+    title: currentSeo.title,
+    description: currentSeo.description,
+    metadataBase: new URL(baseUrl),
+    alternates: {
+      canonical: canonicalUrl,
+      languages: {
+        cs: `${baseUrl}/cs`,
+        en: `${baseUrl}/en`,
+        uk: `${baseUrl}/uk`,
+        "x-default": `${baseUrl}/cs`,
+      },
+    },
+    openGraph: {
+      title: currentSeo.title,
+      description: currentSeo.description,
+      url: canonicalUrl,
+      siteName: "DeviceHelp",
+      locale: locale,
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: currentSeo.title,
+      description: currentSeo.description,
+    },
+    icons: {
+      icon: [
+        {
+          url: "https://xnwoqomipsesacphoczp.supabase.co/storage/v1/object/public/site-assets/favicon/1750418444610-hgnxmfio3rv.PNG",
+          type: "image/png",
+          sizes: "32x32",
+        },
+        {
+          url: "https://xnwoqomipsesacphoczp.supabase.co/storage/v1/object/public/site-assets/favicon/1750418444610-hgnxmfio3rv.PNG",
+          type: "image/png",
+          sizes: "16x16",
+        },
+        {
+          url: "https://xnwoqomipsesacphoczp.supabase.co/storage/v1/object/public/site-assets/favicon/1750418444610-hgnxmfio3rv.PNG",
+          type: "image/png",
+          sizes: "192x192",
+        },
+      ],
+      apple: [
+        {
+          url: "https://xnwoqomipsesacphoczp.supabase.co/storage/v1/object/public/site-assets/favicon/1750418444610-hgnxmfio3rv.PNG",
+          type: "image/png",
+          sizes: "180x180",
+        },
+      ],
+      shortcut:
+        "https://xnwoqomipsesacphoczp.supabase.co/storage/v1/object/public/site-assets/favicon/1750418444610-hgnxmfio3rv.PNG",
     },
   }
 
@@ -133,49 +191,6 @@ export default async function LocaleLayout({
   return (
     <html lang={locale} className={inter.variable} suppressHydrationWarning>
       <head>
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "LocalBusiness",
-              name: "DeviceHelp",
-              description: locale === "cs" 
-                ? "Profesionální oprava mobilních telefonů v Praze 6 Břevnov. iPhone, Samsung, Xiaomi. Garancia 6 měsíců." 
-                : locale === "en"
-                ? "Professional mobile phone repair in Prague 6 Břevnov. iPhone, Samsung, Xiaomi. 6-month warranty."
-                : "Професійний ремонт мобільних телефонів в Празі 6 Бржевнов. iPhone, Samsung, Xiaomi. Гарантія 6 місяців.",
-              address: {
-                "@type": "PostalAddress",
-                streetAddress: "Bělohorská 209/133",
-                addressLocality: "Praha 6-Břevnov",
-                addressRegion: "Praha",
-                postalCode: "169 00",
-                addressCountry: "CZ",
-              },
-              geo: {
-                "@type": "GeoCoordinates",
-                latitude: "50.0982",
-                longitude: "14.3917",
-              },
-              telephone: "+420775848259",
-              email: "info@devicehelp.cz",
-              areaServed: ["Praha 6", "Břevnov", "Dejvice", "Vokovice"],
-              serviceType: "Mobile Phone Repair",
-              priceRange: "1500-5000 CZK",
-              paymentAccepted: ["Cash", "Credit Card"],
-              currenciesAccepted: "CZK",
-              openingHoursSpecification: [
-                {
-                  "@type": "OpeningHoursSpecification",
-                  dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
-                  opens: "09:00",
-                  closes: "19:00",
-                },
-              ],
-            }),
-          }}
-        />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://xnwoqomipsesacphoczp.supabase.co" />
