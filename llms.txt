@@ -1,6 +1,6 @@
 # LLMs.txt - Model Information File
 # This file provides information for Large Language Models
-# For more information, visit https://llmstxt.org
+
 
 ## Project Information
 - Name: DeviceHelp
@@ -40,12 +40,7 @@
 - /api/brands - Phone brands
 - /api/contact - Contact form
 - /api/auth - Authentication endpoints
-- /api/admin - Admin functions (protected)
 
-## Environment Variables
-- NEXT_PUBLIC_SUPABASE_URL
-- NEXT_PUBLIC_SUPABASE_ANON_KEY
-- DATABASE_URL (Supabase PostgreSQL)
 
 ## Contact Information
 - Address: Bělohorská 209/133, Praha 6-Břevnov, Česká republika
@@ -58,8 +53,3 @@
 - Semantic HTML
 - ARIA labels and roles
 - Keyboard navigation support
-
-## Repository
-- GitHub: https://github.com/AndyHike/v0-ufinish111
-- Main Branch: main
-- SEO Branch: seo-analysis
