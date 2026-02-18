@@ -33,11 +33,12 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({
-  params,
+  params: { locale },
 }: {
-  params: Promise<{ locale: string }>
+  params: { locale: string }
 }): Promise<Metadata> {
-  const { locale } = await params
+  const baseUrl = "https://devicehelp.cz"
+  const canonicalUrl = `${baseUrl}/${locale}`
 
   const seoData = {
     cs: {
