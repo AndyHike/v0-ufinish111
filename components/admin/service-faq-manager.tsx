@@ -11,8 +11,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Edit, Plus, Trash2, Save, X, HelpCircle } from "lucide-react"
+import { Edit, Plus, Trash2, Save, X, HelpCircle, Info } from "lucide-react"
 import { toast } from "sonner"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 interface FaqTranslation {
   locale: string
@@ -61,6 +62,27 @@ export function ServiceFaqManager({ serviceId }: ServiceFaqManagerProps) {
 
   const handleSaveFaq = async (faqData: any) => {
     try {
+      // Конвертуємо translations об'єкт у масив
+      const translationsArray = Object.entries(faqData.translations)
+        .filter(([_, data]: [string, any]) => data.question?.trim() && data.answer?.trim())
+        .map(([locale, data]: [string, any]) => ({
+          locale,
+          question: data.question.trim(),
+          answer: data.answer.trim(),
+        }))
+
+      if (translationsArray.length === 0) {
+        toast.error("Будь ласка, заповніть питання та відповідь")
+        return
+      }
+
+      const payloadData = {
+        position: faqData.position,
+        translations: translationsArray,
+      }
+
+      console.log("[v0] Saving FAQ with data:", payloadData)
+
       const url = editingFaq
         ? `/api/admin/services/${serviceId}/faqs/${editingFaq.id}`
         : `/api/admin/services/${serviceId}/faqs`
@@ -71,8 +93,10 @@ export function ServiceFaqManager({ serviceId }: ServiceFaqManagerProps) {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(faqData),
+        body: JSON.stringify(payloadData),
       })
+
+      console.log("[v0] API Response status:", response.status)
 
       if (response.ok) {
         toast.success(editingFaq ? "FAQ оновлено" : "FAQ створено")
@@ -80,10 +104,12 @@ export function ServiceFaqManager({ serviceId }: ServiceFaqManagerProps) {
         setEditingFaq(null)
         fetchFaqs()
       } else {
+        const errorData = await response.json()
+        console.error("[v0] API Error:", errorData)
         toast.error("Помилка збереження FAQ")
       }
     } catch (error) {
-      console.error("Error saving FAQ:", error)
+      console.error("[v0] Error saving FAQ:", error)
       toast.error("Помилка збереження FAQ")
     }
   }
@@ -150,6 +176,32 @@ export function ServiceFaqManager({ serviceId }: ServiceFaqManagerProps) {
               </TabsTrigger>
             ))}
           </TabsList>
+
+          <Alert className="mb-4 mt-4 bg-blue-50 border-blue-200">
+            <Info className="h-4 w-4 text-blue-600" />
+            <AlertDescription className="text-blue-900 text-sm">
+              <strong>Совет:</strong> Використовуйте спеціальні плейсхолдери для SEO-оптимізації:
+              <div className="mt-2 space-y-1 font-mono text-xs">
+                <div><strong>Основні:</strong></div>
+                <div>• {`{{model}}`} - назва моделі (iPhone 14 Pro)</div>
+                <div>• {`{{brand}}`} - назва бренду (Apple)</div>
+                <div>• {`{{service}}`} - назва послуги (Заміна дисплею)</div>
+                <div className="mt-2"><strong>Про пристрій:</strong></div>
+                <div>• {`{{category}}`} - категорія пристрою (Смартфон)</div>
+                <div>• {`{{line}}`} - лінія продукту (Pro, Pro Max)</div>
+                <div>• {`{{productType}}`} - тип пристрою (мобільний телефон)</div>
+                <div className="mt-2"><strong>Про послугу:</strong></div>
+                <div>• {`{{warranty}}`} - гарантійний період (12 місяців)</div>
+                <div>• {`{{price}}`} - ціна послуги (1 500 CZK)</div>
+                <div>• {`{{duration}}`} - час виконання (2 години)</div>
+                <div className="mt-2"><strong>Комбіновані:</strong></div>
+                <div>• {`{{fullModel}}`} - повна назва (Apple iPhone 14 Pro)</div>
+              </div>
+              <div className="mt-3 p-2 bg-blue-100 rounded text-xs">
+                <strong>Приклад:</strong> "{{warranty}} гарантія на {{service}} {{fullModel}}"
+              </div>
+            </AlertDescription>
+          </Alert>
 
           {locales.map((locale) => (
             <TabsContent key={locale.code} value={locale.code} className="space-y-4">
