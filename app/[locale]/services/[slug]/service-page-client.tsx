@@ -186,6 +186,13 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
     model: sourceModel?.name || modelParam || "",
     brand: sourceModel?.brands?.name || "",
     service: translation.name || "",
+    category: sourceModel?.category?.name || sourceModel?.categories?.[0]?.name || "",
+    line: sourceModel?.product_line || "",
+    warranty: serviceData.warranty_period || `${serviceData.warranty_months || 12} місяців`,
+    price: modelServicePrice ? formatCurrency(modelServicePrice) : (minPrice ? formatCurrency(minPrice) : ""),
+    duration: serviceData.duration_hours ? `${serviceData.duration_hours} годин` : "",
+    fullModel: sourceModel ? `${sourceModel.brands?.name || ""} ${sourceModel.name}`.trim() : modelParam || "",
+    productType: sourceModel?.type || "",
   }
 
   // Обробка FAQ для підстановки плейсхолдерів

@@ -182,11 +182,24 @@ export function ServiceFaqManager({ serviceId }: ServiceFaqManagerProps) {
             <AlertDescription className="text-blue-900 text-sm">
               <strong>Совет:</strong> Використовуйте спеціальні плейсхолдери для SEO-оптимізації:
               <div className="mt-2 space-y-1 font-mono text-xs">
-                <div>• {`{{model}}`}  - буде замінено на назву моделі</div>
-                <div>• {`{{brand}}`}  - буде замінено на назву бренду</div>
-                <div>• {`{{service}}`}  - буде замінено на назву послуги</div>
+                <div><strong>Основні:</strong></div>
+                <div>• {`{{model}}`} - назва моделі (iPhone 14 Pro)</div>
+                <div>• {`{{brand}}`} - назва бренду (Apple)</div>
+                <div>• {`{{service}}`} - назва послуги (Заміна дисплею)</div>
+                <div className="mt-2"><strong>Про пристрій:</strong></div>
+                <div>• {`{{category}}`} - категорія пристрою (Смартфон)</div>
+                <div>• {`{{line}}`} - лінія продукту (Pro, Pro Max)</div>
+                <div>• {`{{productType}}`} - тип пристрою (мобільний телефон)</div>
+                <div className="mt-2"><strong>Про послугу:</strong></div>
+                <div>• {`{{warranty}}`} - гарантійний період (12 місяців)</div>
+                <div>• {`{{price}}`} - ціна послуги (1 500 CZK)</div>
+                <div>• {`{{duration}}`} - час виконання (2 години)</div>
+                <div className="mt-2"><strong>Комбіновані:</strong></div>
+                <div>• {`{{fullModel}}`} - повна назва (Apple iPhone 14 Pro)</div>
               </div>
-              <div className="mt-2">Приклад: {`"Який гарантійний період для {{model}} при {{service}}?"`}</div>
+              <div className="mt-3 p-2 bg-blue-100 rounded text-xs">
+                <strong>Приклад:</strong> "{{warranty}} гарантія на {{service}} {{fullModel}}"
+              </div>
             </AlertDescription>
           </Alert>
 
