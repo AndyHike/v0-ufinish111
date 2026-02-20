@@ -8,6 +8,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Phone, MessageCircle, Clock, Shield, CheckCircle, ChevronDown, ArrowLeft } from "lucide-react"
 import { formatCurrency } from "@/lib/format-currency"
 import { formatImageUrl } from "@/utils/image-url"
+import { replaceFaqPlaceholders } from "@/lib/faq-placeholder-replacer"
 import { useEffect, useRef } from "react"
 import { ServicePriceDisplay } from "@/components/service-price-display"
 import { ContactCTABanner } from "@/components/contact-cta-banner"
@@ -179,6 +180,22 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
       })
     }
   }
+
+  // Підготовка значень для замісткі плейсхолдерів
+  const placeholderValues = {
+    model: sourceModel?.name || modelParam || "",
+    brand: sourceModel?.brands?.name || "",
+    service: translation.name || "",
+  }
+
+  // Обробка FAQ для підстановки плейсхолдерів
+  const processedFaqs = faqs.map((faq) => ({
+    ...faq,
+    translation: {
+      question: replaceFaqPlaceholders(faq.translation.question, placeholderValues),
+      answer: replaceFaqPlaceholders(faq.translation.answer, placeholderValues),
+    },
+  }))
 
   const bookingUrl = (() => {
     const params = new URLSearchParams()
@@ -360,7 +377,7 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
             <section className="bg-gray-50 rounded-xl p-6 lg:p-8">
               <h2 className="text-xl lg:text-2xl font-bold text-gray-900 mb-6 text-center">{t("frequentQuestions")}</h2>
               <div className="space-y-4 max-w-4xl mx-auto">
-                {faqs.map((faq) => (
+                {processedFaqs.map((faq) => (
                   <Collapsible key={faq.id}>
                     <CollapsibleTrigger className="flex w-full items-center justify-between p-4 text-left bg-white hover:bg-gray-50 rounded-lg transition-colors border border-gray-200">
                       <span className="font-semibold text-gray-900 text-sm lg:text-base pr-4">
