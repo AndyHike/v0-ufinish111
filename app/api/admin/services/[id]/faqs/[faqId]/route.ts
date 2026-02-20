@@ -3,7 +3,7 @@ import { createServerClient } from "@/utils/supabase/server"
 
 export async function GET(request: NextRequest, { params }: { params: { id: string; faqId: string } }) {
   try {
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
     const { faqId } = await params
 
     const { data: faq, error } = await supabase
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
 export async function PUT(request: NextRequest, { params }: { params: { id: string; faqId: string } }) {
   try {
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
     const { faqId } = await params
     const body = await request.json()
     const { position, translations } = body
@@ -77,7 +77,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
 export async function DELETE(request: NextRequest, { params }: { params: { id: string; faqId: string } }) {
   try {
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
     const { faqId } = await params
 
     const { error } = await supabase.from("service_faqs").delete().eq("id", faqId)
