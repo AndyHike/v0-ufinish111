@@ -62,6 +62,20 @@ export function ServiceFaqManager({ serviceId }: ServiceFaqManagerProps) {
 
   const handleSaveFaq = async (faqData: any) => {
     try {
+      // Конвертуємо translations об'єкт у масив
+      const translationsArray = Object.entries(faqData.translations).map(([locale, data]: [string, any]) => ({
+        locale,
+        question: data.question,
+        answer: data.answer,
+      }))
+
+      const payloadData = {
+        position: faqData.position,
+        translations: translationsArray,
+      }
+
+      console.log("[v0] Saving FAQ with data:", payloadData)
+
       const url = editingFaq
         ? `/api/admin/services/${serviceId}/faqs/${editingFaq.id}`
         : `/api/admin/services/${serviceId}/faqs`
@@ -72,8 +86,10 @@ export function ServiceFaqManager({ serviceId }: ServiceFaqManagerProps) {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(faqData),
+        body: JSON.stringify(payloadData),
       })
+
+      console.log("[v0] API Response status:", response.status)
 
       if (response.ok) {
         toast.success(editingFaq ? "FAQ оновлено" : "FAQ створено")
@@ -81,10 +97,12 @@ export function ServiceFaqManager({ serviceId }: ServiceFaqManagerProps) {
         setEditingFaq(null)
         fetchFaqs()
       } else {
+        const errorData = await response.json()
+        console.error("[v0] API Error:", errorData)
         toast.error("Помилка збереження FAQ")
       }
     } catch (error) {
-      console.error("Error saving FAQ:", error)
+      console.error("[v0] Error saving FAQ:", error)
       toast.error("Помилка збереження FAQ")
     }
   }
