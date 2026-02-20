@@ -41,8 +41,10 @@ export function Header() {
   const t = useTranslations("Header")
   const pathname = usePathname()
   const params = useParams()
-  const locale = params.locale as string
   const router = useRouter()
+
+  // Extract locale from pathname instead of relying on params which can be unreliable
+  const locale = pathname.split("/")[1] || "cs"
 
   const [user, setUser] = useState<any>(null)
   const [userLoaded, setUserLoaded] = useState(false)
