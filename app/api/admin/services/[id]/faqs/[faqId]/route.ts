@@ -52,17 +52,30 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
     // Оновлюємо переклади
     if (translations && Array.isArray(translations)) {
-      for (const translation of translations) {
-        const { error: translationError } = await supabase.from("service_faq_translations").upsert({
+      // Видаляємо старі переклади
+      const { error: deleteError } = await supabase.from("service_faq_translations").delete().eq("service_faq_id", faqId)
+
+      if (deleteError) {
+        console.error("[v0] Error deleting old FAQ translations:", deleteError)
+        return NextResponse.json({ error: "Failed to delete old translations", details: deleteError.message }, { status: 500 })
+      }
+
+      // Додаємо нові переклади
+      const translationInserts = translations
+        .filter((t: any) => t.question?.trim() && t.answer?.trim())
+        .map((translation: any) => ({
           service_faq_id: faqId,
           locale: translation.locale,
-          question: translation.question,
-          answer: translation.answer,
-        })
+          question: translation.question.trim(),
+          answer: translation.answer.trim(),
+        }))
 
-        if (translationError) {
-          console.error("[v0] Error updating FAQ translation:", translationError)
-          return NextResponse.json({ error: "Failed to update FAQ translation", details: translationError.message }, { status: 500 })
+      if (translationInserts.length > 0) {
+        const { error: insertError } = await supabase.from("service_faq_translations").insert(translationInserts)
+
+        if (insertError) {
+          console.error("[v0] Error inserting FAQ translations:", insertError)
+          return NextResponse.json({ error: "Failed to insert translations", details: insertError.message }, { status: 500 })
         }
       }
     }

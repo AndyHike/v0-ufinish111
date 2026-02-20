@@ -63,11 +63,18 @@ export function ServiceFaqManager({ serviceId }: ServiceFaqManagerProps) {
   const handleSaveFaq = async (faqData: any) => {
     try {
       // Конвертуємо translations об'єкт у масив
-      const translationsArray = Object.entries(faqData.translations).map(([locale, data]: [string, any]) => ({
-        locale,
-        question: data.question,
-        answer: data.answer,
-      }))
+      const translationsArray = Object.entries(faqData.translations)
+        .filter(([_, data]: [string, any]) => data.question?.trim() && data.answer?.trim())
+        .map(([locale, data]: [string, any]) => ({
+          locale,
+          question: data.question.trim(),
+          answer: data.answer.trim(),
+        }))
+
+      if (translationsArray.length === 0) {
+        toast.error("Будь ласка, заповніть питання та відповідь")
+        return
+      }
 
       const payloadData = {
         position: faqData.position,

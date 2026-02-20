@@ -59,20 +59,24 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
 
     // Створюємо переклади
     if (translations && Array.isArray(translations)) {
-      const translationInserts = translations.map((translation: any) => ({
-        service_faq_id: faq.id,
-        locale: translation.locale,
-        question: translation.question,
-        answer: translation.answer,
-      }))
+      const translationInserts = translations
+        .filter((t: any) => t.question?.trim() && t.answer?.trim())
+        .map((translation: any) => ({
+          service_faq_id: faq.id,
+          locale: translation.locale,
+          question: translation.question.trim(),
+          answer: translation.answer.trim(),
+        }))
 
-      const { error: translationError } = await supabase.from("service_faq_translations").insert(translationInserts)
+      if (translationInserts.length > 0) {
+        const { error: translationError } = await supabase.from("service_faq_translations").insert(translationInserts)
 
-      if (translationError) {
-        console.error("[v0] Error creating FAQ translations:", translationError)
-        // Видаляємо створений FAQ якщо переклади не вдалося створити
-        await supabase.from("service_faqs").delete().eq("id", faq.id)
-        return NextResponse.json({ error: "Failed to create FAQ translations", details: translationError.message }, { status: 500 })
+        if (translationError) {
+          console.error("[v0] Error creating FAQ translations:", translationError)
+          // Видаляємо створений FAQ якщо переклади не вдалося створити
+          await supabase.from("service_faqs").delete().eq("id", faq.id)
+          return NextResponse.json({ error: "Failed to create FAQ translations", details: translationError.message }, { status: 500 })
+        }
       }
     }
 
