@@ -115,15 +115,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       console.warn("[SITEMAP] Error fetching models:", modelsError.message)
     }
 
-    // Fetch and add dynamic service pages with model combinations
+    // Fetch and add dynamic service pages
     const { data: services, error: servicesError } = await supabase
       .from("services")
-      .select("id, slug, created_at")
+      .select("slug, created_at")
       .not("slug", "is", null)
 
     console.log("[SITEMAP] Services fetched:", { count: services?.length, error: servicesError?.message })
     if (!servicesError && services) {
-      // First add basic service pages without model filter
       services.forEach((service) => {
         if (service.slug) {
           addMultilingualEntries(
@@ -132,30 +131,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           )
         }
       })
-
-      // Then add service+model combinations
-      for (const service of services) {
-        if (!service.slug) continue
-
-        const { data: modelServices, error: modelServicesError } = await supabase
-          .from("model_services")
-          .select("model_id, models(slug)")
-          .eq("service_id", service.id)
-          .not("models.slug", "is", null)
-
-        if (!modelServicesError && modelServices) {
-          console.log(`[SITEMAP] Found ${modelServices.length} models for service "${service.slug}"`)
-          modelServices.forEach((ms) => {
-            const model = ms.models as { slug: string } | null
-            if (model?.slug) {
-              addMultilingualEntries(
-                `/services/${service.slug}?model=${model.slug}`,
-                service.created_at ? new Date(service.created_at) : new Date()
-              )
-            }
-          })
-        }
-      }
     } else if (servicesError) {
       console.warn("[SITEMAP] Error fetching services:", servicesError.message)
     }
