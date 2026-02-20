@@ -1,5 +1,6 @@
 "use client"
 
+import { usePathname } from "next/navigation"
 import Link from "next/link"
 import { ChevronRight, Home } from "lucide-react"
 
@@ -14,6 +15,11 @@ interface BreadcrumbProps {
 }
 
 export function Breadcrumb({ items, className = "" }: BreadcrumbProps) {
+  const pathname = usePathname()
+  // Extract locale from pathname
+  const locale = pathname.split("/")[1] || "cs"
+  const homeHref = `/${locale}`
+
   return (
     <nav
       className={`flex items-center gap-2 text-sm text-muted-foreground ${className}`}
@@ -21,7 +27,7 @@ export function Breadcrumb({ items, className = "" }: BreadcrumbProps) {
     >
       {/* Home link */}
       <Link
-        href="/"
+        href={homeHref}
         className="flex items-center gap-1 hover:text-foreground transition-colors"
         title="Домашня сторінка"
       >
