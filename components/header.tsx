@@ -41,8 +41,10 @@ export function Header() {
   const t = useTranslations("Header")
   const pathname = usePathname()
   const params = useParams()
-  const locale = params.locale as string
   const router = useRouter()
+
+  // Extract locale from pathname instead of relying on params which can be unreliable
+  const locale = pathname.split("/")[1] || "cs"
 
   const [user, setUser] = useState<any>(null)
   const [userLoaded, setUserLoaded] = useState(false)
@@ -79,7 +81,7 @@ export function Header() {
   // Helper function to check if a path is active
   const isActive = (path: string) => {
     if (path === `/${locale}`) {
-      return pathname === `/${locale}`
+      return pathname === "/" || pathname === `/${locale}`
     }
     return pathname.startsWith(path)
   }
@@ -288,15 +290,26 @@ export function Header() {
                     <div className="px-3 space-y-1">
                       <div className="flex items-center gap-2">
                         <Phone className="h-4 w-4 text-primary" />
-                        <span className="text-sm">+42075848259</span>
+                        <a href="tel:+420775848259" className="text-sm hover:text-primary">
+                          +420 775 848 259
+                        </a>
                       </div>
                       <div className="flex items-center gap-2">
                         <Mail className="h-4 w-4 text-primary" />
-                        <span className="text-sm">info@devicehelp.cz</span>
+                        <a href="mailto:info@devicehelp.cz" className="text-sm hover:text-primary">
+                          info@devicehelp.cz
+                        </a>
                       </div>
                       <div className="flex items-center gap-2">
                         <MapPin className="h-4 w-4 text-primary" />
-                        <span className="text-sm">Praha 2</span>
+                        <a
+                          href="https://maps.app.goo.gl/Uw4EPBKqk6RauBRz7"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm hover:text-primary"
+                        >
+                          Bělohorská 209/133, 169 00 Praha 6
+                        </a>
                       </div>
                     </div>
                   </div>
@@ -406,7 +419,7 @@ export function Header() {
             ))}
           </nav>
 
-          {/* Мова та користувач */}
+          {/* Мова та кор�����стувач */}
           <div className="flex items-center gap-2 flex-shrink-0">
             <Suspense
               fallback={
@@ -417,7 +430,9 @@ export function Header() {
             >
               <LanguageSwitcher className="flex" />
             </Suspense>
-            {userLoaded ? <UserNav user={user} /> : <div className="h-8 w-8 rounded-full bg-muted animate-pulse" />}
+            <div className="hidden md:block">
+              {userLoaded ? <UserNav user={user} /> : <div className="h-8 w-8 rounded-full bg-muted animate-pulse" />}
+            </div>
           </div>
         </div>
       </header>
