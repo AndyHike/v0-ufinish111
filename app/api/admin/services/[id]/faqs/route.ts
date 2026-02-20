@@ -84,7 +84,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
           return hasQuestion && hasAnswer
         })
         .map(([locale, translation]: [string, any]) => ({
-          service_faq_id: faq.id,
+          faq_id: faq.id,
           locale,
           question: translation.question.trim(),
           answer: translation.answer.trim(),

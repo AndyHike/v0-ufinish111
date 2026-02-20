@@ -71,7 +71,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     if (translationEntries.length > 0) {
       // Видаляємо старі переклади
       console.log("[v0] Deleting old translations for faqId:", faqId)
-      const { error: deleteError } = await supabase.from("service_faq_translations").delete().eq("service_faq_id", faqId)
+      const { error: deleteError } = await supabase.from("service_faq_translations").delete().eq("faq_id", faqId)
 
       if (deleteError) {
         console.error("[v0] Error deleting old FAQ translations:", deleteError)
@@ -89,7 +89,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
           return hasQuestion && hasAnswer
         })
         .map(([locale, translation]: [string, any]) => ({
-          service_faq_id: faqId,
+          faq_id: faqId,
           locale,
           question: translation.question.trim(),
           answer: translation.answer.trim(),
