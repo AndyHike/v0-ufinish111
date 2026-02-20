@@ -372,24 +372,6 @@ export function ServiceFaqManager({ serviceId }: ServiceFaqManagerProps) {
     </Card>
   )
 }
-
-export function ServiceFaqManager({ serviceId }: ServiceFaqManagerProps) {
-  const [faqs, setFaqs] = useState<Faq[]>([])
-  const [loading, setLoading] = useState(true)
-  const [editingFaq, setEditingFaq] = useState<Faq | null>(null)
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
-
-  const locales = [
-    { code: "uk", name: "Українська" },
-    { code: "en", name: "English" },
-    { code: "cs", name: "Čeština" },
-  ]
-
-  useEffect(() => {
-    fetchFaqs()
-  }, [serviceId])
-
-  const fetchFaqs = async () => {
     try {
       const response = await fetch(`/api/admin/services/${serviceId}/faqs`)
       const data = await response.json()
