@@ -1,5 +1,3 @@
-"use client"
-
 import { replaceFaqPlaceholders, type FaqContext } from "@/lib/faq-placeholders"
 import { useSearchParams } from "next/navigation"
 import Link from "next/link"
