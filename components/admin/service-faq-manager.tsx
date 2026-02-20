@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -11,8 +11,10 @@ import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Edit, Plus, Trash2, Save, X, HelpCircle } from "lucide-react"
+import { Edit, Plus, Trash2, Save, X, HelpCircle, Code2, Copy } from "lucide-react"
 import { toast } from "sonner"
+import { FAQ_PLACEHOLDERS } from "@/lib/faq-placeholders"
+import { ScrollArea } from "@/components/ui/scroll-area"
 
 interface FaqTranslation {
   locale: string
@@ -35,12 +37,17 @@ export function ServiceFaqManager({ serviceId }: ServiceFaqManagerProps) {
   const [loading, setLoading] = useState(true)
   const [editingFaq, setEditingFaq] = useState<Faq | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [showPlaceholders, setShowPlaceholders] = useState(false)
+  const [activePlaceholderField, setActivePlaceholderField] = useState<string | null>(null)
 
   const locales = [
     { code: "uk", name: "Українська" },
     { code: "en", name: "English" },
     { code: "cs", name: "Čeština" },
   ]
+
+  const questionRefMap = useRef<Record<string, HTMLInputElement | null>>({})
+  const answerRefMap = useRef<Record<string, HTMLTextAreaElement | null>>({})
 
   useEffect(() => {
     fetchFaqs()
@@ -108,6 +115,106 @@ export function ServiceFaqManager({ serviceId }: ServiceFaqManagerProps) {
     }
   }
 
+  const insertPlaceholder = (placeholder: string, fieldType: "question" | "answer", locale: string) => {
+    const key = `${locale}-${fieldType}`
+
+    if (fieldType === "question") {
+      const input = questionRefMap.current[key]
+      if (input) {
+        const start = input.selectionStart || 0
+        const end = input.selectionEnd || 0
+        const text = input.value
+        const before = text.substring(0, start)
+        const after = text.substring(end)
+        input.value = before + placeholder + after
+        input.selectionStart = input.selectionEnd = start + placeholder.length
+
+        // Зберегти значення у state (потребує синхронізації з FaqForm)
+        const event = new Event("input", { bubbles: true })
+        input.dispatchEvent(event)
+        input.focus()
+      }
+    } else {
+      const textarea = answerRefMap.current[key]
+      if (textarea) {
+        const start = textarea.selectionStart || 0
+        const end = textarea.selectionEnd || 0
+        const text = textarea.value
+        const before = text.substring(0, start)
+        const after = text.substring(end)
+        textarea.value = before + placeholder + after
+        textarea.selectionStart = textarea.selectionEnd = start + placeholder.length
+
+        const event = new Event("input", { bubbles: true })
+        textarea.dispatchEvent(event)
+        textarea.focus()
+      }
+    }
+
+    toast.success(`Додано: ${placeholder}`)
+    setActivePlaceholderField(null)
+  }
+
+  const PlaceholderPanel = ({
+    fieldType,
+    locale,
+  }: {
+    fieldType: "question" | "answer"
+    locale: string
+  }) => {
+    const isActive = activePlaceholderField === `${locale}-${fieldType}`
+
+    return (
+      <Dialog open={isActive} onOpenChange={(open) => setActivePlaceholderField(open ? `${locale}-${fieldType}` : null)}>
+        <DialogTrigger asChild>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="gap-2"
+            onClick={() => setActivePlaceholderField(`${locale}-${fieldType}`)}
+          >
+            <Code2 className="h-4 w-4" />
+            Плейсхолдери
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Вставити плейсхолдер</DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="h-80">
+            <div className="space-y-2 p-4">
+              {FAQ_PLACEHOLDERS.map((placeholder) => (
+                <div
+                  key={placeholder.key}
+                  className="p-3 border rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="font-semibold text-sm text-gray-900">{placeholder.label}</div>
+                      <div className="text-xs text-gray-600 mt-1">{placeholder.description}</div>
+                      <div className="font-mono text-sm text-blue-600 mt-2 bg-blue-50 px-2 py-1 rounded w-fit">
+                        {placeholder.format}
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={() => insertPlaceholder(placeholder.format, fieldType, locale)}
+                      className="gap-2 flex-shrink-0"
+                    >
+                      <Copy className="h-4 w-4" />
+                      Вставити
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
+    )
+  }
+
   const FaqForm = ({ faq }: { faq?: Faq }) => {
     const [formData, setFormData] = useState({
       position: faq?.position || 0,
@@ -127,6 +234,32 @@ export function ServiceFaqManager({ serviceId }: ServiceFaqManagerProps) {
     const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault()
       handleSaveFaq(formData)
+    }
+
+    const handleQuestionChange = (locale: string, value: string) => {
+      setFormData({
+        ...formData,
+        translations: {
+          ...formData.translations,
+          [locale]: {
+            ...formData.translations[locale],
+            question: value,
+          },
+        },
+      })
+    }
+
+    const handleAnswerChange = (locale: string, value: string) => {
+      setFormData({
+        ...formData,
+        translations: {
+          ...formData.translations,
+          [locale]: {
+            ...formData.translations[locale],
+            answer: value,
+          },
+        },
+      })
     }
 
     return (
@@ -154,43 +287,35 @@ export function ServiceFaqManager({ serviceId }: ServiceFaqManagerProps) {
           {locales.map((locale) => (
             <TabsContent key={locale.code} value={locale.code} className="space-y-4">
               <div>
-                <Label htmlFor={`question-${locale.code}`}>Питання</Label>
+                <div className="flex items-center justify-between mb-2">
+                  <Label htmlFor={`question-${locale.code}`}>Питання</Label>
+                  <PlaceholderPanel fieldType="question" locale={locale.code} />
+                </div>
                 <Input
+                  ref={(el) => {
+                    if (el) questionRefMap.current[`${locale.code}-question`] = el
+                  }}
                   id={`question-${locale.code}`}
                   value={formData.translations[locale.code]?.question || ""}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      translations: {
-                        ...formData.translations,
-                        [locale.code]: {
-                          ...formData.translations[locale.code],
-                          question: e.target.value,
-                        },
-                      },
-                    })
-                  }
+                  onChange={(e) => handleQuestionChange(locale.code, e.target.value)}
+                  placeholder="Напр: {{brand}} {{model}} не включається - що робити?"
                   required
                 />
               </div>
 
               <div>
-                <Label htmlFor={`answer-${locale.code}`}>Відповідь</Label>
+                <div className="flex items-center justify-between mb-2">
+                  <Label htmlFor={`answer-${locale.code}`}>Відповідь</Label>
+                  <PlaceholderPanel fieldType="answer" locale={locale.code} />
+                </div>
                 <Textarea
+                  ref={(el) => {
+                    if (el) answerRefMap.current[`${locale.code}-answer`] = el
+                  }}
                   id={`answer-${locale.code}`}
                   value={formData.translations[locale.code]?.answer || ""}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      translations: {
-                        ...formData.translations,
-                        [locale.code]: {
-                          ...formData.translations[locale.code],
-                          answer: e.target.value,
-                        },
-                      },
-                    })
-                  }
+                  onChange={(e) => handleAnswerChange(locale.code, e.target.value)}
+                  placeholder="Напр: {{service}} для {{device}} займає {{duration_hours}} годину(н). Гарантія {{warranty_months}} {{warranty_period}}."
                   rows={4}
                   required
                 />
