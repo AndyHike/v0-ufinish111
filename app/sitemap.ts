@@ -76,6 +76,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           addMultilingualEntries(`/brands/${brand.slug}`, brand.updated_at ? new Date(brand.updated_at) : new Date())
         }
       })
+    } else if (brandsError) {
+      console.warn("Error fetching brands:", brandsError.message)
     }
 
     // Fetch and add dynamic series pages
@@ -90,6 +92,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           addMultilingualEntries(`/series/${serie.slug}`, serie.updated_at ? new Date(serie.updated_at) : new Date())
         }
       })
+    } else if (seriesError) {
+      console.warn("Error fetching series:", seriesError.message)
     }
 
     // Fetch and add dynamic model pages
@@ -104,6 +108,27 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           addMultilingualEntries(`/models/${model.slug}`, model.updated_at ? new Date(model.updated_at) : new Date())
         }
       })
+    } else if (modelsError) {
+      console.warn("Error fetching models:", modelsError.message)
+    }
+
+    // Fetch and add dynamic service pages
+    const { data: services, error: servicesError } = await supabase
+      .from("services")
+      .select("slug, updated_at")
+      .not("slug", "is", null)
+
+    if (!servicesError && services) {
+      services.forEach((service) => {
+        if (service.slug) {
+          addMultilingualEntries(
+            `/services/${service.slug}`,
+            service.updated_at ? new Date(service.updated_at) : new Date()
+          )
+        }
+      })
+    } else if (servicesError) {
+      console.warn("Error fetching services:", servicesError.message)
     }
 
     console.log(`Generated sitemap with ${sitemapEntries.length} entries`)
