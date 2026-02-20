@@ -259,7 +259,7 @@ export function ContactSection() {
                   >
                     <Button size="lg" className="w-full gap-2">
                       <Navigation className="h-4 w-4" />
-                      Прокласти маршрут
+                      {t("directionButton")}
                     </Button>
                   </a>
                 </div>
@@ -452,7 +452,7 @@ export function ContactSection() {
                 <a href="https://maps.app.goo.gl/Uw4EPBKqk6RauBRz7" target="_blank" rel="noopener noreferrer" className="block">
                   <Button size="lg" className="w-full gap-2">
                     <Navigation className="h-4 w-4" />
-                    Прокласти маршрут
+                    {t("directionButton")}
                   </Button>
                 </a>
               </div>

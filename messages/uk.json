@@ -350,8 +350,9 @@
     "weekdays": "Пн-Пт: 9:00 - 18:00",
     "weekend": "Сб: 10:00 - 15:00",
     "contactForm": "Контактна форма",
-    "location": "Розташування"
-  },
+    "location": "Розташування",
+    "contact": "Контакти",
+    "directionButton": "Прокласти маршрут"
   "Auth": {
     "createAccount": "Створити обліковий запис",
     "alreadyHaveAccount": "Вже маєте обліковий запис?",
@@ -698,7 +699,7 @@
     "loadingError": "Помилка завантаження",
     "tryAgain": "Спробувати знову",
     "statusAdded": "Статус додано",
-    "statusAddedDescription": "Новий статус замовлення успішно додано",
+    "statusAddedDescription": "Нови�� статус замовлення успішно додано",
     "statusUpdated": "Статус оновлено",
     "statusUpdatedDescription": "Статус замовлення успішно оновлено",
     "statusDeleted": "Статус видалено",
