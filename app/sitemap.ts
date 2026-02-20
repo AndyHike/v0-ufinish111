@@ -1,12 +1,12 @@
 import type { MetadataRoute } from "next"
-import { createClient } from "@/lib/supabase"
+import { createServerClient } from "@/utils/supabase/server"
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = "https://devicehelp.cz"
   const locales = ["cs", "en", "uk"] as const
   const defaultLocale = "cs"
 
-  const supabase = createClient()
+  const supabase = await createServerClient()
   const sitemapEntries: MetadataRoute.Sitemap = []
 
   // Helper function to create sitemap entry with hreflang alternates
@@ -70,6 +70,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .select("slug, updated_at")
       .not("slug", "is", null)
 
+    console.log("[SITEMAP] Brands fetched:", { count: brands?.length, error: brandsError?.message })
     if (!brandsError && brands) {
       brands.forEach((brand) => {
         if (brand.slug) {
@@ -77,7 +78,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         }
       })
     } else if (brandsError) {
-      console.warn("Error fetching brands:", brandsError.message)
+      console.warn("[SITEMAP] Error fetching brands:", brandsError.message)
     }
 
     // Fetch and add dynamic series pages
@@ -86,6 +87,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .select("slug, updated_at")
       .not("slug", "is", null)
 
+    console.log("[SITEMAP] Series fetched:", { count: series?.length, error: seriesError?.message })
     if (!seriesError && series) {
       series.forEach((serie) => {
         if (serie.slug) {
@@ -93,7 +95,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         }
       })
     } else if (seriesError) {
-      console.warn("Error fetching series:", seriesError.message)
+      console.warn("[SITEMAP] Error fetching series:", seriesError.message)
     }
 
     // Fetch and add dynamic model pages
@@ -102,6 +104,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .select("slug, updated_at")
       .not("slug", "is", null)
 
+    console.log("[SITEMAP] Models fetched:", { count: models?.length, error: modelsError?.message })
     if (!modelsError && models) {
       models.forEach((model) => {
         if (model.slug) {
@@ -109,7 +112,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         }
       })
     } else if (modelsError) {
-      console.warn("Error fetching models:", modelsError.message)
+      console.warn("[SITEMAP] Error fetching models:", modelsError.message)
     }
 
     // Fetch and add dynamic service pages
@@ -118,6 +121,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .select("slug, updated_at")
       .not("slug", "is", null)
 
+    console.log("[SITEMAP] Services fetched:", { count: services?.length, error: servicesError?.message })
     if (!servicesError && services) {
       services.forEach((service) => {
         if (service.slug) {
@@ -128,10 +132,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         }
       })
     } else if (servicesError) {
-      console.warn("Error fetching services:", servicesError.message)
+      console.warn("[SITEMAP] Error fetching services:", servicesError.message)
     }
 
-    console.log(`Generated sitemap with ${sitemapEntries.length} entries`)
+    console.log(`[SITEMAP] Generated sitemap with ${sitemapEntries.length} entries`)
   } catch (error) {
     console.error("Error generating sitemap:", error)
   }
