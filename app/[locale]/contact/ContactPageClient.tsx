@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/components/ui/use-toast"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Phone, Mail, MapPin, Clock, CheckCircle } from "lucide-react"
+import { Phone, Mail, MapPin, Clock, CheckCircle, Navigation } from "lucide-react"
 
 export default function ContactPageClient() {
   const t = useTranslations("Contact")
@@ -102,7 +102,136 @@ export default function ContactPageClient() {
         <p className="mt-4 text-xl text-muted-foreground">{t("subtitle")}</p>
       </div>
 
-      <div className="grid gap-8 md:grid-cols-2">
+      {/* Мобільна версія */}
+      <div className="md:hidden space-y-6">
+        {/* Форма */}
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("contactUs")}</CardTitle>
+            <CardDescription>{t("contactUsDescription")}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isSuccess ? (
+              <div className="flex flex-col items-center justify-center py-8 text-center h-full">
+                <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
+                <h3 className="text-xl font-semibold mb-2">{t("successTitle")}</h3>
+                <p className="text-muted-foreground mb-6">{t("successMessage")}</p>
+                <Button onClick={() => setIsSuccess(false)}>{t("sendAnother")}</Button>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <label htmlFor="name" className="text-sm font-medium">
+                    {t("nameLabel")}
+                  </label>
+                  <Input id="name" name="name" required placeholder={t("namePlaceholder")} />
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="email" className="text-sm font-medium">
+                    {t("emailLabel")}
+                  </label>
+                  <Input id="email" name="email" type="email" required placeholder={t("emailPlaceholder")} />
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="phone" className="text-sm font-medium">
+                    {t("phoneLabel")}
+                  </label>
+                  <Input id="phone" name="phone" type="tel" placeholder={t("phonePlaceholder")} />
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="message" className="text-sm font-medium">
+                    {t("messageLabel")}
+                  </label>
+                  <Textarea
+                    id="message"
+                    name="message"
+                    required
+                    placeholder={t("messagePlaceholder")}
+                    rows={8}
+                    className="min-h-[180px]"
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={isSubmitting}>
+                  {isSubmitting ? t("sending") : t("send")}
+                </Button>
+              </form>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Контактна інформація під формою */}
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("contact")}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center gap-3">
+              <Phone className="h-5 w-5 text-primary shrink-0" />
+              <a href="tel:+420775848259" className="text-sm hover:text-primary" onClick={() => handleContactClick("phone")}>
+                +420 775 848 259
+              </a>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <Mail className="h-5 w-5 text-primary shrink-0" />
+              <a href="mailto:info@devicehelp.cz" className="text-sm hover:text-primary" onClick={() => handleContactClick("email")}>
+                info@devicehelp.cz
+              </a>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <MapPin className="h-5 w-5 text-primary shrink-0" />
+              <a
+                href="https://maps.app.goo.gl/Uw4EPBKqk6RauBRz7"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm hover:text-primary"
+              >
+                Bělohorská 209/133, 169 00 Praha 6
+              </a>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <Clock className="h-5 w-5 text-primary shrink-0" />
+              <div>
+                <p className="text-sm">{t("workingHoursWeekdays")}</p>
+                <p className="text-sm">{t("workingHoursSaturday")}</p>
+                <p className="text-sm">{t("workingHoursSunday")}</p>
+              </div>
+            </div>
+
+            <a href="https://maps.app.goo.gl/Uw4EPBKqk6RauBRz7" target="_blank" rel="noopener noreferrer" className="w-full block pt-2">
+              <Button size="lg" className="w-full gap-2">
+                <Navigation className="h-4 w-4" />
+                Прокласти маршрут
+              </Button>
+            </a>
+          </CardContent>
+        </Card>
+
+        {/* Карта */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">{t("ourLocation")}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="w-full h-[300px] rounded-lg overflow-hidden">
+              <iframe
+                title={t("mapTitle")}
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2561.9473756468813!2d14.3718826!3d50.0828941!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x470b94f21a6bc55f%3A0x4d61fc29d0c4b1ea!2sB%C4%9Blohorsk%C3%A1%20209%2F133%2C%20169%2000%20Praha%206-B%C5%99evnov!5e0!3m2!1sen!2scz!4v1717177177171!5m2!1sen!2scz"
+                width="100%"
+                height="100%"
+                style={{ border: 0 }}
+                allowFullScreen
+                loading="lazy"
+              ></iframe>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Десктопна версія */}
+      <div className="hidden md:grid gap-8 md:grid-cols-2">
         {/* Ліва колонка з інформацією та картою */}
         <div className="flex flex-col h-full">
           <div className="space-y-6 mb-6">
@@ -149,12 +278,12 @@ export default function ContactPageClient() {
                   <div>
                     <h3 className="font-semibold">{t("address")}</h3>
                     <a
-                      href="https://maps.google.com/?q=Bělohorská+209/133,+169+00+Praha+6-Břevnov"
+                      href="https://maps.app.goo.gl/Uw4EPBKqk6RauBRz7"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-sm text-muted-foreground hover:text-primary"
                     >
-                      {t("addressDetails")}
+                      Bělohorská 209/133, 169 00 Praha 6
                     </a>
                   </div>
                 </div>
@@ -174,6 +303,13 @@ export default function ContactPageClient() {
                 </div>
               </CardContent>
             </Card>
+
+            <a href="https://maps.app.goo.gl/Uw4EPBKqk6RauBRz7" target="_blank" rel="noopener noreferrer">
+              <Button size="lg" className="w-full gap-2">
+                <Navigation className="h-4 w-4" />
+                Прокласти маршрут
+              </Button>
+            </a>
           </div>
 
           {/* Карта Google */}

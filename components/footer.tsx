@@ -102,7 +102,14 @@ export function Footer() {
               </li>
               <li className="flex items-center gap-2">
                 <MapPin className="h-4 w-4 text-gray-500" />
-                <span className="text-sm text-gray-500">Bělohorská 209/133, 169 00 Praha 6-Břevnov</span>
+                <a
+                  href="https://maps.app.goo.gl/Uw4EPBKqk6RauBRz7"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-gray-500 hover:text-gray-900"
+                >
+                  Bělohorská 209/133, 169 00 Praha 6-Břevnov
+                </a>
               </li>
             </ul>
           </div>

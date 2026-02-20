@@ -288,15 +288,26 @@ export function Header() {
                     <div className="px-3 space-y-1">
                       <div className="flex items-center gap-2">
                         <Phone className="h-4 w-4 text-primary" />
-                        <span className="text-sm">+42075848259</span>
+                        <a href="tel:+420775848259" className="text-sm hover:text-primary">
+                          +420 775 848 259
+                        </a>
                       </div>
                       <div className="flex items-center gap-2">
                         <Mail className="h-4 w-4 text-primary" />
-                        <span className="text-sm">info@devicehelp.cz</span>
+                        <a href="mailto:info@devicehelp.cz" className="text-sm hover:text-primary">
+                          info@devicehelp.cz
+                        </a>
                       </div>
                       <div className="flex items-center gap-2">
                         <MapPin className="h-4 w-4 text-primary" />
-                        <span className="text-sm">Praha 2</span>
+                        <a
+                          href="https://maps.app.goo.gl/Uw4EPBKqk6RauBRz7"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm hover:text-primary"
+                        >
+                          Bělohorská 209/133, 169 00 Praha 6
+                        </a>
                       </div>
                     </div>
                   </div>

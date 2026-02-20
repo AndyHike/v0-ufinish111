@@ -83,54 +83,89 @@ export function ContactSection() {
           <p className="text-gray-500 md:text-lg">{t("subtitle")}</p>
         </div>
 
-        {/* Контактна інформація - компактна версія для мобільних */}
-        <div className="md:hidden mb-8 bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
-                <Phone className="h-4 w-4 text-primary" />
-              </div>
-              <div>
-                <a
-                  href="tel:+420775848259"
-                  className="text-sm font-medium hover:text-primary"
-                  onClick={() => handleContactClick("phone")}
-                >
-                  +420775848259
-                </a>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
-                <Mail className="h-4 w-4 text-primary" />
-              </div>
-              <div>
-                <a
-                  href="mailto:info@devicehelp.cz"
-                  className="text-sm font-medium hover:text-primary"
-                  onClick={() => handleContactClick("email")}
-                >
-                  info@devicehelp.cz
-                </a>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
-                <MapPin className="h-4 w-4 text-primary" />
-              </div>
-              <div>
-                <p className="text-sm font-medium">Bělohorská 209/133, 169 00 Praha 6-Břevnov</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
-                <Clock className="h-4 w-4 text-primary" />
-              </div>
-              <div>
-                <p className="text-sm font-medium">9:00 - 18:00</p>
-              </div>
-            </div>
-          </div>
+"use client"
+
+import { useState, type FormEvent } from "react"
+import { useTranslations } from "next-intl"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
+import { Send, Loader2, Phone, Mail, MapPin, Clock, CheckCircle, Navigation } from "lucide-react"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+
+export function ContactSection() {
+  const t = useTranslations("Contact")
+  const [name, setName] = useState("")
+  const [email, setEmail] = useState("")
+  const [phone, setPhone] = useState("")
+  const [message, setMessage] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  const [isSuccess, setIsSuccess] = useState(false)
+  const [activeTab, setActiveTab] = useState("form")
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name,
+          email,
+          phone: phone || null,
+          message,
+        }),
+      })
+
+      if (response.ok) {
+        setIsSuccess(true)
+        setName("")
+        setEmail("")
+        setPhone("")
+        setMessage("")
+
+        // Facebook Pixel - відстеження успішної відправки форми
+        if (typeof window !== "undefined" && window.fbq) {
+          window.fbq("track", "Lead", {
+            content_name: "Contact Form Submission",
+            value: 100,
+            currency: "CZK",
+            custom_parameters: {
+              form_type: "contact_section",
+              has_phone: !!phone,
+              message_length: message.length,
+            },
+          })
+        }
+      }
+    } catch (err) {
+      console.error("Error submitting form:", err)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleContactClick = (method: string) => {
+    // Facebook Pixel - відстеження кліків на контактні методи
+    if (typeof window !== "undefined" && window.fbq) {
+      window.fbq("track", "Contact", {
+        contact_method: method,
+        content_name: "Contact Section Click",
+      })
+    }
+  }
+
+  return (
+    <section className="relative py-12 md:py-20 bg-white">
+      <div className="container relative z-10 px-4 md:px-6 pb-16 md:pb-0">
+        <div className="text-center max-w-3xl mx-auto mb-8 md:mb-12">
+          <h2 className="text-2xl md:text-3xl font-bold tracking-tighter md:text-4xl mb-3">{t("title")}</h2>
+          <p className="text-gray-500 md:text-lg">{t("subtitle")}</p>
         </div>
 
         {/* Мобільні вкладки для форми та карти */}
@@ -228,19 +263,91 @@ export function ContactSection() {
                   </form>
                 )}
               </div>
+
+              {/* Контактна інформація під формою на мобільній версії */}
+              <div className="mt-6 bg-white rounded-xl shadow-sm border border-gray-100 p-4 space-y-4">
+                <h3 className="font-bold text-gray-900 mb-4">{t("contact")}</h3>
+                <div className="flex items-center gap-2">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                    <Phone className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <a
+                      href="tel:+420775848259"
+                      className="text-sm font-medium hover:text-primary"
+                      onClick={() => handleContactClick("phone")}
+                    >
+                      +420 775 848 259
+                    </a>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                    <Mail className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <a
+                      href="mailto:info@devicehelp.cz"
+                      className="text-sm font-medium hover:text-primary"
+                      onClick={() => handleContactClick("email")}
+                    >
+                      info@devicehelp.cz
+                    </a>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                    <MapPin className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <a
+                      href="https://maps.app.goo.gl/Uw4EPBKqk6RauBRz7"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm font-medium hover:text-primary"
+                    >
+                      Bělohorská 209/133, 169 00 Praha 6
+                    </a>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                    <Clock className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">09:00 - 19:00</p>
+                  </div>
+                </div>
+              </div>
             </TabsContent>
             <TabsContent value="map" className="mt-4">
-              <div className="overflow-hidden rounded-xl shadow-sm border border-gray-100 h-[300px] bg-white">
-                <iframe
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2561.9473756468813!2d14.3718826!3d50.0828941!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x470b94f21a6bc55f%3A0x4d61fc29d0c4b1ea!2sB%C4%9Blohorsk%C3%A1%20209%2F133%2C%20169%2000%20Praha%206-B%C5%99evnov!5e0!3m2!1sen!2scz!4v1717177177171!5m2!1sen!2scz"
-                  width="100%"
-                  height="100%"
-                  style={{ border: 0 }}
-                  allowFullScreen
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                  title="Google Maps"
-                ></iframe>
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                {/* Кнопка "Прокласти маршрут" на мобільній версії */}
+                <div className="p-4">
+                  <a
+                    href="https://maps.app.goo.gl/Uw4EPBKqk6RauBRz7"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full"
+                  >
+                    <Button size="lg" className="w-full gap-2">
+                      <Navigation className="h-4 w-4" />
+                      Прокласти маршрут
+                    </Button>
+                  </a>
+                </div>
+                <div className="h-[300px] bg-white">
+                  <iframe
+                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2561.9473756468813!2d14.3718826!3d50.0828941!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x470b94f21a6bc55f%3A0x4d61fc29d0c4b1ea!2sB%C4%9Blohorsk%C3%A1%20209%2F133%2C%20169%2000%20Praha%206-B%C5%99evnov!5e0!3m2!1sen!2scz!4v1717177177171!5m2!1sen!2scz"
+                    width="100%"
+                    height="100%"
+                    style={{ border: 0 }}
+                    allowFullScreen
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    title="Google Maps"
+                  ></iframe>
+                </div>
               </div>
             </TabsContent>
           </Tabs>
