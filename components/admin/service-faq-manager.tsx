@@ -157,11 +157,11 @@ export function ServiceFaqManager({ serviceId }: ServiceFaqManagerProps) {
             <AlertDescription className="text-blue-900 text-sm">
               <strong>Совет:</strong> Використовуйте спеціальні плейсхолдери для SEO-оптимізації:
               <div className="mt-2 space-y-1 font-mono text-xs">
-                <div>• {'{'}{'{'}{'}'}model{'}'}{'}'}  - буде замінено на назву моделі</div>
-                <div>• {'{'}{'{'}{'}'}brand{'}'}{'}'}  - буде замінено на назву бренду</div>
-                <div>• {'{'}{'{'}{'}'}service{'}'}{'}'}  - буде замінено на назву послуги</div>
+                <div>• {`{{model}}`}  - буде замінено на назву моделі</div>
+                <div>• {`{{brand}}`}  - буде замінено на назву бренду</div>
+                <div>• {`{{service}}`}  - буде замінено на назву послуги</div>
               </div>
-              <div className="mt-2">Приклад: "Який гарантійний період для {{model}} при {{service}}?"</div>
+              <div className="mt-2">Приклад: {`"Який гарантійний період для {{model}} при {{service}}?"`}</div>
             </AlertDescription>
           </Alert>
 
