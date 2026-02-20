@@ -15,7 +15,8 @@ export function LanguageSwitcher({ className }: LanguageSwitcherProps) {
   const params = useParams()
   const searchParams = useSearchParams()
   const router = useRouter()
-  const currentLocale = params.locale as string
+  const locale = (params.locale as string) || "cs" // Default to Czech if no locale
+  const currentLocale = locale
   const [isOpen, setIsOpen] = useState(false)
 
   const languages = [
@@ -31,15 +32,22 @@ export function LanguageSwitcher({ className }: LanguageSwitcherProps) {
     }
 
     // Get the current path segments
-    const segments = pathname.split("/")
+    const segments = pathname.split("/").filter(Boolean) // Remove empty segments
 
-    // Replace the locale segment (which should be the first segment after the initial slash)
-    if (segments.length > 1) {
-      segments[1] = newLocale
+    // If we're on the root (no locale in path), just prepend the new locale
+    if (segments.length === 0 || !["uk", "cs", "en"].includes(segments[0])) {
+      const newPath = `/${newLocale}`
+      document.cookie = `NEXT_LOCALE=${newLocale}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`
+      router.push(newPath)
+      setIsOpen(false)
+      return
     }
 
+    // Replace the locale segment (first segment)
+    segments[0] = newLocale
+
     // Reconstruct the path with the new locale
-    const newPath = segments.join("/")
+    const newPath = `/${segments.join("/")}`
 
     document.cookie = `NEXT_LOCALE=${newLocale}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`
 
