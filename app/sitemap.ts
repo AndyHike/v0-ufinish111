@@ -118,7 +118,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Fetch and add dynamic service pages
     const { data: services, error: servicesError } = await supabase
       .from("services")
-      .select("slug, updated_at")
+      .select("slug, created_at")
       .not("slug", "is", null)
 
     console.log("[SITEMAP] Services fetched:", { count: services?.length, error: servicesError?.message })
@@ -127,7 +127,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         if (service.slug) {
           addMultilingualEntries(
             `/services/${service.slug}`,
-            service.updated_at ? new Date(service.updated_at) : new Date()
+            service.created_at ? new Date(service.created_at) : new Date()
           )
         }
       })
