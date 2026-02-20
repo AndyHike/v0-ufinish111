@@ -159,7 +159,7 @@ export default function ContactPageClient() {
           </CardContent>
         </Card>
 
-        {/* Контактна інформація під формою */}
+        {/* Контактна інформація та карта під формою на мобільній версії */}
         <Card>
           <CardHeader>
             <CardTitle>{t("contact")}</CardTitle>
@@ -199,23 +199,16 @@ export default function ContactPageClient() {
                 <p className="text-sm">{t("workingHoursSunday")}</p>
               </div>
             </div>
-
-            <a href="https://maps.app.goo.gl/Uw4EPBKqk6RauBRz7" target="_blank" rel="noopener noreferrer" className="w-full block pt-2">
-              <Button size="lg" className="w-full gap-2">
-                <Navigation className="h-4 w-4" />
-                Прокласти маршрут
-              </Button>
-            </a>
           </CardContent>
         </Card>
 
-        {/* Карта */}
+        {/* Карта з кнопкою на мобільній версії */}
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">{t("ourLocation")}</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="w-full h-[300px] rounded-lg overflow-hidden">
+          <CardContent className="p-0 flex flex-col">
+            <div className="w-full h-[300px] rounded-t-lg overflow-hidden">
               <iframe
                 title={t("mapTitle")}
                 src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2561.9473756468813!2d14.3718826!3d50.0828941!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x470b94f21a6bc55f%3A0x4d61fc29d0c4b1ea!2sB%C4%9Blohorsk%C3%A1%20209%2F133%2C%20169%2000%20Praha%206-B%C5%99evnov!5e0!3m2!1sen!2scz!4v1717177177171!5m2!1sen!2scz"
@@ -226,6 +219,14 @@ export default function ContactPageClient() {
                 loading="lazy"
               ></iframe>
             </div>
+            <div className="p-4 border-t">
+              <a href="https://maps.app.goo.gl/Uw4EPBKqk6RauBRz7" target="_blank" rel="noopener noreferrer" className="w-full block">
+                <Button size="lg" className="w-full gap-2">
+                  <Navigation className="h-4 w-4" />
+                  Прокласти маршрут
+                </Button>
+              </a>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -233,8 +234,8 @@ export default function ContactPageClient() {
       {/* Десктопна версія */}
       <div className="hidden md:grid gap-8 md:grid-cols-2">
         {/* Ліва колонка з інформацією та картою */}
-        <div className="flex flex-col h-full">
-          <div className="space-y-6 mb-6">
+        <div className="flex flex-col h-full gap-6">
+          <div className="space-y-6">
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-start space-x-4">
@@ -303,31 +304,32 @@ export default function ContactPageClient() {
                 </div>
               </CardContent>
             </Card>
-
-            <a href="https://maps.app.goo.gl/Uw4EPBKqk6RauBRz7" target="_blank" rel="noopener noreferrer">
-              <Button size="lg" className="w-full gap-2">
-                <Navigation className="h-4 w-4" />
-                Прокласти маршрут
-              </Button>
-            </a>
           </div>
 
-          {/* Карта Google */}
-          <Card className="flex-grow">
+          {/* Карта Google з кнопкою */}
+          <Card className="flex-grow flex flex-col">
             <CardHeader className="pb-0">
               <CardTitle className="text-lg">{t("ourLocation")}</CardTitle>
             </CardHeader>
-            <CardContent className="p-4">
-              <div className="w-full h-[300px] rounded-lg overflow-hidden">
+            <CardContent className="p-0 flex flex-col flex-grow">
+              <div className="w-full flex-grow rounded-b-xl overflow-hidden">
                 <iframe
                   title={t("mapTitle")}
                   src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2561.9473756468813!2d14.3718826!3d50.0828941!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x470b94f21a6bc55f%3A0x4d61fc29d0c4b1ea!2sB%C4%9Blohorsk%C3%A1%20209%2F133%2C%20169%2000%20Praha%206-B%C5%99evnov!5e0!3m2!1sen!2scz!4v1717177177171!5m2!1sen!2scz"
                   width="100%"
                   height="100%"
-                  style={{ border: 0 }}
+                  style={{ border: 0, minHeight: "300px" }}
                   allowFullScreen
                   loading="lazy"
                 ></iframe>
+              </div>
+              <div className="p-4 border-t">
+                <a href="https://maps.app.goo.gl/Uw4EPBKqk6RauBRz7" target="_blank" rel="noopener noreferrer" className="w-full block">
+                  <Button size="lg" className="w-full gap-2">
+                    <Navigation className="h-4 w-4" />
+                    Прокласти маршрут
+                  </Button>
+                </a>
               </div>
             </CardContent>
           </Card>

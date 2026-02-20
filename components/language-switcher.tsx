@@ -19,9 +19,9 @@ export function LanguageSwitcher({ className }: LanguageSwitcherProps) {
   const [isOpen, setIsOpen] = useState(false)
 
   const languages = [
-    { code: "uk", name: "Українська" },
-    { code: "cs", name: "Čeština" },
-    { code: "en", name: "English" },
+    { code: "uk", name: "Українська", shortCode: "UA" },
+    { code: "cs", name: "Čeština", shortCode: "CZ" },
+    { code: "en", name: "English", shortCode: "EN" },
   ]
 
   const handleLanguageChange = (newLocale: string) => {
@@ -56,8 +56,8 @@ export function LanguageSwitcher({ className }: LanguageSwitcherProps) {
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className={className}>
-          <Globe className="h-5 w-5" />
+        <Button variant="ghost" size="icon" className={className} title={`Current language: ${languages.find((l) => l.code === currentLocale)?.name}`}>
+          <span className="text-xs font-semibold">{languages.find((l) => l.code === currentLocale)?.shortCode}</span>
           <span className="sr-only">Switch language</span>
         </Button>
       </DropdownMenuTrigger>
@@ -68,6 +68,7 @@ export function LanguageSwitcher({ className }: LanguageSwitcherProps) {
             onClick={() => handleLanguageChange(language.code)}
             className={currentLocale === language.code ? "font-medium bg-accent" : ""}
           >
+            <span className="text-xs font-semibold text-muted-foreground mr-2">{language.shortCode}</span>
             {language.name}
           </DropdownMenuItem>
         ))}

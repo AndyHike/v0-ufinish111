@@ -417,7 +417,7 @@ export function Header() {
             ))}
           </nav>
 
-          {/* Мова та користувач */}
+          {/* Мова та кор��стувач */}
           <div className="flex items-center gap-2 flex-shrink-0">
             <Suspense
               fallback={
@@ -428,7 +428,9 @@ export function Header() {
             >
               <LanguageSwitcher className="flex" />
             </Suspense>
-            {userLoaded ? <UserNav user={user} /> : <div className="h-8 w-8 rounded-full bg-muted animate-pulse" />}
+            <div className="hidden md:block">
+              {userLoaded ? <UserNav user={user} /> : <div className="h-8 w-8 rounded-full bg-muted animate-pulse" />}
+            </div>
           </div>
         </div>
       </header>

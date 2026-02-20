@@ -236,9 +236,21 @@ export function ContactSection() {
               </div>
             </TabsContent>
             <TabsContent value="map" className="mt-4">
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
+                <div className="h-[300px] bg-white flex-grow">
+                  <iframe
+                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2561.9473756468813!2d14.3718826!3d50.0828941!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x470b94f21a6bc55f%3A0x4d61fc29d0c4b1ea!2sB%C4%9Blohorsk%C3%A1%20209%2F133%2C%20169%2000%20Praha%206-B%C5%99evnov!5e0!3m2!1sen!2scz!4v1717177177171!5m2!1sen!2scz"
+                    width="100%"
+                    height="100%"
+                    style={{ border: 0 }}
+                    allowFullScreen
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    title="Google Maps"
+                  ></iframe>
+                </div>
                 {/* Кнопка "Прокласти маршрут" на мобільній версії */}
-                <div className="p-4">
+                <div className="p-4 border-t border-gray-100">
                   <a
                     href="https://maps.app.goo.gl/Uw4EPBKqk6RauBRz7"
                     target="_blank"
@@ -250,18 +262,6 @@ export function ContactSection() {
                       Прокласти маршрут
                     </Button>
                   </a>
-                </div>
-                <div className="h-[300px] bg-white">
-                  <iframe
-                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2561.9473756468813!2d14.3718826!3d50.0828941!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x470b94f21a6bc55f%3A0x4d61fc29d0c4b1ea!2sB%C4%9Blohorsk%C3%A1%20209%2F133%2C%20169%2000%20Praha%206-B%C5%99evnov!5e0!3m2!1sen!2scz!4v1717177177171!5m2!1sen!2scz"
-                    width="100%"
-                    height="100%"
-                    style={{ border: 0 }}
-                    allowFullScreen
-                    loading="lazy"
-                    referrerPolicy="no-referrer-when-downgrade"
-                    title="Google Maps"
-                  ></iframe>
                 </div>
               </div>
             </TabsContent>
@@ -369,8 +369,8 @@ export function ContactSection() {
             </div>
           </div>
 
-          {/* Контактна інформація - повна версія для десктопу */}
-          <div className="lg:col-span-1">
+          {/* Контактна інформація та карта - повна версія для десктопу */}
+          <div className="lg:col-span-1 flex flex-col h-full">
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 md:p-6 mb-5 md:mb-6">
               <div className="space-y-4 md:space-y-5">
                 <div className="flex items-start gap-3 md:gap-4">
@@ -434,12 +434,29 @@ export function ContactSection() {
               </div>
             </div>
 
-            <a href="https://maps.app.goo.gl/Uw4EPBKqk6RauBRz7" target="_blank" rel="noopener noreferrer" className="block">
-              <Button size="lg" className="w-full gap-2">
-                <Navigation className="h-4 w-4" />
-                Прокласти маршрут
-              </Button>
-            </a>
+            {/* Карта з кнопкою */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col flex-grow">
+              <div className="h-64 bg-white flex-grow">
+                <iframe
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2561.9473756468813!2d14.3718826!3d50.0828941!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x470b94f21a6bc55f%3A0x4d61fc29d0c4b1ea!2sB%C4%9Blohorsk%C3%A1%20209%2F133%2C%20169%2000%20Praha%206-B%C5%99evnov!5e0!3m2!1sen!2scz!4v1717177177171!5m2!1sen!2scz"
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0 }}
+                  allowFullScreen
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  title="Google Maps"
+                ></iframe>
+              </div>
+              <div className="p-4 border-t border-gray-100">
+                <a href="https://maps.app.goo.gl/Uw4EPBKqk6RauBRz7" target="_blank" rel="noopener noreferrer" className="block">
+                  <Button size="lg" className="w-full gap-2">
+                    <Navigation className="h-4 w-4" />
+                    Прокласти маршрут
+                  </Button>
+                </a>
+              </div>
+            </div>
           </div>
         </div>
       </div>
