@@ -71,15 +71,15 @@ export function Header() {
   const { settings } = useSiteSettings()
 
   const navigation = [
-    { name: t("home"), href: `/${locale}`, icon: <Home className="h-5 w-5" /> },
+    { name: t("home"), href: "/", icon: <Home className="h-5 w-5" /> },
     { name: t("chooseModel"), href: `/${locale}/brands`, icon: <Smartphone className="h-5 w-5" /> },
     { name: t("contact"), href: `/${locale}/contact`, icon: <MessageSquare className="h-5 w-5" /> },
   ]
 
   // Helper function to check if a path is active
   const isActive = (path: string) => {
-    if (path === `/${locale}`) {
-      return pathname === `/${locale}`
+    if (path === "/") {
+      return pathname === "/" || pathname === `/${locale}`
     }
     return pathname.startsWith(path)
   }
@@ -314,7 +314,7 @@ export function Header() {
                 </div>
               </SheetContent>
             </Sheet>
-            <Link href={`/${locale}`} className="flex items-center gap-2">
+            <Link href="/" className="flex items-center gap-2">
               {settings.siteLogo && (
                 <img
                   src={settings.siteLogo || "/placeholder.svg"}
@@ -417,7 +417,7 @@ export function Header() {
             ))}
           </nav>
 
-          {/* Мова та кор��стувач */}
+          {/* Мова та кор����стувач */}
           <div className="flex items-center gap-2 flex-shrink-0">
             <Suspense
               fallback={
