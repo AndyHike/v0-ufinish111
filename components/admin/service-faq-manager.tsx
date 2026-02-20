@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -13,7 +13,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Edit, Plus, Trash2, Save, X, HelpCircle } from "lucide-react"
 import { toast } from "sonner"
-import { FAQ_PLACEHOLDERS } from "@/lib/faq-placeholders"
 
 interface FaqTranslation {
   locale: string
@@ -42,9 +41,6 @@ export function ServiceFaqManager({ serviceId }: ServiceFaqManagerProps) {
     { code: "en", name: "English" },
     { code: "cs", name: "Čeština" },
   ]
-
-  const questionRefMap = useRef<Record<string, HTMLInputElement | null>>({})
-  const answerRefMap = useRef<Record<string, HTMLTextAreaElement | null>>({})
 
   useEffect(() => {
     fetchFaqs()
@@ -112,66 +108,6 @@ export function ServiceFaqManager({ serviceId }: ServiceFaqManagerProps) {
     }
   }
 
-  const insertPlaceholder = (placeholder: string, fieldType: "question" | "answer", locale: string) => {
-    const key = `${locale}-${fieldType}`
-
-    if (fieldType === "question") {
-      const input = questionRefMap.current[key]
-      if (input) {
-        const start = input.selectionStart || 0
-        const end = input.selectionEnd || 0
-        const text = input.value
-        const before = text.substring(0, start)
-        const after = text.substring(end)
-        input.value = before + placeholder + after
-        input.selectionStart = input.selectionEnd = start + placeholder.length
-        input.focus()
-        input.dispatchEvent(new Event("input", { bubbles: true }))
-      }
-    } else {
-      const textarea = answerRefMap.current[key]
-      if (textarea) {
-        const start = textarea.selectionStart || 0
-        const end = textarea.selectionEnd || 0
-        const text = textarea.value
-        const before = text.substring(0, start)
-        const after = text.substring(end)
-        textarea.value = before + placeholder + after
-        textarea.selectionStart = textarea.selectionEnd = start + placeholder.length
-        textarea.focus()
-        textarea.dispatchEvent(new Event("input", { bubbles: true }))
-      }
-    }
-
-    toast.success(`Додано: ${placeholder}`)
-  }
-
-  const PlaceholderButtons = ({
-    fieldType,
-    locale,
-  }: {
-    fieldType: "question" | "answer"
-    locale: string
-  }) => {
-    return (
-      <div className="flex flex-wrap gap-1">
-        {FAQ_PLACEHOLDERS.map((placeholder) => (
-          <Button
-            key={placeholder.key}
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={() => insertPlaceholder(placeholder.format, fieldType, locale)}
-            className="text-xs"
-            title={placeholder.description}
-          >
-            {placeholder.label}
-          </Button>
-        ))}
-      </div>
-    )
-  }
-
   const FaqForm = ({ faq }: { faq?: Faq }) => {
     const [formData, setFormData] = useState({
       position: faq?.position || 0,
@@ -191,32 +127,6 @@ export function ServiceFaqManager({ serviceId }: ServiceFaqManagerProps) {
     const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault()
       handleSaveFaq(formData)
-    }
-
-    const handleQuestionChange = (locale: string, value: string) => {
-      setFormData({
-        ...formData,
-        translations: {
-          ...formData.translations,
-          [locale]: {
-            ...formData.translations[locale],
-            question: value,
-          },
-        },
-      })
-    }
-
-    const handleAnswerChange = (locale: string, value: string) => {
-      setFormData({
-        ...formData,
-        translations: {
-          ...formData.translations,
-          [locale]: {
-            ...formData.translations[locale],
-            answer: value,
-          },
-        },
-      })
     }
 
     return (
@@ -245,33 +155,43 @@ export function ServiceFaqManager({ serviceId }: ServiceFaqManagerProps) {
             <TabsContent key={locale.code} value={locale.code} className="space-y-4">
               <div>
                 <Label htmlFor={`question-${locale.code}`}>Питання</Label>
-                <PlaceholderButtons fieldType="question" locale={locale.code} />
                 <Input
-                  ref={(el) => {
-                    if (el) questionRefMap.current[`${locale.code}-question`] = el
-                  }}
                   id={`question-${locale.code}`}
                   value={formData.translations[locale.code]?.question || ""}
-                  onChange={(e) => handleQuestionChange(locale.code, e.target.value)}
-                  placeholder="Напр: {{brand}} {{model}} не включається - що робити?"
-                  className="mt-2"
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      translations: {
+                        ...formData.translations,
+                        [locale.code]: {
+                          ...formData.translations[locale.code],
+                          question: e.target.value,
+                        },
+                      },
+                    })
+                  }
                   required
                 />
               </div>
 
               <div>
                 <Label htmlFor={`answer-${locale.code}`}>Відповідь</Label>
-                <PlaceholderButtons fieldType="answer" locale={locale.code} />
                 <Textarea
-                  ref={(el) => {
-                    if (el) answerRefMap.current[`${locale.code}-answer`] = el
-                  }}
                   id={`answer-${locale.code}`}
                   value={formData.translations[locale.code]?.answer || ""}
-                  onChange={(e) => handleAnswerChange(locale.code, e.target.value)}
-                  placeholder="Напр: {{service}} для {{device}} займає {{duration_hours}} години. Гарантія {{warranty_months}} {{warranty_period}}."
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      translations: {
+                        ...formData.translations,
+                        [locale.code]: {
+                          ...formData.translations[locale.code],
+                          answer: e.target.value,
+                        },
+                      },
+                    })
+                  }
                   rows={4}
-                  className="mt-2"
                   required
                 />
               </div>
@@ -339,39 +259,6 @@ export function ServiceFaqManager({ serviceId }: ServiceFaqManagerProps) {
             </TableHeader>
             <TableBody>
               {faqs.map((faq) => {
-                const ukTranslation = faq.service_faq_translations?.find((t) => t.locale === "uk")
-                return (
-                  <TableRow key={faq.id}>
-                    <TableCell>{faq.position}</TableCell>
-                    <TableCell className="max-w-xs truncate">{ukTranslation?.question || "Без питання"}</TableCell>
-                    <TableCell className="max-w-xs truncate">{ukTranslation?.answer || "Без відповіді"}</TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setEditingFaq(faq)
-                            setIsDialogOpen(true)
-                          }}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button size="sm" variant="destructive" onClick={() => handleDeleteFaq(faq.id)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
-        )}
-      </CardContent>
-    </Card>
-  )
-}
                 const ukTranslation = faq.service_faq_translations?.find((t) => t.locale === "uk")
                 return (
                   <TableRow key={faq.id}>

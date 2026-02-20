@@ -1,8 +1,6 @@
 "use client"
 
 import { useSearchParams } from "next/navigation"
-import { replaceFaqPlaceholders, type FaqContext } from "@/lib/faq-placeholders"
-import { useMemo } from "react"
 import Link from "next/link"
 import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
@@ -88,59 +86,6 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
 
   const whatIncludedList = translation.what_included?.split("\n").filter((item) => item.trim()) || []
   const benefitsList = translation.benefits?.split("\n").filter((item) => item.trim()) || []
-
-  // Підготуємо контекст для заміни плейсхолдерів в FAQ
-  const faqContext: FaqContext = useMemo(
-    () => ({
-      model: sourceModel
-        ? {
-            name: sourceModel.name,
-            slug: sourceModel.slug || undefined,
-          }
-        : undefined,
-      brand: sourceModel?.brands
-        ? {
-            name: sourceModel.brands.name,
-            slug: sourceModel.brands.slug || undefined,
-          }
-        : undefined,
-      service: {
-        name: translation.name,
-      },
-      warranty: {
-        months: serviceData.warranty_months,
-        period: null,
-      },
-      duration: {
-        hours: serviceData.duration_hours ? Number(serviceData.duration_hours) : undefined,
-      },
-      price: {
-        value:
-          modelParam && modelServicePrice !== null && modelServicePrice !== undefined
-            ? modelServicePrice
-            : minPrice !== null && maxPrice !== null
-              ? minPrice === maxPrice
-                ? minPrice
-                : (minPrice + maxPrice) / 2
-              : undefined,
-        formatted: modelParam && modelServicePrice ? `${modelServicePrice} Kč` : undefined,
-      },
-    }),
-    [sourceModel, translation.name, serviceData.warranty_months, serviceData.duration_hours, modelParam, modelServicePrice, minPrice, maxPrice],
-  )
-
-  // Замінюємо плейсхолдери в FAQ
-  const processedFaqs = useMemo(
-    () =>
-      faqs.map((faq) => ({
-        ...faq,
-        translation: {
-          question: replaceFaqPlaceholders(faq.translation.question, faqContext),
-          answer: replaceFaqPlaceholders(faq.translation.answer, faqContext),
-        },
-      })),
-    [faqs, faqContext],
-  )
 
   useEffect(() => {
     // Перевіряємо чи ми на клієнті ТА чи не відправляли подію раніше
@@ -411,11 +356,11 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
         {/* Компактні повноширинні секції */}
         <div className="space-y-8">
           {/* FAQ Section */}
-          {processedFaqs.length > 0 && (
+          {faqs.length > 0 && (
             <section className="bg-gray-50 rounded-xl p-6 lg:p-8">
               <h2 className="text-xl lg:text-2xl font-bold text-gray-900 mb-6 text-center">{t("frequentQuestions")}</h2>
               <div className="space-y-4 max-w-4xl mx-auto">
-                {processedFaqs.map((faq) => (
+                {faqs.map((faq) => (
                   <Collapsible key={faq.id}>
                     <CollapsibleTrigger className="flex w-full items-center justify-between p-4 text-left bg-white hover:bg-gray-50 rounded-lg transition-colors border border-gray-200">
                       <span className="font-semibold text-gray-900 text-sm lg:text-base pr-4">
