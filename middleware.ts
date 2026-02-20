@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
 const supportedLocales = ["cs", "uk", "en"]
-const defaultLocale = "cs"
+const defaultLocale = "uk"
 
 const PUBLIC_AUTH_ROUTES = [
   "/auth/login",
