@@ -198,7 +198,7 @@ export function ServiceFaqManager({ serviceId }: ServiceFaqManagerProps) {
                 <div>• {`{{fullModel}}`} - повна назва (Apple iPhone 14 Pro)</div>
               </div>
               <div className="mt-3 p-2 bg-blue-100 rounded text-xs">
-                <strong>Приклад:</strong> "{{warranty}} гарантія на {{service}} {{fullModel}}"
+                <strong>Приклад:</strong> {`"${`{{warranty}}`} гарантія на ${`{{service}}`} ${`{{fullModel}}"`}`}
               </div>
             </AlertDescription>
           </Alert>
