@@ -233,7 +233,7 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
               href={`/services/${primaryService.slug}`}
               className="md:hidden fixed left-1/2 -translate-x-1/2 z-30 max-w-sm px-6 py-3 bg-blue-600 text-white rounded-full shadow-lg hover:shadow-xl hover:bg-blue-700 transition-all duration-200 flex items-center gap-3 group"
               animate={{
-                bottom: isNavVisible ? `${navHeight + 16}px` : '32px'
+                bottom: isNavVisible ? `${navHeight + 2}px` : '32px'
               }}
               transition={{ duration: 0.3, ease: 'easeInOut' }}
             >
