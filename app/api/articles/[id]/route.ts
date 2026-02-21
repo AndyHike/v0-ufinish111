@@ -1,0 +1,108 @@
+import { NextRequest, NextResponse } from "next/server"
+import { createClient } from "@/lib/supabase"
+import { generateReadingTime, generateMetaDescription } from "@/lib/articles"
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params
+    const locale = request.nextUrl.searchParams.get("locale") || "cs"
+
+    const supabase = createClient()
+
+    const { data: article, error } = await supabase
+      .from("articles")
+      .select(
+        `
+        *,
+        article_translations(
+          id,
+          article_id,
+          locale,
+          title,
+          content,
+          meta_description,
+          created_at,
+          updated_at
+        ),
+        article_service_links(
+          id,
+          service_id,
+          position
+        )
+      `
+      )
+      .eq("id", id)
+      .single()
+
+    if (error || !article) {
+      return NextResponse.json({ error: "Article not found" }, { status: 404 })
+    }
+
+    return NextResponse.json(article)
+  } catch (error) {
+    console.error("Error fetching article:", error)
+    return NextResponse.json({ error: "Failed to fetch article" }, { status: 500 })
+  }
+}
+
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params
+    const supabase = createClient()
+    const body = await request.json()
+
+    const { title, content, featured_image, featured, published } = body
+
+    // Calculate reading time
+    const readingTime = generateReadingTime(content)
+    const metaDescription = generateMetaDescription(content)
+
+    const { data: article, error } = await supabase
+      .from("articles")
+      .update({
+        title,
+        content,
+        featured_image,
+        featured: featured || false,
+        published: published || false,
+        reading_time_minutes: readingTime,
+        meta_description: metaDescription,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id)
+      .select()
+      .single()
+
+    if (error) throw error
+
+    return NextResponse.json(article)
+  } catch (error) {
+    console.error("Error updating article:", error)
+    return NextResponse.json({ error: "Failed to update article" }, { status: 500 })
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params
+    const supabase = createClient()
+
+    const { error } = await supabase.from("articles").delete().eq("id", id)
+
+    if (error) throw error
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error("Error deleting article:", error)
+    return NextResponse.json({ error: "Failed to delete article" }, { status: 500 })
+  }
+}
