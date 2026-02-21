@@ -30,11 +30,24 @@ export function GoogleReviewsCarousel() {
   useEffect(() => {
     const fetchReviews = async () => {
       try {
+        console.log('[v0] Carousel: Fetching reviews...')
         const response = await fetch('/api/google-reviews')
-        if (!response.ok) throw new Error('Failed to fetch reviews')
         const data = await response.json()
-        setReviews(data)
+        
+        console.log('[v0] Carousel: Received data:', {
+          hasReviews: !!data.reviews,
+          reviewCount: data.reviews?.length || 0,
+          error: data.error,
+        })
+        
+        if (data.reviews && data.reviews.length > 0) {
+          setReviews(data)
+        } else {
+          console.warn('[v0] Carousel: No reviews available')
+          setError('No reviews available')
+        }
       } catch (err) {
+        console.error('[v0] Carousel: Fetch error:', err)
         setError(err instanceof Error ? err.message : 'Unknown error')
       } finally {
         setIsLoading(false)
