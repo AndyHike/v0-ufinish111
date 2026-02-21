@@ -71,7 +71,8 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
-  const fetchArticle = async () => {
+  // Use primary service if available, otherwise use first related service
+  const buttonService = primaryService || relatedServices[0]
     try {
       // Find article by slug and get all data including translations
       const listResponse = await fetch(`/api/articles?locale=${locale}&limit=1000`)
@@ -250,7 +251,7 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
     </article>
 
     {/* Desktop Sticky CTA Button - Minimalist */}
-    {primaryService && (
+    {buttonService && (
       <motion.div
         className="hidden md:fixed md:bottom-8 md:left-1/2 md:-translate-x-1/2 md:z-40"
         animate={{ opacity: 1 }}
@@ -262,13 +263,13 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
               <p className="text-xs font-bold text-blue-600 uppercase tracking-widest">
                 {t("relatedServices")}
               </p>
-              <p className="font-bold text-xl text-gray-900 mt-2 leading-tight">{primaryService.title}</p>
-              {primaryService.description && (
-                <p className="text-sm text-gray-600 mt-3 leading-relaxed">{primaryService.description}</p>
+              <p className="font-bold text-xl text-gray-900 mt-2 leading-tight">{buttonService.title}</p>
+              {buttonService.description && (
+                <p className="text-sm text-gray-600 mt-3 leading-relaxed">{buttonService.description}</p>
               )}
             </div>
             <a
-              href={`/services/${primaryService.slug}`}
+              href={`/services/${buttonService.slug}`}
               className="w-full bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 active:bg-blue-800 transition-colors duration-200 font-semibold text-center"
             >
               {t("orderNow")}
@@ -279,7 +280,7 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
     )}
 
     {/* Mobile Sticky CTA Button - Moves with navigation */}
-    {primaryService && (
+    {buttonService && (
       <motion.div
         className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200"
         animate={{ 
@@ -291,10 +292,10 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0 flex-1">
               <p className="text-xs font-bold text-blue-600 uppercase tracking-widest">{t("relatedServices")}</p>
-              <p className="font-semibold text-sm text-gray-900 mt-0.5 truncate">{primaryService.title}</p>
+              <p className="font-semibold text-sm text-gray-900 mt-0.5 truncate">{buttonService.title}</p>
             </div>
             <a
-              href={`/services/${primaryService.slug}`}
+              href={`/services/${buttonService.slug}`}
               className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 active:bg-blue-800 transition-colors duration-200 font-semibold text-sm flex-shrink-0"
             >
               {t("orderNow")}
