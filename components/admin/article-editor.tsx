@@ -431,7 +431,8 @@ export function ArticleEditor({ articleId, locale }: ArticleEditorProps) {
           </div>
         )}
       </div>
-    </div>
+
+      {/* Language-Specific Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-3">
           {LOCALES.map(loc => (
@@ -500,6 +501,7 @@ export function ArticleEditor({ articleId, locale }: ArticleEditorProps) {
           {articleId ? 'Update' : 'Create'} Article
         </Button>
       </div>
+    </Tabs>
     </div>
   )
 }

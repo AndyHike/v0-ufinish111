@@ -115,7 +115,9 @@ export async function POST(request: NextRequest) {
           .from("article_translations")
           .insert(translationInserts)
 
-    if (translationError) throw translationError
+        if (translationError) throw translationError
+      }
+    }
 
     // Add service links if provided
     if (serviceIds && serviceIds.length > 0) {
