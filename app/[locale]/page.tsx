@@ -36,6 +36,29 @@ function ContactSectionSkeleton() {
   )
 }
 
+function GoogleReviewsSkeleton() {
+  return (
+    <section className="py-12 bg-gradient-to-b from-blue-50 to-white">
+      <div className="container px-4 mx-auto">
+        <div className="text-center mb-12">
+          <div className="h-8 bg-gray-200 rounded w-48 mx-auto mb-4 animate-pulse"></div>
+          <div className="flex gap-1 justify-center mb-4">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="w-4 h-4 bg-gray-200 rounded animate-pulse"></div>
+            ))}
+          </div>
+          <div className="h-6 bg-gray-200 rounded w-32 mx-auto animate-pulse"></div>
+        </div>
+        <div className="hidden md:grid grid-cols-1 md:grid-cols-3 gap-6">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="h-64 bg-gray-200 rounded animate-pulse"></div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
 export default async function HomePage() {
   const infoBannerPromise = getInfoBanner()
   const brandsPromise = getBrands()
@@ -47,7 +70,9 @@ export default async function HomePage() {
         <InfoBannerAsync promise={infoBannerPromise} />
       </Suspense>
       <HeroSection />
-      <GoogleReviewsCarousel />
+      <Suspense fallback={<GoogleReviewsSkeleton />}>
+        <GoogleReviewsCarousel />
+      </Suspense>
       <Suspense fallback={<BrandsSectionSkeleton />}>
         <BrandsSectionAsync promise={brandsPromise} />
       </Suspense>
