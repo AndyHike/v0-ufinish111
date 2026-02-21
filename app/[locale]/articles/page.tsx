@@ -4,20 +4,19 @@ import { Input } from "@/components/ui/input"
 import { ArticleCard } from "@/components/articles/article-card"
 import { createClient } from "@/lib/supabase"
 import { getTranslations } from "next-intl/server"
-import { useTranslations } from "next-intl"
 
 type Props = {
-  params: {
+  params: Promise<{
     locale: string
-  }
-  searchParams: {
+  }>
+  searchParams: Promise<{
     search?: string
     page?: string
-  }
+  }>
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { locale } = params
+  const { locale } = await params
   const t = await getTranslations({ locale, namespace: "Articles" })
 
   return {
@@ -109,9 +108,9 @@ async function ArticlesList({ locale, search }: { locale: string; search?: strin
   )
 }
 
-export default function ArticlesPage({ params, searchParams }: Props) {
-  const { locale } = params
-  const { search } = searchParams
+async function ArticlesPage({ params, searchParams }: Props) {
+  const { locale } = await params
+  const { search } = await searchParams
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
@@ -134,7 +133,11 @@ export default function ArticlesPage({ params, searchParams }: Props) {
   )
 }
 
+export default ArticlesPage
+
 "use client"
+
+import { useTranslations } from "next-intl"
 
 function ArticlesHero({ locale, search }: { locale: string; search?: string }) {
   const t = useTranslations("Articles")

@@ -11,7 +11,6 @@ import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
 import { Loader2, Upload, Save, Eye, FileText } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import ReactMarkdown from "react-markdown"
 
 export function PrivacyPolicyManager() {
   const [content, setContent] = useState("")
@@ -164,44 +163,12 @@ export function PrivacyPolicyManager() {
 
           <TabsContent value="preview" className="space-y-2">
             <Label>Preview</Label>
-            <div className="border rounded-lg p-4 min-h-[400px] bg-white">
+            <div className="border rounded-lg p-4 min-h-[400px] bg-white prose prose-sm max-w-none">
               {content ? (
-                <ReactMarkdown
-                  className="prose prose-sm max-w-none"
-                  components={{
-                    h1: ({ children }) => <h1 className="text-2xl font-bold mt-6 mb-3 text-gray-900">{children}</h1>,
-                    h2: ({ children }) => <h2 className="text-xl font-semibold mt-5 mb-2 text-gray-800">{children}</h2>,
-                    h3: ({ children }) => <h3 className="text-lg font-medium mt-4 mb-2 text-gray-700">{children}</h3>,
-                    p: ({ children }) => <p className="mb-3 text-gray-600 leading-relaxed">{children}</p>,
-                    strong: ({ children }) => <strong className="font-semibold text-gray-900">{children}</strong>,
-                    em: ({ children }) => <em className="italic text-gray-700">{children}</em>,
-                    ul: ({ children }) => <ul className="list-disc list-inside mb-3 space-y-1">{children}</ul>,
-                    ol: ({ children }) => <ol className="list-decimal list-inside mb-3 space-y-1">{children}</ol>,
-                    li: ({ children }) => <li className="text-gray-600">{children}</li>,
-                    blockquote: ({ children }) => (
-                      <blockquote className="border-l-4 border-blue-500 pl-3 py-1 mb-3 bg-gray-50 italic text-gray-700">
-                        {children}
-                      </blockquote>
-                    ),
-                    code: ({ children }) => (
-                      <code className="bg-gray-100 px-1 py-0.5 rounded text-sm font-mono text-gray-800">
-                        {children}
-                      </code>
-                    ),
-                    a: ({ href, children }) => (
-                      <a
-                        href={href}
-                        className="text-blue-600 hover:text-blue-800 underline"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        {children}
-                      </a>
-                    ),
-                  }}
-                >
-                  {content}
-                </ReactMarkdown>
+                <div 
+                  className="text-gray-700"
+                  dangerouslySetInnerHTML={{ __html: content }}
+                />
               ) : (
                 <p className="text-gray-400 italic">No content to preview</p>
               )}
