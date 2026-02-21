@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { useTranslations } from "next-intl"
 import { Clock, Eye, Tag, Calendar } from "lucide-react"
+import { ArticleContentSkeleton } from "./article-content-skeleton"
 
 type Article = {
   id: string
@@ -66,7 +67,7 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
   }
 
   if (isLoading) {
-    return <div className="text-center py-12">Loading article...</div>
+    return <ArticleContentSkeleton />
   }
 
   if (error) {

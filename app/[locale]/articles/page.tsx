@@ -62,7 +62,8 @@ async function ArticlesList({ locale, search }: { locale: string; search?: strin
       published_at,
       article_translations(
         locale,
-        title
+        title,
+        content
       )
     `
     )
