@@ -1,10 +1,8 @@
 import { HeroSection } from "@/components/hero-section"
 import { ContactSection } from "@/components/contact-section"
 import { BrandsSection } from "@/components/brands-section"
-import { InfoBanner } from "@/components/info-banner"
 import { GoogleReviewsCarousel } from "@/components/google-reviews-carousel"
 import { getBrands } from "@/lib/data/brands"
-import { getInfoBanner } from "@/lib/data/info-banner"
 import { getGoogleReviews } from "@/lib/data/google-reviews"
 import { Suspense } from "react"
 
@@ -61,16 +59,12 @@ function GoogleReviewsSkeleton() {
 }
 
 export default async function HomePage() {
-  const infoBannerPromise = getInfoBanner()
   const brandsPromise = getBrands()
   const googleReviewsPromise = getGoogleReviews()
 
   // Don't await here - let hero render immediately
   return (
     <>
-      <Suspense fallback={null}>
-        <InfoBannerAsync promise={infoBannerPromise} />
-      </Suspense>
       <HeroSection />
       <Suspense fallback={<GoogleReviewsSkeleton />}>
         <GoogleReviewsAsync promise={googleReviewsPromise} />
@@ -83,11 +77,6 @@ export default async function HomePage() {
       </Suspense>
     </>
   )
-}
-
-async function InfoBannerAsync({ promise }: { promise: Promise<any> }) {
-  const infoBanner = await promise
-  return infoBanner ? <InfoBanner data={infoBanner} /> : null
 }
 
 async function BrandsSectionAsync({ promise }: { promise: Promise<any> }) {
