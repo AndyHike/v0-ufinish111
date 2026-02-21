@@ -29,50 +29,7 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [relatedServices, setRelatedServices] = useState<Service[]>([])
-  const [primaryService, setPrimaryService] = useState<Service | null>(null)
-  const [isNavVisible, setIsNavVisible] = useState(true)
-  const [lastScrollY, setLastScrollY] = useState(0)
-  const [navHeight, setNavHeight] = useState(80) // Default height of mobile nav
   const t = useTranslations("Articles")
-
-  useEffect(() => {
-    // Calculate mobile nav height dynamically
-    const updateNavHeight = () => {
-      const mobileNav = document.querySelector('[class*="md:hidden"][class*="fixed"][class*="bottom-0"]')
-      if (mobileNav) {
-        setNavHeight(mobileNav.getBoundingClientRect().height)
-      }
-    }
-
-    updateNavHeight()
-    window.addEventListener('resize', updateNavHeight)
-    return () => window.removeEventListener('resize', updateNavHeight)
-  }, [])
-
-  useEffect(() => {
-    fetchArticle()
-  }, [slug, locale])
-
-  useEffect(() => {
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY
-
-      // Show nav when scrolling up, hide when scrolling down
-      if (currentScrollY < lastScrollY || currentScrollY < 100) {
-        setIsNavVisible(true)
-      } else if (currentScrollY > lastScrollY && currentScrollY > 100) {
-        setIsNavVisible(false)
-      }
-
-      setLastScrollY(currentScrollY)
-    }
-
-    window.addEventListener("scroll", handleScroll, { passive: true })
-    return () => window.removeEventListener("scroll", handleScroll)
-  }, [])
-
-  // Use primary service if available, otherwise use first related service
-  const buttonService = primaryService || relatedServices[0]
 
   const fetchArticle = async () => {
     try {
@@ -104,68 +61,15 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
 
       setArticle(displayArticle)
 
-      // Set primary service if available
-      if (fullArticle.primary_service_id) {
-        try {
-          const servicesResponse = await fetch(`/api/services?locale=${locale}&limit=100`)
-          if (servicesResponse.ok) {
-            const servicesData = await servicesResponse.json()
-            const primarySvc = (servicesData.services || []).find(
-              (service: Service) => service.id === fullArticle.primary_service_id
-            )
-            if (primarySvc) {
-              setPrimaryService(primarySvc)
-            }
-          }
-        } catch (err) {
-          console.error("Failed to fetch primary service:", err)
+      // Fetch related services
+      try {
+        const servicesResponse = await fetch(`/api/services?locale=${locale}&limit=100`)
+        if (servicesResponse.ok) {
+          const servicesData = await servicesResponse.json()
+          setRelatedServices(servicesData.services || [])
         }
-      }
-
-      // Fetch related services if article has service links
-      if (fullArticle.article_service_links && fullArticle.article_service_links.length > 0) {
-        try {
-          // Filter out invalid UUIDs before making the request
-          const validLinks = fullArticle.article_service_links.filter((link: any) => 
-            link.service_id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(link.service_id)
-          )
-          
-          if (validLinks.length > 0) {
-            const servicesResponse = await fetch(`/api/services?locale=${locale}&limit=100`)
-            if (servicesResponse.ok) {
-              const servicesData = await servicesResponse.json()
-              const linkedServices = (servicesData.services || []).filter((service: Service) =>
-                validLinks.some((link: any) => link.service_id === service.id)
-              )
-              if (linkedServices.length > 0) {
-                setRelatedServices(linkedServices)
-              }
-            }
-          }
-        } catch (err) {
-          console.error("Failed to fetch related services:", err)
-        }
-      }
-
-      // Fallback: if no services loaded, get any service to show in the button
-      if (!primaryService && relatedServices.length === 0) {
-        try {
-          const servicesResponse = await fetch(`/api/services?locale=${locale}&limit=10`)
-          if (servicesResponse.ok) {
-            const servicesData = await servicesResponse.json()
-            const services = servicesData.services || []
-            if (services.length > 0) {
-              setRelatedServices([services[0]])
-            }
-          }
-        } catch (err) {
-          console.error("Failed to fetch fallback service:", err)
-        }
-      }
-          }
-        } catch (err) {
-          console.error("Failed to fetch related services:", err)
-        }
+      } catch (err) {
+        console.error("Failed to fetch services:", err)
       }
 
       // Increment view count
@@ -178,6 +82,10 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
       setIsLoading(false)
     }
   }
+
+  useEffect(() => {
+    fetchArticle()
+  }, [slug, locale])
 
   if (isLoading) {
     return <ArticleContentSkeleton />
@@ -274,61 +182,6 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
         </div>
       )}
     </article>
-
-    {/* Desktop Sticky CTA Button - Minimalist */}
-    {buttonService && (
-      <motion.div
-        className="hidden md:fixed md:bottom-8 md:left-1/2 md:-translate-x-1/2 md:z-40"
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.3 }}
-      >
-        <div className="w-96 bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-shadow duration-300 p-6 border border-gray-100">
-          <div className="flex flex-col gap-4">
-            <div>
-              <p className="text-xs font-bold text-blue-600 uppercase tracking-widest">
-                {t("relatedServices")}
-              </p>
-              <p className="font-bold text-xl text-gray-900 mt-2 leading-tight">{buttonService.title}</p>
-              {buttonService.description && (
-                <p className="text-sm text-gray-600 mt-3 leading-relaxed">{buttonService.description}</p>
-              )}
-            </div>
-            <a
-              href={`/services/${buttonService.slug}`}
-              className="w-full bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 active:bg-blue-800 transition-colors duration-200 font-semibold text-center"
-            >
-              {t("orderNow")}
-            </a>
-          </div>
-        </div>
-      </motion.div>
-    )}
-
-    {/* Mobile Sticky CTA Button - Moves with navigation */}
-    {buttonService && (
-      <motion.div
-        className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200"
-        animate={{ 
-          translateY: isNavVisible ? 0 : navHeight + 16
-        }}
-        transition={{ duration: 0.3, ease: "easeInOut" }}
-      >
-        <div className="px-4 py-3">
-          <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0 flex-1">
-              <p className="text-xs font-bold text-blue-600 uppercase tracking-widest">{t("relatedServices")}</p>
-              <p className="font-semibold text-sm text-gray-900 mt-0.5 truncate">{buttonService.title}</p>
-            </div>
-            <a
-              href={`/services/${buttonService.slug}`}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 active:bg-blue-800 transition-colors duration-200 font-semibold text-sm flex-shrink-0"
-            >
-              {t("orderNow")}
-            </a>
-          </div>
-        </div>
-      </motion.div>
-    )}
-  </>
+    </>
   )
 }
