@@ -160,8 +160,3 @@ export default function ArticlesPage({ params, searchParams }: Props) {
     </div>
   )
 }
-
-"use client"
-
-function ArticlesPageClient() {
-  const t = useTranslations("Articles")
