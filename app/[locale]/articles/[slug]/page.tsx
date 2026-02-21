@@ -17,7 +17,7 @@ type Props = {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { locale, slug } = params
+  const { locale, slug } = await params
   const supabase = createClient()
 
   const { data: article } = await supabase
@@ -160,8 +160,8 @@ async function ArticleSchemaScript({ locale, slug }: { locale: string; slug: str
   )
 }
 
-export default function ArticlePage({ params }: Props) {
-  const { locale, slug } = params
+export default async function ArticlePage({ params }: Props) {
+  const { locale, slug } = await params
 
   return (
     <div className="min-h-screen py-12">
