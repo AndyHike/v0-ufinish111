@@ -249,46 +249,56 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
       )}
     </article>
 
-    {/* Sticky CTA Button for Primary Service */}
+    {/* Desktop Sticky CTA Button - Minimalist */}
     {primaryService && (
       <motion.div
-        className="fixed bottom-0 md:bottom-8 left-0 right-0 md:left-1/2 md:-translate-x-1/2 bg-white border border-gray-200 rounded-none md:rounded-xl shadow-xl hover:shadow-2xl z-40 px-4 py-4 md:px-6 md:py-5 md:w-fit transition-all duration-300"
-        style={{ maxWidth: window.innerWidth < 768 ? undefined : "calc(100% - 4rem)" }}
-        animate={{ translateY: window.innerWidth < 768 ? (isNavVisible ? 0 : -navHeight) : 0 }}
+        className="hidden md:fixed md:bottom-8 md:left-1/2 md:-translate-x-1/2 md:z-40"
+        animate={{ opacity: 1 }}
         transition={{ duration: 0.3 }}
       >
-        <div className="max-w-full">
-          {/* Mobile version - compact */}
-          <div className="md:hidden flex items-center justify-between gap-3">
-            <div className="min-w-0 flex-1">
-              <p className="text-xs font-medium text-blue-600 uppercase tracking-wide">{t("relatedServices")}</p>
-              <p className="font-semibold text-sm line-clamp-1 text-gray-900 mt-1">{primaryService.title}</p>
+        <div className="w-96 bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-shadow duration-300 p-6 border border-gray-100">
+          <div className="flex flex-col gap-4">
+            <div>
+              <p className="text-xs font-bold text-blue-600 uppercase tracking-widest">
+                {t("relatedServices")}
+              </p>
+              <p className="font-bold text-xl text-gray-900 mt-2 leading-tight">{primaryService.title}</p>
+              {primaryService.description && (
+                <p className="text-sm text-gray-600 mt-3 leading-relaxed">{primaryService.description}</p>
+              )}
             </div>
             <a
               href={`/services/${primaryService.slug}`}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-semibold text-sm whitespace-nowrap flex-shrink-0 shadow-md hover:shadow-lg"
+              className="w-full bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 active:bg-blue-800 transition-colors duration-200 font-semibold text-center"
             >
               {t("orderNow")}
             </a>
           </div>
+        </div>
+      </motion.div>
+    )}
 
-          {/* Desktop version - full card */}
-          <div className="hidden md:block">
-            <div className="flex flex-col gap-4">
-              <div>
-                <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide">{t("relatedServices")}</p>
-                <p className="font-bold text-lg text-gray-900 mt-2">{primaryService.title}</p>
-                {primaryService.description && (
-                  <p className="text-sm text-gray-600 mt-2 line-clamp-2">{primaryService.description}</p>
-                )}
-              </div>
-              <a
-                href={`/services/${primaryService.slug}`}
-                className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-3 rounded-lg hover:from-blue-700 hover:to-blue-800 transition font-semibold text-center shadow-md hover:shadow-lg"
-              >
-                {t("orderNow")}
-              </a>
+    {/* Mobile Sticky CTA Button - Moves with navigation */}
+    {primaryService && (
+      <motion.div
+        className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200"
+        animate={{ 
+          translateY: isNavVisible ? 0 : navHeight + 16
+        }}
+        transition={{ duration: 0.3, ease: "easeInOut" }}
+      >
+        <div className="px-4 py-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-bold text-blue-600 uppercase tracking-widest">{t("relatedServices")}</p>
+              <p className="font-semibold text-sm text-gray-900 mt-0.5 truncate">{primaryService.title}</p>
             </div>
+            <a
+              href={`/services/${primaryService.slug}`}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 active:bg-blue-800 transition-colors duration-200 font-semibold text-sm flex-shrink-0"
+            >
+              {t("orderNow")}
+            </a>
           </div>
         </div>
       </motion.div>
