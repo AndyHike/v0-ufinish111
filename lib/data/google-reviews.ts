@@ -43,6 +43,7 @@ export const getGoogleReviews = cache(async (): Promise<GoogleReviewsData | null
     }
 
     const data = await response.json()
+    console.log("[v0] FULL Google API response:", JSON.stringify(data, null, 2))
     console.log("[v0] Google API data received, reviews count:", data.result?.reviews?.length || 0)
 
     if (!data.result) {
