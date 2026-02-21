@@ -17,7 +17,7 @@ type Props = {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { locale } = params
+  const { locale } = await params
   const t = await getTranslations({ locale, namespace: "Articles" })
 
   return {
@@ -123,9 +123,9 @@ async function ArticlesList({ locale, search, sort }: { locale: string; search?:
   )
 }
 
-export default function ArticlesPage({ params, searchParams }: Props) {
-  const { locale } = params
-  const { search, sort } = searchParams
+export default async function ArticlesPage({ params, searchParams }: Props) {
+  const { locale } = await params
+  const { search, sort } = await searchParams
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
