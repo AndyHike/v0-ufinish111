@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, Smartphone, MessageSquare } from "lucide-react"
+import { Home, Smartphone, MessageSquare, Wrench } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { cn } from "@/lib/utils"
 import { motion } from "framer-motion"
@@ -28,6 +28,11 @@ export function MobileNav() {
       name: t("Header.chooseModel"),
       href: "/brands",
       icon: <Smartphone className="h-5 w-5" />,
+    },
+    {
+      name: "Articles",
+      href: "/articles",
+      icon: <Wrench className="h-5 w-5" />,
     },
     {
       name: t("Header.contact"),

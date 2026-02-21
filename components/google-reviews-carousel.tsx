@@ -88,17 +88,22 @@ export function GoogleReviewsCarousel({ data }: GoogleReviewsCarouselProps) {
         {hasReviews ? (
           <>
             {/* Mobile Carousel View */}
-            <div className="md:hidden overflow-x-auto pb-4">
-              <div className="flex gap-4 px-4 min-w-min">
-                {data.reviews.map((review, index) => (
-                  <ReviewCard
-                    key={index}
-                    review={review}
-                    renderStars={renderStars}
-                    formatDate={(ts) => formatDate(ts, currentLocale)}
-                    t={t}
-                  />
-                ))}
+            <div className="md:hidden">
+              <div className="relative">
+                <div className="overflow-x-auto pb-4 scrollbar-hide">
+                  <div className="flex gap-3 px-4 min-w-min">
+                    {data.reviews.map((review, index) => (
+                      <ReviewCard
+                        key={index}
+                        review={review}
+                        renderStars={renderStars}
+                        formatDate={(ts) => formatDate(ts, currentLocale)}
+                        t={t}
+                        isMobile
+                      />
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -186,11 +191,16 @@ interface ReviewCardProps {
   renderStars: (rating: number) => React.ReactNode
   formatDate: (ts: number) => string
   t: any
+  isMobile?: boolean
 }
 
-function ReviewCard({ review, renderStars, formatDate, t }: ReviewCardProps) {
+function ReviewCard({ review, renderStars, formatDate, t, isMobile }: ReviewCardProps) {
   return (
-    <Card className="flex-none w-full md:flex-1 h-full hover:shadow-lg transition-shadow">
+    <Card
+      className={`flex-none hover:shadow-lg transition-shadow ${
+        isMobile ? "w-80 min-w-80 sm:w-96 sm:min-w-96" : "w-full md:flex-1"
+      } h-full`}
+    >
       <CardContent className="p-6 flex flex-col h-full">
         <div className="mb-4">
           <h3 className="font-semibold truncate text-sm">

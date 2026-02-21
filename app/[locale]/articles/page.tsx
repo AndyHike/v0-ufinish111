@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input"
 import { ArticleCard } from "@/components/articles/article-card"
 import { createClient } from "@/lib/supabase"
 import { getTranslations } from "next-intl/server"
+import { useTranslations } from "next-intl"
 
 type Props = {
   params: {
@@ -20,8 +21,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const t = await getTranslations({ locale, namespace: "Articles" })
 
   return {
-    title: "Repair Guides & Tips | DeviceHelp",
-    description: "Learn how to maintain and repair your devices with our comprehensive guides and tips from experts.",
+    title: t("title"),
+    description: t("subtitle"),
     alternates: {
       canonical: `https://devicehelp.cz/${locale}/articles`,
       languages: {
@@ -111,6 +112,7 @@ async function ArticlesList({ locale, search }: { locale: string; search?: strin
 export default function ArticlesPage({ params, searchParams }: Props) {
   const { locale } = params
   const { search } = searchParams
+  const t = useTranslations("Articles")
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
@@ -119,10 +121,10 @@ export default function ArticlesPage({ params, searchParams }: Props) {
         <div className="container mx-auto px-4">
           <div className="max-w-2xl mx-auto text-center mb-12">
             <h1 className="text-4xl md:text-5xl font-bold mb-4">
-              Repair Guides & Tips
+              {t("title")}
             </h1>
             <p className="text-lg text-gray-600 mb-8">
-              Learn from expert guides on how to maintain and repair your devices. Get step-by-step instructions and professional advice.
+              {t("subtitle")}
             </p>
 
             {/* Search */}
@@ -131,7 +133,7 @@ export default function ArticlesPage({ params, searchParams }: Props) {
                 <Input
                   type="search"
                   name="search"
-                  placeholder="Search articles..."
+                  placeholder={t("searchPlaceholder")}
                   defaultValue={search || ""}
                   className="flex-1"
                 />
@@ -139,7 +141,7 @@ export default function ArticlesPage({ params, searchParams }: Props) {
                   type="submit"
                   className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
                 >
-                  Search
+                  {t("searchButton")}
                 </button>
               </form>
             </div>
@@ -158,3 +160,8 @@ export default function ArticlesPage({ params, searchParams }: Props) {
     </div>
   )
 }
+
+"use client"
+
+function ArticlesPageClient() {
+  const t = useTranslations("Articles")

@@ -890,5 +890,20 @@
     "viewAllReviews": "Zobrazit všechny recenze na Mapách Google",
     "unknownAuthor": "Anonymní",
     "unknownDate": "neznámé datum"
+  },
+  "Articles": {
+    "title": "Průvodci a tipy na opravu",
+    "subtitle": "Naučte se od odborníků, jak udržovat a opravovat vaše zařízení. Získejte podrobné pokyny a profesionální rady.",
+    "searchPlaceholder": "Hledat články...",
+    "searchButton": "Hledat",
+    "noArticlesFound": "Články nenalezeny",
+    "readMore": "Čtěte více",
+    "readingTime": "{minutes} min čtení",
+    "views": "{count} zobrazení",
+    "featured": "Doporučeno",
+    "related": "Související články",
+    "shareArticle": "Sdílet článek",
+    "viewCount": "Zobrazení",
+    "backToArticles": "Zpět na články"
   }
 }

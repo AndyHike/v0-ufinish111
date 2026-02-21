@@ -490,5 +490,20 @@
     "viewAllReviews": "View all reviews on Google Maps",
     "unknownAuthor": "Anonymous",
     "unknownDate": "unknown date"
+  },
+  "Articles": {
+    "title": "Repair Guides & Tips",
+    "subtitle": "Learn from expert guides on how to maintain and repair your devices. Get step-by-step instructions and professional advice.",
+    "searchPlaceholder": "Search articles...",
+    "searchButton": "Search",
+    "noArticlesFound": "No articles found",
+    "readMore": "Read More",
+    "readingTime": "{minutes} min read",
+    "views": "{count} views",
+    "featured": "Featured",
+    "related": "Related Articles",
+    "shareArticle": "Share Article",
+    "viewCount": "Views",
+    "backToArticles": "Back to Articles"
   }
 }

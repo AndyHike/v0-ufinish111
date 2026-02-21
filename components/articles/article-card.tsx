@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import { Clock, Eye } from "lucide-react"
+import { useTranslations } from "next-intl"
 
 type ArticleCardProps = {
   id: string
@@ -25,6 +26,8 @@ export function ArticleCard({
   content,
   locale,
 }: ArticleCardProps) {
+  const t = useTranslations("Articles")
+  
   // Extract first 150 characters for preview
   const preview = content
     .replace(/<[^>]*>/g, "") // Remove HTML tags
@@ -56,11 +59,11 @@ export function ArticleCard({
             <div className="flex items-center gap-4 text-xs text-gray-500 pt-2 border-t">
               <div className="flex items-center gap-1">
                 <Clock className="w-3 h-3" />
-                <span>{reading_time_minutes} min read</span>
+                <span>{t("readingTime", { minutes: reading_time_minutes })}</span>
               </div>
               <div className="flex items-center gap-1">
                 <Eye className="w-3 h-3" />
-                <span>{view_count} views</span>
+                <span>{t("views", { count: view_count })}</span>
               </div>
             </div>
           </div>
