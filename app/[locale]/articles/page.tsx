@@ -1,10 +1,9 @@
 import { Suspense } from "react"
 import type { Metadata } from "next"
-import { Input } from "@/components/ui/input"
-import { ArticleCard } from "@/components/articles/article-card"
 import { createClient } from "@/lib/supabase"
 import { getTranslations } from "next-intl/server"
-import { useTranslations } from "next-intl"
+import { ArticlesHero } from "@/components/articles/articles-hero"
+import { ArticleCard } from "@/components/articles/article-card"
 
 type Props = {
   params: {
@@ -112,40 +111,13 @@ async function ArticlesList({ locale, search }: { locale: string; search?: strin
 export default function ArticlesPage({ params, searchParams }: Props) {
   const { locale } = params
   const { search } = searchParams
-  const t = useTranslations("Articles")
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
       {/* Hero Section */}
       <section className="py-12 md:py-16">
         <div className="container mx-auto px-4">
-          <div className="max-w-2xl mx-auto text-center mb-12">
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">
-              {t("title")}
-            </h1>
-            <p className="text-lg text-gray-600 mb-8">
-              {t("subtitle")}
-            </p>
-
-            {/* Search */}
-            <div className="relative">
-              <form action="" method="get" className="flex gap-2">
-                <Input
-                  type="search"
-                  name="search"
-                  placeholder={t("searchPlaceholder")}
-                  defaultValue={search || ""}
-                  className="flex-1"
-                />
-                <button
-                  type="submit"
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-                >
-                  {t("searchButton")}
-                </button>
-              </form>
-            </div>
-          </div>
+          <ArticlesHero locale={locale} search={search} />
         </div>
       </section>
 
