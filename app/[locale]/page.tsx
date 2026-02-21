@@ -2,6 +2,7 @@ import { HeroSection } from "@/components/hero-section"
 import { ContactSection } from "@/components/contact-section"
 import { BrandsSection } from "@/components/brands-section"
 import { InfoBanner } from "@/components/info-banner"
+import { GoogleReviewsCarousel } from "@/components/google-reviews-carousel"
 import { getBrands } from "@/lib/data/brands"
 import { getInfoBanner } from "@/lib/data/info-banner"
 import { Suspense } from "react"
@@ -46,6 +47,7 @@ export default async function HomePage() {
         <InfoBannerAsync promise={infoBannerPromise} />
       </Suspense>
       <HeroSection />
+      <GoogleReviewsCarousel />
       <Suspense fallback={<BrandsSectionSkeleton />}>
         <BrandsSectionAsync promise={brandsPromise} />
       </Suspense>
