@@ -24,29 +24,39 @@ export const getGoogleReviews = cache(async (): Promise<GoogleReviewsData | null
       return null
     }
 
-    const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&key=${apiKey}&fields=reviews,rating,user_ratings_total,name`
+    // Use the new Places API endpoint instead of legacy API
+    const url = `https://places.googleapis.com/v1/places/${placeId}?fields=displayName,rating,userRatingCount,reviews&key=${apiKey}`
 
     const response = await fetch(url, {
+      headers: {
+        "X-Goog-Api-Key": apiKey,
+      },
       next: { revalidate: 3600 },
     })
 
     const data = await response.json()
     console.log("[v0] Google API Full Response:", JSON.stringify(data, null, 2))
 
-    if (!response.ok || data.status !== "OK") {
-      console.error("[v0] Google API error status:", data.status)
+    if (!response.ok) {
+      console.error("[v0] Google API error status:", response.status, data)
       return null
     }
 
-    if (!data.result) {
+    if (!data) {
       return null
     }
 
     const result = {
-      reviews: data.result.reviews?.slice(0, 6) || [],
-      rating: data.result.rating || 0,
-      totalReviews: data.result.user_ratings_total || 0,
-      businessName: data.result.name,
+      reviews: (data.reviews || []).slice(0, 6).map((review: any) => ({
+        author_name: review.authorAttribution?.displayName || "Anonymous",
+        rating: review.rating || 0,
+        text: review.originalText || review.text || "",
+        time: review.publishTime ? new Date(review.publishTime).getTime() / 1000 : 0,
+        profile_photo_url: review.authorAttribution?.photoUri,
+      })),
+      rating: data.rating || 0,
+      totalReviews: data.userRatingCount || 0,
+      businessName: data.displayName?.text,
     }
     
     console.log("[v0] Returning reviews:", result.reviews.length)
