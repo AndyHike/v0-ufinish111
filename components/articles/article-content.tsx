@@ -137,8 +137,31 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
               const linkedServices = (servicesData.services || []).filter((service: Service) =>
                 validLinks.some((link: any) => link.service_id === service.id)
               )
-              setRelatedServices(linkedServices)
+              if (linkedServices.length > 0) {
+                setRelatedServices(linkedServices)
+              }
             }
+          }
+        } catch (err) {
+          console.error("Failed to fetch related services:", err)
+        }
+      }
+
+      // Fallback: if no services loaded, get any service to show in the button
+      if (!primaryService && relatedServices.length === 0) {
+        try {
+          const servicesResponse = await fetch(`/api/services?locale=${locale}&limit=10`)
+          if (servicesResponse.ok) {
+            const servicesData = await servicesResponse.json()
+            const services = servicesData.services || []
+            if (services.length > 0) {
+              setRelatedServices([services[0]])
+            }
+          }
+        } catch (err) {
+          console.error("Failed to fetch fallback service:", err)
+        }
+      }
           }
         } catch (err) {
           console.error("Failed to fetch related services:", err)
