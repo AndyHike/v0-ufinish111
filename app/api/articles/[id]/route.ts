@@ -57,7 +57,18 @@ export async function PUT(
     const supabase = createClient()
     const body = await request.json()
 
-    const { title, content, featured_image, featured, published, tags = [], slug, meta_description, reading_time_minutes } = body
+    const { 
+      title, 
+      content, 
+      featured_image, 
+      featured, 
+      published, 
+      tags = [], 
+      slug, 
+      meta_description, 
+      reading_time_minutes,
+      translations = []
+    } = body
 
     // Calculate reading time if not provided
     const readingTime = reading_time_minutes || generateReadingTime(content)
@@ -82,6 +93,41 @@ export async function PUT(
       .single()
 
     if (error) throw error
+
+    // Update translations
+    if (translations && translations.length > 0) {
+      for (const trans of translations) {
+        const { data: existing } = await supabase
+          .from("article_translations")
+          .select("id")
+          .eq("article_id", id)
+          .eq("locale", trans.locale)
+          .single()
+
+        if (existing) {
+          // Update existing translation
+          await supabase
+            .from("article_translations")
+            .update({
+              title: trans.title,
+              content: trans.content,
+            })
+            .eq("id", existing.id)
+        } else {
+          // Insert new translation
+          if (trans.content || trans.title) {
+            await supabase
+              .from("article_translations")
+              .insert({
+                article_id: id,
+                locale: trans.locale,
+                title: trans.title,
+                content: trans.content,
+              })
+          }
+        }
+      }
+    }
 
     return NextResponse.json(article)
   } catch (error) {

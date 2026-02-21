@@ -32,7 +32,18 @@ export async function POST(request: NextRequest) {
     const supabase = createClient()
     const body = await request.json()
 
-    const { slug, title, content, featured_image, featured, published, tags = [], meta_description, reading_time_minutes } = body
+    const { 
+      slug, 
+      title, 
+      content, 
+      featured_image, 
+      featured, 
+      published,
+      tags = [],
+      reading_time_minutes,
+      meta_description,
+      translations = []
+    } = body
 
     if (!slug || !title || !content) {
       return NextResponse.json(
@@ -56,12 +67,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Calculate reading time if not provided
-    const readingTime = reading_time_minutes || Math.ceil(
+    const calcReadingTime = reading_time_minutes || Math.ceil(
       content.replace(/<[^>]*>/g, "").split(/\s+/).length / 200
     )
-    const metaDesc = meta_description || content.replace(/<[^>]*>/g, "").substring(0, 155)
+    
+    // Generate meta description if not provided
+    const calcMetaDescription = meta_description || 
+      content.replace(/<[^>]*>/g, "").substring(0, 155)
 
-    const { data: article, error } = await supabase
+    const { data: article, error: articleError } = await supabase
       .from("articles")
       .insert({
         slug,
@@ -70,20 +84,40 @@ export async function POST(request: NextRequest) {
         featured_image: featured_image || null,
         featured: featured || false,
         published: published || false,
-        meta_description: metaDesc,
-        reading_time_minutes: readingTime,
+        meta_description: calcMetaDescription,
+        reading_time_minutes: calcReadingTime,
         tags: tags || [],
       })
       .select()
       .single()
 
-    if (error) throw error
+    if (articleError) throw articleError
+
+    // Add translations if provided
+    if (translations && translations.length > 0) {
+      const translationInserts = translations
+        .filter((t: any) => t.content || t.title) // Only insert non-empty translations
+        .map((t: any) => ({
+          article_id: article.id,
+          locale: t.locale,
+          title: t.title || title,
+          content: t.content || content,
+        }))
+
+      if (translationInserts.length > 0) {
+        const { error: translationError } = await supabase
+          .from("article_translations")
+          .insert(translationInserts)
+
+        if (translationError) throw translationError
+      }
+    }
 
     return NextResponse.json(article, { status: 201 })
   } catch (error) {
     console.error("Error creating article:", error)
     return NextResponse.json(
-      { error: "Failed to create article" },
+      { error: error instanceof Error ? error.message : "Failed to create article" },
       { status: 500 }
     )
   }
