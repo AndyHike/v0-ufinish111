@@ -910,7 +910,21 @@
     "backToArticles": "Zpět na články",
     "tags": "Štítky",
     "publishedDate": "Zveřejněno",
-    "noTags": "Žádné štítky"
+    "noTags": "Žádné štítky",
+    "sortBy": "Řadit podle:",
+    "newest": "Nejnovější",
+    "categories": "Kategorie",
+    "orderNow": "Objednat službu",
+    "relatedServices": "Související služby",
+    "categoryNames": {
+      "General": "Obecné",
+      "Tutorial": "Návod",
+      "Guide": "Průvodce",
+      "Troubleshooting": "Odstraňování problémů",
+      "How-to": "Jak na to",
+      "Review": "Recenze",
+      "Tips & Tricks": "Tipy a triky"
+    }
   },
   "Admin": {
     "articlesManagement": "Správa článků",

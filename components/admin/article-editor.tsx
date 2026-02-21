@@ -57,9 +57,12 @@ export function ArticleEditor({ articleId, locale }: ArticleEditorProps) {
     published_at: '',
     tags: [] as string[],
     category: 'General',
+    serviceIds: [] as string[],
   })
 
   const [tagInput, setTagInput] = useState('')
+  const [availableServices, setAvailableServices] = useState<Array<{ id: string; title: string; slug: string }>>([])
+  const [servicesLoading, setServicesLoading] = useState(false)
 
   // Language-specific translations
   const [translations, setTranslations] = useState<ArticleTranslation[]>(
@@ -74,7 +77,23 @@ export function ArticleEditor({ articleId, locale }: ArticleEditorProps) {
     if (articleId) {
       fetchArticle()
     }
+    // Fetch available services
+    fetchAvailableServices()
   }, [articleId])
+
+  const fetchAvailableServices = async () => {
+    try {
+      setServicesLoading(true)
+      const response = await fetch('/api/services?limit=1000')
+      if (!response.ok) throw new Error('Failed to fetch services')
+      const data = await response.json()
+      setAvailableServices(data.services || [])
+    } catch (error) {
+      console.error('Error fetching services:', error)
+    } finally {
+      setServicesLoading(false)
+    }
+  }
 
   const fetchArticle = async () => {
     if (!articleId) return

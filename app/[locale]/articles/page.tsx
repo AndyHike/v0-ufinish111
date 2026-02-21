@@ -12,6 +12,7 @@ type Props = {
   searchParams: {
     search?: string
     page?: string
+    sort?: string
   }
 }
 
@@ -43,7 +44,7 @@ function ArticlesListSkeleton() {
   )
 }
 
-async function ArticlesList({ locale, search }: { locale: string; search?: string }) {
+async function ArticlesList({ locale, search, sort }: { locale: string; search?: string; sort?: string }) {
   const supabase = createClient()
 
   let query = supabase
@@ -70,7 +71,13 @@ async function ArticlesList({ locale, search }: { locale: string; search?: strin
     )
     .eq("published", true)
     .order("featured", { ascending: false })
-    .order("created_at", { ascending: false })
+
+  // Apply sorting
+  if (sort === "category") {
+    query = query.order("category", { ascending: true }).order("created_at", { ascending: false })
+  } else {
+    query = query.order("created_at", { ascending: false })
+  }
 
   if (search) {
     query = query.ilike("title", `%${search}%`)
@@ -118,14 +125,14 @@ async function ArticlesList({ locale, search }: { locale: string; search?: strin
 
 export default function ArticlesPage({ params, searchParams }: Props) {
   const { locale } = params
-  const { search } = searchParams
+  const { search, sort } = searchParams
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
       {/* Hero Section */}
       <section className="py-8 md:py-12">
         <div className="container mx-auto px-4">
-          <ArticlesHero locale={locale} search={search} />
+          <ArticlesHero locale={locale} search={search} sort={sort} />
         </div>
       </section>
 
@@ -133,7 +140,7 @@ export default function ArticlesPage({ params, searchParams }: Props) {
       <section className="py-8">
         <div className="container mx-auto px-4">
           <Suspense fallback={<ArticlesListSkeleton />}>
-            <ArticlesList locale={locale} search={search} />
+            <ArticlesList locale={locale} search={search} sort={sort} />
           </Suspense>
         </div>
       </section>

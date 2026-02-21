@@ -510,7 +510,21 @@
     "backToArticles": "Back to Articles",
     "tags": "Tags",
     "publishedDate": "Published",
-    "noTags": "No tags"
+    "noTags": "No tags",
+    "sortBy": "Sort by:",
+    "newest": "Newest",
+    "categories": "Categories",
+    "orderNow": "Order Service",
+    "relatedServices": "Related Services",
+    "categoryNames": {
+      "General": "General",
+      "Tutorial": "Tutorial",
+      "Guide": "Guide",
+      "Troubleshooting": "Troubleshooting",
+      "How-to": "How-to",
+      "Review": "Review",
+      "Tips & Tricks": "Tips & Tricks"
+    }
   },
   "Admin": {
     "articlesManagement": "Articles Management",

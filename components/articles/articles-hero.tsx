@@ -18,10 +18,11 @@ interface SearchSuggestion {
   }>
 }
 
-export function ArticlesHero({ locale, search }: { locale: string; search?: string }) {
+export function ArticlesHero({ locale, search, sort }: { locale: string; search?: string; sort?: string }) {
   const t = useTranslations("Articles")
   const router = useRouter()
   const [query, setQuery] = useState(search || "")
+  const [sortBy, setSortBy] = useState(sort || "newest")
   const [suggestions, setSuggestions] = useState<SearchSuggestion | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [showSuggestions, setShowSuggestions] = useState(false)
@@ -55,7 +56,10 @@ export function ArticlesHero({ locale, search }: { locale: string; search?: stri
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    router.push(`/${locale}/articles?search=${encodeURIComponent(query)}`)
+    const params = new URLSearchParams()
+    if (query) params.append("search", query)
+    if (sortBy !== "newest") params.append("sort", sortBy)
+    router.push(`/${locale}/articles${params.toString() ? "?" + params.toString() : ""}`)
     setShowSuggestions(false)
   }
 
@@ -189,6 +193,42 @@ export function ArticlesHero({ locale, search }: { locale: string; search?: stri
             )}
           </div>
         )}
+      </div>
+
+      {/* Sort Buttons */}
+      <div className="mt-6 flex flex-wrap gap-2 justify-center items-center">
+        <span className="text-sm font-medium text-gray-700">{t("sortBy")}</span>
+        <button
+          onClick={() => {
+            setSortBy("newest")
+            const params = new URLSearchParams()
+            if (query) params.append("search", query)
+            router.push(`/${locale}/articles${params.toString() ? "?" + params.toString() : ""}`)
+          }}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+            sortBy === "newest"
+              ? "bg-blue-600 text-white"
+              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+          }`}
+        >
+          {t("newest")}
+        </button>
+        <button
+          onClick={() => {
+            setSortBy("category")
+            const params = new URLSearchParams()
+            if (query) params.append("search", query)
+            params.append("sort", "category")
+            router.push(`/${locale}/articles?${params.toString()}`)
+          }}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+            sortBy === "category"
+              ? "bg-blue-600 text-white"
+              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+          }`}
+        >
+          {t("categories")}
+        </button>
       </div>
     </div>
   )

@@ -1033,13 +1033,27 @@
     "readMore": "Читати далі",
     "readingTime": "{minutes} хв читання",
     "views": "{count} переглядів",
-    "featured": "Рекомендовано",
+    "featured": "Реко��ендовано",
     "related": "Пов'язані статті",
     "shareArticle": "Поділитися статтею",
     "viewCount": "Переглядів",
     "backToArticles": "Назад до статей",
     "tags": "Теги",
     "publishedDate": "Опубліковано",
-    "noTags": "Немає тегів"
+    "noTags": "Немає тегів",
+    "sortBy": "Сортувати по:",
+    "newest": "Новіші",
+    "categories": "Категорії",
+    "orderNow": "Замовити послугу",
+    "relatedServices": "Пов'язані послуги",
+    "categoryNames": {
+      "General": "Загальне",
+      "Tutorial": "Посібник",
+      "Guide": "Керівництво",
+      "Troubleshooting": "Усунення проблем",
+      "How-to": "Як робити",
+      "Review": "Огляд",
+      "Tips & Tricks": "Поради та хитрощі"
+    }
   }
 }
