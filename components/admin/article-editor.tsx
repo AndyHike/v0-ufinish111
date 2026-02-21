@@ -338,170 +338,154 @@ export function ArticleEditor({ articleId, locale }: ArticleEditorProps) {
               Add
             </Button>
           </div>
-          {mainData.tags.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-2">
-              {mainData.tags.map(tag => (
-                <div key={tag} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-2">
-                  {tag}
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveTag(tag)}
-                    className="hover:text-blue-900"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Category */}
-        <div>
-          <Label htmlFor="category">Category</Label>
-          <select
-            id="category"
-            value={mainData.category}
-            onChange={e => setMainData(prev => ({ ...prev, category: e.target.value }))}
-            className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            {CATEGORIES.map(cat => (
-              <option key={cat} value={cat}>
-                {cat}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {/* Services Selection */}
-      <div>
-        <Label>Related Services (Click to select)</Label>
-        <div className="mt-2 space-y-2 max-h-48 overflow-y-auto border rounded-lg p-3">
-          {servicesLoading ? (
-            <p className="text-sm text-gray-500">Loading services...</p>
-          ) : availableServices.length === 0 ? (
-            <p className="text-sm text-gray-500">No services available</p>
-          ) : (
-            availableServices.map(service => (
-              <label key={service.id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-100 p-2 rounded">
-                <input
-                  type="checkbox"
-                  checked={mainData.serviceIds.includes(service.id)}
-                  onChange={e => {
-                    if (e.target.checked) {
-                      setMainData(prev => ({
-                        ...prev,
-                        serviceIds: [...prev.serviceIds, service.id],
-                      }))
-                    } else {
-                      setMainData(prev => ({
-                        ...prev,
-                        serviceIds: prev.serviceIds.filter(id => id !== service.id),
-                      }))
-                    }
-                  }}
-                  className="w-4 h-4 rounded"
-                />
-                <span className="text-sm">{service.title}</span>
-              </label>
-            ))
-          )}
-        </div>
-        {mainData.serviceIds.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-2">
-            {mainData.serviceIds.map(serviceId => {
-              const service = availableServices.find(s => s.id === serviceId)
-              return service ? (
-                <span key={serviceId} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-2">
-                  {service.title}
-                  <button
-                    type="button"
-                    onClick={() => setMainData(prev => ({
-                      ...prev,
-                      serviceIds: prev.serviceIds.filter(id => id !== serviceId),
-                    }))}
-                    className="hover:text-blue-900"
-                  >
-                    ×
-                  </button>
-                </span>
-              ) : null
-            })}
-          </div>
         )}
       </div>
 
-      {/* Language-Specific Content */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
-          {LOCALES.map(loc => (
-            <TabsTrigger key={loc.code} value={loc.code}>
-              {loc.name}
-            </TabsTrigger>
+      {/* Category */}
+      <div>
+        <Label htmlFor="category">Category</Label>
+        <select
+          id="category"
+          value={mainData.category}
+          onChange={e => setMainData(prev => ({ ...prev, category: e.target.value }))}
+          className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        >
+          {CATEGORIES.map(cat => (
+            <option key={cat} value={cat}>
+              {cat}
+            </option>
           ))}
-        </TabsList>
-
-        {LOCALES.map(loc => {
-          const trans = translations.find(t => t.locale === loc.code)
-          return (
-            <TabsContent key={loc.code} value={loc.code} className="space-y-4 mt-4">
-              <div>
-                <Label htmlFor={`title-${loc.code}`}>
-                  Title ({loc.name}) {loc.code === locale ? '*' : ''}
-                </Label>
-                <Input
-                  id={`title-${loc.code}`}
-                  value={trans?.title || ''}
-                  onChange={e => handleTranslationChange(loc.code, 'title', e.target.value)}
-                  placeholder={`Title in ${loc.name}`}
-                  className="mt-1"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor={`content-${loc.code}`}>
-                  Content ({loc.name}) {loc.code === locale ? '*' : ''}
-                </Label>
-                <Textarea
-                  id={`content-${loc.code}`}
-                  value={trans?.content || ''}
-                  onChange={e => handleTranslationChange(loc.code, 'content', e.target.value)}
-                  placeholder={`Write article content in ${loc.name}...`}
-                  className="mt-1 min-h-64 font-mono text-sm"
-                />
-                {trans?.content && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    Reading time: ~{generateReadingTime(trans.content)} min
-                  </p>
-                )}
-              </div>
-            </TabsContent>
-          )
-        })}
-      </Tabs>
-
-      {/* Actions */}
-      <div className="flex gap-4 justify-end pt-6 border-t">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => router.back()}
-          disabled={isSaving}
-        >
-          Cancel
-        </Button>
-        <Button
-          type="button"
-          onClick={handleSave}
-          disabled={isSaving}
-          className="gap-2"
-        >
-          {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
-          {articleId ? 'Update' : 'Create'} Article
-        </Button>
+        </select>
       </div>
-    </Tabs>
     </div>
+
+    {/* Services Selection */}
+    <div>
+      <Label>Related Services (Click to select)</Label>
+      <div className="mt-2 space-y-2 max-h-48 overflow-y-auto border rounded-lg p-3">
+        {servicesLoading ? (
+          <p className="text-sm text-gray-500">Loading services...</p>
+        ) : availableServices.length === 0 ? (
+          <p className="text-sm text-gray-500">No services available</p>
+        ) : (
+          availableServices.map(service => (
+            <label key={service.id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-100 p-2 rounded">
+              <input
+                type="checkbox"
+                checked={mainData.serviceIds.includes(service.id)}
+                onChange={e => {
+                  if (e.target.checked) {
+                    setMainData(prev => ({
+                      ...prev,
+                      serviceIds: [...prev.serviceIds, service.id],
+                    }))
+                  } else {
+                    setMainData(prev => ({
+                      ...prev,
+                      serviceIds: prev.serviceIds.filter(id => id !== service.id),
+                    }))
+                  }
+                }}
+                className="w-4 h-4 rounded"
+              />
+              <span className="text-sm">{service.title}</span>
+            </label>
+          ))
+        )}
+      </div>
+      {mainData.serviceIds.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-2">
+          {mainData.serviceIds.map(serviceId => {
+            const service = availableServices.find(s => s.id === serviceId)
+            return service ? (
+              <span key={serviceId} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-2">
+                {service.title}
+                <button
+                  type="button"
+                  onClick={() => setMainData(prev => ({
+                    ...prev,
+                    serviceIds: prev.serviceIds.filter(id => id !== serviceId),
+                  }))}
+                  className="hover:text-blue-900"
+                >
+                  ×
+                </button>
+              </span>
+            ) : null
+          })}
+        </div>
+      )}
+    </div>
+
+    {/* Language-Specific Content */}
+    <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <TabsList className="grid w-full grid-cols-3">
+        {LOCALES.map(loc => (
+          <TabsTrigger key={loc.code} value={loc.code}>
+            {loc.name}
+          </TabsTrigger>
+        ))}
+      </TabsList>
+
+      {LOCALES.map(loc => {
+        const trans = translations.find(t => t.locale === loc.code)
+        return (
+          <TabsContent key={loc.code} value={loc.code} className="space-y-4 mt-4">
+            <div>
+              <Label htmlFor={`title-${loc.code}`}>
+                Title ({loc.name}) {loc.code === locale ? '*' : ''}
+              </Label>
+              <Input
+                id={`title-${loc.code}`}
+                value={trans?.title || ''}
+                onChange={e => handleTranslationChange(loc.code, 'title', e.target.value)}
+                placeholder={`Title in ${loc.name}`}
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor={`content-${loc.code}`}>
+                Content ({loc.name}) {loc.code === locale ? '*' : ''}
+              </Label>
+              <Textarea
+                id={`content-${loc.code}`}
+                value={trans?.content || ''}
+                onChange={e => handleTranslationChange(loc.code, 'content', e.target.value)}
+                placeholder={`Write article content in ${loc.name}...`}
+                className="mt-1 min-h-64 font-mono text-sm"
+              />
+              {trans?.content && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Reading time: ~{generateReadingTime(trans.content)} min
+                </p>
+              )}
+            </div>
+          </TabsContent>
+        )
+      })}
+    </Tabs>
+
+    {/* Actions */}
+    <div className="flex gap-4 justify-end pt-6 border-t">
+      <Button
+        type="button"
+        variant="outline"
+        onClick={() => router.back()}
+        disabled={isSaving}
+      >
+        Cancel
+      </Button>
+      <Button
+        type="button"
+        onClick={handleSave}
+        disabled={isSaving}
+        className="gap-2"
+      >
+        {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
+        {articleId ? 'Update' : 'Create'} Article
+      </Button>
+    </div>
+  </div>
   )
 }
