@@ -146,6 +146,20 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
     return t("fromHours", { hours })
   }
 
+  // Допоміжна функція для форматування гарантії для плейсхолдерів
+  const getFormattedWarrantyForPlaceholder = (months: number | null, period: string) => {
+    if (months === null || months === undefined) return ""
+    return period === "days" ? t("warrantyDays", { count: months }) : t("warrantyMonths", { count: months })
+  }
+
+  // Допоміжна функція для форматування тривалості для плейсхолдерів
+  const getFormattedDurationForPlaceholder = (hours: number | null) => {
+    if (hours === null || hours === undefined) return ""
+    // Форматуємо без префіксу "~", тільки число + одиниці виміру
+    const hoursText = hours === 1 ? t("hour") : t("hours")
+    return `${hours} ${hoursText}`
+  }
+
   const handleOrderClick = () => {
     if (typeof window === "undefined" || !window.fbq) return
 
@@ -188,9 +202,15 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
     service: translation.name || "",
     category: sourceModel?.category?.name || sourceModel?.categories?.[0]?.name || "",
     line: sourceModel?.product_line || "",
-    warranty: serviceData?.warranty_period || `${serviceData?.warranty_months || 12} місяців` || "12 місяців",
+    // Для гарантії: передаємо сформатовану з перекладом
+    warrantyCounted: getFormattedWarrantyForPlaceholder(serviceData.warranty_months, serviceData.warranty_period),
+    warranty: getFormattedWarrantyForPlaceholder(serviceData.warranty_months, serviceData.warranty_period),
+    warrantyMonths: serviceData.warranty_months || undefined,
     price: modelServicePrice ? formatCurrency(modelServicePrice) : (minPrice ? formatCurrency(minPrice) : ""),
-    duration: serviceData?.duration_hours ? `${serviceData.duration_hours} годин` : "",
+    // Для тривалості: передаємо сформатовану з перекладом
+    durationFormatted: getFormattedDurationForPlaceholder(serviceData.duration_hours),
+    duration: getFormattedDurationForPlaceholder(serviceData.duration_hours),
+    durationHours: serviceData.duration_hours || undefined,
     fullModel: sourceModel ? `${sourceModel.brands?.name || ""} ${sourceModel.name}`.trim() : modelParam || "",
     productType: sourceModel?.type || "",
   }
