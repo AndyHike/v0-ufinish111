@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useTranslations } from "next-intl"
 import { Clock, Eye, Tag, Calendar, ShoppingCart } from "lucide-react"
 import { ArticleContentSkeleton } from "./article-content-skeleton"
+import { motion } from "framer-motion"
 
 type Article = {
   id: string
@@ -29,11 +30,31 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
   const [error, setError] = useState<string | null>(null)
   const [relatedServices, setRelatedServices] = useState<Service[]>([])
   const [primaryService, setPrimaryService] = useState<Service | null>(null)
+  const [isNavVisible, setIsNavVisible] = useState(true)
+  const [lastScrollY, setLastScrollY] = useState(0)
   const t = useTranslations("Articles")
 
   useEffect(() => {
     fetchArticle()
   }, [slug, locale])
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY
+
+      // Show nav when scrolling up, hide when scrolling down
+      if (currentScrollY < lastScrollY || currentScrollY < 100) {
+        setIsNavVisible(true)
+      } else if (currentScrollY > lastScrollY && currentScrollY > 100) {
+        setIsNavVisible(false)
+      }
+
+      setLastScrollY(currentScrollY)
+    }
+
+    window.addEventListener("scroll", handleScroll, { passive: true })
+    return () => window.removeEventListener("scroll", handleScroll)
+  }, [lastScrollY])
 
   const fetchArticle = async () => {
     try {
@@ -208,17 +229,21 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
 
     {/* Sticky CTA Button for Primary Service */}
     {primaryService && (
-      <div className="fixed bottom-20 md:bottom-4 left-0 right-0 md:left-auto md:right-4 md:w-96 bg-white border rounded-lg shadow-lg z-40 p-4 md:p-6">
+      <motion.div
+        className="fixed bottom-20 md:bottom-8 left-1/2 md:left-1/2 -translate-x-1/2 md:-translate-x-1/2 w-[calc(100%-2rem)] md:w-96 bg-white border border-gray-200 rounded-xl shadow-xl hover:shadow-2xl z-40 p-4 md:p-5 transition-all duration-300"
+        animate={{ translateY: isNavVisible ? 0 : 28 }}
+        transition={{ duration: 0.3 }}
+      >
         <div className="max-w-full">
           {/* Mobile version - compact */}
           <div className="md:hidden flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-xs text-gray-600">{t("relatedServices")}</p>
-              <p className="font-semibold text-sm line-clamp-1">{primaryService.title}</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-medium text-blue-600 uppercase tracking-wide">{t("relatedServices")}</p>
+              <p className="font-semibold text-sm line-clamp-1 text-gray-900 mt-1">{primaryService.title}</p>
             </div>
             <a
               href={`/services/${primaryService.slug}`}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-medium text-sm whitespace-nowrap flex-shrink-0"
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-semibold text-sm whitespace-nowrap flex-shrink-0 shadow-md hover:shadow-lg"
             >
               {t("orderNow")}
             </a>
@@ -226,24 +251,24 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
 
           {/* Desktop version - full card */}
           <div className="hidden md:block">
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-4">
               <div>
-                <p className="text-xs text-gray-600 mb-1">{t("relatedServices")}</p>
-                <p className="font-semibold text-base">{primaryService.title}</p>
+                <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide">{t("relatedServices")}</p>
+                <p className="font-bold text-lg text-gray-900 mt-2">{primaryService.title}</p>
                 {primaryService.description && (
-                  <p className="text-xs text-gray-600 mt-2 line-clamp-2">{primaryService.description}</p>
+                  <p className="text-sm text-gray-600 mt-2 line-clamp-2">{primaryService.description}</p>
                 )}
               </div>
               <a
                 href={`/services/${primaryService.slug}`}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-medium text-sm text-center"
+                className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-3 rounded-lg hover:from-blue-700 hover:to-blue-800 transition font-semibold text-center shadow-md hover:shadow-lg"
               >
                 {t("orderNow")}
               </a>
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
     )}
   </>
   )
