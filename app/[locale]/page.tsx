@@ -70,9 +70,7 @@ export default async function HomePage() {
         <InfoBannerAsync promise={infoBannerPromise} />
       </Suspense>
       <HeroSection />
-      <Suspense fallback={<GoogleReviewsSkeleton />}>
-        <GoogleReviewsCarousel />
-      </Suspense>
+      <GoogleReviewsCarousel />
       <Suspense fallback={<BrandsSectionSkeleton />}>
         <BrandsSectionAsync promise={brandsPromise} />
       </Suspense>
