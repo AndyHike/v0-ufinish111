@@ -33,6 +33,7 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
   const [isNavVisible, setIsNavVisible] = useState(true)
   const [lastScrollY, setLastScrollY] = useState(0)
   const [navHeight, setNavHeight] = useState(80) // Default height of mobile nav
+  const t = useTranslations("Articles")
 
   useEffect(() => {
     // Calculate mobile nav height dynamically
