@@ -257,7 +257,7 @@
   },
   "Series": {
     "backToBrand": "Назад до {brand}",
-    "seriesPageDescription": "Перегляньте всі моделі {series} від {brand}",
+    "seriesPageDescription": "Пер��гляньте всі моделі {series} від {brand}",
     "availableModels": "Доступні моделі",
     "noModelsAvailable": "Поки що немає доступних моделей для цієї серії.",
     "seriesNotFound": "Серію не знайдено",
@@ -477,7 +477,7 @@
     "imageUrl": "URL зображення",
     "imageUrlPlaceholder": "Введіть URL зображення (необов'язково)",
     "brandsTitle": "Бренди",
-    "brandsDescription": "Список усіх брендів телефонів у вашій системі.",
+    "brandsDescription": "Список усіх брендів телефонів у ваш��й системі.",
     "name": "Назва",
     "logo": "Логотип",
     "createdAt": "Створ��но",
@@ -993,5 +993,15 @@
     "noSeries": "Серії не знайдено",
     "noModels": "Моделі не знайдено",
     "noServices": "Послуги не знайдено для цієї моделі"
+  },
+  "GoogleReviews": {
+    "title": "Google відгуки",
+    "rating": "{rating} з 5",
+    "reviews": "відгуків",
+    "noReviews": "Поки що відгуків немає",
+    "loading": "Завантаження відгуків...",
+    "viewAllReviews": "Дивитись все відгуки на Google Maps",
+    "unknownAuthor": "Анонім",
+    "unknownDate": "невідома дата"
   }
 }

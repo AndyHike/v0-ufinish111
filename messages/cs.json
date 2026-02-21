@@ -626,7 +626,7 @@
     "remonlineId": "ID RemOnline",
     "orderStatuses": "Stavy objednávek",
     "orderStatusesDescription": "Spravujte stavy objednávek ve vašem systému",
-    "addStatus": "Přidat stav",
+    "addStatus": "P��idat stav",
     "addNewStatus": "Přidat nový stav objednávky",
     "addNewStatusDescription": "Přidejte nový stav objednávky pro sledování oprav",
     "editStatus": "Upravit stav objednávky",
@@ -880,5 +880,15 @@
     "noSeries": "Žádné série nenalezeny",
     "noModels": "Žádné modely nenalezeny",
     "noServices": "Pro tento model nebyly nalezeny žádné služby"
+  },
+  "GoogleReviews": {
+    "title": "Recenze Google",
+    "rating": "{rating} z 5",
+    "reviews": "recenzí",
+    "noReviews": "Zatím žádné recenze",
+    "loading": "Načítání recenzí...",
+    "viewAllReviews": "Zobrazit všechny recenze na Mapách Google",
+    "unknownAuthor": "Anonymní",
+    "unknownDate": "neznámé datum"
   }
 }

@@ -480,5 +480,15 @@
     "noSeries": "No series found",
     "noModels": "No models found",
     "noServices": "No services found for this model"
+  },
+  "GoogleReviews": {
+    "title": "Google Reviews",
+    "rating": "{rating} out of 5",
+    "reviews": "reviews",
+    "noReviews": "No reviews yet",
+    "loading": "Loading reviews...",
+    "viewAllReviews": "View all reviews on Google Maps",
+    "unknownAuthor": "Anonymous",
+    "unknownDate": "unknown date"
   }
 }
