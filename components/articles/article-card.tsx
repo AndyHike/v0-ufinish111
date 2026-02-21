@@ -17,6 +17,7 @@ type ArticleCardProps = {
   locale: string
   tags?: string[]
   published_at?: string
+  category?: string
 }
 
 export function ArticleCard({
@@ -29,6 +30,7 @@ export function ArticleCard({
   locale,
   tags = [],
   published_at,
+  category,
 }: ArticleCardProps) {
   const t = useTranslations("Articles")
   
@@ -68,6 +70,14 @@ export function ArticleCard({
             </div>
 
             <p className="text-sm text-gray-600 line-clamp-2">{preview}</p>
+
+            {category && (
+              <div className="pt-2">
+                <Badge variant="secondary" className="bg-amber-100 text-amber-800 hover:bg-amber-100">
+                  {category}
+                </Badge>
+              </div>
+            )}
 
             {tags && tags.length > 0 && (
               <div className="flex flex-wrap gap-2 pt-2">

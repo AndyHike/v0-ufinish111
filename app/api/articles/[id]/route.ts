@@ -25,6 +25,7 @@ export async function GET(
         published,
         published_at,
         tags,
+        category,
         reading_time_minutes,
         meta_description,
         view_count,
@@ -79,6 +80,7 @@ export async function PUT(
       slug, 
       published_at,
       tags = [],
+      category = 'General',
       meta_description, 
       reading_time_minutes,
       translations = []
@@ -99,6 +101,7 @@ export async function PUT(
         published: published || false,
         published_at: published && published_at ? published_at : null,
         tags: tags || [],
+        category: category || 'General',
         reading_time_minutes: readingTime,
         meta_description: metaDesc,
         updated_at: new Date().toISOString(),

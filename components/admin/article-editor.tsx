@@ -18,6 +18,16 @@ const LOCALES = [
   { code: 'en', name: 'English' },
 ]
 
+const CATEGORIES = [
+  'General',
+  'Tutorial',
+  'Guide',
+  'Troubleshooting',
+  'How-to',
+  'Review',
+  'Tips & Tricks',
+]
+
 interface ArticleTranslation {
   id?: string
   locale: string
@@ -46,6 +56,7 @@ export function ArticleEditor({ articleId, locale }: ArticleEditorProps) {
     published: false,
     published_at: '',
     tags: [] as string[],
+    category: 'General',
   })
 
   const [tagInput, setTagInput] = useState('')
@@ -80,6 +91,7 @@ export function ArticleEditor({ articleId, locale }: ArticleEditorProps) {
         published: data.published || false,
         published_at: data.published_at || '',
         tags: Array.isArray(data.tags) ? data.tags : [],
+        category: data.category || 'General',
       })
       
       if (Array.isArray(data.tags)) {
@@ -166,6 +178,7 @@ export function ArticleEditor({ articleId, locale }: ArticleEditorProps) {
         published: mainData.published,
         published_at: mainData.published && mainData.published_at ? mainData.published_at : null,
         tags: mainData.tags,
+        category: mainData.category,
         reading_time_minutes: readingTime,
         meta_description: metaDescription,
         translations: translations.map(t => ({
@@ -320,6 +333,23 @@ export function ArticleEditor({ articleId, locale }: ArticleEditorProps) {
               ))}
             </div>
           )}
+        </div>
+
+        {/* Category */}
+        <div>
+          <Label htmlFor="category">Category</Label>
+          <select
+            id="category"
+            value={mainData.category}
+            onChange={e => setMainData(prev => ({ ...prev, category: e.target.value }))}
+            className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            {CATEGORIES.map(cat => (
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 

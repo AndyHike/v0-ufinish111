@@ -41,6 +41,7 @@ export async function POST(request: NextRequest) {
       published,
       published_at,
       tags = [],
+      category = 'General',
       reading_time_minutes,
       meta_description,
       translations = []
@@ -87,6 +88,7 @@ export async function POST(request: NextRequest) {
         published: published || false,
         published_at: published_at || null,
         tags: tags || [],
+        category: category || 'General',
         meta_description: calcMetaDescription,
         reading_time_minutes: calcReadingTime,
       })

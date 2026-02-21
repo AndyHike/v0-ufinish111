@@ -59,6 +59,7 @@ async function ArticlesList({ locale, search }: { locale: string; search?: strin
       view_count,
       featured,
       tags,
+      category,
       published_at,
       article_translations(
         locale,
@@ -108,6 +109,7 @@ async function ArticlesList({ locale, search }: { locale: string; search?: strin
           locale={locale}
           tags={article.tags}
           published_at={article.published_at}
+          category={article.category}
         />
       ))}
     </div>
@@ -121,14 +123,14 @@ export default function ArticlesPage({ params, searchParams }: Props) {
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
       {/* Hero Section */}
-      <section className="py-12 md:py-16">
+      <section className="py-8 md:py-12">
         <div className="container mx-auto px-4">
           <ArticlesHero locale={locale} search={search} />
         </div>
       </section>
 
       {/* Articles Grid */}
-      <section className="py-12">
+      <section className="py-8">
         <div className="container mx-auto px-4">
           <Suspense fallback={<ArticlesListSkeleton />}>
             <ArticlesList locale={locale} search={search} />
