@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/components/ui/use-toast"
 import { Edit, Trash2, Plus, Eye } from "lucide-react"
 import Link from "next/link"
-import { useLocale } from "next-intl"
 
 type Article = {
   id: string
@@ -21,10 +20,9 @@ type Article = {
   updated_at: string
 }
 
-export function ArticlesManagement() {
+export function ArticlesManagement({ locale }: { locale: string }) {
   const t = useTranslations("Admin")
   const { toast } = useToast()
-  const locale = useLocale()
 
   const [articles, setArticles] = useState<Article[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -52,7 +50,7 @@ export function ArticlesManagement() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this article?")) return
+    if (!confirm("Ви впевнені, що хочете видалити цю статтю?")) return
 
     try {
       const response = await fetch(`/api/articles/${id}`, {
@@ -62,30 +60,30 @@ export function ArticlesManagement() {
 
       setArticles(articles.filter((a) => a.id !== id))
       toast({
-        title: "Success",
-        description: "Article deleted successfully",
+        title: "Успіх",
+        description: "Статтю успішно видалено",
       })
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to delete article",
+        title: "Помилка",
+        description: "Помилка при видаленні статті",
         variant: "destructive",
       })
     }
   }
 
   if (isLoading) {
-    return <div className="text-center py-8">Loading...</div>
+    return <div className="text-center py-8">Завантаження...</div>
   }
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Articles Management</h2>
+        <h2 className="text-2xl font-bold">{t("articlesManagement")}</h2>
         <Link href={`/${locale}/admin/articles/create`}>
           <Button className="gap-2">
             <Plus className="w-4 h-4" />
-            Create Article
+            {t("addNewArticle")}
           </Button>
         </Link>
       </div>
@@ -94,7 +92,7 @@ export function ArticlesManagement() {
         {articles.length === 0 ? (
           <Card>
             <CardContent className="py-8 text-center">
-              <p className="text-gray-500">No articles yet</p>
+              <p className="text-gray-500">Статей ще немає</p>
             </CardContent>
           </Card>
         ) : (
@@ -106,11 +104,11 @@ export function ArticlesManagement() {
                     <h3 className="font-semibold text-lg">{article.title}</h3>
                     <p className="text-sm text-gray-500">/{article.slug}</p>
                     <div className="flex gap-4 mt-2 text-sm text-gray-600">
-                      <span>Views: {article.view_count}</span>
-                      <span>Reading time: {article.reading_time_minutes} min</span>
+                      <span>Переглядів: {article.view_count}</span>
+                      <span>Час читання: {article.reading_time_minutes} хв</span>
                       <span>
-                        {article.published ? "Published" : "Draft"}
-                        {article.featured && " • Featured"}
+                        {article.published ? "Опубліковано" : "Чернетка"}
+                        {article.featured && " • Рекомендовано"}
                       </span>
                     </div>
                   </div>

@@ -57,22 +57,33 @@ export async function PUT(
     const supabase = createClient()
     const body = await request.json()
 
-    const { title, content, featured_image, featured, published } = body
+    const { 
+      title, 
+      content, 
+      featured_image, 
+      featured, 
+      published,
+      tags = [],
+      reading_time_minutes,
+      meta_description,
+      translations = []
+    } = body
 
-    // Calculate reading time
-    const readingTime = generateReadingTime(content)
-    const metaDescription = generateMetaDescription(content)
+    // Calculate reading time if not provided
+    const calcReadingTime = reading_time_minutes || generateReadingTime(content)
+    const calcMetaDescription = meta_description || generateMetaDescription(content)
 
     const { data: article, error } = await supabase
       .from("articles")
       .update({
         title,
         content,
-        featured_image,
+        featured_image: featured_image || null,
         featured: featured || false,
         published: published || false,
-        reading_time_minutes: readingTime,
-        meta_description: metaDescription,
+        reading_time_minutes: calcReadingTime,
+        meta_description: calcMetaDescription,
+        tags: tags || [],
         updated_at: new Date().toISOString(),
       })
       .eq("id", id)
@@ -81,10 +92,46 @@ export async function PUT(
 
     if (error) throw error
 
+    // Update translations
+    if (translations && translations.length > 0) {
+      for (const trans of translations) {
+        const { data: existing } = await supabase
+          .from("article_translations")
+          .select("id")
+          .eq("article_id", id)
+          .eq("locale", trans.locale)
+          .single()
+
+        if (existing) {
+          // Update existing translation
+          await supabase
+            .from("article_translations")
+            .update({
+              title: trans.title,
+              content: trans.content,
+            })
+            .eq("id", existing.id)
+        } else {
+          // Insert new translation
+          await supabase
+            .from("article_translations")
+            .insert({
+              article_id: id,
+              locale: trans.locale,
+              title: trans.title,
+              content: trans.content,
+            })
+        }
+      }
+    }
+
     return NextResponse.json(article)
   } catch (error) {
     console.error("Error updating article:", error)
-    return NextResponse.json({ error: "Failed to update article" }, { status: 500 })
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Failed to update article" },
+      { status: 500 }
+    )
   }
 }
 
