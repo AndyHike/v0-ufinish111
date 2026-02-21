@@ -13,7 +13,13 @@ interface GoogleReviewsCarouselProps {
 export function GoogleReviewsCarousel({ data }: GoogleReviewsCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0)
 
+  console.log("[v0] GoogleReviewsCarousel rendered with data:", {
+    hasData: !!data,
+    reviewsCount: data?.reviews?.length || 0,
+  })
+
   if (!data || data.reviews.length === 0) {
+    console.log("[v0] GoogleReviewsCarousel returning null - no data")
     return null
   }
 
