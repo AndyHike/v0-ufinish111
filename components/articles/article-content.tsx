@@ -102,86 +102,86 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
   return (
     <>
       <article className="max-w-3xl mx-auto pb-32 md:pb-0">
-      {article.featured_image && (
-        <img
-          src={article.featured_image}
-          alt={article.title}
-          className="w-full h-96 object-cover rounded-lg mb-8"
-        />
-      )}
-
-      <div className="mb-6">
-        <h1 className="text-4xl font-bold mb-4">{article.title}</h1>
-        
-        {/* Теги */}
-        {article.tags && article.tags.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-4">
-            {article.tags.map((tag: string) => (
-              <span key={tag} className="text-sm bg-blue-100 text-blue-700 px-3 py-1 rounded-full flex items-center gap-1">
-                <Tag className="w-3 h-3" />
-                {tag}
-              </span>
-            ))}
-          </div>
+        {article.featured_image && (
+          <img
+            src={article.featured_image}
+            alt={article.title}
+            className="w-full h-96 object-cover rounded-lg mb-8"
+          />
         )}
 
-        {/* Метаінформація */}
-        <div className="flex flex-wrap gap-4 text-gray-600 text-sm">
-          <div className="flex items-center gap-1">
-            <Clock className="w-4 h-4" />
-            <span>{t("readingTime", { minutes: article.reading_time_minutes })}</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Eye className="w-4 h-4" />
-            <span>{t("views", { count: article.view_count })}</span>
-          </div>
-          {article.published_at && (
-            <div className="flex items-center gap-1">
-              <Calendar className="w-4 h-4" />
-              <span>
-                {new Date(article.published_at).toLocaleDateString(locale === 'uk' ? 'uk-UA' : 'cs-CZ', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                })}
-              </span>
+        <div className="mb-6">
+          <h1 className="text-4xl font-bold mb-4">{article.title}</h1>
+          
+          {/* Теги */}
+          {article.tags && article.tags.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-4">
+              {article.tags.map((tag: string) => (
+                <span key={tag} className="text-sm bg-blue-100 text-blue-700 px-3 py-1 rounded-full flex items-center gap-1">
+                  <Tag className="w-3 h-3" />
+                  {tag}
+                </span>
+              ))}
             </div>
           )}
-        </div>
-      </div>
 
-      <div
-        className="prose prose-sm md:prose-base lg:prose-lg max-w-none"
-        dangerouslySetInnerHTML={{ __html: article.content }}
-      />
-
-      {/* Related Services CTA */}
-      {relatedServices.length > 0 && (
-        <div className="mt-12 pt-8 border-t">
-          <h3 className="text-2xl font-bold mb-6">{t("relatedServices")}</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {relatedServices.map((service) => (
-              <a
-                key={service.id}
-                href={`/services/${service.slug}`}
-                className="block p-6 border rounded-lg hover:border-blue-500 hover:shadow-lg transition group"
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <h4 className="font-semibold text-lg group-hover:text-blue-600 transition">
-                    {service.title}
-                  </h4>
-                  <ShoppingCart className="w-5 h-5 text-gray-400 group-hover:text-blue-600 transition" />
-                </div>
-                <p className="text-sm text-gray-600 mb-4">{service.description}</p>
-                <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition text-sm font-medium">
-                  {t("orderNow")}
-                </button>
-              </a>
-            ))}
+          {/* Метаінформація */}
+          <div className="flex flex-wrap gap-4 text-gray-600 text-sm">
+            <div className="flex items-center gap-1">
+              <Clock className="w-4 h-4" />
+              <span>{t("readingTime", { minutes: article.reading_time_minutes })}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Eye className="w-4 h-4" />
+              <span>{t("views", { count: article.view_count })}</span>
+            </div>
+            {article.published_at && (
+              <div className="flex items-center gap-1">
+                <Calendar className="w-4 h-4" />
+                <span>
+                  {new Date(article.published_at).toLocaleDateString(locale === 'uk' ? 'uk-UA' : 'cs-CZ', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  })}
+                </span>
+              </div>
+            )}
           </div>
         </div>
-      )}
-    </article>
+
+        <div
+          className="prose prose-sm md:prose-base lg:prose-lg max-w-none"
+          dangerouslySetInnerHTML={{ __html: article.content }}
+        />
+
+        {/* Related Services CTA */}
+        {relatedServices.length > 0 && (
+          <div className="mt-12 pt-8 border-t">
+            <h3 className="text-2xl font-bold mb-6">{t("relatedServices")}</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {relatedServices.map((service) => (
+                <a
+                  key={service.id}
+                  href={`/services/${service.slug}`}
+                  className="block p-6 border rounded-lg hover:border-blue-500 hover:shadow-lg transition group"
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <h4 className="font-semibold text-lg group-hover:text-blue-600 transition">
+                      {service.title}
+                    </h4>
+                    <ShoppingCart className="w-5 h-5 text-gray-400 group-hover:text-blue-600 transition" />
+                  </div>
+                  <p className="text-sm text-gray-600 mb-4">{service.description}</p>
+                  <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition text-sm font-medium">
+                    {t("orderNow")}
+                  </button>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+      </article>
     </>
   )
 }
