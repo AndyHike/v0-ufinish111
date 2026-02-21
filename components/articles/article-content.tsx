@@ -28,6 +28,7 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [relatedServices, setRelatedServices] = useState<Service[]>([])
+  const [primaryService, setPrimaryService] = useState<Service | null>(null)
   const t = useTranslations("Articles")
 
   useEffect(() => {
@@ -63,6 +64,24 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
       }
 
       setArticle(displayArticle)
+
+      // Set primary service if available
+      if (fullArticle.primary_service_id) {
+        try {
+          const servicesResponse = await fetch(`/api/services?locale=${locale}&limit=100`)
+          if (servicesResponse.ok) {
+            const servicesData = await servicesResponse.json()
+            const primarySvc = (servicesData.services || []).find(
+              (service: Service) => service.id === fullArticle.primary_service_id
+            )
+            if (primarySvc) {
+              setPrimaryService(primarySvc)
+            }
+          }
+        } catch (err) {
+          console.error("Failed to fetch primary service:", err)
+        }
+      }
 
       // Fetch related services if article has service links
       if (fullArticle.article_service_links && fullArticle.article_service_links.length > 0) {
@@ -104,7 +123,8 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
   }
 
   return (
-    <article className="max-w-3xl mx-auto">
+    <>
+      <article className="max-w-3xl mx-auto">
       {article.featured_image && (
         <img
           src={article.featured_image}
@@ -185,5 +205,23 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
         </div>
       )}
     </article>
-  )
-}
+
+    {/* Sticky CTA Button for Primary Service */}
+    {primaryService && (
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-40 p-4">
+        <div className="max-w-3xl mx-auto flex items-center justify-between gap-4">
+          <div>
+            <p className="text-sm text-gray-600">{t("relatedServices")}</p>
+            <p className="font-semibold text-lg">{primaryService.title}</p>
+          </div>
+          <a
+            href={`/services/${primaryService.slug}`}
+            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition font-medium whitespace-nowrap"
+          >
+            {t("orderNow")}
+          </a>
+        </div>
+      </div>
+    )}
+  </>
+)

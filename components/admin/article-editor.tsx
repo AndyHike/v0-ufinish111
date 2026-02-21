@@ -58,6 +58,7 @@ export function ArticleEditor({ articleId, locale }: ArticleEditorProps) {
     tags: [] as string[],
     category: 'General',
     serviceIds: [] as string[],
+    primaryServiceId: '',
   })
 
   const [tagInput, setTagInput] = useState('')
@@ -112,6 +113,7 @@ export function ArticleEditor({ articleId, locale }: ArticleEditorProps) {
         tags: Array.isArray(data.tags) ? data.tags : [],
         category: data.category || 'General',
         serviceIds: (data.article_service_links || []).map((link: any) => link.service_id),
+        primaryServiceId: data.primary_service_id || '',
       })
       
       if (Array.isArray(data.tags)) {
@@ -200,6 +202,7 @@ export function ArticleEditor({ articleId, locale }: ArticleEditorProps) {
         tags: mainData.tags,
         category: mainData.category,
         serviceIds: mainData.serviceIds,
+        primaryServiceId: mainData.primaryServiceId,
         reading_time_minutes: readingTime,
         meta_description: metaDescription,
         translations: translations.map(t => ({
@@ -416,6 +419,30 @@ export function ArticleEditor({ articleId, locale }: ArticleEditorProps) {
         </div>
       )}
     </div>
+
+    {/* Primary Service for CTA Button */}
+    {mainData.serviceIds.length > 0 && (
+      <div>
+        <Label htmlFor="primary-service">Primary Service (for sticky button)</Label>
+        <select
+          id="primary-service"
+          value={mainData.primaryServiceId}
+          onChange={e => setMainData(prev => ({ ...prev, primaryServiceId: e.target.value }))}
+          className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        >
+          <option value="">-- Select primary service --</option>
+          {mainData.serviceIds.map(serviceId => {
+            const service = availableServices.find(s => s.id === serviceId)
+            return service ? (
+              <option key={serviceId} value={serviceId}>
+                {service.title}
+              </option>
+            ) : null
+          })}
+        </select>
+        <p className="text-xs text-gray-500 mt-1">This service will appear in a sticky button at the bottom when reading the article</p>
+      </div>
+    )}
 
     {/* Language-Specific Content */}
     <Tabs value={activeTab} onValueChange={setActiveTab}>

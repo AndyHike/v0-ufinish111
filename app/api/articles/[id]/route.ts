@@ -26,6 +26,7 @@ export async function GET(
         published_at,
         tags,
         category,
+        primary_service_id,
         reading_time_minutes,
         meta_description,
         view_count,
@@ -82,6 +83,7 @@ export async function PUT(
       tags = [],
       category = 'General',
       serviceIds = [],
+      primaryServiceId = '',
       meta_description, 
       reading_time_minutes,
       translations = []
@@ -103,6 +105,7 @@ export async function PUT(
         published_at: published && published_at ? published_at : null,
         tags: tags || [],
         category: category || 'General',
+        primary_service_id: primaryServiceId || null,
         reading_time_minutes: readingTime,
         meta_description: metaDesc,
         updated_at: new Date().toISOString(),

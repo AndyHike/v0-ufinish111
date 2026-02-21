@@ -30,7 +30,7 @@ export function MobileNav() {
       icon: <Smartphone className="h-5 w-5" />,
     },
     {
-      name: "Articles",
+      name: t("Articles.title"),
       href: "/articles",
       icon: <Wrench className="h-5 w-5" />,
     },

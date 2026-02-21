@@ -43,6 +43,7 @@ export async function POST(request: NextRequest) {
       tags = [],
       category = 'General',
       serviceIds = [],
+      primaryServiceId = '',
       reading_time_minutes,
       meta_description,
       translations = []
@@ -90,6 +91,7 @@ export async function POST(request: NextRequest) {
         published_at: published_at || null,
         tags: tags || [],
         category: category || 'General',
+        primary_service_id: primaryServiceId || null,
         meta_description: calcMetaDescription,
         reading_time_minutes: calcReadingTime,
       })
