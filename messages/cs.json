@@ -6,6 +6,7 @@
     "chooseModel": "Vybrat model",
     "about": "O nás",
     "contact": "Kontakt",
+    "articles": "Návody",
     "openMenu": "Otevřít menu",
     "search": "Hledat...",
     "profile": "Profil",
@@ -889,7 +890,9 @@
     "loading": "Načítání recenzí...",
     "viewAllReviews": "Zobrazit všechny recenze na Mapách Google",
     "unknownAuthor": "Anonymní",
-    "unknownDate": "neznámé datum"
+    "unknownDate": "neznámé datum",
+    "previous": "Předchozí",
+    "next": "Další"
   },
   "Articles": {
     "title": "Průvodci a tipy na opravu",
@@ -905,5 +908,24 @@
     "shareArticle": "Sdílet článek",
     "viewCount": "Zobrazení",
     "backToArticles": "Zpět na články"
+  },
+  "Admin": {
+    "articlesManagement": "Správa článků",
+    "manageArticles": "Spravujte průvodce a rady k opravám",
+    "addNewArticle": "Přidat nový článek",
+    "editArticle": "Upravit článek",
+    "articleTitle": "Název články",
+    "articleContent": "Obsah článku",
+    "articleDescription": "Popis",
+    "featuredImage": "Předvolené obrázek",
+    "featured": "Doporučeno",
+    "published": "Publikováno",
+    "readingTime": "Čas čtení (min)",
+    "articleAddedSuccess": "Článek úspěšně přidán",
+    "articleUpdatedSuccess": "Článek úspěšně aktualizován",
+    "articleDeletedSuccess": "Článek úspěšně smazán",
+    "articleAddedError": "Chyba při přidávání článku",
+    "articleUpdatedError": "Chyba při aktualizaci článku",
+    "articleDeletedError": "Chyba při mazání článku"
   }
 }

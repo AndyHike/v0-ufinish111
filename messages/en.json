@@ -6,6 +6,7 @@
     "chooseModel": "Choose Model",
     "about": "About",
     "contact": "Contact",
+    "articles": "Guides",
     "openMenu": "Open menu",
     "search": "Search...",
     "profile": "Profile",
@@ -489,7 +490,9 @@
     "loading": "Loading reviews...",
     "viewAllReviews": "View all reviews on Google Maps",
     "unknownAuthor": "Anonymous",
-    "unknownDate": "unknown date"
+    "unknownDate": "unknown date",
+    "previous": "Previous",
+    "next": "Next"
   },
   "Articles": {
     "title": "Repair Guides & Tips",
@@ -505,5 +508,24 @@
     "shareArticle": "Share Article",
     "viewCount": "Views",
     "backToArticles": "Back to Articles"
+  },
+  "Admin": {
+    "articlesManagement": "Articles Management",
+    "manageArticles": "Manage repair guides and professional tips",
+    "addNewArticle": "Add New Article",
+    "editArticle": "Edit Article",
+    "articleTitle": "Article Title",
+    "articleContent": "Article Content",
+    "articleDescription": "Description",
+    "featuredImage": "Featured Image",
+    "featured": "Featured",
+    "published": "Published",
+    "readingTime": "Reading Time (min)",
+    "articleAddedSuccess": "Article added successfully",
+    "articleUpdatedSuccess": "Article updated successfully",
+    "articleDeletedSuccess": "Article deleted successfully",
+    "articleAddedError": "Error adding article",
+    "articleUpdatedError": "Error updating article",
+    "articleDeletedError": "Error deleting article"
   }
 }

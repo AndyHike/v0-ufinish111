@@ -87,23 +87,50 @@ export function GoogleReviewsCarousel({ data }: GoogleReviewsCarouselProps) {
 
         {hasReviews ? (
           <>
-            {/* Mobile Carousel View */}
+            {/* Mobile Carousel View with Fixed Navigation */}
             <div className="md:hidden">
               <div className="relative">
-                <div className="overflow-x-auto pb-4 scrollbar-hide">
-                  <div className="flex gap-3 px-4 min-w-min">
-                    {data.reviews.map((review, index) => (
-                      <ReviewCard
-                        key={index}
-                        review={review}
-                        renderStars={renderStars}
-                        formatDate={(ts) => formatDate(ts, currentLocale)}
-                        t={t}
-                        isMobile
-                      />
-                    ))}
-                  </div>
+                <div className="grid grid-cols-1 gap-6 mb-8">
+                  {data.reviews.slice(currentIndex, currentIndex + 1).map((review, index) => (
+                    <ReviewCard
+                      key={currentIndex + index}
+                      review={review}
+                      renderStars={renderStars}
+                      formatDate={(ts) => formatDate(ts, currentLocale)}
+                      t={t}
+                      isMobile
+                    />
+                  ))}
                 </div>
+
+                {/* Mobile Navigation Buttons */}
+                {data.reviews.length > 1 && (
+                  <div className="flex justify-center gap-4 mb-6">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={handlePrev}
+                      disabled={!canGoPrev}
+                      className="rounded-full"
+                    >
+                      <ChevronLeft size={20} />
+                      <span className="sr-only">{t("previous")}</span>
+                    </Button>
+                    <span className="flex items-center text-sm text-gray-500 px-4">
+                      {currentIndex + 1} / {data.reviews.length}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={handleNext}
+                      disabled={!canGoNext}
+                      className="rounded-full"
+                    >
+                      <ChevronRight size={20} />
+                      <span className="sr-only">{t("next")}</span>
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -130,8 +157,10 @@ export function GoogleReviewsCarousel({ data }: GoogleReviewsCarouselProps) {
                     onClick={handlePrev}
                     disabled={!canGoPrev}
                     className="rounded-full"
+                    title={t("previous")}
                   >
                     <ChevronLeft size={20} />
+                    <span className="sr-only">{t("previous")}</span>
                   </Button>
                   <Button
                     variant="outline"
@@ -139,8 +168,10 @@ export function GoogleReviewsCarousel({ data }: GoogleReviewsCarouselProps) {
                     onClick={handleNext}
                     disabled={!canGoNext}
                     className="rounded-full"
+                    title={t("next")}
                   >
                     <ChevronRight size={20} />
+                    <span className="sr-only">{t("next")}</span>
                   </Button>
                 </div>
               )}

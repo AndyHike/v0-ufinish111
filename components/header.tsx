@@ -75,7 +75,7 @@ export function Header() {
   const navigation = [
     { name: t("home"), href: `/${locale}`, icon: <Home className="h-5 w-5" /> },
     { name: t("chooseModel"), href: `/${locale}/brands`, icon: <Smartphone className="h-5 w-5" /> },
-    { name: "Articles", href: `/${locale}/articles`, icon: <Wrench className="h-5 w-5" /> },
+    { name: t("articles"), href: `/${locale}/articles`, icon: <Wrench className="h-5 w-5" /> },
     { name: t("contact"), href: `/${locale}/contact`, icon: <MessageSquare className="h-5 w-5" /> },
   ]
 
