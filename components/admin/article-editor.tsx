@@ -18,16 +18,6 @@ const LOCALES = [
   { code: 'en', name: 'English' },
 ]
 
-const CATEGORIES = [
-  'General',
-  'Tutorial',
-  'Guide',
-  'Troubleshooting',
-  'How-to',
-  'Review',
-  'Tips & Tricks',
-]
-
 interface ArticleTranslation {
   id?: string
   locale: string
@@ -56,7 +46,6 @@ export function ArticleEditor({ articleId, locale }: ArticleEditorProps) {
     published: false,
     published_at: '',
     tags: [] as string[],
-    category: 'General',
   })
 
   const [tagInput, setTagInput] = useState('')
