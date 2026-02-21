@@ -81,6 +81,7 @@ export async function PUT(
       published_at,
       tags = [],
       category = 'General',
+      serviceIds = [],
       meta_description, 
       reading_time_minutes,
       translations = []
@@ -147,6 +148,25 @@ export async function PUT(
           }
         }
       }
+    }
+
+    // Update service links
+    // Delete existing service links
+    await supabase.from("article_service_links").delete().eq("article_id", id)
+
+    // Insert new service links if provided
+    if (serviceIds && serviceIds.length > 0) {
+      const serviceLinks = serviceIds.map((serviceId: string, index: number) => ({
+        article_id: id,
+        service_id: serviceId,
+        position: index,
+      }))
+
+      const { error: linkError } = await supabase
+        .from("article_service_links")
+        .insert(serviceLinks)
+
+      if (linkError) throw linkError
     }
 
     return NextResponse.json(article)

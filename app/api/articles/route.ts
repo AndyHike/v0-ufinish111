@@ -42,6 +42,7 @@ export async function POST(request: NextRequest) {
       published_at,
       tags = [],
       category = 'General',
+      serviceIds = [],
       reading_time_minutes,
       meta_description,
       translations = []
@@ -114,8 +115,21 @@ export async function POST(request: NextRequest) {
           .from("article_translations")
           .insert(translationInserts)
 
-        if (translationError) throw translationError
-      }
+    if (translationError) throw translationError
+
+    // Add service links if provided
+    if (serviceIds && serviceIds.length > 0) {
+      const serviceLinks = serviceIds.map((serviceId: string, index: number) => ({
+        article_id: article.id,
+        service_id: serviceId,
+        position: index,
+      }))
+
+      const { error: linkError } = await supabase
+        .from("article_service_links")
+        .insert(serviceLinks)
+
+      if (linkError) throw linkError
     }
 
     return NextResponse.json(article, { status: 201 })

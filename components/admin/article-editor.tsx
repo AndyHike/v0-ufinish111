@@ -111,6 +111,7 @@ export function ArticleEditor({ articleId, locale }: ArticleEditorProps) {
         published_at: data.published_at || '',
         tags: Array.isArray(data.tags) ? data.tags : [],
         category: data.category || 'General',
+        serviceIds: (data.article_service_links || []).map((link: any) => link.service_id),
       })
       
       if (Array.isArray(data.tags)) {
@@ -198,6 +199,7 @@ export function ArticleEditor({ articleId, locale }: ArticleEditorProps) {
         published_at: mainData.published && mainData.published_at ? mainData.published_at : null,
         tags: mainData.tags,
         category: mainData.category,
+        serviceIds: mainData.serviceIds,
         reading_time_minutes: readingTime,
         meta_description: metaDescription,
         translations: translations.map(t => ({
@@ -372,7 +374,64 @@ export function ArticleEditor({ articleId, locale }: ArticleEditorProps) {
         </div>
       </div>
 
-      {/* Language-Specific Content */}
+      {/* Services Selection */}
+      <div>
+        <Label>Related Services (Click to select)</Label>
+        <div className="mt-2 space-y-2 max-h-48 overflow-y-auto border rounded-lg p-3">
+          {servicesLoading ? (
+            <p className="text-sm text-gray-500">Loading services...</p>
+          ) : availableServices.length === 0 ? (
+            <p className="text-sm text-gray-500">No services available</p>
+          ) : (
+            availableServices.map(service => (
+              <label key={service.id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-100 p-2 rounded">
+                <input
+                  type="checkbox"
+                  checked={mainData.serviceIds.includes(service.id)}
+                  onChange={e => {
+                    if (e.target.checked) {
+                      setMainData(prev => ({
+                        ...prev,
+                        serviceIds: [...prev.serviceIds, service.id],
+                      }))
+                    } else {
+                      setMainData(prev => ({
+                        ...prev,
+                        serviceIds: prev.serviceIds.filter(id => id !== service.id),
+                      }))
+                    }
+                  }}
+                  className="w-4 h-4 rounded"
+                />
+                <span className="text-sm">{service.title}</span>
+              </label>
+            ))
+          )}
+        </div>
+        {mainData.serviceIds.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-2">
+            {mainData.serviceIds.map(serviceId => {
+              const service = availableServices.find(s => s.id === serviceId)
+              return service ? (
+                <span key={serviceId} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-2">
+                  {service.title}
+                  <button
+                    type="button"
+                    onClick={() => setMainData(prev => ({
+                      ...prev,
+                      serviceIds: prev.serviceIds.filter(id => id !== serviceId),
+                    }))}
+                    className="hover:text-blue-900"
+                  >
+                    ×
+                  </button>
+                </span>
+              ) : null
+            })}
+          </div>
+        )}
+      </div>
+    </div>
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-3">
           {LOCALES.map(loc => (

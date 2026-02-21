@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useTranslations } from "next-intl"
-import { Clock, Eye, Tag, Calendar } from "lucide-react"
+import { Clock, Eye, Tag, Calendar, ShoppingCart } from "lucide-react"
 import { ArticleContentSkeleton } from "./article-content-skeleton"
 
 type Article = {
@@ -13,12 +13,21 @@ type Article = {
   reading_time_minutes: number
   view_count: number
   content: string
+  article_service_links?: Array<{ service_id: string }>
+}
+
+type Service = {
+  id: string
+  slug: string
+  title: string
+  description: string
 }
 
 export function ArticleContent({ slug, locale }: { slug: string; locale: string }) {
   const [article, setArticle] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [relatedServices, setRelatedServices] = useState<Service[]>([])
   const t = useTranslations("Articles")
 
   useEffect(() => {
@@ -54,6 +63,22 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
       }
 
       setArticle(displayArticle)
+
+      // Fetch related services if article has service links
+      if (fullArticle.article_service_links && fullArticle.article_service_links.length > 0) {
+        try {
+          const servicesResponse = await fetch(`/api/services?locale=${locale}&limit=100`)
+          if (servicesResponse.ok) {
+            const servicesData = await servicesResponse.json()
+            const linkedServices = (servicesData.services || []).filter((service: Service) =>
+              fullArticle.article_service_links.some((link: any) => link.service_id === service.id)
+            )
+            setRelatedServices(linkedServices)
+          }
+        } catch (err) {
+          console.error("Failed to fetch related services:", err)
+        }
+      }
 
       // Increment view count
       await fetch(`/api/articles/${fullArticle.id}/views`, {
@@ -132,6 +157,33 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
         className="prose prose-sm md:prose-base lg:prose-lg max-w-none"
         dangerouslySetInnerHTML={{ __html: article.content }}
       />
+
+      {/* Related Services CTA */}
+      {relatedServices.length > 0 && (
+        <div className="mt-12 pt-8 border-t">
+          <h3 className="text-2xl font-bold mb-6">{t("relatedServices")}</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {relatedServices.map((service) => (
+              <a
+                key={service.id}
+                href={`/services/${service.slug}`}
+                className="block p-6 border rounded-lg hover:border-blue-500 hover:shadow-lg transition group"
+              >
+                <div className="flex items-start justify-between mb-2">
+                  <h4 className="font-semibold text-lg group-hover:text-blue-600 transition">
+                    {service.title}
+                  </h4>
+                  <ShoppingCart className="w-5 h-5 text-gray-400 group-hover:text-blue-600 transition" />
+                </div>
+                <p className="text-sm text-gray-600 mb-4">{service.description}</p>
+                <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition text-sm font-medium">
+                  {t("orderNow")}
+                </button>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
     </article>
   )
 }
