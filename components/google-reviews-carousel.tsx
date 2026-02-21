@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import Image from 'next/image'
 import { Card, CardContent } from '@/components/ui/card'
 import { Star, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -19,6 +18,7 @@ interface ReviewsData {
   rating: number
   totalReviews: number
   businessName?: string
+  error?: string
 }
 
 export function GoogleReviewsCarousel() {
@@ -28,44 +28,83 @@ export function GoogleReviewsCarousel() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    let isMounted = true
+
     const fetchReviews = async () => {
       try {
-        console.log('[v0] Carousel: Fetching reviews...')
-        const response = await fetch('/api/google-reviews')
-        const data = await response.json()
-        
-        console.log('[v0] Carousel: Received data:', {
-          hasReviews: !!data.reviews,
-          reviewCount: data.reviews?.length || 0,
-          error: data.error,
+        console.log('[v0] Carousel: Starting fetch...')
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 10000) // 10s timeout
+
+        const response = await fetch('/api/google-reviews', {
+          signal: controller.signal,
         })
-        
-        if (data.reviews && data.reviews.length > 0) {
+        clearTimeout(timeoutId)
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`)
+        }
+
+        const data = await response.json()
+        console.log('[v0] Carousel: Data received', {
+          hasReviews: Array.isArray(data.reviews),
+          reviewCount: data.reviews?.length || 0,
+          hasError: !!data.error,
+        })
+
+        if (!isMounted) return
+
+        if (Array.isArray(data.reviews) && data.reviews.length > 0) {
           setReviews(data)
+          setError(null)
         } else {
-          console.warn('[v0] Carousel: No reviews available')
-          setError('No reviews available')
+          setError('Немає доступних відгуків')
+          setReviews(null)
         }
       } catch (err) {
-        console.error('[v0] Carousel: Fetch error:', err)
-        setError(err instanceof Error ? err.message : 'Unknown error')
+        console.error('[v0] Carousel: Error:', err)
+        if (!isMounted) return
+        
+        if (err instanceof Error && err.name === 'AbortError') {
+          setError('Помилка завантаження відгуків (timeout)')
+        } else {
+          setError(err instanceof Error ? err.message : 'Помилка завантаження')
+        }
+        setReviews(null)
       } finally {
-        setIsLoading(false)
+        if (isMounted) {
+          setIsLoading(false)
+        }
       }
     }
 
     fetchReviews()
+
+    return () => {
+      isMounted = false
+    }
   }, [])
 
   if (isLoading) {
     return (
-      <section className="py-12 bg-white">
+      <section className="py-12 bg-white border-b">
         <div className="container px-4 mx-auto">
-          <div className="h-8 bg-gray-200 rounded w-48 mx-auto mb-8 animate-pulse"></div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="text-center mb-8">
+            <div className="h-8 bg-gray-200 rounded w-48 mx-auto mb-4 animate-pulse"></div>
+            <div className="flex justify-center gap-2 mb-4">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="w-5 h-5 bg-gray-200 rounded animate-pulse"></div>
+              ))}
+            </div>
+            <div className="h-6 bg-gray-200 rounded w-40 mx-auto animate-pulse"></div>
+          </div>
+          <div className="hidden md:grid grid-cols-3 gap-6">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-64 bg-gray-200 rounded animate-pulse"></div>
+              <div key={i} className="h-64 bg-gray-200 rounded-lg animate-pulse"></div>
             ))}
+          </div>
+          <div className="md:hidden">
+            <div className="h-64 bg-gray-200 rounded-lg animate-pulse"></div>
           </div>
         </div>
       </section>
@@ -99,7 +138,7 @@ export function GoogleReviewsCarousel() {
   }
 
   return (
-    <section className="py-12 bg-gradient-to-b from-blue-50 to-white">
+    <section className="py-12 bg-white border-b">
       <div className="container px-4 mx-auto">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold mb-4">Google відгуки</h2>
@@ -111,19 +150,17 @@ export function GoogleReviewsCarousel() {
         </div>
 
         {/* Mobile Carousel View */}
-        <div className="md:hidden">
-          <div className="overflow-x-auto">
-            <div className="flex gap-4 pb-4 min-w-min px-4">
-              {reviews.reviews.map((review, index) => (
-                <ReviewCard key={index} review={review} renderStars={renderStars} />
-              ))}
-            </div>
+        <div className="md:hidden overflow-x-auto">
+          <div className="flex gap-4 pb-4 px-4 min-w-min">
+            {reviews.reviews.map((review, index) => (
+              <ReviewCard key={index} review={review} renderStars={renderStars} />
+            ))}
           </div>
         </div>
 
         {/* Desktop Grid View with Navigation */}
         <div className="hidden md:block">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             {displayedReviews.map((review, index) => (
               <ReviewCard
                 key={currentIndex + index}
@@ -164,7 +201,7 @@ export function GoogleReviewsCarousel() {
             href="https://www.google.com/maps/search/?api=1&query=devicehelp"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-semibold"
+            className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-semibold transition-colors"
           >
             Дивитись все відгуки на Google Maps
             <ChevronRight size={18} />
@@ -198,35 +235,28 @@ function ReviewCard({
   renderStars: (rating: number) => React.ReactNode
 }) {
   const formatDate = (timestamp: number) => {
-    return new Date(timestamp * 1000).toLocaleDateString('uk-UA', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    })
+    try {
+      return new Date(timestamp * 1000).toLocaleDateString('uk-UA', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      })
+    } catch {
+      return 'невідома дата'
+    }
   }
 
   return (
-    <Card className="flex-none w-full md:flex-1 hover:shadow-lg transition-shadow">
-      <CardContent className="p-6">
-        <div className="flex items-start gap-3 mb-4">
-          {review.profile_photo_url && (
-            <Image
-              src={review.profile_photo_url}
-              alt={review.author_name}
-              width={40}
-              height={40}
-              className="rounded-full"
-            />
-          )}
-          <div className="flex-1 min-w-0">
-            <h3 className="font-semibold truncate">{review.author_name}</h3>
-            <p className="text-sm text-gray-500">{formatDate(review.time)}</p>
-          </div>
+    <Card className="flex-none w-full md:flex-1 h-full hover:shadow-lg transition-shadow">
+      <CardContent className="p-6 flex flex-col h-full">
+        <div className="mb-4">
+          <h3 className="font-semibold truncate text-sm">{review.author_name}</h3>
+          <p className="text-xs text-gray-500">{formatDate(review.time)}</p>
         </div>
 
         <div className="flex gap-1 mb-3">{renderStars(review.rating)}</div>
 
-        <p className="text-gray-700 text-sm line-clamp-4">{review.text}</p>
+        <p className="text-gray-700 text-sm line-clamp-4 flex-1">{review.text}</p>
       </CardContent>
     </Card>
   )
