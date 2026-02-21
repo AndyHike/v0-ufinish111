@@ -30,6 +30,9 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
   const [error, setError] = useState<string | null>(null)
   const [relatedServices, setRelatedServices] = useState<Service[]>([])
   const [primaryService, setPrimaryService] = useState<Service | null>(null)
+  const [isNavVisible, setIsNavVisible] = useState(true)
+  const [lastScrollY, setLastScrollY] = useState(0)
+  const [navHeight, setNavHeight] = useState(80)
   const t = useTranslations("Articles")
 
   const fetchArticle = async () => {
@@ -108,6 +111,39 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
     fetchArticle()
   }, [slug, locale])
 
+  // Calculate mobile nav height and track scroll
+  useEffect(() => {
+    const calculateNavHeight = () => {
+      const mobileNav = document.querySelector('[class*="md:hidden"][class*="fixed"][class*="bottom"]')
+      if (mobileNav) {
+        setNavHeight(mobileNav.getBoundingClientRect().height)
+      }
+    }
+
+    calculateNavHeight()
+    window.addEventListener('resize', calculateNavHeight)
+
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY
+      
+      // Show nav when scrolling up, hide when scrolling down
+      if (currentScrollY < lastScrollY || currentScrollY < 100) {
+        setIsNavVisible(true)
+      } else if (currentScrollY > lastScrollY && currentScrollY > 100) {
+        setIsNavVisible(false)
+      }
+      
+      setLastScrollY(currentScrollY)
+    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    
+    return () => {
+      window.removeEventListener('resize', calculateNavHeight)
+      window.removeEventListener('scroll', handleScroll)
+    }
+  }, [lastScrollY])
+
   if (isLoading) {
     return <ArticleContentSkeleton />
   }
@@ -178,17 +214,37 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
 
         {/* Primary Service Floating CTA - Minimalist */}
         {primaryService && (
-          <a
-            href={`/services/${primaryService.slug}`}
-            className="fixed bottom-8 left-1/2 -translate-x-1/2 z-30 max-w-sm px-6 py-3 bg-blue-600 text-white rounded-full shadow-lg hover:shadow-xl hover:bg-blue-700 transition-all duration-200 flex items-center gap-3 md:gap-4 group"
-          >
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold truncate opacity-90">{primaryService.title}</p>
-            </div>
-            <button className="whitespace-nowrap bg-white text-blue-600 px-4 py-1 rounded-full hover:bg-blue-50 transition font-semibold text-sm flex-shrink-0 group-hover:shadow-md">
-              {t("orderNow")}
-            </button>
-          </a>
+          <>
+            {/* Desktop version */}
+            <a
+              href={`/services/${primaryService.slug}`}
+              className="hidden md:fixed md:bottom-8 md:left-1/2 md:-translate-x-1/2 md:z-30 md:max-w-sm md:px-6 md:py-3 md:bg-blue-600 md:text-white md:rounded-full md:shadow-lg hover:md:shadow-xl hover:md:bg-blue-700 md:transition-all md:duration-200 md:flex md:items-center md:gap-4 md:group"
+            >
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold truncate opacity-90">{primaryService.title}</p>
+              </div>
+              <button className="whitespace-nowrap bg-white text-blue-600 px-4 py-1 rounded-full hover:bg-blue-50 transition font-semibold text-sm flex-shrink-0 group-hover:shadow-md">
+                {t("orderNow")}
+              </button>
+            </a>
+
+            {/* Mobile version with navigation tracking */}
+            <motion.a
+              href={`/services/${primaryService.slug}`}
+              className="md:hidden fixed left-1/2 -translate-x-1/2 z-30 max-w-sm px-6 py-3 bg-blue-600 text-white rounded-full shadow-lg hover:shadow-xl hover:bg-blue-700 transition-all duration-200 flex items-center gap-3 group"
+              animate={{
+                bottom: isNavVisible ? `${navHeight + 16}px` : '32px'
+              }}
+              transition={{ duration: 0.3, ease: 'easeInOut' }}
+            >
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold truncate opacity-90">{primaryService.title}</p>
+              </div>
+              <button className="whitespace-nowrap bg-white text-blue-600 px-4 py-1 rounded-full hover:bg-blue-50 transition font-semibold text-sm flex-shrink-0 group-hover:shadow-md">
+                {t("orderNow")}
+              </button>
+            </motion.a>
+          </>
         )}
 
         {/* Related Services Grid */}
