@@ -30,11 +30,13 @@ export const getGoogleReviews = cache(async (): Promise<GoogleReviewsData | null
       next: { revalidate: 3600 },
     })
 
-    if (!response.ok) {
+    const data = await response.json()
+    console.log("[v0] Google API Full Response:", JSON.stringify(data, null, 2))
+
+    if (!response.ok || data.status !== "OK") {
+      console.error("[v0] Google API error status:", data.status)
       return null
     }
-
-    const data = await response.json()
 
     if (!data.result) {
       return null
@@ -47,8 +49,10 @@ export const getGoogleReviews = cache(async (): Promise<GoogleReviewsData | null
       businessName: data.result.name,
     }
     
+    console.log("[v0] Returning reviews:", result.reviews.length)
     return result
   } catch (error) {
+    console.error("[v0] Error fetching reviews:", error)
     return null
   }
 })
