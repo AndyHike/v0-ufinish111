@@ -128,6 +128,9 @@ export async function getArticles(
       view_count,
       reading_time_minutes,
       featured_image,
+      tags,
+      category,
+      primary_service_id,
       created_at,
       updated_at,
       article_translations(
