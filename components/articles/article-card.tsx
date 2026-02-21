@@ -15,6 +15,8 @@ type ArticleCardProps = {
   view_count: number
   content: string
   locale: string
+  tags?: string[]
+  published_at?: string
 }
 
 export function ArticleCard({
@@ -25,6 +27,8 @@ export function ArticleCard({
   view_count,
   content,
   locale,
+  tags = [],
+  published_at,
 }: ArticleCardProps) {
   const t = useTranslations("Articles")
   
@@ -33,6 +37,15 @@ export function ArticleCard({
     .replace(/<[^>]*>/g, "") // Remove HTML tags
     .substring(0, 150)
     .trim()
+
+  // Format date
+  const formattedDate = published_at
+    ? new Date(published_at).toLocaleDateString(locale === 'uk' ? 'uk-UA' : 'cs-CZ', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      })
+    : null
 
   return (
     <Link href={`/${locale}/articles/${slug}`}>
@@ -55,6 +68,25 @@ export function ArticleCard({
             </div>
 
             <p className="text-sm text-gray-600 line-clamp-2">{preview}</p>
+
+            {tags && tags.length > 0 && (
+              <div className="flex flex-wrap gap-2 pt-2">
+                {tags.slice(0, 2).map((tag) => (
+                  <span key={tag} className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                    {tag}
+                  </span>
+                ))}
+                {tags.length > 2 && (
+                  <span className="text-xs text-gray-500">+{tags.length - 2}</span>
+                )}
+              </div>
+            )}
+
+            {formattedDate && (
+              <div className="text-xs text-gray-500 pt-2">
+                {t("publishedDate")}: {formattedDate}
+              </div>
+            )}
 
             <div className="flex items-center gap-4 text-xs text-gray-500 pt-2 border-t">
               <div className="flex items-center gap-1">

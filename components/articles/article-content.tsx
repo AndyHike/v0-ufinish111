@@ -1,6 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useTranslations } from "next-intl"
+import { Clock, Eye, Tag, Calendar } from "lucide-react"
 
 type Article = {
   id: string
@@ -16,6 +18,7 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
   const [article, setArticle] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const t = useTranslations("Articles")
 
   useEffect(() => {
     fetchArticle()
@@ -86,9 +89,41 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
 
       <div className="mb-6">
         <h1 className="text-4xl font-bold mb-4">{article.title}</h1>
-        <div className="flex gap-6 text-gray-600">
-          <span>Reading time: {article.reading_time_minutes} min</span>
-          <span>Views: {article.view_count}</span>
+        
+        {/* Теги */}
+        {article.tags && article.tags.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-4">
+            {article.tags.map((tag: string) => (
+              <span key={tag} className="text-sm bg-blue-100 text-blue-700 px-3 py-1 rounded-full flex items-center gap-1">
+                <Tag className="w-3 h-3" />
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Метаінформація */}
+        <div className="flex flex-wrap gap-4 text-gray-600 text-sm">
+          <div className="flex items-center gap-1">
+            <Clock className="w-4 h-4" />
+            <span>{t("readingTime", { minutes: article.reading_time_minutes })}</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <Eye className="w-4 h-4" />
+            <span>{t("views", { count: article.view_count })}</span>
+          </div>
+          {article.published_at && (
+            <div className="flex items-center gap-1">
+              <Calendar className="w-4 h-4" />
+              <span>
+                {new Date(article.published_at).toLocaleDateString(locale === 'uk' ? 'uk-UA' : 'cs-CZ', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                })}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 

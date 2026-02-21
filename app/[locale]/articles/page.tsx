@@ -58,6 +58,8 @@ async function ArticlesList({ locale, search }: { locale: string; search?: strin
       reading_time_minutes,
       view_count,
       featured,
+      tags,
+      published_at,
       article_translations(
         locale,
         title
@@ -102,6 +104,8 @@ async function ArticlesList({ locale, search }: { locale: string; search?: strin
           view_count={article.view_count}
           content={article.content}
           locale={locale}
+          tags={article.tags}
+          published_at={article.published_at}
         />
       ))}
     </div>

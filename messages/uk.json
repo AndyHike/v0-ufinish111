@@ -374,7 +374,7 @@
     "phonePlaceholder": "Введіть ваш номер телефону",
     "password": "Пароль",
     "passwordPlaceholder": "Введіть ваш пароль",
-    "passwordRequirements": "Пароль повинен містити щонайменше 8 символ��в",
+    "passwordRequirements": "Пароль пови��ен містити щонайменше 8 символ��в",
     "rememberMe": "Запам'ятати мене",
     "forgotPassword": "Забули пароль?",
     "resetPassword": "Скинути пароль",
@@ -478,7 +478,7 @@
     "imageUrl": "URL зображення",
     "imageUrlPlaceholder": "Введіть URL зображення (необов'язково)",
     "brandsTitle": "Бренди",
-    "brandsDescription": "��писок усіх брендів тел��фонів у в��ш��й системі.",
+    "brandsDescription": "����писок усіх брендів тел��фонів у в��ш��й системі.",
     "name": "Назва",
     "logo": "Логотип",
     "createdAt": "Створ��но",
@@ -486,7 +486,7 @@
     "edit": "Редагувати",
     "delete": "Видалити",
     "noLogo": "Без логотипу",
-    "noImage": "Немає зображ��ння",
+    "noImage": "Немає ��ображ��ння",
     "noBrands": "Немає брендів",
     "noModels": "Немає моделей",
     "addNewBrand": "Додати новий бренд",
@@ -1037,6 +1037,9 @@
     "related": "Пов'язані статті",
     "shareArticle": "Поділитися статтею",
     "viewCount": "Переглядів",
-    "backToArticles": "Назад до статей"
+    "backToArticles": "Назад до статей",
+    "tags": "Теги",
+    "publishedDate": "Опубліковано",
+    "noTags": "Немає тегів"
   }
 }
