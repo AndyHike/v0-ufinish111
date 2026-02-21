@@ -33,11 +33,10 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({
-  params,
+  params: { locale },
 }: {
-  params: Promise<{ locale: string }>
+  params: { locale: string }
 }): Promise<Metadata> {
-  const { locale } = await params
   const baseUrl = "https://devicehelp.cz"
   const canonicalUrl = `${baseUrl}/${locale}`
 
@@ -117,12 +116,11 @@ export async function generateMetadata({
 
 export default async function LocaleLayout({
   children,
-  params,
+  params: { locale },
 }: {
   children: React.ReactNode
-  params: Promise<{ locale: string }>
+  params: { locale: string }
 }) {
-  const { locale } = await params
   const messages = await getMessages(locale).catch((error) => {
     console.error(`Failed to load messages for locale ${locale}:`, error)
     return null
