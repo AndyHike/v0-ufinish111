@@ -224,4 +224,5 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
       </div>
     )}
   </>
-)
+  )
+}

@@ -3,7 +3,8 @@ import { createClient } from "@/lib/supabase"
 import { cache } from "react"
 
 export const getCurrentUser = cache(async () => {
-  const sessionId = cookies().get("session_id")?.value
+  const cookieStore = await cookies()
+  const sessionId = cookieStore.get("session_id")?.value
 
   if (!sessionId) {
     return null
@@ -35,8 +36,9 @@ export const getCurrentUser = cache(async () => {
 
   if (error || !data || new Date(data.expires_at) < new Date()) {
     // Session expired or not found
-    cookies().delete("session_id")
-    cookies().delete("user_role")
+    const cookies_instance = await cookies()
+    cookies_instance.delete("session_id")
+    cookies_instance.delete("user_role")
     return null
   }
 
