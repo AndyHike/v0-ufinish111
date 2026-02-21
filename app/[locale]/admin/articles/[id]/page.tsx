@@ -16,13 +16,13 @@ export async function generateMetadata({
 }
 
 export default function EditArticlePage({
-  params: { id },
+  params: { id, locale },
 }: {
-  params: { id: string }
+  params: { id: string; locale: string }
 }) {
   return (
     <div className="space-y-6">
-      <Link href="/admin/articles">
+      <Link href={`/${locale}/admin/articles`}>
         <Button variant="ghost" className="gap-2">
           <ChevronLeft className="w-4 h-4" />
           Back to Articles
@@ -34,7 +34,7 @@ export default function EditArticlePage({
         <p className="text-muted-foreground mt-2">Update article content and translations</p>
       </div>
 
-      <ArticleEditor articleId={id} />
+      <ArticleEditor articleId={id} locale={locale} />
     </div>
   )
 }

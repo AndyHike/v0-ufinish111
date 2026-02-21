@@ -72,6 +72,7 @@
     "react-dom": "^19",
     "react-hook-form": "latest",
     "react-markdown": "latest",
+    "react-quill": "^2.0.0",
     "react-phone-number-input": "latest",
     "react-resizable-panels": "latest",
     "recharts": "latest",

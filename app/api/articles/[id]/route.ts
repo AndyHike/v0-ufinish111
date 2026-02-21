@@ -57,22 +57,24 @@ export async function PUT(
     const supabase = createClient()
     const body = await request.json()
 
-    const { title, content, featured_image, featured, published } = body
+    const { title, content, featured_image, featured, published, tags = [], slug, meta_description, reading_time_minutes } = body
 
-    // Calculate reading time
-    const readingTime = generateReadingTime(content)
-    const metaDescription = generateMetaDescription(content)
+    // Calculate reading time if not provided
+    const readingTime = reading_time_minutes || generateReadingTime(content)
+    const metaDesc = meta_description || generateMetaDescription(content)
 
     const { data: article, error } = await supabase
       .from("articles")
       .update({
-        title,
+        ...(title && { title }),
+        ...(slug && { slug }),
         content,
-        featured_image,
+        featured_image: featured_image || null,
         featured: featured || false,
         published: published || false,
         reading_time_minutes: readingTime,
-        meta_description: metaDescription,
+        meta_description: metaDesc,
+        tags: tags || [],
         updated_at: new Date().toISOString(),
       })
       .eq("id", id)

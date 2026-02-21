@@ -32,11 +32,11 @@ export async function POST(request: NextRequest) {
     const supabase = createClient()
     const body = await request.json()
 
-    const { slug, title, content, featured_image, featured, published } = body
+    const { slug, title, content, featured_image, featured, published, tags = [], meta_description, reading_time_minutes } = body
 
     if (!slug || !title || !content) {
       return NextResponse.json(
-        { error: "Missing required fields" },
+        { error: "Missing required fields: slug, title, content" },
         { status: 400 }
       )
     }
@@ -55,19 +55,24 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Calculate reading time if not provided
+    const readingTime = reading_time_minutes || Math.ceil(
+      content.replace(/<[^>]*>/g, "").split(/\s+/).length / 200
+    )
+    const metaDesc = meta_description || content.replace(/<[^>]*>/g, "").substring(0, 155)
+
     const { data: article, error } = await supabase
       .from("articles")
       .insert({
         slug,
         title,
         content,
-        featured_image,
+        featured_image: featured_image || null,
         featured: featured || false,
         published: published || false,
-        meta_description: content.substring(0, 155),
-        reading_time_minutes: Math.ceil(
-          content.replace(/<[^>]*>/g, "").split(/\s+/).length / 200
-        ),
+        meta_description: metaDesc,
+        reading_time_minutes: readingTime,
+        tags: tags || [],
       })
       .select()
       .single()
