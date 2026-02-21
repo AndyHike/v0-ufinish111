@@ -146,7 +146,7 @@ export default async function ArticlesPage({ params, searchParams }: Props) {
       </section>
 
       {/* Articles Grid */}
-      <section className="py-8">
+      <section className="py-4">
         <div className="container mx-auto px-4">
           <Suspense fallback={<ArticlesListSkeleton />}>
             <ArticlesList locale={locale} search={search} sort={sort} category={category} />

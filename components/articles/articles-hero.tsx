@@ -197,7 +197,7 @@ export function ArticlesHero({ locale, search, sort }: { locale: string; search?
       </div>
 
       {/* Filter Options - Styled Dropdowns */}
-      <div className="mt-6 flex flex-row gap-2 sm:gap-3 items-center flex-wrap">
+      <div className="mt-3 flex flex-row gap-2 sm:gap-3 items-center flex-wrap">
         {/* Sort Dropdown */}
         <div className="flex-shrink-0">
           <label htmlFor="sort-select" className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1 block">
