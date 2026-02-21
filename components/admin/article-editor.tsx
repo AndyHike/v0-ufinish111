@@ -110,19 +110,6 @@ export function ArticleEditor({ articleId, locale }: ArticleEditorProps) {
       setIsLoading(false)
     }
   }
-        })
-      )
-    } catch (error) {
-      setError('Failed to load article')
-      toast({
-        title: 'Error',
-        description: 'Failed to load article',
-        variant: 'destructive',
-      })
-    } finally {
-      setIsLoading(false)
-    }
-  }
 
   const handleTranslationChange = (locale: string, field: 'title' | 'content', value: string) => {
     setTranslations(prev =>
