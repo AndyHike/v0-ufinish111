@@ -73,6 +73,8 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
 
   // Use primary service if available, otherwise use first related service
   const buttonService = primaryService || relatedServices[0]
+
+  const fetchArticle = async () => {
     try {
       // Find article by slug and get all data including translations
       const listResponse = await fetch(`/api/articles?locale=${locale}&limit=1000`)
