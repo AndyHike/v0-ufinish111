@@ -119,13 +119,20 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
       // Fetch related services if article has service links
       if (fullArticle.article_service_links && fullArticle.article_service_links.length > 0) {
         try {
-          const servicesResponse = await fetch(`/api/services?locale=${locale}&limit=100`)
-          if (servicesResponse.ok) {
-            const servicesData = await servicesResponse.json()
-            const linkedServices = (servicesData.services || []).filter((service: Service) =>
-              fullArticle.article_service_links.some((link: any) => link.service_id === service.id)
-            )
-            setRelatedServices(linkedServices)
+          // Filter out invalid UUIDs before making the request
+          const validLinks = fullArticle.article_service_links.filter((link: any) => 
+            link.service_id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(link.service_id)
+          )
+          
+          if (validLinks.length > 0) {
+            const servicesResponse = await fetch(`/api/services?locale=${locale}&limit=100`)
+            if (servicesResponse.ok) {
+              const servicesData = await servicesResponse.json()
+              const linkedServices = (servicesData.services || []).filter((service: Service) =>
+                validLinks.some((link: any) => link.service_id === service.id)
+              )
+              setRelatedServices(linkedServices)
+            }
           }
         } catch (err) {
           console.error("Failed to fetch related services:", err)
