@@ -208,35 +208,35 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
 
     {/* Sticky CTA Button for Primary Service */}
     {primaryService && (
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-40 p-4 md:bottom-auto md:top-auto md:relative md:mt-8 md:shadow-none md:border-none md:z-auto md:bg-transparent md:p-0">
-        <div className="max-w-3xl mx-auto">
-          {/* Mobile version - horizontal */}
-          <div className="md:hidden flex items-center justify-between gap-4 pb-16">
-            <div>
-              <p className="text-sm text-gray-600">{t("relatedServices")}</p>
-              <p className="font-semibold text-lg">{primaryService.title}</p>
+      <div className="fixed bottom-20 md:bottom-4 left-0 right-0 md:left-auto md:right-4 md:w-96 bg-white border rounded-lg shadow-lg z-40 p-4 md:p-6">
+        <div className="max-w-full">
+          {/* Mobile version - compact */}
+          <div className="md:hidden flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-xs text-gray-600">{t("relatedServices")}</p>
+              <p className="font-semibold text-sm line-clamp-1">{primaryService.title}</p>
             </div>
             <a
               href={`/services/${primaryService.slug}`}
-              className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition font-medium whitespace-nowrap"
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-medium text-sm whitespace-nowrap flex-shrink-0"
             >
               {t("orderNow")}
             </a>
           </div>
 
-          {/* Desktop version - card */}
-          <div className="hidden md:block p-6 border rounded-lg bg-blue-50">
-            <div className="flex items-center justify-between gap-4">
+          {/* Desktop version - full card */}
+          <div className="hidden md:block">
+            <div className="flex flex-col gap-3">
               <div>
-                <p className="text-sm text-gray-600 mb-1">{t("relatedServices")}</p>
-                <p className="font-semibold text-xl">{primaryService.title}</p>
+                <p className="text-xs text-gray-600 mb-1">{t("relatedServices")}</p>
+                <p className="font-semibold text-base">{primaryService.title}</p>
                 {primaryService.description && (
-                  <p className="text-sm text-gray-600 mt-1">{primaryService.description}</p>
+                  <p className="text-xs text-gray-600 mt-2 line-clamp-2">{primaryService.description}</p>
                 )}
               </div>
               <a
                 href={`/services/${primaryService.slug}`}
-                className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition font-medium whitespace-nowrap"
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-medium text-sm text-center"
               >
                 {t("orderNow")}
               </a>

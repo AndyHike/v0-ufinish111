@@ -913,7 +913,10 @@
     "noTags": "Žádné štítky",
     "sortBy": "Řadit podle:",
     "newest": "Nejnovější",
+    "oldest": "Nejstarší",
+    "popular": "Nejpopulárnější",
     "categories": "Kategorie",
+    "allCategories": "Všechny kategorie",
     "orderNow": "Objednat službu",
     "relatedServices": "Související služby",
     "categoryNames": {

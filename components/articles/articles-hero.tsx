@@ -196,76 +196,35 @@ export function ArticlesHero({ locale, search, sort }: { locale: string; search?
         )}
       </div>
 
-      {/* Filter Options - Three Separate Lists */}
-      <div className="mt-8 space-y-6">
-        {/* Newest/Oldest List */}
+      {/* Filter Options - Dropdowns */}
+      <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Sort Dropdown */}
         <div>
-          <p className="text-sm font-medium text-gray-700 mb-3">{t("sortBy")}</p>
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => {
-                setSortBy("newest")
-                setSelectedCategory("")
-                const params = new URLSearchParams()
-                if (query) params.append("search", query)
-                params.append("sort", "newest")
-                router.push(`/${locale}/articles${params.toString() ? "?" + params.toString() : ""}`)
-              }}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                sortBy === "newest"
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-              }`}
-            >
-              {t("newest")}
-            </button>
-            <button
-              onClick={() => {
-                setSortBy("oldest")
-                setSelectedCategory("")
-                const params = new URLSearchParams()
-                if (query) params.append("search", query)
-                params.append("sort", "oldest")
-                router.push(`/${locale}/articles${params.toString() ? "?" + params.toString() : ""}`)
-              }}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                sortBy === "oldest"
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-              }`}
-            >
-              Найстаріші
-            </button>
-          </div>
-        </div>
-
-        {/* Popularity List */}
-        <div>
-          <p className="text-sm font-medium text-gray-700 mb-3">За популярністю</p>
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => {
-                setSortBy("popular")
-                setSelectedCategory("")
-                const params = new URLSearchParams()
-                if (query) params.append("search", query)
-                params.append("sort", "popular")
-                router.push(`/${locale}/articles${params.toString() ? "?" + params.toString() : ""}`)
-              }}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                sortBy === "popular"
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-              }`}
-            >
-              Найпопулярніші
-            </button>
-          </div>
+          <label htmlFor="sort-select" className="text-sm font-medium text-gray-700 mb-2 block">
+            {t("sortBy")}
+          </label>
+          <select
+            id="sort-select"
+            value={sortBy}
+            onChange={e => {
+              setSortBy(e.target.value)
+              setSelectedCategory("")
+              const params = new URLSearchParams()
+              if (query) params.append("search", query)
+              if (e.target.value) params.append("sort", e.target.value)
+              router.push(`/${locale}/articles${params.toString() ? "?" + params.toString() : ""}`)
+            }}
+            className="w-full px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="newest">{t("newest")}</option>
+            <option value="oldest">{t("oldest")}</option>
+            <option value="popular">{t("popular")}</option>
+          </select>
         </div>
 
         {/* Categories Dropdown */}
         <div>
-          <label htmlFor="category-select" className="text-sm font-medium text-gray-700 mb-3 block">
+          <label htmlFor="category-select" className="text-sm font-medium text-gray-700 mb-2 block">
             {t("categories")}
           </label>
           <select
@@ -279,9 +238,9 @@ export function ArticlesHero({ locale, search, sort }: { locale: string; search?
               if (e.target.value) params.append("category", e.target.value)
               router.push(`/${locale}/articles${params.toString() ? "?" + params.toString() : ""}`)
             }}
-            className="w-full md:w-64 px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            <option value="">-- Усі категорії --</option>
+            <option value="">{t("allCategories")}</option>
             <option value="General">{t("categoryNames.General")}</option>
             <option value="Tutorial">{t("categoryNames.Tutorial")}</option>
             <option value="Guide">{t("categoryNames.Guide")}</option>

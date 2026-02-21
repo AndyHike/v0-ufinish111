@@ -6,10 +6,31 @@ import { Home, Smartphone, MessageSquare, Wrench } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { cn } from "@/lib/utils"
 import { motion } from "framer-motion"
+import { useEffect, useState } from "react"
 
 export function MobileNav() {
   const pathname = usePathname()
   const t = useTranslations()
+  const [isVisible, setIsVisible] = useState(true)
+  const [lastScrollY, setLastScrollY] = useState(0)
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY
+
+      // Show nav when scrolling up, hide when scrolling down
+      if (currentScrollY < lastScrollY || currentScrollY < 100) {
+        setIsVisible(true)
+      } else if (currentScrollY > lastScrollY && currentScrollY > 100) {
+        setIsVisible(false)
+      }
+
+      setLastScrollY(currentScrollY)
+    }
+
+    window.addEventListener("scroll", handleScroll, { passive: true })
+    return () => window.removeEventListener("scroll", handleScroll)
+  }, [lastScrollY])
 
   const isActive = (path: string) => {
     if (path === "/") {
@@ -42,7 +63,11 @@ export function MobileNav() {
   ]
 
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t py-2 px-4 shadow-lg">
+    <motion.div
+      className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t py-2 px-4 shadow-lg"
+      animate={{ translateY: isVisible ? 0 : 100 }}
+      transition={{ duration: 0.3 }}
+    >
       <div className="flex justify-around items-center">
         {navigation.map((item) => {
           const active = isActive(item.href)
@@ -77,6 +102,6 @@ export function MobileNav() {
           )
         })}
       </div>
-    </div>
+    </motion.div>
   )
 }

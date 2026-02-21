@@ -374,7 +374,7 @@
     "phonePlaceholder": "Введіть ваш номер телефону",
     "password": "Пароль",
     "passwordPlaceholder": "Введіть ваш пароль",
-    "passwordRequirements": "Пароль пови��ен містити щонайменше 8 символ��в",
+    "passwordRequirements": "Пароль пови����ен містити щонайменше 8 символ��в",
     "rememberMe": "Запам'ятати мене",
     "forgotPassword": "Забули пароль?",
     "resetPassword": "Скинути пароль",
@@ -941,7 +941,7 @@
     "services": "Послуги",
     "contact": "Контакти",
     "about": "Про нас",
-    "search": "Пошук...",
+    "search": "По��ук...",
     "searchPlaceholder": "��укати моделі, бренди, послуги..."
   },
 
@@ -1033,7 +1033,7 @@
     "readMore": "Читати далі",
     "readingTime": "{minutes} хв читання",
     "views": "{count} переглядів",
-    "featured": "Реко��ендовано",
+    "featured": "Реко����ендовано",
     "related": "Пов'язані статті",
     "shareArticle": "Поділитися статтею",
     "viewCount": "Переглядів",
@@ -1043,7 +1043,10 @@
     "noTags": "Немає тегів",
     "sortBy": "Сортувати по:",
     "newest": "Новіші",
+    "oldest": "Найстаріші",
+    "popular": "Найпопулярніші",
     "categories": "Категорії",
+    "allCategories": "Усі категорії",
     "orderNow": "Замовити послугу",
     "relatedServices": "Пов'язані послуги",
     "categoryNames": {

@@ -513,7 +513,10 @@
     "noTags": "No tags",
     "sortBy": "Sort by:",
     "newest": "Newest",
+    "oldest": "Oldest",
+    "popular": "Most Popular",
     "categories": "Categories",
+    "allCategories": "All Categories",
     "orderNow": "Order Service",
     "relatedServices": "Related Services",
     "categoryNames": {
