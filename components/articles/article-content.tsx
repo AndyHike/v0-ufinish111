@@ -30,6 +30,8 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
   const [error, setError] = useState<string | null>(null)
   const [relatedServices, setRelatedServices] = useState<Service[]>([])
   const [primaryService, setPrimaryService] = useState<Service | null>(null)
+  const [isNavVisible, setIsNavVisible] = useState(true)
+  const [lastScrollY, setLastScrollY] = useState(0)
   const [navHeight, setNavHeight] = useState(80) // Default height of mobile nav
 
   useEffect(() => {
@@ -66,7 +68,7 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
 
     window.addEventListener("scroll", handleScroll, { passive: true })
     return () => window.removeEventListener("scroll", handleScroll)
-  }, [lastScrollY])
+  }, [])
 
   const fetchArticle = async () => {
     try {
