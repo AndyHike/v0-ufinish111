@@ -86,8 +86,7 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
       .select(`
         id,
         warranty_months,
-        duration_hours,
-        warranty_period
+        duration_hours
       `)
 
     if (baseServicesError) {
@@ -119,16 +118,15 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
         let warrantyMonths = ms.warranty_months ? Number.parseInt(ms.warranty_months.toString()) : null
         if (warrantyMonths === null && baseService?.warranty_months) {
           warrantyMonths = baseService.warranty_months
-          console.log(`[API Models] Using base service warranty for ${translation.name}: ${warrantyMonths} months`)
         }
         
-        let warrantyPeriod = ms.warranty_period || baseService?.warranty_period || "months"
+        // Період гарантії (days/months) - беремо тільки з model_services, немає у базової services
+        let warrantyPeriod = ms.warranty_period || "months"
         
         // Тривалість: спочатку з model_services, потім з базової services
         let durationHours = ms.duration_hours ? Number.parseFloat(ms.duration_hours.toString()) : null
         if (durationHours === null && baseService?.duration_hours) {
           durationHours = baseService.duration_hours
-          console.log(`[API Models] Using base service duration for ${translation.name}: ${durationHours} hours`)
         }
 
         return {
