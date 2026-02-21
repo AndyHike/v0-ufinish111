@@ -39,6 +39,8 @@ export async function POST(request: NextRequest) {
       featured_image, 
       featured, 
       published,
+      published_at,
+      tags = [],
       reading_time_minutes,
       meta_description,
       translations = []
@@ -83,6 +85,8 @@ export async function POST(request: NextRequest) {
         featured_image: featured_image || null,
         featured: featured || false,
         published: published || false,
+        published_at: published_at || null,
+        tags: tags || [],
         meta_description: calcMetaDescription,
         reading_time_minutes: calcReadingTime,
       })

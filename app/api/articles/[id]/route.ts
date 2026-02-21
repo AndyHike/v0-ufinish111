@@ -16,7 +16,19 @@ export async function GET(
       .from("articles")
       .select(
         `
-        *,
+        id,
+        slug,
+        title,
+        content,
+        featured_image,
+        featured,
+        published,
+        published_at,
+        tags,
+        reading_time_minutes,
+        meta_description,
+        created_at,
+        updated_at,
         article_translations(
           id,
           article_id,
@@ -64,6 +76,8 @@ export async function PUT(
       featured, 
       published, 
       slug, 
+      published_at,
+      tags = [],
       meta_description, 
       reading_time_minutes,
       translations = []
@@ -82,6 +96,8 @@ export async function PUT(
         featured_image: featured_image || null,
         featured: featured || false,
         published: published || false,
+        published_at: published && published_at ? published_at : null,
+        tags: tags || [],
         reading_time_minutes: readingTime,
         meta_description: metaDesc,
         updated_at: new Date().toISOString(),

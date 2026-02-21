@@ -44,7 +44,11 @@ export function ArticleEditor({ articleId, locale }: ArticleEditorProps) {
     featured_image: '',
     featured: false,
     published: false,
+    published_at: '',
+    tags: [] as string[],
   })
+
+  const [tagInput, setTagInput] = useState('')
 
   // Language-specific translations
   const [translations, setTranslations] = useState<ArticleTranslation[]>(
@@ -68,13 +72,23 @@ export function ArticleEditor({ articleId, locale }: ArticleEditorProps) {
       if (!response.ok) throw new Error('Failed to fetch article')
 
       const data = await response.json()
+      
+      // Set main data
       setMainData({
         featured_image: data.featured_image || '',
         featured: data.featured || false,
         published: data.published || false,
+        published_at: data.published_at || '',
+        tags: Array.isArray(data.tags) ? data.tags : [],
       })
+      
+      if (Array.isArray(data.tags)) {
+        setTagInput(data.tags.join(', '))
+      }
 
-      const articleTranslations = data.article_translations || []
+      // Fetch and set translations
+      const articleTranslations = Array.isArray(data.article_translations) ? data.article_translations : []
+      
       setTranslations(
         LOCALES.map(loc => {
           const trans = articleTranslations.find((t: any) => t.locale === loc.code)
@@ -96,6 +110,19 @@ export function ArticleEditor({ articleId, locale }: ArticleEditorProps) {
       setIsLoading(false)
     }
   }
+        })
+      )
+    } catch (error) {
+      setError('Failed to load article')
+      toast({
+        title: 'Error',
+        description: 'Failed to load article',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const handleTranslationChange = (locale: string, field: 'title' | 'content', value: string) => {
     setTranslations(prev =>
@@ -103,6 +130,24 @@ export function ArticleEditor({ articleId, locale }: ArticleEditorProps) {
         t.locale === locale ? { ...t, [field]: value } : t
       )
     )
+  }
+
+  const handleAddTag = (tag: string) => {
+    const trimmed = tag.trim()
+    if (trimmed && !mainData.tags.includes(trimmed)) {
+      setMainData(prev => ({
+        ...prev,
+        tags: [...prev.tags, trimmed],
+      }))
+      setTagInput('')
+    }
+  }
+
+  const handleRemoveTag = (tag: string) => {
+    setMainData(prev => ({
+      ...prev,
+      tags: prev.tags.filter(t => t !== tag),
+    }))
   }
 
   const handleSave = async () => {
@@ -127,11 +172,13 @@ export function ArticleEditor({ articleId, locale }: ArticleEditorProps) {
 
       const payload = {
         slug,
-        title: mainTrans.title, // Main title from first translation
+        title: mainTrans.title,
         content: mainTrans.content,
         featured_image: mainData.featured_image,
         featured: mainData.featured,
         published: mainData.published,
+        published_at: mainData.published && mainData.published_at ? mainData.published_at : null,
+        tags: mainData.tags,
         reading_time_minutes: readingTime,
         meta_description: metaDescription,
         translations: translations.map(t => ({
@@ -228,6 +275,64 @@ export function ArticleEditor({ articleId, locale }: ArticleEditorProps) {
             />
             <span className="text-sm">Published</span>
           </label>
+        </div>
+
+        {/* Published Date */}
+        <div>
+          <Label htmlFor="published_at">Published Date</Label>
+          <Input
+            id="published_at"
+            type="datetime-local"
+            value={mainData.published_at}
+            onChange={e => setMainData(prev => ({ ...prev, published_at: e.target.value }))}
+            disabled={!mainData.published}
+            className="mt-1"
+          />
+          {!mainData.published && (
+            <p className="text-xs text-gray-500 mt-1">Enable "Published" to set date</p>
+          )}
+        </div>
+
+        {/* Tags */}
+        <div>
+          <Label htmlFor="tags">Tags</Label>
+          <div className="flex gap-2 mt-1">
+            <Input
+              id="tags"
+              value={tagInput}
+              onChange={e => setTagInput(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' || e.key === ',') {
+                  e.preventDefault()
+                  handleAddTag(tagInput)
+                }
+              }}
+              placeholder="Type tag and press Enter or comma"
+            />
+            <Button
+              type="button"
+              onClick={() => handleAddTag(tagInput)}
+              variant="outline"
+            >
+              Add
+            </Button>
+          </div>
+          {mainData.tags.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {mainData.tags.map(tag => (
+                <div key={tag} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-2">
+                  {tag}
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveTag(tag)}
+                    className="hover:text-blue-900"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
