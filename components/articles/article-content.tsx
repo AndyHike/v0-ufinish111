@@ -30,9 +30,21 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
   const [error, setError] = useState<string | null>(null)
   const [relatedServices, setRelatedServices] = useState<Service[]>([])
   const [primaryService, setPrimaryService] = useState<Service | null>(null)
-  const [isNavVisible, setIsNavVisible] = useState(true)
-  const [lastScrollY, setLastScrollY] = useState(0)
-  const t = useTranslations("Articles")
+  const [navHeight, setNavHeight] = useState(80) // Default height of mobile nav
+
+  useEffect(() => {
+    // Calculate mobile nav height dynamically
+    const updateNavHeight = () => {
+      const mobileNav = document.querySelector('[class*="md:hidden"][class*="fixed"][class*="bottom-0"]')
+      if (mobileNav) {
+        setNavHeight(mobileNav.getBoundingClientRect().height)
+      }
+    }
+
+    updateNavHeight()
+    window.addEventListener('resize', updateNavHeight)
+    return () => window.removeEventListener('resize', updateNavHeight)
+  }, [])
 
   useEffect(() => {
     fetchArticle()
@@ -230,9 +242,10 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
     {/* Sticky CTA Button for Primary Service */}
     {primaryService && (
       <motion.div
-        className="fixed bottom-20 md:bottom-8 left-4 right-4 md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-full md:max-w-2xl bg-white border border-gray-200 rounded-xl shadow-xl hover:shadow-2xl z-40 p-4 md:p-5 transition-all duration-300"
-        animate={{ translateY: window.innerWidth < 768 ? (isNavVisible ? 0 : 100) : 0 }}
+        className="fixed bottom-0 md:bottom-8 left-1/2 md:left-1/2 -translate-x-1/2 md:-translate-x-1/2 w-[calc(100%-2rem)] md:w-[calc(100%-4rem)] md:max-w-3xl px-4 md:px-0 bg-white border border-gray-200 rounded-xl shadow-xl hover:shadow-2xl z-40 p-4 md:p-5 transition-all duration-300"
+        animate={{ translateY: window.innerWidth < 768 ? (isNavVisible ? 0 : -navHeight) : 0 }}
         transition={{ duration: 0.3 }}
+        style={{ bottom: window.innerWidth < 768 ? undefined : "2rem" }}
       >
         <div className="max-w-full">
           {/* Mobile version - compact */}
