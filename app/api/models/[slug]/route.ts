@@ -80,7 +80,24 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
 
     console.log(`Found ${modelServices?.length || 0} model services`)
 
-    // Трансформуємо дані послуг з правильною конвертацією типів
+    // Отримуємо базові послуги для fallback даних
+    const { data: baseServices, error: baseServicesError } = await supabase
+      .from("services")
+      .select(`
+        id,
+        warranty_months,
+        duration_hours,
+        warranty_period
+      `)
+
+    if (baseServicesError) {
+      console.error("Error fetching base services:", baseServicesError)
+    }
+
+    // Створюємо map базових послуг для швидкого пошуку
+    const baseServiceMap = new Map(baseServices?.map(s => [s.id, s]) || [])
+
+    // Трансформуємо дані послуг з правильною конвертацією типів та fallback на базові послуги
     const services = modelServices
       ?.map((ms) => {
         const service = ms.services
@@ -92,21 +109,38 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
 
         if (!translation) return null
 
-        // Правильна конвертація типів даних
+        // Отримуємо базову послугу для fallback
+        const baseService = baseServiceMap.get(service.id)
+
+        // Правильна конвертація типів даних з fallback на базову послугу
         const price = ms.price ? Number.parseFloat(ms.price.toString()) : null
-        const warrantyMonths = ms.warranty_months ? Number.parseInt(ms.warranty_months.toString()) : null
-        const durationHours = ms.duration_hours ? Number.parseFloat(ms.duration_hours.toString()) : null
+        
+        // Гарантія: спочатку з model_services, потім з базової services
+        let warrantyMonths = ms.warranty_months ? Number.parseInt(ms.warranty_months.toString()) : null
+        if (warrantyMonths === null && baseService?.warranty_months) {
+          warrantyMonths = baseService.warranty_months
+          console.log(`[API Models] Using base service warranty for ${translation.name}: ${warrantyMonths} months`)
+        }
+        
+        let warrantyPeriod = ms.warranty_period || baseService?.warranty_period || "months"
+        
+        // Тривалість: спочатку з model_services, потім з базової services
+        let durationHours = ms.duration_hours ? Number.parseFloat(ms.duration_hours.toString()) : null
+        if (durationHours === null && baseService?.duration_hours) {
+          durationHours = baseService.duration_hours
+          console.log(`[API Models] Using base service duration for ${translation.name}: ${durationHours} hours`)
+        }
 
         return {
           id: service.id,
           slug: service.slug,
           name: translation.name,
           description: translation.description,
-          // ВАЖЛИВО: Використовуємо дані з model_services, а не з services
+          // ВАЖЛИВО: Використовуємо дані з model_services, а якщо немає - з базової services
           price: price,
           warranty_months: warrantyMonths,
           duration_hours: durationHours,
-          warranty_period: ms.warranty_period || "months",
+          warranty_period: warrantyPeriod,
           position: service.position,
           image_url: service.image_url,
           detailed_description: ms.detailed_description,

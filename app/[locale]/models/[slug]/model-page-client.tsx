@@ -81,6 +81,13 @@ export default function ModelPageClient({ modelData, locale }: Props) {
     if (process.env.NODE_ENV === "development") {
       console.log("[v0] Model services loaded:", currentModelData.services.length)
       currentModelData.services.forEach((service) => {
+        console.log(`[v0] Service "${service.name}":`, {
+          warranty_months: service.warranty_months,
+          warranty_period: service.warranty_period,
+          duration_hours: service.duration_hours,
+          displayedWarranty: formatWarranty(service.warranty_months, service.warranty_period),
+          displayedDuration: formatDuration(service.duration_hours),
+        })
         if (service.has_discount) {
           console.log(`[v0] Service "${service.name}" has discount:`, {
             originalPrice: service.price,
