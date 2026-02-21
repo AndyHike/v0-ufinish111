@@ -39,7 +39,6 @@ export async function POST(request: NextRequest) {
       featured_image, 
       featured, 
       published,
-      tags = [],
       reading_time_minutes,
       meta_description,
       translations = []
@@ -86,7 +85,6 @@ export async function POST(request: NextRequest) {
         published: published || false,
         meta_description: calcMetaDescription,
         reading_time_minutes: calcReadingTime,
-        tags: tags || [],
       })
       .select()
       .single()
@@ -96,12 +94,13 @@ export async function POST(request: NextRequest) {
     // Add translations if provided
     if (translations && translations.length > 0) {
       const translationInserts = translations
-        .filter((t: any) => t.content || t.title) // Only insert non-empty translations
+        .filter((t: any) => t.content || t.title)
         .map((t: any) => ({
           article_id: article.id,
           locale: t.locale,
           title: t.title || title,
           content: t.content || content,
+          meta_description: t.meta_description || calcMetaDescription,
         }))
 
       if (translationInserts.length > 0) {

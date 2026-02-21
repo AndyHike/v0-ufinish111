@@ -63,7 +63,6 @@ export async function PUT(
       featured_image, 
       featured, 
       published, 
-      tags = [], 
       slug, 
       meta_description, 
       reading_time_minutes,
@@ -85,7 +84,6 @@ export async function PUT(
         published: published || false,
         reading_time_minutes: readingTime,
         meta_description: metaDesc,
-        tags: tags || [],
         updated_at: new Date().toISOString(),
       })
       .eq("id", id)
@@ -111,6 +109,7 @@ export async function PUT(
             .update({
               title: trans.title,
               content: trans.content,
+              meta_description: trans.meta_description || metaDesc,
             })
             .eq("id", existing.id)
         } else {
@@ -123,6 +122,7 @@ export async function PUT(
                 locale: trans.locale,
                 title: trans.title,
                 content: trans.content,
+                meta_description: trans.meta_description || metaDesc,
               })
           }
         }
