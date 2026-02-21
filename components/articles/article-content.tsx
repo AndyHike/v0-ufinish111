@@ -252,7 +252,8 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
     {/* Sticky CTA Button for Primary Service */}
     {primaryService && (
       <motion.div
-        className="fixed bottom-0 md:bottom-8 left-0 right-0 md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-full md:max-w-4xl bg-white border border-gray-200 rounded-none md:rounded-xl shadow-xl hover:shadow-2xl z-40 px-4 py-4 md:px-6 md:py-5 transition-all duration-300"
+        className="fixed bottom-0 md:bottom-8 left-0 right-0 md:left-1/2 md:-translate-x-1/2 bg-white border border-gray-200 rounded-none md:rounded-xl shadow-xl hover:shadow-2xl z-40 px-4 py-4 md:px-6 md:py-5 md:w-fit transition-all duration-300"
+        style={{ maxWidth: window.innerWidth < 768 ? undefined : "calc(100% - 4rem)" }}
         animate={{ translateY: window.innerWidth < 768 ? (isNavVisible ? 0 : -navHeight) : 0 }}
         transition={{ duration: 0.3 }}
       >
