@@ -29,6 +29,7 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [relatedServices, setRelatedServices] = useState<Service[]>([])
+  const [primaryService, setPrimaryService] = useState<Service | null>(null)
   const t = useTranslations("Articles")
 
   const fetchArticle = async () => {
@@ -61,12 +62,32 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
 
       setArticle(displayArticle)
 
-      // Fetch related services
+      // Fetch all services once
       try {
         const servicesResponse = await fetch(`/api/services?locale=${locale}&limit=100`)
         if (servicesResponse.ok) {
           const servicesData = await servicesResponse.json()
-          setRelatedServices(servicesData.services || [])
+          const allServices = servicesData.services || []
+
+          // Filter services that are linked to this article
+          if (fullArticle.article_service_links && fullArticle.article_service_links.length > 0) {
+            const linkedServiceIds = fullArticle.article_service_links
+              .map((link: any) => link.service_id)
+              .filter((id: string) => id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id))
+
+            const filtered = allServices.filter((service: Service) =>
+              linkedServiceIds.includes(service.id)
+            )
+            setRelatedServices(filtered)
+          }
+
+          // Set primary service if available
+          if (fullArticle.primary_service_id) {
+            const primary = allServices.find((service: Service) => service.id === fullArticle.primary_service_id)
+            if (primary) {
+              setPrimaryService(primary)
+            }
+          }
         }
       } catch (err) {
         console.error("Failed to fetch services:", err)
@@ -155,7 +176,28 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
           dangerouslySetInnerHTML={{ __html: article.content }}
         />
 
-        {/* Related Services CTA */}
+        {/* Primary Service CTA - Centered */}
+        {primaryService && (
+          <div className="mt-12 pt-8 border-t flex justify-center">
+            <a
+              href={`/services/${primaryService.slug}`}
+              className="inline-block max-w-lg p-8 bg-blue-50 border-2 border-blue-600 rounded-lg hover:bg-blue-100 transition"
+            >
+              <p className="text-xs font-bold text-blue-600 uppercase tracking-widest mb-2">
+                {t("relatedServices")}
+              </p>
+              <h3 className="text-2xl font-bold text-gray-900 mb-3">{primaryService.title}</h3>
+              {primaryService.description && (
+                <p className="text-gray-700 mb-4">{primaryService.description}</p>
+              )}
+              <button className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition font-semibold">
+                {t("orderNow")}
+              </button>
+            </a>
+          </div>
+        )}
+
+        {/* Related Services Grid */}
         {relatedServices.length > 0 && (
           <div className="mt-12 pt-8 border-t">
             <h3 className="text-2xl font-bold mb-6">{t("relatedServices")}</h3>
