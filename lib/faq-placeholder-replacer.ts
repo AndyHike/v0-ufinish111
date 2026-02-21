@@ -9,9 +9,13 @@ interface PlaceholderValues {
   service?: string
   category?: string
   line?: string
-  warranty?: string
+  warranty?: string | number  // може бути число місяців
+  warrantyMonths?: number  // кількість місяців для гарантії
+  warrantyCounted?: string  // Полная сформатированная гарантія з перекладом
   price?: string
-  duration?: string
+  duration?: string | number  // може бути число годин
+  durationHours?: number  // кількість годин для тривалості
+  durationFormatted?: string  // Полная сформатированная тривалість з перекладом
   fullModel?: string
   productType?: string
 }
@@ -45,8 +49,13 @@ export function replaceFaqPlaceholders(text: string, values: PlaceholderValues):
   }
 
   // Замінюємо {{warranty}} на гарантійний період
-  if (values.warranty) {
-    result = result.replace(/\{\{warranty\}\}/g, values.warranty)
+  // Пріоритет: warrantyCounted > warranty > warrantMonths
+  if (values.warrantyCounted) {
+    result = result.replace(/\{\{warranty\}\}/g, values.warrantyCounted)
+  } else if (values.warranty) {
+    result = result.replace(/\{\{warranty\}\}/g, String(values.warranty))
+  } else if (values.warrantyCounted) {
+    result = result.replace(/\{\{warranty\}\}/g, values.warrantyCounted)
   }
 
   // Замінюємо {{price}} на ціну послуги
@@ -55,8 +64,13 @@ export function replaceFaqPlaceholders(text: string, values: PlaceholderValues):
   }
 
   // Замінюємо {{duration}} на час виконання
-  if (values.duration) {
-    result = result.replace(/\{\{duration\}\}/g, values.duration)
+  // Пріоритет: durationFormatted > duration > durationHours
+  if (values.durationFormatted) {
+    result = result.replace(/\{\{duration\}\}/g, values.durationFormatted)
+  } else if (values.duration) {
+    result = result.replace(/\{\{duration\}\}/g, String(values.duration))
+  } else if (values.durationHours) {
+    result = result.replace(/\{\{duration\}\}/g, String(values.durationHours))
   }
 
   // Замінюємо {{fullModel}} на повну назву (бренд + модель)
