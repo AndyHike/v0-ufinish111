@@ -27,6 +27,7 @@ export async function GET(
         tags,
         reading_time_minutes,
         meta_description,
+        view_count,
         created_at,
         updated_at,
         article_translations(

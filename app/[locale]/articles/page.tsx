@@ -88,6 +88,7 @@ async function ArticlesList({ locale, search }: { locale: string; search?: strin
     return {
       ...article,
       displayTitle: translation?.title || article.title,
+      displayContent: translation?.content || article.content,
     }
   })
 
@@ -102,7 +103,7 @@ async function ArticlesList({ locale, search }: { locale: string; search?: strin
           featured_image={article.featured_image}
           reading_time_minutes={article.reading_time_minutes}
           view_count={article.view_count}
-          content={article.content}
+          content={article.displayContent}
           locale={locale}
           tags={article.tags}
           published_at={article.published_at}

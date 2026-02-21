@@ -507,7 +507,10 @@
     "related": "Related Articles",
     "shareArticle": "Share Article",
     "viewCount": "Views",
-    "backToArticles": "Back to Articles"
+    "backToArticles": "Back to Articles",
+    "tags": "Tags",
+    "publishedDate": "Published",
+    "noTags": "No tags"
   },
   "Admin": {
     "articlesManagement": "Articles Management",

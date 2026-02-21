@@ -904,10 +904,13 @@
     "readingTime": "{minutes} min čtení",
     "views": "{count} zobrazení",
     "featured": "Doporučeno",
-    "related": "Související články",
+    "related": "související články",
     "shareArticle": "Sdílet článek",
     "viewCount": "Zobrazení",
-    "backToArticles": "Zpět na články"
+    "backToArticles": "Zpět na články",
+    "tags": "Štítky",
+    "publishedDate": "Zveřejněno",
+    "noTags": "Žádné štítky"
   },
   "Admin": {
     "articlesManagement": "Správa článků",
