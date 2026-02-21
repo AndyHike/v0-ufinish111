@@ -13,6 +13,7 @@ type Props = {
     search?: string
     page?: string
     sort?: string
+    category?: string
   }
 }
 
@@ -44,7 +45,7 @@ function ArticlesListSkeleton() {
   )
 }
 
-async function ArticlesList({ locale, search, sort }: { locale: string; search?: string; sort?: string }) {
+async function ArticlesList({ locale, search, sort, category }: { locale: string; search?: string; sort?: string; category?: string }) {
   const supabase = createClient()
 
   let query = supabase
@@ -72,10 +73,18 @@ async function ArticlesList({ locale, search, sort }: { locale: string; search?:
     .eq("published", true)
     .order("featured", { ascending: false })
 
+  // Apply filtering by category
+  if (category) {
+    query = query.eq("category", category)
+  }
+
   // Apply sorting
-  if (sort === "category") {
-    query = query.order("category", { ascending: true }).order("created_at", { ascending: false })
+  if (sort === "oldest") {
+    query = query.order("created_at", { ascending: true })
+  } else if (sort === "popular") {
+    query = query.order("view_count", { ascending: false }).order("created_at", { ascending: false })
   } else {
+    // Default to newest
     query = query.order("created_at", { ascending: false })
   }
 
@@ -125,7 +134,7 @@ async function ArticlesList({ locale, search, sort }: { locale: string; search?:
 
 export default async function ArticlesPage({ params, searchParams }: Props) {
   const { locale } = await params
-  const { search, sort } = await searchParams
+  const { search, sort, category } = await searchParams
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
@@ -140,7 +149,7 @@ export default async function ArticlesPage({ params, searchParams }: Props) {
       <section className="py-8">
         <div className="container mx-auto px-4">
           <Suspense fallback={<ArticlesListSkeleton />}>
-            <ArticlesList locale={locale} search={search} sort={sort} />
+            <ArticlesList locale={locale} search={search} sort={sort} category={category} />
           </Suspense>
         </div>
       </section>

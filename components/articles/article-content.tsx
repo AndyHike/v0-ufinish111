@@ -124,7 +124,7 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
 
   return (
     <>
-      <article className="max-w-3xl mx-auto">
+      <article className="max-w-3xl mx-auto pb-32 md:pb-0">
       {article.featured_image && (
         <img
           src={article.featured_image}
@@ -208,18 +208,40 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
 
     {/* Sticky CTA Button for Primary Service */}
     {primaryService && (
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-40 p-4">
-        <div className="max-w-3xl mx-auto flex items-center justify-between gap-4">
-          <div>
-            <p className="text-sm text-gray-600">{t("relatedServices")}</p>
-            <p className="font-semibold text-lg">{primaryService.title}</p>
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-40 p-4 md:bottom-auto md:top-auto md:relative md:mt-8 md:shadow-none md:border-none md:z-auto md:bg-transparent md:p-0">
+        <div className="max-w-3xl mx-auto">
+          {/* Mobile version - horizontal */}
+          <div className="md:hidden flex items-center justify-between gap-4 pb-16">
+            <div>
+              <p className="text-sm text-gray-600">{t("relatedServices")}</p>
+              <p className="font-semibold text-lg">{primaryService.title}</p>
+            </div>
+            <a
+              href={`/services/${primaryService.slug}`}
+              className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition font-medium whitespace-nowrap"
+            >
+              {t("orderNow")}
+            </a>
           </div>
-          <a
-            href={`/services/${primaryService.slug}`}
-            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition font-medium whitespace-nowrap"
-          >
-            {t("orderNow")}
-          </a>
+
+          {/* Desktop version - card */}
+          <div className="hidden md:block p-6 border rounded-lg bg-blue-50">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm text-gray-600 mb-1">{t("relatedServices")}</p>
+                <p className="font-semibold text-xl">{primaryService.title}</p>
+                {primaryService.description && (
+                  <p className="text-sm text-gray-600 mt-1">{primaryService.description}</p>
+                )}
+              </div>
+              <a
+                href={`/services/${primaryService.slug}`}
+                className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition font-medium whitespace-nowrap"
+              >
+                {t("orderNow")}
+              </a>
+            </div>
+          </div>
         </div>
       </div>
     )}
