@@ -1,297 +1,487 @@
-'use client'
+"use client"
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { useTranslations } from 'next-intl'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { RichTextEditor } from './rich-text-editor'
-import { Loader2, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { useState, useEffect } from "react"
+import { useTranslations } from "next-intl"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useToast } from "@/components/ui/use-toast"
+import { Checkbox } from "@/components/ui/checkbox"
+import { generateSlug, generateReadingTime, generateMetaDescription } from "@/lib/articles"
+import { Save, Plus, Trash2, X } from "lucide-react"
+import { useRouter } from "next/navigation"
 
-const LANGUAGES = [
-  { code: 'cs', label: 'Čeština' },
-  { code: 'uk', label: 'Українська' },
-  { code: 'en', label: 'English' },
-]
-
-interface ArticleTranslation {
+type ArticleTranslation = {
+  id: string
   locale: string
   title: string
   content: string
+  meta_description: string
 }
 
-interface ArticleEditorProps {
+type ArticleData = {
+  id?: string
+  slug: string
+  title: string
+  content: string
+  featured_image: string
+  featured: boolean
+  published: boolean
+  meta_description: string
+  reading_time_minutes: number
+  translations: ArticleTranslation[]
+}
+
+type ArticleEditorProps = {
   articleId?: string
-  initialData?: {
-    title: string
-    tags: string
-    featured_image?: string
-    featured: boolean
-    published: boolean
-    translations: ArticleTranslation[]
-  }
-  locale: string
+  onClose?: () => void
 }
 
-export function ArticleEditor({ articleId, initialData, locale }: ArticleEditorProps) {
-  const t = useTranslations('Admin')
-  const router = useRouter()
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState(false)
-  const [activeTab, setActiveTab] = useState(locale)
+const LOCALES = [
+  { code: "cs", name: "Čeština" },
+  { code: "uk", name: "Українська" },
+  { code: "en", name: "English" },
+]
 
-  const [formData, setFormData] = useState({
-    title: initialData?.title || '',
-    tags: initialData?.tags || '',
-    featured: initialData?.featured || false,
-    published: initialData?.published || false,
-    featured_image: initialData?.featured_image || '',
+export function ArticleEditor({ articleId, onClose }: ArticleEditorProps) {
+  const router = useRouter()
+  const { toast } = useToast()
+  const [isLoading, setIsLoading] = useState(!!articleId)
+  const [isSaving, setIsSaving] = useState(false)
+  const [activeTab, setActiveTab] = useState("cs")
+  const [addingTranslation, setAddingTranslation] = useState<string | null>(null)
+
+  const [article, setArticle] = useState<ArticleData>({
+    slug: "",
+    title: "",
+    content: "",
+    featured_image: "",
+    featured: false,
+    published: false,
+    meta_description: "",
+    reading_time_minutes: 1,
+    translations: [],
   })
 
-  const [translations, setTranslations] = useState<ArticleTranslation[]>(
-    initialData?.translations || LANGUAGES.map(lang => ({
-      locale: lang.code,
-      title: '',
-      content: '',
-    }))
-  )
+  useEffect(() => {
+    if (articleId) {
+      fetchArticle()
+    }
+  }, [articleId])
 
-  const handleTranslationChange = (locale: string, field: 'title' | 'content', value: string) => {
-    setTranslations(prev =>
-      prev.map(t => (t.locale === locale ? { ...t, [field]: value } : t))
-    )
+  const fetchArticle = async () => {
+    if (!articleId) return
+    try {
+      const response = await fetch(`/api/articles/${articleId}`)
+      if (!response.ok) throw new Error("Failed to fetch article")
+
+      const data = await response.json()
+      setArticle({
+        ...data,
+        translations: data.article_translations || [],
+      })
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load article",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
-  const handleImageUpload = async (file: File): Promise<string> => {
-    // Для демонстрації використовуємо base64
-    // У реальному застосунку потрібно завантажити на сервер
-    return new Promise((resolve) => {
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        resolve(reader.result as string)
-      }
-      reader.readAsDataURL(file)
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const title = e.target.value
+    setArticle({
+      ...article,
+      title,
+      slug: generateSlug(title),
     })
   }
 
-  const calculateReadingTime = (html: string): number => {
-    const text = html.replace(/<[^>]*>/g, '')
-    const wordCount = text.trim().split(/\s+/).length
-    return Math.ceil(wordCount / 200) // 200 слів на хвилину
+  const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const content = e.target.value
+    const readingTime = generateReadingTime(content)
+    const metaDescription = generateMetaDescription(content)
+
+    setArticle({
+      ...article,
+      content,
+      reading_time_minutes: readingTime,
+      meta_description: metaDescription,
+    })
   }
 
-  const generateMetaDescription = (html: string): string => {
-    const text = html.replace(/<[^>]*>/g, '')
-    return text.substring(0, 160).trim() + (text.length > 160 ? '...' : '')
-  }
-
-  const generateSlug = (title: string): string => {
-    return title
-      .toLowerCase()
-      .trim()
-      .replace(/[^\w\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
-    setSuccess(false)
-
-    // Валідація
-    if (!formData.title.trim()) {
-      setError('Назва статті не може бути порожною')
+  const handleAddTranslation = async (locale: string) => {
+    if (!article.id) {
+      toast({
+        title: "Error",
+        description: "Save the article first before adding translations",
+        variant: "destructive",
+      })
       return
     }
-
-    const mainTranslation = translations.find(t => t.locale === locale)
-    if (!mainTranslation?.title || !mainTranslation?.content) {
-      setError(`Заголовок та вміст статті мовою ${locale} обов'язкові`)
-      return
-    }
-
-    setLoading(true)
 
     try {
-      const slug = generateSlug(formData.title)
-      const readingTime = calculateReadingTime(mainTranslation.content)
-      const metaDescription = generateMetaDescription(mainTranslation.content)
-
-      const payload = {
-        title: formData.title,
-        slug,
-        tags: formData.tags.split(',').map(t => t.trim()).filter(Boolean),
-        featured_image: formData.featured_image,
-        featured: formData.featured,
-        published: formData.published,
-        reading_time_minutes: readingTime,
-        meta_description: metaDescription,
-        content: mainTranslation.content,
-        translations: translations.map(t => ({
-          locale: t.locale,
-          title: t.title || formData.title,
-          content: t.content || mainTranslation.content,
-        })),
-      }
-
-      const url = articleId
-        ? `/api/articles/${articleId}`
-        : '/api/articles'
-
-      const response = await fetch(url, {
-        method: articleId ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+      const response = await fetch(`/api/articles/${article.id}/translations`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          locale,
+          title: article.title,
+          content: article.content,
+        }),
       })
 
-      if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || 'Помилка при збереженні статті')
-      }
+      if (!response.ok) throw new Error("Failed to add translation")
 
-      setSuccess(true)
-      setTimeout(() => {
-        router.push(`/${locale}/admin/articles`)
-      }, 2000)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Невідома помилка')
-    } finally {
-      setLoading(false)
+      const translation = await response.json()
+      setArticle({
+        ...article,
+        translations: [...article.translations, translation],
+      })
+      setAddingTranslation(null)
+      setActiveTab(locale)
+      toast({
+        title: "Success",
+        description: `Translation added for ${locale}`,
+      })
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to add translation",
+        variant: "destructive",
+      })
     }
   }
 
+  const handleUpdateTranslation = async (locale: string, updates: any) => {
+    if (!article.id) return
+
+    try {
+      const response = await fetch(
+        `/api/articles/${article.id}/translations/${locale}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updates),
+        }
+      )
+
+      if (!response.ok) throw new Error("Failed to update translation")
+
+      const updated = await response.json()
+      setArticle({
+        ...article,
+        translations: article.translations.map((t) =>
+          t.locale === locale ? updated : t
+        ),
+      })
+      toast({
+        title: "Success",
+        description: "Translation updated",
+      })
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update translation",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleDeleteTranslation = async (locale: string) => {
+    if (!article.id) return
+
+    try {
+      const response = await fetch(
+        `/api/articles/${article.id}/translations/${locale}`,
+        { method: "DELETE" }
+      )
+
+      if (!response.ok) throw new Error("Failed to delete translation")
+
+      setArticle({
+        ...article,
+        translations: article.translations.filter((t) => t.locale !== locale),
+      })
+      toast({
+        title: "Success",
+        description: "Translation deleted",
+      })
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete translation",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleSave = async () => {
+    if (!article.title || !article.content || !article.slug) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsSaving(true)
+    try {
+      if (article.id) {
+        // Update
+        const response = await fetch(`/api/articles/${article.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: article.title,
+            content: article.content,
+            featured_image: article.featured_image,
+            featured: article.featured,
+            published: article.published,
+          }),
+        })
+
+        if (!response.ok) throw new Error("Failed to save article")
+
+        toast({
+          title: "Success",
+          description: "Article updated successfully",
+        })
+      } else {
+        // Create
+        const response = await fetch("/api/articles", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            slug: article.slug,
+            title: article.title,
+            content: article.content,
+            featured_image: article.featured_image,
+            featured: article.featured,
+            published: article.published,
+          }),
+        })
+
+        if (!response.ok) throw new Error("Failed to create article")
+
+        const created = await response.json()
+        setArticle({ ...article, id: created.id })
+
+        toast({
+          title: "Success",
+          description: "Article created successfully",
+        })
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save article",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  if (isLoading) {
+    return <div className="text-center py-8">Loading...</div>
+  }
+
+  const hasTranslation = (locale: string) =>
+    article.translations.some((t) => t.locale === locale)
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Alerts */}
-      {error && (
-        <div className="flex gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
-          <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-          <p className="text-red-800">{error}</p>
-        </div>
-      )}
+    <Card>
+      <CardHeader>
+        <CardTitle>{article.id ? "Edit Article" : "Create New Article"}</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <Tabs defaultValue="main" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="main">Main</TabsTrigger>
+            {LOCALES.map((locale) => (
+              <TabsTrigger
+                key={locale.code}
+                value={locale.code}
+                className={!hasTranslation(locale.code) ? "opacity-50" : ""}
+              >
+                {locale.name}
+              </TabsTrigger>
+            ))}
+          </TabsList>
 
-      {success && (
-        <div className="flex gap-3 p-4 bg-green-50 border border-green-200 rounded-lg">
-          <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-          <p className="text-green-800">Статтю успішно збережено!</p>
-        </div>
-      )}
-
-      {/* Main Section */}
-      <div className="space-y-4">
-        <h2 className="text-lg font-semibold">Основна інформація</h2>
-
-        <div>
-          <Label htmlFor="title">Назва статті *</Label>
-          <Input
-            id="title"
-            value={formData.title}
-            onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-            placeholder="Введіть назву статті"
-            className="mt-1"
-          />
-        </div>
-
-        <div>
-          <Label htmlFor="tags">Теги (через кому)</Label>
-          <Input
-            id="tags"
-            value={formData.tags}
-            onChange={(e) => setFormData(prev => ({ ...prev, tags: e.target.value }))}
-            placeholder="ремонт, телефон, інструкція"
-            className="mt-1"
-          />
-        </div>
-
-        <div>
-          <Label htmlFor="image">URL основного зображення</Label>
-          <Input
-            id="image"
-            value={formData.featured_image}
-            onChange={(e) => setFormData(prev => ({ ...prev, featured_image: e.target.value }))}
-            placeholder="https://example.com/image.jpg"
-            className="mt-1"
-          />
-        </div>
-
-        <div className="flex gap-6">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={formData.featured}
-              onChange={(e) => setFormData(prev => ({ ...prev, featured: e.target.checked }))}
-              className="w-4 h-4 rounded border-gray-300"
-            />
-            <span>Рекомендована статтю</span>
-          </label>
-
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={formData.published}
-              onChange={(e) => setFormData(prev => ({ ...prev, published: e.target.checked }))}
-              className="w-4 h-4 rounded border-gray-300"
-            />
-            <span>Опубліковано</span>
-          </label>
-        </div>
-      </div>
-
-      {/* Content Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          {LANGUAGES.map(lang => (
-            <TabsTrigger key={lang.code} value={lang.code}>
-              {lang.label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-
-        {LANGUAGES.map(lang => (
-          <TabsContent key={lang.code} value={lang.code} className="space-y-4">
+          <TabsContent value="main" className="space-y-4">
             <div>
-              <Label htmlFor={`title-${lang.code}`}>Заголовок ({lang.label}) {lang.code === locale ? '*' : ''}</Label>
+              <Label htmlFor="title">Title</Label>
               <Input
-                id={`title-${lang.code}`}
-                value={translations.find(t => t.locale === lang.code)?.title || ''}
-                onChange={(e) => handleTranslationChange(lang.code, 'title', e.target.value)}
-                placeholder={`Заголовок статті мовою ${lang.label}`}
-                className="mt-1"
+                id="title"
+                value={article.title}
+                onChange={handleTitleChange}
+                placeholder="Article title"
               />
             </div>
 
             <div>
-              <Label>Вміст ({lang.label}) {lang.code === locale ? '*' : ''}</Label>
-              <RichTextEditor
-                value={translations.find(t => t.locale === lang.code)?.content || ''}
-                onChange={(content) => handleTranslationChange(lang.code, 'content', content)}
-                onImageUpload={handleImageUpload}
-                placeholder={`Напишіть вміст статті мовою ${lang.label}...`}
+              <Label htmlFor="slug">Slug</Label>
+              <Input
+                id="slug"
+                value={article.slug}
+                onChange={(e) => setArticle({ ...article, slug: e.target.value })}
+                placeholder="auto-generated"
               />
+            </div>
+
+            <div>
+              <Label htmlFor="content">Content (HTML)</Label>
+              <Textarea
+                id="content"
+                value={article.content}
+                onChange={handleContentChange}
+                placeholder="Article content in HTML"
+                className="min-h-80"
+              />
+              <p className="text-sm text-gray-500 mt-2">
+                Reading time: {article.reading_time_minutes} min
+              </p>
+            </div>
+
+            <div>
+              <Label htmlFor="featured_image">Featured Image URL</Label>
+              <Input
+                id="featured_image"
+                value={article.featured_image}
+                onChange={(e) =>
+                  setArticle({ ...article, featured_image: e.target.value })
+                }
+                placeholder="https://..."
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="meta_description">Meta Description</Label>
+              <Textarea
+                id="meta_description"
+                value={article.meta_description}
+                readOnly
+                className="min-h-24 bg-gray-50"
+              />
+              <p className="text-sm text-gray-500 mt-2">Auto-generated from content</p>
+            </div>
+
+            <div className="flex gap-4">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="featured"
+                  checked={article.featured}
+                  onCheckedChange={(checked) =>
+                    setArticle({ ...article, featured: checked === true })
+                  }
+                />
+                <Label htmlFor="featured" className="cursor-pointer">
+                  Featured
+                </Label>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="published"
+                  checked={article.published}
+                  onCheckedChange={(checked) =>
+                    setArticle({ ...article, published: checked === true })
+                  }
+                />
+                <Label htmlFor="published" className="cursor-pointer">
+                  Published
+                </Label>
+              </div>
             </div>
           </TabsContent>
-        ))}
-      </Tabs>
 
-      {/* Actions */}
-      <div className="flex gap-4 justify-end pt-6 border-t">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => router.back()}
-          disabled={loading}
-        >
-          Скасувати
-        </Button>
-        <Button type="submit" disabled={loading} className="gap-2">
-          {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-          {articleId ? 'Оновити' : 'Створити'} статтю
-        </Button>
-      </div>
-    </form>
+          {LOCALES.map((locale) => {
+            const translation = article.translations.find(
+              (t) => t.locale === locale.code
+            )
+
+            return (
+              <TabsContent key={locale.code} value={locale.code} className="space-y-4">
+                {!translation && !addingTranslation?.includes(locale.code) ? (
+                  <Button
+                    onClick={() => handleAddTranslation(locale.code)}
+                    className="w-full gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add {locale.name} Translation
+                  </Button>
+                ) : translation ? (
+                  <>
+                    <div>
+                      <Label>Title ({locale.name})</Label>
+                      <Input
+                        value={translation.title}
+                        onChange={(e) =>
+                          handleUpdateTranslation(locale.code, {
+                            title: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+
+                    <div>
+                      <Label>Content ({locale.name})</Label>
+                      <Textarea
+                        value={translation.content}
+                        onChange={(e) =>
+                          handleUpdateTranslation(locale.code, {
+                            content: e.target.value,
+                          })
+                        }
+                        className="min-h-80"
+                      />
+                    </div>
+
+                    <div>
+                      <Label>Meta Description ({locale.name})</Label>
+                      <Textarea
+                        value={translation.meta_description}
+                        readOnly
+                        className="min-h-24 bg-gray-50"
+                      />
+                    </div>
+
+                    <Button
+                      variant="outline"
+                      className="w-full text-red-600 gap-2"
+                      onClick={() => handleDeleteTranslation(locale.code)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Delete Translation
+                    </Button>
+                  </>
+                ) : null}
+              </TabsContent>
+            )
+          })}
+        </Tabs>
+
+        <div className="flex gap-2 justify-end">
+          {onClose && (
+            <Button variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+          )}
+          <Button onClick={handleSave} disabled={isSaving} className="gap-2">
+            <Save className="w-4 h-4" />
+            {isSaving ? "Saving..." : "Save Article"}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   )
 }

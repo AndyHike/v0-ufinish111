@@ -86,10 +86,12 @@ async function BrandsSectionAsync({ promise }: { promise: Promise<any> }) {
 
 async function GoogleReviewsAsync({ promise }: { promise: Promise<any> }) {
   try {
+    console.log("[v0] GoogleReviewsAsync: Awaiting promise")
     const googleReviews = await promise
+    console.log("[v0] GoogleReviewsAsync: Promise resolved", { hasData: !!googleReviews, reviewsCount: googleReviews?.reviews?.length })
     return googleReviews ? <GoogleReviewsCarousel data={googleReviews} /> : null
   } catch (error) {
-    console.error("GoogleReviewsAsync error:", error)
+    console.error("[v0] GoogleReviewsAsync error:", error)
     return null
   }
 }

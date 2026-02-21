@@ -9,24 +9,18 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const t = await getTranslations({ locale, namespace: "Admin" })
   return {
-    title: t("articlesManagement"),
+    title: "Articles Management",
   }
 }
 
-export default async function ArticlesAdminPage({
-  params: { locale },
-}: {
-  params: { locale: string }
-}) {
-  const t = await getTranslations({ locale, namespace: "Admin" })
-
+export default async function ArticlesAdminPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-4xl font-bold tracking-tight">{t("articlesManagement")}</h1>
-        <p className="text-muted-foreground mt-2">{t("manageArticles")}</p>
+        <h1 className="text-4xl font-bold tracking-tight">Articles Management</h1>
+        <p className="text-muted-foreground mt-2">Manage repair guides and tips</p>
       </div>
-      <ArticlesManagement locale={locale} />
+      <ArticlesManagement />
     </div>
   )
 }

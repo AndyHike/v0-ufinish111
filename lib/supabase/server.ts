@@ -20,14 +20,14 @@ export async function createClient() {
           try {
             cookieStore.set({ name, value, ...options })
           } catch (error) {
-            console.error("Cookie set error:", error)
+            console.error("[v0] Cookie set error:", error)
           }
         },
         remove(name: string, options: CookieOptions) {
           try {
             cookieStore.set({ name, value: "", ...options })
           } catch (error) {
-            console.error("Cookie remove error:", error)
+            console.error("[v0] Cookie remove error:", error)
           }
         },
       },

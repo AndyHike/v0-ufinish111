@@ -35,9 +35,10 @@ export const getGoogleReviews = cache(async (): Promise<GoogleReviewsData | null
     })
 
     const data = await response.json()
+    console.log("[v0] Google API Full Response:", JSON.stringify(data, null, 2))
 
     if (!response.ok) {
-      console.error("Google API error status:", response.status, data)
+      console.error("[v0] Google API error status:", response.status, data)
       return null
     }
 
@@ -58,9 +59,10 @@ export const getGoogleReviews = cache(async (): Promise<GoogleReviewsData | null
       businessName: data.displayName?.text,
     }
     
+    console.log("[v0] Returning reviews:", result.reviews.length)
     return result
   } catch (error) {
-    console.error("Error fetching reviews:", error)
+    console.error("[v0] Error fetching reviews:", error)
     return null
   }
 })

@@ -4,38 +4,34 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ChevronLeft } from "lucide-react"
+import { useLocale } from "next-intl"
 
 export async function generateMetadata({
   params: { locale },
 }: {
   params: { locale: string }
 }): Promise<Metadata> {
-  const t = await getTranslations({ locale, namespace: "Admin" })
   return {
-    title: t("addNewArticle"),
+    title: "Create Article",
   }
 }
 
-export default function CreateArticlePage({
-  params: { locale },
-}: {
-  params: { locale: string }
-}) {
+export default function CreateArticlePage() {
   return (
     <div className="space-y-6">
-      <Link href={`/${locale}/admin/articles`}>
+      <Link href="/admin/articles">
         <Button variant="ghost" className="gap-2">
           <ChevronLeft className="w-4 h-4" />
-          Назад до статей
+          Back to Articles
         </Button>
       </Link>
 
       <div>
-        <h1 className="text-4xl font-bold tracking-tight">Створити нову статтю</h1>
-        <p className="text-muted-foreground mt-2">Додайте новий посібник або поради по ремонту</p>
+        <h1 className="text-4xl font-bold tracking-tight">Create New Article</h1>
+        <p className="text-muted-foreground mt-2">Add a new repair guide or tip</p>
       </div>
 
-      <ArticleEditor locale={locale} />
+      <ArticleEditor />
     </div>
   )
 }
