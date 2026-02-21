@@ -146,7 +146,7 @@ export default async function ArticlesPage({ params, searchParams }: Props) {
       </section>
 
       {/* Articles Grid */}
-      <section className="pt-1 md:pt-2 pb-16 md:pb-24">
+      <section className="pb-8 md:pb-12">
         <div className="container mx-auto px-4">
           <Suspense fallback={<ArticlesListSkeleton />}>
             <ArticlesList locale={locale} search={search} sort={sort} category={category} />
