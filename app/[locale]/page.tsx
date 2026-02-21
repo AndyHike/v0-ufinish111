@@ -2,8 +2,10 @@ import { HeroSection } from "@/components/hero-section"
 import { ContactSection } from "@/components/contact-section"
 import { BrandsSection } from "@/components/brands-section"
 import { InfoBanner } from "@/components/info-banner"
+import { GoogleReviewsCarousel } from "@/components/google-reviews-carousel"
 import { getBrands } from "@/lib/data/brands"
 import { getInfoBanner } from "@/lib/data/info-banner"
+import { getGoogleReviews } from "@/lib/data/google-reviews"
 import { Suspense } from "react"
 
 export const revalidate = 3600 // Revalidate every hour
@@ -35,9 +37,33 @@ function ContactSectionSkeleton() {
   )
 }
 
+function GoogleReviewsSkeleton() {
+  return (
+    <section className="py-12 bg-white border-b">
+      <div className="container px-4 mx-auto">
+        <div className="text-center mb-12">
+          <div className="h-8 bg-gray-200 rounded w-48 mx-auto mb-4 animate-pulse"></div>
+          <div className="flex gap-1 justify-center mb-4">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="w-4 h-4 bg-gray-200 rounded animate-pulse"></div>
+            ))}
+          </div>
+          <div className="h-6 bg-gray-200 rounded w-40 mx-auto animate-pulse"></div>
+        </div>
+        <div className="hidden md:grid grid-cols-3 gap-6">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="h-64 bg-gray-200 rounded animate-pulse"></div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
 export default async function HomePage() {
   const infoBannerPromise = getInfoBanner()
   const brandsPromise = getBrands()
+  const googleReviewsPromise = getGoogleReviews()
 
   // Don't await here - let hero render immediately
   return (
@@ -46,6 +72,9 @@ export default async function HomePage() {
         <InfoBannerAsync promise={infoBannerPromise} />
       </Suspense>
       <HeroSection />
+      <Suspense fallback={<GoogleReviewsSkeleton />}>
+        <GoogleReviewsAsync promise={googleReviewsPromise} />
+      </Suspense>
       <Suspense fallback={<BrandsSectionSkeleton />}>
         <BrandsSectionAsync promise={brandsPromise} />
       </Suspense>
@@ -64,4 +93,9 @@ async function InfoBannerAsync({ promise }: { promise: Promise<any> }) {
 async function BrandsSectionAsync({ promise }: { promise: Promise<any> }) {
   const brands = await promise
   return <BrandsSection data={brands} />
+}
+
+async function GoogleReviewsAsync({ promise }: { promise: Promise<any> }) {
+  const googleReviews = await promise
+  return googleReviews ? <GoogleReviewsCarousel data={googleReviews} /> : null
 }
