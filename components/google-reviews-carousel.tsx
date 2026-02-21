@@ -13,18 +13,10 @@ interface GoogleReviewsCarouselProps {
 export function GoogleReviewsCarousel({ data }: GoogleReviewsCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0)
 
-  console.log("[v0] GoogleReviewsCarousel rendered with data:", {
-    hasData: !!data,
-    reviewsCount: data?.reviews?.length || 0,
-  })
+  const hasReviews = data && data.reviews.length > 0
 
-  if (!data || data.reviews.length === 0) {
-    console.log("[v0] GoogleReviewsCarousel returning null - no data")
-    return null
-  }
-
-  const displayedReviews = data.reviews.slice(currentIndex, currentIndex + 3)
-  const canGoNext = currentIndex + 3 < data.reviews.length
+  const displayedReviews = hasReviews ? data.reviews.slice(currentIndex, currentIndex + 3) : []
+  const canGoNext = currentIndex + 3 < (data?.reviews?.length || 0)
   const canGoPrev = currentIndex > 0
 
   const handlePrev = () => {
@@ -62,64 +54,76 @@ export function GoogleReviewsCarousel({ data }: GoogleReviewsCarouselProps) {
       <div className="container px-4 mx-auto">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold mb-4">Google відгуки</h2>
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <div className="flex gap-1">{renderStars(Math.round(data.rating))}</div>
-            <span className="font-semibold text-lg">{data.rating.toFixed(1)}</span>
-            <span className="text-gray-600">({data.totalReviews} відгуків)</span>
-          </div>
-        </div>
-
-        {/* Mobile Carousel View */}
-        <div className="md:hidden overflow-x-auto pb-4">
-          <div className="flex gap-4 px-4 min-w-min">
-            {data.reviews.map((review, index) => (
-              <ReviewCard
-                key={index}
-                review={review}
-                renderStars={renderStars}
-                formatDate={formatDate}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* Desktop Grid View with Navigation */}
-        <div className="hidden md:block">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            {displayedReviews.map((review, index) => (
-              <ReviewCard
-                key={currentIndex + index}
-                review={review}
-                renderStars={renderStars}
-                formatDate={formatDate}
-              />
-            ))}
-          </div>
-
-          {/* Navigation Buttons */}
-          {data.reviews.length > 3 && (
-            <div className="flex justify-center gap-4">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={handlePrev}
-                disabled={!canGoPrev}
-                className="rounded-full"
-              >
-                <ChevronLeft size={20} />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={handleNext}
-                disabled={!canGoNext}
-                className="rounded-full"
-              >
-                <ChevronRight size={20} />
-              </Button>
+          {hasReviews ? (
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <div className="flex gap-1">{renderStars(Math.round(data!.rating))}</div>
+              <span className="font-semibold text-lg">{data!.rating.toFixed(1)}</span>
+              <span className="text-gray-600">({data!.totalReviews} відгуків)</span>
             </div>
+          ) : (
+            <div className="text-gray-500 mb-4">Поки що відгуків немає</div>
           )}
         </div>
+
+        {hasReviews ? (
+          <>
+            {/* Mobile Carousel View */}
+            <div className="md:hidden overflow-x-auto pb-4">
+              <div className="flex gap-4 px-4 min-w-min">
+                {data!.reviews.map((review, index) => (
+                  <ReviewCard
+                    key={index}
+                    review={review}
+                    renderStars={renderStars}
+                    formatDate={formatDate}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Desktop Grid View with Navigation */}
+            <div className="hidden md:block">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                {displayedReviews.map((review, index) => (
+                  <ReviewCard
+                    key={currentIndex + index}
+                    review={review}
+                    renderStars={renderStars}
+                    formatDate={formatDate}
+                  />
+                ))}
+              </div>
+
+              {/* Navigation Buttons */}
+              {data!.reviews.length > 3 && (
+                <div className="flex justify-center gap-4">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={handlePrev}
+                    disabled={!canGoPrev}
+                    className="rounded-full"
+                  >
+                    <ChevronLeft size={20} />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={handleNext}
+                    disabled={!canGoNext}
+                    className="rounded-full"
+                  >
+                    <ChevronRight size={20} />
+                  </Button>
+                </div>
+              )}
+            </div>
+          </>
+        ) : (
+          <div className="text-center py-8">
+            <p className="text-gray-500">Завантаження відгуків...</p>
+          </div>
+        )}
 
         {/* Google Business Link */}
         <div className="text-center mt-8">
@@ -136,19 +140,21 @@ export function GoogleReviewsCarousel({ data }: GoogleReviewsCarouselProps) {
       </div>
 
       {/* Schema.org markup for aggregate rating */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "AggregateRating",
-            ratingValue: data.rating.toFixed(1),
-            reviewCount: data.totalReviews,
-            bestRating: "5",
-            worstRating: "1",
-          }),
-        }}
-      />
+      {hasReviews && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "AggregateRating",
+              ratingValue: data!.rating.toFixed(1),
+              reviewCount: data!.totalReviews,
+              bestRating: "5",
+              worstRating: "1",
+            }),
+          }}
+        />
+      )}
     </section>
   )
 }
