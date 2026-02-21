@@ -50,7 +50,7 @@ export const getGoogleReviews = cache(async (): Promise<GoogleReviewsData | null
       reviews: (data.reviews || []).slice(0, 6).map((review: any) => ({
         author_name: review.authorAttribution?.displayName || "Anonymous",
         rating: review.rating || 0,
-        text: typeof review.text === 'object' ? review.text?.text : (review.text || ""),
+        text: review.originalText?.text || (typeof review.text === 'object' ? review.text?.text : (review.text || "")),
         time: review.publishTime ? new Date(review.publishTime).getTime() / 1000 : 0,
         profile_photo_url: review.authorAttribution?.photoUri,
       })),
