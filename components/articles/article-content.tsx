@@ -176,25 +176,19 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
           dangerouslySetInnerHTML={{ __html: article.content }}
         />
 
-        {/* Primary Service CTA - Centered */}
+        {/* Primary Service Floating CTA - Minimalist */}
         {primaryService && (
-          <div className="mt-12 pt-8 border-t flex justify-center">
-            <a
-              href={`/services/${primaryService.slug}`}
-              className="inline-block max-w-lg p-8 bg-blue-50 border-2 border-blue-600 rounded-lg hover:bg-blue-100 transition"
-            >
-              <p className="text-xs font-bold text-blue-600 uppercase tracking-widest mb-2">
-                {t("relatedServices")}
-              </p>
-              <h3 className="text-2xl font-bold text-gray-900 mb-3">{primaryService.title}</h3>
-              {primaryService.description && (
-                <p className="text-gray-700 mb-4">{primaryService.description}</p>
-              )}
-              <button className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition font-semibold">
-                {t("orderNow")}
-              </button>
-            </a>
-          </div>
+          <a
+            href={`/services/${primaryService.slug}`}
+            className="fixed bottom-8 left-1/2 -translate-x-1/2 z-30 max-w-sm px-6 py-3 bg-blue-600 text-white rounded-full shadow-lg hover:shadow-xl hover:bg-blue-700 transition-all duration-200 flex items-center gap-3 md:gap-4 group"
+          >
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold truncate opacity-90">{primaryService.title}</p>
+            </div>
+            <button className="whitespace-nowrap bg-white text-blue-600 px-4 py-1 rounded-full hover:bg-blue-50 transition font-semibold text-sm flex-shrink-0 group-hover:shadow-md">
+              {t("orderNow")}
+            </button>
+          </a>
         )}
 
         {/* Related Services Grid */}
