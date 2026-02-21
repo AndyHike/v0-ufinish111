@@ -160,6 +160,30 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       console.warn("[SITEMAP] Error fetching services:", servicesError.message)
     }
 
+    // Add articles hub pages
+    addMultilingualEntries("/articles")
+
+    // Fetch and add dynamic article pages
+    const { data: articles, error: articlesError } = await supabase
+      .from("articles")
+      .select("slug, updated_at")
+      .eq("published", true)
+      .not("slug", "is", null)
+
+    console.log("[SITEMAP] Articles fetched:", { count: articles?.length, error: articlesError?.message })
+    if (!articlesError && articles) {
+      articles.forEach((article) => {
+        if (article.slug) {
+          addMultilingualEntries(
+            `/articles/${article.slug}`,
+            article.updated_at ? new Date(article.updated_at) : new Date()
+          )
+        }
+      })
+    } else if (articlesError) {
+      console.warn("[SITEMAP] Error fetching articles:", articlesError.message)
+    }
+
     console.log(`[SITEMAP] Generated sitemap with ${sitemapEntries.length} entries`)
   } catch (error) {
     console.error("Error generating sitemap:", error)

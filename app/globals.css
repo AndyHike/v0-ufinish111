@@ -129,6 +129,21 @@
     scrollbar-width: none; /* Firefox */
   }
 
+  /* Scrollbar hide utility for carousel */
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+  }
+
   /* Performance utility classes */
   .gpu-accelerated {
     transform: translateZ(0);

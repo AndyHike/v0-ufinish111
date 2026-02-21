@@ -87,18 +87,50 @@ export function GoogleReviewsCarousel({ data }: GoogleReviewsCarouselProps) {
 
         {hasReviews ? (
           <>
-            {/* Mobile Carousel View */}
-            <div className="md:hidden overflow-x-auto pb-4">
-              <div className="flex gap-4 px-4 min-w-min">
-                {data.reviews.map((review, index) => (
-                  <ReviewCard
-                    key={index}
-                    review={review}
-                    renderStars={renderStars}
-                    formatDate={(ts) => formatDate(ts, currentLocale)}
-                    t={t}
-                  />
-                ))}
+            {/* Mobile Carousel View with Fixed Navigation */}
+            <div className="md:hidden">
+              <div className="relative">
+                <div className="grid grid-cols-1 gap-6 mb-8">
+                  {data.reviews.slice(currentIndex, currentIndex + 1).map((review, index) => (
+                    <ReviewCard
+                      key={currentIndex + index}
+                      review={review}
+                      renderStars={renderStars}
+                      formatDate={(ts) => formatDate(ts, currentLocale)}
+                      t={t}
+                      isMobile
+                    />
+                  ))}
+                </div>
+
+                {/* Mobile Navigation Buttons */}
+                {data.reviews.length > 1 && (
+                  <div className="flex justify-center gap-4 mb-6">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={handlePrev}
+                      disabled={!canGoPrev}
+                      className="rounded-full"
+                    >
+                      <ChevronLeft size={20} />
+                      <span className="sr-only">{t("previous")}</span>
+                    </Button>
+                    <span className="flex items-center text-sm text-gray-500 px-4">
+                      {currentIndex + 1} / {data.reviews.length}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={handleNext}
+                      disabled={!canGoNext}
+                      className="rounded-full"
+                    >
+                      <ChevronRight size={20} />
+                      <span className="sr-only">{t("next")}</span>
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -125,8 +157,10 @@ export function GoogleReviewsCarousel({ data }: GoogleReviewsCarouselProps) {
                     onClick={handlePrev}
                     disabled={!canGoPrev}
                     className="rounded-full"
+                    title={t("previous")}
                   >
                     <ChevronLeft size={20} />
+                    <span className="sr-only">{t("previous")}</span>
                   </Button>
                   <Button
                     variant="outline"
@@ -134,8 +168,10 @@ export function GoogleReviewsCarousel({ data }: GoogleReviewsCarouselProps) {
                     onClick={handleNext}
                     disabled={!canGoNext}
                     className="rounded-full"
+                    title={t("next")}
                   >
                     <ChevronRight size={20} />
+                    <span className="sr-only">{t("next")}</span>
                   </Button>
                 </div>
               )}
@@ -186,11 +222,16 @@ interface ReviewCardProps {
   renderStars: (rating: number) => React.ReactNode
   formatDate: (ts: number) => string
   t: any
+  isMobile?: boolean
 }
 
-function ReviewCard({ review, renderStars, formatDate, t }: ReviewCardProps) {
+function ReviewCard({ review, renderStars, formatDate, t, isMobile }: ReviewCardProps) {
   return (
-    <Card className="flex-none w-full md:flex-1 h-full hover:shadow-lg transition-shadow">
+    <Card
+      className={`flex-none hover:shadow-lg transition-shadow ${
+        isMobile ? "w-80 min-w-80 sm:w-96 sm:min-w-96" : "w-full md:flex-1"
+      } h-full`}
+    >
       <CardContent className="p-6 flex flex-col h-full">
         <div className="mb-4">
           <h3 className="font-semibold truncate text-sm">

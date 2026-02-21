@@ -33,10 +33,11 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({
-  params: { locale },
+  params,
 }: {
   params: { locale: string }
 }): Promise<Metadata> {
+  const { locale } = await params
   const baseUrl = "https://devicehelp.cz"
   const canonicalUrl = `${baseUrl}/${locale}`
 
@@ -50,7 +51,7 @@ export async function generateMetadata({
       description: "Fast and quality mobile phone repair in Prague. Warranty on all repairs.",
     },
     uk: {
-      title: "DeviceHelp - DeviceHelp - Profesійнý ремонт мобільних телефонів у Празі",
+      title: "DeviceHelp - DeviceHelp - Profesійnský ремонт мобільних телефонів у Празі",
       description: "Швидкий та якісний ремонт мобільних телефонів у Празі. Гарантія на всі ремонти.",
     },
   }
@@ -116,11 +117,12 @@ export async function generateMetadata({
 
 export default async function LocaleLayout({
   children,
-  params: { locale },
+  params,
 }: {
   children: React.ReactNode
   params: { locale: string }
 }) {
+  const { locale } = await params
   const messages = await getMessages(locale).catch((error) => {
     console.error(`Failed to load messages for locale ${locale}:`, error)
     return null

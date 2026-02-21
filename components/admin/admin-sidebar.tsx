@@ -17,6 +17,7 @@ import {
   Upload,
   ArrowLeftRight,
   Megaphone,
+  BookOpen,
 } from "lucide-react"
 
 const sidebarItems = [
@@ -44,6 +45,11 @@ const sidebarItems = [
     title: "Послуги",
     href: "/admin/services",
     icon: FileText,
+  },
+  {
+    title: "Статті",
+    href: "/admin/articles",
+    icon: BookOpen,
   },
   {
     title: "Імпорт/Експорт",
