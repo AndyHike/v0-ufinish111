@@ -22,16 +22,22 @@ export function formatContent(content: string): string {
 
     // Обробляємо заголовки
     if (para.startsWith("### ")) {
-      const text = formatInlineText(para.slice(4))
-      return `<h3 class="text-xl font-bold mt-6 mb-4">${text}</h3>`
+      const text = para.slice(4).trim()
+      const formattedText = formatInlineText(text)
+      const id = generateId(text)
+      return `<h3 id="${id}" class="text-xl font-bold mt-6 mb-4 scroll-mt-20">${formattedText}</h3>`
     }
     if (para.startsWith("## ")) {
-      const text = formatInlineText(para.slice(3))
-      return `<h2 class="text-2xl font-bold mt-8 mb-4">${text}</h2>`
+      const text = para.slice(3).trim()
+      const formattedText = formatInlineText(text)
+      const id = generateId(text)
+      return `<h2 id="${id}" class="text-2xl font-bold mt-8 mb-4 scroll-mt-20">${formattedText}</h2>`
     }
     if (para.startsWith("# ")) {
-      const text = formatInlineText(para.slice(2))
-      return `<h1 class="text-3xl font-bold mt-8 mb-4">${text}</h1>`
+      const text = para.slice(2).trim()
+      const formattedText = formatInlineText(text)
+      const id = generateId(text)
+      return `<h1 id="${id}" class="text-3xl font-bold mt-8 mb-4 scroll-mt-20">${formattedText}</h1>`
     }
 
     // Обробляємо списки
@@ -80,4 +86,65 @@ function escapeHtml(text: string): string {
   const div = document.createElement('div')
   div.textContent = text
   return div.innerHTML
+}
+
+/**
+ * Генерує ID з тексту заголовку для якорів
+ */
+export function generateId(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^\w-]/g, '')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+}
+
+/**
+ * Інтерфейс для елементів Table of Contents
+ */
+export interface TableOfContentsItem {
+  id: string
+  title: string
+  level: number
+}
+
+/**
+ * Генерує Table of Contents з контенту
+ */
+export function generateTableOfContents(content: string): TableOfContentsItem[] {
+  if (!content) return []
+
+  const items: TableOfContentsItem[] = []
+  const paragraphs = content.split(/\n\n+/).filter(p => p.trim())
+
+  paragraphs.forEach(para => {
+    para = para.trim()
+
+    // Шукаємо заголовки
+    if (para.startsWith('### ')) {
+      const title = para.slice(4).trim()
+      items.push({
+        id: generateId(title),
+        title,
+        level: 3,
+      })
+    } else if (para.startsWith('## ')) {
+      const title = para.slice(3).trim()
+      items.push({
+        id: generateId(title),
+        title,
+        level: 2,
+      })
+    } else if (para.startsWith('# ')) {
+      const title = para.slice(2).trim()
+      items.push({
+        id: generateId(title),
+        title,
+        level: 1,
+      })
+    }
+  })
+
+  return items
 }
