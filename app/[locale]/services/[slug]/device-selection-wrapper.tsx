@@ -1,3 +1,5 @@
+"use client"
+
 import { DeviceSelectionGuard } from "@/components/services/device-selection-guard"
 
 interface DeviceSelectionWrapperProps {
