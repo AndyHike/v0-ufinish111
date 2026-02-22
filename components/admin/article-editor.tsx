@@ -559,5 +559,4 @@ export function ArticleEditor({ articleId, locale }: ArticleEditorProps) {
       </Button>
     </div>
   </div>
-  )
 }
