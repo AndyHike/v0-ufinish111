@@ -97,6 +97,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: titlePatterns[locale as keyof typeof titlePatterns] || titlePatterns.en,
     description: descriptionPatterns[locale as keyof typeof descriptionPatterns] || descriptionPatterns.en,
+    openGraph: {
+      title: titlePatterns[locale as keyof typeof titlePatterns] || titlePatterns.en,
+      description: descriptionPatterns[locale as keyof typeof descriptionPatterns] || descriptionPatterns.en,
+      url: `https://devicehelp.cz/${locale}/series/${slug}`,
+    },
+    alternates: {
+      canonical: `https://devicehelp.cz/${locale}/series/${slug}`,
+    },
   }
 }
 

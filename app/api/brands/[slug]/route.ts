@@ -11,7 +11,6 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
       .from("brands")
       .select("*, series(id, name, slug, position)")
       .eq("slug", slug)
-      .order("position", { foreignTable: "series", ascending: true })
       .single()
 
     // Якщо не знайдено за слагом, спробуємо знайти за ID
@@ -20,18 +19,26 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
         .from("brands")
         .select("*, series(id, name, slug, position)")
         .eq("id", slug)
-        .order("position", { foreignTable: "series", ascending: true })
         .single()
 
       if (errorById) {
-        console.error("Error fetching brand by ID:", errorById)
+        console.error("[v0] Error fetching brand by ID:", errorById)
         return NextResponse.json({ error: "Brand not found" }, { status: 404 })
       }
 
       brand = dataById
     } else if (error) {
-      console.error("Error fetching brand:", error)
+      console.error("[v0] Error fetching brand:", error)
       return NextResponse.json({ error: "Failed to fetch brand" }, { status: 500 })
+    }
+
+    // Сортуємо серії на клієнтській стороні, оскільки Supabase не дозволяє сортувати по пов'язаним таблицям за замовчуванням
+    if (brand?.series) {
+      brand.series = (brand.series as any[]).sort((a, b) => {
+        const aPos = a.position || 999
+        const bPos = b.position || 999
+        return aPos - bPos
+      })
     }
 
     // Fetch models without series
@@ -49,7 +56,7 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
 
     return NextResponse.json(responseData)
   } catch (error) {
-    console.error("Unexpected error:", error)
+    console.error("[v0] Unexpected error in brands API:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
