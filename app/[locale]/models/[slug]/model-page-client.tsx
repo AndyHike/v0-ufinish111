@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useTranslations } from "next-intl"
-import { Clock, Shield, ArrowRight } from "lucide-react"
+import { Clock, Shield, ArrowRight, Zap } from "lucide-react"
 import { formatImageUrl } from "@/utils/image-url"
 import { useEffect, useRef, useState } from "react"
 import { ServicePriceDisplay } from "@/components/service-price-display"
@@ -327,6 +327,75 @@ export default function ModelPageClient({ modelData, locale }: Props) {
         </div>
 
         {currentModelData.services.length > 0 && <ContactCTABanner locale={locale} variant="compact" />}
+
+        {/* Why Choose Us & Repair Process Section - SEO Content */}
+        {currentModelData.services.length > 0 && (
+          <div className="mt-16 bg-white rounded-2xl p-8 shadow-sm border border-gray-100 mb-12">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">{t("whyChooseTitle") || `Proč zvolit náš servis pro ${currentModelData.brands?.name} ${currentModelData.name}?`}</h2>
+            <div className="grid md:grid-cols-3 gap-8">
+              <div>
+                <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center mb-4">
+                  <Shield className="h-6 w-6 text-blue-600" />
+                </div>
+                <h3 className="font-bold text-lg mb-2">6 {t("monthsWarranty") || "měsíců záruka"}</h3>
+                <p className="text-gray-600 text-sm">
+                  {t("warrantyDescription") || "Na všechny naše opravy poskytujeme standardní záruku 6 měsíců. Věříme v kvalitu našich náhradních dílů a profesionální práci našich techniků."}
+                </p>
+              </div>
+              <div>
+                <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center mb-4">
+                  <Clock className="h-6 w-6 text-blue-600" />
+                </div>
+                <h3 className="font-bold text-lg mb-2">{t("fastService") || "Rychlá realizace"}</h3>
+                <p className="text-gray-600 text-sm">
+                  {t("fastServiceDescription") || "Většinu oprav pro tento model provádíme na počkání nebo v řádu hodin. Snažíme se, abyste své zařízení měli co nejdříve zpět."}
+                </p>
+              </div>
+              <div>
+                <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center mb-4">
+                  <Zap className="h-6 w-6 text-blue-600" />
+                </div>
+                <h3 className="font-bold text-lg mb-2">{t("qualityParts") || "Kvalitní díly"}</h3>
+                <p className="text-gray-600 text-sm">
+                  {t("partsDescription") || "Používáme pouze ověřené náhradní díly, které splňují vysoké standardy. U nás máte jistotu, že vaše zařízení dostane špičkovou péči."}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-12 pt-8 border-t border-gray-100">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">{t("repairProcessTitle") || "Jak u nás oprava probíhá?"}</h2>
+              <div className="grid md:grid-cols-4 gap-6">
+                <div className="flex flex-col">
+                  <div className="h-8 w-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold mb-3">1</div>
+                  <h4 className="font-bold mb-1">{t("step1Title") || "Diagnostika"}</h4>
+                  <p className="text-gray-600 text-xs">{t("step1Desc") || "Odborně posoudíme stav zařízení a určíme přesnou příčinu závady."}</p>
+                </div>
+                <div className="flex flex-col">
+                  <div className="h-8 w-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold mb-3">2</div>
+                  <h4 className="font-bold mb-1">{t("step2Title") || "Cena"}</h4>
+                  <p className="text-gray-600 text-xs">{t("step2Desc") || "Sdělíme vám přesnou cenu opravy předem k vašemu schválení."}</p>
+                </div>
+                <div className="flex flex-col">
+                  <div className="h-8 w-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold mb-3">3</div>
+                  <h4 className="font-bold mb-1">{t("step3Title") || "Oprava"}</h4>
+                  <p className="text-gray-600 text-xs">{t("step3Desc") || "Naši technici provedou odbornou opravu s maximální pečlivostí."}</p>
+                </div>
+                <div className="flex flex-col">
+                  <div className="h-8 w-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold mb-3">4</div>
+                  <h4 className="font-bold mb-1">{t("step4Title") || "Test a předání"}</h4>
+                  <p className="text-gray-600 text-xs">{t("step4Desc") || "Zařízení otestujeme a předáme vám ho se záručním listem."}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-12 p-6 bg-slate-50 rounded-xl">
+              <h2 className="text-xl font-bold text-gray-900 mb-3">{t("locationTitle") || "Kde nás najdete?"}</h2>
+              <p className="text-gray-600 text-sm">
+                Náš servis se nachází na adrese <strong>Bělohorská 209/133, Praha 6 - Břevnov</strong>. Jsme snadno dostupní městskou hromadnou dopravou a v okolí je možné parkování. Pro více informací nás neváhejte kontaktovat na telefonu <strong>+420 775 848 259</strong>.
+              </p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

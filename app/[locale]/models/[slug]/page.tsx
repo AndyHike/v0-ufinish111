@@ -20,16 +20,16 @@ type Props = {
 export async function generateStaticParams() {
   // Use public client for build-time static generation
   const supabase = createClient()
-  
+
   try {
     const { data: models } = await supabase
       .from("models")
       .select("slug")
       .order("position", { ascending: true })
       .limit(100) // Pre-render top 100 models
-    
+
     const locales = ["cs", "uk", "en"]
-    
+
     return (
       models?.flatMap((model) =>
         locales.map((locale) => ({
@@ -83,45 +83,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       keywords: `${brandName} ${modelName} repair Prague 6, mobile service Břevnov, screen replacement ${modelName}, phone repair Bělohorská`,
     },
     uk: {
-      title: `Ремонт ${brandName} ${modelName} Прага 6 Бржевнов | Сервіс мобільних | Гарантія 6 місяців`,
+      title: `Ремонт ${brandName} ${modelName} | Прага 6 | Гарантія 6 місяців`,
       description: `Професійний ремонт ${brandName} ${modelName} в Празі 6 Бржевнов. Заміна екрану, батареї, камери. Гарантія 6 місяців, ремонт 2-3 години. Bělohorská 209/133. ☎ +420 775 848 259`,
       keywords: `ремонт ${brandName} ${modelName} Прага 6, сервіс мобільних Бржевнов, заміна екрану ${modelName}, ремонт телефону Белогорська`,
     },
   }
 
   const currentMetadata = metadata[locale as keyof typeof metadata] || metadata.en
-
-  const structuredData = {
-    "@context": "https://schema.org",
-    "@type": ["Service", "LocalBusiness"],
-    name: `${brandName} ${modelName} Repair`,
-    description: currentMetadata.description,
-    provider: {
-      "@type": "LocalBusiness",
-      name: "DeviceHelp",
-      address: {
-        "@type": "PostalAddress",
-        streetAddress: "Bělohorská 209/133",
-        addressLocality: "Praha 6-Břevnov",
-        addressRegion: "Praha",
-        postalCode: "169 00",
-        addressCountry: "CZ",
-      },
-      geo: {
-        "@type": "GeoCoordinates",
-        latitude: "50.0982",
-        longitude: "14.3917",
-      },
-      telephone: "+420775848259",
-      areaServed: ["Praha 6", "Břevnov", "Dejvice", "Vokovice", "Bělohorská", "Praha6"],
-    },
-    areaServed: "Praha 6",
-    offers: {
-      "@type": "Offer",
-      warranty: "6 months",
-      priceCurrency: "CZK",
-    },
-  }
 
   return {
     title: currentMetadata.title,
@@ -144,7 +112,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     },
     other: {
       "seznam-wmt": "kEPWnFjKJyWrp9OtNNXIlOe6oNf9vfv4",
-      structuredData: structuredData,
     },
   }
 }
@@ -307,7 +274,51 @@ export default async function ModelPage({ params }: Props) {
       services: filteredServices,
     }
 
-    return <ModelPageClient modelData={modelData} locale={locale} />
+    const structuredData = {
+      "@context": "https://schema.org",
+      "@type": ["Service", "LocalBusiness"],
+      name: `${model.brands?.name || "Device"} ${model.name} Repair`,
+      description: locale === "cs"
+        ? `Profesionální oprava ${model.brands?.name} ${model.name} v Praze 6. Výměna displeje, baterie, kamery. Záruka 6 měsíců.`
+        : locale === "uk"
+          ? `Професійний ремонт ${model.brands?.name} ${model.name} в Празі 6. Заміна екрану, батареї, камери. Гарантія 6 місяців.`
+          : `Professional ${model.brands?.name} ${model.name} repair in Prague 6. Screen replacement, battery, camera repair. 6 month warranty.`,
+      provider: {
+        "@type": "LocalBusiness",
+        name: "DeviceHelp",
+        address: {
+          "@type": "PostalAddress",
+          streetAddress: "Bělohorská 209/133",
+          addressLocality: "Praha 6-Břevnov",
+          addressRegion: "Praha",
+          postalCode: "169 00",
+          addressCountry: "CZ",
+        },
+        geo: {
+          "@type": "GeoCoordinates",
+          latitude: "50.0982",
+          longitude: "14.3917",
+        },
+        telephone: "+420775848259",
+        areaServed: ["Praha 6", "Břevnov", "Dejvice", "Vokovice", "Bělohorská", "Praha6"],
+      },
+      areaServed: "Praha 6",
+      offers: {
+        "@type": "Offer",
+        warranty: "6 months",
+        priceCurrency: "CZK",
+      },
+    }
+
+    return (
+      <>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+        />
+        <ModelPageClient modelData={modelData} locale={locale} />
+      </>
+    )
   } catch (error) {
     console.error("[MODEL PAGE] Error:", error)
     notFound()
