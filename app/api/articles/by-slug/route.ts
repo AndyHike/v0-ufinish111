@@ -158,7 +158,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error("Error fetching article by slug:", error)
     return NextResponse.json(
-      { error: "Failed to fetch article" },
+      { error: "Failed to fetch article", details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     )
   }

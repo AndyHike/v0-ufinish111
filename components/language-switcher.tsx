@@ -51,6 +51,7 @@ export function LanguageSwitcher({ className }: LanguageSwitcherProps) {
   ]
 
   const handleLanguageChange = async (newLocale: string) => {
+    console.log("[v0] Language change requested:", { currentLocale, newLocale, pathname })
     if (newLocale === currentLocale) {
       setIsOpen(false)
       return
@@ -74,25 +75,35 @@ export function LanguageSwitcher({ className }: LanguageSwitcherProps) {
     // Check if this is an article page and we need to fetch the localized slug
     if (segments.length >= 2 && segments[1] === "articles") {
       const currentSlug = segments[2]
+      console.log("[v0] Article page detected, fetching localized slug:", { currentSlug, newLocale })
       try {
         // Fetch the localized slug for this article in the new language
-        const response = await fetch(`/api/articles/by-slug?slug=${currentSlug}&locale=${newLocale}`)
+        const url = `/api/articles/by-slug?slug=${encodeURIComponent(currentSlug)}&locale=${newLocale}`
+        console.log("[v0] Fetching URL:", url)
+        const response = await fetch(url)
+        
         if (response.ok) {
           const article = await response.json()
+          console.log("[v0] Article fetched successfully:", { article_id: article.id })
           // The API returns article data with article_translations array
           // We need to get the slug for the new locale from article_translations
           const allTranslations = article.article_translations || []
           const targetTranslation = allTranslations.find((t: any) => t.locale === newLocale)
+          console.log("[v0] Target translation found:", { slug: targetTranslation?.slug, locale: newLocale })
           segments[2] = targetTranslation?.slug || article.slug || currentSlug
+        } else {
+          const errorData = await response.json().catch(() => ({}))
+          console.error("[v0] Failed to fetch article:", { status: response.status, error: errorData.error })
         }
       } catch (error) {
-        console.error("Failed to fetch localized article slug:", error)
+        console.error("[v0] Failed to fetch localized article slug:", error)
         // Fallback to current slug if API call fails
       }
     }
 
     // Reconstruct the path with the new locale
     const newPath = `/${segments.join("/")}`
+    console.log("[v0] New path:", newPath)
 
     document.cookie = `NEXT_LOCALE=${newLocale}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`
 
@@ -102,6 +113,7 @@ export function LanguageSwitcher({ className }: LanguageSwitcherProps) {
     const finalPath = queryString ? `${newPath}?${queryString}` : newPath
 
     // Use router.push for smoother navigation
+    console.log("[v0] Pushing to:", finalPath)
     router.push(finalPath)
     setIsOpen(false)
   }

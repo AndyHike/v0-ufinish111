@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const supabase = createClient()
 
   // Query using localized slug from article_translations
-  const { data: articleTranslation } = await supabase
+  let { data: articleTranslation } = await supabase
     .from("article_translations")
     .select(
       `
@@ -42,6 +42,58 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     .eq("slug", slug)
     .eq("locale", locale)
     .single()
+
+  // If not found with localized slug, try to find by any slug and get correct translation
+  if (!articleTranslation) {
+    const { data: anyTranslation } = await supabase
+      .from("article_translations")
+      .select(
+        `
+        title,
+        meta_description,
+        locale,
+        article_id,
+        articles(
+          id,
+          featured_image,
+          meta_description,
+          article_translations(
+            locale,
+            slug
+          )
+        )
+      `
+      )
+      .eq("slug", slug)
+      .single()
+
+    if (anyTranslation?.article_id) {
+      // Get the correct translation for this locale
+      const { data: correctTranslation } = await supabase
+        .from("article_translations")
+        .select(
+          `
+          title,
+          meta_description,
+          locale,
+          articles(
+            id,
+            featured_image,
+            meta_description,
+            article_translations(
+              locale,
+              slug
+            )
+          )
+        `
+        )
+        .eq("article_id", anyTranslation.article_id)
+        .eq("locale", locale)
+        .single()
+
+      articleTranslation = correctTranslation
+    }
+  }
 
   if (!articleTranslation?.articles) {
     return {
@@ -182,6 +234,46 @@ async function ArticleSchemaScript({ locale, slug }: { locale: string; slug: str
 
 export default async function ArticlePage({ params }: Props) {
   const { locale, slug } = await params
+  const supabase = createClient()
+
+  // Check if the current slug is the correct localized slug for this language
+  // If not, redirect to the correct localized slug
+  const { data: correctTranslation } = await supabase
+    .from("article_translations")
+    .select("slug, articles(id)")
+    .eq("slug", slug)
+    .eq("locale", locale)
+    .single()
+
+  // If the slug exists for this locale, use it. Otherwise, find the article by any slug
+  // and redirect to the correct localized slug for this locale
+  let articleId = correctTranslation?.articles?.id
+
+  if (!articleId) {
+    // Try to find the article by searching for this slug in any locale
+    const { data: anyTranslation } = await supabase
+      .from("article_translations")
+      .select("articles(id)")
+      .eq("slug", slug)
+      .single()
+
+    if (anyTranslation?.articles?.id) {
+      articleId = anyTranslation.articles.id
+
+      // Now find the correct slug for the target locale
+      const { data: targetTranslation } = await supabase
+        .from("article_translations")
+        .select("slug")
+        .eq("article_id", articleId)
+        .eq("locale", locale)
+        .single()
+
+      if (targetTranslation?.slug && targetTranslation.slug !== slug) {
+        const { redirect } = await import("next/navigation")
+        redirect(`/${locale}/articles/${targetTranslation.slug}`)
+      }
+    }
+  }
 
   return (
     <div className="min-h-screen py-12">

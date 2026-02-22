@@ -38,8 +38,11 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
   const fetchArticle = async () => {
     try {
       // Fetch article directly by localized slug and locale
-      const response = await fetch(`/api/articles/by-slug?slug=${slug}&locale=${locale}`)
-      if (!response.ok) throw new Error("Failed to fetch article")
+      const response = await fetch(`/api/articles/by-slug?slug=${encodeURIComponent(slug)}&locale=${locale}`)
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || `HTTP ${response.status}: Failed to fetch article`)
+      }
 
       const fullArticle = await response.json()
 
