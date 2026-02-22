@@ -1,7 +1,7 @@
 import { Suspense } from "react"
 import type { Metadata } from "next"
 import { ArticleContent } from "@/components/articles/article-content"
-import { ArticleContentSkeleton } from "@/components/articles/article-content-skeleton"
+import { ArticleServiceRecommendation } from "@/components/articles/article-service-recommendation"
 import { createClient } from "@/lib/supabase"
 import { notFound } from "next/navigation"
 import { getTranslations } from "next-intl/server"
@@ -274,6 +274,24 @@ export default async function ArticlePage({ params }: Props) {
     }
   }
 
+  // Get article ID for service recommendations
+  if (!articleId) {
+    try {
+      const { data: articleData } = await supabase
+        .from("article_translations")
+        .select("article_id")
+        .eq("slug", slug)
+        .eq("locale", locale)
+        .single()
+
+      if (articleData) {
+        articleId = articleData.article_id
+      }
+    } catch (error) {
+      console.error("[v0] Failed to get article ID:", error)
+    }
+  }
+
   return (
     <div className="min-h-screen py-12">
       <Suspense fallback={null}>
@@ -284,6 +302,13 @@ export default async function ArticlePage({ params }: Props) {
           <Suspense fallback={<ArticleContentSkeleton />}>
             <ArticleContent slug={slug} locale={locale} />
           </Suspense>
+
+          {/* Service Recommendations */}
+          {articleId && (
+            <Suspense fallback={null}>
+              <ArticleServiceRecommendation articleId={articleId} locale={locale} />
+            </Suspense>
+          )}
         </article>
       </div>
     </div>
