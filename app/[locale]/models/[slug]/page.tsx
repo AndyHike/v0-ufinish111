@@ -45,8 +45,8 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug, locale } = params
-  const supabase = createServerClient()
+  const { slug, locale } = await params
+  const supabase = await createServerClient()
 
   const { data: model } = await supabase
     .from("models")
@@ -146,9 +146,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function ModelPage({ params }: Props) {
-  const { slug, locale } = params
+  const { slug, locale } = await params
 
-  const supabase = createServerClient()
+  const supabase = await createServerClient()
 
   try {
     const { data: model, error: modelError } = await supabase

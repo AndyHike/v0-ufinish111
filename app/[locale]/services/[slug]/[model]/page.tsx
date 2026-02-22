@@ -13,8 +13,8 @@ type Props = {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug, locale, model: modelSlug } = params
-  const supabase = createServerClient()
+  const { slug, locale, model: modelSlug } = await params
+  const supabase = await createServerClient()
 
   const { data: service } = await supabase
     .from("services")

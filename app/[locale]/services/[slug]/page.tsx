@@ -16,9 +16,9 @@ type Props = {
 }
 
 export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
-  const { slug, locale } = params
-  const { model: modelSlug } = searchParams
-  const supabase = createServerClient()
+  const { slug, locale } = await params
+  const { model: modelSlug } = await searchParams
+  const supabase = await createServerClient()
 
   const { data: service } = await supabase
     .from("services")
@@ -177,8 +177,8 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
 }
 
 export default async function ServicePage({ params, searchParams }: Props) {
-  const { slug, locale } = params
-  const { model: modelSlug } = searchParams
+  const { slug, locale } = await params
+  const { model: modelSlug } = await searchParams
 
   // If a model is provided via query param (old format), redirect to new URL format
   if (modelSlug) {
