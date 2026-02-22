@@ -48,6 +48,10 @@ interface ServiceData {
       slug: string | null
       logo_url: string | null
     } | null
+    category?: { name: string } | null
+    categories?: Array<{ name: string }> | null
+    product_line?: string | null
+    type?: string | null
   } | null
   modelServicePrice: number | null
   minPrice: number | null
@@ -359,7 +363,7 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
               {(sourceModel || modelParam) && (
                 <p className="text-gray-600 text-sm">
                   {sourceModel
-                    ? t("forModel", { brand: sourceModel.brands?.name, model: sourceModel.name })
+                    ? t("forModel", { brand: sourceModel.brands?.name || "", model: sourceModel.name })
                     : t("forSpecificModel")}
                 </p>
               )}
@@ -414,21 +418,6 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
                   {whatIncludedList.map((item, index) => (
                     <div key={index} className="flex items-start gap-2">
                       <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-                      <span className="text-gray-700 text-sm">{item}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Переваги */}
-            {benefitsList.length > 0 && (
-              <div className="pt-2">
-                <h3 className="text-lg font-bold text-gray-900 mb-3">{t("benefits")}</h3>
-                <div className="space-y-2">
-                  {benefitsList.map((item, index) => (
-                    <div key={index} className="flex items-start gap-2">
-                      <CheckCircle className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
                       <span className="text-gray-700 text-sm">{item}</span>
                     </div>
                   ))}

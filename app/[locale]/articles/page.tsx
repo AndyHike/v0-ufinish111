@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const t = await getTranslations({ locale, namespace: "Articles" })
 
   return {
-    title: t("title"),
+    title: `${t("title")} | ${t("metaTitleSuffix") || "DeviceHelp Articles"}`,
     description: t("subtitle"),
     alternates: {
       canonical: `https://devicehelp.cz/${locale}/articles`,

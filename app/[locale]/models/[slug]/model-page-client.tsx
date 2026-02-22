@@ -11,7 +11,7 @@ import { PartTypeBadges } from "@/components/part-type-badges"
 import { Breadcrumb } from "@/components/breadcrumb"
 import useSWR from "swr"
 
-interface ModelData {
+export interface ModelData {
   id: string
   name: string
   slug: string | null
@@ -81,7 +81,7 @@ export default function ModelPageClient({ modelData, locale }: Props) {
   useEffect(() => {
     if (process.env.NODE_ENV === "development") {
       console.log("[v0] Model services loaded:", currentModelData?.services?.length)
-      currentModelData?.services?.forEach((service) => {
+      currentModelData?.services?.forEach((service: any) => {
         if (service.has_discount) {
           console.log(`[v0] Service "${service.name}" has discount:`, {
             originalPrice: service.price,
@@ -100,10 +100,10 @@ export default function ModelPageClient({ modelData, locale }: Props) {
     const sendFbqEvent = () => {
       if (typeof window === "undefined" || !window.fbq) return
 
-      const servicesWithPrice = currentModelData?.services?.filter((s) => s.price !== null && s.price !== undefined) || []
+      const servicesWithPrice = currentModelData?.services?.filter((s: any) => s.price !== null && s.price !== undefined) || []
       const avgPrice =
         servicesWithPrice.length > 0
-          ? servicesWithPrice.reduce((sum, s) => sum + (s.price || 0), 0) / servicesWithPrice.length
+          ? servicesWithPrice.reduce((sum: number, s: any) => sum + (s.price || 0), 0) / servicesWithPrice.length
           : 0
 
       const brandName = currentModelData?.brands?.name || "Unknown"
@@ -221,7 +221,7 @@ export default function ModelPageClient({ modelData, locale }: Props) {
 
           {currentModelData.services.length > 0 ? (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {currentModelData.services.map((service) => (
+              {currentModelData.services.map((service: any) => (
                 <Link
                   key={service.id}
                   href={`/${locale}/services/${service.slug}/${currentModelData.slug}`}
@@ -325,8 +325,6 @@ export default function ModelPageClient({ modelData, locale }: Props) {
             </div>
           )}
         </div>
-
-        {currentModelData.services.length > 0 && <ContactCTABanner locale={locale} variant="compact" />}
       </div>
     </div>
   )

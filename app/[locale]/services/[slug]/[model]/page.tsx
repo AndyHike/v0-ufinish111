@@ -3,6 +3,7 @@ import { notFound } from "next/navigation"
 import { createServerClient } from "@/utils/supabase/server"
 import ServicePageClient from "../service-page-client"
 import { getPriceWithDiscount } from "@/lib/discounts/get-applicable-discounts"
+import { RelatedArticlesList } from "@/components/articles/related-articles-list"
 
 type Props = {
   params: Promise<{
@@ -56,7 +57,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       .single()
 
     if (model) {
-      modelData = model
+      modelData = {
+        ...model,
+        brands: Array.isArray(model.brands) ? model.brands[0] : model.brands
+      }
     }
   }
 
@@ -80,7 +84,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         keywords: `${serviceName} ${fullModelName}, ${serviceName} ${brandName} Prague 6, ${modelName} repair Břevnov`,
       },
       uk: {
-        title: `${serviceName} ${fullModelName} Прага 6 | Гарантія 6 місяців | DeviceHelp`,
+        title: `${serviceName} ${fullModelName} | Прага 6`,
         description: `Професійний ${serviceName.toLowerCase()} ${fullModelName} в Празі 6 Бржевнов. Гарантія 6 місяців, ремонт 2-3 години. Bělohorská 209/133. ☎ +420 775 848 259`,
         keywords: `${serviceName} ${fullModelName}, ${serviceName} ${brandName} Прага 6, ремонт ${modelName} Бржевнов`,
       },
@@ -89,17 +93,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     // Universal service metadata (no specific model)
     metadata = {
       cs: {
-        title: `${serviceName} Praha 6 Břevnov | Záruka 6 měsíců | DeviceHelp`,
+        title: `${serviceName} | Praha 6 Břevnov | DeviceHelp`,
         description: `${serviceName} mobilních telefonů v Praze 6 na Břevnově. Záruka 6 měsíců, oprava 2-3 hodiny. iPhone, Samsung, Xiaomi. Bělohorská 209/133. ☎ +420 775 848 259`,
         keywords: `${serviceName} Praha 6, ${serviceName} Břevnov, ${serviceName} mobil, oprava telefonu Bělohorská, servis Praha6`,
       },
       en: {
-        title: `${serviceName} Prague 6 Břevnov | 6 Month Warranty | DeviceHelp`,
+        title: `${serviceName} | Prague 6 Břevnov | DeviceHelp`,
         description: `${serviceName} for mobile phones in Prague 6 Břevnov. 6 month warranty, 2-3 hours service. iPhone, Samsung, Xiaomi. Bělohorská 209/133. ☎ +420 775 848 259`,
         keywords: `${serviceName} Prague 6, ${serviceName} Břevnov, mobile ${serviceName}, phone repair Bělohorská`,
       },
       uk: {
-        title: `${serviceName} Прага 6 Бржевнов | Гарантія 6 місяців | DeviceHelp`,
+        title: `${serviceName} | Прага 6 Бржевнов | DeviceHelp`,
         description: `${serviceName} мобільних телефонів в Празі 6 Бржевнов. Гарантія 6 місяців, ремонт 2-3 години. iPhone, Samsung, Xiaomi. Bělohorská 209/133. ☎ +420 775 848 259`,
         keywords: `${serviceName} Прага 6, ${serviceName} Бржевнов, ${serviceName} мобільний, ремонт телефону Белогорська`,
       },
@@ -171,7 +175,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     },
     other: {
       "seznam-wmt": "kEPWnFjKJyWrp9OtNNXIlOe6oNf9vfv4",
-      "structured-data": JSON.stringify(structuredData),
     },
   }
 }
@@ -270,16 +273,18 @@ export default async function ServicePageWithModel({ params }: Props) {
 
       if (model) {
         // Витягуємо тільки потрібні поля для серіалізації
+        const brandObj = Array.isArray(model.brands) ? model.brands[0] : model.brands
+
         sourceModel = {
           id: model.id,
           name: model.name,
           slug: model.slug,
           image_url: model.image_url,
-          brands: model.brands ? {
-            id: model.brands.id,
-            name: model.brands.name,
-            slug: model.brands.slug,
-            logo_url: model.brands.logo_url,
+          brands: brandObj ? {
+            id: brandObj.id,
+            name: brandObj.name,
+            slug: brandObj.slug,
+            logo_url: brandObj.logo_url,
           } : null,
         }
 
@@ -381,7 +386,68 @@ export default async function ServicePageWithModel({ params }: Props) {
     }
 
 
-    return <ServicePageClient serviceData={serviceData} locale={locale} />
+    const pageDescription = locale === "cs"
+      ? `Profesionální ${translation.name.toLowerCase()} ${sourceModel?.brands?.name || ""} ${sourceModel?.name || ""} v Praze 6. Záruka 6 měsíců.`
+      : locale === "uk"
+        ? `Професійний ${translation.name.toLowerCase()} ${sourceModel?.brands?.name || ""} ${sourceModel?.name || ""} в Празі 6. Гарантія 6 місяців.`
+        : `Professional ${translation.name.toLowerCase()} ${sourceModel?.brands?.name || ""} ${sourceModel?.name || ""} in Prague 6. 6-month warranty.`
+
+    const structuredData = sourceModel
+      ? {
+        "@context": "https://schema.org",
+        "@type": "Service",
+        name: `${translation.name} ${sourceModel.brands?.name || ""} ${sourceModel.name || ""}`,
+        description: pageDescription,
+        provider: {
+          "@type": "LocalBusiness",
+          name: "DeviceHelp",
+          address: {
+            "@type": "PostalAddress",
+            streetAddress: "Bělohorská 209/133",
+            addressLocality: "Praha 6-Břevnov",
+            addressRegion: "Praha",
+            postalCode: "169 00",
+            addressCountry: "CZ",
+          },
+          telephone: "+420 775 848 259",
+        },
+        areaServed: ["Praha 6", "Břevnov", "Dejvice", "Vokovice"],
+        warranty: "6 months",
+      }
+      : {
+        "@context": "https://schema.org",
+        "@type": "Service",
+        name: translation.name,
+        description: pageDescription,
+        provider: {
+          "@type": "LocalBusiness",
+          name: "DeviceHelp",
+          address: {
+            "@type": "PostalAddress",
+            streetAddress: "Bělohorská 209/133",
+            addressLocality: "Praha 6-Břevnov",
+            addressRegion: "Praha",
+            postalCode: "169 00",
+            addressCountry: "CZ",
+          },
+          telephone: "+420 775 848 259",
+        },
+        areaServed: ["Praha 6", "Břevnov", "Dejvice", "Vokovice"],
+        warranty: "6 months",
+      }
+
+    return (
+      <>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+        />
+        <ServicePageClient serviceData={serviceData} locale={locale} />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <RelatedArticlesList locale={locale} />
+        </div>
+      </>
+    )
   } catch (error) {
     console.error("Error loading service page:", error)
     notFound()
