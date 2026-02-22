@@ -3,7 +3,7 @@ import { notFound } from "next/navigation"
 import { createServerClient } from "@/utils/supabase/server"
 import ServicePageClient from "./service-page-client"
 import { getPriceWithDiscount } from "@/lib/discounts/get-applicable-discounts"
-import { DeviceSelectionGuard } from "@/components/services/device-selection-guard"
+import { DeviceSelectionWrapper } from "./device-selection-wrapper"
 
 type Props = {
   params: {
@@ -182,7 +182,7 @@ export default async function ServicePage({ params, searchParams }: Props) {
 
   // If no model is provided, show the device selection guard
   if (!modelSlug) {
-    return <DeviceSelectionGuard serviceSlug={slug} locale={locale} />
+    return <DeviceSelectionWrapper serviceSlug={slug} locale={locale} />
   }
 
   const supabase = createServerClient()
