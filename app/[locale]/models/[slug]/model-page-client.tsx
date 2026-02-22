@@ -152,9 +152,6 @@ export default function ModelPageClient({ modelData, locale }: Props) {
     return null
   }
 
-  if (!mounted) {
-    return null
-  }
 
   const formatWarranty = (months: number | null, period: string | null) => {
     if (months === null || months === undefined || months === 0) return t("contactForWarranty")

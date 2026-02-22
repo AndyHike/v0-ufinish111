@@ -1,13 +1,10 @@
 import type React from "react"
 import type { Metadata } from "next"
 
-// Додаємо canonical URL для root path
+// Metadata for root is minimal - actual metadata is set per-locale in [locale]/layout.tsx
 export const metadata: Metadata = {
   generator: 'v0.app',
   metadataBase: new URL('https://devicehelp.cz'),
-  alternates: {
-    canonical: 'https://devicehelp.cz/cs',
-  },
 }
 
 // Цей Layout є лише обгорткою-пустушкою, щоб задовольнити Next.js.
