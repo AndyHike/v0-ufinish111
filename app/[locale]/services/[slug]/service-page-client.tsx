@@ -56,6 +56,7 @@ interface ServiceData {
   hasDiscount?: boolean
   discount?: any
   part_type?: string | null
+  modelSlug?: string | null // Параметр модель з URL
 }
 
 interface Props {
@@ -79,8 +80,11 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
     discountedPrice,
     hasDiscount,
     discount,
+    modelSlug, // Отримуємо модель slug з пропса
   } = serviceData
-  const modelParam = searchParams.get("model")
+  
+  // Використовуємо modelSlug з пропса, якщо він є, інакше беремо з search params для зворотної сумісності
+  const modelParam = modelSlug || searchParams.get("model")
 
   const backUrl = sourceModel ? `/${locale}/models/${sourceModel.slug}` : `/${locale}`
   const backText = sourceModel ? `${sourceModel.brands?.name} ${sourceModel.name}` : commonT("backToHome")
@@ -303,7 +307,7 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
             <div>
               {modelParam ? (
                 // Коли вибрана конкретна модель - показуємо ціну лише для цієї моделі або "за запитом"
-                modelParam && serviceData.modelServicePrice !== null && serviceData.modelServicePrice !== undefined ? (
+                serviceData.modelServicePrice !== null && serviceData.modelServicePrice !== undefined ? (
                   <ServicePriceDisplay
                     originalPrice={serviceData.modelServicePrice}
                     discountedPrice={discountedPrice || undefined}

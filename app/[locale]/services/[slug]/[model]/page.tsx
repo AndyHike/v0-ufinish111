@@ -294,15 +294,6 @@ export default async function ServicePageWithModel({ params }: Props) {
               discount = discountInfo.discount
             }
           }
-
-          console.log("Model-specific service data found:", {
-            price: modelServicePrice,
-            discounted_price: discountedPrice,
-            has_discount: hasDiscount,
-            warranty_months: modelWarrantyMonths,
-            duration_hours: modelDurationHours,
-            source: "model_services table",
-          })
         }
       } else {
         notFound()
@@ -354,6 +345,7 @@ export default async function ServicePageWithModel({ params }: Props) {
       discountedPrice,
       hasDiscount,
       discount,
+      modelSlug, // Передаємо модель slug
     }
 
     console.log("Final service data:", {
@@ -369,7 +361,7 @@ export default async function ServicePageWithModel({ params }: Props) {
 
     return <ServicePageClient serviceData={serviceData} locale={locale} />
   } catch (error) {
-    console.error("Error in ServicePageWithModel:", error)
+    console.error("Error loading service page:", error)
     notFound()
   }
 }
