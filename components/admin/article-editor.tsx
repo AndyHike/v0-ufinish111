@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/components/ui/use-toast'
-import { generateSlug, generateReadingTime, generateMetaDescription } from '@/lib/slug-utils'
+import { generateSlug, normalizeSlug, generateReadingTime, generateMetaDescription } from '@/lib/slug-utils'
 import { Save, Loader2, AlertCircle, CheckCircle2, X } from 'lucide-react'
 
 const LOCALES = [
@@ -471,8 +471,8 @@ export function ArticleEditor({ articleId, locale }: ArticleEditorProps) {
                 value={trans?.slug || ''}
                 onChange={e => {
                   const value = e.target.value
-                  // Automatically replace spaces with hyphens
-                  const normalized = value.replace(/\s+/g, '-').toLowerCase()
+                  // Normalize slug: transliterate Ukrainian, replace spaces with hyphens
+                  const normalized = normalizeSlug(value, loc.code)
                   setTranslations(prev =>
                     prev.map(t =>
                       t.locale === loc.code ? { ...t, slug: normalized } : t
@@ -482,7 +482,7 @@ export function ArticleEditor({ articleId, locale }: ArticleEditorProps) {
                 placeholder={`URL slug in ${loc.name}`}
                 className="mt-1"
               />
-              <p className="text-xs text-gray-500 mt-1">Spaces will be replaced with hyphens. Example: "jak-vichistis-konektor"</p>
+              <p className="text-xs text-gray-500 mt-1">Spaces will be replaced with hyphens. Ukrainian characters will be transliterated (e.g., "як-вичистити-кон" → "yak-vychystyty-kon")</p>
             </div>
 
             <div>

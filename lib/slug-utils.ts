@@ -21,22 +21,27 @@ export function generateSlug(text: string, locale: string = "en"): string {
   if (locale === "uk") {
     // Для української мови використовуємо транслітерацію
     slug = transliterate(text, { unknown: "-" })
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, "") // Видаляємо спеціальні символи крім пробілів і "-"
+      .replace(/[\s_-]+/g, "-") // Замінюємо пробіли, підкреслення на "-"
+      .replace(/^-+|-+$/g, "") // Видаляємо "-" на початку і кінці
+  } else if (locale === "cs") {
+    // Для чеської мови також транслітеруємо
+    slug = transliterate(text, { unknown: "-" })
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, "")
+      .replace(/[\s_-]+/g, "-")
+      .replace(/^-+|-+$/g, "")
   } else {
-    // Для інших мов просто нормалізуємо
-    slug = text.toLowerCase()
+    // Для англійської та інших мов
+    slug = text
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, "")
+      .replace(/[\s_-]+/g, "-")
+      .replace(/^-+|-+$/g, "")
   }
 
-  // Нормалізація:
-  // 1. Замінюємо всі спеціальні символи і пробіли на "-"
-  // 2. Видаляємо множественні "-"
-  // 3. Видаляємо "-" на початку і кінці
   return slug
-    .normalize("NFD") // Нормалізуємо діакритику
-    .replace(/[\u0300-\u036f]/g, "") // Видаляємо діакритичні значки
-    .toLowerCase()
-    .replace(/[^\w\s-]/g, "") // Видаляємо всі спеціальні символи крім пробілів і "-"
-    .replace(/[\s_-]+/g, "-") // Замінюємо пробіли, підкреслення на "-"
-    .replace(/^-+|-+$/g, "") // Видаляємо "-" на початку і кінці
 }
 
 /**
@@ -49,10 +54,22 @@ export function isValidSlug(slug: string): boolean {
 
 /**
  * Нормалізує вручну введений slug
- * Замінює пробіли на дефіси
+ * Замінює пробіли на дефіси та транслітерує циривицу
  */
-export function normalizeSlug(input: string): string {
-  return input
+export function normalizeSlug(input: string, locale: string = "uk"): string {
+  if (!input) return ""
+
+  let slug: string
+
+  // Спочатку транслітеруємо українські букви
+  if (locale === "uk" || /[а-яіїєґА-ЯІЇЄҐ]/.test(input)) {
+    slug = transliterate(input, { unknown: "-" })
+  } else {
+    slug = input
+  }
+
+  // Потім нормалізуємо
+  return slug
     .trim()
     .toLowerCase()
     .replace(/\s+/g, "-") // Замінюємо пробіли на дефіси
