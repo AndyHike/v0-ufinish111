@@ -27,7 +27,7 @@ COPY --from=deps /app/node_modules ./node_modules
 # Копіюємо весь код проекту
 COPY . .
 
-# Створюємо .env файл з аргументів білда (для білд-часу)
+# Приймаємо тільки публічні АРГументи (які безпечно включаються в образ)
 ARG NEXT_PUBLIC_SUPABASE_URL
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
 ARG NEXT_PUBLIC_MAINTENANCE_MODE
@@ -35,30 +35,22 @@ ARG NEXT_PUBLIC_DEFAULT_LOCALE
 ARG NEXT_PUBLIC_APP_URL
 ARG NEXT_PUBLIC_FACEBOOK_PIXEL_ID
 
+# Встановлюємо публічні змінні для білду
+ENV NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+ENV NEXT_PUBLIC_MAINTENANCE_MODE=${NEXT_PUBLIC_MAINTENANCE_MODE}
+ENV NEXT_PUBLIC_DEFAULT_LOCALE=${NEXT_PUBLIC_DEFAULT_LOCALE}
+ENV NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
+ENV NEXT_PUBLIC_FACEBOOK_PIXEL_ID=${NEXT_PUBLIC_FACEBOOK_PIXEL_ID}
+
 # Відключаємо телеметрію Next.js
-ENV NEXT_TELEMETRY_DISABLED 1
-# --- БЛОК SUPABASE ---
+ENV NEXT_TELEMETRY_DISABLED=1
 
-# 1. Ваші реальні дані (URL та ANON KEY)
-ENV NEXT_PUBLIC_SUPABASE_URL=https://xnwoqomipsesacphoczp.supabase.co
-ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhud29xb21pcHNlc2FjcGhvY3pwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUxODk3NzEsImV4cCI6MjA2MDc2NTc3MX0.cTWJV3GXDS_LCS_UPqSP1Uni76PzzjOaoSLljNCUGmM
+# Встановлюємо заглушку для приватних ключів що не потрібні при білді
+ENV SUPABASE_SERVICE_ROLE_KEY=placeholder_build_only
+ENV NEXTAUTH_SECRET=placeholder_build_only
 
-# 2. АЛЬТЕРНАТИВНІ НАЗВИ (Дублюємо ключ для сумісності)
-# Якщо код шукає просто SUPABASE_KEY або SUPABASE_URL
-ENV SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
-ENV SUPABASE_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
-ENV NEXT_PUBLIC_SUPABASE_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-# 3. ЗАГЛУШКА ДЛЯ СЕРВІСНОГО КЛЮЧА (Найважливіше!)
-# Часто збірка падає, бо шукає цей ключ. Ми даємо фейковий, щоб заспокоїти перевірку.
-# Реальний ключ підтягнеться з Portainer вже при запуску.
-ENV SUPABASE_SERVICE_ROLE_KEY=placeholder_key_for_build_process_only
-
-# ---------------------
-
-# Тільки після цього запускаємо збірку
-RUN npm run build
-# Збираємо проект
+# Запускаємо збірку
 RUN npm run build
 
 # Етап production
@@ -66,8 +58,8 @@ FROM base AS runner
 
 WORKDIR /app
 
-ENV NODE_ENV production
-ENV NEXT_TELEMETRY_DISABLED 1
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 
 # Створюємо користувача для безпеки
 RUN addgroup --system --gid 1001 nodejs
@@ -86,8 +78,8 @@ USER nextjs
 # Відкриваємо порт 3000
 EXPOSE 3000
 
-ENV PORT 3000
-ENV HOSTNAME "0.0.0.0"
+ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
 
 # Запускаємо додаток
 CMD ["node", "server.js"]
