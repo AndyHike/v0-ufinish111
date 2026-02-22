@@ -77,8 +77,8 @@ export default function ModelPageClient({ modelData, locale }: Props) {
     setMounted(true)
   }, [])
 
-  // Проверяємо дані перед рендерингом
-  if (!mounted || !currentModelData || !currentModelData.services) {
+  // Показуємо помилку тільки якщо загрузка завершена і немає даних
+  if (mounted && !isLoading && (!currentModelData || !currentModelData.services)) {
     return (
       <div className="container px-4 py-12 md:px-6 md:py-24">
         <div className="mx-auto max-w-6xl text-center">
@@ -86,6 +86,15 @@ export default function ModelPageClient({ modelData, locale }: Props) {
         </div>
       </div>
     )
+  }
+
+  // Якщо немає даних загалом
+  if (!currentModelData || !currentModelData.services) {
+    return null
+  }
+
+  if (!mounted) {
+    return null
   }
 
   useEffect(() => {

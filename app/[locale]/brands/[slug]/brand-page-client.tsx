@@ -37,6 +37,10 @@ export default function BrandPageClient({ initialData, locale, slug }: Props) {
 
   useEffect(() => {
     setMounted(true)
+    // Зберігаємо дані в контекст для наступних навігацій
+    if (data?.brand) {
+      setCachedBrand(slug, data)
+    }
   }, [data, slug, setCachedBrand])
 
   if (!mounted) {
@@ -58,8 +62,8 @@ export default function BrandPageClient({ initialData, locale, slug }: Props) {
   // Використовуємо initialData як default, якщо SWR дані ще не завантажені
   const brandData = data || initialData
 
-  if (!brandData?.brand) {
-    console.error("[v0] BrandPageClient - No brand data available. Data:", data, "InitialData:", initialData)
+  // Показуємо помилку тільки якщо загрузка завершена і немає даних
+  if (!isLoading && !brandData?.brand) {
     return (
       <div className="container px-4 py-12 md:px-6 md:py-24">
         <div className="mx-auto max-w-6xl text-center">
@@ -67,6 +71,11 @@ export default function BrandPageClient({ initialData, locale, slug }: Props) {
         </div>
       </div>
     )
+  }
+
+  // Якщо немає даних загалом
+  if (!brandData?.brand) {
+    return null
   }
 
   const { brand, modelsWithoutSeries } = brandData

@@ -9,7 +9,7 @@ import { Phone, MessageCircle, Clock, Shield, CheckCircle, ChevronDown, ArrowLef
 import { formatCurrency } from "@/lib/format-currency"
 import { formatImageUrl } from "@/utils/image-url"
 import { replaceFaqPlaceholders } from "@/lib/faq-placeholder-replacer"
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import { ServicePriceDisplay } from "@/components/service-price-display"
 import { ContactCTABanner } from "@/components/contact-cta-banner"
 import { PartTypeBadges } from "@/components/part-type-badges"
@@ -75,8 +75,8 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
     setMounted(true)
   }, [])
 
-  // Якщо немає монтування або немає даних, показуємо помилку
-  if (!mounted || !serviceData) {
+  // Показуємо помилку тільки якщо немає даних
+  if (mounted && !serviceData) {
     return (
       <div className="container px-4 py-12 md:px-6 md:py-24">
         <div className="mx-auto max-w-6xl text-center">
@@ -84,6 +84,15 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
         </div>
       </div>
     )
+  }
+
+  // Якщо немає даних загалом
+  if (!serviceData) {
+    return null
+  }
+
+  if (!mounted) {
+    return null
   }
 
   const {
