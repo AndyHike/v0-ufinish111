@@ -519,8 +519,9 @@ export function ArticleEditor({ articleId, locale }: ArticleEditorProps) {
                   className="mt-1 min-h-64 font-mono text-sm"
                 />
                 <p className="text-xs text-gray-500 mt-2">
-                  💡 Format guide: Use <code># Title</code> for h1, <code>## Subtitle</code> for h2, <code>### Section</code> for h3. 
+                  💡 Format guide (SEO-friendly): Use <code>## Section</code> for main headings (H2), <code>### Subsection</code> for subheadings (H3). 
                   Use <code>**text**</code> for bold. Separate paragraphs with blank lines. Start lines with <code>*</code> for bullet points.
+                  Note: Article title is H1, content should use H2/H3 only.
                 </p>
                 {trans?.content && (
                   <p className="text-xs text-gray-500 mt-1">

@@ -200,14 +200,15 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
         {/* Table of Contents */}
         {(() => {
           const toc = generateTableOfContents(article.content)
+            .filter(item => item.level === 2) // Показуємо тільки H2 заголовки (##)
           if (toc.length === 0) return null
           
           return (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
-              <h3 className="text-lg font-semibold mb-4 text-blue-900">Зміст статті</h3>
+              <h3 className="text-lg font-semibold mb-4 text-blue-900">{t("tableOfContents")}</h3>
               <ul className="space-y-2">
                 {toc.map((item) => (
-                  <li key={item.id} style={{ marginLeft: `${(item.level - 1) * 1.5}rem` }}>
+                  <li key={item.id}>
                     <a
                       href={`#${item.id}`}
                       className="text-blue-600 hover:text-blue-800 hover:underline transition-colors"
