@@ -119,6 +119,8 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
     const timer = setTimeout(calculateNavHeight, 100)
     window.addEventListener('resize', calculateNavHeight)
 
+    let lastScrollY = window.scrollY
+
     const handleScroll = () => {
       const currentScrollY = window.scrollY
       
@@ -129,7 +131,7 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
         setIsNavVisible(false)
       }
       
-      setLastScrollY(currentScrollY)
+      lastScrollY = currentScrollY
     }
 
     window.addEventListener('scroll', handleScroll, { passive: true })
@@ -139,7 +141,7 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
       window.removeEventListener('resize', calculateNavHeight)
       window.removeEventListener('scroll', handleScroll)
     }
-  }, [])
+  }, [isNavVisible])
 
   if (isLoading) {
     return <ArticleContentSkeleton />
