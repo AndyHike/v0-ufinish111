@@ -518,6 +518,10 @@ export function ArticleEditor({ articleId, locale }: ArticleEditorProps) {
                   placeholder={`Write article content in ${loc.name}...`}
                   className="mt-1 min-h-64 font-mono text-sm"
                 />
+                <p className="text-xs text-gray-500 mt-2">
+                  💡 Format guide: Use <code># Title</code> for h1, <code>## Subtitle</code> for h2, <code>### Section</code> for h3. 
+                  Separate paragraphs with blank lines. Start lines with <code>*</code> for bullet points.
+                </p>
                 {trans?.content && (
                   <p className="text-xs text-gray-500 mt-1">
                     Reading time: ~{generateReadingTime(trans.content)} min

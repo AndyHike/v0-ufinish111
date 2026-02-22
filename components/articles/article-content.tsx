@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl"
 import { Clock, Eye, Tag, Calendar, ShoppingCart } from "lucide-react"
 import { ArticleContentSkeleton } from "./article-content-skeleton"
 import { motion } from "framer-motion"
+import { formatContent } from "@/lib/content-formatter"
 
 type Article = {
   id: string
@@ -198,7 +199,7 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
 
         <div
           className="prose prose-sm md:prose-base lg:prose-lg max-w-none"
-          dangerouslySetInnerHTML={{ __html: article.content }}
+          dangerouslySetInnerHTML={{ __html: formatContent(article.content) }}
         />
 
         {/* Primary Service Floating CTA - Minimalist */}
