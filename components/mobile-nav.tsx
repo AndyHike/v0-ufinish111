@@ -13,6 +13,9 @@ export function MobileNav() {
   const t = useTranslations()
   const [isVisible, setIsVisible] = useState(true)
 
+  // Extract locale from pathname
+  const locale = pathname.split("/")[1] || "cs"
+
   useEffect(() => {
     let lastScrollY = 0
 
@@ -34,31 +37,32 @@ export function MobileNav() {
   }, [])
 
   const isActive = (path: string) => {
+    const fullPath = `/${locale}${path}`
     if (path === "/") {
-      return pathname === "/" || pathname === ""
+      return pathname === `/${locale}` || pathname === `/${locale}/`
     }
-    return pathname === path || pathname?.startsWith(path + "/")
+    return pathname === fullPath || pathname?.startsWith(fullPath + "/")
   }
 
   const navigation = [
     {
       name: t("Header.home"),
-      href: "/",
+      href: `/${locale}`,
       icon: <Home className="h-5 w-5" />,
     },
     {
       name: t("Header.chooseModel"),
-      href: "/brands",
+      href: `/${locale}/brands`,
       icon: <Smartphone className="h-5 w-5" />,
     },
     {
-      name: t("Articles.title"),
-      href: "/articles",
+      name: t("Header.articles"),
+      href: `/${locale}/articles`,
       icon: <Wrench className="h-5 w-5" />,
     },
     {
       name: t("Header.contact"),
-      href: "/contact",
+      href: `/${locale}/contact`,
       icon: <MessageSquare className="h-5 w-5" />,
     },
   ]

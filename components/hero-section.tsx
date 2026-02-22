@@ -3,7 +3,7 @@
 import { useTranslations } from "next-intl"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { CheckCircle, ArrowRight, Smartphone, Phone } from "lucide-react"
+import { CheckCircle, ArrowRight, Smartphone, Phone, BookOpen } from "lucide-react"
 import { useParams } from "next/navigation"
 import Image from "next/image"
 
@@ -44,6 +44,12 @@ export function HeroSection() {
                 {t("repairMyDevice")}
               </Button>
             </Link>
+            <Link href={`/${locale}/articles`} className="w-full">
+              <Button size="lg" variant="outline" className="w-full border-2 bg-white">
+                <ArrowRight className="mr-2 h-4 w-4" />
+                {t("articlesButton")}
+              </Button>
+            </Link>
             <Link href={`/${locale}/contact`} className="w-full">
               <Button size="lg" variant="outline" className="w-full border-2 bg-white">
                 <Phone className="mr-2 h-4 w-4" />
@@ -81,6 +87,12 @@ export function HeroSection() {
                 <Button size="lg" className="btn-primary w-full sm:w-auto">
                   <Smartphone className="mr-2 h-4 w-4" />
                   {t("repairMyDevice")}
+                </Button>
+              </Link>
+              <Link href={`/${locale}/articles`}>
+                <Button size="lg" variant="outline" className="w-full sm:w-auto bg-white">
+                  {t("articlesButton")}
+                  <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
               <Link href={`/${locale}/contact`}>
