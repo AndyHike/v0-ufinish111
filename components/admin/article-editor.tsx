@@ -388,13 +388,13 @@ export function ArticleEditor({ articleId, locale }: ArticleEditorProps) {
       <div className="border rounded-lg p-6 space-y-4">
         <h2 className="text-xl font-semibold">Related Services</h2>
         <div className="mt-2 space-y-2 max-h-48 overflow-y-auto border rounded-lg p-3">
-        {servicesLoading ? (
-          <p className="text-sm text-gray-500">Loading services...</p>
-        ) : availableServices.length === 0 ? (
-          <p className="text-sm text-gray-500">No services available</p>
-        ) : (
-          availableServices.map(service => (
-            <label key={service.id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-100 p-2 rounded">
+          {servicesLoading ? (
+            <p className="text-sm text-gray-500">Loading services...</p>
+          ) : availableServices.length === 0 ? (
+            <p className="text-sm text-gray-500">No services available</p>
+          ) : (
+            availableServices.map(service => (
+              <label key={service.id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-100 p-2 rounded">
               <input
                 type="checkbox"
                 checked={mainData.serviceIds.includes(service.id)}
@@ -417,34 +417,34 @@ export function ArticleEditor({ articleId, locale }: ArticleEditorProps) {
             </label>
           ))
         )}
-      </div>
-      {mainData.serviceIds.length > 0 && (
-        <div className="mt-2 flex flex-wrap gap-2">
-          {mainData.serviceIds.map(serviceId => {
-            const service = availableServices.find(s => s.id === serviceId)
-            return service ? (
-              <span key={serviceId} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-2">
-                {service.title}
-                <button
-                  type="button"
-                  onClick={() => setMainData(prev => ({
-                    ...prev,
-                    serviceIds: prev.serviceIds.filter(id => id !== serviceId),
-                  }))}
-                  className="hover:text-blue-900"
-                >
-                  ×
-                </button>
-              </span>
-            ) : null
-          })}
         </div>
-      )}
-    </div>
+        {mainData.serviceIds.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-2">
+            {mainData.serviceIds.map(serviceId => {
+              const service = availableServices.find(s => s.id === serviceId)
+              return service ? (
+                <span key={serviceId} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-2">
+                  {service.title}
+                  <button
+                    type="button"
+                    onClick={() => setMainData(prev => ({
+                      ...prev,
+                      serviceIds: prev.serviceIds.filter(id => id !== serviceId),
+                    }))}
+                    className="hover:text-blue-900"
+                  >
+                    ×
+                  </button>
+                </span>
+              ) : null
+            })}
+          </div>
+        )}
+      </div>
 
     {/* Primary Service for CTA Button */}
     {mainData.serviceIds.length > 0 && (
-      <div>
+      <div className="border rounded-lg p-6 space-y-4">
         <Label htmlFor="primary-service">Primary Service (for sticky button)</Label>
         <select
           id="primary-service"
