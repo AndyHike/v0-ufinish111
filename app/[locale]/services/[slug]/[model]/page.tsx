@@ -271,7 +271,19 @@ export default async function ServicePageWithModel({ params }: Props) {
         .single()
 
       if (model) {
-        sourceModel = model
+        // Витягуємо тільки потрібні поля для серіалізації
+        sourceModel = {
+          id: model.id,
+          name: model.name,
+          slug: model.slug,
+          image_url: model.image_url,
+          brand: model.brands ? {
+            id: model.brands.id,
+            name: model.brands.name,
+            slug: model.brands.slug,
+            logo_url: model.brands.logo_url,
+          } : null,
+        }
 
         // Get model-specific service data
         const { data: modelService } = await supabase
