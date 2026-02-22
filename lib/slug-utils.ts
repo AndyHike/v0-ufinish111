@@ -53,8 +53,8 @@ export function isValidSlug(slug: string): boolean {
 }
 
 /**
- * Нормалізує вручну введений slug
- * Замінює пробіли на дефіси та транслітерує циривицу
+ * Нормалізує вручно введений slug
+ * Замінює пробіли на дефіси та транслітерує кирилицю
  */
 export function normalizeSlug(input: string, locale: string = "uk"): string {
   if (!input) return ""
@@ -67,6 +67,20 @@ export function normalizeSlug(input: string, locale: string = "uk"): string {
   } else {
     slug = input
   }
+
+  // Потім нормалізуємо
+  return slug
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "-") // Замінюємо пробіли на дефіси
+    .replace(/[^\w-]/g, (match) => {
+      // Видаляємо спеціальні символи, крім дефісів
+      // Якщо це спеціальний символ поруч з дефісом, замінюємо на дефіс
+      return match === "-" ? "-" : ""
+    })
+    .replace(/-+/g, "-") // Видаляємо множественні дефіси
+    .replace(/^-+|-+$/g, "") // Видаляємо дефіси на початку і кінці
+}
 
   // Потім нормалізуємо
   return slug

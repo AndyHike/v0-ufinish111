@@ -181,6 +181,7 @@ export async function getArticles(
         locale,
         title,
         content,
+        slug,
         meta_description
       )
     `,
@@ -241,6 +242,7 @@ export async function getArticlesByService(serviceId: string, locale: string = "
         locale,
         title,
         content,
+        slug,
         meta_description
       )
     `

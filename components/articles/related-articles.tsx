@@ -12,6 +12,11 @@ type Article = {
   featured_image?: string
   reading_time_minutes: number
   view_count: number
+  article_translations?: Array<{
+    locale: string
+    slug: string
+    title: string
+  }>
 }
 
 export function RelatedArticles({
@@ -54,21 +59,30 @@ export function RelatedArticles({
     <section className="mt-12 pt-8 border-t">
       <h3 className="text-2xl font-bold mb-6">Related Articles</h3>
       <div className="grid md:grid-cols-3 gap-6">
-        {articles.map((article) => (
-          <Card key={article.id} className="hover:shadow-lg transition-shadow">
-            <CardContent className="p-4">
-              <h4 className="font-semibold mb-2 line-clamp-2">{article.title}</h4>
-              <p className="text-xs text-gray-500 mb-4">
-                {article.reading_time_minutes} min read
-              </p>
-              <Link href={`/${locale}/articles/${article.slug}`}>
-                <Button variant="outline" size="sm" className="w-full">
-                  Read More
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-        ))}
+        {articles.map((article) => {
+          // Get localized slug for this article
+          const localizedTranslation = article.article_translations?.find(
+            (t) => t.locale === locale
+          )
+          const slugToUse = localizedTranslation?.slug || article.slug
+          
+          return (
+            <Card key={article.id} className="hover:shadow-lg transition-shadow">
+              <CardContent className="p-4">
+                <h4 className="font-semibold mb-2 line-clamp-2">{article.title}</h4>
+                <p className="text-xs text-gray-500 mb-4">
+                  {article.reading_time_minutes} min read
+                </p>
+                <Link href={`/${locale}/articles/${slugToUse}`}>
+                  <Button variant="outline" size="sm" className="w-full">
+                    Read More
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          )
+        })}
+      </div>
       </div>
     </section>
   )
