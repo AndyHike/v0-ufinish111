@@ -147,6 +147,7 @@ export function ArticleEditor({ articleId, locale }: ArticleEditorProps) {
       setIsLoading(false)
     }
   }
+  }
 
   const handleTranslationChange = (locale: string, field: 'title' | 'content', value: string) => {
     setTranslations(prev =>
