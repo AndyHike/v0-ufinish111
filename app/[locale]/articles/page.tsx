@@ -90,10 +90,11 @@ async function ArticlesList({ locale, search, sort, category }: { locale: string
 
   if (search) {
     // Check if search starts with # for tag search
-    const searchTerm = search.toLowerCase()
+    const searchTerm = search.toLowerCase().trim()
     if (searchTerm.startsWith("#")) {
-      // Tag search - remove # and search in tags array
-      const tagToSearch = searchTerm.substring(1)
+      // Tag search - remove # and search in tags array using contains
+      const tagToSearch = searchTerm.substring(1).toLowerCase()
+      // For PostgreSQL array, use contains with array syntax
       query = query.contains("tags", [tagToSearch])
     } else {
       // Regular title search

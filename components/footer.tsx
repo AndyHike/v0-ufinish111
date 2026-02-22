@@ -28,9 +28,9 @@ export function Footer() {
   }
 
   return (
-    <footer className="bg-gray-50 border-t border-gray-200">
+    <footer className="bg-gray-50 border-t border-gray-200 mt-12">
       <div className="container px-4 md:px-6 py-16 md:py-20">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               {settings.siteLogo && (
