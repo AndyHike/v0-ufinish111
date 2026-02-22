@@ -171,6 +171,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     },
     other: {
       "seznam-wmt": "kEPWnFjKJyWrp9OtNNXIlOe6oNf9vfv4",
+      "structured-data": JSON.stringify(structuredData),
     },
   }
 }
@@ -347,7 +348,7 @@ export default async function ServicePageWithModel({ params }: Props) {
         name: translation?.name || "",
         description: translation?.description || "",
         detailed_description: translation?.detailed_description || "",
-        what_included: translation?.what_included ? (typeof translation.what_included === "string" ? translation.what_included : "") : "",
+        what_included: translation?.what_included || "",
         benefits: translation?.benefits || null,
       },
       faqs: faqsWithTranslations.map((faq: any) => ({
@@ -370,12 +371,12 @@ export default async function ServicePageWithModel({ params }: Props) {
           logo_url: sourceModel.brands.logo_url || null,
         } : null,
       } : null,
-      modelServicePrice: modelServicePrice || null,
-      minPrice: minPrice || null,
-      maxPrice: maxPrice || null,
-      discountedPrice: discountedPrice || null,
+      modelServicePrice: modelServicePrice ? Number(modelServicePrice) : null,
+      minPrice: minPrice ? Number(minPrice) : null,
+      maxPrice: maxPrice ? Number(maxPrice) : null,
+      discountedPrice: discountedPrice ? Number(discountedPrice) : null,
       hasDiscount: hasDiscount || false,
-      discount: discount || null,
+      discount: discount ? JSON.parse(JSON.stringify(discount)) : null,
       modelSlug: modelSlug || null,
     }
 
