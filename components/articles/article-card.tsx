@@ -34,6 +34,19 @@ export function ArticleCard({
 }: ArticleCardProps) {
   const t = useTranslations("Articles")
   
+  // Translate category
+  const categoryNames: Record<string, string> = {
+    "General": t("categoryNames.General") || "General",
+    "Tutorial": t("categoryNames.Tutorial") || "Tutorial",
+    "Guide": t("categoryNames.Guide") || "Guide",
+    "Troubleshooting": t("categoryNames.Troubleshooting") || "Troubleshooting",
+    "How-to": t("categoryNames.How-to") || "How-to",
+    "Review": t("categoryNames.Review") || "Review",
+    "Tips & Tricks": t("categoryNames.Tips & Tricks") || "Tips & Tricks",
+  }
+  
+  const translatedCategory = category && categoryNames[category] ? categoryNames[category] : category
+  
   // Extract first 150 characters for preview
   const preview = content
     .replace(/<[^>]*>/g, "") // Remove HTML tags
@@ -71,10 +84,10 @@ export function ArticleCard({
 
             <p className="text-sm text-gray-600 line-clamp-2">{preview}</p>
 
-            {category && (
+            {translatedCategory && (
               <div className="pt-2">
                 <Badge variant="secondary" className="bg-amber-100 text-amber-800 hover:bg-amber-100">
-                  {category}
+                  {translatedCategory}
                 </Badge>
               </div>
             )}
@@ -83,7 +96,7 @@ export function ArticleCard({
               <div className="flex flex-wrap gap-2 pt-2">
                 {tags.slice(0, 2).map((tag) => (
                   <span key={tag} className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
-                    {tag}
+                    #{tag}
                   </span>
                 ))}
                 {tags.length > 2 && (

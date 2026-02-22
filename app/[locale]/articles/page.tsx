@@ -89,7 +89,16 @@ async function ArticlesList({ locale, search, sort, category }: { locale: string
   }
 
   if (search) {
-    query = query.ilike("title", `%${search}%`)
+    // Check if search starts with # for tag search
+    const searchTerm = search.toLowerCase()
+    if (searchTerm.startsWith("#")) {
+      // Tag search - remove # and search in tags array
+      const tagToSearch = searchTerm.substring(1)
+      query = query.contains("tags", [tagToSearch])
+    } else {
+      // Regular title search
+      query = query.ilike("title", `%${search}%`)
+    }
   }
 
   const { data: articles, error } = await query.limit(100)
