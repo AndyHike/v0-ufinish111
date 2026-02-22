@@ -3,6 +3,7 @@ import { notFound } from "next/navigation"
 import { createServerClient } from "@/utils/supabase/server"
 import ServicePageClient from "../service-page-client"
 import { getPriceWithDiscount } from "@/lib/discounts/get-applicable-discounts"
+import { RelatedArticlesList } from "@/components/articles/related-articles-list"
 
 type Props = {
   params: Promise<{
@@ -56,7 +57,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       .single()
 
     if (model) {
-      modelData = model
+      modelData = {
+        ...model,
+        brands: Array.isArray(model.brands) ? model.brands[0] : model.brands
+      }
     }
   }
 
@@ -269,16 +273,18 @@ export default async function ServicePageWithModel({ params }: Props) {
 
       if (model) {
         // Витягуємо тільки потрібні поля для серіалізації
+        const brandObj = Array.isArray(model.brands) ? model.brands[0] : model.brands
+
         sourceModel = {
           id: model.id,
           name: model.name,
           slug: model.slug,
           image_url: model.image_url,
-          brands: model.brands ? {
-            id: model.brands.id,
-            name: model.brands.name,
-            slug: model.brands.slug,
-            logo_url: model.brands.logo_url,
+          brands: brandObj ? {
+            id: brandObj.id,
+            name: brandObj.name,
+            slug: brandObj.slug,
+            logo_url: brandObj.logo_url,
           } : null,
         }
 
@@ -437,6 +443,9 @@ export default async function ServicePageWithModel({ params }: Props) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
         />
         <ServicePageClient serviceData={serviceData} locale={locale} />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <RelatedArticlesList locale={locale} />
+        </div>
       </>
     )
   } catch (error) {

@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useTranslations } from "next-intl"
-import { Clock, Shield, ArrowRight, Zap } from "lucide-react"
+import { Clock, Shield, ArrowRight } from "lucide-react"
 import { formatImageUrl } from "@/utils/image-url"
 import { useEffect, useRef, useState } from "react"
 import { ServicePriceDisplay } from "@/components/service-price-display"
@@ -11,7 +11,7 @@ import { PartTypeBadges } from "@/components/part-type-badges"
 import { Breadcrumb } from "@/components/breadcrumb"
 import useSWR from "swr"
 
-interface ModelData {
+export interface ModelData {
   id: string
   name: string
   slug: string | null
@@ -325,77 +325,6 @@ export default function ModelPageClient({ modelData, locale }: Props) {
             </div>
           )}
         </div>
-
-        {currentModelData.services.length > 0 && <ContactCTABanner locale={locale} variant="compact" />}
-
-        {/* Why Choose Us & Repair Process Section - SEO Content */}
-        {currentModelData.services.length > 0 && (
-          <div className="mt-16 bg-white rounded-2xl p-8 shadow-sm border border-gray-100 mb-12">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">{t("whyChooseTitle", { brand: String(currentModelData?.brands?.name || "Device"), model: String(currentModelData?.name || "Phone") })}</h2>
-            <div className="grid md:grid-cols-3 gap-8">
-              <div>
-                <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center mb-4">
-                  <Shield className="h-6 w-6 text-blue-600" />
-                </div>
-                <h3 className="font-bold text-lg mb-2">{t("monthsWarranty", { count: "6" })}</h3>
-                <p className="text-gray-600 text-sm">
-                  {t("warrantyDescription")}
-                </p>
-              </div>
-              <div>
-                <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center mb-4">
-                  <Clock className="h-6 w-6 text-blue-600" />
-                </div>
-                <h3 className="font-bold text-lg mb-2">{t("fastService")}</h3>
-                <p className="text-gray-600 text-sm">
-                  {t("fastServiceDescription")}
-                </p>
-              </div>
-              <div>
-                <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center mb-4">
-                  <Zap className="h-6 w-6 text-blue-600" />
-                </div>
-                <h3 className="font-bold text-lg mb-2">{t("qualityParts")}</h3>
-                <p className="text-gray-600 text-sm">
-                  {t("partsDescription")}
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-12 pt-8 border-t border-gray-100">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">{t("repairProcessTitle")}</h2>
-              <div className="grid md:grid-cols-4 gap-6">
-                <div className="flex flex-col">
-                  <div className="h-8 w-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold mb-3">1</div>
-                  <h4 className="font-bold mb-1">{t("step1Title")}</h4>
-                  <p className="text-gray-600 text-xs">{t("step1Desc")}</p>
-                </div>
-                <div className="flex flex-col">
-                  <div className="h-8 w-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold mb-3">2</div>
-                  <h4 className="font-bold mb-1">{t("step2Title")}</h4>
-                  <p className="text-gray-600 text-xs">{t("step2Desc")}</p>
-                </div>
-                <div className="flex flex-col">
-                  <div className="h-8 w-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold mb-3">3</div>
-                  <h4 className="font-bold mb-1">{t("step3Title")}</h4>
-                  <p className="text-gray-600 text-xs">{t("step3Desc")}</p>
-                </div>
-                <div className="flex flex-col">
-                  <div className="h-8 w-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold mb-3">4</div>
-                  <h4 className="font-bold mb-1">{t("step4Title")}</h4>
-                  <p className="text-gray-600 text-xs">{t("step4Desc")}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-12 p-6 bg-slate-50 rounded-xl">
-              <h2 className="text-xl font-bold text-gray-900 mb-3">{t("locationTitle")}</h2>
-              <p className="text-gray-600 text-sm">
-                Náš servis se nachází na adrese <strong>Bělohorská 209/133, Praha 6 - Břevnov</strong>. Jsme snadno dostupní městskou hromadnou dopravou a v okolí je možné parkování. Pro více informací nás neváhejte kontaktovat na telefonu <strong>+420 775 848 259</strong>.
-              </p>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   )

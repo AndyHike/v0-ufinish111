@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { createServerClient } from "@/utils/supabase/server"
 import { createClient } from "@/utils/supabase/client"
-import ModelPageClient from "./model-page-client"
+import ModelPageClient, { ModelData } from "./model-page-client"
 import { getPriceWithDiscount } from "@/lib/discounts/get-applicable-discounts"
 
 // ISR Configuration
@@ -67,7 +67,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     }
   }
 
-  const brandName = model.brands?.name || "Device"
+  const brandObj = Array.isArray(model.brands) ? model.brands[0] : model.brands
+  const brandName = brandObj?.name || "Device"
   const modelName = model.name
 
   // Language-specific optimized metadata
@@ -116,6 +117,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
+import { RelatedArticlesList } from "@/components/articles/related-articles-list"
+
 export default async function ModelPage({ params }: Props) {
   const { slug, locale } = await params
 
@@ -148,6 +151,12 @@ export default async function ModelPage({ params }: Props) {
       notFound()
     }
 
+    const seriesObj = Array.isArray(model.series) ? model.series[0] : model.series
+
+    const brandObj = Array.isArray(model.brands) ? model.brands[0] : model.brands
+    const brandName = brandObj?.name || "Device"
+    const modelName = model.name
+
     console.log(`[MODEL PAGE] Found model: ${model.id} - ${model.name}`)
 
     // Отримуємо послуги для моделі з правильною логікою пріоритетів
@@ -178,16 +187,18 @@ export default async function ModelPage({ params }: Props) {
         )
       `)
       .eq("model_id", model.id)
-      .order("services(position)")
+      .order("services(position)", { ascending: true })
 
     console.log(`[MODEL PAGE] Found ${modelServices?.length || 0} model services`)
 
     const servicesWithTranslations = await Promise.all(
       (modelServices || []).map(async (ms) => {
-        const service = ms.services
+        const serviceRaw = ms.services
+        const service = Array.isArray(serviceRaw) ? serviceRaw[0] : serviceRaw
         if (!service) return null
 
-        const translation = service.services_translations?.find((t: any) => t.locale === locale)
+        const translations = service.services_translations as any[]
+        const translation = translations?.find((t: any) => t.locale === locale)
         if (!translation) return null
 
         // ВИПРАВЛЕНО: Використовуємо пріоритетну логіку - model_services має пріоритет над services
@@ -222,21 +233,6 @@ export default async function ModelPage({ params }: Props) {
           }
         }
 
-        console.log(`[MODEL PAGE] Service ${service.id} data:`, {
-          name: translation.name,
-          model_service_warranty: ms.warranty_months,
-          service_warranty: service.warranty_months,
-          final_warranty: warrantyMonths,
-          model_service_duration: ms.duration_hours,
-          service_duration: service.duration_hours,
-          final_duration: durationHours,
-          price: price,
-          discounted_price: discountedPrice,
-          has_discount: hasDiscount,
-          actual_discount_percentage: actualDiscountPercentage, // Log actual percentage
-          warranty_period: ms.warranty_period || "months",
-        })
-
         return {
           id: service.id,
           slug: service.slug,
@@ -264,25 +260,25 @@ export default async function ModelPage({ params }: Props) {
 
     console.log(`[MODEL PAGE] Final services count: ${filteredServices.length}`)
 
-    const modelData = {
+    const modelData: ModelData = {
       id: model.id,
       name: model.name,
       slug: model.slug,
       image_url: model.image_url,
-      brands: model.brands,
-      series: model.series,
-      services: filteredServices,
+      brands: brandObj,
+      series: seriesObj,
+      services: filteredServices as any,
     }
 
     const structuredData = {
       "@context": "https://schema.org",
       "@type": ["Service", "LocalBusiness"],
-      name: `${model.brands?.name || "Device"} ${model.name} Repair`,
+      name: `${brandName} ${modelName} Repair`,
       description: locale === "cs"
-        ? `Profesionální oprava ${model.brands?.name} ${model.name} v Praze 6. Výměna displeje, baterie, kamery. Záruka 6 měsíců.`
+        ? `Profesionální oprava ${brandName} ${modelName} v Praze 6. Výměna displeje, baterie, kamery. Záruka 6 měsíců.`
         : locale === "uk"
-          ? `Професійний ремонт ${model.brands?.name} ${model.name} в Празі 6. Заміна екрану, батареї, камери. Гарантія 6 місяців.`
-          : `Professional ${model.brands?.name} ${model.name} repair in Prague 6. Screen replacement, battery, camera repair. 6 month warranty.`,
+          ? `Професійний ремонт ${brandName} ${modelName} в Празі 6. Заміна екрану, батареї, камери. Гарантія 6 місяців.`
+          : `Professional ${brandName} ${modelName} repair in Prague 6. Screen replacement, battery, camera repair. 6 month warranty.`,
       provider: {
         "@type": "LocalBusiness",
         name: "DeviceHelp",
@@ -317,6 +313,9 @@ export default async function ModelPage({ params }: Props) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
         />
         <ModelPageClient modelData={modelData} locale={locale} />
+        <div className="container mx-auto px-4 py-8">
+          <RelatedArticlesList locale={locale} />
+        </div>
       </>
     )
   } catch (error) {

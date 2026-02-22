@@ -99,12 +99,14 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     // Трансформуємо дані послуг з правильною конвертацією типів та fallback на базові послуги
     const services = modelServices
       ?.map((ms) => {
-        const service = ms.services
+        const serviceRaw = ms.services
+        const service = Array.isArray(serviceRaw) ? serviceRaw[0] : serviceRaw
         if (!service) return null
 
         // Знаходимо переклад для поточної локалі
+        const translations = service.services_translations as any[]
         const translation =
-          service.services_translations?.find((t) => t.locale === locale) || service.services_translations?.[0]
+          translations?.find((t: any) => t.locale === locale) || translations?.[0]
 
         if (!translation) return null
 
@@ -113,16 +115,16 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
         // Правильна конвертація типів даних з fallback на базову послугу
         const price = ms.price ? Number.parseFloat(ms.price.toString()) : null
-        
+
         // Гарантія: спочатку з model_services, потім з базової services
         let warrantyMonths = ms.warranty_months ? Number.parseInt(ms.warranty_months.toString()) : null
         if (warrantyMonths === null && baseService?.warranty_months) {
           warrantyMonths = baseService.warranty_months
         }
-        
+
         // Період гарантії (days/months) - беремо тільки з model_services, немає у базової services
         let warrantyPeriod = ms.warranty_period || "months"
-        
+
         // Тривалість: спочатку з model_services, потім з базової services
         let durationHours = ms.duration_hours ? Number.parseFloat(ms.duration_hours.toString()) : null
         if (durationHours === null && baseService?.duration_hours) {
@@ -152,8 +154,14 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     console.log("Transformed services with model-specific data:", services?.length || 0)
 
+    // Normalize brands and series from arrays to single objects (Supabase returns arrays for relations)
+    const brandObj = Array.isArray(model.brands) ? model.brands[0] : model.brands
+    const seriesObj = Array.isArray(model.series) ? model.series[0] : model.series
+
     const result = {
       ...model,
+      brands: brandObj || null,
+      series: seriesObj || null,
       services: services || [],
     }
 
