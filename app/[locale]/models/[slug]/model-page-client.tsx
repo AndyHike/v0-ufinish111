@@ -81,7 +81,7 @@ export default function ModelPageClient({ modelData, locale }: Props) {
   useEffect(() => {
     if (process.env.NODE_ENV === "development") {
       console.log("[v0] Model services loaded:", currentModelData?.services?.length)
-      currentModelData?.services?.forEach((service) => {
+      currentModelData?.services?.forEach((service: any) => {
         if (service.has_discount) {
           console.log(`[v0] Service "${service.name}" has discount:`, {
             originalPrice: service.price,
@@ -100,10 +100,10 @@ export default function ModelPageClient({ modelData, locale }: Props) {
     const sendFbqEvent = () => {
       if (typeof window === "undefined" || !window.fbq) return
 
-      const servicesWithPrice = currentModelData?.services?.filter((s) => s.price !== null && s.price !== undefined) || []
+      const servicesWithPrice = currentModelData?.services?.filter((s: any) => s.price !== null && s.price !== undefined) || []
       const avgPrice =
         servicesWithPrice.length > 0
-          ? servicesWithPrice.reduce((sum, s) => sum + (s.price || 0), 0) / servicesWithPrice.length
+          ? servicesWithPrice.reduce((sum: number, s: any) => sum + (s.price || 0), 0) / servicesWithPrice.length
           : 0
 
       const brandName = currentModelData?.brands?.name || "Unknown"
@@ -221,7 +221,7 @@ export default function ModelPageClient({ modelData, locale }: Props) {
 
           {currentModelData.services.length > 0 ? (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {currentModelData.services.map((service) => (
+              {currentModelData.services.map((service: any) => (
                 <Link
                   key={service.id}
                   href={`/${locale}/services/${service.slug}/${currentModelData.slug}`}
@@ -331,65 +331,65 @@ export default function ModelPageClient({ modelData, locale }: Props) {
         {/* Why Choose Us & Repair Process Section - SEO Content */}
         {currentModelData.services.length > 0 && (
           <div className="mt-16 bg-white rounded-2xl p-8 shadow-sm border border-gray-100 mb-12">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">{t("whyChooseTitle") || `Proč zvolit náš servis pro ${currentModelData.brands?.name} ${currentModelData.name}?`}</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">{t("whyChooseTitle", { brand: String(currentModelData?.brands?.name || "Device"), model: String(currentModelData?.name || "Phone") })}</h2>
             <div className="grid md:grid-cols-3 gap-8">
               <div>
                 <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center mb-4">
                   <Shield className="h-6 w-6 text-blue-600" />
                 </div>
-                <h3 className="font-bold text-lg mb-2">6 {t("monthsWarranty") || "měsíců záruka"}</h3>
+                <h3 className="font-bold text-lg mb-2">{t("monthsWarranty", { count: "6" })}</h3>
                 <p className="text-gray-600 text-sm">
-                  {t("warrantyDescription") || "Na všechny naše opravy poskytujeme standardní záruku 6 měsíců. Věříme v kvalitu našich náhradních dílů a profesionální práci našich techniků."}
+                  {t("warrantyDescription")}
                 </p>
               </div>
               <div>
                 <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center mb-4">
                   <Clock className="h-6 w-6 text-blue-600" />
                 </div>
-                <h3 className="font-bold text-lg mb-2">{t("fastService") || "Rychlá realizace"}</h3>
+                <h3 className="font-bold text-lg mb-2">{t("fastService")}</h3>
                 <p className="text-gray-600 text-sm">
-                  {t("fastServiceDescription") || "Většinu oprav pro tento model provádíme na počkání nebo v řádu hodin. Snažíme se, abyste své zařízení měli co nejdříve zpět."}
+                  {t("fastServiceDescription")}
                 </p>
               </div>
               <div>
                 <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center mb-4">
                   <Zap className="h-6 w-6 text-blue-600" />
                 </div>
-                <h3 className="font-bold text-lg mb-2">{t("qualityParts") || "Kvalitní díly"}</h3>
+                <h3 className="font-bold text-lg mb-2">{t("qualityParts")}</h3>
                 <p className="text-gray-600 text-sm">
-                  {t("partsDescription") || "Používáme pouze ověřené náhradní díly, které splňují vysoké standardy. U nás máte jistotu, že vaše zařízení dostane špičkovou péči."}
+                  {t("partsDescription")}
                 </p>
               </div>
             </div>
 
             <div className="mt-12 pt-8 border-t border-gray-100">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">{t("repairProcessTitle") || "Jak u nás oprava probíhá?"}</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">{t("repairProcessTitle")}</h2>
               <div className="grid md:grid-cols-4 gap-6">
                 <div className="flex flex-col">
                   <div className="h-8 w-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold mb-3">1</div>
-                  <h4 className="font-bold mb-1">{t("step1Title") || "Diagnostika"}</h4>
-                  <p className="text-gray-600 text-xs">{t("step1Desc") || "Odborně posoudíme stav zařízení a určíme přesnou příčinu závady."}</p>
+                  <h4 className="font-bold mb-1">{t("step1Title")}</h4>
+                  <p className="text-gray-600 text-xs">{t("step1Desc")}</p>
                 </div>
                 <div className="flex flex-col">
                   <div className="h-8 w-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold mb-3">2</div>
-                  <h4 className="font-bold mb-1">{t("step2Title") || "Cena"}</h4>
-                  <p className="text-gray-600 text-xs">{t("step2Desc") || "Sdělíme vám přesnou cenu opravy předem k vašemu schválení."}</p>
+                  <h4 className="font-bold mb-1">{t("step2Title")}</h4>
+                  <p className="text-gray-600 text-xs">{t("step2Desc")}</p>
                 </div>
                 <div className="flex flex-col">
                   <div className="h-8 w-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold mb-3">3</div>
-                  <h4 className="font-bold mb-1">{t("step3Title") || "Oprava"}</h4>
-                  <p className="text-gray-600 text-xs">{t("step3Desc") || "Naši technici provedou odbornou opravu s maximální pečlivostí."}</p>
+                  <h4 className="font-bold mb-1">{t("step3Title")}</h4>
+                  <p className="text-gray-600 text-xs">{t("step3Desc")}</p>
                 </div>
                 <div className="flex flex-col">
                   <div className="h-8 w-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold mb-3">4</div>
-                  <h4 className="font-bold mb-1">{t("step4Title") || "Test a předání"}</h4>
-                  <p className="text-gray-600 text-xs">{t("step4Desc") || "Zařízení otestujeme a předáme vám ho se záručním listem."}</p>
+                  <h4 className="font-bold mb-1">{t("step4Title")}</h4>
+                  <p className="text-gray-600 text-xs">{t("step4Desc")}</p>
                 </div>
               </div>
             </div>
 
             <div className="mt-12 p-6 bg-slate-50 rounded-xl">
-              <h2 className="text-xl font-bold text-gray-900 mb-3">{t("locationTitle") || "Kde nás najdete?"}</h2>
+              <h2 className="text-xl font-bold text-gray-900 mb-3">{t("locationTitle")}</h2>
               <p className="text-gray-600 text-sm">
                 Náš servis se nachází na adrese <strong>Bělohorská 209/133, Praha 6 - Břevnov</strong>. Jsme snadno dostupní městskou hromadnou dopravou a v okolí je možné parkování. Pro více informací nás neváhejte kontaktovat na telefonu <strong>+420 775 848 259</strong>.
               </p>

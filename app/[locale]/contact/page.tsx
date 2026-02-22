@@ -26,32 +26,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     uk: "ремонт мобільних бржевнов, сервіс прага 6, ремонт iphone прага 6, ремонт samsung бржевнов, сервіс мобільних білогорська, сервіс телефонів прага 6, швидкий ремонт бржевнов",
   }
 
-  const structuredData = {
-    "@context": "https://schema.org",
-    "@type": "LocalBusiness",
-    name: "DeviceHelp - Oprava mobilních telefonů Praha 6",
-    description: descriptionPatterns[locale as keyof typeof descriptionPatterns],
-    address: {
-      "@type": "PostalAddress",
-      streetAddress: "Bělohorská 209/133",
-      addressLocality: "Praha 6-Břevnov",
-      addressRegion: "Praha",
-      postalCode: "169 00",
-      addressCountry: "CZ",
-    },
-    geo: {
-      "@type": "GeoCoordinates",
-      latitude: "50.0982",
-      longitude: "14.3917",
-    },
-    telephone: "+420775848259",
-    areaServed: ["Praha 6", "Praha6", "Břevnov", "Dejvice", "Vokovice", "Bělohorská", "Белогорська"],
-    priceRange: "1500-5000 CZK",
-    openingHours: "Mo-Su 09:00-19:00",
-    paymentAccepted: ["Cash", "Credit Card"],
-    currenciesAccepted: "CZK",
-  }
-
   return {
     title: titlePatterns[locale as keyof typeof titlePatterns] || titlePatterns.en,
     description: descriptionPatterns[locale as keyof typeof descriptionPatterns] || descriptionPatterns.en,
