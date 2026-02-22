@@ -206,7 +206,11 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
     warrantyCounted: getFormattedWarrantyForPlaceholder(serviceData.warranty_months, serviceData.warranty_period),
     warranty: getFormattedWarrantyForPlaceholder(serviceData.warranty_months, serviceData.warranty_period),
     warrantyMonths: serviceData.warranty_months || undefined,
-    price: modelServicePrice ? formatCurrency(modelServicePrice) : (minPrice ? formatCurrency(minPrice) : ""),
+    // Для ціни: якщо вибрана конкретна модель, використовуємо ціну цієї моделі або "за запитом"
+    // Якщо модель не вибрана, використовуємо мінімальну ціну з діапазону
+    price: modelParam
+      ? (modelServicePrice ? formatCurrency(modelServicePrice) : t("priceOnRequest"))
+      : (minPrice ? formatCurrency(minPrice) : t("priceOnRequest")),
     // Для тривалості: передаємо сформатовану з перекладом
     durationFormatted: getFormattedDurationForPlaceholder(serviceData.duration_hours),
     duration: getFormattedDurationForPlaceholder(serviceData.duration_hours),
