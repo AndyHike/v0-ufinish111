@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl"
 import { Clock, Eye, Tag, Calendar, ShoppingCart } from "lucide-react"
 import { ArticleContentSkeleton } from "./article-content-skeleton"
 import { motion } from "framer-motion"
-import { formatContent } from "@/lib/content-formatter"
+import { formatContent, generateTableOfContents } from "@/lib/content-formatter"
 
 type Article = {
   id: string
@@ -132,7 +132,7 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
       window.removeEventListener('resize', calculateNavHeight)
       window.removeEventListener('scroll', handleScroll)
     }
-  }, [lastScrollY])
+  }, [])
 
   if (isLoading) {
     return <ArticleContentSkeleton />
@@ -197,6 +197,30 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
           </div>
         </div>
 
+        {/* Table of Contents */}
+        {(() => {
+          const toc = generateTableOfContents(article.content)
+          if (toc.length === 0) return null
+          
+          return (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
+              <h3 className="text-lg font-semibold mb-4 text-blue-900">Зміст статті</h3>
+              <ul className="space-y-2">
+                {toc.map((item) => (
+                  <li key={item.id} style={{ marginLeft: `${(item.level - 1) * 1.5}rem` }}>
+                    <a
+                      href={`#${item.id}`}
+                      className="text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+                    >
+                      {item.title}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )
+        })()}
+
         <div
           className="prose prose-sm md:prose-base lg:prose-lg max-w-none"
           dangerouslySetInnerHTML={{ __html: formatContent(article.content) }}
@@ -237,32 +261,6 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
           </>
         )}
 
-        {/* Related Services Grid */}
-        {relatedServices.length > 0 && (
-          <div className="mt-12 pt-8 border-t">
-            <h3 className="text-2xl font-bold mb-6">{t("relatedServices")}</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {relatedServices.map((service) => (
-                <a
-                  key={service.id}
-                  href={`/services/${service.slug}`}
-                  className="block p-6 border rounded-lg hover:border-blue-500 hover:shadow-lg transition group"
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <h4 className="font-semibold text-lg group-hover:text-blue-600 transition">
-                      {service.title}
-                    </h4>
-                    <ShoppingCart className="w-5 h-5 text-gray-400 group-hover:text-blue-600 transition" />
-                  </div>
-                  <p className="text-sm text-gray-600 mb-4">{service.description}</p>
-                  <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition text-sm font-medium">
-                    {t("orderNow")}
-                  </button>
-                </a>
-              ))}
-            </div>
-          </div>
-        )}
       </article>
     </>
   )

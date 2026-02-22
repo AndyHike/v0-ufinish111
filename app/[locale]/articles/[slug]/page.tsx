@@ -274,24 +274,6 @@ export default async function ArticlePage({ params }: Props) {
     }
   }
 
-  // Get article ID for service recommendations
-  if (!articleId) {
-    try {
-      const { data: articleData } = await supabase
-        .from("article_translations")
-        .select("article_id")
-        .eq("slug", slug)
-        .eq("locale", locale)
-        .single()
-
-      if (articleData) {
-        articleId = articleData.article_id
-      }
-    } catch (error) {
-      console.error("[v0] Failed to get article ID:", error)
-    }
-  }
-
   return (
     <div className="min-h-screen py-12">
       <Suspense fallback={null}>
