@@ -56,17 +56,6 @@ export function generateMetaDescription(content: string): string {
   return text.substring(0, 155) + (text.length > 155 ? "..." : "")
 }
 
-// Generate slug from title
-export function generateSlug(title: string): string {
-  return title
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, "") // Remove special characters
-    .replace(/\s+/g, "-") // Replace spaces with hyphens
-    .replace(/-+/g, "-") // Replace multiple hyphens with single hyphen
-    .replace(/^-+|-+$/g, "") // Remove leading/trailing hyphens
-}
-
 // Fetch single article by localized slug and locale
 export async function getArticleBySlug(
   slug: string,
@@ -75,7 +64,7 @@ export async function getArticleBySlug(
   const supabase = createClient()
 
   // Query by localized slug from article_translations
-  const { data: translation, error: translationError } = await supabase
+  let { data: translation, error: translationError } = await supabase
     .from("article_translations")
     .select(
       `
@@ -117,7 +106,41 @@ export async function getArticleBySlug(
     .eq("articles.published", true)
     .single()
 
-  if (translationError || !translation?.articles) return null
+  // Fallback: якщо локалізований slug не знайдений, шукаємо за основним slug
+  if (translationError || !translation?.articles) {
+    const { data: article } = await supabase
+      .from("articles")
+      .select(
+        `
+        *,
+        article_translations(
+          id,
+          article_id,
+          locale,
+          title,
+          content,
+          meta_description,
+          slug,
+          created_at,
+          updated_at
+        )
+      `
+      )
+      .eq("slug", slug)
+      .eq("published", true)
+      .single()
+
+    if (!article) return null
+
+    const trans = (article.article_translations as ArticleTranslation[])?.find(
+      (t: ArticleTranslation) => t.locale === locale
+    )
+
+    return {
+      ...article,
+      translation: trans,
+    }
+  }
 
   const article = translation.articles
 
