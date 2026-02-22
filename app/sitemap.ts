@@ -171,19 +171,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .not("slug", "is", null)
 
     console.log("[SITEMAP] Article translations fetched:", { count: articleTranslations?.length, error: articlesError?.message })
-      // Group by locale to generate proper hreflang alternates
-      const articlesByLocale: Record<string, Array<{ slug: string; updated_at: string }>> = {}
-      
-      articleTranslations.forEach((trans: any) => {
-        if (!articlesByLocale[trans.locale]) {
-          articlesByLocale[trans.locale] = []
-        }
-        articlesByLocale[trans.locale].push({
-          slug: trans.slug,
-          updated_at: trans.updated_at,
-        })
-      })
-
+    if (!articlesError && articleTranslations) {
       // For each unique article, create sitemap entries with proper hreflang alternates
       const processedArticles = new Set<string>()
       
