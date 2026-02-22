@@ -4,7 +4,6 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { createClient } from "@/utils/supabase/client"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ChevronLeft, Search } from "lucide-react"
@@ -258,21 +257,22 @@ export function DeviceSelectionGuard({ serviceSlug, locale }: DeviceSelectionGua
   ].filter(Boolean).join(" > ")
 
   return (
-    <Dialog open={true} onOpenChange={() => {}}>
-      <DialogContent className="sm:max-w-[500px] max-h-[80vh] flex flex-col">
-        <DialogHeader>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <div className="w-full max-w-[500px] bg-white rounded-lg shadow-lg border border-gray-200">
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
-            <DialogTitle>
+            <h2 className="text-lg font-semibold text-gray-900">
               {step === 1 && t("selectBrand")}
               {step === 2 && t("selectSeries")}
               {step === 3 && t("selectDevice")}
-            </DialogTitle>
+            </h2>
             {step > 1 && (
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={handleBack}
-                className="h-8 w-8"
+                className="h-8 w-8 -mr-2"
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
@@ -281,18 +281,22 @@ export function DeviceSelectionGuard({ serviceSlug, locale }: DeviceSelectionGua
           {breadcrumb && (
             <p className="text-sm text-gray-600 mt-2">{breadcrumb}</p>
           )}
-        </DialogHeader>
+        </div>
 
+        {/* Error */}
         {error && (
-          <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
-            {error}
+          <div className="px-6 pt-4">
+            <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+              {error}
+            </div>
           </div>
         )}
 
-        <div className="flex-1 overflow-auto">
+        {/* Content */}
+        <div className="max-h-[60vh] overflow-auto">
           {/* Step 1: Brand Selection */}
           {step === 1 && (
-            <div className="p-4 space-y-3">
+            <div className="p-6 space-y-4">
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                 <Input
@@ -333,7 +337,7 @@ export function DeviceSelectionGuard({ serviceSlug, locale }: DeviceSelectionGua
 
           {/* Step 2: Series Selection */}
           {step === 2 && (
-            <div className="p-4 space-y-3">
+            <div className="p-6 space-y-4">
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                 <Input
@@ -367,7 +371,7 @@ export function DeviceSelectionGuard({ serviceSlug, locale }: DeviceSelectionGua
 
           {/* Step 3: Model Selection */}
           {step === 3 && (
-            <div className="p-4 space-y-3">
+            <div className="p-6 space-y-4">
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                 <Input
@@ -407,7 +411,7 @@ export function DeviceSelectionGuard({ serviceSlug, locale }: DeviceSelectionGua
             </div>
           )}
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   )
 }
