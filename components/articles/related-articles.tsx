@@ -83,7 +83,6 @@ export function RelatedArticles({
           )
         })}
       </div>
-      </div>
     </section>
   )
 }
