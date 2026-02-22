@@ -104,13 +104,19 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
   // Calculate mobile nav height and track scroll
   useEffect(() => {
     const calculateNavHeight = () => {
-      const mobileNav = document.querySelector('[class*="md:hidden"][class*="fixed"][class*="bottom"]')
+      // Шукаємо мобільну навігацію - це може бути компонент mobile-nav
+      const mobileNav = document.querySelector('[class*="md:hidden"][class*="fixed"]')
       if (mobileNav) {
-        setNavHeight(mobileNav.getBoundingClientRect().height)
+        const height = mobileNav.getBoundingClientRect().height
+        setNavHeight(height)
+      } else {
+        // Якщо навігація не знайдена, встановлюємо значення за замовчуванням
+        setNavHeight(0)
       }
     }
 
-    calculateNavHeight()
+    // Затримуємо розрахунок, щоб переконатися, що DOM готовий
+    const timer = setTimeout(calculateNavHeight, 100)
     window.addEventListener('resize', calculateNavHeight)
 
     const handleScroll = () => {
@@ -129,6 +135,7 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
     window.addEventListener('scroll', handleScroll, { passive: true })
     
     return () => {
+      clearTimeout(timer)
       window.removeEventListener('resize', calculateNavHeight)
       window.removeEventListener('scroll', handleScroll)
     }
@@ -203,18 +210,25 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
             .filter(item => item.level === 2) // Показуємо тільки H2 заголовки (##)
           if (toc.length === 0) return null
           
+          const handleTocClick = (id: string) => {
+            const element = document.getElementById(id)
+            if (element) {
+              element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            }
+          }
+          
           return (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
               <h3 className="text-lg font-semibold mb-4 text-blue-900">{t("tableOfContents")}</h3>
               <ul className="space-y-2">
                 {toc.map((item) => (
                   <li key={item.id}>
-                    <a
-                      href={`#${item.id}`}
-                      className="text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+                    <button
+                      onClick={() => handleTocClick(item.id)}
+                      className="text-blue-600 hover:text-blue-800 hover:underline transition-colors text-left"
                     >
                       {item.title}
-                    </a>
+                    </button>
                   </li>
                 ))}
               </ul>
@@ -246,9 +260,12 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
             {/* Mobile version with navigation tracking */}
             <motion.a
               href={`/services/${primaryService.slug}`}
-              className="md:hidden fixed left-1/2 -translate-x-1/2 z-30 max-w-sm px-6 py-3 bg-blue-600 text-white rounded-full shadow-lg hover:shadow-xl hover:bg-blue-700 transition-all duration-200 flex items-center gap-3 group"
+              className="md:hidden fixed left-1/2 -translate-x-1/2 z-30 max-w-sm px-6 py-3 bg-blue-600 text-white rounded-full shadow-lg hover:shadow-xl hover:bg-blue-700 transition-all duration-200 flex items-center gap-3 group w-11/12"
+              style={{
+                bottom: isNavVisible ? `${navHeight + 16}px` : '16px'
+              }}
               animate={{
-                bottom: isNavVisible ? `${navHeight + 2}px` : '32px'
+                bottom: isNavVisible ? `${navHeight + 16}px` : '16px'
               }}
               transition={{ duration: 0.3, ease: 'easeInOut' }}
             >
