@@ -77,6 +77,65 @@ export default function ModelPageClient({ modelData, locale }: Props) {
     setMounted(true)
   }, [])
 
+  // ВАЖЛИВО: Всі useEffect перед умовними поверненнями
+  useEffect(() => {
+    if (process.env.NODE_ENV === "development") {
+      console.log("[v0] Model services loaded:", currentModelData?.services?.length)
+      currentModelData?.services?.forEach((service) => {
+        if (service.has_discount) {
+          console.log(`[v0] Service "${service.name}" has discount:`, {
+            originalPrice: service.price,
+            discountedPrice: service.discounted_price,
+            discount: service.discount,
+            actualDiscountPercentage: service.actual_discount_percentage,
+          })
+        }
+      })
+    }
+  }, [currentModelData])
+
+  useEffect(() => {
+    if (viewContentSent.current) return
+
+    const sendFbqEvent = () => {
+      if (typeof window === "undefined" || !window.fbq) return
+
+      const servicesWithPrice = currentModelData?.services?.filter((s) => s.price !== null && s.price !== undefined) || []
+      const avgPrice =
+        servicesWithPrice.length > 0
+          ? servicesWithPrice.reduce((sum, s) => sum + (s.price || 0), 0) / servicesWithPrice.length
+          : 0
+
+      const brandName = currentModelData?.brands?.name || "Unknown"
+      const modelName = currentModelData?.name || "Unknown"
+      const contentName = `${brandName} ${modelName}`
+
+      window.fbq("track", "ViewContent", {
+        content_type: "product",
+        content_id: `model_${currentModelData?.id}`,
+        content_name: contentName,
+        content_category: "device_models",
+        value: Math.round(avgPrice) || 0,
+        currency: "CZK",
+      })
+
+      if (process.env.NODE_ENV === "development") {
+        console.log("📊 Model ViewContent:", {
+          brand: brandName,
+          model: modelName,
+          avg_price: Math.round(avgPrice) || 0,
+          services_count: currentModelData?.services?.length || 0,
+        })
+      }
+
+      viewContentSent.current = true
+    }
+
+    const timeoutId = setTimeout(sendFbqEvent, 100)
+    return () => clearTimeout(timeoutId)
+  }, [currentModelData])
+
+  // УМОВНЕ ПОВЕРНЕННЯ ПІСЛЯ ВСІХ HOOKS
   // Показуємо помилку тільки якщо загрузка завершена і немає даних
   if (mounted && !isLoading && (!currentModelData || !currentModelData.services)) {
     return (
@@ -96,63 +155,6 @@ export default function ModelPageClient({ modelData, locale }: Props) {
   if (!mounted) {
     return null
   }
-
-  useEffect(() => {
-    if (process.env.NODE_ENV === "development") {
-      console.log("[v0] Model services loaded:", currentModelData.services.length)
-      currentModelData.services.forEach((service) => {
-        if (service.has_discount) {
-          console.log(`[v0] Service "${service.name}" has discount:`, {
-            originalPrice: service.price,
-            discountedPrice: service.discounted_price,
-            discount: service.discount,
-            actualDiscountPercentage: service.actual_discount_percentage,
-          })
-        }
-      })
-    }
-  }, [currentModelData])
-
-  useEffect(() => {
-    if (viewContentSent.current) return
-
-    const sendFbqEvent = () => {
-      if (typeof window === "undefined" || !window.fbq) return
-
-      const servicesWithPrice = currentModelData.services.filter((s) => s.price !== null && s.price !== undefined)
-      const avgPrice =
-        servicesWithPrice.length > 0
-          ? servicesWithPrice.reduce((sum, s) => sum + (s.price || 0), 0) / servicesWithPrice.length
-          : 0
-
-      const brandName = currentModelData.brands?.name || "Unknown"
-      const modelName = currentModelData.name
-      const contentName = `${brandName} ${modelName}`
-
-      window.fbq("track", "ViewContent", {
-        content_type: "product",
-        content_id: `model_${currentModelData.id}`,
-        content_name: contentName,
-        content_category: "device_models",
-        value: Math.round(avgPrice) || 0,
-        currency: "CZK",
-      })
-
-      if (process.env.NODE_ENV === "development") {
-        console.log("📊 Model ViewContent:", {
-          brand: brandName,
-          model: modelName,
-          avg_price: Math.round(avgPrice) || 0,
-          services_count: currentModelData.services.length,
-        })
-      }
-
-      viewContentSent.current = true
-    }
-
-    const timeoutId = setTimeout(sendFbqEvent, 100)
-    return () => clearTimeout(timeoutId)
-  }, [modelData])
 
   const formatWarranty = (months: number | null, period: string | null) => {
     if (months === null || months === undefined || months === 0) return t("contactForWarranty")
