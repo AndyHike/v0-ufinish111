@@ -38,8 +38,12 @@ export function ArticleServiceRecommendation({
       if (!response.ok) throw new Error("Failed to fetch services")
 
       const links = await response.json()
-      // Extract services from links
-      const serviceList = links.map((link: any) => link.services)
+      
+      // Extract services from links - array of { id, service_id, position, services: {...} }
+      const serviceList = links
+        .filter((link: any) => link.services)
+        .map((link: any) => link.services)
+      
       setServices(serviceList)
     } catch (error) {
       console.error("Error fetching services:", error)

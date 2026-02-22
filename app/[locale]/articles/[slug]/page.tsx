@@ -274,6 +274,24 @@ export default async function ArticlePage({ params }: Props) {
     }
   }
 
+  // Get article ID for service recommendations
+  let articleId = ""
+  try {
+    const supabase = createClient()
+    const { data: articleData } = await supabase
+      .from("article_translations")
+      .select("article_id")
+      .eq("slug", slug)
+      .eq("locale", locale)
+      .single()
+
+    if (articleData) {
+      articleId = articleData.article_id
+    }
+  } catch (error) {
+    console.error("[v0] Failed to get article ID:", error)
+  }
+
   return (
     <div className="min-h-screen py-12">
       <Suspense fallback={null}>
@@ -286,9 +304,11 @@ export default async function ArticlePage({ params }: Props) {
           </Suspense>
 
           {/* Service Recommendations */}
-          <Suspense fallback={null}>
-            <ArticleServiceRecommendation articleId={slug} locale={locale} />
-          </Suspense>
+          {articleId && (
+            <Suspense fallback={null}>
+              <ArticleServiceRecommendation articleId={articleId} locale={locale} />
+            </Suspense>
+          )}
         </article>
       </div>
     </div>

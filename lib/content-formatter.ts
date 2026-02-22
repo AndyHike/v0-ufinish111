@@ -80,12 +80,17 @@ function formatInlineText(text: string): string {
 }
 
 /**
- * Екранує HTML спеціальні символи для безпеки
+ * Екранює HTML спеціальні символи для безпеки
  */
 function escapeHtml(text: string): string {
-  const div = document.createElement('div')
-  div.textContent = text
-  return div.innerHTML
+  const map: { [key: string]: string } = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;'
+  }
+  return text.replace(/[&<>"']/g, (char) => map[char])
 }
 
 /**
