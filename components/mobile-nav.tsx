@@ -12,9 +12,10 @@ export function MobileNav() {
   const pathname = usePathname()
   const t = useTranslations()
   const [isVisible, setIsVisible] = useState(true)
-  const [lastScrollY, setLastScrollY] = useState(0)
 
   useEffect(() => {
+    let lastScrollY = 0
+
     const handleScroll = () => {
       const currentScrollY = window.scrollY
 
@@ -25,12 +26,12 @@ export function MobileNav() {
         setIsVisible(false)
       }
 
-      setLastScrollY(currentScrollY)
+      lastScrollY = currentScrollY
     }
 
     window.addEventListener("scroll", handleScroll, { passive: true })
     return () => window.removeEventListener("scroll", handleScroll)
-  }, [lastScrollY])
+  }, [])
 
   const isActive = (path: string) => {
     if (path === "/") {
