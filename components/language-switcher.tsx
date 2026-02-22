@@ -50,7 +50,7 @@ export function LanguageSwitcher({ className }: LanguageSwitcherProps) {
     { code: "en", name: "English", shortCode: "EN" },
   ]
 
-  const handleLanguageChange = (newLocale: string) => {
+  const handleLanguageChange = async (newLocale: string) => {
     if (newLocale === currentLocale) {
       setIsOpen(false)
       return
@@ -70,6 +70,26 @@ export function LanguageSwitcher({ className }: LanguageSwitcherProps) {
 
     // Replace the locale segment (first segment)
     segments[0] = newLocale
+
+    // Check if this is an article page and we need to fetch the localized slug
+    if (segments.length >= 2 && segments[1] === "articles") {
+      const currentSlug = segments[2]
+      try {
+        // Fetch the localized slug for this article in the new language
+        const response = await fetch(`/api/articles/by-slug?slug=${currentSlug}&locale=${newLocale}`)
+        if (response.ok) {
+          const article = await response.json()
+          // The API returns article data with article_translations array
+          // We need to get the slug for the new locale from article_translations
+          const allTranslations = article.article_translations || []
+          const targetTranslation = allTranslations.find((t: any) => t.locale === newLocale)
+          segments[2] = targetTranslation?.slug || article.slug || currentSlug
+        }
+      } catch (error) {
+        console.error("Failed to fetch localized article slug:", error)
+        // Fallback to current slug if API call fails
+      }
+    }
 
     // Reconstruct the path with the new locale
     const newPath = `/${segments.join("/")}`
