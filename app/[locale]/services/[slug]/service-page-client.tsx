@@ -305,6 +305,7 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
                   discount={discount}
                   size="lg"
                   showBadge={true}
+                  priceOnRequest={false}
                 />
               ) : minPrice !== null && maxPrice !== null ? (
                 <div className="text-2xl lg:text-3xl font-bold text-gray-900 mb-1">
@@ -313,7 +314,11 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
                     : `${formatCurrency(minPrice)} - ${formatCurrency(maxPrice)}`}
                 </div>
               ) : (
-                <div className="text-2xl lg:text-3xl font-bold text-gray-900 mb-1">{t("priceOnRequest")}</div>
+                <ServicePriceDisplay
+                  originalPrice={null}
+                  size="lg"
+                  priceOnRequest={true}
+                />
               )}
               {(sourceModel || modelParam) && (
                 <p className="text-gray-600 text-sm">
