@@ -2,10 +2,9 @@
 
 import { useEffect, useState } from "react"
 import { useTranslations } from "next-intl"
-import { Clock, Eye, Tag, Calendar, ShoppingCart } from "lucide-react"
+import { Clock, Eye, Tag, Calendar } from "lucide-react"
 import { ArticleContentSkeleton } from "./article-content-skeleton"
-import { motion } from "framer-motion"
-import { formatContent } from "@/lib/content-formatter"
+import { formatContent, generateTableOfContents } from "@/lib/content-formatter"
 
 type Article = {
   id: string
@@ -15,25 +14,12 @@ type Article = {
   reading_time_minutes: number
   view_count: number
   content: string
-  article_service_links?: Array<{ service_id: string }>
-}
-
-type Service = {
-  id: string
-  slug: string
-  title: string
-  description: string
 }
 
 export function ArticleContent({ slug, locale }: { slug: string; locale: string }) {
   const [article, setArticle] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [relatedServices, setRelatedServices] = useState<Service[]>([])
-  const [primaryService, setPrimaryService] = useState<Service | null>(null)
-  const [isNavVisible, setIsNavVisible] = useState(true)
-  const [lastScrollY, setLastScrollY] = useState(0)
-  const [navHeight, setNavHeight] = useState(80)
   const t = useTranslations("Articles")
 
   const fetchArticle = async () => {
@@ -197,72 +183,32 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
           </div>
         </div>
 
+        {/* Table of Contents */}
+        {(() => {
+          const toc = generateTableOfContents(article.content)
+          return toc.length > 0 ? (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
+              <h3 className="text-lg font-semibold mb-4 text-blue-900">Зміст статті</h3>
+              <ul className="space-y-2">
+                {toc.map((item) => (
+                  <li key={item.id} style={{ marginLeft: `${(item.level - 2) * 1.5}rem` }}>
+                    <a
+                      href={`#${item.id}`}
+                      className="text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+                    >
+                      {item.title}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null
+        })()}
+
         <div
           className="prose prose-sm md:prose-base lg:prose-lg max-w-none"
           dangerouslySetInnerHTML={{ __html: formatContent(article.content) }}
         />
-
-        {/* Primary Service Floating CTA - Minimalist */}
-        {primaryService && (
-          <>
-            {/* Desktop version */}
-            <a
-              href={`/services/${primaryService.slug}`}
-              className="hidden md:fixed md:bottom-8 md:left-1/2 md:-translate-x-1/2 md:z-30 md:max-w-sm md:px-6 md:py-3 md:bg-blue-600 md:text-white md:rounded-full md:shadow-lg hover:md:shadow-xl hover:md:bg-blue-700 md:transition-all md:duration-200 md:flex md:items-center md:gap-4 md:group"
-            >
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold truncate opacity-90">{primaryService.title}</p>
-              </div>
-              <button className="whitespace-nowrap bg-white text-blue-600 px-4 py-1 rounded-full hover:bg-blue-50 transition font-semibold text-sm flex-shrink-0 group-hover:shadow-md">
-                {t("orderNow")}
-              </button>
-            </a>
-
-            {/* Mobile version with navigation tracking */}
-            <motion.a
-              href={`/services/${primaryService.slug}`}
-              className="md:hidden fixed left-1/2 -translate-x-1/2 z-30 max-w-sm px-6 py-3 bg-blue-600 text-white rounded-full shadow-lg hover:shadow-xl hover:bg-blue-700 transition-all duration-200 flex items-center gap-3 group"
-              animate={{
-                bottom: isNavVisible ? `${navHeight + 2}px` : '32px'
-              }}
-              transition={{ duration: 0.3, ease: 'easeInOut' }}
-            >
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold truncate opacity-90">{primaryService.title}</p>
-              </div>
-              <button className="whitespace-nowrap bg-white text-blue-600 px-4 py-1 rounded-full hover:bg-blue-50 transition font-semibold text-sm flex-shrink-0 group-hover:shadow-md">
-                {t("orderNow")}
-              </button>
-            </motion.a>
-          </>
-        )}
-
-        {/* Related Services Grid */}
-        {relatedServices.length > 0 && (
-          <div className="mt-12 pt-8 border-t">
-            <h3 className="text-2xl font-bold mb-6">{t("relatedServices")}</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {relatedServices.map((service) => (
-                <a
-                  key={service.id}
-                  href={`/services/${service.slug}`}
-                  className="block p-6 border rounded-lg hover:border-blue-500 hover:shadow-lg transition group"
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <h4 className="font-semibold text-lg group-hover:text-blue-600 transition">
-                      {service.title}
-                    </h4>
-                    <ShoppingCart className="w-5 h-5 text-gray-400 group-hover:text-blue-600 transition" />
-                  </div>
-                  <p className="text-sm text-gray-600 mb-4">{service.description}</p>
-                  <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition text-sm font-medium">
-                    {t("orderNow")}
-                  </button>
-                </a>
-              ))}
-            </div>
-          </div>
-        )}
       </article>
     </>
   )
