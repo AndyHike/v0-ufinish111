@@ -1,7 +1,6 @@
 import { Suspense } from "react"
 import type { Metadata } from "next"
 import { ArticleContent } from "@/components/articles/article-content"
-import { RelatedArticles } from "@/components/articles/related-articles"
 import { ArticleServiceRecommendation } from "@/components/articles/article-service-recommendation"
 import { createClient } from "@/lib/supabase"
 import { notFound } from "next/navigation"
@@ -289,11 +288,6 @@ export default async function ArticlePage({ params }: Props) {
           {/* Service Recommendations */}
           <Suspense fallback={null}>
             <ArticleServiceRecommendation articleId={slug} locale={locale} />
-          </Suspense>
-
-          {/* Related Articles */}
-          <Suspense fallback={null}>
-            <RelatedArticles currentSlug={slug} locale={locale} />
           </Suspense>
         </article>
       </div>

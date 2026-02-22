@@ -520,7 +520,7 @@ export function ArticleEditor({ articleId, locale }: ArticleEditorProps) {
                 />
                 <p className="text-xs text-gray-500 mt-2">
                   💡 Format guide: Use <code># Title</code> for h1, <code>## Subtitle</code> for h2, <code>### Section</code> for h3. 
-                  Separate paragraphs with blank lines. Start lines with <code>*</code> for bullet points.
+                  Use <code>**text**</code> for bold. Separate paragraphs with blank lines. Start lines with <code>*</code> for bullet points.
                 </p>
                 {trans?.content && (
                   <p className="text-xs text-gray-500 mt-1">
