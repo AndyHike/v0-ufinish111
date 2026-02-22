@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useTranslations } from "next-intl"
 import { Card, CardContent } from "@/components/ui/card"
 import { Star, ChevronLeft, ChevronRight } from "lucide-react"
@@ -14,19 +14,34 @@ interface GoogleReviewsCarouselProps {
 export function GoogleReviewsCarousel({ data }: GoogleReviewsCarouselProps) {
   const t = useTranslations("GoogleReviews")
   const [currentIndex, setCurrentIndex] = useState(0)
+  const [isMobile, setIsMobile] = useState(false)
+
+  // Detect mobile on mount and resize
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    checkMobile()
+    window.addEventListener("resize", checkMobile)
+    return () => window.removeEventListener("resize", checkMobile)
+  }, [])
 
   const hasReviews = data && data.reviews.length > 0
 
-  const displayedReviews = hasReviews ? data.reviews.slice(currentIndex, currentIndex + 3) : []
-  const canGoNext = currentIndex + 3 < (data?.reviews?.length || 0)
+  // Show 1 review on mobile, 3 on desktop
+  const itemsPerPage = isMobile ? 1 : 3
+  const displayedReviews = hasReviews ? data.reviews.slice(currentIndex, currentIndex + itemsPerPage) : []
+  const canGoNext = currentIndex + itemsPerPage < (data?.reviews?.length || 0)
   const canGoPrev = currentIndex > 0
+  const totalPages = Math.ceil((data?.reviews?.length || 0) / itemsPerPage)
+  const currentPage = Math.floor(currentIndex / itemsPerPage) + 1
 
   const handlePrev = () => {
-    if (canGoPrev) setCurrentIndex(currentIndex - 1)
+    if (canGoPrev) setCurrentIndex(Math.max(0, currentIndex - itemsPerPage))
   }
 
   const handleNext = () => {
-    if (canGoNext) setCurrentIndex(currentIndex + 1)
+    if (canGoNext) setCurrentIndex(currentIndex + itemsPerPage)
   }
 
   const renderStars = (rating: number) => {
@@ -91,7 +106,7 @@ export function GoogleReviewsCarousel({ data }: GoogleReviewsCarouselProps) {
             <div className="md:hidden">
               <div className="relative">
                 <div className="grid grid-cols-1 gap-6 mb-8">
-                  {data.reviews.slice(currentIndex, currentIndex + 1).map((review, index) => (
+                  {displayedReviews.map((review, index) => (
                     <ReviewCard
                       key={currentIndex + index}
                       review={review}
@@ -117,7 +132,7 @@ export function GoogleReviewsCarousel({ data }: GoogleReviewsCarouselProps) {
                       <span className="sr-only">{t("previous")}</span>
                     </Button>
                     <span className="flex items-center text-sm text-gray-500 px-4">
-                      {currentIndex + 1} / {data.reviews.length}
+                      {currentPage} / {totalPages}
                     </span>
                     <Button
                       variant="outline"
@@ -149,7 +164,7 @@ export function GoogleReviewsCarousel({ data }: GoogleReviewsCarouselProps) {
               </div>
 
               {/* Navigation Buttons */}
-              {data.reviews.length > 3 && (
+              {data.reviews.length > itemsPerPage && (
                 <div className="flex justify-center gap-4">
                   <Button
                     variant="outline"
