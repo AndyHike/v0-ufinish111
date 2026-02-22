@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/components/ui/use-toast'
-import { generateSlug, generateReadingTime, generateMetaDescription } from '@/lib/articles'
+import { generateSlug, generateReadingTime, generateMetaDescription } from '@/lib/slug-utils'
 import { Save, Loader2, AlertCircle, CheckCircle2, X } from 'lucide-react'
 
 const LOCALES = [
@@ -33,6 +33,7 @@ interface ArticleTranslation {
   locale: string
   title: string
   content: string
+  slug: string // Localized slug
 }
 
 interface ArticleEditorProps {
@@ -71,6 +72,7 @@ export function ArticleEditor({ articleId, locale }: ArticleEditorProps) {
       locale: loc.code,
       title: '',
       content: '',
+      slug: '',
     }))
   )
 
@@ -130,6 +132,7 @@ export function ArticleEditor({ articleId, locale }: ArticleEditorProps) {
             locale: loc.code,
             title: trans?.title || '',
             content: trans?.content || '',
+            slug: trans?.slug || '',
           }
         })
       )
@@ -187,7 +190,7 @@ export function ArticleEditor({ articleId, locale }: ArticleEditorProps) {
     try {
       // Use first locale's data to generate slug and reading time
       const mainTrans = translations[0]
-      const slug = generateSlug(mainTrans.title)
+      const slug = mainTrans.slug || generateSlug(mainTrans.title)
       const readingTime = generateReadingTime(mainTrans.content)
       const metaDescription = generateMetaDescription(mainTrans.content)
 
@@ -209,6 +212,7 @@ export function ArticleEditor({ articleId, locale }: ArticleEditorProps) {
           locale: t.locale,
           title: t.title,
           content: t.content,
+          slug: t.slug || generateSlug(t.title), // Include localized slug
           meta_description: generateMetaDescription(t.content),
         })),
       }
@@ -458,6 +462,29 @@ export function ArticleEditor({ articleId, locale }: ArticleEditorProps) {
         const trans = translations.find(t => t.locale === loc.code)
         return (
           <TabsContent key={loc.code} value={loc.code} className="space-y-4 mt-4">
+            <div>
+              <Label htmlFor={`slug-${loc.code}`}>
+                URL Slug ({loc.name}) *
+              </Label>
+              <Input
+                id={`slug-${loc.code}`}
+                value={trans?.slug || ''}
+                onChange={e => {
+                  const value = e.target.value
+                  // Automatically replace spaces with hyphens
+                  const normalized = value.replace(/\s+/g, '-').toLowerCase()
+                  setTranslations(prev =>
+                    prev.map(t =>
+                      t.locale === loc.code ? { ...t, slug: normalized } : t
+                    )
+                  )
+                }}
+                placeholder={`URL slug in ${loc.name}`}
+                className="mt-1"
+              />
+              <p className="text-xs text-gray-500 mt-1">Spaces will be replaced with hyphens. Example: "jak-vichistis-konektor"</p>
+            </div>
+
             <div>
               <Label htmlFor={`title-${loc.code}`}>
                 Title ({loc.name}) {loc.code === locale ? '*' : ''}

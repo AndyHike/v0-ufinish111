@@ -60,3 +60,30 @@ export function normalizeSlug(input: string): string {
     .replace(/-+/g, "-") // Видаляємо множественні дефіси
     .replace(/^-+|-+$/g, "") // Видаляємо дефіси на початку і кінці
 }
+
+/**
+ * Генерує час читання на основі контенту
+ * Розраховує на базі 200 слів за хвилину
+ */
+export function generateReadingTime(content: string): number {
+  const wordsPerMinute = 200
+  const wordCount = content
+    .replace(/<[^>]*>/g, "") // Видаляємо HTML теги
+    .split(/\s+/)
+    .filter((word) => word.length > 0).length
+
+  return Math.max(1, Math.ceil(wordCount / wordsPerMinute))
+}
+
+/**
+ * Генерує мета-описання з контенту
+ * Беремо перші 155 символів (Google стандарт)
+ */
+export function generateMetaDescription(content: string): string {
+  const text = content
+    .replace(/<[^>]*>/g, "") // Видаляємо HTML теги
+    .replace(/\s+/g, " ") // Нормалізуємо пробіли
+    .trim()
+
+  return text.substring(0, 155) + (text.length > 155 ? "..." : "")
+}
