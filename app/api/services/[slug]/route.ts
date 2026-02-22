@@ -2,15 +2,15 @@ import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/utils/supabase/server"
 import { getPriceWithDiscount } from "@/lib/discounts/get-applicable-discounts"
 
-export async function GET(request: NextRequest, { params }: { params: { slug: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   try {
+    const { slug } = await params
     const supabase = createClient()
-    const { slug } = params
     const { searchParams } = new URL(request.url)
     const locale = searchParams.get("locale") || "uk"
     const modelSlug = searchParams.get("model")
 
-    console.log(`[API] Fetching service data for slug: ${slug}, locale: ${locale}, model: ${modelSlug}`)
+    console.log(`[v0] Fetching service data for slug: ${slug}, locale: ${locale}, model: ${modelSlug}`)
 
     // Спочатку спробуємо знайти за slug
     let { data: service, error } = await supabase
