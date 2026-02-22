@@ -22,6 +22,7 @@ export interface ArticleTranslation {
   title: string
   content: string
   meta_description?: string
+  slug: string // Localized slug for this language
   created_at: string
   updated_at: string
 }
@@ -66,39 +67,59 @@ export function generateSlug(title: string): string {
     .replace(/^-+|-+$/g, "") // Remove leading/trailing hyphens
 }
 
-// Fetch single article by slug with translations
+// Fetch single article by localized slug and locale
 export async function getArticleBySlug(
   slug: string,
   locale: string = "cs"
 ): Promise<(Article & { translation?: ArticleTranslation }) | null> {
   const supabase = createClient()
 
-  const { data: article, error } = await supabase
-    .from("articles")
+  // Query by localized slug from article_translations
+  const { data: translation, error: translationError } = await supabase
+    .from("article_translations")
     .select(
       `
-      *,
-      article_translations(
+      id,
+      article_id,
+      locale,
+      title,
+      content,
+      meta_description,
+      slug,
+      created_at,
+      updated_at,
+      articles(
         id,
-        article_id,
-        locale,
+        slug,
         title,
         content,
         meta_description,
+        featured,
+        published,
+        view_count,
+        reading_time_minutes,
+        featured_image,
+        tags,
+        category,
+        primary_service_id,
         created_at,
-        updated_at
+        updated_at,
+        article_translations(
+          locale,
+          title,
+          slug
+        )
       )
     `
     )
     .eq("slug", slug)
-    .eq("published", true)
+    .eq("locale", locale)
+    .eq("articles.published", true)
     .single()
 
-  if (error || !article) return null
+  if (translationError || !translation?.articles) return null
 
-  const translation = (article.article_translations as ArticleTranslation[])?.find(
-    (t: ArticleTranslation) => t.locale === locale
-  )
+  const article = translation.articles
 
   return {
     ...article,

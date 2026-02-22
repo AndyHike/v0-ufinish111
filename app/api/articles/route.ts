@@ -110,6 +110,7 @@ export async function POST(request: NextRequest) {
           title: t.title || title,
           content: t.content || content,
           meta_description: t.meta_description || calcMetaDescription,
+          slug: t.slug || slug, // Use localized slug if provided, otherwise use default slug
         }))
 
       if (translationInserts.length > 0) {

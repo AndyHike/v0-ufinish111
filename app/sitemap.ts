@@ -163,22 +163,55 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Add articles hub pages
     addMultilingualEntries("/articles")
 
-    // Fetch and add dynamic article pages
-    const { data: articles, error: articlesError } = await supabase
-      .from("articles")
-      .select("slug, updated_at")
-      .eq("published", true)
+    // Fetch and add dynamic article pages with localized slugs
+    const { data: articleTranslations, error: articlesError } = await supabase
+      .from("article_translations")
+      .select("slug, locale, updated_at, articles(updated_at, published)")
+      .eq("articles.published", true)
       .not("slug", "is", null)
 
-    console.log("[SITEMAP] Articles fetched:", { count: articles?.length, error: articlesError?.message })
-    if (!articlesError && articles) {
-      articles.forEach((article) => {
-        if (article.slug) {
-          addMultilingualEntries(
-            `/articles/${article.slug}`,
-            article.updated_at ? new Date(article.updated_at) : new Date()
-          )
+    console.log("[SITEMAP] Article translations fetched:", { count: articleTranslations?.length, error: articlesError?.message })
+      // Group by locale to generate proper hreflang alternates
+      const articlesByLocale: Record<string, Array<{ slug: string; updated_at: string }>> = {}
+      
+      articleTranslations.forEach((trans: any) => {
+        if (!articlesByLocale[trans.locale]) {
+          articlesByLocale[trans.locale] = []
         }
+        articlesByLocale[trans.locale].push({
+          slug: trans.slug,
+          updated_at: trans.updated_at,
+        })
+      })
+
+      // For each unique article, create sitemap entries with proper hreflang alternates
+      const processedArticles = new Set<string>()
+      
+      articleTranslations.forEach((trans: any) => {
+        const articleId = trans.article_id
+        if (processedArticles.has(articleId)) return
+        
+        // Get all translations for this article to build proper alternates
+        const allTranslations = articleTranslations.filter((t: any) => t.article_id === articleId)
+        
+        const alternates: Record<string, string> = {}
+        allTranslations.forEach((t: any) => {
+          alternates[t.locale] = `${baseUrl}/${t.locale}/articles/${t.slug}`
+        })
+        alternates["x-default"] = `${baseUrl}/${defaultLocale}/articles/${allTranslations.find((t: any) => t.locale === defaultLocale)?.slug || allTranslations[0].slug}`
+
+        // Add one entry per locale for this article
+        allTranslations.forEach((trans: any) => {
+          sitemapEntries.push({
+            url: `${baseUrl}/${trans.locale}/articles/${trans.slug}`,
+            lastModified: trans.updated_at ? new Date(trans.updated_at) : new Date(),
+            alternates: {
+              languages: alternates,
+            },
+          })
+        })
+        
+        processedArticles.add(articleId)
       })
     } else if (articlesError) {
       console.warn("[SITEMAP] Error fetching articles:", articlesError.message)

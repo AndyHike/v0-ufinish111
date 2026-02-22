@@ -37,30 +37,16 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
 
   const fetchArticle = async () => {
     try {
-      // Find article by slug and get all data including translations
-      const listResponse = await fetch(`/api/articles?locale=${locale}&limit=1000`)
-      if (!listResponse.ok) throw new Error("Failed to fetch articles")
+      // Fetch article directly by localized slug and locale
+      const response = await fetch(`/api/articles/by-slug?slug=${slug}&locale=${locale}`)
+      if (!response.ok) throw new Error("Failed to fetch article")
 
-      const listData = await listResponse.json()
-      const articleBase = listData.articles.find((a: any) => a.slug === slug)
-
-      if (!articleBase) throw new Error("Article not found")
-
-      // Fetch full article with translations
-      const fullResponse = await fetch(`/api/articles/${articleBase.id}`)
-      if (!fullResponse.ok) throw new Error("Failed to fetch article details")
-
-      const fullArticle = await fullResponse.json()
-
-      // Get translation for current locale or fallback to main article
-      const translation = (fullArticle.article_translations as any[])?.find(
-        (t) => t.locale === locale
-      )
+      const fullArticle = await response.json()
 
       const displayArticle = {
         ...fullArticle,
-        title: translation?.title || fullArticle.title,
-        content: translation?.content || fullArticle.content,
+        title: fullArticle.title,
+        content: fullArticle.content,
       }
 
       setArticle(displayArticle)
