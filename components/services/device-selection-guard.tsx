@@ -62,8 +62,12 @@ export function DeviceSelectionGuard({ serviceSlug, locale }: DeviceSelectionGua
 
   // Load brands on mount
   useEffect(() => {
+    let isMounted = true
+
     const loadBrands = async () => {
       try {
+        if (!isMounted) return
+
         setIsLoading(true)
         setError(null)
 
@@ -73,18 +77,27 @@ export function DeviceSelectionGuard({ serviceSlug, locale }: DeviceSelectionGua
           .order("position")
           .order("name")
 
+        if (!isMounted) return
+
         if (dbError) throw dbError
         setBrands(data || [])
       } catch (err) {
+        if (!isMounted) return
         console.error("[v0] Error loading brands:", err)
         setError(t("loadingError"))
       } finally {
-        setIsLoading(false)
+        if (isMounted) {
+          setIsLoading(false)
+        }
       }
     }
 
     loadBrands()
-  }, [supabase, t])
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   // Load series when brand is selected
   useEffect(() => {
@@ -94,8 +107,12 @@ export function DeviceSelectionGuard({ serviceSlug, locale }: DeviceSelectionGua
       return
     }
 
+    let isMounted = true
+
     const loadSeries = async () => {
       try {
+        if (!isMounted) return
+
         setIsLoading(true)
         setError(null)
 
@@ -106,20 +123,29 @@ export function DeviceSelectionGuard({ serviceSlug, locale }: DeviceSelectionGua
           .order("position")
           .order("name")
 
+        if (!isMounted) return
+
         if (dbError) throw dbError
         setSeries(data || [])
         setModels([])
         setSelectedSeriesId(null)
       } catch (err) {
+        if (!isMounted) return
         console.error("[v0] Error loading series:", err)
         setError(t("loadingError"))
       } finally {
-        setIsLoading(false)
+        if (isMounted) {
+          setIsLoading(false)
+        }
       }
     }
 
     loadSeries()
-  }, [selectedBrandId, supabase, t])
+
+    return () => {
+      isMounted = false
+    }
+  }, [selectedBrandId])
 
   // Load models when series is selected
   useEffect(() => {
@@ -128,8 +154,12 @@ export function DeviceSelectionGuard({ serviceSlug, locale }: DeviceSelectionGua
       return
     }
 
+    let isMounted = true
+
     const loadModels = async () => {
       try {
+        if (!isMounted) return
+
         setIsLoading(true)
         setError(null)
 
@@ -140,18 +170,27 @@ export function DeviceSelectionGuard({ serviceSlug, locale }: DeviceSelectionGua
           .order("position")
           .order("name")
 
+        if (!isMounted) return
+
         if (dbError) throw dbError
         setModels(data || [])
       } catch (err) {
+        if (!isMounted) return
         console.error("[v0] Error loading models:", err)
         setError(t("loadingError"))
       } finally {
-        setIsLoading(false)
+        if (isMounted) {
+          setIsLoading(false)
+        }
       }
     }
 
     loadModels()
-  }, [selectedSeriesId, supabase, t])
+
+    return () => {
+      isMounted = false
+    }
+  }, [selectedSeriesId])
 
   const filteredBrands = brands.filter((brand) =>
     brand.name.toLowerCase().includes(brandsSearch.toLowerCase())
