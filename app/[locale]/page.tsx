@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import { HeroSection } from "@/components/hero-section"
 import { ContactSection } from "@/components/contact-section"
 import { BrandsSection } from "@/components/brands-section"
@@ -7,6 +8,61 @@ import { getGoogleReviews } from "@/lib/data/google-reviews"
 import { Suspense } from "react"
 
 export const revalidate = 3600 // Revalidate every hour
+
+export async function generateMetadata({
+  params,
+}: {
+  params: { locale: string }
+}): Promise<Metadata> {
+  const { locale } = await params
+  const baseUrl = "https://devicehelp.cz"
+  const canonicalUrl = `${baseUrl}/${locale}`
+
+  const seoData = {
+    cs: {
+      title: "DeviceHelp - Profesionální oprava mobilních telefonů v Praze",
+      description: "Rychlá a kvalitní oprava mobilních telefonů v Praze. Záruka na všechny opravy.",
+    },
+    en: {
+      title: "DeviceHelp - Professional Mobile Phone Repair in Prague",
+      description: "Fast and quality mobile phone repair in Prague. Warranty on all repairs.",
+    },
+    uk: {
+      title: "DeviceHelp - Profesійnský ремонт мобільних телефонів у Празі",
+      description: "Швидкий та якісний ремонт мобільних телефонів у Празі. Гарантія на всі ремонти.",
+    },
+  }
+
+  const currentSeo = seoData[locale as keyof typeof seoData] || seoData.cs
+
+  return {
+    title: currentSeo.title,
+    description: currentSeo.description,
+    metadataBase: new URL(baseUrl),
+    alternates: {
+      canonical: canonicalUrl,
+      languages: {
+        cs: `${baseUrl}/cs`,
+        en: `${baseUrl}/en`,
+        uk: `${baseUrl}/uk`,
+        "x-default": `${baseUrl}/cs`,
+      },
+    },
+    openGraph: {
+      title: currentSeo.title,
+      description: currentSeo.description,
+      url: canonicalUrl,
+      siteName: "DeviceHelp",
+      locale: locale,
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: currentSeo.title,
+      description: currentSeo.description,
+    },
+  }
+}
 
 function BrandsSectionSkeleton() {
   return (

@@ -220,6 +220,11 @@ export function GoogleReviewsCarousel({ data }: GoogleReviewsCarouselProps) {
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "AggregateRating",
+              itemReviewed: {
+                "@type": "LocalBusiness",
+                name: "DeviceHelp",
+                url: "https://devicehelp.cz",
+              },
               ratingValue: data.rating.toFixed(1),
               reviewCount: data.totalReviews,
               bestRating: "5",
