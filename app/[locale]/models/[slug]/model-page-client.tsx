@@ -10,6 +10,7 @@ import { ContactCTABanner } from "@/components/contact-cta-banner"
 import { PartTypeBadges } from "@/components/part-type-badges"
 import { Breadcrumb } from "@/components/breadcrumb"
 import useSWR from "swr"
+import useSWR from "swr"
 
 interface ModelData {
   id: string
@@ -76,6 +77,17 @@ export default function ModelPageClient({ modelData, locale }: Props) {
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  // Проверяємо дані перед рендерингом
+  if (!mounted || !currentModelData || !currentModelData.services) {
+    return (
+      <div className="container px-4 py-12 md:px-6 md:py-24">
+        <div className="mx-auto max-w-6xl text-center">
+          <p className="text-lg text-muted-foreground">Не вдалося завантажити дані про модель. Спробуйте оновити сторінку.</p>
+        </div>
+      </div>
+    )
+  }
 
   useEffect(() => {
     if (process.env.NODE_ENV === "development") {

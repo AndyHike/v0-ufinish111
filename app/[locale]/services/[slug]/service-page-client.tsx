@@ -69,6 +69,22 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
   const commonT = useTranslations("Common")
   const searchParams = useSearchParams()
   const viewContentSent = useRef(false)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // Якщо немає монтування або немає даних, показуємо помилку
+  if (!mounted || !serviceData) {
+    return (
+      <div className="container px-4 py-12 md:px-6 md:py-24">
+        <div className="mx-auto max-w-6xl text-center">
+          <p className="text-lg text-muted-foreground">Не вдалося завантажити дані про послугу. Спробуйте оновити сторінку.</p>
+        </div>
+      </div>
+    )
+  }
 
   const {
     translation,

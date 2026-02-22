@@ -37,13 +37,6 @@ export default function SeriesPageClient({ initialData, locale, slug }: Props) {
 
   useEffect(() => {
     setMounted(true)
-    console.log("[v0] SeriesPageClient mounted - initialData:", initialData)
-    console.log("[v0] SeriesPageClient - SWR data:", data)
-    // Зберігаємо в контекст для наступних навігацій
-    if (data?.series) {
-      console.log("[v0] SeriesPageClient - Caching series:", data.series.slug)
-      setCachedSeries(slug, data)
-    }
   }, [data, slug, setCachedSeries])
 
   if (!mounted) {
@@ -62,12 +55,21 @@ export default function SeriesPageClient({ initialData, locale, slug }: Props) {
     )
   }
 
-  if (!data?.series) {
-    console.warn("[v0] SeriesPageClient - No data available:", { data, initialData })
-    return null
+  // Використовуємо initialData як default, якщо SWR дані ще не завантажені
+  const seriesData = data || initialData
+
+  if (!seriesData?.series) {
+    console.error("[v0] SeriesPageClient - No series data available:", { data, initialData, seriesData })
+    return (
+      <div className="container px-4 py-12 md:px-6 md:py-24">
+        <div className="mx-auto max-w-6xl text-center">
+          <p className="text-lg text-muted-foreground">Не вдалося завантажити дані про серію. Спробуйте оновити сторінку.</p>
+        </div>
+      </div>
+    )
   }
 
-  const { series, models } = data
+  const { series, models } = seriesData
 
   return (
     <div className="container px-4 py-12 md:px-6 md:py-24">
