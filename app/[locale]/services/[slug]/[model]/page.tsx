@@ -112,7 +112,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     ? {
       "@context": "https://schema.org",
       "@type": "Service",
-      name: `${serviceName} ${modelData.brands?.name} ${modelData.name}`,
+      name: `${serviceName} ${modelData.brands?.name || ""} ${modelData.name || ""}`,
       provider: {
         "@type": "LocalBusiness",
         name: "DeviceHelp",
