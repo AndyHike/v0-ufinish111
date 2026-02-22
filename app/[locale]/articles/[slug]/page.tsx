@@ -275,21 +275,21 @@ export default async function ArticlePage({ params }: Props) {
   }
 
   // Get article ID for service recommendations
-  let articleId = ""
-  try {
-    const supabase = createClient()
-    const { data: articleData } = await supabase
-      .from("article_translations")
-      .select("article_id")
-      .eq("slug", slug)
-      .eq("locale", locale)
-      .single()
+  if (!articleId) {
+    try {
+      const { data: articleData } = await supabase
+        .from("article_translations")
+        .select("article_id")
+        .eq("slug", slug)
+        .eq("locale", locale)
+        .single()
 
-    if (articleData) {
-      articleId = articleData.article_id
+      if (articleData) {
+        articleId = articleData.article_id
+      }
+    } catch (error) {
+      console.error("[v0] Failed to get article ID:", error)
     }
-  } catch (error) {
-    console.error("[v0] Failed to get article ID:", error)
   }
 
   return (
