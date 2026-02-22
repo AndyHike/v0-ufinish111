@@ -159,10 +159,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description: currentMetadata.description,
       type: "website",
       locale: locale,
-      url: `https://devicehelp.cz/${locale}/services/${slug}/${model}`,
+      url: `https://devicehelp.cz/${locale}/services/${slug}/${modelSlug}`,
     },
     alternates: {
-      canonical: `https://devicehelp.cz/${locale}/services/${slug}/${model}`,
+      canonical: `https://devicehelp.cz/${locale}/services/${slug}/${modelSlug}`,
     },
     twitter: {
       card: "summary",
