@@ -361,12 +361,13 @@ export function ArticleEditor({ articleId, locale }: ArticleEditorProps) {
                 </span>
               ))}
             </div>
-          )}
-        </div>
+        )}
       </div>
+    </div>
 
-      {/* Category */}
-      <div>
+    {/* Primary Service for CTA Button */}
+    {mainData.serviceIds.length > 0 && (
+      <div className="border rounded-lg p-6 space-y-4">
         <Label htmlFor="category">Category</Label>
         <select
           id="category"
@@ -381,12 +382,12 @@ export function ArticleEditor({ articleId, locale }: ArticleEditorProps) {
           ))}
         </select>
       </div>
-    </div>
+      </div>
 
-    {/* Services Selection */}
-    <div>
-      <Label>Related Services (Click to select)</Label>
-      <div className="mt-2 space-y-2 max-h-48 overflow-y-auto border rounded-lg p-3">
+      {/* Services Selection */}
+      <div className="border rounded-lg p-6 space-y-4">
+        <h2 className="text-xl font-semibold">Related Services</h2>
+        <div className="mt-2 space-y-2 max-h-48 overflow-y-auto border rounded-lg p-3">
         {servicesLoading ? (
           <p className="text-sm text-gray-500">Loading services...</p>
         ) : availableServices.length === 0 ? (
