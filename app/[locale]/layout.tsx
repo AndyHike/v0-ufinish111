@@ -16,7 +16,6 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { GlobalDataProvider } from "@/providers/global-data-provider"
 import { Toaster } from "@/components/ui/toaster"
 import { DynamicFavicon } from "@/components/dynamic-favicon"
-import { Analytics } from "@vercel/analytics/react"
 import "@/app/globals.css"
 
 const inter = Inter({
@@ -142,11 +141,11 @@ export default async function LocaleLayout({
               "@context": "https://schema.org",
               "@type": "LocalBusiness",
               name: "DeviceHelp",
-              description: locale === "cs" 
-                ? "Profesionální oprava mobilních telefonů v Praze 6 Břevnov. iPhone, Samsung, Xiaomi. Garancia 6 měsíců." 
+              description: locale === "cs"
+                ? "Profesionální oprava mobilních telefonů v Praze 6 Břevnov. iPhone, Samsung, Xiaomi. Garancia 6 měsíců."
                 : locale === "en"
-                ? "Professional mobile phone repair in Prague 6 Břevnov. iPhone, Samsung, Xiaomi. 6-month warranty."
-                : "Професійний ремонт мобільних телефонів в Празі 6 Бржевнов. iPhone, Samsung, Xiaomi. Гарантія 6 місяців.",
+                  ? "Professional mobile phone repair in Prague 6 Břevnov. iPhone, Samsung, Xiaomi. 6-month warranty."
+                  : "Професійний ремонт мобільних телефонів в Празі 6 Бржевнов. iPhone, Samsung, Xiaomi. Гарантія 6 місяців.",
               address: {
                 "@type": "PostalAddress",
                 streetAddress: "Bělohorská 209/133",
@@ -225,7 +224,6 @@ export default async function LocaleLayout({
                     </Suspense>
                   </div>
                   <Toaster />
-                  <Analytics />
                 </GlobalDataProvider>
               </CookieConsentProvider>
             </SessionProvider>

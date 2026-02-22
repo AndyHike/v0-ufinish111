@@ -46,6 +46,7 @@
   },
   "UserNav": {
     "adminPanel": "Adminstrátorský panel",
+    "adminRole": "Administrátor",
     "login": "Přihlásit se",
     "profile": "Profil",
     "orders": "Objednávky",
@@ -129,23 +130,33 @@
       "services": "Služby",
       "acceptAll": "Přijmout vše",
       "acceptNecessary": "Pouze nezbytné",
+      "save": "Uložit",
       "saveAndClose": "Uložit a zavřít"
     },
     "categories": {
       "necessary": {
         "name": "Nezbytné cookies",
         "description": "Tyto cookies jsou nezbytné pro správné fungování webu a nelze je vypnout.",
-        "services": "Relace, autentifikace, jazykové nastavení"
+        "services": [
+          "Relace, autentifikace",
+          "Jazykové nastavení"
+        ]
       },
       "analytics": {
         "name": "Analytické cookies",
         "description": "Tyto cookies nám pomáhají pochopit, jak návštěvníci používají náš web.",
-        "services": "Google Analytics, Google Tag Manager"
+        "services": [
+          "Google Analytics",
+          "Google Tag Manager"
+        ]
       },
       "marketing": {
         "name": "Marketingové cookies",
         "description": "Tyto cookies se používají k zobrazování relevantních reklam a měření jejich účinnosti.",
-        "services": "Facebook Pixel, Google Ads, Remarketing"
+        "services": [
+          "Facebook Pixel",
+          "Google Ads"
+        ]
       }
     }
   },
