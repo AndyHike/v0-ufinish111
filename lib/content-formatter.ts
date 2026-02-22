@@ -25,19 +25,19 @@ export function formatContent(content: string): string {
       const text = para.slice(4).trim()
       const formattedText = formatInlineText(text)
       const id = generateId(text)
-      return `<h3 id="${id}" class="text-xl font-bold mt-6 mb-4 scroll-mt-20">${formattedText}</h3>`
+      return `<h3 id="${id}" class="text-xl font-bold mt-6 mb-4 scroll-mt-32">${formattedText}</h3>`
     }
     if (para.startsWith("## ")) {
       const text = para.slice(3).trim()
       const formattedText = formatInlineText(text)
       const id = generateId(text)
-      return `<h2 id="${id}" class="text-2xl font-bold mt-8 mb-4 scroll-mt-20">${formattedText}</h2>`
+      return `<h2 id="${id}" class="text-2xl font-bold mt-8 mb-4 scroll-mt-32">${formattedText}</h2>`
     }
     if (para.startsWith("# ")) {
       const text = para.slice(2).trim()
       const formattedText = formatInlineText(text)
       const id = generateId(text)
-      return `<h1 id="${id}" class="text-3xl font-bold mt-8 mb-4 scroll-mt-20">${formattedText}</h1>`
+      return `<h1 id="${id}" class="text-3xl font-bold mt-8 mb-4 scroll-mt-32">${formattedText}</h1>`
     }
 
     // Обробляємо списки
