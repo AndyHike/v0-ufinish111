@@ -206,9 +206,14 @@ export default async function ServicePageWithModel({ params }: Props) {
       notFound()
     }
 
-    const translation = service.services_translations?.find((t: any) => t.locale === locale)
-    if (!translation) {
-      notFound()
+    const translation = service.services_translations?.[0]
+    if (!translation || translation.locale !== locale) {
+      // Перевіримо наявність перекладу для локалі
+      const localizedTranslation = service.services_translations?.find((t: any) => t.locale === locale)
+      if (!localizedTranslation) {
+        notFound()
+      }
+      Object.assign(translation, localizedTranslation)
     }
 
     // Get FAQs
@@ -228,19 +233,15 @@ export default async function ServicePageWithModel({ params }: Props) {
 
     const faqsWithTranslations =
       faqs
-        ?.map((faq) => {
-          const faqTranslation = faq.service_faq_translations?.find((t: any) => t.locale === locale)
-          if (!faqTranslation) return null
-          return {
-            id: faq.id,
-            position: faq.position,
-            translation: {
-              question: faqTranslation.question,
-              answer: faqTranslation.answer,
-            },
-          }
-        })
-        .filter(Boolean) || []
+        ?.map((faq: any) => ({
+          id: faq.id,
+          position: faq.position,
+          translation: {
+            question: faq.service_faq_translations?.find((t: any) => t.locale === locale)?.question || "",
+            answer: faq.service_faq_translations?.find((t: any) => t.locale === locale)?.answer || "",
+          },
+        }))
+        .filter((faq: any) => faq.translation.question && faq.translation.answer) || []
 
     // Get source model if specified
     let sourceModel = null
@@ -335,36 +336,50 @@ export default async function ServicePageWithModel({ params }: Props) {
 
     const serviceData = {
       id: service.id,
-      position: service.position,
+      position: service.position || 0,
       warranty_months:
         modelWarrantyMonths !== null && modelWarrantyMonths !== undefined
           ? modelWarrantyMonths
-          : service.warranty_months,
+          : (service.warranty_months || null),
       duration_hours:
-        modelDurationHours !== null && modelDurationHours !== undefined ? modelDurationHours : service.duration_hours,
+        modelDurationHours !== null && modelDurationHours !== undefined ? modelDurationHours : (service.duration_hours || null),
       warranty_period: "months",
-      image_url: service.image_url,
+      image_url: service.image_url || null,
       slug: service.slug,
       translation: {
-        name: translation.name || "",
-        description: translation.description || "",
-        detailed_description: translation.detailed_description || "",
-        what_included: typeof translation.what_included === "string" 
-          ? translation.what_included 
-          : (typeof translation.what_included === "object" 
-              ? JSON.stringify(translation.what_included) 
-              : ""),
+        name: translation?.name || "",
+        description: translation?.description || "",
+        detailed_description: translation?.detailed_description || "",
+        what_included: translation?.what_included ? (typeof translation.what_included === "string" ? translation.what_included : "") : "",
         benefits: null,
       },
-      faqs: faqsWithTranslations,
-      sourceModel,
-      modelServicePrice,
-      minPrice,
-      maxPrice,
-      discountedPrice,
-      hasDiscount,
-      discount,
-      modelSlug, // Передаємо модель slug
+      faqs: faqsWithTranslations.map((faq: any) => ({
+        id: faq.id || "",
+        position: faq.position || 0,
+        translation: {
+          question: faq.translation?.question || "",
+          answer: faq.translation?.answer || "",
+        },
+      })),
+      sourceModel: sourceModel ? {
+        id: sourceModel.id || "",
+        name: sourceModel.name || "",
+        slug: sourceModel.slug || "",
+        image_url: sourceModel.image_url || null,
+        brand: sourceModel.brand ? {
+          id: sourceModel.brand.id || "",
+          name: sourceModel.brand.name || "",
+          slug: sourceModel.brand.slug || "",
+          logo_url: sourceModel.brand.logo_url || null,
+        } : null,
+      } : null,
+      modelServicePrice: modelServicePrice || null,
+      minPrice: minPrice || null,
+      maxPrice: maxPrice || null,
+      discountedPrice: discountedPrice || null,
+      hasDiscount: hasDiscount || false,
+      discount: discount || null,
+      modelSlug: modelSlug || null,
     }
 
     
