@@ -33,7 +33,7 @@ interface ArticleTranslation {
   locale: string
   title: string
   content: string
-  slug: string // Localized slug
+  slug: string
 }
 
 interface ArticleEditorProps {
@@ -50,7 +50,6 @@ export function ArticleEditor({ articleId, locale }: ArticleEditorProps) {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
 
-  // Main article data - shared across all languages
   const [mainData, setMainData] = useState({
     featured_image: '',
     featured: false,
@@ -66,7 +65,6 @@ export function ArticleEditor({ articleId, locale }: ArticleEditorProps) {
   const [availableServices, setAvailableServices] = useState<Array<{ id: string; title: string; slug: string }>>([])
   const [servicesLoading, setServicesLoading] = useState(false)
 
-  // Language-specific translations
   const [translations, setTranslations] = useState<ArticleTranslation[]>(
     LOCALES.map(loc => ({
       locale: loc.code,
@@ -80,7 +78,6 @@ export function ArticleEditor({ articleId, locale }: ArticleEditorProps) {
     if (articleId) {
       fetchArticle()
     }
-    // Fetch available services
     fetchAvailableServices()
   }, [articleId])
 
@@ -105,8 +102,7 @@ export function ArticleEditor({ articleId, locale }: ArticleEditorProps) {
       if (!response.ok) throw new Error('Failed to fetch article')
 
       const data = await response.json()
-      
-      // Set main data
+
       setMainData({
         featured_image: data.featured_image || '',
         featured: data.featured || false,
@@ -117,14 +113,13 @@ export function ArticleEditor({ articleId, locale }: ArticleEditorProps) {
         serviceIds: (data.article_service_links || []).map((link: any) => link.service_id),
         primaryServiceId: data.primary_service_id || '',
       })
-      
+
       if (Array.isArray(data.tags)) {
         setTagInput(data.tags.join(', '))
       }
 
-      // Fetch and set translations
       const articleTranslations = Array.isArray(data.article_translations) ? data.article_translations : []
-      
+
       setTranslations(
         LOCALES.map(loc => {
           const trans = articleTranslations.find((t: any) => t.locale === loc.code)
@@ -178,17 +173,15 @@ export function ArticleEditor({ articleId, locale }: ArticleEditorProps) {
     setError(null)
     setSuccess(false)
 
-    // Validation - each language must have title and content
     for (const trans of translations) {
       if (!trans.title.trim() || !trans.content.trim()) {
-        setError(`Please fill title and content for all languages`)
+        setError('Please fill title and content for all languages')
         return
       }
     }
 
     setIsSaving(true)
     try {
-      // Use first locale's data to generate slug and reading time
       const mainTrans = translations[0]
       const slug = mainTrans.slug || generateSlug(mainTrans.title)
       const readingTime = generateReadingTime(mainTrans.content)
@@ -212,7 +205,7 @@ export function ArticleEditor({ articleId, locale }: ArticleEditorProps) {
           locale: t.locale,
           title: t.title,
           content: t.content,
-          slug: t.slug || generateSlug(t.title), // Include localized slug
+          slug: t.slug || generateSlug(t.title),
           meta_description: generateMetaDescription(t.content),
         })),
       }
@@ -268,7 +261,7 @@ export function ArticleEditor({ articleId, locale }: ArticleEditorProps) {
         </div>
       )}
 
-      {/* Main Section - Basic Info */}
+      {/* Basic Information */}
       <div className="border rounded-lg p-6 space-y-4">
         <h2 className="text-xl font-semibold">Basic Information</h2>
 
@@ -317,7 +310,7 @@ export function ArticleEditor({ articleId, locale }: ArticleEditorProps) {
             className="mt-1"
           />
           {!mainData.published && (
-            <p className="text-xs text-gray-500 mt-1">Enable "Published" to set date</p>
+            <p className="text-xs text-gray-500 mt-1">Enable &quot;Published&quot; to set date</p>
           )}
         </div>
 
@@ -345,7 +338,6 @@ export function ArticleEditor({ articleId, locale }: ArticleEditorProps) {
               Add
             </Button>
           </div>
-          {/* Display added tags */}
           {mainData.tags.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-3">
               {mainData.tags.map(tag => (
@@ -361,27 +353,25 @@ export function ArticleEditor({ articleId, locale }: ArticleEditorProps) {
                 </span>
               ))}
             </div>
-        )}
-      </div>
-    </div>
+          )}
+        </div>
 
-    {/* Primary Service for CTA Button */}
-    {mainData.serviceIds.length > 0 && (
-      <div className="border rounded-lg p-6 space-y-4">
-        <Label htmlFor="category">Category</Label>
-        <select
-          id="category"
-          value={mainData.category}
-          onChange={e => setMainData(prev => ({ ...prev, category: e.target.value }))}
-          className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-        >
-          {CATEGORIES.map(cat => (
-            <option key={cat} value={cat}>
-              {cat}
-            </option>
-          ))}
-        </select>
-      </div>
+        {/* Category */}
+        <div>
+          <Label htmlFor="category">Category</Label>
+          <select
+            id="category"
+            value={mainData.category}
+            onChange={e => setMainData(prev => ({ ...prev, category: e.target.value }))}
+            className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            {CATEGORIES.map(cat => (
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Services Selection */}
@@ -395,28 +385,28 @@ export function ArticleEditor({ articleId, locale }: ArticleEditorProps) {
           ) : (
             availableServices.map(service => (
               <label key={service.id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-100 p-2 rounded">
-              <input
-                type="checkbox"
-                checked={mainData.serviceIds.includes(service.id)}
-                onChange={e => {
-                  if (e.target.checked) {
-                    setMainData(prev => ({
-                      ...prev,
-                      serviceIds: [...prev.serviceIds, service.id],
-                    }))
-                  } else {
-                    setMainData(prev => ({
-                      ...prev,
-                      serviceIds: prev.serviceIds.filter(id => id !== service.id),
-                    }))
-                  }
-                }}
-                className="w-4 h-4 rounded"
-              />
-              <span className="text-sm">{service.title}</span>
-            </label>
-          ))
-        )}
+                <input
+                  type="checkbox"
+                  checked={mainData.serviceIds.includes(service.id)}
+                  onChange={e => {
+                    if (e.target.checked) {
+                      setMainData(prev => ({
+                        ...prev,
+                        serviceIds: [...prev.serviceIds, service.id],
+                      }))
+                    } else {
+                      setMainData(prev => ({
+                        ...prev,
+                        serviceIds: prev.serviceIds.filter(id => id !== service.id),
+                      }))
+                    }
+                  }}
+                  className="w-4 h-4 rounded"
+                />
+                <span className="text-sm">{service.title}</span>
+              </label>
+            ))
+          )}
         </div>
         {mainData.serviceIds.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-2">
@@ -442,121 +432,123 @@ export function ArticleEditor({ articleId, locale }: ArticleEditorProps) {
         )}
       </div>
 
-    {/* Primary Service for CTA Button */}
-    {mainData.serviceIds.length > 0 && (
-      <div className="border rounded-lg p-6 space-y-4">
-        <Label htmlFor="primary-service">Primary Service (for sticky button)</Label>
-        <select
-          id="primary-service"
-          value={mainData.primaryServiceId}
-          onChange={e => setMainData(prev => ({ ...prev, primaryServiceId: e.target.value }))}
-          className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-        >
-          <option value="">-- Select primary service --</option>
-          {mainData.serviceIds.map(serviceId => {
-            const service = availableServices.find(s => s.id === serviceId)
-            return service ? (
-              <option key={serviceId} value={serviceId}>
-                {service.title}
-              </option>
-            ) : null
-          })}
-        </select>
-        <p className="text-xs text-gray-500 mt-1">This service will appear in a sticky button at the bottom when reading the article</p>
-      </div>
-    )}
+      {/* Primary Service for CTA Button */}
+      {mainData.serviceIds.length > 0 && (
+        <div className="border rounded-lg p-6 space-y-4">
+          <Label htmlFor="primary-service">Primary Service (for sticky button)</Label>
+          <select
+            id="primary-service"
+            value={mainData.primaryServiceId}
+            onChange={e => setMainData(prev => ({ ...prev, primaryServiceId: e.target.value }))}
+            className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value="">-- Select primary service --</option>
+            {mainData.serviceIds.map(serviceId => {
+              const service = availableServices.find(s => s.id === serviceId)
+              return service ? (
+                <option key={serviceId} value={serviceId}>
+                  {service.title}
+                </option>
+              ) : null
+            })}
+          </select>
+          <p className="text-xs text-gray-500 mt-1">This service will appear in a sticky button at the bottom when reading the article</p>
+        </div>
+      )}
 
-    {/* Language-Specific Content */}
-    <Tabs value={activeTab} onValueChange={setActiveTab}>
-      <TabsList className="grid w-full grid-cols-3">
-        {LOCALES.map(loc => (
-          <TabsTrigger key={loc.code} value={loc.code}>
-            {loc.name}
-          </TabsTrigger>
-        ))}
-      </TabsList>
+      {/* Language-Specific Content */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-3">
+          {LOCALES.map(loc => (
+            <TabsTrigger key={loc.code} value={loc.code}>
+              {loc.name}
+            </TabsTrigger>
+          ))}
+        </TabsList>
 
-      {LOCALES.map(loc => {
-        const trans = translations.find(t => t.locale === loc.code)
-        return (
-          <TabsContent key={loc.code} value={loc.code} className="space-y-4 mt-4">
-            <div>
-              <Label htmlFor={`slug-${loc.code}`}>
-                URL Slug ({loc.name}) *
-              </Label>
-              <Input
-                id={`slug-${loc.code}`}
-                value={trans?.slug || ''}
-                onChange={e => {
-                  const value = e.target.value
-                  // Normalize slug: transliterate Ukrainian, replace spaces with hyphens
-                  const normalized = normalizeSlug(value, loc.code)
-                  setTranslations(prev =>
-                    prev.map(t =>
-                      t.locale === loc.code ? { ...t, slug: normalized } : t
+        {LOCALES.map(loc => {
+          const trans = translations.find(t => t.locale === loc.code)
+          return (
+            <TabsContent key={loc.code} value={loc.code} className="space-y-4 mt-4">
+              <div>
+                <Label htmlFor={`slug-${loc.code}`}>
+                  URL Slug ({loc.name}) *
+                </Label>
+                <Input
+                  id={`slug-${loc.code}`}
+                  value={trans?.slug || ''}
+                  onChange={e => {
+                    const value = e.target.value
+                    const normalized = normalizeSlug(value, loc.code)
+                    setTranslations(prev =>
+                      prev.map(t =>
+                        t.locale === loc.code ? { ...t, slug: normalized } : t
+                      )
                     )
-                  )
-                }}
-                placeholder={`URL slug in ${loc.name}`}
-                className="mt-1"
-              />
-              <p className="text-xs text-gray-500 mt-1">Spaces will be replaced with hyphens. Ukrainian characters will be transliterated (e.g., "як-вичистити-кон" → "yak-vychystyty-kon")</p>
-            </div>
-
-            <div>
-              <Label htmlFor={`title-${loc.code}`}>
-                Title ({loc.name}) {loc.code === locale ? '*' : ''}
-              </Label>
-              <Input
-                id={`title-${loc.code}`}
-                value={trans?.title || ''}
-                onChange={e => handleTranslationChange(loc.code, 'title', e.target.value)}
-                placeholder={`Title in ${loc.name}`}
-                className="mt-1"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor={`content-${loc.code}`}>
-                Content ({loc.name}) {loc.code === locale ? '*' : ''}
-              </Label>
-              <Textarea
-                id={`content-${loc.code}`}
-                value={trans?.content || ''}
-                onChange={e => handleTranslationChange(loc.code, 'content', e.target.value)}
-                placeholder={`Write article content in ${loc.name}...`}
-                className="mt-1 min-h-64 font-mono text-sm"
-              />
-              {trans?.content && (
+                  }}
+                  placeholder={`URL slug in ${loc.name}`}
+                  className="mt-1"
+                />
                 <p className="text-xs text-gray-500 mt-1">
-                  Reading time: ~{generateReadingTime(trans.content)} min
+                  Spaces will be replaced with hyphens. Ukrainian characters will be transliterated.
                 </p>
-              )}
-            </div>
-          </TabsContent>
-        )
-      })}
-    </Tabs>
+              </div>
 
-    {/* Actions */}
-    <div className="flex gap-4 justify-end pt-6 border-t">
-      <Button
-        type="button"
-        variant="outline"
-        onClick={() => router.back()}
-        disabled={isSaving}
-      >
-        Cancel
-      </Button>
-      <Button
-        type="button"
-        onClick={handleSave}
-        disabled={isSaving}
-        className="gap-2"
-      >
-        {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
-        {articleId ? 'Update' : 'Create'} Article
-      </Button>
+              <div>
+                <Label htmlFor={`title-${loc.code}`}>
+                  Title ({loc.name}) {loc.code === locale ? '*' : ''}
+                </Label>
+                <Input
+                  id={`title-${loc.code}`}
+                  value={trans?.title || ''}
+                  onChange={e => handleTranslationChange(loc.code, 'title', e.target.value)}
+                  placeholder={`Title in ${loc.name}`}
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor={`content-${loc.code}`}>
+                  Content ({loc.name}) {loc.code === locale ? '*' : ''}
+                </Label>
+                <Textarea
+                  id={`content-${loc.code}`}
+                  value={trans?.content || ''}
+                  onChange={e => handleTranslationChange(loc.code, 'content', e.target.value)}
+                  placeholder={`Write article content in ${loc.name}...`}
+                  className="mt-1 min-h-64 font-mono text-sm"
+                />
+                {trans?.content && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Reading time: ~{generateReadingTime(trans.content)} min
+                  </p>
+                )}
+              </div>
+            </TabsContent>
+          )
+        })}
+      </Tabs>
+
+      {/* Actions */}
+      <div className="flex gap-4 justify-end pt-6 border-t">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => router.back()}
+          disabled={isSaving}
+        >
+          Cancel
+        </Button>
+        <Button
+          type="button"
+          onClick={handleSave}
+          disabled={isSaving}
+          className="gap-2"
+        >
+          {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
+          {articleId ? 'Update' : 'Create'} Article
+        </Button>
+      </div>
     </div>
-  </div>
+  )
 }
