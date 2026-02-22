@@ -149,7 +149,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             const model = ms.models as { slug: string } | null
             if (model?.slug) {
               addMultilingualEntries(
-                `/services/${service.slug}?model=${model.slug}`,
+                `/services/${service.slug}/${model.slug}`,
                 service.created_at ? new Date(service.created_at) : new Date()
               )
             }
