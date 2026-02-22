@@ -297,28 +297,40 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
 
             {/* Ціна */}
             <div>
-              {modelParam && serviceData.modelServicePrice !== null && serviceData.modelServicePrice !== undefined ? (
-                <ServicePriceDisplay
-                  originalPrice={serviceData.modelServicePrice}
-                  discountedPrice={discountedPrice || undefined}
-                  hasDiscount={hasDiscount}
-                  discount={discount}
-                  size="lg"
-                  showBadge={true}
-                  priceOnRequest={false}
-                />
-              ) : minPrice !== null && maxPrice !== null ? (
-                <div className="text-2xl lg:text-3xl font-bold text-gray-900 mb-1">
-                  {minPrice === maxPrice
-                    ? formatCurrency(minPrice)
-                    : `${formatCurrency(minPrice)} - ${formatCurrency(maxPrice)}`}
-                </div>
+              {modelParam ? (
+                // Коли вибрана конкретна модель - показуємо ціну лише для цієї моделі або "за запитом"
+                modelParam && serviceData.modelServicePrice !== null && serviceData.modelServicePrice !== undefined ? (
+                  <ServicePriceDisplay
+                    originalPrice={serviceData.modelServicePrice}
+                    discountedPrice={discountedPrice || undefined}
+                    hasDiscount={hasDiscount}
+                    discount={discount}
+                    size="lg"
+                    showBadge={true}
+                    priceOnRequest={false}
+                  />
+                ) : (
+                  <ServicePriceDisplay
+                    originalPrice={null}
+                    size="lg"
+                    priceOnRequest={true}
+                  />
+                )
               ) : (
-                <ServicePriceDisplay
-                  originalPrice={null}
-                  size="lg"
-                  priceOnRequest={true}
-                />
+                // Коли модель не вибрана - показуємо діапазон цін
+                minPrice !== null && maxPrice !== null ? (
+                  <div className="text-2xl lg:text-3xl font-bold text-gray-900 mb-1">
+                    {minPrice === maxPrice
+                      ? formatCurrency(minPrice)
+                      : `${formatCurrency(minPrice)} - ${formatCurrency(maxPrice)}`}
+                  </div>
+                ) : (
+                  <ServicePriceDisplay
+                    originalPrice={null}
+                    size="lg"
+                    priceOnRequest={true}
+                  />
+                )
               )}
               {(sourceModel || modelParam) && (
                 <p className="text-gray-600 text-sm">
