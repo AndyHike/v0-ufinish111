@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useTranslations } from "next-intl"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -27,6 +28,7 @@ export function ArticleServiceRecommendation({
 }) {
   const [services, setServices] = useState<Service[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const t = useTranslations("Articles")
 
   useEffect(() => {
     fetchServices()
@@ -38,8 +40,12 @@ export function ArticleServiceRecommendation({
       if (!response.ok) throw new Error("Failed to fetch services")
 
       const links = await response.json()
-      // Extract services from links
-      const serviceList = links.map((link: any) => link.services)
+      
+      // Extract services from links - array of { id, service_id, position, services: {...} }
+      const serviceList = links
+        .filter((link: any) => link.services)
+        .map((link: any) => link.services)
+      
       setServices(serviceList)
     } catch (error) {
       console.error("Error fetching services:", error)
@@ -55,7 +61,7 @@ export function ArticleServiceRecommendation({
   return (
     <section className="my-12 py-8 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg">
       <div className="max-w-3xl mx-auto px-6">
-        <h3 className="text-2xl font-bold mb-6">Related Services</h3>
+        <h3 className="text-2xl font-bold mb-6">{t("relatedServices")}</h3>
         <div className="grid md:grid-cols-2 gap-6">
           {services.map((service) => {
             const translation = service.services_translations?.find(
@@ -81,7 +87,7 @@ export function ArticleServiceRecommendation({
                   </p>
                   <Link href={`/${locale}/services/${service.slug}`}>
                     <Button size="sm" className="w-full gap-2">
-                      View Service
+                      {t("orderNow")}
                       <ArrowRight className="w-3 h-3" />
                     </Button>
                   </Link>

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
-import { generateReadingTime, generateMetaDescription } from "@/lib/articles"
+import { generateReadingTime, generateMetaDescription } from "@/lib/slug-utils"
 
 export async function GET(
   request: NextRequest,
@@ -38,6 +38,7 @@ export async function GET(
           locale,
           title,
           content,
+          slug,
           meta_description,
           created_at,
           updated_at
@@ -133,6 +134,7 @@ export async function PUT(
             .update({
               title: trans.title,
               content: trans.content,
+              slug: trans.slug, // Include slug in update
               meta_description: trans.meta_description || metaDesc,
             })
             .eq("id", existing.id)
@@ -146,6 +148,7 @@ export async function PUT(
                 locale: trans.locale,
                 title: trans.title,
                 content: trans.content,
+                slug: trans.slug, // Include slug in insert
                 meta_description: trans.meta_description || metaDesc,
               })
           }

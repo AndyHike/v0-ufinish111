@@ -1,7 +1,6 @@
 import { Suspense } from "react"
 import type { Metadata } from "next"
 import { ArticleContent } from "@/components/articles/article-content"
-import { RelatedArticles } from "@/components/articles/related-articles"
 import { ArticleServiceRecommendation } from "@/components/articles/article-service-recommendation"
 import { createClient } from "@/lib/supabase"
 import { notFound } from "next/navigation"
@@ -20,37 +19,98 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale, slug } = await params
   const supabase = createClient()
 
-  const { data: article } = await supabase
-    .from("articles")
+  // Query using localized slug from article_translations
+  let { data: articleTranslation } = await supabase
+    .from("article_translations")
     .select(
       `
-      id,
       title,
       meta_description,
-      featured_image,
-      slug,
-      article_translations(
-        locale,
-        title,
-        meta_description
+      locale,
+      articles(
+        id,
+        featured_image,
+        meta_description,
+        article_translations(
+          locale,
+          slug
+        )
       )
     `
     )
     .eq("slug", slug)
-    .eq("published", true)
+    .eq("locale", locale)
     .single()
 
-  if (!article) {
+  // If not found with localized slug, try to find by any slug and get correct translation
+  if (!articleTranslation) {
+    const { data: anyTranslation } = await supabase
+      .from("article_translations")
+      .select(
+        `
+        title,
+        meta_description,
+        locale,
+        article_id,
+        articles(
+          id,
+          featured_image,
+          meta_description,
+          article_translations(
+            locale,
+            slug
+          )
+        )
+      `
+      )
+      .eq("slug", slug)
+      .single()
+
+    if (anyTranslation?.article_id) {
+      // Get the correct translation for this locale
+      const { data: correctTranslation } = await supabase
+        .from("article_translations")
+        .select(
+          `
+          title,
+          meta_description,
+          locale,
+          articles(
+            id,
+            featured_image,
+            meta_description,
+            article_translations(
+              locale,
+              slug
+            )
+          )
+        `
+        )
+        .eq("article_id", anyTranslation.article_id)
+        .eq("locale", locale)
+        .single()
+
+      articleTranslation = correctTranslation
+    }
+  }
+
+  if (!articleTranslation?.articles) {
     return {
       title: "Article not found",
     }
   }
 
-  const translation = (article.article_translations as any[])?.find(
-    (t) => t.locale === locale
-  )
-  const title = translation?.title || article.title
-  const description = translation?.meta_description || article.meta_description || ""
+  const article = articleTranslation.articles
+  const title = articleTranslation.title
+  const description = articleTranslation.meta_description || article.meta_description || ""
+
+  // Get all localized slugs for hreflang
+  const translations = article.article_translations as any[]
+  const alternateLanguages: Record<string, string> = {}
+  
+  translations.forEach((t) => {
+    alternateLanguages[t.locale] = `https://devicehelp.cz/${t.locale}/articles/${t.slug}`
+  })
 
   return {
     title: `${title} | DeviceHelp`,
@@ -63,11 +123,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     },
     alternates: {
       canonical: `https://devicehelp.cz/${locale}/articles/${slug}`,
-      languages: {
-        cs: `https://devicehelp.cz/cs/articles/${slug}`,
-        uk: `https://devicehelp.cz/uk/articles/${slug}`,
-        en: `https://devicehelp.cz/en/articles/${slug}`,
-      },
+      languages: alternateLanguages,
     },
   }
 }
@@ -75,18 +131,27 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export async function generateStaticParams() {
   const supabase = createClient()
 
-  const { data: articles } = await supabase
-    .from("articles")
-    .select("slug")
-    .eq("published", true)
+  // Get all published articles with their localized slugs and locales
+  const { data: translations } = await supabase
+    .from("article_translations")
+    .select(
+      `
+      slug,
+      locale,
+      articles(
+        published
+      )
+    `
+    )
+    .eq("articles.published", true)
 
-  if (!articles) return []
+  if (!translations) return []
 
-  return articles.flatMap((article) => [
-    { locale: "cs", slug: article.slug },
-    { locale: "uk", slug: article.slug },
-    { locale: "en", slug: article.slug },
-  ])
+  // Generate params for each locale-slug combination
+  return translations.map((translation) => ({
+    locale: translation.locale,
+    slug: translation.slug,
+  }))
 }
 
 function ArticleContentSkeleton() {
@@ -109,27 +174,33 @@ function ArticleContentSkeleton() {
 async function ArticleSchemaScript({ locale, slug }: { locale: string; slug: string }) {
   const supabase = createClient()
 
-  const { data: article } = await supabase
-    .from("articles")
+  // Query by localized slug and locale
+  const { data: translation } = await supabase
+    .from("article_translations")
     .select(
       `
-      id,
       title,
-      content,
-      meta_description,
-      featured_image,
-      created_at,
-      updated_at
+      locale,
+      articles(
+        id,
+        featured_image,
+        created_at,
+        updated_at,
+        content,
+        meta_description
+      )
     `
     )
     .eq("slug", slug)
-    .eq("published", true)
+    .eq("locale", locale)
     .single()
 
-  if (!article) return null
+  if (!translation?.articles) return null
+
+  const article = translation.articles
 
   const schema = generateArticleSchema({
-    title: article.title,
+    title: translation.title,
     description: article.meta_description || article.content.substring(0, 160),
     image: article.featured_image,
     slug,
@@ -139,7 +210,7 @@ async function ArticleSchemaScript({ locale, slug }: { locale: string; slug: str
   })
 
   const breadcrumbSchema = generateArticleBreadcrumbSchema({
-    title: article.title,
+    title: translation.title,
     slug,
     locale,
   })
@@ -162,6 +233,46 @@ async function ArticleSchemaScript({ locale, slug }: { locale: string; slug: str
 
 export default async function ArticlePage({ params }: Props) {
   const { locale, slug } = await params
+  const supabase = createClient()
+
+  // Check if the current slug is the correct localized slug for this language
+  // If not, redirect to the correct localized slug
+  const { data: correctTranslation } = await supabase
+    .from("article_translations")
+    .select("slug, articles(id)")
+    .eq("slug", slug)
+    .eq("locale", locale)
+    .single()
+
+  // If the slug exists for this locale, use it. Otherwise, find the article by any slug
+  // and redirect to the correct localized slug for this locale
+  let articleId = correctTranslation?.articles?.id
+
+  if (!articleId) {
+    // Try to find the article by searching for this slug in any locale
+    const { data: anyTranslation } = await supabase
+      .from("article_translations")
+      .select("articles(id)")
+      .eq("slug", slug)
+      .single()
+
+    if (anyTranslation?.articles?.id) {
+      articleId = anyTranslation.articles.id
+
+      // Now find the correct slug for the target locale
+      const { data: targetTranslation } = await supabase
+        .from("article_translations")
+        .select("slug")
+        .eq("article_id", articleId)
+        .eq("locale", locale)
+        .single()
+
+      if (targetTranslation?.slug && targetTranslation.slug !== slug) {
+        const { redirect } = await import("next/navigation")
+        redirect(`/${locale}/articles/${targetTranslation.slug}`)
+      }
+    }
+  }
 
   return (
     <div className="min-h-screen py-12">
@@ -175,14 +286,11 @@ export default async function ArticlePage({ params }: Props) {
           </Suspense>
 
           {/* Service Recommendations */}
-          <Suspense fallback={null}>
-            <ArticleServiceRecommendation articleId={slug} locale={locale} />
-          </Suspense>
-
-          {/* Related Articles */}
-          <Suspense fallback={null}>
-            <RelatedArticles currentSlug={slug} locale={locale} />
-          </Suspense>
+          {articleId && (
+            <Suspense fallback={null}>
+              <ArticleServiceRecommendation articleId={articleId} locale={locale} />
+            </Suspense>
+          )}
         </article>
       </div>
     </div>

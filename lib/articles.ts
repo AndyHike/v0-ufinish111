@@ -22,6 +22,7 @@ export interface ArticleTranslation {
   title: string
   content: string
   meta_description?: string
+  slug: string // Localized slug for this language
   created_at: string
   updated_at: string
 }
@@ -55,50 +56,93 @@ export function generateMetaDescription(content: string): string {
   return text.substring(0, 155) + (text.length > 155 ? "..." : "")
 }
 
-// Generate slug from title
-export function generateSlug(title: string): string {
-  return title
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, "") // Remove special characters
-    .replace(/\s+/g, "-") // Replace spaces with hyphens
-    .replace(/-+/g, "-") // Replace multiple hyphens with single hyphen
-    .replace(/^-+|-+$/g, "") // Remove leading/trailing hyphens
-}
-
-// Fetch single article by slug with translations
+// Fetch single article by localized slug and locale
 export async function getArticleBySlug(
   slug: string,
   locale: string = "cs"
 ): Promise<(Article & { translation?: ArticleTranslation }) | null> {
   const supabase = createClient()
 
-  const { data: article, error } = await supabase
-    .from("articles")
+  // Query by localized slug from article_translations
+  let { data: translation, error: translationError } = await supabase
+    .from("article_translations")
     .select(
       `
-      *,
-      article_translations(
+      id,
+      article_id,
+      locale,
+      title,
+      content,
+      meta_description,
+      slug,
+      created_at,
+      updated_at,
+      articles(
         id,
-        article_id,
-        locale,
+        slug,
         title,
         content,
         meta_description,
+        featured,
+        published,
+        view_count,
+        reading_time_minutes,
+        featured_image,
+        tags,
+        category,
+        primary_service_id,
         created_at,
-        updated_at
+        updated_at,
+        article_translations(
+          locale,
+          title,
+          slug
+        )
       )
     `
     )
     .eq("slug", slug)
-    .eq("published", true)
+    .eq("locale", locale)
+    .eq("articles.published", true)
     .single()
 
-  if (error || !article) return null
+  // Fallback: якщо локалізований slug не знайдений, шукаємо за основним slug
+  if (translationError || !translation?.articles) {
+    const { data: article } = await supabase
+      .from("articles")
+      .select(
+        `
+        *,
+        article_translations(
+          id,
+          article_id,
+          locale,
+          title,
+          content,
+          meta_description,
+          slug,
+          created_at,
+          updated_at
+        )
+      `
+      )
+      .eq("slug", slug)
+      .eq("published", true)
+      .single()
 
-  const translation = (article.article_translations as ArticleTranslation[])?.find(
-    (t: ArticleTranslation) => t.locale === locale
-  )
+    if (!article) return null
+
+    const trans = (article.article_translations as ArticleTranslation[])?.find(
+      (t: ArticleTranslation) => t.locale === locale
+    )
+
+    return {
+      ...article,
+      translation: trans,
+    }
+  }
+
+  const article = translation.articles
 
   return {
     ...article,
@@ -111,7 +155,8 @@ export async function getArticles(
   locale: string = "cs",
   page: number = 1,
   limit: number = 10,
-  featured: boolean = false
+  featured: boolean = false,
+  showOnlyPublished: boolean = true // Add parameter to control published filter
 ) {
   const supabase = createClient()
 
@@ -125,6 +170,7 @@ export async function getArticles(
       content,
       meta_description,
       featured,
+      published,
       view_count,
       reading_time_minutes,
       featured_image,
@@ -137,12 +183,17 @@ export async function getArticles(
         locale,
         title,
         content,
+        slug,
         meta_description
       )
     `,
       { count: "exact" }
     )
-    .eq("published", true)
+
+  // Only filter by published if showOnlyPublished is true (default for public view)
+  if (showOnlyPublished) {
+    query = query.eq("published", true)
+  }
 
   if (featured) {
     query = query.eq("featured", true)
@@ -197,6 +248,7 @@ export async function getArticlesByService(serviceId: string, locale: string = "
         locale,
         title,
         content,
+        slug,
         meta_description
       )
     `
