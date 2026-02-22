@@ -71,12 +71,8 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
   const viewContentSent = useRef(false)
   const [mounted, setMounted] = useState(false)
 
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
   // Показуємо помилку тільки якщо немає даних
-  if (mounted && !serviceData) {
+  if (!serviceData) {
     return (
       <div className="container px-4 py-12 md:px-6 md:py-24">
         <div className="mx-auto max-w-6xl text-center">
@@ -84,15 +80,6 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
         </div>
       </div>
     )
-  }
-
-  // Якщо немає даних загалом
-  if (!serviceData) {
-    return null
-  }
-
-  if (!mounted) {
-    return null
   }
 
   const {
@@ -105,7 +92,7 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
     discountedPrice,
     hasDiscount,
     discount,
-    modelSlug, // Отримуємо модель slug з пропса
+    modelSlug,
   } = serviceData
 
   // Використовуємо modelSlug з пропса, якщо він є, інакше беремо з search params для зворотної сумісності
@@ -118,8 +105,12 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
   const benefitsList = translation.benefits?.split("\n").filter((item) => item.trim()) || []
 
   useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  useEffect(() => {
     // Перевіряємо чи ми на клієнті ТА чи не відправляли подію раніше
-    if (viewContentSent.current) return
+    if (!mounted || viewContentSent.current) return
 
     // Виконуємо тільки після монтування компонента на клієнті
     const sendFbqEvent = () => {
@@ -163,7 +154,7 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
     // Додаємо невеликий таймаут щоб гарантувати що fbq завантажився
     const timeoutId = setTimeout(sendFbqEvent, 100)
     return () => clearTimeout(timeoutId)
-  }, [serviceData.id, translation.name, modelParam, sourceModel, modelServicePrice, minPrice, maxPrice])
+  }, [mounted, serviceData.id, translation.name, modelParam, modelServicePrice, minPrice, maxPrice])
 
   const formatWarranty = (months: number | null, period: string) => {
     if (months === null || months === undefined) return t("contactForWarranty")
