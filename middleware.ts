@@ -86,11 +86,17 @@ export async function middleware(request: NextRequest) {
     return response
   }
 
+  // Quick locale check without full response building for most requests
   const locale = pathname.split("/")[1]
-  const response = NextResponse.next()
+  if (!supportedLocales.includes(locale)) {
+    return NextResponse.next()
+  }
 
   const savedLocale = request.cookies.get("NEXT_LOCALE")?.value
+  
+  // Only build response if we need to set cookies
   if (savedLocale !== locale && supportedLocales.includes(locale)) {
+    const response = NextResponse.next()
     response.cookies.set("NEXT_LOCALE", locale, {
       path: "/",
       maxAge: 31536000,
@@ -98,17 +104,16 @@ export async function middleware(request: NextRequest) {
       secure: process.env.NODE_ENV === "production",
       httpOnly: false,
     })
+    return response
   }
 
+  // Auth checks for protected routes
   if (pathname.includes("/profile") || pathname.includes("/admin")) {
     const sessionId = request.cookies.get("session_id")?.value
-
-    console.log("[v0] Checking auth for:", pathname, "Session ID:", sessionId ? "exists" : "missing")
 
     if (!sessionId) {
       const loginUrl = new URL(`/${locale}/auth/login`, request.url)
       loginUrl.searchParams.set("redirect", pathname)
-      console.log("[v0] No session, redirecting to login")
       return NextResponse.redirect(loginUrl)
     }
   }
@@ -122,7 +127,7 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  return response
+  return NextResponse.next()
 }
 
 export const config = {

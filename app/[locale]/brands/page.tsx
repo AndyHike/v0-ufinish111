@@ -13,7 +13,7 @@ type Props = {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { locale } = params
+  const { locale } = await params
 
   const titlePatterns = {
     cs: "Značky zařízení | DeviceHelp",
@@ -43,7 +43,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function BrandsPage({ params }: Props) {
-  const { locale } = params
+  const { locale } = await params
   const t = await getTranslations({ locale, namespace: "Brands" })
 
   const supabase = await createServerClient()

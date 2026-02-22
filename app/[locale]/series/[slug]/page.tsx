@@ -50,9 +50,9 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug, locale } = params
+  const { slug, locale } = await params
 
-  const supabase = createServerClient()
+  const supabase = await createServerClient()
 
   // Спочатку спробуємо знайти за слагом
   let { data: series } = await supabase.from("series").select("*, brands(name)").eq("slug", slug).single()
@@ -101,10 +101,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function SeriesPage({ params }: Props) {
-  const { slug, locale } = params
+  const { slug, locale } = await params
   const t = await getTranslations({ locale, namespace: "Series" })
 
-  const supabase = createServerClient()
+  const supabase = await createServerClient()
 
   // Спочатку спробуємо знайти за слагом
   let { data: series, error: seriesError } = await supabase
