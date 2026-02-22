@@ -5,11 +5,11 @@ import ServicePageClient from "../service-page-client"
 import { getPriceWithDiscount } from "@/lib/discounts/get-applicable-discounts"
 
 type Props = {
-  params: {
+  params: Promise<{
     locale: string
     slug: string
     model: string
-  }
+  }>
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -352,16 +352,8 @@ export default async function ServicePageWithModel({ params }: Props) {
       modelSlug, // Передаємо модель slug
     }
 
-    console.log("Final service data:", {
-      warranty_months: serviceData.warranty_months,
-      duration_hours: serviceData.duration_hours,
-      warranty_source: modelWarrantyMonths !== null ? "model_services" : "services",
-      duration_source: modelDurationHours !== null ? "model_services" : "services",
-      modelServicePrice: serviceData.modelServicePrice,
-      discountedPrice: serviceData.discountedPrice,
-      hasDiscount: serviceData.hasDiscount,
-      hasSourceModel: !!sourceModel,
-    })
+    console.log("[v0] Final service data - warranty_months:", serviceData.warranty_months)
+    console.log("[v0] Final service data - hasDiscount:", serviceData.hasDiscount)
 
     return <ServicePageClient serviceData={serviceData} locale={locale} />
   } catch (error) {
