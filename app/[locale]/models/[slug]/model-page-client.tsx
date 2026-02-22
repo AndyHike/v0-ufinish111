@@ -10,7 +10,6 @@ import { ContactCTABanner } from "@/components/contact-cta-banner"
 import { PartTypeBadges } from "@/components/part-type-badges"
 import { Breadcrumb } from "@/components/breadcrumb"
 import useSWR from "swr"
-import useSWR from "swr"
 
 interface ModelData {
   id: string
