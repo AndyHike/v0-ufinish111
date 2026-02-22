@@ -110,45 +110,45 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const structuredData = modelData
     ? {
-        "@context": "https://schema.org",
-        "@type": "Service",
-        name: `${serviceName} ${modelData.brands?.name} ${modelData.name}`,
-        provider: {
-          "@type": "LocalBusiness",
-          name: "DeviceHelp",
-          address: {
-            "@type": "PostalAddress",
-            streetAddress: "Bělohorská 209/133",
-            addressLocality: "Praha 6-Břevnov",
-            addressRegion: "Praha",
-            postalCode: "169 00",
-            addressCountry: "CZ",
-          },
-          telephone: "+420 775 848 259",
+      "@context": "https://schema.org",
+      "@type": "Service",
+      name: `${serviceName} ${modelData.brands?.name} ${modelData.name}`,
+      provider: {
+        "@type": "LocalBusiness",
+        name: "DeviceHelp",
+        address: {
+          "@type": "PostalAddress",
+          streetAddress: "Bělohorská 209/133",
+          addressLocality: "Praha 6-Břevnov",
+          addressRegion: "Praha",
+          postalCode: "169 00",
+          addressCountry: "CZ",
         },
-        areaServed: ["Praha 6", "Břevnov", "Dejvice", "Vokovice"],
-        warranty: "6 months",
-      }
+        telephone: "+420 775 848 259",
+      },
+      areaServed: ["Praha 6", "Břevnov", "Dejvice", "Vokovice"],
+      warranty: "6 months",
+    }
     : {
-        "@context": "https://schema.org",
-        "@type": "Service",
-        name: serviceName,
-        provider: {
-          "@type": "LocalBusiness",
-          name: "DeviceHelp",
-          address: {
-            "@type": "PostalAddress",
-            streetAddress: "Bělohorská 209/133",
-            addressLocality: "Praha 6-Břevnov",
-            addressRegion: "Praha",
-            postalCode: "169 00",
-            addressCountry: "CZ",
-          },
-          telephone: "+420 775 848 259",
+      "@context": "https://schema.org",
+      "@type": "Service",
+      name: serviceName,
+      provider: {
+        "@type": "LocalBusiness",
+        name: "DeviceHelp",
+        address: {
+          "@type": "PostalAddress",
+          streetAddress: "Bělohorská 209/133",
+          addressLocality: "Praha 6-Břevnov",
+          addressRegion: "Praha",
+          postalCode: "169 00",
+          addressCountry: "CZ",
         },
-        areaServed: ["Praha 6", "Břevnov", "Dejvice", "Vokovice"],
-        warranty: "6 months",
-      }
+        telephone: "+420 775 848 259",
+      },
+      areaServed: ["Praha 6", "Břevnov", "Dejvice", "Vokovice"],
+      warranty: "6 months",
+    }
 
   return {
     title: currentMetadata.title,
@@ -196,6 +196,7 @@ export default async function ServicePageWithModel({ params }: Props) {
           description,
           detailed_description,
           what_included,
+          benefits,
           locale
         )
       `)
@@ -206,14 +207,10 @@ export default async function ServicePageWithModel({ params }: Props) {
       notFound()
     }
 
-    const translation = service.services_translations?.[0]
-    if (!translation || translation.locale !== locale) {
-      // Перевіримо наявність перекладу для локалі
-      const localizedTranslation = service.services_translations?.find((t: any) => t.locale === locale)
-      if (!localizedTranslation) {
-        notFound()
-      }
-      Object.assign(translation, localizedTranslation)
+    const translation = service.services_translations?.find((t: any) => t.locale === locale)
+      || service.services_translations?.[0]
+    if (!translation) {
+      notFound()
     }
 
     // Get FAQs
@@ -277,7 +274,7 @@ export default async function ServicePageWithModel({ params }: Props) {
           name: model.name,
           slug: model.slug,
           image_url: model.image_url,
-          brand: model.brands ? {
+          brands: model.brands ? {
             id: model.brands.id,
             name: model.brands.name,
             slug: model.brands.slug,
@@ -351,7 +348,7 @@ export default async function ServicePageWithModel({ params }: Props) {
         description: translation?.description || "",
         detailed_description: translation?.detailed_description || "",
         what_included: translation?.what_included ? (typeof translation.what_included === "string" ? translation.what_included : "") : "",
-        benefits: null,
+        benefits: translation?.benefits || null,
       },
       faqs: faqsWithTranslations.map((faq: any) => ({
         id: faq.id || "",
@@ -366,11 +363,11 @@ export default async function ServicePageWithModel({ params }: Props) {
         name: sourceModel.name || "",
         slug: sourceModel.slug || "",
         image_url: sourceModel.image_url || null,
-        brand: sourceModel.brand ? {
-          id: sourceModel.brand.id || "",
-          name: sourceModel.brand.name || "",
-          slug: sourceModel.brand.slug || "",
-          logo_url: sourceModel.brand.logo_url || null,
+        brands: sourceModel.brands ? {
+          id: sourceModel.brands.id || "",
+          name: sourceModel.brands.name || "",
+          slug: sourceModel.brands.slug || "",
+          logo_url: sourceModel.brands.logo_url || null,
         } : null,
       } : null,
       modelServicePrice: modelServicePrice || null,
@@ -382,7 +379,7 @@ export default async function ServicePageWithModel({ params }: Props) {
       modelSlug: modelSlug || null,
     }
 
-    
+
     return <ServicePageClient serviceData={serviceData} locale={locale} />
   } catch (error) {
     console.error("Error loading service page:", error)

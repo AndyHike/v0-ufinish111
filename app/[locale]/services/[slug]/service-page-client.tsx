@@ -47,7 +47,7 @@ interface ServiceData {
       name: string
       slug: string | null
       logo_url: string | null
-    }
+    } | null
   } | null
   modelServicePrice: number | null
   minPrice: number | null
@@ -107,7 +107,7 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
     discount,
     modelSlug, // Отримуємо модель slug з пропса
   } = serviceData
-  
+
   // Використовуємо modelSlug з пропса, якщо він є, інакше беремо з search params для зворотної сумісності
   const modelParam = modelSlug || searchParams.get("model")
 
@@ -289,7 +289,7 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
           {/* Ліва колонка - зображення (контрольована висота) */}
           <div className="lg:col-span-2 flex flex-col">
             <div className="relative w-full bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl overflow-hidden flex-shrink-0"
-                 style={{ aspectRatio: "4/3", maxHeight: "300px" }}>
+              style={{ aspectRatio: "4/3", maxHeight: "300px" }}>
               {/* Part Type Badges - верхній лівий кут */}
               {serviceData.part_type && (
                 <div className="absolute top-2 left-2 z-10">
