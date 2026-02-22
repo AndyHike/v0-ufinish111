@@ -5,11 +5,11 @@ import ServicePageClient from "../service-page-client"
 import { getPriceWithDiscount } from "@/lib/discounts/get-applicable-discounts"
 
 type Props = {
-  params: {
+  params: Promise<{
     locale: string
     slug: string
     model: string
-  }
+  }>
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -110,45 +110,45 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const structuredData = modelData
     ? {
-        "@context": "https://schema.org",
-        "@type": "Service",
-        name: `${serviceName} ${modelData.brands?.name} ${modelData.name}`,
-        provider: {
-          "@type": "LocalBusiness",
-          name: "DeviceHelp",
-          address: {
-            "@type": "PostalAddress",
-            streetAddress: "Bělohorská 209/133",
-            addressLocality: "Praha 6-Břevnov",
-            addressRegion: "Praha",
-            postalCode: "169 00",
-            addressCountry: "CZ",
-          },
-          telephone: "+420 775 848 259",
+      "@context": "https://schema.org",
+      "@type": "Service",
+      name: `${serviceName} ${modelData.brands?.name || ""} ${modelData.name || ""}`,
+      provider: {
+        "@type": "LocalBusiness",
+        name: "DeviceHelp",
+        address: {
+          "@type": "PostalAddress",
+          streetAddress: "Bělohorská 209/133",
+          addressLocality: "Praha 6-Břevnov",
+          addressRegion: "Praha",
+          postalCode: "169 00",
+          addressCountry: "CZ",
         },
-        areaServed: ["Praha 6", "Břevnov", "Dejvice", "Vokovice"],
-        warranty: "6 months",
-      }
+        telephone: "+420 775 848 259",
+      },
+      areaServed: ["Praha 6", "Břevnov", "Dejvice", "Vokovice"],
+      warranty: "6 months",
+    }
     : {
-        "@context": "https://schema.org",
-        "@type": "Service",
-        name: serviceName,
-        provider: {
-          "@type": "LocalBusiness",
-          name: "DeviceHelp",
-          address: {
-            "@type": "PostalAddress",
-            streetAddress: "Bělohorská 209/133",
-            addressLocality: "Praha 6-Břevnov",
-            addressRegion: "Praha",
-            postalCode: "169 00",
-            addressCountry: "CZ",
-          },
-          telephone: "+420 775 848 259",
+      "@context": "https://schema.org",
+      "@type": "Service",
+      name: serviceName,
+      provider: {
+        "@type": "LocalBusiness",
+        name: "DeviceHelp",
+        address: {
+          "@type": "PostalAddress",
+          streetAddress: "Bělohorská 209/133",
+          addressLocality: "Praha 6-Břevnov",
+          addressRegion: "Praha",
+          postalCode: "169 00",
+          addressCountry: "CZ",
         },
-        areaServed: ["Praha 6", "Břevnov", "Dejvice", "Vokovice"],
-        warranty: "6 months",
-      }
+        telephone: "+420 775 848 259",
+      },
+      areaServed: ["Praha 6", "Břevnov", "Dejvice", "Vokovice"],
+      warranty: "6 months",
+    }
 
   return {
     title: currentMetadata.title,
@@ -159,6 +159,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description: currentMetadata.description,
       type: "website",
       locale: locale,
+      url: `https://devicehelp.cz/${locale}/services/${slug}/${modelSlug}`,
+    },
+    alternates: {
+      canonical: `https://devicehelp.cz/${locale}/services/${slug}/${modelSlug}`,
     },
     twitter: {
       card: "summary",
@@ -173,9 +177,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function ServicePageWithModel({ params }: Props) {
-  const { slug, locale, model: modelSlug } = params
+  const { slug, locale, model: modelSlug } = await params
 
-  const supabase = createServerClient()
+  const supabase = await createServerClient()
 
   try {
     // Get service data
@@ -193,6 +197,7 @@ export default async function ServicePageWithModel({ params }: Props) {
           description,
           detailed_description,
           what_included,
+          benefits,
           locale
         )
       `)
@@ -204,6 +209,7 @@ export default async function ServicePageWithModel({ params }: Props) {
     }
 
     const translation = service.services_translations?.find((t: any) => t.locale === locale)
+      || service.services_translations?.[0]
     if (!translation) {
       notFound()
     }
@@ -225,19 +231,15 @@ export default async function ServicePageWithModel({ params }: Props) {
 
     const faqsWithTranslations =
       faqs
-        ?.map((faq) => {
-          const faqTranslation = faq.service_faq_translations?.find((t: any) => t.locale === locale)
-          if (!faqTranslation) return null
-          return {
-            id: faq.id,
-            position: faq.position,
-            translation: {
-              question: faqTranslation.question,
-              answer: faqTranslation.answer,
-            },
-          }
-        })
-        .filter(Boolean) || []
+        ?.map((faq: any) => ({
+          id: faq.id,
+          position: faq.position,
+          translation: {
+            question: faq.service_faq_translations?.find((t: any) => t.locale === locale)?.question || "",
+            answer: faq.service_faq_translations?.find((t: any) => t.locale === locale)?.answer || "",
+          },
+        }))
+        .filter((faq: any) => faq.translation.question && faq.translation.answer) || []
 
     // Get source model if specified
     let sourceModel = null
@@ -267,7 +269,19 @@ export default async function ServicePageWithModel({ params }: Props) {
         .single()
 
       if (model) {
-        sourceModel = model
+        // Витягуємо тільки потрібні поля для серіалізації
+        sourceModel = {
+          id: model.id,
+          name: model.name,
+          slug: model.slug,
+          image_url: model.image_url,
+          brands: model.brands ? {
+            id: model.brands.id,
+            name: model.brands.name,
+            slug: model.brands.slug,
+            logo_url: model.brands.logo_url,
+          } : null,
+        }
 
         // Get model-specific service data
         const { data: modelService } = await supabase
@@ -320,44 +334,52 @@ export default async function ServicePageWithModel({ params }: Props) {
 
     const serviceData = {
       id: service.id,
-      position: service.position,
+      position: service.position || 0,
       warranty_months:
         modelWarrantyMonths !== null && modelWarrantyMonths !== undefined
           ? modelWarrantyMonths
-          : service.warranty_months,
+          : (service.warranty_months || null),
       duration_hours:
-        modelDurationHours !== null && modelDurationHours !== undefined ? modelDurationHours : service.duration_hours,
+        modelDurationHours !== null && modelDurationHours !== undefined ? modelDurationHours : (service.duration_hours || null),
       warranty_period: "months",
-      image_url: service.image_url,
+      image_url: service.image_url || null,
       slug: service.slug,
       translation: {
-        name: translation.name,
-        description: translation.description,
-        detailed_description: translation.detailed_description,
-        what_included: translation.what_included,
-        benefits: null,
+        name: translation?.name || "",
+        description: translation?.description || "",
+        detailed_description: translation?.detailed_description || "",
+        what_included: translation?.what_included || "",
+        benefits: translation?.benefits || null,
       },
-      faqs: faqsWithTranslations,
-      sourceModel,
-      modelServicePrice,
-      minPrice,
-      maxPrice,
-      discountedPrice,
-      hasDiscount,
-      discount,
-      modelSlug, // Передаємо модель slug
+      faqs: faqsWithTranslations.map((faq: any) => ({
+        id: faq.id || "",
+        position: faq.position || 0,
+        translation: {
+          question: faq.translation?.question || "",
+          answer: faq.translation?.answer || "",
+        },
+      })),
+      sourceModel: sourceModel ? {
+        id: sourceModel.id || "",
+        name: sourceModel.name || "",
+        slug: sourceModel.slug || "",
+        image_url: sourceModel.image_url || null,
+        brands: sourceModel.brands ? {
+          id: sourceModel.brands.id || "",
+          name: sourceModel.brands.name || "",
+          slug: sourceModel.brands.slug || "",
+          logo_url: sourceModel.brands.logo_url || null,
+        } : null,
+      } : null,
+      modelServicePrice: modelServicePrice ? Number(modelServicePrice) : null,
+      minPrice: minPrice ? Number(minPrice) : null,
+      maxPrice: maxPrice ? Number(maxPrice) : null,
+      discountedPrice: discountedPrice ? Number(discountedPrice) : null,
+      hasDiscount: hasDiscount || false,
+      discount: discount ? JSON.parse(JSON.stringify(discount)) : null,
+      modelSlug: modelSlug || null,
     }
 
-    console.log("Final service data:", {
-      warranty_months: serviceData.warranty_months,
-      duration_hours: serviceData.duration_hours,
-      warranty_source: modelWarrantyMonths !== null ? "model_services" : "services",
-      duration_source: modelDurationHours !== null ? "model_services" : "services",
-      modelServicePrice: serviceData.modelServicePrice,
-      discountedPrice: serviceData.discountedPrice,
-      hasDiscount: serviceData.hasDiscount,
-      hasSourceModel: !!sourceModel,
-    })
 
     return <ServicePageClient serviceData={serviceData} locale={locale} />
   } catch (error) {

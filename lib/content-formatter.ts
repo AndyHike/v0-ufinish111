@@ -6,6 +6,9 @@
  * - # Заголовок 1 рівня (h1)
  * - * Пункт списку (ul)
  * - **жирний текст** (bold)
+ * - __обичайний текст без жиру__ (normal/regular)
+ * - ~~перекреслений текст~~ (strikethrough)
+ * - <u>підкреслений текст</u> (underline) або __u текст__
  * - Порожні рядки розділяють параграфи
  */
 export function formatContent(content: string): string {
@@ -69,14 +72,26 @@ export function formatContent(content: string): string {
 }
 
 /**
- * Форматує інлайн текст з підтримкою жирного шрифту **текст**
+ * Форматує інлайн текст з підтримкою різних стилів
+ * Порядок важливий - спочатку обробляємо складніші шаблони
  */
 function formatInlineText(text: string): string {
   // Екрануємо HTML спеціальні символи спочатку
-  const escaped = escapeHtml(text)
+  let escaped = escapeHtml(text)
   
-  // Замінюємо **текст** на <strong>текст</strong>
-  return escaped.replace(/\*\*([^\*]+)\*\*/g, '<strong class="font-bold">$1</strong>')
+  // Замінюємо ~~text~~ на <s>text</s> (strikethrough)
+  escaped = escaped.replace(/~~([^~]+)~~/g, '<s class="line-through">$1</s>')
+  
+  // Замінюємо __u text__ на <u>text</u> (underline variant)
+  escaped = escaped.replace(/__u\s+([^_]+?)(?:__|\s+__)/g, '<u class="underline">$1</u>')
+  
+  // Замінюємо __text__ на <span>text</span> (regular/normal weight - не жирний)
+  escaped = escaped.replace(/__([^_]+?)__(?!u)/g, '<span class="font-normal">$1</span>')
+  
+  // Замінюємо **text** на <strong>text</strong> (bold) - це має бути останнім
+  escaped = escaped.replace(/\*\*([^\*]+)\*\*/g, '<strong class="font-bold">$1</strong>')
+  
+  return escaped
 }
 
 /**
@@ -94,15 +109,28 @@ function escapeHtml(text: string): string {
 }
 
 /**
- * Генерує ID з тексту заголовку для якорів
+ * Генерує ID з тексту заголовку для якорів - підтримує кирилицю та інші мови
  */
 export function generateId(text: string): string {
-  return text
+  // Спочатку нормалізуємо текст
+  let id = text
     .toLowerCase()
+    .trim()
+    // Замінюємо пробіли на тире
     .replace(/\s+/g, '-')
-    .replace(/[^\w-]/g, '')
+    // Видаляємо спеціальні символи крім тире, але зберігаємо букви будь-яких мов та цифри
+    .replace(/[^\w\-а-яіїєґ]/gu, '')
+    // Видаляємо кілька тире підряд
     .replace(/-+/g, '-')
+    // Видаляємо тире на початку та кінці
     .replace(/^-|-$/g, '')
+
+  // Якщо ID пустий після обробки, генеруємо випадковий
+  if (!id) {
+    id = 'section-' + Math.random().toString(36).substr(2, 9)
+  }
+
+  return id
 }
 
 /**

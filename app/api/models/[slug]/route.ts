@@ -1,14 +1,14 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/utils/supabase/server"
 
-export async function GET(request: NextRequest, { params }: { params: { slug: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   try {
-    const supabase = createClient()
-    const { slug } = params
+    const { slug } = await params
+    const supabase = await createClient()
     const { searchParams } = new URL(request.url)
     const locale = searchParams.get("locale") || "uk"
 
-    console.log(`Fetching model data for slug: ${slug}, locale: ${locale}`)
+    console.log(`[v0] Fetching model data for slug: ${slug}, locale: ${locale}`)
 
     // Спочатку спробуємо знайти за слагом
     let { data: model, error } = await supabase

@@ -519,9 +519,14 @@ export function ArticleEditor({ articleId, locale }: ArticleEditorProps) {
                   className="mt-1 min-h-64 font-mono text-sm"
                 />
                 <p className="text-xs text-gray-500 mt-2">
-                  💡 Format guide (SEO-friendly): Use <code>## Section</code> for main headings (H2), <code>### Subsection</code> for subheadings (H3). 
-                  Use <code>**text**</code> for bold. Separate paragraphs with blank lines. Start lines with <code>*</code> for bullet points.
-                  Note: Article title is H1, content should use H2/H3 only.
+                  💡 <strong>Format Guide:</strong><br/>
+                  • <code>## Section</code> for H2 headings, <code>### Subsection</code> for H3<br/>
+                  • <code>**text**</code> for <strong>bold</strong> text<br/>
+                  • <code>__text__</code> for normal text (remove bold from headings)<br/>
+                  • <code>~~text~~</code> for <s className="line-through">strikethrough</s> text<br/>
+                  • <code>__u text__</code> for <u className="underline">underlined</u> text<br/>
+                  • Start lines with <code>* </code> for bullet points<br/>
+                  • Blank lines separate paragraphs. Article title is H1, use H2/H3 only.
                 </p>
                 {trans?.content && (
                   <p className="text-xs text-gray-500 mt-1">

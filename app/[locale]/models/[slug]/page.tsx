@@ -132,6 +132,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description: currentMetadata.description,
       type: "website",
       locale: locale,
+      url: `https://devicehelp.cz/${locale}/models/${slug}`,
+    },
+    alternates: {
+      canonical: `https://devicehelp.cz/${locale}/models/${slug}`,
     },
     twitter: {
       card: "summary",

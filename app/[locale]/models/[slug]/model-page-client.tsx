@@ -77,10 +77,11 @@ export default function ModelPageClient({ modelData, locale }: Props) {
     setMounted(true)
   }, [])
 
+  // ВАЖЛИВО: Всі useEffect перед умовними поверненнями
   useEffect(() => {
     if (process.env.NODE_ENV === "development") {
-      console.log("[v0] Model services loaded:", currentModelData.services.length)
-      currentModelData.services.forEach((service) => {
+      console.log("[v0] Model services loaded:", currentModelData?.services?.length)
+      currentModelData?.services?.forEach((service) => {
         if (service.has_discount) {
           console.log(`[v0] Service "${service.name}" has discount:`, {
             originalPrice: service.price,
@@ -99,19 +100,19 @@ export default function ModelPageClient({ modelData, locale }: Props) {
     const sendFbqEvent = () => {
       if (typeof window === "undefined" || !window.fbq) return
 
-      const servicesWithPrice = currentModelData.services.filter((s) => s.price !== null && s.price !== undefined)
+      const servicesWithPrice = currentModelData?.services?.filter((s) => s.price !== null && s.price !== undefined) || []
       const avgPrice =
         servicesWithPrice.length > 0
           ? servicesWithPrice.reduce((sum, s) => sum + (s.price || 0), 0) / servicesWithPrice.length
           : 0
 
-      const brandName = currentModelData.brands?.name || "Unknown"
-      const modelName = currentModelData.name
+      const brandName = currentModelData?.brands?.name || "Unknown"
+      const modelName = currentModelData?.name || "Unknown"
       const contentName = `${brandName} ${modelName}`
 
       window.fbq("track", "ViewContent", {
         content_type: "product",
-        content_id: `model_${currentModelData.id}`,
+        content_id: `model_${currentModelData?.id}`,
         content_name: contentName,
         content_category: "device_models",
         value: Math.round(avgPrice) || 0,
@@ -123,7 +124,7 @@ export default function ModelPageClient({ modelData, locale }: Props) {
           brand: brandName,
           model: modelName,
           avg_price: Math.round(avgPrice) || 0,
-          services_count: currentModelData.services.length,
+          services_count: currentModelData?.services?.length || 0,
         })
       }
 
@@ -132,7 +133,28 @@ export default function ModelPageClient({ modelData, locale }: Props) {
 
     const timeoutId = setTimeout(sendFbqEvent, 100)
     return () => clearTimeout(timeoutId)
-  }, [modelData])
+  }, [currentModelData])
+
+  // УМОВНЕ ПОВЕРНЕННЯ ПІСЛЯ ВСІХ HOOKS
+  // Показуємо помилку тільки якщо загрузка завершена і немає даних
+  if (mounted && !isLoading && (!currentModelData || !currentModelData.services)) {
+    return (
+      <div className="container px-4 py-12 md:px-6 md:py-24">
+        <div className="mx-auto max-w-6xl text-center">
+          <p className="text-lg text-muted-foreground">Не вдалося завантажити дані про модель. Спробуйте оновити сторінку.</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Якщо немає даних загалом
+  if (!currentModelData || !currentModelData.services) {
+    return null
+  }
+
+  if (!mounted) {
+    return null
+  }
 
   const formatWarranty = (months: number | null, period: string | null) => {
     if (months === null || months === undefined || months === 0) return t("contactForWarranty")

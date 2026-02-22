@@ -101,6 +101,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description: currentMetadata.description,
       type: "website",
       locale: locale,
+      url: `https://devicehelp.cz/${locale}/brands/${slug}`,
+    },
+    alternates: {
+      canonical: `https://devicehelp.cz/${locale}/brands/${slug}`,
     },
     twitter: {
       card: "summary",
@@ -140,6 +144,15 @@ export default async function BrandPage({ params }: Props) {
 
   if (brandError || !brand) {
     notFound()
+  }
+
+  // Сортуємо серії на стороні сервера
+  if (brand?.series) {
+    brand.series = (brand.series as any[]).sort((a, b) => {
+      const aPos = a.position || 999
+      const bPos = b.position || 999
+      return aPos - bPos
+    })
   }
 
   // Оновимо запит до бази даних, щоб отримати моделі без серії

@@ -119,6 +119,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title,
       description,
       type: "article",
+      url: `https://devicehelp.cz/${locale}/articles/${slug}`,
       images: article.featured_image ? [article.featured_image] : [],
     },
     alternates: {

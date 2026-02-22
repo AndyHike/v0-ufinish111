@@ -6,13 +6,13 @@ import { getPriceWithDiscount } from "@/lib/discounts/get-applicable-discounts"
 import { DeviceSelectionWrapper } from "./device-selection-wrapper"
 
 type Props = {
-  params: {
+  params: Promise<{
     locale: string
     slug: string
-  }
-  searchParams: {
+  }>
+  searchParams: Promise<{
     model?: string
-  }
+  }>
 }
 
 export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
@@ -163,6 +163,10 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
       description: currentMetadata.description,
       type: "website",
       locale: locale,
+      url: `https://devicehelp.cz/${locale}/services/${slug}`,
+    },
+    alternates: {
+      canonical: `https://devicehelp.cz/${locale}/services/${slug}`,
     },
     twitter: {
       card: "summary",
