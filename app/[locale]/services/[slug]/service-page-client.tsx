@@ -206,7 +206,11 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
     warrantyCounted: getFormattedWarrantyForPlaceholder(serviceData.warranty_months, serviceData.warranty_period),
     warranty: getFormattedWarrantyForPlaceholder(serviceData.warranty_months, serviceData.warranty_period),
     warrantyMonths: serviceData.warranty_months || undefined,
-    price: modelServicePrice ? formatCurrency(modelServicePrice) : (minPrice ? formatCurrency(minPrice) : ""),
+    // Для ціни: якщо вибрана конкретна модель, використовуємо ціну цієї моделі або "за запитом"
+    // Якщо модель не вибрана, використовуємо мінімальну ціну з діапазону
+    price: modelParam
+      ? (modelServicePrice ? formatCurrency(modelServicePrice) : t("priceOnRequest"))
+      : (minPrice ? formatCurrency(minPrice) : t("priceOnRequest")),
     // Для тривалості: передаємо сформатовану з перекладом
     durationFormatted: getFormattedDurationForPlaceholder(serviceData.duration_hours),
     duration: getFormattedDurationForPlaceholder(serviceData.duration_hours),
@@ -297,23 +301,40 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
 
             {/* Ціна */}
             <div>
-              {modelParam && serviceData.modelServicePrice !== null && serviceData.modelServicePrice !== undefined ? (
-                <ServicePriceDisplay
-                  originalPrice={serviceData.modelServicePrice}
-                  discountedPrice={discountedPrice || undefined}
-                  hasDiscount={hasDiscount}
-                  discount={discount}
-                  size="lg"
-                  showBadge={true}
-                />
-              ) : minPrice !== null && maxPrice !== null ? (
-                <div className="text-2xl lg:text-3xl font-bold text-gray-900 mb-1">
-                  {minPrice === maxPrice
-                    ? formatCurrency(minPrice)
-                    : `${formatCurrency(minPrice)} - ${formatCurrency(maxPrice)}`}
-                </div>
+              {modelParam ? (
+                // Коли вибрана конкретна модель - показуємо ціну лише для цієї моделі або "за запитом"
+                modelParam && serviceData.modelServicePrice !== null && serviceData.modelServicePrice !== undefined ? (
+                  <ServicePriceDisplay
+                    originalPrice={serviceData.modelServicePrice}
+                    discountedPrice={discountedPrice || undefined}
+                    hasDiscount={hasDiscount}
+                    discount={discount}
+                    size="lg"
+                    showBadge={true}
+                    priceOnRequest={false}
+                  />
+                ) : (
+                  <ServicePriceDisplay
+                    originalPrice={null}
+                    size="lg"
+                    priceOnRequest={true}
+                  />
+                )
               ) : (
-                <div className="text-2xl lg:text-3xl font-bold text-gray-900 mb-1">{t("priceOnRequest")}</div>
+                // Коли модель не вибрана - показуємо діапазон цін
+                minPrice !== null && maxPrice !== null ? (
+                  <div className="text-2xl lg:text-3xl font-bold text-gray-900 mb-1">
+                    {minPrice === maxPrice
+                      ? formatCurrency(minPrice)
+                      : `${formatCurrency(minPrice)} - ${formatCurrency(maxPrice)}`}
+                  </div>
+                ) : (
+                  <ServicePriceDisplay
+                    originalPrice={null}
+                    size="lg"
+                    priceOnRequest={true}
+                  />
+                )
               )}
               {(sourceModel || modelParam) && (
                 <p className="text-gray-600 text-sm">

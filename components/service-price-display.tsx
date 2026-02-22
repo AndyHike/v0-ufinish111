@@ -1,16 +1,18 @@
+import { useTranslations } from "next-intl"
 import { formatCurrency } from "@/lib/format-currency"
 import { Badge } from "@/components/ui/badge"
 import { formatDiscountValue } from "@/lib/discounts/utils"
 import type { Discount } from "@/lib/discounts/types"
 
 interface ServicePriceDisplayProps {
-  originalPrice: number
-  discountedPrice?: number
+  originalPrice?: number | null
+  discountedPrice?: number | null
   hasDiscount?: boolean
   discount?: Discount
   actualDiscountPercentage?: number
   size?: "sm" | "md" | "lg"
   showBadge?: boolean
+  priceOnRequest?: boolean
 }
 
 export function ServicePriceDisplay({
@@ -21,7 +23,10 @@ export function ServicePriceDisplay({
   actualDiscountPercentage,
   size = "md",
   showBadge = true,
+  priceOnRequest = false,
 }: ServicePriceDisplayProps) {
+  const t = useTranslations("Services")
+  
   const sizeClasses = {
     sm: "text-base",
     md: "text-xl",
@@ -32,6 +37,15 @@ export function ServicePriceDisplay({
     sm: "text-xs",
     md: "text-sm",
     lg: "text-base",
+  }
+
+  // If price on request or no price available
+  if (priceOnRequest || !originalPrice) {
+    return (
+      <div className={`font-bold text-gray-900 ${sizeClasses[size]}`} suppressHydrationWarning>
+        {t("priceOnRequest")}
+      </div>
+    )
   }
 
   if (!hasDiscount || !discountedPrice) {

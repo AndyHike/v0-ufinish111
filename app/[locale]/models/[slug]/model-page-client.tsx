@@ -266,12 +266,17 @@ export default function ModelPageClient({ modelData, locale }: Props) {
                             discountedPrice={service.discounted_price || undefined}
                             hasDiscount={service.has_discount}
                             discount={service.discount}
-                            actualDiscountPercentage={service.actual_discount_percentage || undefined} // Pass actual percentage to display component
+                            actualDiscountPercentage={service.actual_discount_percentage || undefined}
                             size="md"
                             showBadge={true}
+                            priceOnRequest={false}
                           />
                         ) : (
-                          <div className="text-xl font-bold text-gray-900">{t("priceOnRequest")}</div>
+                          <ServicePriceDisplay
+                            originalPrice={null}
+                            size="md"
+                            priceOnRequest={true}
+                          />
                         )}
                         <div className="flex items-center text-blue-600 font-semibold group-hover:text-blue-700">
                           <span className="mr-1 text-sm">{commonT("details")}</span>
