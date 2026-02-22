@@ -171,7 +171,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     },
     other: {
       "seznam-wmt": "kEPWnFjKJyWrp9OtNNXIlOe6oNf9vfv4",
-      "structured-data": JSON.stringify(structuredData),
     },
   }
 }
@@ -347,10 +346,14 @@ export default async function ServicePageWithModel({ params }: Props) {
       image_url: service.image_url,
       slug: service.slug,
       translation: {
-        name: translation.name,
-        description: translation.description,
-        detailed_description: translation.detailed_description,
-        what_included: translation.what_included,
+        name: translation.name || "",
+        description: translation.description || "",
+        detailed_description: translation.detailed_description || "",
+        what_included: typeof translation.what_included === "string" 
+          ? translation.what_included 
+          : (typeof translation.what_included === "object" 
+              ? JSON.stringify(translation.what_included) 
+              : ""),
         benefits: null,
       },
       faqs: faqsWithTranslations,
@@ -364,9 +367,7 @@ export default async function ServicePageWithModel({ params }: Props) {
       modelSlug, // Передаємо модель slug
     }
 
-    console.log("[v0] Final service data - warranty_months:", serviceData.warranty_months)
-    console.log("[v0] Final service data - hasDiscount:", serviceData.hasDiscount)
-
+    
     return <ServicePageClient serviceData={serviceData} locale={locale} />
   } catch (error) {
     console.error("Error loading service page:", error)
