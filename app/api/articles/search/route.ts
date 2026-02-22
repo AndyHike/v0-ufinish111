@@ -34,7 +34,8 @@ export async function GET(request: NextRequest) {
         article_translations(
           locale,
           title,
-          content
+          content,
+          slug
         )
       `
       )
@@ -82,7 +83,7 @@ export async function GET(request: NextRequest) {
         )
         return {
           id: article.id,
-          slug: article.slug,
+          slug: translation?.slug || article.slug, // Use localized slug if available
           title: translation?.title || article.title,
           category: article.category,
           reading_time: article.reading_time_minutes,

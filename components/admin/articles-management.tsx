@@ -35,7 +35,7 @@ export function ArticlesManagement() {
 
   const fetchArticles = async () => {
     try {
-      const response = await fetch(`/api/articles?limit=100`)
+      const response = await fetch(`/api/articles?limit=100&admin=true`) // Add admin=true to get all articles
       if (!response.ok) throw new Error("Failed to fetch articles")
       const data = await response.json()
       setArticles(data.articles || [])

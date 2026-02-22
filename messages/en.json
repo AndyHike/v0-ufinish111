@@ -512,6 +512,8 @@
   "Articles": {
     "title": "Repair Guides & Tips",
     "subtitle": "Learn from expert guides on how to maintain and repair your devices. Get step-by-step instructions and professional advice.",
+    "tableOfContents": "Table of Contents",
+    "relatedServices": "Related Services",
     "searchPlaceholder": "Search articles...",
     "searchButton": "Search",
     "noArticlesFound": "No articles found",

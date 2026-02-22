@@ -27,6 +27,21 @@ function isPublicAuthRoute(pathname: string): boolean {
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
+  const searchParams = request.nextUrl.searchParams
+
+  // Handle 301 redirects for old URL formats with query parameters
+  // Old format: /services/{slug}?model={model} → New format: /services/{slug}/{model}
+  const servicesMatch = pathname.match(/^\/([a-z]{2})\/services\/([^/]+)$/)
+  if (servicesMatch && searchParams.has("model")) {
+    const locale = servicesMatch[1]
+    const serviceSlug = servicesMatch[2]
+    const modelSlug = searchParams.get("model")
+    
+    return NextResponse.redirect(
+      new URL(`/${locale}/services/${serviceSlug}/${modelSlug}`, request.url),
+      { status: 301 }
+    )
+  }
 
   // Force HTTPS redirect for HTTP requests
   if (request.headers.get("x-forwarded-proto") !== "https" && process.env.NODE_ENV === "production") {

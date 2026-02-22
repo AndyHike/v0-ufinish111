@@ -205,7 +205,7 @@ export default function ModelPageClient({ modelData, locale }: Props) {
               {currentModelData.services.map((service) => (
                 <Link
                   key={service.id}
-                  href={`/${locale}/services/${service.slug}?model=${currentModelData.slug}`}
+                  href={`/${locale}/services/${service.slug}/${currentModelData.slug}`}
                   className="group block"
                   onClick={() => handleServiceClick(service)}
                 >

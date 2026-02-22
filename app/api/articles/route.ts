@@ -9,8 +9,9 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "10")
     const locale = searchParams.get("locale") || "cs"
     const featured = searchParams.get("featured") === "true"
+    const admin = searchParams.get("admin") === "true" // Include all articles in admin view
 
-    const { articles, total } = await getArticles(locale, page, limit, featured)
+    const { articles, total } = await getArticles(locale, page, limit, featured, !admin) // Pass showOnlyPublished parameter
 
     return NextResponse.json({
       articles,
@@ -110,6 +111,7 @@ export async function POST(request: NextRequest) {
           title: t.title || title,
           content: t.content || content,
           meta_description: t.meta_description || calcMetaDescription,
+          slug: t.slug || slug, // Use localized slug if provided, otherwise use default slug
         }))
 
       if (translationInserts.length > 0) {

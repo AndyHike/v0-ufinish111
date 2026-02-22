@@ -261,8 +261,8 @@ export function DeviceSelectionGuard({ serviceSlug, locale }: DeviceSelectionGua
         return
       }
 
-      // Redirect to service page with model parameter
-      router.push(`/${locale}/services/${serviceSlug}?model=${modelSlug}`)
+      // Redirect to service page with model as URL segment
+      router.push(`/${locale}/services/${serviceSlug}/${modelSlug}`)
     } catch (err) {
       console.error("[v0] Error verifying service:", err)
       setError(t("verificationError"))
