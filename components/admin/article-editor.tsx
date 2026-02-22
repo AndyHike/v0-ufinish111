@@ -345,7 +345,24 @@ export function ArticleEditor({ articleId, locale }: ArticleEditorProps) {
               Add
             </Button>
           </div>
-        )}
+          {/* Display added tags */}
+          {mainData.tags.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-3">
+              {mainData.tags.map(tag => (
+                <span key={tag} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-2">
+                  {tag}
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveTag(tag)}
+                    className="hover:text-blue-900"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Category */}

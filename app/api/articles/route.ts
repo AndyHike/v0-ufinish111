@@ -9,8 +9,9 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "10")
     const locale = searchParams.get("locale") || "cs"
     const featured = searchParams.get("featured") === "true"
+    const admin = searchParams.get("admin") === "true" // Include all articles in admin view
 
-    const { articles, total } = await getArticles(locale, page, limit, featured)
+    const { articles, total } = await getArticles(locale, page, limit, featured, !admin) // Pass showOnlyPublished parameter
 
     return NextResponse.json({
       articles,

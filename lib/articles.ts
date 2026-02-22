@@ -155,7 +155,8 @@ export async function getArticles(
   locale: string = "cs",
   page: number = 1,
   limit: number = 10,
-  featured: boolean = false
+  featured: boolean = false,
+  showOnlyPublished: boolean = true // Add parameter to control published filter
 ) {
   const supabase = createClient()
 
@@ -169,6 +170,7 @@ export async function getArticles(
       content,
       meta_description,
       featured,
+      published,
       view_count,
       reading_time_minutes,
       featured_image,
@@ -187,7 +189,11 @@ export async function getArticles(
     `,
       { count: "exact" }
     )
-    .eq("published", true)
+
+  // Only filter by published if showOnlyPublished is true (default for public view)
+  if (showOnlyPublished) {
+    query = query.eq("published", true)
+  }
 
   if (featured) {
     query = query.eq("featured", true)
