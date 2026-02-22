@@ -197,10 +197,10 @@ export function ArticlesHero({ locale, search, sort }: { locale: string; search?
       </div>
 
       {/* Filter Options - Styled Dropdowns */}
-      <div className="mt-6 flex flex-col sm:flex-row gap-2 sm:gap-3 items-end sm:items-center">
+      <div className="mt-3 flex flex-row gap-2 sm:gap-3 items-center flex-wrap">
         {/* Sort Dropdown */}
-        <div className="flex-1 sm:flex-none">
-          <label htmlFor="sort-select" className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1 sm:mb-2 block">
+        <div className="flex-shrink-0">
+          <label htmlFor="sort-select" className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1 block">
             {t("sortBy")}
           </label>
           <select
@@ -214,7 +214,7 @@ export function ArticlesHero({ locale, search, sort }: { locale: string; search?
               if (e.target.value) params.append("sort", e.target.value)
               router.push(`/${locale}/articles${params.toString() ? "?" + params.toString() : ""}`)
             }}
-            className="w-full sm:w-48 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-gray-300 bg-white text-gray-700 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent hover:border-gray-400 transition appearance-none cursor-pointer pr-6 sm:pr-8"
+            className="w-32 sm:w-48 px-2 sm:px-3 py-1 sm:py-2 rounded-lg border border-gray-300 bg-white text-gray-700 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent hover:border-gray-400 transition appearance-none cursor-pointer pr-6 sm:pr-8"
             style={{
               backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
               backgroundRepeat: "no-repeat",
@@ -230,8 +230,8 @@ export function ArticlesHero({ locale, search, sort }: { locale: string; search?
         </div>
 
         {/* Categories Dropdown */}
-        <div className="flex-1 sm:flex-none">
-          <label htmlFor="category-select" className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1 sm:mb-2 block">
+        <div className="flex-shrink-0">
+          <label htmlFor="category-select" className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1 block">
             {t("categories")}
           </label>
           <select
@@ -245,7 +245,7 @@ export function ArticlesHero({ locale, search, sort }: { locale: string; search?
               if (e.target.value) params.append("category", e.target.value)
               router.push(`/${locale}/articles${params.toString() ? "?" + params.toString() : ""}`)
             }}
-            className="w-full sm:w-48 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-gray-300 bg-white text-gray-700 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent hover:border-gray-400 transition appearance-none cursor-pointer pr-6 sm:pr-8"
+            className="w-32 sm:w-48 px-2 sm:px-3 py-1 sm:py-2 rounded-lg border border-gray-300 bg-white text-gray-700 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent hover:border-gray-400 transition appearance-none cursor-pointer pr-6 sm:pr-8"
             style={{
               backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
               backgroundRepeat: "no-repeat",

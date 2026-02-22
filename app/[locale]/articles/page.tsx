@@ -89,7 +89,17 @@ async function ArticlesList({ locale, search, sort, category }: { locale: string
   }
 
   if (search) {
-    query = query.ilike("title", `%${search}%`)
+    // Check if search starts with # for tag search
+    const searchTerm = search.toLowerCase().trim()
+    if (searchTerm.startsWith("#")) {
+      // Tag search - remove # and search in tags array using contains
+      const tagToSearch = searchTerm.substring(1).toLowerCase()
+      // For PostgreSQL array, use contains with array syntax
+      query = query.contains("tags", [tagToSearch])
+    } else {
+      // Regular title search
+      query = query.ilike("title", `%${search}%`)
+    }
   }
 
   const { data: articles, error } = await query.limit(100)
@@ -139,14 +149,14 @@ export default async function ArticlesPage({ params, searchParams }: Props) {
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
       {/* Hero Section */}
-      <section className="py-8 md:py-12">
+      <section className="py-6 md:py-8">
         <div className="container mx-auto px-4">
           <ArticlesHero locale={locale} search={search} sort={sort} />
         </div>
       </section>
 
       {/* Articles Grid */}
-      <section className="py-8">
+      <section className="pb-8 md:pb-12">
         <div className="container mx-auto px-4">
           <Suspense fallback={<ArticlesListSkeleton />}>
             <ArticlesList locale={locale} search={search} sort={sort} category={category} />

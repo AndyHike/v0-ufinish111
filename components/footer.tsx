@@ -28,9 +28,9 @@ export function Footer() {
   }
 
   return (
-    <footer className="bg-gray-50 border-t border-gray-200">
-      <div className="container px-4 md:px-6 py-8 md:py-12">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+    <footer className="bg-gray-50 border-t border-gray-200 mt-12">
+      <div className="container px-4 md:px-6 py-16 md:py-20">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               {settings.siteLogo && (
@@ -53,7 +53,7 @@ export function Footer() {
             <ul className="space-y-2">
               <li>
                 <Link href={`/${locale}/articles`} className="text-sm text-gray-500 hover:text-gray-900">
-                  Articles
+                  {t("articles")}
                 </Link>
               </li>
               <li>
