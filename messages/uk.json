@@ -49,6 +49,7 @@
   },
   "UserNav": {
     "adminPanel": "Панель адміністратора",
+    "adminRole": "Адміністратор",
     "login": "війти",
     "profile": "Профіль",
     "orders": "Замовлення",
@@ -880,28 +881,38 @@
     },
     "settings": {
       "title": "Налаштування cookies",
-      "description": "Тут ви можете керувати своїми налаштуваннями cookies. Ви можете увімкнути або вимкнути різні категорії відповідно до ваших уподобань.",
+      "description": "Тут ви можете керувати своїми налаштуваннями cookies. Ви можете вмикати або вимкнути різні категорії відповідно до ваших уподобань.",
       "required": "обов'язкові",
       "services": "Сервіси",
       "acceptAll": "Прийняти все",
       "acceptNecessary": "Тільки необхідні",
+      "save": "Зберегти",
       "saveAndClose": "Зберегти та закрити"
     },
     "categories": {
       "necessary": {
         "name": "Необхідні cookies",
         "description": "Ці cookies є необхідними для правильного функціонування сайту і не можуть бути вимкнені.",
-        "services": "Сесії, автентифікація, мовні налаштування"
+        "services": [
+          "Сесії, аутентифікація",
+          "Мовні налаштування"
+        ]
       },
       "analytics": {
         "name": "Аналітичні cookies",
         "description": "Ці cookies допомагають нам зрозуміти, як відвідувачі використовують наш сайт.",
-        "services": "Google Analytics, Google Tag Manager"
+        "services": [
+          "Google Analytics",
+          "Google Tag Manager"
+        ]
       },
       "marketing": {
         "name": "Маркетингові cookies",
         "description": "Ці cookies використовуються для показу релевантної реклами та вимірювання її ефективності.",
-        "services": "Facebook Pixel, Google Ads, Remarketing"
+        "services": [
+          "Facebook Pixel",
+          "Google Ads"
+        ]
       }
     }
   },

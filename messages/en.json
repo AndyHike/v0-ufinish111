@@ -46,6 +46,7 @@
   },
   "UserNav": {
     "adminPanel": "Admin Panel",
+    "adminRole": "Administrator",
     "login": "Login",
     "profile": "Profile",
     "orders": "Orders",
@@ -179,23 +180,33 @@
       "services": "Services",
       "acceptAll": "Accept All",
       "acceptNecessary": "Necessary Only",
+      "save": "Save",
       "saveAndClose": "Save and Close"
     },
     "categories": {
       "necessary": {
         "name": "Necessary Cookies",
         "description": "These cookies are essential for the proper functioning of the website and cannot be disabled.",
-        "services": "Sessions, authentication, language settings"
+        "services": [
+          "Sessions, authentication",
+          "Language settings"
+        ]
       },
       "analytics": {
         "name": "Analytics Cookies",
         "description": "These cookies help us understand how visitors use our website.",
-        "services": "Google Analytics, Google Tag Manager"
+        "services": [
+          "Google Analytics",
+          "Google Tag Manager"
+        ]
       },
       "marketing": {
         "name": "Marketing Cookies",
         "description": "These cookies are used to display relevant ads and measure their effectiveness.",
-        "services": "Facebook Pixel, Google Ads, Remarketing"
+        "services": [
+          "Facebook Pixel",
+          "Google Ads"
+        ]
       }
     }
   },

@@ -66,6 +66,7 @@ export async function getMessages(locale: string) {
         login: locale === "uk" ? "Увійти" : locale === "cs" ? "Přihlásit se" : "Login",
         profile: locale === "uk" ? "Профіль" : locale === "cs" ? "Profil" : "Profile",
         orders: locale === "uk" ? "Замовлення" : locale === "cs" ? "Objednávky" : "Orders",
+        adminRole: locale === "uk" ? "Адміністратор" : locale === "cs" ? "Administrátor" : "Administrator",
         adminDashboard:
           locale === "uk" ? "Панель адміністратора" : locale === "cs" ? "Administrátorský panel" : "Admin Dashboard",
         logout: locale === "uk" ? "Вийти" : locale === "cs" ? "Odhlásit se" : "Logout",
