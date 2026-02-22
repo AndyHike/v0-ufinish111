@@ -912,6 +912,8 @@
   "Articles": {
     "title": "Průvodci a tipy na opravu",
     "subtitle": "Naučte se od odborníků, jak udržovat a opravovat vaše zařízení. Získejte podrobné pokyny a profesionální rady.",
+    "tableOfContents": "Obsah článku",
+    "relatedServices": "Související služby",
     "searchPlaceholder": "Hledat články...",
     "searchButton": "Hledat",
     "noArticlesFound": "Články nenalezeny",
