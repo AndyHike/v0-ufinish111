@@ -177,9 +177,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function ServicePageWithModel({ params }: Props) {
-  const { slug, locale, model: modelSlug } = params
+  const { slug, locale, model: modelSlug } = await params
 
-  const supabase = createServerClient()
+  const supabase = await createServerClient()
 
   try {
     // Get service data
