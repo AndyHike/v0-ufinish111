@@ -8,9 +8,27 @@ export async function GET() {
     const supabase = createServerClient()
     console.log("[v0] Supabase client created")
 
+    // Select specific columns - do NOT use * for joined data
     const { data: services, error } = await supabase
       .from("services")
-      .select("*")
+      .select(`
+        id,
+        slug,
+        name,
+        position,
+        warranty_months,
+        duration_hours,
+        image_url,
+        description,
+        services_translations(
+          locale,
+          name,
+          description,
+          detailed_description,
+          what_included,
+          benefits
+        )
+      `)
       .order("position", { ascending: true })
 
     console.log("[v0] Query executed. Error:", error?.message, "Data length:", services?.length)

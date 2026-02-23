@@ -16,8 +16,8 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         warranty_months,
         duration_hours,
         image_url,
+        description,
         services_translations(
-          id,
           locale,
           name,
           description,
