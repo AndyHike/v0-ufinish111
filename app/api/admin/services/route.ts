@@ -3,46 +3,30 @@ import { createServerClient } from "@/utils/supabase/server"
 
 export async function GET() {
   try {
+    console.log("[v0] GET /api/admin/services - Starting...")
+
     const supabase = createServerClient()
+    console.log("[v0] Supabase client created")
 
-    console.log("[v0] Starting services fetch from admin API...")
-
-    // Fetch services with translations - simplified query
     const { data: services, error } = await supabase
       .from("services")
-      .select(`
-        id,
-        slug,
-        name,
-        position,
-        warranty_months,
-        duration_hours,
-        image_url,
-        description,
-        services_translations(
-          locale,
-          name,
-          description,
-          detailed_description,
-          what_included,
-          benefits
-        )
-      `)
+      .select("*")
       .order("position", { ascending: true })
 
+    console.log("[v0] Query executed. Error:", error?.message, "Data length:", services?.length)
+
     if (error) {
-      console.error("[v0] Supabase error:", error)
+      console.error("[v0] Supabase error:", error.message)
       return NextResponse.json(
         { error: error.message },
         { status: 500 }
       )
     }
 
-    console.log("[v0] Fetched", services?.length || 0, "services")
-    
+    console.log("[v0] Successfully fetched", services?.length || 0, "services")
     return NextResponse.json({ services: services || [] })
   } catch (error) {
-    console.error("[v0] Error:", error instanceof Error ? error.message : error)
+    console.error("[v0] Exception:", error instanceof Error ? error.message : error)
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
