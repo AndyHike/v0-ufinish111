@@ -34,24 +34,27 @@ export function ImageCropper({ open, imageSrc, onCropComplete, onClose }: ImageC
     img.crossOrigin = 'anonymous'
     img.onload = () => {
       imageRef.current = img
-      // Update container size to show full image
-      const maxWidth = 800
-      const maxHeight = 600
+      
+      // Use much larger limits to show full image
+      const maxWidth = 1400
+      const maxHeight = 800
       let width = maxWidth
       let height = maxHeight
       
-      // Calculate proportional dimensions
+      // Calculate proportional dimensions - фото завжди буде видно цілком
       const imgRatio = img.width / img.height
       const maxRatio = maxWidth / maxHeight
       
       if (imgRatio > maxRatio) {
+        // Image is wider
         height = width / imgRatio
       } else {
+        // Image is taller
         width = height * imgRatio
       }
       
       setContainerSize({ width, height })
-      redraw()
+      // Don't call redraw here - it will be called by useEffect dependency
     }
     img.onerror = () => {
       console.error('Failed to load image')
@@ -90,15 +93,15 @@ export function ImageCropper({ open, imageSrc, onCropComplete, onClose }: ImageC
 
     ctx.restore()
 
-    // Draw crop area outline (16:9 rectangle)
-    const cropW = (CROP_WIDTH / 1920) * canvas.width
-    const cropH = (CROP_HEIGHT / 1080) * canvas.height
+    // Draw crop area outline (16:9 rectangle) - fixed size
+    const cropW = 400 // Fixed width for display area
+    const cropH = 225 // Fixed height maintaining 16:9
     ctx.strokeStyle = '#3b82f6'
-    ctx.lineWidth = 2
+    ctx.lineWidth = 3
     ctx.strokeRect(canvas.width / 2 - cropW / 2, canvas.height / 2 - cropH / 2, cropW, cropH)
 
-    // Draw grid
-    ctx.strokeStyle = 'rgba(59, 130, 246, 0.3)'
+    // Draw grid inside crop area
+    ctx.strokeStyle = 'rgba(59, 130, 246, 0.4)'
     ctx.lineWidth = 1
     const gridW = cropW / 3
     const gridH = cropH / 3
@@ -117,7 +120,7 @@ export function ImageCropper({ open, imageSrc, onCropComplete, onClose }: ImageC
 
   useEffect(() => {
     redraw()
-  }, [scale, rotation, offset])
+  }, [scale, rotation, offset, containerSize])
 
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     setIsDragging(true)
@@ -155,13 +158,13 @@ export function ImageCropper({ open, imageSrc, onCropComplete, onClose }: ImageC
     ctx.scale(scale, scale)
 
     const img = imageRef.current
-    const scaleFactor = CROP_WIDTH / containerSize.width
+    
     ctx.drawImage(
       img,
-      (-img.width / 2 + offset.x) * scaleFactor,
-      (-img.height / 2 + offset.y) * scaleFactor,
-      img.width * scaleFactor,
-      img.height * scaleFactor
+      -img.width / 2 + offset.x,
+      -img.height / 2 + offset.y,
+      img.width,
+      img.height
     )
 
     ctx.restore()
@@ -177,21 +180,22 @@ export function ImageCropper({ open, imageSrc, onCropComplete, onClose }: ImageC
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-6xl max-h-[95vh] overflow-y-auto p-6">
         <DialogHeader>
           <DialogTitle>Crop and Adjust Image</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-6">
           {/* Canvas - Large display area */}
-          <div ref={containerRef} className="border-2 border-gray-300 rounded-lg bg-gray-50 flex justify-center items-center min-h-[500px]">
+          <div ref={containerRef} className="border-3 border-gray-300 rounded-lg bg-gray-100 flex justify-center items-center w-full" style={{ minHeight: '600px' }}>
             <canvas
               ref={canvasRef}
               onMouseDown={handleMouseDown}
               onMouseMove={handleMouseMove}
               onMouseUp={handleMouseUp}
               onMouseLeave={handleMouseUp}
-              className="cursor-move max-w-full max-h-full"
+              className="cursor-move"
+              style={{ maxWidth: '100%', maxHeight: '100%', display: 'block' }}
             />
           </div>
 
@@ -232,8 +236,15 @@ export function ImageCropper({ open, imageSrc, onCropComplete, onClose }: ImageC
             </div>
 
             {/* Info */}
-            <div className="text-xs text-gray-600 bg-blue-50 p-3 rounded">
-              Drag on the canvas to reposition the image. Use zoom and rotation controls to adjust. The blue rectangle shows the crop area (16:9, 1200x675px). You can position any part of the image inside the crop zone.
+            <div className="text-sm text-gray-700 bg-blue-50 border border-blue-200 p-4 rounded">
+              <strong>Як редагувати:</strong>
+              <ul className="mt-2 space-y-1 text-xs">
+                <li>Перетягуйте зображення мишею для позиціонування</li>
+                <li>Используйте <strong>Zoom</strong>, щоб наблизити/далеко віддалити зображення (1x до 3x)</li>
+                <li>Используйте <strong>Rotation</strong>, щоб повернути зображення</li>
+                <li>Синій прямокутник показує область обрізання (16:9, 1200x675px)</li>
+                <li>Позиціонуйте будь-яку частину зображення всередину прямокутника для обрізання</li>
+              </ul>
             </div>
           </div>
         </div>
