@@ -25,16 +25,16 @@ type Props = {
 export async function generateStaticParams() {
   // Use public client for build-time static generation
   const supabase = createClient()
-  
+
   try {
     const { data: seriesList } = await supabase
       .from("series")
       .select("slug")
       .order("position", { ascending: true })
       .limit(50) // Pre-render top 50 series
-    
+
     const locales = ["cs", "uk", "en"]
-    
+
     return (
       seriesList?.flatMap((series) =>
         locales.map((locale) => ({
@@ -104,6 +104,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     },
     alternates: {
       canonical: `https://devicehelp.cz/${locale}/series/${slug}`,
+      languages: {
+        cs: `https://devicehelp.cz/cs/series/${slug}`,
+        en: `https://devicehelp.cz/en/series/${slug}`,
+        uk: `https://devicehelp.cz/uk/series/${slug}`,
+        "x-default": `https://devicehelp.cz/cs/series/${slug}`,
+      },
     },
   }
 }

@@ -6,6 +6,7 @@ import { GoogleReviewsCarousel } from "@/components/google-reviews-carousel"
 import { getBrands } from "@/lib/data/brands"
 import { getGoogleReviews } from "@/lib/data/google-reviews"
 import { Suspense } from "react"
+import { toOGLocale } from "@/lib/og-locale"
 
 export const revalidate = 3600 // Revalidate every hour
 
@@ -53,7 +54,7 @@ export async function generateMetadata({
       description: currentSeo.description,
       url: canonicalUrl,
       siteName: "DeviceHelp",
-      locale: locale,
+      locale: toOGLocale(locale),
       type: "website",
     },
     twitter: {

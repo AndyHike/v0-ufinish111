@@ -9,7 +9,7 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ['/admin/', '/api/'],
       },
     ],
-    sitemap: 'https://www.devicehelp.cz/sitemap.xml',
-    host: 'https://www.devicehelp.cz',
+    sitemap: 'https://devicehelp.cz/sitemap.xml',
+    host: 'https://devicehelp.cz',
   }
 }

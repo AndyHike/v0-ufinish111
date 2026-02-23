@@ -16,6 +16,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { GlobalDataProvider } from "@/providers/global-data-provider"
 import { Toaster } from "@/components/ui/toaster"
 import { DynamicFavicon } from "@/components/dynamic-favicon"
+import { toOGLocale } from "@/lib/og-locale"
 import "@/app/globals.css"
 
 const inter = Inter({
@@ -75,7 +76,7 @@ export async function generateMetadata({
       description: currentSeo.description,
       url: canonicalUrl,
       siteName: "DeviceHelp",
-      locale: locale,
+      locale: toOGLocale(locale),
       type: "website",
     },
     twitter: {

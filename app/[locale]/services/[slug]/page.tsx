@@ -4,6 +4,7 @@ import { createServerClient } from "@/utils/supabase/server"
 import ServicePageClient from "./service-page-client"
 import { getPriceWithDiscount } from "@/lib/discounts/get-applicable-discounts"
 import { DeviceSelectionWrapper } from "./device-selection-wrapper"
+import { toOGLocale } from "@/lib/og-locale"
 
 type Props = {
   params: Promise<{
@@ -165,7 +166,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
       title: currentMetadata.title,
       description: currentMetadata.description,
       type: "website",
-      locale: locale,
+      locale: toOGLocale(locale),
       url: `https://devicehelp.cz/${locale}/services/${slug}`,
     },
     alternates: {

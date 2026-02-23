@@ -3,7 +3,7 @@ import type { Metadata } from "next"
 import { ArticleContent } from "@/components/articles/article-content"
 import { ArticleServiceRecommendation } from "@/components/articles/article-service-recommendation"
 import { createClient } from "@/lib/supabase"
-import { notFound } from "next/navigation"
+import { notFound, permanentRedirect } from "next/navigation"
 import { getTranslations } from "next-intl/server"
 import { generateArticleSchema, generateArticleBreadcrumbSchema } from "@/lib/article-schema"
 import Script from "next/script"
@@ -111,6 +111,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   translations.forEach((t) => {
     alternateLanguages[t.locale] = `https://devicehelp.cz/${t.locale}/articles/${t.slug}`
   })
+  // Add x-default pointing to Czech version
+  const defaultSlug = translations.find((t: any) => t.locale === "cs")?.slug || translations[0]?.slug
+  if (defaultSlug) {
+    alternateLanguages["x-default"] = `https://devicehelp.cz/cs/articles/${defaultSlug}`
+  }
 
   return {
     title: title,
@@ -269,8 +274,7 @@ export default async function ArticlePage({ params }: Props) {
         .single()
 
       if (targetTranslation?.slug && targetTranslation.slug !== slug) {
-        const { redirect } = await import("next/navigation")
-        redirect(`/${locale}/articles/${targetTranslation.slug}`)
+        permanentRedirect(`/${locale}/articles/${targetTranslation.slug}`)
       }
     }
   }

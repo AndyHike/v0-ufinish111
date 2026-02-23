@@ -11,6 +11,7 @@ export async function generateMetadata({ params }: { params: { locale: string } 
   return {
     title: t("pageTitle"),
     description: t("pageDescription"),
+    robots: { index: false, follow: false },
   }
 }
 

@@ -9,6 +9,7 @@ import { formatImageUrl } from "@/utils/image-url"
 import { ContactCTABanner } from "@/components/contact-cta-banner"
 import { Breadcrumb } from "@/components/breadcrumb"
 import BrandPageClient from "./brand-page-client"
+import { toOGLocale } from "@/lib/og-locale"
 
 // ISR Configuration
 export const revalidate = 3600 // Regenerate every 1 hour
@@ -25,16 +26,16 @@ type Props = {
 export async function generateStaticParams() {
   // Use public client for build-time static generation
   const supabase = createClient()
-  
+
   try {
     const { data: brands } = await supabase
       .from("brands")
       .select("slug")
       .order("position", { ascending: true })
       .limit(50) // Pre-render top 50 brands
-    
+
     const locales = ["cs", "uk", "en"]
-    
+
     return (
       brands?.flatMap((brand) =>
         locales.map((locale) => ({
@@ -100,11 +101,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: currentMetadata.title,
       description: currentMetadata.description,
       type: "website",
-      locale: locale,
+      locale: toOGLocale(locale),
       url: `https://devicehelp.cz/${locale}/brands/${slug}`,
     },
     alternates: {
       canonical: `https://devicehelp.cz/${locale}/brands/${slug}`,
+      languages: {
+        cs: `https://devicehelp.cz/cs/brands/${slug}`,
+        en: `https://devicehelp.cz/en/brands/${slug}`,
+        uk: `https://devicehelp.cz/uk/brands/${slug}`,
+        "x-default": `https://devicehelp.cz/cs/brands/${slug}`,
+      },
     },
     twitter: {
       card: "summary",

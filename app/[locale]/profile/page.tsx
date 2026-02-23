@@ -1,9 +1,16 @@
+import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 import { getLocale } from "next-intl/server"
 import { getSession } from "@/lib/auth/session"
 import { createClient } from "@/lib/supabase"
 import { syncUserProfile } from "@/lib/user/profile-sync"
 import ProfileContent from "./profile-content"
+
+export const metadata: Metadata = {
+  title: "My Profile | DeviceHelp",
+  robots: { index: false, follow: false },
+}
+
 
 export default async function ProfilePage() {
   const locale = await getLocale()
