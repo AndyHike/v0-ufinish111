@@ -35,26 +35,25 @@ export function ImageCropper({ open, imageSrc, onCropComplete, onClose }: ImageC
     img.onload = () => {
       imageRef.current = img
       
-      // Use much larger limits to show full image
-      const maxWidth = 1400
-      const maxHeight = 800
-      let width = maxWidth
-      let height = maxHeight
+      // Calculate size to fit in viewport - не обмежуємо по розширенню
+      // Simply scale down proportionally to fit in max available space
+      const maxDisplayWidth = window.innerWidth * 0.85 // 85% of viewport width
+      const maxDisplayHeight = window.innerHeight * 0.6 // 60% of viewport height
       
-      // Calculate proportional dimensions - фото завжди буде видно цілком
-      const imgRatio = img.width / img.height
-      const maxRatio = maxWidth / maxHeight
+      let displayWidth = img.width
+      let displayHeight = img.height
       
-      if (imgRatio > maxRatio) {
-        // Image is wider
-        height = width / imgRatio
-      } else {
-        // Image is taller
-        width = height * imgRatio
+      // Scale down if too large, but maintain aspect ratio
+      if (displayWidth > maxDisplayWidth) {
+        displayHeight = (displayHeight * maxDisplayWidth) / displayWidth
+        displayWidth = maxDisplayWidth
+      }
+      if (displayHeight > maxDisplayHeight) {
+        displayWidth = (displayWidth * maxDisplayHeight) / displayHeight
+        displayHeight = maxDisplayHeight
       }
       
-      setContainerSize({ width, height })
-      // Don't call redraw here - it will be called by useEffect dependency
+      setContainerSize({ width: displayWidth, height: displayHeight })
     }
     img.onerror = () => {
       console.error('Failed to load image')
@@ -93,9 +92,11 @@ export function ImageCropper({ open, imageSrc, onCropComplete, onClose }: ImageC
 
     ctx.restore()
 
-    // Draw crop area outline (16:9 rectangle) - fixed size
-    const cropW = 400 // Fixed width for display area
-    const cropH = 225 // Fixed height maintaining 16:9
+    // Draw crop area outline (16:9 rectangle) - dynamic size based on canvas size
+    // Make it proportional to canvas size so it stretches/shrinks with the image
+    const cropW = Math.min(canvas.width * 0.8, 400) // 80% of canvas width, max 400px
+    const cropH = cropW / (16 / 9) // Maintain 16:9 ratio
+    
     ctx.strokeStyle = '#3b82f6'
     ctx.lineWidth = 3
     ctx.strokeRect(canvas.width / 2 - cropW / 2, canvas.height / 2 - cropH / 2, cropW, cropH)
