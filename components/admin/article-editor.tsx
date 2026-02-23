@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/components/ui/use-toast'
 import { generateSlug, normalizeSlug, generateReadingTime, generateMetaDescription } from '@/lib/slug-utils'
 import { Save, Loader2, AlertCircle, CheckCircle2, X } from 'lucide-react'
+import { ImageUploadField } from './image-upload-field'
 
 const LOCALES = [
   { code: 'cs', name: 'Čeština' },
@@ -265,16 +266,10 @@ export function ArticleEditor({ articleId, locale }: ArticleEditorProps) {
       <div className="border rounded-lg p-6 space-y-4">
         <h2 className="text-xl font-semibold">Basic Information</h2>
 
-        <div>
-          <Label htmlFor="image">Featured Image URL</Label>
-          <Input
-            id="image"
-            value={mainData.featured_image}
-            onChange={e => setMainData(prev => ({ ...prev, featured_image: e.target.value }))}
-            placeholder="https://example.com/image.jpg"
-            className="mt-1"
-          />
-        </div>
+        <ImageUploadField
+          value={mainData.featured_image}
+          onChange={url => setMainData(prev => ({ ...prev, featured_image: url }))}
+        />
 
         <div className="flex gap-6">
           <label className="flex items-center gap-2 cursor-pointer">
