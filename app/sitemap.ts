@@ -174,14 +174,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     if (!articlesError && articleTranslations) {
       // For each unique article, create sitemap entries with proper hreflang alternates
       const processedArticles = new Set<string>()
-      
+
       articleTranslations.forEach((trans: any) => {
         const articleId = trans.article_id
         if (processedArticles.has(articleId)) return
-        
+
         // Get all translations for this article to build proper alternates
         const allTranslations = articleTranslations.filter((t: any) => t.article_id === articleId)
-        
+
         const alternates: Record<string, string> = {}
         allTranslations.forEach((t: any) => {
           alternates[t.locale] = `${baseUrl}/${t.locale}/articles/${t.slug}`
@@ -198,7 +198,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             },
           })
         })
-        
+
         processedArticles.add(articleId)
       })
     } else if (articlesError) {

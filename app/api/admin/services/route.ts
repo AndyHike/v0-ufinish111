@@ -3,7 +3,7 @@ import { createServerClient } from "@/utils/supabase/server"
 
 export async function GET() {
   try {
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
 
     console.log("[v0] Starting services fetch...")
 
@@ -46,7 +46,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
     const body = await request.json()
 
     console.log("Creating service with data:", body)

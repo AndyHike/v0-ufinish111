@@ -107,7 +107,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // Get all localized slugs for hreflang
   const translations = article.article_translations as any[]
   const alternateLanguages: Record<string, string> = {}
-  
+
   translations.forEach((t) => {
     alternateLanguages[t.locale] = `https://devicehelp.cz/${t.locale}/articles/${t.slug}`
   })

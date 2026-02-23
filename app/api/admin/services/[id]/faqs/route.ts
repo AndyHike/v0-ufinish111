@@ -3,7 +3,7 @@ import { createServerClient } from "@/utils/supabase/server"
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
     const { id: serviceId } = params
 
     const { data: faqs, error } = await supabase
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
     const { id: serviceId } = params
     const body = await request.json()
     const { position, translations } = body
