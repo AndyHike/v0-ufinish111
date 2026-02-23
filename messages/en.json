@@ -266,7 +266,14 @@
     "chooseModelTitle": "Choose Your Phone Model",
     "chooseModelDescription": "Select your phone brand to see available models and repair prices",
     "pageTitle": "Choose Your Phone Model",
-    "pageDescription": "Select your phone brand to see available models and repair prices"
+    "pageDescription": "Select your phone brand to see available models and repair prices",
+    "professionalRepair": "Professional Repair",
+    "serviceSelectionPrompt": "Choose your device model below to find out the exact cost and time of work. We use only verified spare parts and provide a guarantee for all services.",
+    "warrantyLabel": "6 months warranty",
+    "repairTime": "Repair from 30 min",
+    "originalParts": "Quality spare parts",
+    "selectYourDevice": "Select your device",
+    "back": "Back"
   },
   "Series": {
     "backToBrand": "Back to {brand}",
@@ -591,5 +598,13 @@
     "articleAddedError": "Error adding article",
     "articleUpdatedError": "Error updating article",
     "articleDeletedError": "Error deleting article"
+  },
+  "Terms": {
+    "title": "Terms and Conditions",
+    "contentPlaceholder": "Content will be added later."
+  },
+  "Privacy": {
+    "title": "Privacy Policy",
+    "contentPlaceholder": "Content will be added later."
   }
 }

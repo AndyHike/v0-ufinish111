@@ -25,9 +25,17 @@ type Service = {
   description: string
 }
 
-export function ArticleContent({ slug, locale }: { slug: string; locale: string }) {
-  const [article, setArticle] = useState<any>(null)
-  const [isLoading, setIsLoading] = useState(true)
+export function ArticleContent({
+  slug,
+  locale,
+  initialData,
+}: {
+  slug: string
+  locale: string
+  initialData?: any
+}) {
+  const [article, setArticle] = useState<any>(initialData || null)
+  const [isLoading, setIsLoading] = useState(!initialData)
   const [error, setError] = useState<string | null>(null)
   const [relatedServices, setRelatedServices] = useState<Service[]>([])
   const [primaryService, setPrimaryService] = useState<Service | null>(null)
@@ -98,8 +106,30 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
   }
 
   useEffect(() => {
-    fetchArticle()
-  }, [slug, locale])
+    if (!initialData) {
+      fetchArticle()
+    } else {
+      // If we have initial data, we still might want to increment view count
+      // and fetch related services if they aren't included in initialData
+      const incrementViews = async () => {
+        try {
+          await fetch(`/api/articles/${initialData.id}/views`, { method: "POST" })
+        } catch (err) {
+          console.error("Failed to increment views:", err)
+        }
+      }
+      incrementViews()
+
+      // If initialData doesn't have related services logic handled, fetch it
+      if (initialData && !relatedServices.length && !isLoading) {
+        // We could fetch them here if needed, but let's assume for now 
+        // that the client fetch might still be useful for secondary data.
+        // Actually, let's just use the client fetch if we want the full experience
+        // Or better: just use initialData and only fetch extras.
+        fetchArticle()
+      }
+    }
+  }, [slug, locale, initialData])
 
   // Calculate mobile nav height and track scroll
   useEffect(() => {
@@ -123,19 +153,19 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
 
     const handleScroll = () => {
       const currentScrollY = window.scrollY
-      
+
       // Show nav when scrolling up, hide when scrolling down
       if (currentScrollY < lastScrollY || currentScrollY < 100) {
         setIsNavVisible(true)
       } else if (currentScrollY > lastScrollY && currentScrollY > 100) {
         setIsNavVisible(false)
       }
-      
+
       lastScrollY = currentScrollY
     }
 
     window.addEventListener('scroll', handleScroll, { passive: true })
-    
+
     return () => {
       clearTimeout(timer)
       window.removeEventListener('resize', calculateNavHeight)
@@ -168,7 +198,7 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
 
         <div className="mb-6">
           <h1 className="text-4xl font-bold mb-4">{article.title}</h1>
-          
+
           {/* Теги */}
           {article.tags && article.tags.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-4">
@@ -211,14 +241,14 @@ export function ArticleContent({ slug, locale }: { slug: string; locale: string 
           const toc = generateTableOfContents(article.content)
             .filter(item => item.level === 2) // Показуємо тільки H2 заголовки (##)
           if (toc.length === 0) return null
-          
+
           const handleTocClick = (id: string) => {
             const element = document.getElementById(id)
             if (element) {
               element.scrollIntoView({ behavior: 'smooth', block: 'start' })
             }
           }
-          
+
           return (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
               <h3 className="text-lg font-semibold mb-4 text-blue-900">{t("tableOfContents")}</h3>

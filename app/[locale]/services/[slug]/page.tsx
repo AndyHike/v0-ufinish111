@@ -7,7 +7,13 @@ import { DeviceSelectionWrapper } from "./device-selection-wrapper"
 import { toOGLocale } from "@/lib/og-locale"
 import { siteUrl } from "@/lib/site-config"
 import { getTranslations } from "next-intl/server"
+import { ContactCTABanner } from "@/components/contact-cta-banner"
 import { Breadcrumb } from "@/components/breadcrumb"
+import { Wrench, CheckCircle, ShieldCheck, Clock } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import Link from "next/link"
+
+import { BrandSeoSections } from "@/components/brand-seo-sections"
 
 type Props = {
   params: Promise<{
@@ -83,7 +89,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
       cs: {
         title: `${serviceName} ${fullModelName} Praha 6 | Záruka 6 měsíců | DeviceHelp`,
         description: `Profesionální ${serviceName.toLowerCase()} ${fullModelName} v Praze 6 na Břevnově. Záruka 6 měsíců, oprava 2-3 hodiny. Bělohorská 209/133. ☎ +420 775 848 259`,
-        keywords: `${serviceName} ${fullModelName}, ${serviceName} ${brandName} Praha 6, oprava ${modelName} Břevnov, servis ${brandName} Bělohorská`,
+        keywords: `${serviceName} ${fullModelName}, ${serviceName} ${brandName} Praha 6, oprava ${modelName} Břevnov, servis ${brandName} Běлоhorská`,
       },
       en: {
         title: `${serviceName} ${fullModelName} Prague 6 | 6 Month Warranty | DeviceHelp`,
@@ -118,48 +124,6 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   }
 
   const currentMetadata = metadata[locale as keyof typeof metadata] || metadata.en
-
-  const structuredData = modelData
-    ? {
-      "@context": "https://schema.org",
-      "@type": "Service",
-      name: `${serviceName} ${modelData.brands?.name} ${modelData.name}`,
-      provider: {
-        "@type": "LocalBusiness",
-        name: "DeviceHelp",
-        address: {
-          "@type": "PostalAddress",
-          streetAddress: "Bělohorská 209/133",
-          addressLocality: "Praha 6-Břevnov",
-          addressRegion: "Praha",
-          postalCode: "169 00",
-          addressCountry: "CZ",
-        },
-        telephone: "+420 775 848 259",
-      },
-      areaServed: ["Praha 6", "Břevnov", "Dejvice", "Vokovice"],
-      warranty: "6 months",
-    }
-    : {
-      "@context": "https://schema.org",
-      "@type": "Service",
-      name: serviceName,
-      provider: {
-        "@type": "LocalBusiness",
-        name: "DeviceHelp",
-        address: {
-          "@type": "PostalAddress",
-          streetAddress: "Bělohorská 209/133",
-          addressLocality: "Praha 6-Břevnov",
-          addressRegion: "Praha",
-          postalCode: "169 00",
-          addressCountry: "CZ",
-        },
-        telephone: "+420 775 848 259",
-      },
-      areaServed: ["Praha 6", "Břevnov", "Dejvice", "Vokovice"],
-      warranty: "6 months",
-    }
 
   return {
     title: currentMetadata.title,
@@ -213,18 +177,80 @@ export default async function ServicePage({ params, searchParams }: Props) {
   const translation = service?.services_translations?.find((t: any) => t.locale === locale) || service?.services_translations?.[0]
   const serviceName = translation?.name || slug
 
-  // If no model is provided, show the device selection guard
+  // Fetch popular services for BrandSeoSections
+  const { data: topServices } = await supabase
+    .from("services")
+    .select(`id, slug, position, services_translations(name, locale), model_services(price)`)
+    .order("position", { ascending: true })
+    .limit(6)
+
+  const seoServices = (topServices || []).map((svc: any) => {
+    const tr = (svc.services_translations as any[])?.find((t: any) => t.locale === locale) ?? svc.services_translations?.[0]
+    const prices = (svc.model_services as any[])?.map((ms: any) => ms.price).filter((p: any) => p != null && p > 0)
+    return {
+      id: svc.id,
+      slug: svc.slug,
+      name: tr?.name ?? svc.slug,
+      minPrice: prices && prices.length > 0 ? Math.min(...prices) : null,
+    }
+  })
+
+  // If no model is provided, show the device selection guard with updated site-wide layout
   return (
-    <div className="bg-gray-50 flex flex-col items-center">
-      <div className="w-full max-w-[500px] px-4 pt-8 pb-4 mx-auto self-start">
-        <Breadcrumb
-          items={[
-            { label: brandsT("allBrands") || "Всі бренди", href: `/${locale}/brands` },
-            { label: serviceName, href: "#" }
-          ]}
-        />
+    <div className="flex flex-col min-h-screen">
+      <div className="order-1 container px-4 py-8 md:py-16 mx-auto max-w-6xl">
+        {/* Breadcrumb */}
+        <div className="mb-8 pl-1">
+          <Breadcrumb
+            items={[
+              { label: brandsT("allBrands") || "Всі бренди", href: `/${locale}/brands` },
+              { label: serviceName, href: "#" }
+            ]}
+          />
+        </div>
+
+        {/* Clean Header Section */}
+        <div className="mb-12 text-center max-w-3xl mx-auto">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-xs font-bold uppercase tracking-wider mb-4 border border-blue-100">
+            <ShieldCheck className="w-3 h-3" />
+            {brandsT("professionalRepair") || "Professional Repair"}
+          </div>
+          <h1 className="text-3xl md:text-5xl font-extrabold text-gray-900 tracking-tight mb-4 text-balance">
+            {serviceName}
+          </h1>
+          <p className="text-lg text-muted-foreground leading-relaxed">
+            {brandsT("serviceSelectionPrompt") || "Please select your device model below to see exact prices and completion times. We use only verified parts and provide a warranty."}
+          </p>
+
+          <div className="mt-8 flex flex-wrap gap-6 justify-center text-sm font-medium text-gray-500">
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4 text-blue-500" />
+              {brandsT("repairTime") || "From 30 min"}
+            </div>
+            <div className="flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 text-blue-500" />
+              {brandsT("originalParts") || "Original Parts"}
+            </div>
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-blue-500" />
+              {brandsT("warrantyLabel") || "6 months warranty"}
+            </div>
+          </div>
+        </div>
+
+        {/* Device Selection Guard Section */}
+        <div className="mt-8">
+          <DeviceSelectionWrapper serviceSlug={slug} locale={locale} />
+        </div>
       </div>
-      <DeviceSelectionWrapper serviceSlug={slug} locale={locale} />
+
+      <div className="order-2 w-full">
+        <BrandSeoSections locale={locale} services={seoServices} />
+      </div>
+
+      <div className="order-3 container mx-auto px-4 pb-16 pt-8 w-full max-w-6xl">
+        <ContactCTABanner locale={locale} />
+      </div>
     </div>
   )
 }
