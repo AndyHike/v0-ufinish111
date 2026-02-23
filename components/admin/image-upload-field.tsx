@@ -52,11 +52,39 @@ export function ImageUploadField({
       clearInterval(progressInterval)
 
       if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || 'Failed to upload image')
+        let errorMessage = 'Failed to upload image'
+        
+        // Handle different error statuses
+        if (response.status === 413) {
+          errorMessage = 'File is too large. Please use a smaller image (max 10MB before compression).'
+        } else if (response.status === 400) {
+          try {
+            const data = await response.json()
+            errorMessage = data.error || errorMessage
+          } catch {
+            errorMessage = 'Invalid image file. Please try another image.'
+          }
+        } else if (response.status === 401) {
+          errorMessage = 'You are not authorized to upload images'
+        } else if (response.status === 500) {
+          try {
+            const data = await response.json()
+            errorMessage = data.error || 'Server error during upload'
+          } catch {
+            errorMessage = 'Server error. Check your Cloudflare S3 configuration.'
+          }
+        }
+        
+        throw new Error(errorMessage)
       }
 
-      const data = await response.json()
+      let data
+      try {
+        data = await response.json()
+      } catch {
+        throw new Error('Invalid response from server. Check your configuration.')
+      }
+
       const imageUrl = data.url
 
       setUploadProgress(100)

@@ -7,17 +7,23 @@ import { processImage, validateImageFile } from "@/lib/image-processor"
 
 export async function POST(request: Request) {
   try {
+    console.log('[v0] Upload API called')
+    
     // Check authentication
     const session = await getSession()
     if (!session?.user || session.user.role !== "admin") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    console.log('[v0] User authenticated:', session.user.email)
+
     // Get the form data
     const formData = await request.formData()
     const file = formData.get("file") as File
     const uploadType = (formData.get("type") as string) || "model"
     const slug = formData.get("slug") as string
+
+    console.log('[v0] Upload details - Type:', uploadType, 'File size:', file?.size, 'File type:', file?.type)
 
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 })
@@ -26,11 +32,15 @@ export async function POST(request: Request) {
     // Handle article image uploads with S3
     if (uploadType === "article") {
       try {
+        console.log('[v0] Processing article image for S3')
+        
         // Validate image file
         await validateImageFile(file)
+        console.log('[v0] Image validation passed')
 
         // Process image (resize, compress, convert to WebP)
         const { buffer, mimeType, filename } = await processImage(file)
+        console.log('[v0] Image processed - Compressed size:', buffer.length, 'Filename:', filename)
 
         // Upload to Cloudflare S3
         if (!process.env.CLOUDFLARE_BUCKET_NAME) {
@@ -38,6 +48,7 @@ export async function POST(request: Request) {
         }
 
         const s3Key = `articles/${filename}`
+        console.log('[v0] Uploading to S3 with key:', s3Key)
 
         const putCommand = new PutObjectCommand({
           Bucket: process.env.CLOUDFLARE_BUCKET_NAME,
@@ -48,9 +59,11 @@ export async function POST(request: Request) {
         })
 
         await s3Client.send(putCommand)
+        console.log('[v0] Upload to S3 successful')
 
         // Generate public URL
         const publicUrl = `${process.env.CLOUDFLARE_PUBLIC_URL}/${s3Key}`
+        console.log('[v0] Public URL generated:', publicUrl)
 
         return NextResponse.json({ 
           url: publicUrl,
@@ -58,7 +71,7 @@ export async function POST(request: Request) {
           filename: filename,
         })
       } catch (error) {
-        console.error("Error uploading article image to S3:", error)
+        console.error("[v0] Error uploading article image to S3:", error)
         const message = error instanceof Error ? error.message : "Failed to upload image"
         return NextResponse.json({ error: message }, { status: 400 })
       }
