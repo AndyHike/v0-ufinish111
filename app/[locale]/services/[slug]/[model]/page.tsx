@@ -168,6 +168,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     },
     alternates: {
       canonical: `https://devicehelp.cz/${locale}/services/${slug}/${modelSlug}`,
+      languages: {
+        cs: `https://devicehelp.cz/cs/services/${slug}/${modelSlug}`,
+        en: `https://devicehelp.cz/en/services/${slug}/${modelSlug}`,
+        uk: `https://devicehelp.cz/uk/services/${slug}/${modelSlug}`,
+        "x-default": `https://devicehelp.cz/cs/services/${slug}/${modelSlug}`,
+      },
     },
     twitter: {
       card: "summary",
@@ -401,6 +407,7 @@ export default async function ServicePageWithModel({ params }: Props) {
         description: pageDescription,
         provider: {
           "@type": "LocalBusiness",
+          "@id": "https://devicehelp.cz/#business",
           name: "DeviceHelp",
           address: {
             "@type": "PostalAddress",
@@ -422,6 +429,7 @@ export default async function ServicePageWithModel({ params }: Props) {
         description: pageDescription,
         provider: {
           "@type": "LocalBusiness",
+          "@id": "https://devicehelp.cz/#business",
           name: "DeviceHelp",
           address: {
             "@type": "PostalAddress",

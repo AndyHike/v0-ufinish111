@@ -171,6 +171,12 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
     },
     alternates: {
       canonical: `https://devicehelp.cz/${locale}/services/${slug}`,
+      languages: {
+        cs: `https://devicehelp.cz/cs/services/${slug}`,
+        en: `https://devicehelp.cz/en/services/${slug}`,
+        uk: `https://devicehelp.cz/uk/services/${slug}`,
+        "x-default": `https://devicehelp.cz/cs/services/${slug}`,
+      },
     },
     twitter: {
       card: "summary",
@@ -179,7 +185,6 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
     },
     other: {
       "seznam-wmt": "kEPWnFjKJyWrp9OtNNXIlOe6oNf9vfv4",
-      "structured-data": JSON.stringify(structuredData),
     },
   }
 }

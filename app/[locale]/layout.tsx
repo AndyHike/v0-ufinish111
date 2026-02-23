@@ -62,15 +62,6 @@ export async function generateMetadata({
     title: currentSeo.title,
     description: currentSeo.description,
     metadataBase: new URL(baseUrl),
-    alternates: {
-      canonical: canonicalUrl,
-      languages: {
-        cs: `${baseUrl}/cs`,
-        en: `${baseUrl}/en`,
-        uk: `${baseUrl}/uk`,
-        "x-default": `${baseUrl}/cs`,
-      },
-    },
     openGraph: {
       title: currentSeo.title,
       description: currentSeo.description,
@@ -141,6 +132,8 @@ export default async function LocaleLayout({
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "LocalBusiness",
+              "@id": "https://devicehelp.cz/#business",
+              url: "https://devicehelp.cz",
               name: "DeviceHelp",
               description: locale === "cs"
                 ? "Profesionální oprava mobilních telefonů v Praze 6 Břevnov. iPhone, Samsung, Xiaomi. Garancia 6 měsíců."

@@ -34,8 +34,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: titlePatterns[locale as keyof typeof titlePatterns] || titlePatterns.en,
       description: descriptionPatterns[locale as keyof typeof descriptionPatterns] || descriptionPatterns.en,
       type: "website",
-      locale: locale,
-      alternateLocale: ["cs", "en", "uk"].filter((l) => l !== locale),
+      locale: locale === "cs" ? "cs_CZ" : locale === "uk" ? "uk_UA" : "en_US",
     },
     twitter: {
       card: "summary",
@@ -66,6 +65,8 @@ export default function ContactPage() {
           __html: JSON.stringify({
             "@context": "https://schema.org",
             "@type": "LocalBusiness",
+            "@id": "https://devicehelp.cz/#business",
+            url: "https://devicehelp.cz",
             name: "DeviceHelp - Oprava mobilních telefonů Praha 6",
             description: "Profesionální oprava mobilních telefonů v Praze 6 Břevnov - iPhone, Samsung, Xiaomi a dalších značek. Rychlá oprava s garancí 6 měsíců. Bělohorská 209/133, Praha 6-Břevnov.",
             address: {

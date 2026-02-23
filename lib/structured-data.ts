@@ -19,6 +19,8 @@ export function generateLocalBusinessSchema(locale: string) {
   return {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
+    "@id": "https://devicehelp.cz/#business",
+    url: "https://devicehelp.cz",
     name: data.name,
     description: data.description,
     address: {

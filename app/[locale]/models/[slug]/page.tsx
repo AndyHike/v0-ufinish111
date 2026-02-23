@@ -280,14 +280,26 @@ export default async function ModelPage({ params }: Props) {
     const structuredData = {
       "@context": "https://schema.org",
       "@type": ["Service", "LocalBusiness"],
+      "@id": "https://devicehelp.cz/#business",
       name: `${brandName} ${modelName} Repair`,
+      url: "https://devicehelp.cz",
       description: locale === "cs"
         ? `Profesionální oprava ${brandName} ${modelName} v Praze 6. Výměna displeje, baterie, kamery. Záruka 6 měsíců.`
         : locale === "uk"
           ? `Професійний ремонт ${brandName} ${modelName} в Празі 6. Заміна екрану, батареї, камери. Гарантія 6 місяців.`
           : `Professional ${brandName} ${modelName} repair in Prague 6. Screen replacement, battery, camera repair. 6 month warranty.`,
+      address: {
+        "@type": "PostalAddress",
+        streetAddress: "Bělohorská 209/133",
+        addressLocality: "Praha 6-Břevnov",
+        addressRegion: "Praha",
+        postalCode: "169 00",
+        addressCountry: "CZ",
+      },
+      telephone: "+420775848259",
       provider: {
         "@type": "LocalBusiness",
+        "@id": "https://devicehelp.cz/#business",
         name: "DeviceHelp",
         address: {
           "@type": "PostalAddress",
