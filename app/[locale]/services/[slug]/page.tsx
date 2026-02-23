@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { notFound } from "next/navigation"
+import { notFound, permanentRedirect } from "next/navigation"
 import { createServerClient } from "@/utils/supabase/server"
 import ServicePageClient from "./service-page-client"
 import { getPriceWithDiscount } from "@/lib/discounts/get-applicable-discounts"
