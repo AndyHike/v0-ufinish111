@@ -5,9 +5,16 @@ export async function GET() {
   try {
     const supabase = createServerClient()
 
-    console.log("[v0] Fetching services from admin API...")
+    console.log("[v0] Starting services fetch from admin API...")
 
-    // Select only columns that exist in services_translations
+    // First, check if services table has any data
+    const { data: serviceCount, error: countError } = await supabase
+      .from("services")
+      .select("id", { count: "exact" })
+
+    console.log("[v0] Total services in database:", serviceCount?.length || 0, "Error:", countError?.message)
+
+    // Fetch services with translations
     const { data: services, error } = await supabase
       .from("services")
       .select(`
@@ -31,7 +38,12 @@ export async function GET() {
       .order("position")
 
     if (error) {
-      console.error("[v0] Supabase error fetching services:", error.message, error.details, error.code)
+      console.error("[v0] Supabase error fetching services:", {
+        message: error.message,
+        details: error.details,
+        code: error.code,
+        hint: error.hint,
+      })
       return NextResponse.json(
         { error: `Failed to fetch services: ${error.message}` },
         { status: 500 }
@@ -40,7 +52,13 @@ export async function GET() {
 
     console.log("[v0] Successfully fetched", services?.length || 0, "services")
     if (services && services.length > 0) {
-      console.log("[v0] First service:", JSON.stringify(services[0], null, 2))
+      console.log("[v0] First service structure:", {
+        id: services[0].id,
+        name: services[0].name,
+        translationsCount: services[0].services_translations?.length || 0,
+      })
+    } else {
+      console.warn("[v0] No services returned from database")
     }
 
     return NextResponse.json({ services: services || [] })
