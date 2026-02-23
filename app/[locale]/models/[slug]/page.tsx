@@ -5,6 +5,7 @@ import { createClient } from "@/utils/supabase/client"
 import ModelPageClient, { ModelData } from "./model-page-client"
 import { getPriceWithDiscount } from "@/lib/discounts/get-applicable-discounts"
 import { toOGLocale } from "@/lib/og-locale"
+import { siteUrl } from "@/lib/site-config"
 
 // ISR Configuration
 export const revalidate = 3600 // Regenerate every 1 hour
@@ -102,15 +103,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description: currentMetadata.description,
       type: "website",
       locale: toOGLocale(locale),
-      url: `https://devicehelp.cz/${locale}/models/${slug}`,
+      url: `${siteUrl}/${locale}/models/${slug}`,
     },
     alternates: {
-      canonical: `https://devicehelp.cz/${locale}/models/${slug}`,
+      canonical: `${siteUrl}/${locale}/models/${slug}`,
       languages: {
-        cs: `https://devicehelp.cz/cs/models/${slug}`,
-        en: `https://devicehelp.cz/en/models/${slug}`,
-        uk: `https://devicehelp.cz/uk/models/${slug}`,
-        "x-default": `https://devicehelp.cz/cs/models/${slug}`,
+        cs: `${siteUrl}/cs/models/${slug}`,
+        en: `${siteUrl}/en/models/${slug}`,
+        uk: `${siteUrl}/uk/models/${slug}`,
+        "x-default": `${siteUrl}/cs/models/${slug}`,
       },
     },
     twitter: {

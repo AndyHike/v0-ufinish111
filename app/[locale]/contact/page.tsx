@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import ContactPageClient from "./ContactPageClient"
+import { siteUrl } from "@/lib/site-config"
 
 interface Props {
   params: Promise<{ locale: string }>
@@ -42,12 +43,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description: descriptionPatterns[locale as keyof typeof descriptionPatterns] || descriptionPatterns.en,
     },
     alternates: {
-      canonical: `https://devicehelp.cz/${locale}/contact`,
+      canonical: `${siteUrl}/${locale}/contact`,
       languages: {
-        cs: "https://devicehelp.cz/cs/contact",
-        en: "https://devicehelp.cz/en/contact",
-        uk: "https://devicehelp.cz/uk/contact",
-        "x-default": "https://devicehelp.cz/cs/contact",
+        cs: `${siteUrl}/cs/contact`,
+        en: `${siteUrl}/en/contact`,
+        uk: `${siteUrl}/uk/contact`,
+        "x-default": `${siteUrl}/cs/contact`,
       },
     },
     other: {

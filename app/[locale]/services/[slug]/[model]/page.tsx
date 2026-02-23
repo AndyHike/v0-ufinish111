@@ -5,6 +5,7 @@ import ServicePageClient from "../service-page-client"
 import { getPriceWithDiscount } from "@/lib/discounts/get-applicable-discounts"
 import { RelatedArticlesList } from "@/components/articles/related-articles-list"
 import { toOGLocale } from "@/lib/og-locale"
+import { siteUrl } from "@/lib/site-config"
 
 type Props = {
   params: Promise<{
@@ -164,15 +165,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description: currentMetadata.description,
       type: "website",
       locale: toOGLocale(locale),
-      url: `https://devicehelp.cz/${locale}/services/${slug}/${modelSlug}`,
+      url: `${siteUrl}/${locale}/services/${slug}/${modelSlug}`,
     },
     alternates: {
-      canonical: `https://devicehelp.cz/${locale}/services/${slug}/${modelSlug}`,
+      canonical: `${siteUrl}/${locale}/services/${slug}/${modelSlug}`,
       languages: {
-        cs: `https://devicehelp.cz/cs/services/${slug}/${modelSlug}`,
-        en: `https://devicehelp.cz/en/services/${slug}/${modelSlug}`,
-        uk: `https://devicehelp.cz/uk/services/${slug}/${modelSlug}`,
-        "x-default": `https://devicehelp.cz/cs/services/${slug}/${modelSlug}`,
+        cs: `${siteUrl}/cs/services/${slug}/${modelSlug}`,
+        en: `${siteUrl}/en/services/${slug}/${modelSlug}`,
+        uk: `${siteUrl}/uk/services/${slug}/${modelSlug}`,
+        "x-default": `${siteUrl}/cs/services/${slug}/${modelSlug}`,
       },
     },
     twitter: {

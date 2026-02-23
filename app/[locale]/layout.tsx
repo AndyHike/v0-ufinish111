@@ -17,6 +17,7 @@ import { GlobalDataProvider } from "@/providers/global-data-provider"
 import { Toaster } from "@/components/ui/toaster"
 import { DynamicFavicon } from "@/components/dynamic-favicon"
 import { toOGLocale } from "@/lib/og-locale"
+import { siteUrl } from "@/lib/site-config"
 import "@/app/globals.css"
 
 const inter = Inter({
@@ -38,7 +39,7 @@ export async function generateMetadata({
   params: { locale: string }
 }): Promise<Metadata> {
   const { locale } = await params
-  const baseUrl = "https://devicehelp.cz"
+  const baseUrl = siteUrl
   const canonicalUrl = `${baseUrl}/${locale}`
 
   const seoData = {

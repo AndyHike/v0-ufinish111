@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase"
 import { getTranslations } from "next-intl/server"
 import { ArticlesHero } from "@/components/articles/articles-hero"
 import { ArticleCard } from "@/components/articles/article-card"
+import { siteUrl } from "@/lib/site-config"
 
 type Props = {
   params: {
@@ -25,11 +26,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: `${t("title")} | ${t("metaTitleSuffix") || "DeviceHelp Articles"}`,
     description: t("subtitle"),
     alternates: {
-      canonical: `https://devicehelp.cz/${locale}/articles`,
+      canonical: `${siteUrl}/${locale}/articles`,
       languages: {
-        cs: "https://devicehelp.cz/cs/articles",
-        uk: "https://devicehelp.cz/uk/articles",
-        en: "https://devicehelp.cz/en/articles",
+        cs: `${siteUrl}/cs/articles`,
+        en: `${siteUrl}/en/articles`,
+        uk: `${siteUrl}/uk/articles`,
+        "x-default": `${siteUrl}/cs/articles`,
       },
     },
   }

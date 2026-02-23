@@ -10,6 +10,7 @@ import { ContactCTABanner } from "@/components/contact-cta-banner"
 import { Breadcrumb } from "@/components/breadcrumb"
 import BrandPageClient from "./brand-page-client"
 import { toOGLocale } from "@/lib/og-locale"
+import { siteUrl } from "@/lib/site-config"
 
 // ISR Configuration
 export const revalidate = 3600 // Regenerate every 1 hour
@@ -102,15 +103,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description: currentMetadata.description,
       type: "website",
       locale: toOGLocale(locale),
-      url: `https://devicehelp.cz/${locale}/brands/${slug}`,
+      url: `${siteUrl}/${locale}/brands/${slug}`,
     },
     alternates: {
-      canonical: `https://devicehelp.cz/${locale}/brands/${slug}`,
+      canonical: `${siteUrl}/${locale}/brands/${slug}`,
       languages: {
-        cs: `https://devicehelp.cz/cs/brands/${slug}`,
-        en: `https://devicehelp.cz/en/brands/${slug}`,
-        uk: `https://devicehelp.cz/uk/brands/${slug}`,
-        "x-default": `https://devicehelp.cz/cs/brands/${slug}`,
+        cs: `${siteUrl}/cs/brands/${slug}`,
+        en: `${siteUrl}/en/brands/${slug}`,
+        uk: `${siteUrl}/uk/brands/${slug}`,
+        "x-default": `${siteUrl}/cs/brands/${slug}`,
       },
     },
     twitter: {

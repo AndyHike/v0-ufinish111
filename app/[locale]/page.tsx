@@ -7,6 +7,7 @@ import { getBrands } from "@/lib/data/brands"
 import { getGoogleReviews } from "@/lib/data/google-reviews"
 import { Suspense } from "react"
 import { toOGLocale } from "@/lib/og-locale"
+import { siteUrl } from "@/lib/site-config"
 
 export const revalidate = 3600 // Revalidate every hour
 
@@ -16,7 +17,7 @@ export async function generateMetadata({
   params: { locale: string }
 }): Promise<Metadata> {
   const { locale } = await params
-  const baseUrl = "https://devicehelp.cz"
+  const baseUrl = siteUrl
   const canonicalUrl = `${baseUrl}/${locale}`
 
   const seoData = {

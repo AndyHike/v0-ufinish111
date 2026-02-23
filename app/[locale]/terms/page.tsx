@@ -2,6 +2,7 @@ import { getTranslations } from "next-intl/server"
 import type { Metadata } from "next"
 import { getAppSetting } from "@/lib/app-settings"
 import ReactMarkdown from "react-markdown"
+import { siteUrl } from "@/lib/site-config"
 
 type Props = {
   params: {
@@ -28,12 +29,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: titlePatterns[locale as keyof typeof titlePatterns] || titlePatterns.en,
     description: descriptionPatterns[locale as keyof typeof descriptionPatterns] || descriptionPatterns.en,
     alternates: {
-      canonical: `https://devicehelp.cz/${locale}/terms`,
+      canonical: `${siteUrl}/${locale}/terms`,
       languages: {
-        cs: "https://devicehelp.cz/cs/terms",
-        en: "https://devicehelp.cz/en/terms",
-        uk: "https://devicehelp.cz/uk/terms",
-        "x-default": "https://devicehelp.cz/cs/terms",
+        cs: `${siteUrl}/cs/terms`,
+        en: `${siteUrl}/en/terms`,
+        uk: `${siteUrl}/uk/terms`,
+        "x-default": `${siteUrl}/cs/terms`,
       },
     },
   }

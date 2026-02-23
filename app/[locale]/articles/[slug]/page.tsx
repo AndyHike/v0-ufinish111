@@ -7,6 +7,7 @@ import { notFound, permanentRedirect } from "next/navigation"
 import { getTranslations } from "next-intl/server"
 import { generateArticleSchema, generateArticleBreadcrumbSchema } from "@/lib/article-schema"
 import Script from "next/script"
+import { siteUrl } from "@/lib/site-config"
 
 type Props = {
   params: {
@@ -109,12 +110,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const alternateLanguages: Record<string, string> = {}
 
   translations.forEach((t) => {
-    alternateLanguages[t.locale] = `https://devicehelp.cz/${t.locale}/articles/${t.slug}`
+    alternateLanguages[t.locale] = `${siteUrl}/${t.locale}/articles/${t.slug}`
   })
   // Add x-default pointing to Czech version
   const defaultSlug = translations.find((t: any) => t.locale === "cs")?.slug || translations[0]?.slug
   if (defaultSlug) {
-    alternateLanguages["x-default"] = `https://devicehelp.cz/cs/articles/${defaultSlug}`
+    alternateLanguages["x-default"] = `${siteUrl}/cs/articles/${defaultSlug}`
   }
 
   return {

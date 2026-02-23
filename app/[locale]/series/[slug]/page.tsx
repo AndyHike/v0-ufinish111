@@ -9,6 +9,7 @@ import { ArrowLeft, Smartphone } from "lucide-react"
 import { ContactCTABanner } from "@/components/contact-cta-banner"
 import { Breadcrumb } from "@/components/breadcrumb"
 import SeriesPageClient from "./series-page-client"
+import { siteUrl } from "@/lib/site-config"
 
 // ISR Configuration
 export const revalidate = 3600 // Regenerate every 1 hour
@@ -100,15 +101,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title: titlePatterns[locale as keyof typeof titlePatterns] || titlePatterns.en,
       description: descriptionPatterns[locale as keyof typeof descriptionPatterns] || descriptionPatterns.en,
-      url: `https://devicehelp.cz/${locale}/series/${slug}`,
+      url: `${siteUrl}/${locale}/series/${slug}`,
     },
     alternates: {
-      canonical: `https://devicehelp.cz/${locale}/series/${slug}`,
+      canonical: `${siteUrl}/${locale}/series/${slug}`,
       languages: {
-        cs: `https://devicehelp.cz/cs/series/${slug}`,
-        en: `https://devicehelp.cz/en/series/${slug}`,
-        uk: `https://devicehelp.cz/uk/series/${slug}`,
-        "x-default": `https://devicehelp.cz/cs/series/${slug}`,
+        cs: `${siteUrl}/cs/series/${slug}`,
+        en: `${siteUrl}/en/series/${slug}`,
+        uk: `${siteUrl}/uk/series/${slug}`,
+        "x-default": `${siteUrl}/cs/series/${slug}`,
       },
     },
   }

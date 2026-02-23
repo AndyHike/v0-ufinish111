@@ -5,6 +5,7 @@ import { createServerClient } from "@/utils/supabase/server"
 import { ArrowLeft } from "lucide-react"
 import { formatImageUrl } from "@/utils/image-url"
 import { ContactCTABanner } from "@/components/contact-cta-banner"
+import { siteUrl } from "@/lib/site-config"
 
 type Props = {
   params: {
@@ -31,12 +32,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: titlePatterns[locale as keyof typeof titlePatterns] || titlePatterns.en,
     description: descriptionPatterns[locale as keyof typeof descriptionPatterns] || descriptionPatterns.en,
     alternates: {
-      canonical: `https://devicehelp.cz/${locale}/brands`,
+      canonical: `${siteUrl}/${locale}/brands`,
       languages: {
-        cs: "https://devicehelp.cz/cs/brands",
-        en: "https://devicehelp.cz/en/brands",
-        uk: "https://devicehelp.cz/uk/brands",
-        "x-default": "https://devicehelp.cz/cs/brands",
+        cs: `${siteUrl}/cs/brands`,
+        en: `${siteUrl}/en/brands`,
+        uk: `${siteUrl}/uk/brands`,
+        "x-default": `${siteUrl}/cs/brands`,
       },
     },
   }
