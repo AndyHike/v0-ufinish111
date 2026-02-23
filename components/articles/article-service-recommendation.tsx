@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
+import { stripMarkdown } from "@/lib/markdown-utils"
 
 type Service = {
   id: string
@@ -83,7 +84,7 @@ export function ArticleServiceRecommendation({
                 <CardContent className="p-4">
                   <h4 className="font-semibold mb-2">{serviceName}</h4>
                   <p className="text-sm text-gray-600 mb-4 line-clamp-2">
-                    {translation?.description || "Professional service"}
+                    {stripMarkdown(translation?.description || "Professional service")}
                   </p>
                   <Link href={`/${locale}/services/${service.slug}`}>
                     <Button size="sm" className="w-full gap-2">

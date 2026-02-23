@@ -1,4 +1,4 @@
-import { type NextRequest, NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/utils/supabase/server"
 
 export async function GET() {
@@ -7,35 +7,16 @@ export async function GET() {
 
     const { data: services, error } = await supabase
       .from("services")
-      .select(`
-        id,
-        slug,
-        name,
-        position,
-        warranty_months,
-        duration_hours,
-        image_url,
-        services_translations(
-          id,
-          name,
-          description,
-          detailed_description,
-          what_included,
-          benefits,
-          locale
-        )
-      `)
-      .order("position")
+      .select("id, slug, name, position")
+      .order("position", { ascending: true })
 
     if (error) {
-      console.error("Error fetching services:", error)
-      return NextResponse.json({ error: "Failed to fetch services" }, { status: 500 })
+      return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json({ services })
+    return NextResponse.json({ services: services || [] })
   } catch (error) {
-    console.error("Error in GET /api/admin/services:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    return NextResponse.json({ error: "Server error" }, { status: 500 })
   }
 }
 

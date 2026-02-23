@@ -62,11 +62,9 @@ export function ServicesManagement() {
       }
 
       const data = await response.json()
-      console.log("Fetched services data:", data)
-
       setServices(data.services || [])
     } catch (error) {
-      console.error("Error fetching services:", error)
+      console.error("[v0] Error fetching services:", error)
       toast.error("Помилка завантаження послуг")
       setServices([])
     } finally {
@@ -78,8 +76,6 @@ export function ServicesManagement() {
     try {
       const url = editingService ? `/api/admin/services/${editingService.id}` : "/api/admin/services"
       const method = editingService ? "PUT" : "POST"
-
-      console.log("Saving service:", { url, method, serviceData })
 
       const response = await fetch(url, {
         method,
@@ -96,11 +92,10 @@ export function ServicesManagement() {
         fetchServices()
       } else {
         const errorData = await response.json()
-        console.error("Error response:", errorData)
         toast.error(errorData.error || "Помилка збереження послуги")
       }
     } catch (error) {
-      console.error("Error saving service:", error)
+      console.error("[v0] Error saving service:", error)
       toast.error("Помилка збереження послуги")
     }
   }
@@ -214,7 +209,6 @@ export function ServicesManagement() {
 
     const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault()
-      console.log("Form data being submitted:", formData)
       handleSaveService(formData)
     }
 
@@ -522,7 +516,9 @@ export function ServicesManagement() {
         </div>
       </CardHeader>
       <CardContent>
-        {services.length === 0 ? (
+        {loading ? (
+          <div className="text-center py-8">Завантаження послуг...</div>
+        ) : services.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">Послуги не знайдено. Додайте першу послугу.</div>
         ) : (
           <Table>
