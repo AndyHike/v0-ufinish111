@@ -14,13 +14,6 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
 
-  // Збільшуємо ліміт розміру тіла запиту для завантажень
-  api: {
-    bodyParser: {
-      sizeLimit: '50mb',
-    },
-  },
-
   // Налаштування картинок
   images: {
     formats: ['image/webp', 'image/avif'],

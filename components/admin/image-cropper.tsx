@@ -4,7 +4,6 @@ import { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { X, ZoomIn, ZoomOut, RotateCw } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import { Slider } from '@/components/ui/slider'
 import { Label } from '@/components/ui/label'
 
 interface ImageCropperProps {
@@ -188,12 +187,13 @@ export function ImageCropper({ open, imageSrc, onCropComplete, onClose }: ImageC
                 <ZoomIn className="h-4 w-4" />
                 Zoom: {scale.toFixed(2)}x
               </Label>
-              <Slider
-                value={[scale]}
-                onValueChange={(value) => setScale(value[0])}
+              <input
+                type="range"
                 min={1}
                 max={3}
                 step={0.1}
+                value={scale}
+                onChange={(e) => setScale(parseFloat(e.target.value))}
                 className="w-full"
               />
             </div>
@@ -204,12 +204,13 @@ export function ImageCropper({ open, imageSrc, onCropComplete, onClose }: ImageC
                 <RotateCw className="h-4 w-4" />
                 Rotation: {rotation}°
               </Label>
-              <Slider
-                value={[rotation]}
-                onValueChange={(value) => setRotation(value[0])}
+              <input
+                type="range"
                 min={0}
                 max={360}
                 step={1}
+                value={rotation}
+                onChange={(e) => setRotation(parseFloat(e.target.value))}
                 className="w-full"
               />
             </div>
