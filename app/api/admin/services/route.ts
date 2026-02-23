@@ -7,15 +7,33 @@ export async function GET() {
 
     const { data: services, error } = await supabase
       .from("services")
-      .select("id, slug, name, position")
+      .select(`
+        id, 
+        slug, 
+        name, 
+        position,
+        warranty_months,
+        duration_hours,
+        image_url,
+        services_translations (
+          locale,
+          name,
+          description,
+          detailed_description,
+          what_included,
+          benefits
+        )
+      `)
       .order("position", { ascending: true })
 
     if (error) {
+      console.error("[v0] Database error fetching services:", error)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
     return NextResponse.json({ services: services || [] })
   } catch (error) {
+    console.error("[v0] Error in GET /api/admin/services:", error)
     return NextResponse.json({ error: "Server error" }, { status: 500 })
   }
 }
