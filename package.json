@@ -71,7 +71,6 @@
     "react-csv": "latest",
     "react-day-picker": "latest",
     "react-dom": "^19",
-    "react-easy-crop": "^4.7.7",
     "react-hook-form": "latest",
     "react-markdown": "latest",
     "react-phone-number-input": "latest",
