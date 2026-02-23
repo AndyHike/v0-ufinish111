@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server"
+import { PutObjectCommand } from "@aws-sdk/client-s3"
 import { createClient } from "@/lib/supabase"
 import { getSession } from "@/lib/auth/session"
+import { s3Client } from "@/lib/s3-client"
+import { processImage, validateImageFile } from "@/lib/image-processor"
 
 export async function POST(request: Request) {
   try {
@@ -20,6 +23,48 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 })
     }
 
+    // Handle article image uploads with S3
+    if (uploadType === "article") {
+      try {
+        // Validate image file
+        await validateImageFile(file)
+
+        // Process image (resize, compress, convert to WebP)
+        const { buffer, mimeType, filename } = await processImage(file)
+
+        // Upload to Cloudflare S3
+        if (!process.env.CLOUDFLARE_BUCKET_NAME) {
+          throw new Error("CLOUDFLARE_BUCKET_NAME is not set")
+        }
+
+        const s3Key = `articles/${filename}`
+
+        const putCommand = new PutObjectCommand({
+          Bucket: process.env.CLOUDFLARE_BUCKET_NAME,
+          Key: s3Key,
+          Body: buffer,
+          ContentType: mimeType,
+          CacheControl: "max-age=86400", // 24 hours
+        })
+
+        await s3Client.send(putCommand)
+
+        // Generate public URL
+        const publicUrl = `${process.env.CLOUDFLARE_PUBLIC_URL}/${s3Key}`
+
+        return NextResponse.json({ 
+          url: publicUrl,
+          type: "s3",
+          filename: filename,
+        })
+      } catch (error) {
+        console.error("Error uploading article image to S3:", error)
+        const message = error instanceof Error ? error.message : "Failed to upload image"
+        return NextResponse.json({ error: message }, { status: 400 })
+      }
+    }
+
+    // Existing logic for other upload types (logo, favicon, service, model)
     // Define allowed types and max sizes based on upload type
     const allowedTypes = {
       logo: ["image/png", "image/jpeg", "image/jpg", "image/svg+xml"],
