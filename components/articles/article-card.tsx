@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import { Clock, Eye } from "lucide-react"
 import { useTranslations } from "next-intl"
+import { stripMarkdown } from "@/lib/markdown-utils"
 
 type ArticleCardProps = {
   id: string
@@ -48,17 +49,7 @@ export function ArticleCard({
   const translatedCategory = category && categoryNames[category] ? categoryNames[category] : category
   
   // Extract first 150 characters for preview, removing Markdown formatting
-  const preview = content
-    .replace(/^#+\s+/gm, "") // Remove headers (# ## ### etc)
-    .replace(/\*\*(.+?)\*\*/g, "$1") // Remove bold (**)
-    .replace(/\*(.+?)\*/g, "$1") // Remove italic (*)
-    .replace(/`(.+?)`/g, "$1") // Remove inline code
-    .replace(/\[(.+?)\]\(.+?\)/g, "$1") // Convert markdown links to text
-    .replace(/^[-*]\s+/gm, "") // Remove list markers
-    .replace(/<[^>]*>/g, "") // Remove HTML tags
-    .trim()
-    .substring(0, 150)
-    .trim()
+  const preview = stripMarkdown(content).substring(0, 150).trim()
 
   // Format date
   const formattedDate = published_at

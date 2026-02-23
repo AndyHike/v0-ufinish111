@@ -524,7 +524,9 @@ export function ServicesManagement() {
         </div>
       </CardHeader>
       <CardContent>
-        {services.length === 0 ? (
+        {loading ? (
+          <div className="text-center py-8">Завантаження послуг...</div>
+        ) : services.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">Послуги не знайдено. Додайте першу послугу.</div>
         ) : (
           <Table>

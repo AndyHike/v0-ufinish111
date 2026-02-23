@@ -5,6 +5,8 @@ export async function GET() {
   try {
     const supabase = createServerClient()
 
+    console.log("[v0] Fetching services from admin API...")
+
     const { data: services, error } = await supabase
       .from("services")
       .select(`
@@ -28,9 +30,29 @@ export async function GET() {
       .order("position")
 
     if (error) {
-      console.error("Error fetching services:", error)
-      return NextResponse.json({ error: "Failed to fetch services" }, { status: 500 })
+      console.error("[v0] Supabase error fetching services:", error.message, error.details)
+      return NextResponse.json(
+        { error: `Failed to fetch services: ${error.message}` },
+        { status: 500 }
+      )
     }
+
+    console.log("[v0] Successfully fetched", services?.length || 0, "services")
+    if (services && services.length > 0) {
+      console.log("[v0] First service:", services[0])
+    }
+
+    return NextResponse.json({ services: services || [] })
+  } catch (error) {
+    console.error("[v0] Error in GET /api/admin/services:", error)
+    return NextResponse.json(
+      {
+        error: `Internal server error: ${error instanceof Error ? error.message : "Unknown error"}`,
+      },
+      { status: 500 }
+    )
+  }
+}
 
     return NextResponse.json({ services })
   } catch (error) {
