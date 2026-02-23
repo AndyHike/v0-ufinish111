@@ -22,11 +22,10 @@ export function ImageCropper({ open, imageSrc, onCropComplete, onClose }: ImageC
   const [offset, setOffset] = useState({ x: 0, y: 0 })
   const [isDragging, setIsDragging] = useState(false)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
+  const [containerSize, setContainerSize] = useState({ width: 800, height: 600 })
 
   const CROP_WIDTH = 1200
   const CROP_HEIGHT = 675 // 16:9 aspect ratio
-  const DISPLAY_WIDTH = 500
-  const DISPLAY_HEIGHT = 281
 
   useEffect(() => {
     if (!open) return
@@ -35,6 +34,23 @@ export function ImageCropper({ open, imageSrc, onCropComplete, onClose }: ImageC
     img.crossOrigin = 'anonymous'
     img.onload = () => {
       imageRef.current = img
+      // Update container size to show full image
+      const maxWidth = 800
+      const maxHeight = 600
+      let width = maxWidth
+      let height = maxHeight
+      
+      // Calculate proportional dimensions
+      const imgRatio = img.width / img.height
+      const maxRatio = maxWidth / maxHeight
+      
+      if (imgRatio > maxRatio) {
+        height = width / imgRatio
+      } else {
+        width = height * imgRatio
+      }
+      
+      setContainerSize({ width, height })
       redraw()
     }
     img.onerror = () => {
@@ -50,8 +66,8 @@ export function ImageCropper({ open, imageSrc, onCropComplete, onClose }: ImageC
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    canvas.width = DISPLAY_WIDTH
-    canvas.height = DISPLAY_HEIGHT
+    canvas.width = containerSize.width
+    canvas.height = containerSize.height
 
     // Draw background
     ctx.fillStyle = '#f3f4f6'
@@ -139,7 +155,7 @@ export function ImageCropper({ open, imageSrc, onCropComplete, onClose }: ImageC
     ctx.scale(scale, scale)
 
     const img = imageRef.current
-    const scaleFactor = CROP_WIDTH / DISPLAY_WIDTH
+    const scaleFactor = CROP_WIDTH / containerSize.width
     ctx.drawImage(
       img,
       (-img.width / 2 + offset.x) * scaleFactor,
@@ -161,21 +177,21 @@ export function ImageCropper({ open, imageSrc, onCropComplete, onClose }: ImageC
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Crop and Adjust Image</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Canvas */}
-          <div ref={containerRef} className="border-2 border-gray-300 rounded-lg bg-gray-50 flex justify-center overflow-auto">
+          {/* Canvas - Large display area */}
+          <div ref={containerRef} className="border-2 border-gray-300 rounded-lg bg-gray-50 flex justify-center items-center min-h-[500px]">
             <canvas
               ref={canvasRef}
               onMouseDown={handleMouseDown}
               onMouseMove={handleMouseMove}
               onMouseUp={handleMouseUp}
               onMouseLeave={handleMouseUp}
-              className="cursor-move"
+              className="cursor-move max-w-full max-h-full"
             />
           </div>
 
@@ -217,7 +233,7 @@ export function ImageCropper({ open, imageSrc, onCropComplete, onClose }: ImageC
 
             {/* Info */}
             <div className="text-xs text-gray-600 bg-blue-50 p-3 rounded">
-              💡 Drag on the canvas to reposition the image. Use zoom and rotation controls to adjust. The blue rectangle shows the crop area (16:9 • 1200x675px).
+              Drag on the canvas to reposition the image. Use zoom and rotation controls to adjust. The blue rectangle shows the crop area (16:9, 1200x675px). You can position any part of the image inside the crop zone.
             </div>
           </div>
         </div>
