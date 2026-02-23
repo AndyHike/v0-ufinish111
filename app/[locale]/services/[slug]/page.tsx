@@ -60,7 +60,10 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
       .single()
 
     if (model) {
-      modelData = model
+      modelData = {
+        ...model,
+        brands: Array.isArray(model.brands) ? model.brands[0] : model.brands,
+      }
     }
   }
 
@@ -184,10 +187,9 @@ export default async function ServicePage({ params, searchParams }: Props) {
   const { slug, locale } = await params
   const { model: modelSlug } = await searchParams
 
-  // If a model is provided via query param (old format), redirect to new URL format
+  // If a model is provided via query param (old format), 301 redirect to new URL format
   if (modelSlug) {
-    const { redirect } = await import("next/navigation")
-    redirect(`/${locale}/services/${slug}/${modelSlug}`)
+    permanentRedirect(`/${locale}/services/${slug}/${modelSlug}`)
   }
 
   // If no model is provided, show the device selection guard
