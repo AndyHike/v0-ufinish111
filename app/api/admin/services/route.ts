@@ -2,53 +2,34 @@ import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/utils/supabase/server"
 
 export async function GET() {
+  console.log("[v0] GET /api/admin/services - STARTED")
+
   try {
-    console.log("[v0] GET /api/admin/services - Starting...")
-
+    console.log("[v0] Creating Supabase client...")
     const supabase = createServerClient()
-    console.log("[v0] Supabase client created")
+    console.log("[v0] Supabase client created successfully")
 
-    // Select specific columns - do NOT use * for joined data
+    console.log("[v0] Executing SELECT query for services...")
+    
+    // First try: simple query without joins
     const { data: services, error } = await supabase
       .from("services")
-      .select(`
-        id,
-        slug,
-        name,
-        position,
-        warranty_months,
-        duration_hours,
-        image_url,
-        description,
-        services_translations(
-          locale,
-          name,
-          description,
-          detailed_description,
-          what_included,
-          benefits
-        )
-      `)
+      .select("id, slug, name, position")
       .order("position", { ascending: true })
 
-    console.log("[v0] Query executed. Error:", error?.message, "Data length:", services?.length)
+    console.log("[v0] Query completed")
+    console.log("[v0] Error:", error?.message || "none")
+    console.log("[v0] Services count:", services?.length || 0)
 
     if (error) {
-      console.error("[v0] Supabase error:", error.message)
-      return NextResponse.json(
-        { error: error.message },
-        { status: 500 }
-      )
+      console.error("[v0] Supabase error:", error)
+      return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    console.log("[v0] Successfully fetched", services?.length || 0, "services")
     return NextResponse.json({ services: services || [] })
   } catch (error) {
-    console.error("[v0] Exception:", error instanceof Error ? error.message : error)
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    )
+    console.error("[v0] Exception in GET:", error)
+    return NextResponse.json({ error: "Server error" }, { status: 500 })
   }
 }
 
