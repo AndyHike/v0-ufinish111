@@ -242,14 +242,16 @@ export default async function ArticlePage({ params }: Props) {
   const { locale, slug } = await params
   const supabase = createClient()
 
-  // Check if the current slug is the correct localized slug for this language
-  // If not, redirect to the correct localized slug
+  // Check if slug matches this locale and redirect if needed
   const { data: correctTranslation } = await supabase
     .from("article_translations")
-    .select("slug, articles(id)")
+    .select("slug, title, articles(id)")
     .eq("slug", slug)
     .eq("locale", locale)
     .single()
+
+  // SSR title for H1 — visible to bots even without JS
+  let articleTitle: string | null = correctTranslation?.title ?? null
 
   // If the slug exists for this locale, use it. Otherwise, find the article by any slug
   // and redirect to the correct localized slug for this locale
@@ -287,6 +289,10 @@ export default async function ArticlePage({ params }: Props) {
       </Suspense>
       <div className="container mx-auto px-4">
         <article className="max-w-3xl mx-auto">
+          {/* SSR H1: rendered server-side so bots see it even without JS */}
+          {articleTitle && (
+            <h1 className="text-4xl font-bold mb-4 sr-only" aria-hidden="false">{articleTitle}</h1>
+          )}
           <Suspense fallback={<ArticleContentSkeleton />}>
             <ArticleContent slug={slug} locale={locale} />
           </Suspense>

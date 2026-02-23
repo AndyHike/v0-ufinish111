@@ -6,12 +6,14 @@ import { createServerClient } from "@/utils/supabase/server"
 import { createClient } from "@/utils/supabase/client"
 import { ChevronRight, Smartphone, ArrowLeft } from "lucide-react"
 import { formatImageUrl } from "@/utils/image-url"
-import { ContactCTABanner } from "@/components/contact-cta-banner"
 import { Breadcrumb } from "@/components/breadcrumb"
 import BrandPageClient from "./brand-page-client"
 import { toOGLocale } from "@/lib/og-locale"
 import { siteUrl } from "@/lib/site-config"
 import { PrevNextNav } from "@/components/prev-next-nav"
+import { BrandSeoSections } from "@/components/brand-seo-sections"
+import { ContactCTABanner } from "@/components/contact-cta-banner"
+
 
 // ISR Configuration
 export const revalidate = 3600 // Regenerate every 1 hour
@@ -190,16 +192,46 @@ export default async function BrandPage({ params }: Props) {
   const prevBrand = brandIndex > 0 ? allBrands![brandIndex - 1] : null
   const nextBrand = allBrands && brandIndex >= 0 && brandIndex < allBrands.length - 1 ? allBrands[brandIndex + 1] : null
 
+  // Fetch popular services with min prices for BrandSeoSections
+  const { data: topServices } = await supabase
+    .from("services")
+    .select(`id, slug, position, services_translations(name, locale), model_services(price)`)
+    .order("position", { ascending: true })
+    .limit(6)
+
+  const seoServices = (topServices || []).map((svc: any) => {
+    const tr = (svc.services_translations as any[])?.find((t: any) => t.locale === locale) ?? svc.services_translations?.[0]
+    const prices = (svc.model_services as any[])?.map((ms: any) => ms.price).filter((p: any) => p != null && p > 0)
+    return {
+      id: svc.id,
+      slug: svc.slug,
+      name: tr?.name ?? svc.slug,
+      minPrice: prices && prices.length > 0 ? Math.min(...prices) : null,
+    }
+  })
+
   return (
-    <>
-      <BrandPageClient initialData={initialData} locale={locale} slug={slug} />
-      <div className="container mx-auto px-4 pb-10">
-        <PrevNextNav
-          prev={prevBrand ? { name: prevBrand.name, href: `/${locale}/brands/${prevBrand.slug}` } : null}
-          next={nextBrand ? { name: nextBrand.name, href: `/${locale}/brands/${nextBrand.slug}` } : null}
-          label="Navigate brands"
-        />
+    <div className="flex flex-col min-h-screen">
+      <div className="order-1">
+        <BrandPageClient initialData={initialData} locale={locale} slug={slug} />
       </div>
-    </>
+
+      <div className="order-2 w-full">
+        <BrandSeoSections locale={locale} services={seoServices} />
+      </div>
+
+      <div className="order-3 container mx-auto px-4 pb-10 pt-4 w-full">
+        <div className="mt-8 mb-8">
+          <ContactCTABanner locale={locale} />
+        </div>
+        <div className="mt-8">
+          <PrevNextNav
+            prev={prevBrand ? { name: prevBrand.name, href: `/${locale}/brands/${prevBrand.slug}` } : null}
+            next={nextBrand ? { name: nextBrand.name, href: `/${locale}/brands/${nextBrand.slug}` } : null}
+            label="Navigate brands"
+          />
+        </div>
+      </div>
+    </div>
   )
 }

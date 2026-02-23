@@ -182,6 +182,7 @@ export async function getMessages(locale: string) {
             : locale === "cs"
               ? "Opravujeme telefony všech populárních značek."
               : "We repair phones of all popular brands.",
+        allBrands: locale === "uk" ? "Всі бренди" : locale === "cs" ? "Všechny značky" : "All Brands",
         allBrandsButton: locale === "uk" ? "Всі бренди" : locale === "cs" ? "Všechny značky" : "All Brands",
       },
       Testimonials: {

@@ -10,9 +10,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params
 
   const titlePatterns = {
-    cs: "Oprava mobilů Břevnov Praha 6 | DeviceHelp | Bělohorská 209/133 | Kontakt",
-    en: "Mobile Phone Repair Břevnov Prague 6 | DeviceHelp | Bělohorská 209/133 | Contact",
-    uk: "Ремонт мобільних Бржевнов Прага 6 | DeviceHelp | Bělohorská 209/133 | Контакти",
+    cs: "Oprava mobilů Praha 6 Břevnov | Kontakt | DeviceHelp",
+    en: "Mobile Repair Prague 6 Břevnov | Contact | DeviceHelp",
+    uk: "Ремонт мобільних Прага 6 | Контакти | DeviceHelp",
   }
 
   const descriptionPatterns = {

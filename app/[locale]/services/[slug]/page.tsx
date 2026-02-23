@@ -6,6 +6,8 @@ import { getPriceWithDiscount } from "@/lib/discounts/get-applicable-discounts"
 import { DeviceSelectionWrapper } from "./device-selection-wrapper"
 import { toOGLocale } from "@/lib/og-locale"
 import { siteUrl } from "@/lib/site-config"
+import { getTranslations } from "next-intl/server"
+import { Breadcrumb } from "@/components/breadcrumb"
 
 type Props = {
   params: Promise<{
@@ -199,6 +201,30 @@ export default async function ServicePage({ params, searchParams }: Props) {
     permanentRedirect(`/${locale}/services/${slug}/${modelSlug}`)
   }
 
+  const brandsT = await getTranslations({ locale, namespace: "Brands" })
+  const supabase = await createServerClient()
+
+  const { data: service } = await supabase
+    .from("services")
+    .select("services_translations(name, locale)")
+    .eq("slug", slug)
+    .single()
+
+  const translation = service?.services_translations?.find((t: any) => t.locale === locale) || service?.services_translations?.[0]
+  const serviceName = translation?.name || slug
+
   // If no model is provided, show the device selection guard
-  return <DeviceSelectionWrapper serviceSlug={slug} locale={locale} />
+  return (
+    <div className="bg-gray-50 flex flex-col items-center">
+      <div className="w-full max-w-[500px] px-4 pt-8 pb-4 mx-auto self-start">
+        <Breadcrumb
+          items={[
+            { label: brandsT("allBrands") || "Всі бренди", href: `/${locale}/brands` },
+            { label: serviceName, href: "#" }
+          ]}
+        />
+      </div>
+      <DeviceSelectionWrapper serviceSlug={slug} locale={locale} />
+    </div>
+  )
 }

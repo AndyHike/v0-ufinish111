@@ -4,7 +4,6 @@ import Link from "next/link"
 import { useTranslations } from "next-intl"
 import { ChevronRight, Smartphone } from "lucide-react"
 import { formatImageUrl } from "@/utils/image-url"
-import { ContactCTABanner } from "@/components/contact-cta-banner"
 import { Breadcrumb } from "@/components/breadcrumb"
 import { useGlobalData } from "@/hooks/use-global-data"
 import { useEffect, useState } from "react"
@@ -72,7 +71,10 @@ export default function BrandPageClient({ initialData, locale, slug }: Props) {
         {/* Breadcrumb */}
         <div className="mb-8">
           <Breadcrumb
-            items={[{ label: brand.name, href: `/${locale}/brands/${brand.slug}` }]}
+            items={[
+              { label: t("allBrands") || "Всі бренди", href: `/${locale}/brands` },
+              { label: brand.name, href: `/${locale}/brands/${brand.slug}` }
+            ]}
           />
         </div>
 
@@ -179,8 +181,6 @@ export default function BrandPageClient({ initialData, locale, slug }: Props) {
           </div>
         )}
 
-        {/* Contact CTA Banner */}
-        <ContactCTABanner locale={locale} />
       </div>
     </div>
   )

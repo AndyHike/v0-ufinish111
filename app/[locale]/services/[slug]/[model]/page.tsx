@@ -275,6 +275,11 @@ export default async function ServicePageWithModel({ params }: Props) {
             name,
             slug,
             logo_url
+          ),
+          series(
+            id,
+            name,
+            slug
           )
         `)
         .eq("slug", modelSlug)
@@ -283,6 +288,7 @@ export default async function ServicePageWithModel({ params }: Props) {
       if (model) {
         // Витягуємо тільки потрібні поля для серіалізації
         const brandObj = Array.isArray(model.brands) ? model.brands[0] : model.brands
+        const seriesObj = Array.isArray(model.series) ? model.series[0] : model.series
 
         sourceModel = {
           id: model.id,
@@ -294,6 +300,11 @@ export default async function ServicePageWithModel({ params }: Props) {
             name: brandObj.name,
             slug: brandObj.slug,
             logo_url: brandObj.logo_url,
+          } : null,
+          series: seriesObj ? {
+            id: seriesObj.id,
+            name: seriesObj.name,
+            slug: seriesObj.slug,
           } : null,
         }
 
@@ -384,6 +395,11 @@ export default async function ServicePageWithModel({ params }: Props) {
           slug: sourceModel.brands.slug || "",
           logo_url: sourceModel.brands.logo_url || null,
         } : null,
+        series: sourceModel.series ? {
+          id: sourceModel.series.id || "",
+          name: sourceModel.series.name || "",
+          slug: sourceModel.series.slug || "",
+        } : null,
       } : null,
       modelServicePrice: modelServicePrice ? Number(modelServicePrice) : null,
       minPrice: minPrice ? Number(minPrice) : null,
@@ -447,21 +463,27 @@ export default async function ServicePageWithModel({ params }: Props) {
         warranty: "6 months",
       }
 
-    // Fetch prev/next models for this service for navigation
-    const { data: serviceModels } = await supabase
+    // Fetch prev/next services for this model (navigate between services, not models)
+    const { data: modelAllServices } = await supabase
       .from("model_services")
-      .select("models(name, slug)")
-      .eq("service_id", service.id)
-      .order("models(position)", { ascending: true })
+      .select("services(slug, position, services_translations(name, locale))")
+      .eq("model_id", sourceModel?.id)
+      .order("services(position)", { ascending: true })
 
-    const flatModels = (serviceModels || [])
-      .map((ms: any) => Array.isArray(ms.models) ? ms.models[0] : ms.models)
+    // Build a flat, sorted list of services for this model with localized names
+    const sortedServices = (modelAllServices || [])
+      .map((ms: any) => Array.isArray(ms.services) ? ms.services[0] : ms.services)
       .filter(Boolean)
+      .sort((a: any, b: any) => (a.position ?? 999) - (b.position ?? 999))
+      .map((svc: any) => {
+        const t = (svc.services_translations as any[])?.find((tr: any) => tr.locale === locale) ?? svc.services_translations?.[0]
+        return { name: t?.name ?? svc.slug, slug: svc.slug }
+      })
 
-    const modelPageIndex = flatModels.findIndex((m: any) => m.slug === modelSlug)
-    const prevServiceModel = modelPageIndex > 0 ? flatModels[modelPageIndex - 1] : null
-    const nextServiceModel = modelPageIndex >= 0 && modelPageIndex < flatModels.length - 1
-      ? flatModels[modelPageIndex + 1]
+    const servicePageIndex = sortedServices.findIndex((s: any) => s.slug === slug)
+    const prevServiceNav = servicePageIndex > 0 ? sortedServices[servicePageIndex - 1] : null
+    const nextServiceNav = servicePageIndex >= 0 && servicePageIndex < sortedServices.length - 1
+      ? sortedServices[servicePageIndex + 1]
       : null
 
     return (
@@ -474,9 +496,9 @@ export default async function ServicePageWithModel({ params }: Props) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <RelatedArticlesList locale={locale} />
           <PrevNextNav
-            prev={prevServiceModel ? { name: prevServiceModel.name, href: `/${locale}/services/${slug}/${prevServiceModel.slug}` } : null}
-            next={nextServiceModel ? { name: nextServiceModel.name, href: `/${locale}/services/${slug}/${nextServiceModel.slug}` } : null}
-            label="Navigate models"
+            prev={prevServiceNav ? { name: prevServiceNav.name, href: `/${locale}/services/${prevServiceNav.slug}/${modelSlug}` } : null}
+            next={nextServiceNav ? { name: nextServiceNav.name, href: `/${locale}/services/${nextServiceNav.slug}/${modelSlug}` } : null}
+            label="Navigate services"
           />
         </div>
       </>
