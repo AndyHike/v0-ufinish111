@@ -731,8 +731,9 @@
     "next": "Další"
   },
   "Articles": {
-    "title": "Průvodci a tipy na opravu",
+    "title": "Návody a tipy na opravy",
     "subtitle": "Naučte se od odborníků, jak udržovat a opravovat vaše zařízení. Získejte podrobné pokyny a profesionální rady.",
+    "metaTitleSuffix": "DeviceHelp Návody",
     "searchPlaceholder": "Hledat články...",
     "searchButton": "Hledat",
     "noArticlesFound": "Články nenalezeny",

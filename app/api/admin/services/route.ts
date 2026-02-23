@@ -7,6 +7,7 @@ export async function GET() {
 
     console.log("[v0] Fetching services from admin API...")
 
+    // Select only columns that exist in services_translations
     const { data: services, error } = await supabase
       .from("services")
       .select(`
@@ -17,20 +18,20 @@ export async function GET() {
         warranty_months,
         duration_hours,
         image_url,
+        description,
         services_translations(
-          id,
+          locale,
           name,
           description,
           detailed_description,
           what_included,
-          benefits,
-          locale
+          benefits
         )
       `)
       .order("position")
 
     if (error) {
-      console.error("[v0] Supabase error fetching services:", error.message, error.details)
+      console.error("[v0] Supabase error fetching services:", error.message, error.details, error.code)
       return NextResponse.json(
         { error: `Failed to fetch services: ${error.message}` },
         { status: 500 }
@@ -39,7 +40,7 @@ export async function GET() {
 
     console.log("[v0] Successfully fetched", services?.length || 0, "services")
     if (services && services.length > 0) {
-      console.log("[v0] First service:", services[0])
+      console.log("[v0] First service:", JSON.stringify(services[0], null, 2))
     }
 
     return NextResponse.json({ services: services || [] })
