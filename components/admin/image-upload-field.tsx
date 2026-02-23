@@ -1,10 +1,9 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { Upload, X, Loader2, Check, AlertCircle, Edit2 } from 'lucide-react'
+import { Upload, X, Loader2, Check, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { ImageCropper } from './image-cropper'
 
 interface ImageUploadFieldProps {
   value: string
@@ -25,19 +24,14 @@ export function ImageUploadField({
   const [error, setError] = useState<string | null>(null)
   const [preview, setPreview] = useState<string>(value)
   const [uploadProgress, setUploadProgress] = useState(0)
-  const [isCropperOpen, setIsCropperOpen] = useState(false)
-  const [selectedImageForCrop, setSelectedImageForCrop] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const handleCropComplete = async (croppedBlob: Blob) => {
+  const handleFileSelect = async (file: File) => {
     setError(null)
     setIsUploading(true)
     setUploadProgress(0)
 
     try {
-      // Create File from Blob
-      const file = new File([croppedBlob], 'cropped-image.jpg', { type: 'image/jpeg' })
-
       const formData = new FormData()
       formData.append('file', file)
       formData.append('type', 'article')
@@ -60,6 +54,7 @@ export function ImageUploadField({
       if (!response.ok) {
         let errorMessage = 'Failed to upload image'
         
+        // Handle different error statuses
         if (response.status === 413) {
           errorMessage = 'File is too large. Please use a smaller image (max 10MB before compression).'
         } else if (response.status === 400) {
@@ -96,6 +91,7 @@ export function ImageUploadField({
       setPreview(imageUrl)
       onChange(imageUrl)
 
+      // Reset progress after brief success display
       setTimeout(() => {
         setUploadProgress(0)
       }, 500)
@@ -107,17 +103,6 @@ export function ImageUploadField({
     } finally {
       setIsUploading(false)
     }
-  }
-
-  const handleFileSelect = (file: File) => {
-    // Create preview for cropper
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      const result = e.target?.result as string
-      setSelectedImageForCrop(result)
-      setIsCropperOpen(true)
-    }
-    reader.readAsDataURL(file)
   }
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
@@ -181,28 +166,14 @@ export function ImageUploadField({
               </div>
             )}
             {!isUploading && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => {
-                    fileInputRef.current?.click()
-                  }}
-                  disabled={disabled}
-                  className="bg-blue-500 hover:bg-blue-600 text-white rounded-full p-2 transition"
-                  title="Replace image"
-                >
-                  <Edit2 className="h-4 w-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={handleRemoveImage}
-                  disabled={disabled}
-                  className="bg-red-500 hover:bg-red-600 text-white rounded-full p-2 transition"
-                  title="Remove image"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </>
+              <button
+                type="button"
+                onClick={handleRemoveImage}
+                disabled={disabled}
+                className="bg-red-500 hover:bg-red-600 text-white rounded-full p-2 transition"
+              >
+                <X className="h-4 w-4" />
+              </button>
             )}
           </div>
           {uploadProgress > 0 && uploadProgress < 100 && (
@@ -251,20 +222,6 @@ export function ImageUploadField({
       <p className="text-xs text-gray-500">
         💡 Your image will be automatically compressed and optimized. Recommended size: at least 1200px wide.
       </p>
-
-      {/* Image Cropper Modal */}
-      {selectedImageForCrop && (
-        <ImageCropper
-          open={isCropperOpen}
-          imageSrc={selectedImageForCrop}
-          onCropComplete={handleCropComplete}
-          onClose={() => {
-            setIsCropperOpen(false)
-            setSelectedImageForCrop(null)
-          }}
-        />
-      )}
     </div>
   )
 }
-
