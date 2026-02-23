@@ -47,9 +47,16 @@ export function ArticleCard({
   
   const translatedCategory = category && categoryNames[category] ? categoryNames[category] : category
   
-  // Extract first 150 characters for preview
+  // Extract first 150 characters for preview, removing Markdown formatting
   const preview = content
+    .replace(/^#+\s+/gm, "") // Remove headers (# ## ### etc)
+    .replace(/\*\*(.+?)\*\*/g, "$1") // Remove bold (**)
+    .replace(/\*(.+?)\*/g, "$1") // Remove italic (*)
+    .replace(/`(.+?)`/g, "$1") // Remove inline code
+    .replace(/\[(.+?)\]\(.+?\)/g, "$1") // Convert markdown links to text
+    .replace(/^[-*]\s+/gm, "") // Remove list markers
     .replace(/<[^>]*>/g, "") // Remove HTML tags
+    .trim()
     .substring(0, 150)
     .trim()
 

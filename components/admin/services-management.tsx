@@ -62,11 +62,13 @@ export function ServicesManagement() {
       }
 
       const data = await response.json()
-      console.log("Fetched services data:", data)
+      console.log("[v0] Fetched services data:", data)
+      console.log("[v0] Services count:", data?.services?.length || 0)
+      console.log("[v0] First service:", data?.services?.[0])
 
       setServices(data.services || [])
     } catch (error) {
-      console.error("Error fetching services:", error)
+      console.error("[v0] Error fetching services:", error)
       toast.error("Помилка завантаження послуг")
       setServices([])
     } finally {
