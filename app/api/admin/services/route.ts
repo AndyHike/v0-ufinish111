@@ -7,14 +7,7 @@ export async function GET() {
 
     console.log("[v0] Starting services fetch from admin API...")
 
-    // First, check if services table has any data
-    const { data: serviceCount, error: countError } = await supabase
-      .from("services")
-      .select("id", { count: "exact" })
-
-    console.log("[v0] Total services in database:", serviceCount?.length || 0, "Error:", countError?.message)
-
-    // Fetch services with translations
+    // Fetch services with translations - simplified query
     const { data: services, error } = await supabase
       .from("services")
       .select(`
@@ -35,39 +28,23 @@ export async function GET() {
           benefits
         )
       `)
-      .order("position")
+      .order("position", { ascending: true })
 
     if (error) {
-      console.error("[v0] Supabase error fetching services:", {
-        message: error.message,
-        details: error.details,
-        code: error.code,
-        hint: error.hint,
-      })
+      console.error("[v0] Supabase error:", error)
       return NextResponse.json(
-        { error: `Failed to fetch services: ${error.message}` },
+        { error: error.message },
         { status: 500 }
       )
     }
 
-    console.log("[v0] Successfully fetched", services?.length || 0, "services")
-    if (services && services.length > 0) {
-      console.log("[v0] First service structure:", {
-        id: services[0].id,
-        name: services[0].name,
-        translationsCount: services[0].services_translations?.length || 0,
-      })
-    } else {
-      console.warn("[v0] No services returned from database")
-    }
-
+    console.log("[v0] Fetched", services?.length || 0, "services")
+    
     return NextResponse.json({ services: services || [] })
   } catch (error) {
-    console.error("[v0] Error in GET /api/admin/services:", error)
+    console.error("[v0] Error:", error instanceof Error ? error.message : error)
     return NextResponse.json(
-      {
-        error: `Internal server error: ${error instanceof Error ? error.message : "Unknown error"}`,
-      },
+      { error: "Internal server error" },
       { status: 500 }
     )
   }

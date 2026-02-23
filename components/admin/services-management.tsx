@@ -55,25 +55,13 @@ export function ServicesManagement() {
   const fetchServices = async () => {
     try {
       setLoading(true)
-      console.log("[v0] Fetching services from /api/admin/services...")
-      
       const response = await fetch("/api/admin/services")
 
-      console.log("[v0] Response status:", response.status, "ok:", response.ok)
-
       if (!response.ok) {
-        const errorText = await response.text()
-        console.error("[v0] HTTP error! status:", response.status, "body:", errorText)
         throw new Error(`HTTP error! status: ${response.status}`)
       }
 
       const data = await response.json()
-      console.log("[v0] Fetched services data:", data)
-      console.log("[v0] Services count:", data?.services?.length || 0)
-      if (data?.services?.length > 0) {
-        console.log("[v0] First service:", data.services[0])
-      }
-
       setServices(data.services || [])
     } catch (error) {
       console.error("[v0] Error fetching services:", error)
@@ -88,8 +76,6 @@ export function ServicesManagement() {
     try {
       const url = editingService ? `/api/admin/services/${editingService.id}` : "/api/admin/services"
       const method = editingService ? "PUT" : "POST"
-
-      console.log("Saving service:", { url, method, serviceData })
 
       const response = await fetch(url, {
         method,
@@ -106,11 +92,10 @@ export function ServicesManagement() {
         fetchServices()
       } else {
         const errorData = await response.json()
-        console.error("Error response:", errorData)
         toast.error(errorData.error || "Помилка збереження послуги")
       }
     } catch (error) {
-      console.error("Error saving service:", error)
+      console.error("[v0] Error saving service:", error)
       toast.error("Помилка збереження послуги")
     }
   }
@@ -224,7 +209,6 @@ export function ServicesManagement() {
 
     const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault()
-      console.log("Form data being submitted:", formData)
       handleSaveService(formData)
     }
 
