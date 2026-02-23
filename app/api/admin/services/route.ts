@@ -5,33 +5,34 @@ export async function GET() {
   try {
     const supabase = createServerClient()
 
-    const { data: services, error } = await supabase
+    // Отримуємо всі послуги
+    const { data: services, error: servicesError } = await supabase
       .from("services")
-      .select(`
-        id, 
-        slug, 
-        name, 
-        position,
-        warranty_months,
-        duration_hours,
-        image_url,
-        services_translations (
-          locale,
-          name,
-          description,
-          detailed_description,
-          what_included,
-          benefits
-        )
-      `)
+      .select("id, slug, name, position, warranty_months, duration_hours, image_url")
       .order("position", { ascending: true })
 
-    if (error) {
-      console.error("[v0] Database error fetching services:", error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+    if (servicesError) {
+      console.error("[v0] Database error fetching services:", servicesError)
+      return NextResponse.json({ error: servicesError.message }, { status: 500 })
     }
 
-    return NextResponse.json({ services: services || [] })
+    // Отримуємо всі переклади послуг
+    const { data: translations, error: translationsError } = await supabase
+      .from("services_translations")
+      .select("service_id, locale, name, description, detailed_description, what_included, benefits")
+
+    if (translationsError) {
+      console.error("[v0] Database error fetching translations:", translationsError)
+      return NextResponse.json({ error: translationsError.message }, { status: 500 })
+    }
+
+    // Об'єднуємо послуги з їх перекладами
+    const servicesWithTranslations = services.map((service) => ({
+      ...service,
+      services_translations: translations.filter((t) => t.service_id === service.id),
+    }))
+
+    return NextResponse.json({ services: servicesWithTranslations || [] })
   } catch (error) {
     console.error("[v0] Error in GET /api/admin/services:", error)
     return NextResponse.json({ error: "Server error" }, { status: 500 })
