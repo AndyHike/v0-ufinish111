@@ -11,6 +11,7 @@ import { Breadcrumb } from "@/components/breadcrumb"
 import BrandPageClient from "./brand-page-client"
 import { toOGLocale } from "@/lib/og-locale"
 import { siteUrl } from "@/lib/site-config"
+import { PrevNextNav } from "@/components/prev-next-nav"
 
 // ISR Configuration
 export const revalidate = 3600 // Regenerate every 1 hour
@@ -76,17 +77,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const metadata = {
     cs: {
-      title: `Oprava ${brandName} Praha 6 Břevnov | Servis mobilů ${brandName} | Záruka 6 měsíců`,
+      title: `Oprava ${brandName} Praha 6 | Servis mobilů | DeviceHelp`,
       description: `Profesionální oprava mobilních telefonů ${brandName} v Praze 6 na Břevnově. Všechny modely ${brandName}, záruka 6 měsíců, oprava 2-3 hodiny. Bělohorská 209/133. ☎ +420 775 848 259`,
       keywords: `oprava ${brandName} Praha 6, servis ${brandName} Břevnov, oprava mobilu ${brandName}, servis telefonu Bělohorská, ${brandName} Praha6`,
     },
     en: {
-      title: `${brandName} Repair Prague 6 Břevnov | ${brandName} Mobile Service | 6 Month Warranty`,
+      title: `${brandName} Repair Prague 6 | Phone Service | DeviceHelp`,
       description: `Professional ${brandName} mobile phone repair in Prague 6 Břevnov. All ${brandName} models, 6 month warranty, 2-3 hours service. Bělohorská 209/133. ☎ +420 775 848 259`,
       keywords: `${brandName} repair Prague 6, ${brandName} service Břevnov, ${brandName} mobile repair, phone service Bělohorská`,
     },
     uk: {
-      title: `Ремонт ${brandName} Прага 6 Бржевнов | Сервіс мобільних ${brandName} | Гарантія 6 місяців`,
+      title: `Ремонт ${brandName} Прага 6 | Сервіс | DeviceHelp`,
       description: `Професійний ремонт мобільних телефонів ${brandName} в Празі 6 Бржевнов. Всі моделі ${brandName}, гарантія 6 місяців, ремонт 2-3 години. Bělohorská 209/133. ☎ +420 775 848 259`,
       keywords: `ремонт ${brandName} Прага 6, сервіс ${brandName} Бржевнов, ремонт мобільного ${brandName}, сервіс телефону Белогорська`,
     },
@@ -179,5 +180,26 @@ export default async function BrandPage({ params }: Props) {
     modelsWithoutSeries: modelsWithoutSeries || [],
   }
 
-  return <BrandPageClient initialData={initialData} locale={locale} slug={slug} />
+  // Fetch all brands for prev/next navigation
+  const { data: allBrands } = await supabase
+    .from("brands")
+    .select("name, slug")
+    .order("position", { ascending: true })
+
+  const brandIndex = allBrands?.findIndex((b) => b.slug === slug) ?? -1
+  const prevBrand = brandIndex > 0 ? allBrands![brandIndex - 1] : null
+  const nextBrand = allBrands && brandIndex >= 0 && brandIndex < allBrands.length - 1 ? allBrands[brandIndex + 1] : null
+
+  return (
+    <>
+      <BrandPageClient initialData={initialData} locale={locale} slug={slug} />
+      <div className="container mx-auto px-4 pb-10">
+        <PrevNextNav
+          prev={prevBrand ? { name: prevBrand.name, href: `/${locale}/brands/${prevBrand.slug}` } : null}
+          next={nextBrand ? { name: nextBrand.name, href: `/${locale}/brands/${nextBrand.slug}` } : null}
+          label="Navigate brands"
+        />
+      </div>
+    </>
+  )
 }

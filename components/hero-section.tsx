@@ -31,7 +31,7 @@ export function HeroSection() {
               quality={85}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent flex items-end">
-              <h1 className="hero-title text-2xl font-semibold tracking-tight text-white p-3 w-full">{t("title")}</h1>
+              <p className="hero-title text-2xl font-semibold tracking-tight text-white p-3 w-full">{t("title")}</p>
             </div>
           </div>
 

@@ -6,6 +6,7 @@ import { getPriceWithDiscount } from "@/lib/discounts/get-applicable-discounts"
 import { RelatedArticlesList } from "@/components/articles/related-articles-list"
 import { toOGLocale } from "@/lib/og-locale"
 import { siteUrl } from "@/lib/site-config"
+import { PrevNextNav } from "@/components/prev-next-nav"
 
 type Props = {
   params: Promise<{
@@ -76,12 +77,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
     metadata = {
       cs: {
-        title: `${serviceName} ${fullModelName} Praha 6 | Záruka 6 měsíců | DeviceHelp`,
+        title: `${serviceName} ${fullModelName} Praha 6 | DeviceHelp`,
         description: `Profesionální ${serviceName.toLowerCase()} ${fullModelName} v Praze 6 na Břevnově. Záruka 6 měsíců, oprava 2-3 hodiny. Bělohorská 209/133. ☎ +420 775 848 259`,
         keywords: `${serviceName} ${fullModelName}, ${serviceName} ${brandName} Praha 6, oprava ${modelName} Břevnov, servis ${brandName} Bělohorská`,
       },
       en: {
-        title: `${serviceName} ${fullModelName} Prague 6 | 6 Month Warranty | DeviceHelp`,
+        title: `${serviceName} ${fullModelName} Prague 6 | DeviceHelp`,
         description: `Professional ${serviceName.toLowerCase()} ${fullModelName} in Prague 6 Břevnov. 6 month warranty, 2-3 hours service. Bělohorská 209/133. ☎ +420 775 848 259`,
         keywords: `${serviceName} ${fullModelName}, ${serviceName} ${brandName} Prague 6, ${modelName} repair Břevnov`,
       },
@@ -446,6 +447,23 @@ export default async function ServicePageWithModel({ params }: Props) {
         warranty: "6 months",
       }
 
+    // Fetch prev/next models for this service for navigation
+    const { data: serviceModels } = await supabase
+      .from("model_services")
+      .select("models(name, slug)")
+      .eq("service_id", service.id)
+      .order("models(position)", { ascending: true })
+
+    const flatModels = (serviceModels || [])
+      .map((ms: any) => Array.isArray(ms.models) ? ms.models[0] : ms.models)
+      .filter(Boolean)
+
+    const modelPageIndex = flatModels.findIndex((m: any) => m.slug === modelSlug)
+    const prevServiceModel = modelPageIndex > 0 ? flatModels[modelPageIndex - 1] : null
+    const nextServiceModel = modelPageIndex >= 0 && modelPageIndex < flatModels.length - 1
+      ? flatModels[modelPageIndex + 1]
+      : null
+
     return (
       <>
         <script
@@ -455,6 +473,11 @@ export default async function ServicePageWithModel({ params }: Props) {
         <ServicePageClient serviceData={serviceData} locale={locale} />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <RelatedArticlesList locale={locale} />
+          <PrevNextNav
+            prev={prevServiceModel ? { name: prevServiceModel.name, href: `/${locale}/services/${slug}/${prevServiceModel.slug}` } : null}
+            next={nextServiceModel ? { name: nextServiceModel.name, href: `/${locale}/services/${slug}/${nextServiceModel.slug}` } : null}
+            label="Navigate models"
+          />
         </div>
       </>
     )

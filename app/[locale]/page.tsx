@@ -30,7 +30,7 @@ export async function generateMetadata({
       description: "Fast and quality mobile phone repair in Prague. Warranty on all repairs.",
     },
     uk: {
-      title: "DeviceHelp - Profesійnský ремонт мобільних телефонів у Празі",
+      title: "DeviceHelp - Професійний ремонт мобільних телефонів у Празі",
       description: "Швидкий та якісний ремонт мобільних телефонів у Празі. Гарантія на всі ремонти.",
     },
   }

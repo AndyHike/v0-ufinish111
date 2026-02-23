@@ -6,6 +6,8 @@ import ModelPageClient, { ModelData } from "./model-page-client"
 import { getPriceWithDiscount } from "@/lib/discounts/get-applicable-discounts"
 import { toOGLocale } from "@/lib/og-locale"
 import { siteUrl } from "@/lib/site-config"
+import { PrevNextNav } from "@/components/prev-next-nav"
+import { RelatedArticlesList } from "@/components/articles/related-articles-list"
 
 // ISR Configuration
 export const revalidate = 3600 // Regenerate every 1 hour
@@ -76,12 +78,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // Language-specific optimized metadata
   const metadata = {
     cs: {
-      title: `Oprava ${brandName} ${modelName} Praha 6 Břevnov | Servis mobilů | Záruka 6 měsíců`,
+      title: `Oprava ${brandName} ${modelName} Praha 6 | DeviceHelp`,
       description: `Profesionální oprava ${brandName} ${modelName} v Praze 6 na Břevnově. Výměna displeje, baterie, kamery. Záruka 6 měsíců, oprava 2-3 hodiny. Bělohorská 209/133. ☎ +420 775 848 259`,
       keywords: `oprava ${brandName} ${modelName} Praha 6, servis ${brandName} Břevnov, výměna displeje ${modelName}, oprava telefonu Bělohorská, servis mobilu Praha6`,
     },
     en: {
-      title: `${brandName} ${modelName} Repair Prague 6 Břevnov | Mobile Service | 6 Month Warranty`,
+      title: `${brandName} ${modelName} Repair Prague 6 | DeviceHelp`,
       description: `Professional ${brandName} ${modelName} repair in Prague 6 Břevnov. Screen replacement, battery, camera repair. 6 month warranty, 2-3 hours service. Bělohorská 209/133. ☎ +420 775 848 259`,
       keywords: `${brandName} ${modelName} repair Prague 6, mobile service Břevnov, screen replacement ${modelName}, phone repair Bělohorská`,
     },
@@ -125,7 +127,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
-import { RelatedArticlesList } from "@/components/articles/related-articles-list"
 
 export default async function ModelPage({ params }: Props) {
   const { slug, locale } = await params
@@ -326,6 +327,21 @@ export default async function ModelPage({ params }: Props) {
       },
     }
 
+    // Fetch prev/next models in the same brand for navigation
+    const { data: siblingModels } = brandObj?.id
+      ? await supabase
+        .from("models")
+        .select("name, slug")
+        .eq("brand_id", brandObj.id)
+        .order("position", { ascending: true })
+      : { data: null }
+
+    const modelIndex = siblingModels?.findIndex((m) => m.slug === slug) ?? -1
+    const prevModel = modelIndex > 0 ? siblingModels![modelIndex - 1] : null
+    const nextModel = siblingModels && modelIndex >= 0 && modelIndex < siblingModels.length - 1
+      ? siblingModels[modelIndex + 1]
+      : null
+
     return (
       <>
         <script
@@ -335,6 +351,11 @@ export default async function ModelPage({ params }: Props) {
         <ModelPageClient modelData={modelData} locale={locale} />
         <div className="container mx-auto px-4 py-8">
           <RelatedArticlesList locale={locale} />
+          <PrevNextNav
+            prev={prevModel ? { name: prevModel.name, href: `/${locale}/models/${prevModel.slug}` } : null}
+            next={nextModel ? { name: nextModel.name, href: `/${locale}/models/${nextModel.slug}` } : null}
+            label="Navigate models"
+          />
         </div>
       </>
     )

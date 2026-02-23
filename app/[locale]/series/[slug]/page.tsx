@@ -10,6 +10,7 @@ import { ContactCTABanner } from "@/components/contact-cta-banner"
 import { Breadcrumb } from "@/components/breadcrumb"
 import SeriesPageClient from "./series-page-client"
 import { siteUrl } from "@/lib/site-config"
+import { PrevNextNav } from "@/components/prev-next-nav"
 
 // ISR Configuration
 export const revalidate = 3600 // Regenerate every 1 hour
@@ -156,5 +157,32 @@ export default async function SeriesPage({ params }: Props) {
     models: models || [],
   }
 
-  return <SeriesPageClient initialData={initialData} locale={locale} slug={slug} />
+  // Fetch prev/next series in same brand for navigation
+  const brandId = Array.isArray(series.brands) ? (series.brands as any[])[0]?.id : (series.brands as any)?.id
+  const { data: siblingSeries } = brandId
+    ? await supabase
+      .from("series")
+      .select("name, slug")
+      .eq("brand_id", brandId)
+      .order("position", { ascending: true })
+    : { data: null }
+
+  const seriesIndex = siblingSeries?.findIndex((s) => s.slug === slug) ?? -1
+  const prevSeries = seriesIndex > 0 ? siblingSeries![seriesIndex - 1] : null
+  const nextSeries = siblingSeries && seriesIndex >= 0 && seriesIndex < siblingSeries.length - 1
+    ? siblingSeries[seriesIndex + 1]
+    : null
+
+  return (
+    <>
+      <SeriesPageClient initialData={initialData} locale={locale} slug={slug} />
+      <div className="container mx-auto px-4 pb-10">
+        <PrevNextNav
+          prev={prevSeries ? { name: prevSeries.name, href: `/${locale}/series/${prevSeries.slug}` } : null}
+          next={nextSeries ? { name: nextSeries.name, href: `/${locale}/series/${nextSeries.slug}` } : null}
+          label="Navigate series"
+        />
+      </div>
+    </>
+  )
 }
