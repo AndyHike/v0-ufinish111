@@ -1,34 +1,21 @@
-import { type NextRequest, NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/utils/supabase/server"
 
 export async function GET() {
-  console.log("[v0] GET /api/admin/services - STARTED")
-
   try {
-    console.log("[v0] Creating Supabase client...")
     const supabase = createServerClient()
-    console.log("[v0] Supabase client created successfully")
 
-    console.log("[v0] Executing SELECT query for services...")
-    
-    // First try: simple query without joins
     const { data: services, error } = await supabase
       .from("services")
       .select("id, slug, name, position")
       .order("position", { ascending: true })
 
-    console.log("[v0] Query completed")
-    console.log("[v0] Error:", error?.message || "none")
-    console.log("[v0] Services count:", services?.length || 0)
-
     if (error) {
-      console.error("[v0] Supabase error:", error)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
     return NextResponse.json({ services: services || [] })
   } catch (error) {
-    console.error("[v0] Exception in GET:", error)
     return NextResponse.json({ error: "Server error" }, { status: 500 })
   }
 }
