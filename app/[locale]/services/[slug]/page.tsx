@@ -114,45 +114,45 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
 
   const structuredData = modelData
     ? {
-        "@context": "https://schema.org",
-        "@type": "Service",
-        name: `${serviceName} ${modelData.brands?.name} ${modelData.name}`,
-        provider: {
-          "@type": "LocalBusiness",
-          name: "DeviceHelp",
-          address: {
-            "@type": "PostalAddress",
-            streetAddress: "Bělohorská 209/133",
-            addressLocality: "Praha 6-Břevnov",
-            addressRegion: "Praha",
-            postalCode: "169 00",
-            addressCountry: "CZ",
-          },
-          telephone: "+420 775 848 259",
+      "@context": "https://schema.org",
+      "@type": "Service",
+      name: `${serviceName} ${modelData.brands?.name} ${modelData.name}`,
+      provider: {
+        "@type": "LocalBusiness",
+        name: "DeviceHelp",
+        address: {
+          "@type": "PostalAddress",
+          streetAddress: "Bělohorská 209/133",
+          addressLocality: "Praha 6-Břevnov",
+          addressRegion: "Praha",
+          postalCode: "169 00",
+          addressCountry: "CZ",
         },
-        areaServed: ["Praha 6", "Břevnov", "Dejvice", "Vokovice"],
-        warranty: "6 months",
-      }
+        telephone: "+420 775 848 259",
+      },
+      areaServed: ["Praha 6", "Břevnov", "Dejvice", "Vokovice"],
+      warranty: "6 months",
+    }
     : {
-        "@context": "https://schema.org",
-        "@type": "Service",
-        name: serviceName,
-        provider: {
-          "@type": "LocalBusiness",
-          name: "DeviceHelp",
-          address: {
-            "@type": "PostalAddress",
-            streetAddress: "Bělohorská 209/133",
-            addressLocality: "Praha 6-Břevnov",
-            addressRegion: "Praha",
-            postalCode: "169 00",
-            addressCountry: "CZ",
-          },
-          telephone: "+420 775 848 259",
+      "@context": "https://schema.org",
+      "@type": "Service",
+      name: serviceName,
+      provider: {
+        "@type": "LocalBusiness",
+        name: "DeviceHelp",
+        address: {
+          "@type": "PostalAddress",
+          streetAddress: "Bělohorská 209/133",
+          addressLocality: "Praha 6-Břevnov",
+          addressRegion: "Praha",
+          postalCode: "169 00",
+          addressCountry: "CZ",
         },
-        areaServed: ["Praha 6", "Břevnov", "Dejvice", "Vokovice"],
-        warranty: "6 months",
-      }
+        telephone: "+420 775 848 259",
+      },
+      areaServed: ["Praha 6", "Břevnov", "Dejvice", "Vokovice"],
+      warranty: "6 months",
+    }
 
   return {
     title: currentMetadata.title,

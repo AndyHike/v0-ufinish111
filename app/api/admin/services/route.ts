@@ -3,26 +3,50 @@ import { createServerClient } from "@/utils/supabase/server"
 
 export async function GET() {
   try {
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
 
+    console.log("[v0] Starting services fetch...")
+
+    // Спробуємо вложену選擇як у інших API
     const { data: services, error } = await supabase
       .from("services")
-      .select("id, slug, name, position")
+      .select(`
+        id, 
+        slug, 
+        name, 
+        position, 
+        warranty_months, 
+        duration_hours, 
+        image_url,
+        services_translations (
+          service_id,
+          locale, 
+          name, 
+          description, 
+          detailed_description, 
+          what_included, 
+          benefits
+        )
+      `)
       .order("position", { ascending: true })
 
+    console.log("[v0] Query result:", { servicesCount: services?.length, error })
+
     if (error) {
+      console.error("[v0] Database error fetching services:", error)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
     return NextResponse.json({ services: services || [] })
   } catch (error) {
-    return NextResponse.json({ error: "Server error" }, { status: 500 })
+    console.error("[v0] Error in GET /api/admin/services:", error)
+    return NextResponse.json({ error: "Server error: " + (error instanceof Error ? error.message : String(error)) }, { status: 500 })
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
     const body = await request.json()
 
     console.log("Creating service with data:", body)
