@@ -185,7 +185,7 @@ export default async function LocaleLayout({
             *{box-sizing:border-box}
             body{font-family:var(--font-inter),system-ui,sans-serif;margin:0;padding:0;-webkit-font-smoothing:antialiased;text-rendering:optimizeSpeed;line-height:1.5}
             .hero-section{background:#fff;padding:1.5rem 0;min-height:350px;contain:layout style paint}
-            .hero-title{font-size:1.75rem;font-weight:600;line-height:1.2;margin-bottom:0.75rem;color:#111827}
+            .hero-title{font-size:1.75rem;font-weight:600;line-height:1.2;margin-bottom:0.75rem}
             .hero-subtitle{color:#6b7280;font-size:1rem;margin-bottom:1.5rem;line-height:1.5;font-weight:400}
             .hero-image{width:100%;height:250px;object-fit:cover;border-radius:0.75rem;transform:translateZ(0);content-visibility:auto}
             .container{max-width:1200px;margin:0 auto;padding:0 1rem}
