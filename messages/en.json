@@ -559,7 +559,14 @@
     "submitBooking": "Confirm Booking",
     "submitting": "Submitting...",
     "bookingSuccess": "Thank you! Your booking has been submitted. We will contact you soon",
-    "bookingError": "Error submitting booking. Please try again"
+    "bookingError": "Error submitting booking. Please try again",
+    "successTitle": "Thank you for your booking!",
+    "successMessage": "Your request has been successfully submitted",
+    "nextSteps": "What's Next?",
+    "step1": "You will receive a confirmation email",
+    "step2": "Our manager will contact you soon",
+    "step3": "We will confirm your appointment time",
+    "workingHours": "Working Hours"
   },
   "GoogleReviews": {
     "title": "Google Reviews",
