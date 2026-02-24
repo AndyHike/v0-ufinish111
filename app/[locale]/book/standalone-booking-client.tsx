@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import Link from "next/link"
 import { useTranslations } from "next-intl"
 import { useSearchParams } from "next/navigation"
 import StepBrand from "./steps/step-brand"
@@ -8,7 +9,8 @@ import StepSeries from "./steps/step-series"
 import StepModel from "./steps/step-model"
 import StepService from "./steps/step-service"
 import BookingConfirmation from "./booking-confirmation"
-import { Loader2 } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Loader2, ArrowLeft, ChevronRight, Wrench } from "lucide-react"
 import { formatCurrency } from "@/lib/format-currency"
 
 interface Brand {
