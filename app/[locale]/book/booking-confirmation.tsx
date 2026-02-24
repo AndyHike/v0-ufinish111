@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ArrowLeft, Loader2, Calendar, Clock, X, Clock3, Shield } from "lucide-react"
 import { formatCurrency } from "@/lib/format-currency"
+import BookingSuccess from "./booking-success"
 
 interface BookingConfirmationProps {
   locale: string
@@ -55,6 +56,7 @@ export default function BookingConfirmation({
   const [selectedDate, setSelectedDate] = useState<string>("")
   const [selectedTime, setSelectedTime] = useState<string>("")
   const [localizedService, setLocalizedService] = useState(service)
+  const [bookingSuccess, setBookingSuccess] = useState(false)
 
   // Re-fetch service data when locale changes to get proper translations
   useEffect(() => {
@@ -101,6 +103,11 @@ export default function BookingConfirmation({
         </div>
       </div>
     )
+  }
+
+  // Show success screen if booking was successful
+  if (bookingSuccess) {
+    return <BookingSuccess locale={locale} />
   }
 
   // Generate time slots
@@ -175,9 +182,7 @@ export default function BookingConfirmation({
       const result = await response.json()
 
       if (result.success) {
-        alert(`Thank you! Your booking has been submitted. We will contact you shortly at ${formData.phone}`)
-        // Redirect to home page after successful booking
-        window.location.href = `/${locale}`
+        setBookingSuccess(true)
       }
     } catch (error) {
       console.error("Error submitting booking:", error)
@@ -311,6 +316,7 @@ export default function BookingConfirmation({
                 autoComplete="tel"
                 required
                 disabled={submitting}
+                inputMode="tel"
                 className="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-opacity-20 focus:border-gray-900 transition-all disabled:bg-gray-50 disabled:cursor-not-allowed"
               />
               </div>

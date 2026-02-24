@@ -8,9 +8,11 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams
     const brandId = searchParams.get("brand_id")
     const seriesId = searchParams.get("series_id")
+    const seriesSlug = searchParams.get("series_slug")
+    const modelSlug = searchParams.get("slug")
 
     const supabase = createClient()
-    let query = supabase.from("models").select("*, brands(name), series(name)")
+    let query = supabase.from("models").select("*, brands(name), series(name, slug)")
 
     if (brandId) {
       query = query.eq("brand_id", brandId)
@@ -18,6 +20,23 @@ export async function GET(request: NextRequest) {
 
     if (seriesId) {
       query = query.eq("series_id", seriesId)
+    } else if (seriesSlug) {
+      // Спочатку знайдемо серію за slug
+      const { data: seriesData, error: seriesError } = await supabase
+        .from("series")
+        .select("id")
+        .eq("slug", seriesSlug)
+        .single()
+
+      if (seriesError || !seriesData) {
+        return NextResponse.json({ error: "Series not found" }, { status: 404 })
+      }
+
+      query = query.eq("series_id", seriesData.id)
+    }
+
+    if (modelSlug) {
+      query = query.eq("slug", modelSlug)
     }
 
     const { data, error } = await query.order("position", { ascending: true, nullsLast: true })
