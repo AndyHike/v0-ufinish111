@@ -3,8 +3,8 @@ import { createServerClient } from "@/utils/supabase/server"
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = "https://devicehelp.cz"
-  const locales = ["cs", "en", "uk"] as const
-  const defaultLocale = "cs"
+  const locales = ["uk", "cs", "en"] as const
+  const defaultLocale = "uk"
 
   const supabase = await createServerClient()
   const sitemapEntries: MetadataRoute.Sitemap = []

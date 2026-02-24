@@ -1,54 +1,59 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { useTranslations } from "next-intl"
+import { useSearchParams } from "next/navigation"
+import StepBrand from "./steps/step-brand"
+import StepSeries from "./steps/step-series"
+import StepModel from "./steps/step-model"
+import StepService from "./steps/step-service"
+import BookingConfirmation from "./booking-confirmation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowLeft, Loader2, ChevronRight, Smartphone, Wrench } from "lucide-react"
-import Link from "next/link"
+import { Loader2, ArrowLeft, ChevronRight, Wrench, Smartphone } from "lucide-react"
 import { formatCurrency } from "@/lib/format-currency"
 
 interface Brand {
   id: string
   name: string
   slug: string
-  logo_url: string | null
 }
 
 interface Series {
   id: string
   name: string
   slug: string
-  brand_id: string
 }
 
 interface Model {
   id: string
   name: string
   slug: string
-  image_url: string | null
-  series_id: string
 }
 
 interface Service {
   id: string
-  slug: string
   name: string
+  slug: string
   price: number | null
+  warranty_months?: number
+  duration_hours?: number
+  warranty_period?: string
 }
 
-interface Props {
+interface StandaloneBookingClientProps {
   locale: string
 }
 
-export default function StandaloneBookingClient({ locale }: Props) {
+export default function StandaloneBookingClient({ locale }: StandaloneBookingClientProps) {
   const t = useTranslations("StandaloneBooking")
-  const commonT = useTranslations("Common")
-  const router = useRouter()
-
+  const searchParams = useSearchParams()
+  
   const [step, setStep] = useState(1)
+  const [showConfirmation, setShowConfirmation] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [isLoadingFromUrl, setIsLoadingFromUrl] = useState(false)
 
   const [brands, setBrands] = useState<Brand[]>([])
   const [series, setSeries] = useState<Series[]>([])
@@ -60,25 +65,141 @@ export default function StandaloneBookingClient({ locale }: Props) {
   const [selectedModel, setSelectedModel] = useState<Model | null>(null)
   const [selectedService, setSelectedService] = useState<Service | null>(null)
 
-  // Завантаження брендів
+  // Завантаження брендів з URL параметрів
   useEffect(() => {
-    const fetchBrands = async () => {
-      setLoading(true)
+    const serviceSlug = searchParams.get("service_slug")
+    const modelSlug = searchParams.get("model_slug")
+    
+    // Перевіряємо, чи є збережений стан у sessionStorage
+    const savedState = typeof window !== 'undefined' ? sessionStorage.getItem('bookingState') : null
+    
+    if (savedState) {
       try {
-        const response = await fetch(`/api/brands?locale=${locale}`)
-        const data = await response.json()
-        setBrands(data)
+        const state = JSON.parse(savedState)
+        console.log("[v0] Restoring booking state from sessionStorage:", state)
+        setStep(state.step)
+        setSelectedBrand(state.selectedBrand)
+        setSelectedSeries(state.selectedSeries)
+        setSelectedModel(state.selectedModel)
+        setSelectedService(state.selectedService)
+        setShowConfirmation(state.showConfirmation)
       } catch (error) {
-        console.error("Error fetching brands:", error)
-      } finally {
-        setLoading(false)
+        console.error("[v0] Error restoring booking state:", error)
+      }
+    } else if (serviceSlug && modelSlug) {
+      // Якщо є параметри в URL, завантажуємо модель та послугу
+      setIsLoadingFromUrl(true)
+      // Скроллимо в верх сторінки
+      if (typeof window !== 'undefined') {
+        window.scrollTo(0, 0)
+      }
+      const fetchModelAndService = async () => {
+        try {
+          // Завантажуємо модель
+          const modelResponse = await fetch(`/api/admin/models?slug=${modelSlug}`)
+          if (modelResponse.ok) {
+            const modelData = await modelResponse.json()
+            const modelArray = Array.isArray(modelData) ? modelData : modelData?.data || []
+            if (modelArray.length > 0) {
+              const model = modelArray[0]
+              setSelectedModel(model)
+              setSelectedBrand({ id: model.brand_id, name: model.brands?.name || '', slug: model.brands?.slug || '' })
+              
+              // Завантажуємо послуги для моделі з поточним locale
+              const servicesResponse = await fetch(`/api/admin/model-services?model_id=${model.id}&locale=${locale}`)
+              if (servicesResponse.ok) {
+                const servicesData = await servicesResponse.json()
+                const servicesArray = Array.isArray(servicesData) ? servicesData : servicesData?.data || []
+                
+                // Шукаємо послугу за slug
+                const foundService = servicesArray.find((ms: any) => 
+                  (ms.services?.slug || '') === serviceSlug
+                )
+                
+                if (foundService) {
+                  // Отримуємо дані з URL параметрів
+                  const urlWarrantyMonths = searchParams.get("warranty_months")
+                  const urlDurationHours = searchParams.get("duration_hours")
+
+                  const service: Service = {
+                    id: foundService.id,
+                    slug: foundService.services?.slug || '',
+                    name: foundService.services?.name || foundService.name || 'Unknown Service',
+                    price: foundService.price,
+                    warranty_months: urlWarrantyMonths ? parseInt(urlWarrantyMonths) : foundService.warranty_months,
+                    duration_hours: urlDurationHours ? parseInt(urlDurationHours) : foundService.duration_hours,
+                    warranty_period: foundService.warranty_period,
+                  }
+                  setSelectedService(service)
+                  setStep(4)
+                  setShowConfirmation(true)
+                }
+              }
+            }
+          }
+        } catch (error) {
+          console.error("[v0] Error loading model/service from URL params:", error)
+        } finally {
+          setIsLoadingFromUrl(false)
+        }
+      }
+      
+      fetchModelAndService()
+    } else {
+      // Завантажуємо бренди
+      const fetchBrands = async () => {
+        setLoading(true)
+        try {
+          const response = await fetch(`/api/admin/brands`)
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`)
+          }
+          const data = await response.json()
+          console.log("[v0] Brands loaded:", data)
+          setBrands(Array.isArray(data) ? data : data?.data || [])
+        } catch (error) {
+          console.error("[v0] Error fetching brands:", error)
+          setBrands([])
+        } finally {
+          setLoading(false)
+        }
+      }
+
+      fetchBrands()
+    }
+  }, [searchParams, locale])
+
+  // Зберігаємо стан у sessionStorage кожен раз, коли він змінюється
+  useEffect(() => {
+    if (selectedBrand || selectedModel || selectedService) {
+      const bookingState = {
+        step,
+        selectedBrand,
+        selectedSeries,
+        selectedModel,
+        selectedService,
+        showConfirmation,
+      }
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('bookingState', JSON.stringify(bookingState))
       }
     }
+  }, [step, selectedBrand, selectedSeries, selectedModel, selectedService, showConfirmation])
 
-    fetchBrands()
-  }, [locale])
-
-  // Завантаження серій після вибору бренду
+  // Збереження стану в sessionStorage коли він змінюється
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const state = {
+        step,
+        selectedBrand,
+        selectedSeries,
+        selectedModel,
+        selectedService,
+        showConfirmation,
+      }
+      sessionStorage.setItem('bookingState', JSON.stringify(state))
+    }
+  }, [step, selectedBrand, selectedSeries, selectedModel, selectedService, showConfirmation])
   useEffect(() => {
     if (!selectedBrand) return
 
@@ -86,11 +207,15 @@ export default function StandaloneBookingClient({ locale }: Props) {
       setLoading(true)
       try {
         const response = await fetch(`/api/admin/series?brand_id=${selectedBrand.id}`)
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
         const data = await response.json()
         console.log("[v0] Series loaded:", data)
-        setSeries(data)
+        setSeries(Array.isArray(data) ? data : data?.data || [])
       } catch (error) {
         console.error("Error fetching series:", error)
+        setSeries([])
       } finally {
         setLoading(false)
       }
@@ -107,11 +232,15 @@ export default function StandaloneBookingClient({ locale }: Props) {
       setLoading(true)
       try {
         const response = await fetch(`/api/admin/models?series_id=${selectedSeries.id}`)
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
         const data = await response.json()
         console.log("[v0] Models loaded:", data)
-        setModels(data)
+        setModels(Array.isArray(data) ? data : data?.data || [])
       } catch (error) {
         console.error("Error fetching models:", error)
+        setModels([])
       } finally {
         setLoading(false)
       }
@@ -127,27 +256,38 @@ export default function StandaloneBookingClient({ locale }: Props) {
     const fetchServices = async () => {
       setLoading(true)
       try {
-        const response = await fetch(`/api/admin/model-services?model_id=${selectedModel.id}`)
+        const response = await fetch(`/api/admin/model-services?model_id=${selectedModel.id}&locale=${locale}`)
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
         const data = await response.json()
+        console.log("[v0] Services loaded:", data)
 
         // Трансформуємо дані для відображення
-        const transformedServices = data.map((ms: any) => ({
-          id: ms.services.id,
-          slug: ms.services.slug,
-          name: ms.services.translation?.name || ms.services.name,
+        const servicesArray = Array.isArray(data) ? data : data?.data || []
+        const transformedServices = servicesArray.map((ms: any) => ({
+          id: ms.id,
+          service_id: ms.service_id,
+          slug: ms.services?.slug || '',
+          name: ms.services?.name || ms.name || 'Unknown Service',
           price: ms.price,
+          warranty_months: ms.warranty_months,
+          duration_hours: ms.duration_hours,
+          warranty_period: ms.warranty_period,
         }))
 
+        console.log("[v0] Transformed services:", transformedServices)
         setServices(transformedServices)
       } catch (error) {
-        console.error("Error fetching services:", error)
+        console.error("[v0] Error fetching services:", error)
+        setServices([])
       } finally {
         setLoading(false)
       }
     }
 
     fetchServices()
-  }, [selectedModel])
+  }, [selectedModel, locale])
 
   const handleBrandSelect = (brand: Brand) => {
     setSelectedBrand(brand)
@@ -172,20 +312,21 @@ export default function StandaloneBookingClient({ locale }: Props) {
 
   const handleServiceSelect = (service: Service) => {
     setSelectedService(service)
+    setShowConfirmation(true)
   }
 
   const handleProceedToBooking = () => {
-    if (!selectedService || !selectedModel) return
-
-    const params = new URLSearchParams()
-    params.set("service_slug", selectedService.slug)
-    params.set("model_slug", selectedModel.slug)
-
-    router.push(`/${locale}/book-service?${params.toString()}`)
+    if (!selectedService || !selectedModel || !selectedBrand) {
+      alert("Please select a service before proceeding")
+      return
+    }
+    setShowConfirmation(true)
   }
 
   const handleBack = () => {
-    if (step === 4) {
+    if (showConfirmation) {
+      setShowConfirmation(false)
+    } else if (step === 4) {
       setStep(3)
       setSelectedService(null)
     } else if (step === 3) {
@@ -197,21 +338,65 @@ export default function StandaloneBookingClient({ locale }: Props) {
       setSelectedSeries(null)
       setSelectedModel(null)
       setSelectedService(null)
+    } else if (step === 1) {
+      // Очищуємо sessionStorage при повертанні на крок 1
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('bookingState')
+      }
+      setSelectedBrand(null)
+      setSelectedSeries(null)
+      setSelectedModel(null)
+      setSelectedService(null)
     }
+  }
+
+  const handleConfirmationBack = () => {
+    setShowConfirmation(false)
+    // Очищуємо sessionStorage коли виходимо з confirmation форми
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('bookingState')
+    }
+  }
+
+  // Show confirmation form if requested
+  if (showConfirmation && selectedBrand && selectedModel && selectedService) {
+    return (
+      <BookingConfirmation
+        locale={locale}
+        brand={{ name: selectedBrand.name, slug: selectedBrand.slug }}
+        model={{ name: selectedModel.name, slug: selectedModel.slug, id: selectedModel.id }}
+        service={{
+          name: selectedService.name,
+          slug: selectedService.slug,
+          price: selectedService.price,
+          warranty_months: selectedService.warranty_months,
+          duration_hours: selectedService.duration_hours,
+          warranty_period: selectedService.warranty_period,
+        }}
+      />
+    )
   }
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4">
+        {/* Show loader if loading from URL params */}
+        {isLoadingFromUrl ? (
+          <div className="flex flex-col items-center justify-center py-24">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-600 mb-4" />
+            <p className="text-gray-600">{t("loading") || "Loading..."}</p>
+          </div>
+        ) : (
+          <>
         {/* Breadcrumb */}
         <nav className="mb-6">
-          <Link
-            href={`/${locale}`}
-            className="text-gray-600 hover:text-gray-900 flex items-center gap-2 text-sm transition-colors"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            {commonT("backToHome")}
-          </Link>
+            <Link
+              href={`/${locale}`}
+              className="text-gray-600 hover:text-gray-900 flex items-center gap-2 text-sm transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              {t("backToHome")}
+            </Link>
         </nav>
 
         <Card className="shadow-sm border-0 bg-white">
@@ -391,6 +576,7 @@ export default function StandaloneBookingClient({ locale }: Props) {
                 {loading ? (
                   <div className="flex items-center justify-center py-12">
                     <Loader2 className="h-6 w-6 animate-spin text-gray-600" />
+                    <span className="ml-2 text-gray-600">{t("loading")}</span>
                   </div>
                 ) : services.length === 0 ? (
                   <p className="text-center text-gray-600 py-8">{t("noServices")}</p>
@@ -440,6 +626,8 @@ export default function StandaloneBookingClient({ locale }: Props) {
             )}
           </CardContent>
         </Card>
+          </>
+        )}
       </div>
     </div>
   )

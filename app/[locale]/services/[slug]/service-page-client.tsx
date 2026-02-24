@@ -269,7 +269,15 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
       params.set("model_slug", modelParam)
     }
 
-    return `/${locale}/book-service?${params.toString()}`
+    // Add warranty and duration if available
+    if (serviceData.warranty_months) {
+      params.set("warranty_months", serviceData.warranty_months.toString())
+    }
+    if (serviceData.duration_hours) {
+      params.set("duration_hours", serviceData.duration_hours.toString())
+    }
+
+    return `/${locale}/book?${params.toString()}`
   })()
 
   return (

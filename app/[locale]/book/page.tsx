@@ -2,11 +2,12 @@ import { getTranslations } from "next-intl/server"
 import StandaloneBookingClient from "./standalone-booking-client"
 
 interface Props {
-  params: { locale: string }
+  params: Promise<{ locale: string }>
 }
 
-export async function generateMetadata({ params }: { params: { locale: string } }) {
-  const t = await getTranslations({ locale: params.locale, namespace: "StandaloneBooking" })
+export async function generateMetadata({ params }: Props) {
+  const resolvedParams = await params
+  const t = await getTranslations({ locale: resolvedParams.locale, namespace: "StandaloneBooking" })
 
   return {
     title: t("pageTitle"),
@@ -15,10 +16,12 @@ export async function generateMetadata({ params }: { params: { locale: string } 
   }
 }
 
-export default function StandaloneBookingPage({ params }: Props) {
+export default async function StandaloneBookingPage({ params }: Props) {
+  const resolvedParams = await params
+  
   return (
     <div className="min-h-screen bg-gray-50">
-      <StandaloneBookingClient locale={params.locale} />
+      <StandaloneBookingClient locale={resolvedParams.locale} />
     </div>
   )
 }

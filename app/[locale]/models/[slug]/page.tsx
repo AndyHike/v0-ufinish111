@@ -32,7 +32,7 @@ export async function generateStaticParams() {
       .order("position", { ascending: true })
       .limit(100) // Pre-render top 100 models
 
-    const locales = ["cs", "uk", "en"]
+    const locales = ["uk", "cs", "en"]
 
     return (
       models?.flatMap((model) =>
