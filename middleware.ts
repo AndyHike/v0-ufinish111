@@ -75,7 +75,7 @@ export async function middleware(request: NextRequest) {
     const url = new URL(`/${preferredLocale}${pathname}`, request.url)
     url.search = request.nextUrl.search
 
-    const response = NextResponse.redirect(url)
+    const response = NextResponse.redirect(url, { status: 301 })
     response.cookies.set("NEXT_LOCALE", preferredLocale, {
       path: "/",
       maxAge: 31536000,
