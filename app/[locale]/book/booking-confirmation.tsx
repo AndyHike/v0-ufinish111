@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import Link from "next/link"
 import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,7 +11,7 @@ import { formatCurrency } from "@/lib/format-currency"
 interface BookingConfirmationProps {
   locale: string
   brand?: { name: string; slug: string }
-  model?: { name: string; slug: string }
+  model?: { name: string; slug: string; id?: string }
   service?: {
     name: string
     slug: string
@@ -59,10 +60,38 @@ export default function BookingConfirmation({
 
   // Re-fetch service data when locale changes to get proper translations
   useEffect(() => {
-    if (service && model) {
-      setLocalizedService(service)
+    if (service?.slug && model?.id) {
+      // Перезавантажуємо дані при зміні locale
+      const refetchServiceData = async () => {
+        try {
+          console.log("[v0] Refetching service data for locale:", locale, "model_id:", model.id)
+          const response = await fetch(`/api/admin/model-services?model_id=${model.id}&locale=${locale}`)
+          if (!response.ok) return
+          
+          const data = await response.json()
+          const servicesArray = Array.isArray(data) ? data : data?.data || []
+          
+          // Шукаємо послугу за slug
+          const foundService = servicesArray.find((ms: any) => (ms.services?.slug || "") === service.slug)
+          
+          if (foundService) {
+            console.log("[v0] Found service with updated data:", foundService)
+            setLocalizedService({
+              ...service,
+              name: foundService.services?.name || foundService.name || service.name,
+              duration_hours: foundService.duration_hours,
+              warranty_months: foundService.warranty_months,
+              warranty_period: foundService.warranty_period,
+            })
+          }
+        } catch (error) {
+          console.error("[v0] Error refetching service data:", error)
+        }
+      }
+      
+      refetchServiceData()
     }
-  }, [locale, service, model])
+  }, [locale, service?.slug, model?.id])
 
   // Guard clause for missing data
   if (!brand || !model || !service || !onBack) {
@@ -175,14 +204,14 @@ export default function BookingConfirmation({
   return (
     <div className="min-h-screen bg-gray-50 py-6 sm:py-12 px-4">
       <div className="max-w-2xl mx-auto">
-        {/* Back Button */}
-        <button
-          onClick={onBack}
+        {/* Home Button */}
+        <Link
+          href={`/${locale}`}
           className="inline-flex items-center gap-2 text-sm text-gray-700 hover:text-gray-900 mb-6 sm:mb-8 transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
-          {t("back")}
-        </button>
+          {t("backToHome") || "Back to Home"}
+        </Link>
 
         {/* Page Title */}
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">{t("bookService") || "Book a Service"}</h1>
@@ -248,7 +277,7 @@ export default function BookingConfirmation({
                 autoComplete="given-name"
                 required
                 disabled={submitting}
-                className="border-0 border-b border-gray-300 rounded-none bg-transparent px-0 py-2 text-sm placeholder:text-gray-400 focus:border-gray-900 focus:ring-0"
+                className="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-opacity-20 focus:border-gray-900 transition-all disabled:bg-gray-50 disabled:cursor-not-allowed"
               />
               </div>
 
@@ -265,7 +294,7 @@ export default function BookingConfirmation({
                 autoComplete="family-name"
                 required
                 disabled={submitting}
-                className="border-0 border-b border-gray-300 rounded-none bg-transparent px-0 py-2 text-sm placeholder:text-gray-400 focus:border-gray-900 focus:ring-0"
+                className="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-opacity-20 focus:border-gray-900 transition-all disabled:bg-gray-50 disabled:cursor-not-allowed"
               />
               </div>
 
@@ -282,7 +311,7 @@ export default function BookingConfirmation({
                 autoComplete="tel"
                 required
                 disabled={submitting}
-                className="border-0 border-b border-gray-300 rounded-none bg-transparent px-0 py-2 text-sm placeholder:text-gray-400 focus:border-gray-900 focus:ring-0"
+                className="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-opacity-20 focus:border-gray-900 transition-all disabled:bg-gray-50 disabled:cursor-not-allowed"
               />
               </div>
 
@@ -299,7 +328,7 @@ export default function BookingConfirmation({
                 autoComplete="email"
                 required
                 disabled={submitting}
-                className="border-0 border-b border-gray-300 rounded-none bg-transparent px-0 py-2 text-sm placeholder:text-gray-400 focus:border-gray-900 focus:ring-0"
+                className="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-opacity-20 focus:border-gray-900 transition-all disabled:bg-gray-50 disabled:cursor-not-allowed"
               />
               </div>
             </div>

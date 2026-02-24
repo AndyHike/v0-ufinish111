@@ -80,16 +80,12 @@ export default function StandaloneBookingClient({ locale }: StandaloneBookingCli
         setSelectedSeries(state.selectedSeries)
         setSelectedModel(state.selectedModel)
         setSelectedService(state.selectedService)
-        setShowConfirmation(state.showConfirmation)
+        // НЕ встановлюємо showConfirmation, дозволимо звичайний потік
       } catch (error) {
         console.error("[v0] Error restoring booking state:", error)
       }
     } else if (serviceSlug && modelSlug) {
-      // Якщо є параметри в URL, переходимо прямо на крок 4
-      setStep(4)
-      setShowConfirmation(true)
-      
-      // Завантажуємо модель та послугу
+      // Якщо є параметри в URL, завантажуємо модель та послугу
       const fetchModelAndService = async () => {
         try {
           // Завантажуємо модель
@@ -102,7 +98,7 @@ export default function StandaloneBookingClient({ locale }: StandaloneBookingCli
               setSelectedModel(model)
               setSelectedBrand({ id: model.brand_id, name: model.brands?.name || '', slug: model.brands?.slug || '' })
               
-              // Завантажуємо послуги для моделі
+              // Завантажуємо послуги для моделі з поточним locale
               const servicesResponse = await fetch(`/api/admin/model-services?model_id=${model.id}&locale=${locale}`)
               if (servicesResponse.ok) {
                 const servicesData = await servicesResponse.json()
@@ -128,6 +124,8 @@ export default function StandaloneBookingClient({ locale }: StandaloneBookingCli
                     warranty_period: foundService.warranty_period,
                   }
                   setSelectedService(service)
+                  setStep(4)
+                  setShowConfirmation(true)
                 }
               }
             }
@@ -339,7 +337,7 @@ export default function StandaloneBookingClient({ locale }: StandaloneBookingCli
       <BookingConfirmation
         locale={locale}
         brand={{ name: selectedBrand.name, slug: selectedBrand.slug }}
-        model={{ name: selectedModel.name, slug: selectedModel.slug }}
+        model={{ name: selectedModel.name, slug: selectedModel.slug, id: selectedModel.id }}
         service={{
           name: selectedService.name,
           slug: selectedService.slug,
