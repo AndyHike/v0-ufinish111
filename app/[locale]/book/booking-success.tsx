@@ -7,10 +7,9 @@ import { CheckCircle2, Phone, Mail, Clock } from "lucide-react"
 
 interface BookingSuccessProps {
   locale: string
-  phone?: string
 }
 
-export default function BookingSuccess({ locale, phone }: BookingSuccessProps) {
+export default function BookingSuccess({ locale }: BookingSuccessProps) {
   const t = useTranslations("StandaloneBooking")
 
   return (
@@ -69,15 +68,13 @@ export default function BookingSuccess({ locale, phone }: BookingSuccessProps) {
 
         {/* Contact Information - Compact */}
         <div className="bg-blue-50 rounded-lg p-4 sm:p-5 mb-5 space-y-3">
-          {phone && (
-            <div className="flex items-start gap-3">
-              <Phone className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="text-xs text-gray-600 font-medium uppercase tracking-wide">{t("phoneLabel")}</p>
-                <p className="text-sm text-gray-900">{phone}</p>
-              </div>
+          <div className="flex items-start gap-3">
+            <Phone className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-xs text-gray-600 font-medium uppercase tracking-wide">{t("phoneLabel")}</p>
+              <p className="text-sm text-gray-900">{t("phoneValue")}</p>
             </div>
-          )}
+          </div>
 
           <div className="flex items-start gap-3">
             <Mail className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />

@@ -341,7 +341,7 @@
     "priceOnRequest": "Cena na vyžádání",
     "forModel": "pro {brand} {model}",
     "loadingError": "Chyba načítání",
-    "loadingErrorDescription": "Nepodařilo se nač��������������st data služby. Zkuste to prosím později.",
+    "loadingErrorDescription": "Nepodařilo se nač����������������st data služby. Zkuste to prosím později.",
     "backToSeries": "Zpět na modely ",
     "repairServices": "Opravárenské služby",
     "modelNotFound": "Model nenalezen",
@@ -763,6 +763,7 @@
     "workingHoursValue": "9:00 - 19:00",
     "contactLabel": "Kontakt",
     "phoneLabel": "Telefon",
+    "phoneValue": "+420775848259",
     "emailLabel": "Email",
     "emailValue": "info@devicehelp.cz"
   },

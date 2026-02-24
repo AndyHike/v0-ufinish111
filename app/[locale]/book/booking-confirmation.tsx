@@ -107,7 +107,7 @@ export default function BookingConfirmation({
 
   // Show success screen if booking was successful
   if (bookingSuccess) {
-    return <BookingSuccess locale={locale} phone={formData.phone} />
+    return <BookingSuccess locale={locale} />
   }
 
   // Generate time slots
