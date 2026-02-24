@@ -321,23 +321,17 @@ export default function StandaloneBookingClient({ locale }: StandaloneBookingCli
   // Show confirmation form if requested
   if (showConfirmation && selectedBrand && selectedModel && selectedService) {
     return (
-      <div className="space-y-6">
-        <Button variant="ghost" onClick={handleConfirmationBack} className="text-gray-600 hover:text-gray-900">
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          {t("back")}
-        </Button>
-        <BookingConfirmation
-          locale={locale}
-          brand={{ name: selectedBrand.name, slug: selectedBrand.slug }}
-          model={{ name: selectedModel.name, slug: selectedModel.slug }}
-          service={{
-            name: selectedService.name,
-            slug: selectedService.slug,
-            price: selectedService.price,
-          }}
-          onBack={handleConfirmationBack}
-        />
-      </div>
+      <BookingConfirmation
+        locale={locale}
+        brand={{ name: selectedBrand.name, slug: selectedBrand.slug }}
+        model={{ name: selectedModel.name, slug: selectedModel.slug }}
+        service={{
+          name: selectedService.name,
+          slug: selectedService.slug,
+          price: selectedService.price,
+        }}
+        onBack={handleConfirmationBack}
+      />
     )
   }
 
