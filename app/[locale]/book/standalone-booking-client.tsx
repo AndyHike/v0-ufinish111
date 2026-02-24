@@ -231,10 +231,14 @@ export default function StandaloneBookingClient({ locale }: StandaloneBookingCli
         // Трансформуємо дані для відображення
         const servicesArray = Array.isArray(data) ? data : data?.data || []
         const transformedServices = servicesArray.map((ms: any) => ({
-          id: ms.services?.id || ms.service_id,
+          id: ms.id,
+          service_id: ms.service_id,
           slug: ms.services?.slug || '',
           name: ms.services?.name || ms.name || 'Unknown Service',
           price: ms.price,
+          warranty_months: ms.warranty_months,
+          duration_hours: ms.duration_hours,
+          warranty_period: ms.warranty_period,
         }))
 
         console.log("[v0] Transformed services:", transformedServices)
@@ -329,6 +333,9 @@ export default function StandaloneBookingClient({ locale }: StandaloneBookingCli
           name: selectedService.name,
           slug: selectedService.slug,
           price: selectedService.price,
+          warranty_months: selectedService.warranty_months,
+          duration_hours: selectedService.duration_hours,
+          warranty_period: selectedService.warranty_period,
         }}
         onBack={handleConfirmationBack}
       />

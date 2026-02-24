@@ -11,7 +11,14 @@ interface BookingConfirmationProps {
   locale: string
   brand?: { name: string; slug: string }
   model?: { name: string; slug: string }
-  service?: { name: string; slug: string; price: number | null; executionTime?: string; warranty?: string }
+  service?: {
+    name: string
+    slug: string
+    price: number | null
+    warranty_months?: number
+    duration_hours?: number
+    warranty_period?: string
+  }
   onBack?: () => void
 }
 
@@ -63,17 +70,17 @@ export default function BookingConfirmation({
   const generateAvailableDates = () => {
     const dates = []
     const today = new Date()
-    
+
     for (let i = 1; i <= 30; i++) {
       const date = new Date(today)
       date.setDate(date.getDate() + i)
-      
+
       // Пропускаємо неділю (0)
       if (date.getDay() !== 0) {
         dates.push(date)
       }
     }
-    
+
     return dates
   }
 
@@ -89,7 +96,7 @@ export default function BookingConfirmation({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!formData.firstName || !formData.lastName || !formData.email || !formData.phone || !selectedDate || !selectedTime) {
       alert(t("fillAllFields") || "Please fill all required fields")
       return
@@ -123,7 +130,7 @@ export default function BookingConfirmation({
       }
 
       const result = await response.json()
-      
+
       if (result.success) {
         alert(
           t("bookingSuccess") ||
@@ -147,261 +154,290 @@ export default function BookingConfirmation({
       })
     : ""
 
+  // Format warranty and duration for display
+  const warrantyText = service.warranty_months
+    ? `${service.warranty_months} ${service.warranty_period || "місяців"}`
+    : "—"
+  const durationText = service.duration_hours ? `${service.duration_hours} год.` : "—"
+
   return (
-    <div className="min-h-screen bg-white py-12">
-      <div className="max-w-2xl mx-auto px-4">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white py-12">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Back Button */}
         <button
           onClick={onBack}
-          className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-12 transition-colors"
+          className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-10 transition-colors group"
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
           {t("back")}
         </button>
 
-        <div className="space-y-10">
+        <div className="space-y-8">
           {/* Header */}
-          <div>
-            <h1 className="text-3xl font-light text-gray-900 mb-2">{t("confirmBooking")}</h1>
-            <p className="text-gray-600">{t("enterDetails")}</p>
+          <div className="max-w-2xl">
+            <h1 className="text-4xl font-bold text-gray-900 mb-3">{t("confirmBooking")}</h1>
+            <p className="text-lg text-gray-600">{t("enterDetails")}</p>
           </div>
 
-          {/* Service Summary Card */}
-          <div className="border border-gray-200 rounded-lg p-6 space-y-4">
-            <div className="grid grid-cols-2 gap-6">
-              <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">{t("brand")}</p>
-                <p className="text-lg text-gray-900 font-medium">{brand.name}</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">{t("model")}</p>
-                <p className="text-lg text-gray-900 font-medium">{model.name}</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">{t("service")}</p>
-                <p className="text-lg text-gray-900 font-medium">{service.name}</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">{t("price")}</p>
-                <p className="text-lg text-gray-900 font-bold">{service.price ? formatCurrency(service.price) : "—"}</p>
-              </div>
-            </div>
-            
-            {/* Additional Info */}
-            {(service.executionTime || service.warranty) && (
-              <div className="border-t border-gray-200 pt-4 grid grid-cols-2 gap-6">
-                {service.executionTime && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Left Column - Service Summary */}
+            <div className="lg:col-span-1">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sticky top-8 space-y-6">
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-2">Бренд</p>
+                  <p className="text-xl font-bold text-gray-900">{brand.name}</p>
+                </div>
+
+                <div className="border-t border-gray-100 pt-6">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-2">Модель</p>
+                  <p className="text-lg font-semibold text-gray-900">{model.name}</p>
+                </div>
+
+                <div className="border-t border-gray-100 pt-6 space-y-4">
                   <div>
-                    <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Час виконання</p>
-                    <p className="text-sm text-gray-900">{service.executionTime}</p>
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-2">Послуга</p>
+                    <p className="text-lg font-semibold text-gray-900">{service.name}</p>
                   </div>
-                )}
-                {service.warranty && (
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Час роботи</p>
+                      <p className="text-sm font-semibold text-gray-700">{durationText}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Гарантія</p>
+                      <p className="text-sm font-semibold text-gray-700">{warrantyText}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t border-gray-100 pt-6">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-2">Ціна</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {service.price ? formatCurrency(service.price) : "—"}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column - Form */}
+            <div className="lg:col-span-2">
+              <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 space-y-6">
+                {/* Name Fields */}
+                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Гарантія</p>
-                    <p className="text-sm text-gray-900">{service.warranty}</p>
+                    <label className="block text-sm font-semibold text-gray-900 mb-2">{t("firstName")} *</label>
+                    <Input
+                      type="text"
+                      name="firstName"
+                      value={formData.firstName}
+                      onChange={handleInputChange}
+                      required
+                      disabled={submitting}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                      placeholder="John"
+                    />
                   </div>
-                )}
-              </div>
-            )}
-          </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-900 mb-2">{t("lastName")} *</label>
+                    <Input
+                      type="text"
+                      name="lastName"
+                      value={formData.lastName}
+                      onChange={handleInputChange}
+                      required
+                      disabled={submitting}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                      placeholder="Doe"
+                    />
+                  </div>
+                </div>
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-8">
-            {/* Name Fields */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs text-gray-600 uppercase tracking-wide mb-3">{t("firstName")} *</label>
-                <Input
-                  type="text"
-                  name="firstName"
-                  value={formData.firstName}
-                  onChange={handleInputChange}
-                  required
-                  disabled={submitting}
-                  className="border-0 border-b border-gray-300 rounded-none bg-transparent px-0 py-2 text-sm focus:border-gray-900 focus:ring-0"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-600 uppercase tracking-wide mb-3">{t("lastName")} *</label>
-                <Input
-                  type="text"
-                  name="lastName"
-                  value={formData.lastName}
-                  onChange={handleInputChange}
-                  required
-                  disabled={submitting}
-                  className="border-0 border-b border-gray-300 rounded-none bg-transparent px-0 py-2 text-sm focus:border-gray-900 focus:ring-0"
-                />
-              </div>
-            </div>
+                {/* Email and Phone */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-900 mb-2">{t("email")} *</label>
+                    <Input
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      required
+                      disabled={submitting}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                      placeholder="john@example.com"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-900 mb-2">{t("phone")} *</label>
+                    <Input
+                      type="tel"
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleInputChange}
+                      required
+                      disabled={submitting}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                      placeholder="+38 (0XX) XXX-XX-XX"
+                    />
+                  </div>
+                </div>
 
-            {/* Email and Phone */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs text-gray-600 uppercase tracking-wide mb-3">{t("email")} *</label>
-                <Input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  required
-                  disabled={submitting}
-                  className="border-0 border-b border-gray-300 rounded-none bg-transparent px-0 py-2 text-sm focus:border-gray-900 focus:ring-0"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-600 uppercase tracking-wide mb-3">{t("phone")} *</label>
-                <Input
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleInputChange}
-                  required
-                  disabled={submitting}
-                  className="border-0 border-b border-gray-300 rounded-none bg-transparent px-0 py-2 text-sm focus:border-gray-900 focus:ring-0"
-                />
-              </div>
-            </div>
+                {/* Date and Time Selection */}
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Date Picker Field */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-900 mb-2">{t("selectDate")} *</label>
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setShowDatePicker(!showDatePicker)}
+                        className="w-full flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg bg-white hover:border-gray-400 transition-colors"
+                      >
+                        <Calendar className="h-4 w-4 text-gray-600" />
+                        <span className={formattedDate ? "text-gray-900 font-medium" : "text-gray-500"}>
+                          {formattedDate || "Виберіть дату"}
+                        </span>
+                      </button>
 
-            {/* Date and Time Selection */}
-            <div className="grid grid-cols-2 gap-4">
-              {/* Date Picker Field */}
-              <div>
-                <label className="block text-xs text-gray-600 uppercase tracking-wide mb-3">{t("selectDate")} *</label>
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setShowDatePicker(!showDatePicker)}
-                    className="w-full flex items-center gap-2 border-0 border-b border-gray-300 bg-transparent px-0 py-2 text-sm text-gray-900 hover:border-gray-600 transition-colors"
-                  >
-                    <Calendar className="h-4 w-4 text-gray-600" />
-                    <span>{formattedDate || "Select date"}</span>
-                  </button>
-                  
-                  {/* Date Picker Modal */}
-                  {showDatePicker && (
-                    <div className="absolute top-full mt-2 left-0 bg-white border border-gray-300 rounded-lg p-4 z-50 shadow-lg w-64">
-                      <div className="flex justify-between items-center mb-3">
-                        <h3 className="text-sm font-medium text-gray-900">{t("selectDate")}</h3>
-                        <button
-                          onClick={() => setShowDatePicker(false)}
-                          className="text-gray-400 hover:text-gray-600"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
-                      <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto">
-                        {availableDates.map((date) => {
-                          const dateStr = date.toISOString().split("T")[0]
-                          const isSelected = selectedDate === dateStr
-                          
-                          return (
+                      {/* Date Picker Modal */}
+                      {showDatePicker && (
+                        <div className="absolute top-full mt-2 left-0 bg-white border border-gray-300 rounded-lg p-4 z-50 shadow-lg w-full min-w-72">
+                          <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-sm font-semibold text-gray-900">{t("selectDate")}</h3>
                             <button
-                              key={dateStr}
                               type="button"
-                              onClick={() => {
-                                setSelectedDate(dateStr)
-                                setShowDatePicker(false)
-                              }}
-                              className={`p-2 text-xs rounded font-medium transition-all ${
-                                isSelected
-                                  ? "bg-gray-900 text-white"
-                                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                              }`}
+                              onClick={() => setShowDatePicker(false)}
+                              className="text-gray-400 hover:text-gray-600 transition-colors"
                             >
-                              {date.getDate()}
+                              <X className="h-5 w-5" />
                             </button>
-                          )
-                        })}
-                      </div>
+                          </div>
+                          <div className="grid grid-cols-4 gap-2 max-h-64 overflow-y-auto">
+                            {availableDates.map((date) => {
+                              const dateStr = date.toISOString().split("T")[0]
+                              const isSelected = selectedDate === dateStr
+
+                              return (
+                                <button
+                                  key={dateStr}
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedDate(dateStr)
+                                    setShowDatePicker(false)
+                                  }}
+                                  className={`p-3 text-sm rounded-lg font-semibold transition-all ${
+                                    isSelected
+                                      ? "bg-gray-900 text-white shadow-md"
+                                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                  }`}
+                                >
+                                  {date.getDate()}
+                                </button>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              </div>
+                  </div>
 
-              {/* Time Picker Field */}
-              <div>
-                <label className="block text-xs text-gray-600 uppercase tracking-wide mb-3">{t("selectTime")} *</label>
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setShowTimePicker(!showTimePicker)}
-                    className="w-full flex items-center gap-2 border-0 border-b border-gray-300 bg-transparent px-0 py-2 text-sm text-gray-900 hover:border-gray-600 transition-colors"
-                  >
-                    <Clock className="h-4 w-4 text-gray-600" />
-                    <span>{selectedTime || "Select time"}</span>
-                  </button>
-                  
-                  {/* Time Picker Modal */}
-                  {showTimePicker && (
-                    <div className="absolute top-full mt-2 right-0 bg-white border border-gray-300 rounded-lg p-4 z-50 shadow-lg w-64">
-                      <div className="flex justify-between items-center mb-3">
-                        <h3 className="text-sm font-medium text-gray-900">{t("selectTime")}</h3>
-                        <button
-                          onClick={() => setShowTimePicker(false)}
-                          className="text-gray-400 hover:text-gray-600"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
-                      <div className="grid grid-cols-3 gap-2">
-                        {timeSlots.map((slot) => (
-                          <button
-                            key={slot.hour}
-                            type="button"
-                            onClick={() => {
-                              setSelectedTime(`${slot.hour.toString().padStart(2, "0")}:00`)
-                              setShowTimePicker(false)
-                            }}
-                            className={`p-2 text-xs rounded font-medium transition-all ${
-                              selectedTime === `${slot.hour.toString().padStart(2, "0")}:00`
-                                ? "bg-gray-900 text-white"
-                                : slot.available
-                                  ? "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                                  : "bg-gray-50 text-gray-300 cursor-not-allowed"
-                            }`}
-                          >
-                            {slot.hour}:00
-                          </button>
-                        ))}
-                      </div>
+                  {/* Time Picker Field */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-900 mb-2">{t("selectTime")} *</label>
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setShowTimePicker(!showTimePicker)}
+                        className="w-full flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg bg-white hover:border-gray-400 transition-colors"
+                      >
+                        <Clock className="h-4 w-4 text-gray-600" />
+                        <span className={selectedTime ? "text-gray-900 font-medium" : "text-gray-500"}>
+                          {selectedTime || "Виберіть час"}
+                        </span>
+                      </button>
+
+                      {/* Time Picker Modal */}
+                      {showTimePicker && (
+                        <div className="absolute top-full mt-2 right-0 bg-white border border-gray-300 rounded-lg p-4 z-50 shadow-lg w-full min-w-72">
+                          <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-sm font-semibold text-gray-900">{t("selectTime")}</h3>
+                            <button
+                              type="button"
+                              onClick={() => setShowTimePicker(false)}
+                              className="text-gray-400 hover:text-gray-600 transition-colors"
+                            >
+                              <X className="h-5 w-5" />
+                            </button>
+                          </div>
+                          <div className="grid grid-cols-3 gap-2">
+                            {timeSlots.map((slot) => (
+                              <button
+                                key={slot.hour}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedTime(`${slot.hour.toString().padStart(2, "0")}:00`)
+                                  setShowTimePicker(false)
+                                }}
+                                className={`p-3 text-sm rounded-lg font-semibold transition-all ${
+                                  selectedTime === `${slot.hour.toString().padStart(2, "0")}:00`
+                                    ? "bg-gray-900 text-white shadow-md"
+                                    : slot.available
+                                      ? "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                      : "bg-gray-50 text-gray-300 cursor-not-allowed"
+                                }`}
+                              >
+                                {slot.hour}:00
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  )}
+                  </div>
                 </div>
-              </div>
-            </div>
 
-            {/* Comment Field */}
-            <div>
-              <label className="block text-xs text-gray-600 uppercase tracking-wide mb-3">{t("additionalInfo")}</label>
-              <textarea
-                name="comment"
-                value={formData.comment}
-                onChange={handleInputChange}
-                rows={3}
-                disabled={submitting}
-                className="w-full px-3 py-2 border border-gray-300 bg-white text-sm focus:outline-none focus:ring-1 focus:ring-gray-900 disabled:bg-gray-50 disabled:cursor-not-allowed"
-              />
-            </div>
+                {/* Comment Field */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-900 mb-2">{t("additionalInfo")}</label>
+                  <textarea
+                    name="comment"
+                    value={formData.comment}
+                    onChange={handleInputChange}
+                    rows={4}
+                    disabled={submitting}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent resize-none"
+                    placeholder="Додайте деякі зауваження або спеціальні вимоги..."
+                  />
+                </div>
 
-            {/* Submit Button */}
-            <Button
-              type="submit"
-              disabled={submitting || !formData.firstName || !formData.lastName || !formData.email || !formData.phone || !selectedDate || !selectedTime}
-              className="w-full bg-gray-900 hover:bg-gray-800 text-white py-3 text-sm font-medium rounded-none"
-              size="lg"
-            >
-              {submitting ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  {t("submitting")}
-                </>
-              ) : (
-                t("submitBooking")
-              )}
-            </Button>
-          </form>
+                {/* Submit Button */}
+                <Button
+                  type="submit"
+                  disabled={
+                    submitting ||
+                    !formData.firstName ||
+                    !formData.lastName ||
+                    !formData.email ||
+                    !formData.phone ||
+                    !selectedDate ||
+                    !selectedTime
+                  }
+                  className="w-full bg-gray-900 hover:bg-gray-800 text-white py-3 text-base font-semibold rounded-lg transition-colors"
+                  size="lg"
+                >
+                  {submitting ? (
+                    <>
+                      <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                      {t("submitting")}
+                    </>
+                  ) : (
+                    t("submitBooking")
+                  )}
+                </Button>
+              </form>
+            </div>
+          </div>
         </div>
       </div>
     </div>
