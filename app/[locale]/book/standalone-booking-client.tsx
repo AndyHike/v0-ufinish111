@@ -1,53 +1,49 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowLeft, Loader2, ChevronRight, Smartphone, Wrench } from "lucide-react"
-import Link from "next/link"
-import { formatCurrency } from "@/lib/format-currency"
+import { useSearchParams } from "next/navigation"
+import StepBrand from "./steps/step-brand"
+import StepSeries from "./steps/step-series"
+import StepModel from "./steps/step-model"
+import StepService from "./steps/step-service"
 import BookingConfirmation from "./booking-confirmation"
+import { Loader2 } from "lucide-react"
+import { formatCurrency } from "@/lib/format-currency"
 
 interface Brand {
   id: string
   name: string
   slug: string
-  logo_url: string | null
 }
 
 interface Series {
   id: string
   name: string
   slug: string
-  brand_id: string
 }
 
 interface Model {
   id: string
   name: string
   slug: string
-  image_url: string | null
-  series_id: string
 }
 
 interface Service {
   id: string
-  slug: string
   name: string
+  slug: string
   price: number | null
 }
 
-interface Props {
+interface StandaloneBookingClientProps {
   locale: string
 }
 
-export default function StandaloneBookingClient({ locale }: Props) {
+export default function StandaloneBookingClient({ locale }: StandaloneBookingClientProps) {
   const t = useTranslations("StandaloneBooking")
-  const commonT = useTranslations("Common")
-  const router = useRouter()
-
+  const searchParams = useSearchParams()
+  
   const [step, setStep] = useState(1)
   const [showConfirmation, setShowConfirmation] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -62,25 +58,110 @@ export default function StandaloneBookingClient({ locale }: Props) {
   const [selectedModel, setSelectedModel] = useState<Model | null>(null)
   const [selectedService, setSelectedService] = useState<Service | null>(null)
 
-  // Завантаження брендів
+  // Завантаження брендів з URL параметрів
   useEffect(() => {
-    const fetchBrands = async () => {
-      setLoading(true)
+    const serviceSlug = searchParams.get("service_slug")
+    const modelSlug = searchParams.get("model_slug")
+    
+    // Перевіряємо, чи є збережений стан у sessionStorage
+    const savedState = typeof window !== 'undefined' ? sessionStorage.getItem('bookingState') : null
+    
+    if (savedState) {
       try {
-        const response = await fetch(`/api/brands?locale=${locale}`)
-        const data = await response.json()
-        setBrands(data)
+        const state = JSON.parse(savedState)
+        setStep(state.step)
+        setSelectedBrand(state.selectedBrand)
+        setSelectedSeries(state.selectedSeries)
+        setSelectedModel(state.selectedModel)
+        setSelectedService(state.selectedService)
+        setShowConfirmation(state.showConfirmation)
       } catch (error) {
-        console.error("Error fetching brands:", error)
-      } finally {
-        setLoading(false)
+        console.error("[v0] Error restoring booking state:", error)
       }
+    } else if (serviceSlug && modelSlug) {
+      // Якщо є параметри в URL, переходимо прямо на крок 4
+      setStep(4)
+      setShowConfirmation(true)
+      
+      // Завантажуємо модель та послугу
+      const fetchModelAndService = async () => {
+        try {
+          // Завантажуємо модель
+          const modelResponse = await fetch(`/api/admin/models?slug=${modelSlug}`)
+          if (modelResponse.ok) {
+            const modelData = await modelResponse.json()
+            const modelArray = Array.isArray(modelData) ? modelData : modelData?.data || []
+            if (modelArray.length > 0) {
+              const model = modelArray[0]
+              setSelectedModel(model)
+              setSelectedBrand({ id: model.brand_id, name: model.brands?.name || '', slug: model.brands?.slug || '' })
+              
+              // Завантажуємо послуги для моделі
+              const servicesResponse = await fetch(`/api/admin/model-services?model_id=${model.id}&locale=${locale}`)
+              if (servicesResponse.ok) {
+                const servicesData = await servicesResponse.json()
+                const servicesArray = Array.isArray(servicesData) ? servicesData : servicesData?.data || []
+                
+                // Шукаємо послугу за slug
+                const foundService = servicesArray.find((ms: any) => 
+                  (ms.services?.slug || '') === serviceSlug
+                )
+                
+                if (foundService) {
+                  const service: Service = {
+                    id: foundService.services?.id || foundService.service_id,
+                    slug: foundService.services?.slug || '',
+                    name: foundService.services?.name || foundService.name || 'Unknown Service',
+                    price: foundService.price,
+                  }
+                  setSelectedService(service)
+                }
+              }
+            }
+          }
+        } catch (error) {
+          console.error("[v0] Error loading model/service from URL params:", error)
+        }
+      }
+      
+      fetchModelAndService()
+    } else {
+      // Завантажуємо бренди
+      const fetchBrands = async () => {
+        setLoading(true)
+        try {
+          const response = await fetch(`/api/brands?locale=${locale}`)
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`)
+          }
+          const data = await response.json()
+          setBrands(Array.isArray(data) ? data : data?.data || [])
+        } catch (error) {
+          console.error("Error fetching brands:", error)
+          setBrands([])
+        } finally {
+          setLoading(false)
+        }
+      }
+
+      fetchBrands()
     }
+  }, [searchParams, locale])
 
-    fetchBrands()
-  }, [locale])
-
-  // Завантаження серій після вибору бренду
+  // Збереження стану в sessionStorage коли він змінюється
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const state = {
+        step,
+        selectedBrand,
+        selectedSeries,
+        selectedModel,
+        selectedService,
+        showConfirmation,
+      }
+      sessionStorage.setItem('bookingState', JSON.stringify(state))
+    }
+  }, [step, selectedBrand, selectedSeries, selectedModel, selectedService, showConfirmation])
   useEffect(() => {
     if (!selectedBrand) return
 
@@ -193,20 +274,9 @@ export default function StandaloneBookingClient({ locale }: Props) {
 
   const handleProceedToBooking = () => {
     if (!selectedService || !selectedModel || !selectedBrand) {
-      console.log("[v0] Cannot proceed - Missing data:", {
-        selectedService: !!selectedService,
-        selectedModel: !!selectedModel,
-        selectedBrand: !!selectedBrand,
-      })
       alert("Please select a service before proceeding")
       return
     }
-    console.log("[v0] Proceeding to booking confirmation with:", {
-      brand: selectedBrand.name,
-      model: selectedModel.name,
-      service: selectedService.name,
-      price: selectedService.price,
-    })
     setShowConfirmation(true)
   }
 
@@ -225,7 +295,25 @@ export default function StandaloneBookingClient({ locale }: Props) {
       setSelectedSeries(null)
       setSelectedModel(null)
       setSelectedService(null)
+    } else if (step === 1) {
+      // Очищуємо sessionStorage при повертанні на крок 1
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('bookingState')
+      }
+      setSelectedBrand(null)
+      setSelectedSeries(null)
+      setSelectedModel(null)
+      setSelectedService(null)
     }
+  }
+
+  const handleConfirmationBack = () => {
+    setShowConfirmation(false)
+    // Очищуємо sessionStorage коли виходимо з confirmation форми
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('bookingState')
+    }
+  }
   }
 
   // Show confirmation form if requested
@@ -260,7 +348,7 @@ export default function StandaloneBookingClient({ locale }: Props) {
                   slug: selectedService.slug,
                   price: selectedService.price,
                 }}
-                onBack={handleBack}
+                onBack={handleConfirmationBack}
               />
             </CardContent>
           </Card>

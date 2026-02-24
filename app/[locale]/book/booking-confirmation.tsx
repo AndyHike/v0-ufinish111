@@ -4,7 +4,6 @@ import { useState } from "react"
 import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowLeft, Loader2, Calendar, Clock } from "lucide-react"
 import { formatCurrency } from "@/lib/format-currency"
 
@@ -54,7 +53,7 @@ export default function BookingConfirmation({
   const [selectedTime, setSelectedTime] = useState<string>("")
 
   // Генеруємо часові слоти від 9 до 19
-  const timeSlots: TimeSlot[] = Array.from({ length: 10 }, (_, i) => ({
+  const timeSlots: TimeSlot[] = Array.from({ length: 11 }, (_, i) => ({
     hour: 9 + i,
     available: true,
   }))
@@ -154,197 +153,173 @@ export default function BookingConfirmation({
   return (
     <div className="space-y-6">
       {/* Back Button */}
-      <Button variant="ghost" onClick={onBack} className="mb-2">
+      <Button variant="ghost" onClick={onBack} className="text-gray-600 hover:text-gray-900">
         <ArrowLeft className="h-4 w-4 mr-2" />
         {t("back")}
       </Button>
 
-      {/* Summary Card */}
-      <Card className="bg-blue-50 border-blue-200">
-        <CardHeader>
-          <CardTitle className="text-lg">{t("bookingSummary")}</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <div className="flex justify-between">
-            <span className="text-gray-600">{t("brand")}:</span>
-            <span className="font-medium text-gray-900">{brand.name}</span>
+      {/* Minimalist Summary */}
+      <div className="space-y-3">
+        <h2 className="text-2xl font-light text-gray-900">{t("confirmBooking")}</h2>
+        <div className="space-y-2 text-sm text-gray-600">
+          <div className="flex justify-between items-center">
+            <span>{brand.name}</span>
+            <span className="text-gray-400">•</span>
+            <span>{model.name}</span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-gray-600">{t("model")}:</span>
-            <span className="font-medium text-gray-900">{model.name}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-600">{t("service")}:</span>
+          <div className="flex justify-between items-center pt-2 border-t border-gray-200">
             <span className="font-medium text-gray-900">{service.name}</span>
+            {service.price && (
+              <span className="font-semibold text-gray-900">{formatCurrency(service.price)}</span>
+            )}
           </div>
-          {service.price && (
-            <div className="flex justify-between pt-2 border-t border-blue-200">
-              <span className="text-gray-600 font-medium">{t("price")}:</span>
-              <span className="font-bold text-blue-600">{formatCurrency(service.price)}</span>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      {/* Booking Form */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("enterDetails")}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Name Fields */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-900">{t("firstName")} *</label>
-                <Input
-                  type="text"
-                  name="firstName"
-                  value={formData.firstName}
-                  onChange={handleInputChange}
-                  placeholder={t("firstName")}
-                  required
+      {/* Minimalist Form */}
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Name Fields */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <Input
+              type="text"
+              name="firstName"
+              value={formData.firstName}
+              onChange={handleInputChange}
+              placeholder={t("firstName")}
+              required
+              disabled={submitting}
+              className="border-0 border-b border-gray-300 rounded-none bg-transparent px-0 py-2 text-sm placeholder:text-gray-400 focus:border-gray-900 focus:ring-0"
+            />
+          </div>
+          <div className="space-y-1">
+            <Input
+              type="text"
+              name="lastName"
+              value={formData.lastName}
+              onChange={handleInputChange}
+              placeholder={t("lastName")}
+              required
+              disabled={submitting}
+              className="border-0 border-b border-gray-300 rounded-none bg-transparent px-0 py-2 text-sm placeholder:text-gray-400 focus:border-gray-900 focus:ring-0"
+            />
+          </div>
+        </div>
+
+        {/* Email and Phone */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <Input
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleInputChange}
+              placeholder={t("email")}
+              required
+              disabled={submitting}
+              className="border-0 border-b border-gray-300 rounded-none bg-transparent px-0 py-2 text-sm placeholder:text-gray-400 focus:border-gray-900 focus:ring-0"
+            />
+          </div>
+          <div className="space-y-1">
+            <Input
+              type="tel"
+              name="phone"
+              value={formData.phone}
+              onChange={handleInputChange}
+              placeholder={t("phone")}
+              required
+              disabled={submitting}
+              className="border-0 border-b border-gray-300 rounded-none bg-transparent px-0 py-2 text-sm placeholder:text-gray-400 focus:border-gray-900 focus:ring-0"
+            />
+          </div>
+        </div>
+
+        {/* Date Selection - Minimalist Toggles */}
+        <div className="space-y-3 pt-4">
+          <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">{t("selectDate")}</div>
+          <div className="flex overflow-x-auto gap-1 pb-2">
+            {availableDates.map((date) => {
+              const dateStr = date.toISOString().split("T")[0]
+              const isSelected = selectedDate === dateStr
+              
+              return (
+                <button
+                  key={dateStr}
+                  type="button"
+                  onClick={() => setSelectedDate(dateStr)}
                   disabled={submitting}
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-900">{t("lastName")} *</label>
-                <Input
-                  type="text"
-                  name="lastName"
-                  value={formData.lastName}
-                  onChange={handleInputChange}
-                  placeholder={t("lastName")}
-                  required
-                  disabled={submitting}
-                />
-              </div>
-            </div>
+                  className={`flex-shrink-0 px-3 py-2 text-xs transition-all ${
+                    isSelected
+                      ? "bg-gray-900 text-white"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  }`}
+                >
+                  <div className="font-medium">{date.getDate()}</div>
+                  <div className="text-xs">
+                    {date.toLocaleDateString(locale, { weekday: "short" })[0]}
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        </div>
 
-            {/* Email and Phone */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-900">{t("email")} *</label>
-                <Input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  placeholder={t("email")}
-                  required
-                  disabled={submitting}
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-900">{t("phone")} *</label>
-                <Input
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleInputChange}
-                  placeholder={t("phone")}
-                  required
-                  disabled={submitting}
-                />
-              </div>
-            </div>
-
-            {/* Date and Time Selection */}
-            <div className="space-y-4 pt-2">
-              <div>
-                <label className="text-sm font-medium text-gray-900 flex items-center gap-2 mb-3">
-                  <Calendar className="h-4 w-4" />
-                  {t("selectDate")} *
-                </label>
-                <div className="grid grid-cols-4 md:grid-cols-5 gap-2">
-                  {availableDates.map((date) => {
-                    const dateStr = date.toISOString().split("T")[0]
-                    const isSelected = selectedDate === dateStr
-                    
-                    return (
-                      <button
-                        key={dateStr}
-                        type="button"
-                        onClick={() => setSelectedDate(dateStr)}
-                        disabled={submitting}
-                        className={`p-2 text-xs rounded border-2 transition-all ${
-                          isSelected
-                            ? "border-blue-500 bg-blue-50 font-medium text-blue-600"
-                            : "border-gray-200 hover:border-blue-300 text-gray-700"
-                        }`}
-                      >
-                        <div className="font-medium">{date.getDate()}</div>
-                        <div className="text-xs opacity-70">
-                          {date.toLocaleDateString(locale, { weekday: "short" })[0]}
-                        </div>
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-
-              <div>
-                <label className="text-sm font-medium text-gray-900 flex items-center gap-2 mb-3">
-                  <Clock className="h-4 w-4" />
-                  {t("selectTime")} *
-                </label>
-                <div className="grid grid-cols-5 md:grid-cols-5 gap-2">
-                  {timeSlots.map((slot) => (
-                    <button
-                      key={slot.hour}
-                      type="button"
-                      onClick={() => setSelectedTime(`${slot.hour.toString().padStart(2, "0")}:00`)}
-                      disabled={!slot.available || submitting}
-                      className={`p-2 text-sm rounded border-2 transition-all ${
-                        selectedTime === `${slot.hour.toString().padStart(2, "0")}:00`
-                          ? "border-blue-500 bg-blue-50 font-medium text-blue-600"
-                          : slot.available
-                            ? "border-gray-200 hover:border-blue-300 text-gray-700"
-                            : "border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed"
-                      }`}
-                    >
-                      {slot.hour}:00
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Comment Field */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-900">{t("additionalInfo")}</label>
-              <textarea
-                name="comment"
-                value={formData.comment}
-                onChange={handleInputChange}
-                placeholder={t("additionalInfo")}
-                rows={4}
-                disabled={submitting}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:cursor-not-allowed"
-              />
-            </div>
-
-            {/* Submit Button */}
-            <div className="pt-4">
-              <Button
-                type="submit"
-                disabled={submitting || !formData.firstName || !formData.lastName || !formData.email || !formData.phone || !selectedDate || !selectedTime}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 font-medium"
-                size="lg"
+        {/* Time Selection - Minimalist Toggles */}
+        <div className="space-y-3">
+          <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">{t("selectTime")}</div>
+          <div className="grid grid-cols-6 gap-1">
+            {timeSlots.map((slot) => (
+              <button
+                key={slot.hour}
+                type="button"
+                onClick={() => setSelectedTime(`${slot.hour.toString().padStart(2, "0")}:00`)}
+                disabled={!slot.available || submitting}
+                className={`px-2 py-2 text-xs transition-all ${
+                  selectedTime === `${slot.hour.toString().padStart(2, "0")}:00`
+                    ? "bg-gray-900 text-white"
+                    : slot.available
+                      ? "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      : "bg-gray-50 text-gray-300 cursor-not-allowed"
+                }`}
               >
-                {submitting ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    {t("submitting")}
-                  </>
-                ) : (
-                  t("submitBooking")
-                )}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+                {slot.hour}:00
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Comment Field */}
+        <div className="space-y-2 pt-2">
+          <textarea
+            name="comment"
+            value={formData.comment}
+            onChange={handleInputChange}
+            placeholder={t("additionalInfo")}
+            rows={3}
+            disabled={submitting}
+            className="w-full px-3 py-2 border border-gray-300 bg-white text-sm placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-900 disabled:bg-gray-50 disabled:cursor-not-allowed"
+          />
+        </div>
+
+        {/* Submit Button */}
+        <div className="pt-4">
+          <Button
+            type="submit"
+            disabled={submitting || !formData.firstName || !formData.lastName || !formData.email || !formData.phone || !selectedDate || !selectedTime}
+            className="w-full bg-gray-900 hover:bg-gray-800 text-white py-3 text-sm font-medium rounded-none"
+            size="lg"
+          >
+            {submitting ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                {t("submitting")}
+              </>
+            ) : (
+              t("submitBooking")
+            )}
+          </Button>
+        </div>
+      </form>
     </div>
   )
 }
