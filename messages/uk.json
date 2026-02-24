@@ -258,7 +258,7 @@
     "backToAllBrands": "Назад до всіх брендів",
     "startingFrom": "Від {price}",
     "repairServices": "Послуги з ремонту",
-    "brandNotFound": "Бренд н�� знайден",
+    "brandNotFound": "Бренд н���� знайден",
     "brandNotFoundDesc": "Запитаний бренд не знайдено.",
     "chooseModelTitle": "Виберіть модель телефону",
     "chooseModelDescription": "Виберіть бренд вашого телефону, щоб побачити доступні моделі та ціни на ремонт",
@@ -916,7 +916,7 @@
       },
       "marketing": {
         "name": "Маркетингові cookies",
-        "description": "Ці cookies використовуються для показу релевантної реклами т�� вимірювання її ефективності.",
+        "description": "Ці cookies використовуються для показу релевантної реклам�� т�� вимірювання її ефективності.",
         "services": [
           "Facebook Pixel",
           "Google Ads"
@@ -1048,6 +1048,9 @@
     "noServices": "Послуги не знайдено для цієї моделі",
     "loading": "Завантаження...",
     "confirmBooking": "Підтвердження бронювання",
+    "bookService": "Замовити послугу",
+    "personalInfo": "Особисті дані",
+    "dateTime": "Дата та час",
     "summary": "Резюме",
     "bookingSummary": "Резюме бронювання",
     "brand": "Бренд",
@@ -1057,16 +1060,20 @@
     "enterDetails": "Введіть ваші дані",
     "firstName": "Ім'я",
     "lastName": "Прізвище",
+    "enterFirstName": "Введіть ваше ім'я",
+    "enterLastName": "Введіть ваше прізвище",
     "email": "Email",
     "phone": "Номер телефону",
+    "months": "міс.",
     "fillAllFields": "Будь ласка, заповніть всі обов'язкові поля",
     "selectDate": "Виберіть дату",
     "selectTime": "Виберіть час",
     "additionalInfo": "Додаткова інформація",
-    "submitBooking": "Відправити бронювання",
+    "additionalNotesPlaceholder": "Додаткова інформація...",
+    "submitBooking": "Підтвердити бронювання",
     "submitting": "Відправлення...",
     "bookingSuccess": "Спасибо! Ваше бронювання було відправлено. Ми свяжемся с вами найближчим часом",
-    "bookingError": "Помилка при відправці бронювання. Будь ласка, спро��уйте ще раз"
+    "bookingError": "Помилка при відправці бронювання. Будь ласка, спробуйте ще раз"
   },
   "GoogleReviews": {
     "title": "Google Відгуки",
