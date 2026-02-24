@@ -89,6 +89,10 @@ export default function StandaloneBookingClient({ locale }: StandaloneBookingCli
     } else if (serviceSlug && modelSlug) {
       // Якщо є параметри в URL, завантажуємо модель та послугу
       setIsLoadingFromUrl(true)
+      // Скроллимо в верх сторінки
+      if (typeof window !== 'undefined') {
+        window.scrollTo(0, 0)
+      }
       const fetchModelAndService = async () => {
         try {
           // Завантажуємо модель
