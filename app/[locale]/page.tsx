@@ -6,6 +6,8 @@ import { GoogleReviewsCarousel } from "@/components/google-reviews-carousel"
 import { getBrands } from "@/lib/data/brands"
 import { getGoogleReviews } from "@/lib/data/google-reviews"
 import { Suspense } from "react"
+import { toOGLocale } from "@/lib/og-locale"
+import { siteUrl } from "@/lib/site-config"
 
 export const revalidate = 3600 // Revalidate every hour
 
@@ -15,7 +17,7 @@ export async function generateMetadata({
   params: { locale: string }
 }): Promise<Metadata> {
   const { locale } = await params
-  const baseUrl = "https://devicehelp.cz"
+  const baseUrl = siteUrl
   const canonicalUrl = `${baseUrl}/${locale}`
 
   const seoData = {
@@ -28,7 +30,7 @@ export async function generateMetadata({
       description: "Fast and quality mobile phone repair in Prague. Warranty on all repairs.",
     },
     uk: {
-      title: "DeviceHelp - Profesійnský ремонт мобільних телефонів у Празі",
+      title: "DeviceHelp - Професійний ремонт мобільних телефонів у Празі",
       description: "Швидкий та якісний ремонт мобільних телефонів у Празі. Гарантія на всі ремонти.",
     },
   }
@@ -53,7 +55,7 @@ export async function generateMetadata({
       description: currentSeo.description,
       url: canonicalUrl,
       siteName: "DeviceHelp",
-      locale: locale,
+      locale: toOGLocale(locale),
       type: "website",
     },
     twitter: {

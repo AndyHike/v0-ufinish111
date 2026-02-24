@@ -1,10 +1,13 @@
 import type { Metadata } from "next"
 import { getTranslations } from "next-intl/server"
 import Link from "next/link"
+import { Breadcrumb } from "@/components/breadcrumb"
 import { createServerClient } from "@/utils/supabase/server"
 import { ArrowLeft } from "lucide-react"
 import { formatImageUrl } from "@/utils/image-url"
 import { ContactCTABanner } from "@/components/contact-cta-banner"
+import { BrandSeoSections } from "@/components/brand-seo-sections"
+import { siteUrl } from "@/lib/site-config"
 
 type Props = {
   params: {
@@ -31,12 +34,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: titlePatterns[locale as keyof typeof titlePatterns] || titlePatterns.en,
     description: descriptionPatterns[locale as keyof typeof descriptionPatterns] || descriptionPatterns.en,
     alternates: {
-      canonical: `https://devicehelp.cz/${locale}/brands`,
+      canonical: `${siteUrl}/${locale}/brands`,
       languages: {
-        cs: "https://devicehelp.cz/cs/brands",
-        en: "https://devicehelp.cz/en/brands",
-        uk: "https://devicehelp.cz/uk/brands",
-        "x-default": "https://devicehelp.cz/cs/brands",
+        cs: `${siteUrl}/cs/brands`,
+        en: `${siteUrl}/en/brands`,
+        uk: `${siteUrl}/uk/brands`,
+        "x-default": `${siteUrl}/cs/brands`,
       },
     },
   }
@@ -57,17 +60,33 @@ export default async function BrandsPage({ params }: Props) {
     console.error("Error fetching brands:", error)
   }
 
+  // Fetch popular services for BrandSeoSections
+  const { data: topServices } = await supabase
+    .from("services")
+    .select(`id, slug, position, services_translations(name, locale), model_services(price)`)
+    .order("position", { ascending: true })
+    .limit(6)
+
+  const seoServices = (topServices || []).map((svc: any) => {
+    const tr = (svc.services_translations as any[])?.find((t: any) => t.locale === locale) ?? svc.services_translations?.[0]
+    const prices = (svc.model_services as any[])?.map((ms: any) => ms.price).filter((p: any) => p != null && p > 0)
+    return {
+      id: svc.id,
+      slug: svc.slug,
+      name: tr?.name ?? svc.slug,
+      minPrice: prices && prices.length > 0 ? Math.min(...prices) : null,
+    }
+  })
+
   return (
-    <div className="container px-4 py-12 md:px-6 md:py-24">
-      <div className="mx-auto max-w-6xl">
-        {/* Кнопка повернення на головну */}
-        <Link
-          href={`/${locale}`}
-          className="mb-8 inline-flex items-center gap-2 rounded-md bg-slate-50 px-3 py-1 text-sm font-medium text-muted-foreground hover:text-primary"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          {t("backToHome") || "На головну"}
-        </Link>
+    <div className="flex flex-col min-h-screen">
+      <div className="order-1 container px-4 py-12 md:px-6 md:py-24 mx-auto max-w-6xl">
+        {/* Breadcrumb */}
+        <div className="mb-8">
+          <Breadcrumb
+            items={[{ label: t("allBrands") || "Всі бренди", href: `/${locale}/brands` }]}
+          />
+        </div>
 
         {/* Заголовок */}
         <div className="mb-12 text-center">
@@ -79,35 +98,42 @@ export default async function BrandsPage({ params }: Props) {
 
         {/* Сітка брендів */}
         {brands && brands.length > 0 ? (
-          <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-6 sm:gap-8 justify-items-center">
             {brands.map((brand) => (
               <Link
                 key={brand.id}
                 href={`/${locale}/brands/${brand.slug || brand.id}`}
-                className="group flex flex-col items-center rounded-lg bg-white p-6 shadow-sm transition-all hover:shadow-md"
+                className="group flex w-full max-w-[180px] flex-col items-center rounded-2xl bg-white p-6 shadow-sm border border-gray-100 transition-all hover:-translate-y-1 hover:shadow-lg hover:border-primary/20"
               >
-                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-lg bg-slate-50 p-3">
+                <div className="mb-5 flex h-24 w-24 items-center justify-center rounded-xl bg-slate-50 p-3 sm:h-28 sm:w-28 group-hover:bg-primary/5 transition-colors">
                   <img
-                    src={formatImageUrl(brand.logo_url) || "/placeholder.svg?height=64&width=64&query=brand+logo"}
+                    src={formatImageUrl(brand.logo_url) || "/placeholder.svg?height=112&width=112&query=brand+logo"}
                     alt={brand.name}
-                    width={64}
-                    height={64}
-                    className="h-full w-full object-contain"
+                    width={112}
+                    height={112}
+                    className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-110"
                     style={{ display: "block" }}
                   />
                 </div>
-                <h3 className="text-center text-sm font-medium group-hover:text-primary">{brand.name}</h3>
+                <h3 className="text-center text-base font-bold text-gray-800 group-hover:text-primary sm:text-lg">{brand.name}</h3>
               </Link>
             ))}
           </div>
         ) : (
-          <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-8 text-center">
+          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-12 text-center text-lg">
             <p className="text-muted-foreground">{t("noBrandsAvailable") || "Бренди недоступні"}</p>
           </div>
         )}
+      </div>
 
-        {/* Contact CTA Banner */}
-        <ContactCTABanner locale={locale} />
+      <div className="order-2 w-full mt-12 sm:mt-16">
+        <BrandSeoSections locale={locale} services={seoServices} />
+      </div>
+
+      <div className="order-3 container mx-auto px-4 pb-10 pt-4 w-full">
+        <div className="mt-8 mb-8">
+          <ContactCTABanner locale={locale} />
+        </div>
       </div>
     </div>
   )

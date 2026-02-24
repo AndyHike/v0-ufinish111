@@ -182,6 +182,7 @@ export async function getMessages(locale: string) {
             : locale === "cs"
               ? "Opravujeme telefony všech populárních značek."
               : "We repair phones of all popular brands.",
+        allBrands: locale === "uk" ? "Всі бренди" : locale === "cs" ? "Všechny značky" : "All Brands",
         allBrandsButton: locale === "uk" ? "Всі бренди" : locale === "cs" ? "Všechny značky" : "All Brands",
       },
       Testimonials: {
@@ -280,6 +281,29 @@ export async function getMessages(locale: string) {
             : locale === "cs"
               ? "Děkujeme za vaši zprávu. Budeme vás kontaktovat co nejdříve."
               : "Thank you for your message. We will contact you as soon as possible.",
+      },
+      Terms: {
+        title: locale === "uk" ? "Умови використання" : locale === "cs" ? "Obchodní podmínky" : "Terms and Conditions",
+        contentPlaceholder:
+          locale === "uk"
+            ? "Вміст буде додано пізніше."
+            : locale === "cs"
+              ? "Obsah bude přidán později."
+              : "Content will be added later.",
+      },
+      Privacy: {
+        title:
+          locale === "uk"
+            ? "Політика конфіденційності"
+            : locale === "cs"
+              ? "Ochrana osobních údajů"
+              : "Privacy Policy",
+        contentPlaceholder:
+          locale === "uk"
+            ? "Вміст буде додано пізніше."
+            : locale === "cs"
+              ? "Obsah bude přidán později."
+              : "Content will be added later.",
       },
     }
   }

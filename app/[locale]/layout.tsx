@@ -16,6 +16,8 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { GlobalDataProvider } from "@/providers/global-data-provider"
 import { Toaster } from "@/components/ui/toaster"
 import { DynamicFavicon } from "@/components/dynamic-favicon"
+import { toOGLocale } from "@/lib/og-locale"
+import { siteUrl } from "@/lib/site-config"
 import "@/app/globals.css"
 
 const inter = Inter({
@@ -37,7 +39,7 @@ export async function generateMetadata({
   params: { locale: string }
 }): Promise<Metadata> {
   const { locale } = await params
-  const baseUrl = "https://devicehelp.cz"
+  const baseUrl = siteUrl
   const canonicalUrl = `${baseUrl}/${locale}`
 
   const seoData = {
@@ -61,21 +63,12 @@ export async function generateMetadata({
     title: currentSeo.title,
     description: currentSeo.description,
     metadataBase: new URL(baseUrl),
-    alternates: {
-      canonical: canonicalUrl,
-      languages: {
-        cs: `${baseUrl}/cs`,
-        en: `${baseUrl}/en`,
-        uk: `${baseUrl}/uk`,
-        "x-default": `${baseUrl}/cs`,
-      },
-    },
     openGraph: {
       title: currentSeo.title,
       description: currentSeo.description,
       url: canonicalUrl,
       siteName: "DeviceHelp",
-      locale: locale,
+      locale: toOGLocale(locale),
       type: "website",
     },
     twitter: {
@@ -140,6 +133,8 @@ export default async function LocaleLayout({
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "LocalBusiness",
+              "@id": "https://devicehelp.cz/#business",
+              url: "https://devicehelp.cz",
               name: "DeviceHelp",
               description: locale === "cs"
                 ? "Profesionální oprava mobilních telefonů v Praze 6 Břevnov. iPhone, Samsung, Xiaomi. Garancia 6 měsíců."
@@ -190,7 +185,7 @@ export default async function LocaleLayout({
             *{box-sizing:border-box}
             body{font-family:var(--font-inter),system-ui,sans-serif;margin:0;padding:0;-webkit-font-smoothing:antialiased;text-rendering:optimizeSpeed;line-height:1.5}
             .hero-section{background:#fff;padding:1.5rem 0;min-height:350px;contain:layout style paint}
-            .hero-title{font-size:1.75rem;font-weight:600;line-height:1.2;margin-bottom:0.75rem;color:#111827}
+            .hero-title{font-size:1.75rem;font-weight:600;line-height:1.2;margin-bottom:0.75rem}
             .hero-subtitle{color:#6b7280;font-size:1rem;margin-bottom:1.5rem;line-height:1.5;font-weight:400}
             .hero-image{width:100%;height:250px;object-fit:cover;border-radius:0.75rem;transform:translateZ(0);content-visibility:auto}
             .container{max-width:1200px;margin:0 auto;padding:0 1rem}

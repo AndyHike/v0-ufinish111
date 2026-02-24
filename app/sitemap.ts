@@ -58,7 +58,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     addMultilingualEntries("")
 
     // Static pages
-    const staticPages = ["/contact", "/about", "/services", "/pricing", "/privacy", "/terms", "/brands"]
+    // Only include pages that actually exist as routes
+    const staticPages = ["/contact", "/brands"]
 
     staticPages.forEach((page) => {
       addMultilingualEntries(page)
@@ -115,7 +116,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       console.warn("[SITEMAP] Error fetching models:", modelsError.message)
     }
 
-    // Fetch and add dynamic service pages with model combinations
+    // Fetch services and all their model combinations in two queries (no N+1)
     const { data: services, error: servicesError } = await supabase
       .from("services")
       .select("id, slug, created_at")
@@ -123,7 +124,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     console.log("[SITEMAP] Services fetched:", { count: services?.length, error: servicesError?.message })
     if (!servicesError && services) {
-      // First add basic service pages without model filter
+      // Add basic service pages
       services.forEach((service) => {
         if (service.slug) {
           addMultilingualEntries(
@@ -133,28 +134,28 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         }
       })
 
-      // Then add service+model combinations
-      for (const service of services) {
-        if (!service.slug) continue
+      // Single query for ALL service+model combinations (no N+1)
+      const serviceIds = services.map((s) => s.id)
+      const { data: allModelServices, error: msError } = await supabase
+        .from("model_services")
+        .select("service_id, models(slug), services(slug, created_at)")
+        .in("service_id", serviceIds)
+        .not("models.slug", "is", null)
 
-        const { data: modelServices, error: modelServicesError } = await supabase
-          .from("model_services")
-          .select("model_id, models(slug)")
-          .eq("service_id", service.id)
-          .not("models.slug", "is", null)
-
-        if (!modelServicesError && modelServices) {
-          console.log(`[SITEMAP] Found ${modelServices.length} models for service "${service.slug}"`)
-          modelServices.forEach((ms) => {
-            const model = ms.models as { slug: string } | null
-            if (model?.slug) {
-              addMultilingualEntries(
-                `/services/${service.slug}/${model.slug}`,
-                service.created_at ? new Date(service.created_at) : new Date()
-              )
-            }
-          })
-        }
+      if (!msError && allModelServices) {
+        console.log(`[SITEMAP] Found ${allModelServices.length} service+model combinations`)
+        allModelServices.forEach((ms) => {
+          const model = (ms.models as unknown) as { slug: string } | null
+          const service = (ms.services as unknown) as { slug: string; created_at: string } | null
+          if (model?.slug && service?.slug) {
+            addMultilingualEntries(
+              `/services/${service.slug}/${model.slug}`,
+              service.created_at ? new Date(service.created_at) : new Date()
+            )
+          }
+        })
+      } else if (msError) {
+        console.warn("[SITEMAP] Error fetching model services:", msError.message)
       }
     } else if (servicesError) {
       console.warn("[SITEMAP] Error fetching services:", servicesError.message)

@@ -40,7 +40,7 @@ export function formatContent(content: string): string {
       const text = para.slice(2).trim()
       const formattedText = formatInlineText(text)
       const id = generateId(text)
-      return `<h1 id="${id}" class="text-3xl font-bold mt-8 mb-4 scroll-mt-32">${formattedText}</h1>`
+      return `<h2 id="${id}" class="text-3xl font-bold mt-8 mb-4 scroll-mt-32">${formattedText}</h2>`
     }
 
     // Обробляємо списки
@@ -78,19 +78,19 @@ export function formatContent(content: string): string {
 function formatInlineText(text: string): string {
   // Екрануємо HTML спеціальні символи спочатку
   let escaped = escapeHtml(text)
-  
+
   // Замінюємо ~~text~~ на <s>text</s> (strikethrough)
   escaped = escaped.replace(/~~([^~]+)~~/g, '<s class="line-through">$1</s>')
-  
+
   // Замінюємо __u text__ на <u>text</u> (underline variant)
   escaped = escaped.replace(/__u\s+([^_]+?)(?:__|\s+__)/g, '<u class="underline">$1</u>')
-  
+
   // Замінюємо __text__ на <span>text</span> (regular/normal weight - не жирний)
   escaped = escaped.replace(/__([^_]+?)__(?!u)/g, '<span class="font-normal">$1</span>')
-  
+
   // Замінюємо **text** на <strong>text</strong> (bold) - це має бути останнім
   escaped = escaped.replace(/\*\*([^\*]+)\*\*/g, '<strong class="font-bold">$1</strong>')
-  
+
   return escaped
 }
 

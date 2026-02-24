@@ -9,6 +9,9 @@ import { ArrowLeft, Smartphone } from "lucide-react"
 import { ContactCTABanner } from "@/components/contact-cta-banner"
 import { Breadcrumb } from "@/components/breadcrumb"
 import SeriesPageClient from "./series-page-client"
+import { siteUrl } from "@/lib/site-config"
+import { PrevNextNav } from "@/components/prev-next-nav"
+import { BrandSeoSections } from "@/components/brand-seo-sections"
 
 // ISR Configuration
 export const revalidate = 3600 // Regenerate every 1 hour
@@ -25,16 +28,16 @@ type Props = {
 export async function generateStaticParams() {
   // Use public client for build-time static generation
   const supabase = createClient()
-  
+
   try {
     const { data: seriesList } = await supabase
       .from("series")
       .select("slug")
       .order("position", { ascending: true })
       .limit(50) // Pre-render top 50 series
-    
+
     const locales = ["cs", "uk", "en"]
-    
+
     return (
       seriesList?.flatMap((series) =>
         locales.map((locale) => ({
@@ -100,10 +103,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title: titlePatterns[locale as keyof typeof titlePatterns] || titlePatterns.en,
       description: descriptionPatterns[locale as keyof typeof descriptionPatterns] || descriptionPatterns.en,
-      url: `https://devicehelp.cz/${locale}/series/${slug}`,
+      url: `${siteUrl}/${locale}/series/${slug}`,
     },
     alternates: {
-      canonical: `https://devicehelp.cz/${locale}/series/${slug}`,
+      canonical: `${siteUrl}/${locale}/series/${slug}`,
+      languages: {
+        cs: `${siteUrl}/cs/series/${slug}`,
+        en: `${siteUrl}/en/series/${slug}`,
+        uk: `${siteUrl}/uk/series/${slug}`,
+        "x-default": `${siteUrl}/cs/series/${slug}`,
+      },
     },
   }
 }
@@ -149,5 +158,62 @@ export default async function SeriesPage({ params }: Props) {
     models: models || [],
   }
 
-  return <SeriesPageClient initialData={initialData} locale={locale} slug={slug} />
+  // Fetch prev/next series in same brand for navigation
+  const brandId = Array.isArray(series.brands) ? (series.brands as any[])[0]?.id : (series.brands as any)?.id
+  const { data: siblingSeries } = brandId
+    ? await supabase
+      .from("series")
+      .select("name, slug")
+      .eq("brand_id", brandId)
+      .order("position", { ascending: true })
+    : { data: null }
+
+  const seriesIndex = siblingSeries?.findIndex((s) => s.slug === slug) ?? -1
+  const prevSeries = seriesIndex > 0 ? siblingSeries![seriesIndex - 1] : null
+  const nextSeries = siblingSeries && seriesIndex >= 0 && seriesIndex < siblingSeries.length - 1
+    ? siblingSeries[seriesIndex + 1]
+    : null
+
+  // Fetch popular services for BrandSeoSections
+  const { data: topServices } = await supabase
+    .from("services")
+    .select(`id, slug, position, services_translations(name, locale), model_services(price)`)
+    .order("position", { ascending: true })
+    .limit(6)
+
+  const seoServices = (topServices || []).map((svc: any) => {
+    const tr = (svc.services_translations as any[])?.find((t: any) => t.locale === locale) ?? svc.services_translations?.[0]
+    const prices = (svc.model_services as any[])?.map((ms: any) => ms.price).filter((p: any) => p != null && p > 0)
+    return {
+      id: svc.id,
+      slug: svc.slug,
+      name: tr?.name ?? svc.slug,
+      minPrice: prices && prices.length > 0 ? Math.min(...prices) : null,
+    }
+  })
+
+  return (
+    <div className="flex flex-col min-h-screen">
+      <div className="order-1">
+        <SeriesPageClient initialData={initialData} locale={locale} slug={slug} />
+      </div>
+
+      <div className="order-2 w-full">
+        <BrandSeoSections locale={locale} services={seoServices} />
+      </div>
+
+      <div className="order-3 container mx-auto px-4 pb-10 pt-4 w-full">
+        <div className="mt-8 mb-8">
+          <ContactCTABanner locale={locale} />
+        </div>
+        <div className="mt-8">
+          <PrevNextNav
+            prev={prevSeries ? { name: prevSeries.name, href: `/${locale}/series/${prevSeries.slug}` } : null}
+            next={nextSeries ? { name: nextSeries.name, href: `/${locale}/series/${nextSeries.slug}` } : null}
+            label="Navigate series"
+          />
+        </div>
+      </div>
+    </div>
+  )
 }

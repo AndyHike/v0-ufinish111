@@ -4,10 +4,9 @@ import Link from "next/link"
 import Image from "next/image"
 import { useTranslations } from "next-intl"
 import { Smartphone } from "lucide-react"
-import { ContactCTABanner } from "@/components/contact-cta-banner"
 import { Breadcrumb } from "@/components/breadcrumb"
 import { useGlobalData } from "@/hooks/use-global-data"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import useSWR from "swr"
 
 type SeriesData = {
@@ -25,8 +24,11 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
 export default function SeriesPageClient({ initialData, locale, slug }: Props) {
   const t = useTranslations("Series")
+  const commonT = useTranslations("Common")
+  const brandsT = useTranslations("Brands")
   const { setCachedSeries } = useGlobalData()
   const [mounted, setMounted] = useState(false)
+  const viewContentSent = useRef(false)
 
   // SWR для кешування та фонового оновлення
   const { data, isLoading } = useSWR(`/api/series/${slug}`, fetcher, {
@@ -71,6 +73,7 @@ export default function SeriesPageClient({ initialData, locale, slug }: Props) {
         <div className="mb-8">
           <Breadcrumb
             items={[
+              { label: brandsT("allBrands") || "Всі бренди", href: `/${locale}/brands` },
               { label: series.brands?.name || "Brand", href: `/${locale}/brands/${series.brands?.slug || series.brand_id}` },
               { label: series.name, href: `/${locale}/series/${series.slug}` },
             ]}
@@ -147,7 +150,6 @@ export default function SeriesPageClient({ initialData, locale, slug }: Props) {
           )}
         </div>
 
-        <ContactCTABanner locale={locale} />
       </div>
     </div>
   )

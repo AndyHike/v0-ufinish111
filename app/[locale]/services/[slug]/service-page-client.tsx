@@ -3,6 +3,7 @@
 import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { useTranslations } from "next-intl"
+import { Breadcrumb } from "@/components/breadcrumb"
 import { Button } from "@/components/ui/button"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Phone, MessageCircle, Clock, Shield, CheckCircle, ChevronDown, ArrowLeft } from "lucide-react"
@@ -48,6 +49,11 @@ interface ServiceData {
       slug: string | null
       logo_url: string | null
     } | null
+    series: {
+      id: string
+      name: string
+      slug: string | null
+    } | null
     category?: { name: string } | null
     categories?: Array<{ name: string }> | null
     product_line?: string | null
@@ -71,6 +77,7 @@ interface Props {
 export default function ServicePageClient({ serviceData, locale }: Props) {
   const t = useTranslations("Services")
   const commonT = useTranslations("Common")
+  const brandsT = useTranslations("Brands")
   const searchParams = useSearchParams()
   const viewContentSent = useRef(false)
   const [mounted, setMounted] = useState(false)
@@ -101,9 +108,6 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
 
   // Використовуємо modelSlug з пропса, якщо він є, інакше беремо з search params для зворотної сумісності
   const modelParam = modelSlug || searchParams.get("model")
-
-  const backUrl = sourceModel ? `/${locale}/models/${sourceModel.slug}` : `/${locale}`
-  const backText = sourceModel ? `${sourceModel.brands?.name} ${sourceModel.name}` : commonT("backToHome")
 
   const whatIncludedList = translation.what_included?.split("\n").filter((item) => item.trim()) || []
   const benefitsList = translation.benefits?.split("\n").filter((item) => item.trim()) || []
@@ -272,12 +276,17 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
     <div className="min-h-screen bg-white">
       <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
         {/* Breadcrumb */}
-        <nav className="mb-4 text-sm text-gray-500">
-          <Link href={backUrl} className="hover:text-blue-600 transition-colors flex items-center gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            {backText}
-          </Link>
-        </nav>
+        <div className="mb-6">
+          <Breadcrumb
+            items={[
+              { label: brandsT("allBrands") || "Всі бренди", href: `/${locale}/brands` },
+              ...(sourceModel?.brands ? [{ label: sourceModel.brands.name, href: `/${locale}/brands/${sourceModel.brands.slug}` }] : []),
+              ...(sourceModel?.series ? [{ label: sourceModel.series.name, href: `/${locale}/series/${sourceModel.series.slug}` }] : []),
+              ...(sourceModel ? [{ label: sourceModel.name, href: `/${locale}/models/${sourceModel.slug}` }] : []),
+              { label: translation.name, href: `#` },
+            ]}
+          />
+        </div>
 
         {/* Адаптивний макет - мобільний/планшет одна колонка, великі екрани дві */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">

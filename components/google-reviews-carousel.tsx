@@ -224,6 +224,14 @@ export function GoogleReviewsCarousel({ data }: GoogleReviewsCarouselProps) {
                 "@type": "LocalBusiness",
                 name: "DeviceHelp",
                 url: "https://devicehelp.cz",
+                address: {
+                  "@type": "PostalAddress",
+                  streetAddress: "Bělohorská 209/133",
+                  addressLocality: "Praha 6-Břevnov",
+                  addressRegion: "Praha",
+                  postalCode: "169 00",
+                  addressCountry: "CZ",
+                },
               },
               ratingValue: data.rating.toFixed(1),
               reviewCount: data.totalReviews,
@@ -248,9 +256,8 @@ interface ReviewCardProps {
 function ReviewCard({ review, renderStars, formatDate, t, isMobile }: ReviewCardProps) {
   return (
     <Card
-      className={`flex-none hover:shadow-lg transition-shadow ${
-        isMobile ? "w-80 min-w-80 sm:w-96 sm:min-w-96" : "w-full md:flex-1"
-      } h-full`}
+      className={`flex-none hover:shadow-lg transition-shadow ${isMobile ? "w-80 min-w-80 sm:w-96 sm:min-w-96" : "w-full md:flex-1"
+        } h-full`}
     >
       <CardContent className="p-6 flex flex-col h-full">
         <div className="mb-4">

@@ -4,6 +4,9 @@ import { createServerClient } from "@/utils/supabase/server"
 import ServicePageClient from "../service-page-client"
 import { getPriceWithDiscount } from "@/lib/discounts/get-applicable-discounts"
 import { RelatedArticlesList } from "@/components/articles/related-articles-list"
+import { toOGLocale } from "@/lib/og-locale"
+import { siteUrl } from "@/lib/site-config"
+import { PrevNextNav } from "@/components/prev-next-nav"
 
 type Props = {
   params: Promise<{
@@ -74,12 +77,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
     metadata = {
       cs: {
-        title: `${serviceName} ${fullModelName} Praha 6 | Záruka 6 měsíců | DeviceHelp`,
+        title: `${serviceName} ${fullModelName} Praha 6 | DeviceHelp`,
         description: `Profesionální ${serviceName.toLowerCase()} ${fullModelName} v Praze 6 na Břevnově. Záruka 6 měsíců, oprava 2-3 hodiny. Bělohorská 209/133. ☎ +420 775 848 259`,
         keywords: `${serviceName} ${fullModelName}, ${serviceName} ${brandName} Praha 6, oprava ${modelName} Břevnov, servis ${brandName} Bělohorská`,
       },
       en: {
-        title: `${serviceName} ${fullModelName} Prague 6 | 6 Month Warranty | DeviceHelp`,
+        title: `${serviceName} ${fullModelName} Prague 6 | DeviceHelp`,
         description: `Professional ${serviceName.toLowerCase()} ${fullModelName} in Prague 6 Břevnov. 6 month warranty, 2-3 hours service. Bělohorská 209/133. ☎ +420 775 848 259`,
         keywords: `${serviceName} ${fullModelName}, ${serviceName} ${brandName} Prague 6, ${modelName} repair Břevnov`,
       },
@@ -162,11 +165,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: currentMetadata.title,
       description: currentMetadata.description,
       type: "website",
-      locale: locale,
-      url: `https://devicehelp.cz/${locale}/services/${slug}/${modelSlug}`,
+      locale: toOGLocale(locale),
+      url: `${siteUrl}/${locale}/services/${slug}/${modelSlug}`,
     },
     alternates: {
-      canonical: `https://devicehelp.cz/${locale}/services/${slug}/${modelSlug}`,
+      canonical: `${siteUrl}/${locale}/services/${slug}/${modelSlug}`,
+      languages: {
+        cs: `${siteUrl}/cs/services/${slug}/${modelSlug}`,
+        en: `${siteUrl}/en/services/${slug}/${modelSlug}`,
+        uk: `${siteUrl}/uk/services/${slug}/${modelSlug}`,
+        "x-default": `${siteUrl}/cs/services/${slug}/${modelSlug}`,
+      },
     },
     twitter: {
       card: "summary",
@@ -266,6 +275,11 @@ export default async function ServicePageWithModel({ params }: Props) {
             name,
             slug,
             logo_url
+          ),
+          series(
+            id,
+            name,
+            slug
           )
         `)
         .eq("slug", modelSlug)
@@ -274,6 +288,7 @@ export default async function ServicePageWithModel({ params }: Props) {
       if (model) {
         // Витягуємо тільки потрібні поля для серіалізації
         const brandObj = Array.isArray(model.brands) ? model.brands[0] : model.brands
+        const seriesObj = Array.isArray(model.series) ? model.series[0] : model.series
 
         sourceModel = {
           id: model.id,
@@ -285,6 +300,11 @@ export default async function ServicePageWithModel({ params }: Props) {
             name: brandObj.name,
             slug: brandObj.slug,
             logo_url: brandObj.logo_url,
+          } : null,
+          series: seriesObj ? {
+            id: seriesObj.id,
+            name: seriesObj.name,
+            slug: seriesObj.slug,
           } : null,
         }
 
@@ -375,6 +395,11 @@ export default async function ServicePageWithModel({ params }: Props) {
           slug: sourceModel.brands.slug || "",
           logo_url: sourceModel.brands.logo_url || null,
         } : null,
+        series: sourceModel.series ? {
+          id: sourceModel.series.id || "",
+          name: sourceModel.series.name || "",
+          slug: sourceModel.series.slug || "",
+        } : null,
       } : null,
       modelServicePrice: modelServicePrice ? Number(modelServicePrice) : null,
       minPrice: minPrice ? Number(minPrice) : null,
@@ -400,6 +425,7 @@ export default async function ServicePageWithModel({ params }: Props) {
         description: pageDescription,
         provider: {
           "@type": "LocalBusiness",
+          "@id": "https://devicehelp.cz/#business",
           name: "DeviceHelp",
           address: {
             "@type": "PostalAddress",
@@ -421,6 +447,7 @@ export default async function ServicePageWithModel({ params }: Props) {
         description: pageDescription,
         provider: {
           "@type": "LocalBusiness",
+          "@id": "https://devicehelp.cz/#business",
           name: "DeviceHelp",
           address: {
             "@type": "PostalAddress",
@@ -436,6 +463,29 @@ export default async function ServicePageWithModel({ params }: Props) {
         warranty: "6 months",
       }
 
+    // Fetch prev/next services for this model (navigate between services, not models)
+    const { data: modelAllServices } = await supabase
+      .from("model_services")
+      .select("services(slug, position, services_translations(name, locale))")
+      .eq("model_id", sourceModel?.id)
+      .order("services(position)", { ascending: true })
+
+    // Build a flat, sorted list of services for this model with localized names
+    const sortedServices = (modelAllServices || [])
+      .map((ms: any) => Array.isArray(ms.services) ? ms.services[0] : ms.services)
+      .filter(Boolean)
+      .sort((a: any, b: any) => (a.position ?? 999) - (b.position ?? 999))
+      .map((svc: any) => {
+        const t = (svc.services_translations as any[])?.find((tr: any) => tr.locale === locale) ?? svc.services_translations?.[0]
+        return { name: t?.name ?? svc.slug, slug: svc.slug }
+      })
+
+    const servicePageIndex = sortedServices.findIndex((s: any) => s.slug === slug)
+    const prevServiceNav = servicePageIndex > 0 ? sortedServices[servicePageIndex - 1] : null
+    const nextServiceNav = servicePageIndex >= 0 && servicePageIndex < sortedServices.length - 1
+      ? sortedServices[servicePageIndex + 1]
+      : null
+
     return (
       <>
         <script
@@ -445,6 +495,11 @@ export default async function ServicePageWithModel({ params }: Props) {
         <ServicePageClient serviceData={serviceData} locale={locale} />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <RelatedArticlesList locale={locale} />
+          <PrevNextNav
+            prev={prevServiceNav ? { name: prevServiceNav.name, href: `/${locale}/services/${prevServiceNav.slug}/${modelSlug}` } : null}
+            next={nextServiceNav ? { name: nextServiceNav.name, href: `/${locale}/services/${nextServiceNav.slug}/${modelSlug}` } : null}
+            label="Navigate services"
+          />
         </div>
       </>
     )

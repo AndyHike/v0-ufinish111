@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import ContactPageClient from "./ContactPageClient"
+import { siteUrl } from "@/lib/site-config"
 
 interface Props {
   params: Promise<{ locale: string }>
@@ -9,9 +10,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params
 
   const titlePatterns = {
-    cs: "Oprava mobilů Břevnov Praha 6 | DeviceHelp | Bělohorská 209/133 | Kontakt",
-    en: "Mobile Phone Repair Břevnov Prague 6 | DeviceHelp | Bělohorská 209/133 | Contact",
-    uk: "Ремонт мобільних Бржевнов Прага 6 | DeviceHelp | Bělohorská 209/133 | Контакти",
+    cs: "Oprava mobilů Praha 6 Břevnov | Kontakt | DeviceHelp",
+    en: "Mobile Repair Prague 6 Břevnov | Contact | DeviceHelp",
+    uk: "Ремонт мобільних Прага 6 | Контакти | DeviceHelp",
   }
 
   const descriptionPatterns = {
@@ -34,8 +35,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: titlePatterns[locale as keyof typeof titlePatterns] || titlePatterns.en,
       description: descriptionPatterns[locale as keyof typeof descriptionPatterns] || descriptionPatterns.en,
       type: "website",
-      locale: locale,
-      alternateLocale: ["cs", "en", "uk"].filter((l) => l !== locale),
+      locale: locale === "cs" ? "cs_CZ" : locale === "uk" ? "uk_UA" : "en_US",
     },
     twitter: {
       card: "summary",
@@ -43,12 +43,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description: descriptionPatterns[locale as keyof typeof descriptionPatterns] || descriptionPatterns.en,
     },
     alternates: {
-      canonical: `https://devicehelp.cz/${locale}/contact`,
+      canonical: `${siteUrl}/${locale}/contact`,
       languages: {
-        cs: "https://devicehelp.cz/cs/contact",
-        en: "https://devicehelp.cz/en/contact",
-        uk: "https://devicehelp.cz/uk/contact",
-        "x-default": "https://devicehelp.cz/cs/contact",
+        cs: `${siteUrl}/cs/contact`,
+        en: `${siteUrl}/en/contact`,
+        uk: `${siteUrl}/uk/contact`,
+        "x-default": `${siteUrl}/cs/contact`,
       },
     },
     other: {
@@ -66,6 +66,8 @@ export default function ContactPage() {
           __html: JSON.stringify({
             "@context": "https://schema.org",
             "@type": "LocalBusiness",
+            "@id": "https://devicehelp.cz/#business",
+            url: "https://devicehelp.cz",
             name: "DeviceHelp - Oprava mobilních telefonů Praha 6",
             description: "Profesionální oprava mobilních telefonů v Praze 6 Břevnov - iPhone, Samsung, Xiaomi a dalších značek. Rychlá oprava s garancí 6 měsíců. Bělohorská 209/133, Praha 6-Břevnov.",
             address: {

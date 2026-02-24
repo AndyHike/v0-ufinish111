@@ -267,7 +267,14 @@
     "productLines": "Лінійки продуктів",
     "otherModels": "Інші моделі",
     "viewAllModels": "Переглянути всі моделі",
-    "modelsWithoutSeries": "Моделі без серії"
+    "modelsWithoutSeries": "Моделі без серії",
+    "professionalRepair": "Професійний ремонт",
+    "serviceSelectionPrompt": "Оберіть модель вашого пристрою нижче, щоб дізнатися точну вартість та час виконання робіт. Ми використовуємо тільки перевірені запчастини та надаємо гарантію на всі послуги.",
+    "warrantyLabel": "Гарантія 6 місяців",
+    "repairTime": "Ремонт від 30 хв",
+    "originalParts": "Якісні запчастини",
+    "selectYourDevice": "Оберіть ваш пристрій",
+    "back": "Назад"
   },
   "Series": {
     "backToBrand": "Назад до {brand}",
@@ -1085,5 +1092,13 @@
       "Review": "Огляд",
       "Tips & Tricks": "Поради та хитрощі"
     }
+  },
+  "Terms": {
+    "title": "Умови використання",
+    "contentPlaceholder": "Вміст буде додано пізніше."
+  },
+  "Privacy": {
+    "title": "Політика конфіденційності",
+    "contentPlaceholder": "Вміст буде додано пізніше."
   }
 }

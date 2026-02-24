@@ -8,6 +8,7 @@ export async function generateMetadata({ params: { locale } }: { params: { local
   return {
     title: t("signIn"),
     description: t("signInDescription"),
+    robots: { index: false, follow: false },
   }
 }
 

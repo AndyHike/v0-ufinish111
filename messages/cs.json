@@ -312,7 +312,14 @@
     "chooseModelTitle": "Vyberte model telefonu",
     "chooseModelDescription": "Vyberte značku vašeho telefonu pro zobrazení dostupných modelů a cen oprav",
     "pageTitle": "Vyberte model telefonu",
-    "pageDescription": "Vyberte značku vašeho telefonu pro zobrazení dostupných modelů a cen oprav"
+    "pageDescription": "Vyberte značku vašeho telefonu pro zobrazení dostupných modelů a cen oprav",
+    "professionalRepair": "Profesionální oprava",
+    "serviceSelectionPrompt": "Vyberte níže model svého zařízení a dozvíte se přesnou cenu a čas provedení prací. Používáme pouze ověřené náhradní díly a na všechny služby poskytujeme záruku.",
+    "warrantyLabel": "Záruka 6 měsíců",
+    "repairTime": "Oprava od 30 min",
+    "originalParts": "Kvalitní díly",
+    "selectYourDevice": "Vyberte své zařízení",
+    "back": "Zpět"
   },
   "Models": {
     "executionTime": "Doba provádění",

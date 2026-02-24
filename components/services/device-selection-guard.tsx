@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl"
 import { createClient } from "@/utils/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { ChevronLeft, Search } from "lucide-react"
+import { ChevronLeft, ChevronRight, Search, Smartphone } from "lucide-react"
 import { formatImageUrl } from "@/utils/image-url"
 
 interface Brand {
@@ -40,6 +40,7 @@ type SelectionStep = 1 | 2 | 3
 
 export function DeviceSelectionGuard({ serviceSlug, locale }: DeviceSelectionGuardProps) {
   const t = useTranslations("Services")
+  const brandsT = useTranslations("Brands")
   const router = useRouter()
   const supabase = createClient()
 
@@ -208,6 +209,8 @@ export function DeviceSelectionGuard({ serviceSlug, locale }: DeviceSelectionGua
     setSelectedBrandId(brandId)
     setStep(2)
     setBrandsSearch("")
+    // Smooth scroll to selection title if it's too far
+    window.scrollTo({ top: 300, behavior: 'smooth' });
   }
 
   const handleSelectSeries = (seriesId: string) => {
@@ -290,166 +293,176 @@ export function DeviceSelectionGuard({ serviceSlug, locale }: DeviceSelectionGua
   const selectedBrand = brands.find((b) => b.id === selectedBrandId)
   const selectedSeries = series.find((s) => s.id === selectedSeriesId)
 
-  const breadcrumb = [
-    selectedBrand?.name,
-    selectedSeries?.name,
-  ].filter(Boolean).join(" > ")
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <div className="w-full max-w-[500px] bg-white rounded-lg shadow-lg border border-gray-200">
-        {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-200">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">
-              {step === 1 && t("selectBrand")}
-              {step === 2 && t("selectSeries")}
-              {step === 3 && t("selectDevice")}
-            </h2>
-            {step > 1 && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleBack}
-                className="h-8 w-8 -mr-2"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
-          {breadcrumb && (
-            <p className="text-sm text-gray-600 mt-2">{breadcrumb}</p>
+    <div className="w-full">
+      {/* Navigation Header */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8 bg-gray-50/50 p-4 rounded-2xl border border-gray-100">
+        <div className="flex items-center gap-3">
+          {step > 1 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleBack}
+              className="gap-2 rounded-xl border-gray-200 hover:bg-white hover:text-blue-600 transition-all font-medium"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              {brandsT("back") || "Back"}
+            </Button>
           )}
+          <div className="flex items-center gap-2 overflow-hidden">
+            <span className={`h-2 w-2 rounded-full ${step >= 1 ? 'bg-blue-600' : 'bg-gray-300'}`}></span>
+            <span className={`h-1 w-8 rounded-full ${step >= 2 ? 'bg-blue-600' : 'bg-gray-200'}`}></span>
+            <span className={`h-2 w-2 rounded-full ${step >= 2 ? 'bg-blue-600' : 'bg-gray-300'}`}></span>
+            <span className={`h-1 w-8 rounded-full ${step >= 3 ? 'bg-blue-600' : 'bg-gray-200'}`}></span>
+            <span className={`h-2 w-2 rounded-full ${step >= 3 ? 'bg-blue-600' : 'bg-gray-300'}`}></span>
+          </div>
         </div>
 
-        {/* Error */}
-        {error && (
-          <div className="px-6 pt-4">
-            <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
-              {error}
-            </div>
+        <div className="text-sm font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+          {step === 1 && <span className="text-blue-600">{t("selectBrand") || "1. Select Brand"}</span>}
+          {step === 2 && (
+            <>
+              <span className="text-gray-400">{selectedBrand?.name}</span>
+              <span className="text-gray-300">/</span>
+              <span className="text-blue-600">{t("selectSeries") || "2. Select Series"}</span>
+            </>
+          )}
+          {step === 3 && (
+            <>
+              <span className="text-gray-400">{selectedBrand?.name}</span>
+              <span className="text-gray-300">/</span>
+              <span className="text-gray-400">{selectedSeries?.name}</span>
+              <span className="text-gray-300">/</span>
+              <span className="text-blue-600">{t("selectDevice") || "3. Select Device"}</span>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Error Message */}
+      {error && (
+        <div className="mb-8 p-4 bg-red-50 border border-red-100 rounded-2xl text-sm text-red-600 flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
+          <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div>
+          {error}
+        </div>
+      )}
+
+      {/* Main Selection Area */}
+      <div className="min-h-[400px]">
+        {/* Search Bar */}
+        <div className="mb-8 relative max-w-md mx-auto sm:mx-0">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+          <Input
+            placeholder={
+              step === 1 ? (t("searchBrand") || "Search brand...") :
+                step === 2 ? (t("searchSeries") || "Search series...") :
+                  (t("searchDevice") || "Search model...")
+            }
+            value={step === 1 ? brandsSearch : step === 2 ? seriesSearch : modelsSearch}
+            onChange={(e) => step === 1 ? setBrandsSearch(e.target.value) : step === 2 ? setSeriesSearch(e.target.value) : setModelsSearch(e.target.value)}
+            className="pl-12 h-14 bg-white border-gray-100 rounded-2xl shadow-sm focus:ring-blue-500 focus:border-blue-500 text-lg transition-all"
+            disabled={isLoading || isSubmitting}
+          />
+        </div>
+
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-20 text-gray-400 gap-4">
+            <div className="w-10 h-10 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin"></div>
+            <p className="font-medium">{t("loading") || "Loading..."}</p>
           </div>
-        )}
-
-        {/* Content */}
-        <div className="max-h-[60vh] overflow-auto">
-          {/* Step 1: Brand Selection */}
-          {step === 1 && (
-            <div className="p-6 space-y-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder={t("searchBrand")}
-                  value={brandsSearch}
-                  onChange={(e) => setBrandsSearch(e.target.value)}
-                  className="pl-9"
-                  disabled={isLoading}
-                />
-              </div>
-
-              {isLoading ? (
-                <div className="text-center py-8 text-gray-500">{t("loading")}</div>
-              ) : filteredBrands.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">{t("noBrands")}</div>
+        ) : (
+          <div className="animate-in fade-in duration-500">
+            {/* Step 1: Brand Grid */}
+            {step === 1 && (
+              filteredBrands.length === 0 ? (
+                <div className="text-center py-20 text-gray-500 bg-gray-50 rounded-3xl border border-dashed border-gray-200">
+                  {t("noBrands") || "No brands found"}
+                </div>
               ) : (
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
                   {filteredBrands.map((brand) => (
                     <button
                       key={brand.id}
                       onClick={() => handleSelectBrand(brand.id)}
-                      className="p-3 border-2 border-gray-200 rounded-lg hover:border-blue-600 hover:bg-blue-50 transition-all text-left"
+                      className="group flex flex-col items-center rounded-2xl bg-white p-6 shadow-sm border border-gray-100 transition-all hover:-translate-y-1 hover:shadow-lg hover:border-blue-200"
                     >
-                      {brand.logo_url && (
-                        <img
-                          src={formatImageUrl(brand.logo_url)}
-                          alt={brand.name}
-                          className="h-8 mb-2 object-contain"
-                        />
-                      )}
-                      <p className="text-sm font-medium text-gray-900">{brand.name}</p>
+                      <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-xl bg-gray-50 p-3 group-hover:bg-blue-50 transition-colors">
+                        {brand.logo_url ? (
+                          <img
+                            src={formatImageUrl(brand.logo_url)}
+                            alt={brand.name}
+                            className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-110"
+                          />
+                        ) : (
+                          <Smartphone className="w-8 h-8 text-gray-300" />
+                        )}
+                      </div>
+                      <h3 className="text-center text-sm font-bold text-gray-800 group-hover:text-blue-600 transition-colors line-clamp-1">{brand.name}</h3>
                     </button>
                   ))}
                 </div>
-              )}
-            </div>
-          )}
+              )
+            )}
 
-          {/* Step 2: Series Selection */}
-          {step === 2 && (
-            <div className="p-6 space-y-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder={t("searchSeries")}
-                  value={seriesSearch}
-                  onChange={(e) => setSeriesSearch(e.target.value)}
-                  className="pl-9"
-                  disabled={isLoading}
-                />
-              </div>
-
-              {isLoading ? (
-                <div className="text-center py-8 text-gray-500">{t("loading")}</div>
-              ) : filteredSeries.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">{t("noSeries")}</div>
+            {/* Step 2: Series Selection */}
+            {step === 2 && (
+              filteredSeries.length === 0 ? (
+                <div className="text-center py-20 text-gray-500 bg-gray-50 rounded-3xl border border-dashed border-gray-200">
+                  {t("noSeries") || "No series found for this brand"}
+                </div>
               ) : (
-                <div className="space-y-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {filteredSeries.map((s) => (
                     <button
                       key={s.id}
                       onClick={() => handleSelectSeries(s.id)}
-                      className="w-full p-3 border-2 border-gray-200 rounded-lg hover:border-blue-600 hover:bg-blue-50 transition-all text-left"
+                      className="flex items-center justify-between p-6 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md hover:border-blue-200 transition-all group"
                     >
-                      <p className="text-sm font-medium text-gray-900">{s.name}</p>
+                      <div className="flex items-center gap-4">
+                        <div className="w-1 h-8 bg-blue-100 group-hover:bg-blue-600 rounded-full transition-colors"></div>
+                        <h3 className="text-lg font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">{s.name}</h3>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-blue-600 transition-all transform group-hover:translate-x-1" />
                     </button>
                   ))}
                 </div>
-              )}
-            </div>
-          )}
+              )
+            )}
 
-          {/* Step 3: Model Selection */}
-          {step === 3 && (
-            <div className="p-6 space-y-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder={t("searchDevice")}
-                  value={modelsSearch}
-                  onChange={(e) => setModelsSearch(e.target.value)}
-                  className="pl-9"
-                  disabled={isLoading || isSubmitting}
-                />
-              </div>
-
-              {isLoading ? (
-                <div className="text-center py-8 text-gray-500">{t("loading")}</div>
-              ) : filteredModels.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">{t("noDevices")}</div>
+            {/* Step 3: Model Grid */}
+            {step === 3 && (
+              filteredModels.length === 0 ? (
+                <div className="text-center py-20 text-gray-500 bg-gray-50 rounded-3xl border border-dashed border-gray-200">
+                  {t("noDevices") || "No devices found for this series"}
+                </div>
               ) : (
-                <div className="space-y-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
                   {filteredModels.map((model) => (
                     <button
                       key={model.id}
                       onClick={() => handleSelectModel(model.slug!)}
                       disabled={isSubmitting}
-                      className="w-full p-3 border-2 border-gray-200 rounded-lg hover:border-blue-600 hover:bg-blue-50 transition-all text-left disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3"
+                      className="group flex flex-col items-center rounded-2xl bg-white p-6 shadow-sm border border-gray-100 transition-all hover:-translate-y-1 hover:shadow-lg hover:border-blue-200 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {model.image_url && (
-                        <img
-                          src={formatImageUrl(model.image_url)}
-                          alt={model.name}
-                          className="h-12 w-12 object-contain flex-shrink-0"
-                        />
-                      )}
-                      <p className="text-sm font-medium text-gray-900">{model.name}</p>
+                      <div className="mb-4 flex h-24 w-24 items-center justify-center rounded-xl bg-gray-50 p-3 group-hover:bg-blue-50 transition-colors">
+                        {model.image_url ? (
+                          <img
+                            src={formatImageUrl(model.image_url)}
+                            alt={model.name}
+                            className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-110"
+                          />
+                        ) : (
+                          <Smartphone className="w-10 h-10 text-gray-300" />
+                        )}
+                      </div>
+                      <h3 className="text-center text-sm font-bold text-gray-800 group-hover:text-blue-600 transition-colors line-clamp-2 leading-tight">{model.name}</h3>
                     </button>
                   ))}
                 </div>
-              )}
-            </div>
-          )}
-        </div>
+              )
+            )}
+          </div>
+        )}
       </div>
     </div>
   )

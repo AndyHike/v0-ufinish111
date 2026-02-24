@@ -59,6 +59,7 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json())
 export default function ModelPageClient({ modelData, locale }: Props) {
   const t = useTranslations("Models")
   const commonT = useTranslations("Common")
+  const brandsT = useTranslations("Brands")
   const viewContentSent = useRef(false)
   const [mounted, setMounted] = useState(false)
 
@@ -176,6 +177,7 @@ export default function ModelPageClient({ modelData, locale }: Props) {
         <div className="mb-6">
           <Breadcrumb
             items={[
+              { label: brandsT("allBrands") || "Всі бренди", href: `/${locale}/brands` },
               ...(currentModelData.brands ? [{ label: currentModelData.brands.name, href: `/${locale}/brands/${currentModelData.brands.slug}` }] : []),
               ...(currentModelData.series ? [{ label: currentModelData.series.name, href: `/${locale}/series/${currentModelData.series.slug}` }] : []),
               { label: currentModelData.name, href: `/${locale}/models/${currentModelData.slug}` },
