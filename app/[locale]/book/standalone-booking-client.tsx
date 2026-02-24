@@ -53,6 +53,7 @@ export default function StandaloneBookingClient({ locale }: StandaloneBookingCli
   const [step, setStep] = useState(1)
   const [showConfirmation, setShowConfirmation] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [isLoadingFromUrl, setIsLoadingFromUrl] = useState(false)
 
   const [brands, setBrands] = useState<Brand[]>([])
   const [series, setSeries] = useState<Series[]>([])
@@ -86,6 +87,7 @@ export default function StandaloneBookingClient({ locale }: StandaloneBookingCli
       }
     } else if (serviceSlug && modelSlug) {
       // Якщо є параметри в URL, завантажуємо модель та послугу
+      setIsLoadingFromUrl(true)
       const fetchModelAndService = async () => {
         try {
           // Завантажуємо модель
@@ -132,6 +134,8 @@ export default function StandaloneBookingClient({ locale }: StandaloneBookingCli
           }
         } catch (error) {
           console.error("[v0] Error loading model/service from URL params:", error)
+        } finally {
+          setIsLoadingFromUrl(false)
         }
       }
       
@@ -354,6 +358,14 @@ export default function StandaloneBookingClient({ locale }: StandaloneBookingCli
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4">
+        {/* Show loader if loading from URL params */}
+        {isLoadingFromUrl ? (
+          <div className="flex flex-col items-center justify-center py-24">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-600 mb-4" />
+            <p className="text-gray-600">{t("loading") || "Loading..."}</p>
+          </div>
+        ) : (
+          <>
         {/* Breadcrumb */}
         <nav className="mb-6">
             <Link
@@ -592,6 +604,8 @@ export default function StandaloneBookingClient({ locale }: StandaloneBookingCli
             )}
           </CardContent>
         </Card>
+          </>
+        )}
       </div>
     </div>
   )
