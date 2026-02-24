@@ -341,7 +341,7 @@
     "priceOnRequest": "Cena na vyžádání",
     "forModel": "pro {brand} {model}",
     "loadingError": "Chyba načítání",
-    "loadingErrorDescription": "Nepodařilo se nač������������st data služby. Zkuste to prosím později.",
+    "loadingErrorDescription": "Nepodařilo se nač��������������st data služby. Zkuste to prosím později.",
     "backToSeries": "Zpět na modely ",
     "repairServices": "Opravárenské služby",
     "modelNotFound": "Model nenalezen",
@@ -760,11 +760,11 @@
     "step2": "Náš manažer vás brzy kontaktuje",
     "step3": "Potvrdíme vám čas vaší schůzky",
     "workingHours": "Pracovní doba",
-    "workingHoursValue": "Pondělí-Pátek: 9:00 - 18:00",
+    "workingHoursValue": "9:00 - 19:00",
     "contactLabel": "Kontakt",
     "phoneLabel": "Telefon",
     "emailLabel": "Email",
-    "emailValue": "contact@repair.cz"
+    "emailValue": "info@devicehelp.cz"
   },
   "GoogleReviews": {
     "title": "Recenze Google",

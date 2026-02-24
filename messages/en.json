@@ -567,11 +567,11 @@
     "step2": "Our manager will contact you soon",
     "step3": "We will confirm your appointment time",
     "workingHours": "Working Hours",
-    "workingHoursValue": "Mon-Fri: 9:00 - 18:00",
+    "workingHoursValue": "9:00 - 19:00",
     "contactLabel": "Contact",
     "phoneLabel": "Phone",
     "emailLabel": "Email",
-    "emailValue": "contact@repair.cz"
+    "emailValue": "info@devicehelp.cz"
   },
   "GoogleReviews": {
     "title": "Google Reviews",

@@ -688,7 +688,7 @@
     "importResultSummary": "Імпортовано {success} з {total} елементів з {failed} помилками",
     "showErrors": "Показати помилки",
     "andMoreErrors": "...і ще {count} помилок",
-    "importError": "Не вдалос�� імпортувати дані",
+    "importError": "Не в��алос�� імпортувати дані",
     "onlyCSVAllowed": "Дозволені лише CSV файли",
     "csvParseError": "Помилка аналізу CSV файлу",
     "csvMissingColumns": "У CSV файлі відсутні необхідні стовпці",
@@ -1081,11 +1081,11 @@
     "step2": "Наш менеджер зв'яжеться з вами найближчим часом",
     "step3": "Ми підтвердимо час вашої зустрічі",
     "workingHours": "Робочі години",
-    "workingHoursValue": "Пн-Пт: 9:00 - 18:00",
+    "workingHoursValue": "9:00 - 19:00",
     "contactLabel": "Контакти",
     "phoneLabel": "Телефон",
     "emailLabel": "Email",
-    "emailValue": "contact@repair.cz"
+    "emailValue": "info@devicehelp.cz"
   },
   "GoogleReviews": {
     "title": "Google Відгуки",
