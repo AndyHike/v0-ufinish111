@@ -314,7 +314,6 @@ export default function StandaloneBookingClient({ locale }: StandaloneBookingCli
       sessionStorage.removeItem('bookingState')
     }
   }
-  }
 
   // Show confirmation form if requested
   if (showConfirmation && selectedBrand && selectedModel && selectedService) {
@@ -337,6 +336,7 @@ export default function StandaloneBookingClient({ locale }: StandaloneBookingCli
         />
       </div>
     )
+  }
   }
 
   return (
