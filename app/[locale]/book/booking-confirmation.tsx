@@ -20,7 +20,6 @@ interface BookingConfirmationProps {
     duration_hours?: number
     warranty_period?: string
   }
-  onBack?: () => void
 }
 
 interface TimeSlot {
@@ -39,7 +38,6 @@ export default function BookingConfirmation({
   brand,
   model,
   service,
-  onBack,
 }: BookingConfirmationProps) {
   const t = useTranslations("StandaloneBooking")
   const [submitting, setSubmitting] = useState(false)
@@ -178,7 +176,8 @@ export default function BookingConfirmation({
 
       if (result.success) {
         alert(`Thank you! Your booking has been submitted. We will contact you shortly at ${formData.phone}`)
-        onBack()
+        // Redirect to home page after successful booking
+        window.location.href = `/${locale}`
       }
     } catch (error) {
       console.error("Error submitting booking:", error)

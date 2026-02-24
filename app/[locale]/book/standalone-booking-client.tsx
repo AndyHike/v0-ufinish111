@@ -76,12 +76,13 @@ export default function StandaloneBookingClient({ locale }: StandaloneBookingCli
     if (savedState) {
       try {
         const state = JSON.parse(savedState)
+        console.log("[v0] Restoring booking state from sessionStorage:", state)
         setStep(state.step)
         setSelectedBrand(state.selectedBrand)
         setSelectedSeries(state.selectedSeries)
         setSelectedModel(state.selectedModel)
         setSelectedService(state.selectedService)
-        // НЕ встановлюємо showConfirmation, дозволимо звичайний потік
+        setShowConfirmation(state.showConfirmation)
       } catch (error) {
         console.error("[v0] Error restoring booking state:", error)
       }
@@ -163,6 +164,23 @@ export default function StandaloneBookingClient({ locale }: StandaloneBookingCli
       fetchBrands()
     }
   }, [searchParams, locale])
+
+  // Зберігаємо стан у sessionStorage кожен раз, коли він змінюється
+  useEffect(() => {
+    if (selectedBrand || selectedModel || selectedService) {
+      const bookingState = {
+        step,
+        selectedBrand,
+        selectedSeries,
+        selectedModel,
+        selectedService,
+        showConfirmation,
+      }
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('bookingState', JSON.stringify(bookingState))
+      }
+    }
+  }, [step, selectedBrand, selectedSeries, selectedModel, selectedService, showConfirmation])
 
   // Збереження стану в sessionStorage коли він змінюється
   useEffect(() => {
@@ -351,7 +369,6 @@ export default function StandaloneBookingClient({ locale }: StandaloneBookingCli
           duration_hours: selectedService.duration_hours,
           warranty_period: selectedService.warranty_period,
         }}
-        onBack={handleConfirmationBack}
       />
     )
   }
