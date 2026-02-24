@@ -3,30 +3,26 @@ import { createClient } from "@/utils/supabase/server"
 
 export async function GET() {
   try {
-    const supabase = createClient()
-    console.log("Fetching brands from Supabase...")
+    const supabase = await createClient()
+    console.log("[v0] Fetching brands from Supabase...")
 
-    // Get brands ordered by position, включаючи slug
+    // Get brands ordered by position
     const { data, error } = await supabase
       .from("brands")
-      .select("id, name, slug, logo_url, position, series(id, name, position, slug)")
+      .select("id, name, slug, logo_url, position")
       .order("position", { ascending: true, nullsLast: true })
       .order("name", { ascending: true })
 
     if (error) {
-      console.error("Error fetching brands:", error)
+      console.error("[v0] Error fetching brands:", error)
       return NextResponse.json({ error: "Failed to fetch brands" }, { status: 500 })
     }
 
-    console.log(`Successfully fetched ${data?.length || 0} brands`)
-    console.log(
-      "Brands with slugs:",
-      data?.map((b) => ({ name: b.name, slug: b.slug })),
-    )
+    console.log(`[v0] Successfully fetched ${data?.length || 0} brands`)
 
     return NextResponse.json(data)
   } catch (error) {
-    console.error("Unexpected error fetching brands:", error)
+    console.error("[v0] Unexpected error fetching brands:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
