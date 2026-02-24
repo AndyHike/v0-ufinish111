@@ -37,6 +37,9 @@ interface Service {
   name: string
   slug: string
   price: number | null
+  warranty_months?: number
+  duration_hours?: number
+  warranty_period?: string
 }
 
 interface StandaloneBookingClientProps {
@@ -111,11 +114,18 @@ export default function StandaloneBookingClient({ locale }: StandaloneBookingCli
                 )
                 
                 if (foundService) {
+                  // Отримуємо дані з URL параметрів
+                  const urlWarrantyMonths = searchParams.get("warranty_months")
+                  const urlDurationHours = searchParams.get("duration_hours")
+
                   const service: Service = {
-                    id: foundService.services?.id || foundService.service_id,
+                    id: foundService.id,
                     slug: foundService.services?.slug || '',
                     name: foundService.services?.name || foundService.name || 'Unknown Service',
                     price: foundService.price,
+                    warranty_months: urlWarrantyMonths ? parseInt(urlWarrantyMonths) : foundService.warranty_months,
+                    duration_hours: urlDurationHours ? parseInt(urlDurationHours) : foundService.duration_hours,
+                    warranty_period: foundService.warranty_period,
                   }
                   setSelectedService(service)
                 }

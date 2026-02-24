@@ -534,6 +534,7 @@
     "noServices": "No services found for this model",
     "loading": "Loading...",
     "confirmBooking": "Confirm Booking",
+    "summary": "Summary",
     "bookingSummary": "Booking Summary",
     "brand": "Brand",
     "model": "Model",
