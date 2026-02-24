@@ -59,7 +59,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     // Static pages
     // Only include pages that actually exist as routes
-    const staticPages = ["/contact", "/privacy", "/terms", "/brands"]
+    const staticPages = ["/contact", "/brands"]
 
     staticPages.forEach((page) => {
       addMultilingualEntries(page)

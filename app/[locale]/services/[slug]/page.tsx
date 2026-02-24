@@ -215,27 +215,9 @@ export default async function ServicePage({ params, searchParams }: Props) {
             <ShieldCheck className="w-3 h-3" />
             {brandsT("professionalRepair") || "Professional Repair"}
           </div>
-          <h1 className="text-3xl md:text-5xl font-extrabold text-gray-900 tracking-tight mb-4 text-balance">
+          <h1 className="text-3xl md:text-5xl font-extrabold text-gray-900 tracking-tight text-balance">
             {serviceName}
           </h1>
-          <p className="text-lg text-muted-foreground leading-relaxed">
-            {brandsT("serviceSelectionPrompt") || "Please select your device model below to see exact prices and completion times. We use only verified parts and provide a warranty."}
-          </p>
-
-          <div className="mt-8 flex flex-wrap gap-6 justify-center text-sm font-medium text-gray-500">
-            <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-blue-500" />
-              {brandsT("repairTime") || "From 30 min"}
-            </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle className="w-4 h-4 text-blue-500" />
-              {brandsT("originalParts") || "Original Parts"}
-            </div>
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-blue-500" />
-              {brandsT("warrantyLabel") || "6 months warranty"}
-            </div>
-          </div>
         </div>
 
         {/* Device Selection Guard Section */}

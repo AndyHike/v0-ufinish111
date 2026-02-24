@@ -37,6 +37,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         "x-default": `${siteUrl}/cs/terms`,
       },
     },
+    robots: {
+      index: false,
+      follow: true,
+    },
   }
 }
 

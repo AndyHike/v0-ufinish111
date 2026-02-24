@@ -119,7 +119,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   return {
-    title: title,
+    title: `${title} | DeviceHelp`,
     description,
     openGraph: {
       title,
