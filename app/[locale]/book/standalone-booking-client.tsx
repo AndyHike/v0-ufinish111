@@ -319,40 +319,22 @@ export default function StandaloneBookingClient({ locale }: StandaloneBookingCli
   // Show confirmation form if requested
   if (showConfirmation && selectedBrand && selectedModel && selectedService) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
-        <div className="max-w-2xl mx-auto px-4">
-          {/* Breadcrumb */}
-          <nav className="mb-6">
-            <Link
-              href={`/${locale}`}
-              className="text-gray-600 hover:text-gray-900 flex items-center gap-2 text-sm transition-colors"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              {commonT("backToHome")}
-            </Link>
-          </nav>
-
-          <Card className="shadow-sm border-0 bg-white">
-            <CardHeader className="pb-6">
-              <CardTitle className="text-2xl font-semibold text-center text-gray-900">
-                {t("confirmBooking")}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <BookingConfirmation
-                locale={locale}
-                brand={{ name: selectedBrand.name, slug: selectedBrand.slug }}
-                model={{ name: selectedModel.name, slug: selectedModel.slug }}
-                service={{
-                  name: selectedService.name,
-                  slug: selectedService.slug,
-                  price: selectedService.price,
-                }}
-                onBack={handleConfirmationBack}
-              />
-            </CardContent>
-          </Card>
-        </div>
+      <div className="space-y-6">
+        <Button variant="ghost" onClick={handleConfirmationBack} className="text-gray-600 hover:text-gray-900">
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          {t("back")}
+        </Button>
+        <BookingConfirmation
+          locale={locale}
+          brand={{ name: selectedBrand.name, slug: selectedBrand.slug }}
+          model={{ name: selectedModel.name, slug: selectedModel.slug }}
+          service={{
+            name: selectedService.name,
+            slug: selectedService.slug,
+            price: selectedService.price,
+          }}
+          onBack={handleConfirmationBack}
+        />
       </div>
     )
   }
@@ -362,13 +344,13 @@ export default function StandaloneBookingClient({ locale }: StandaloneBookingCli
       <div className="max-w-4xl mx-auto px-4">
         {/* Breadcrumb */}
         <nav className="mb-6">
-          <Link
-            href={`/${locale}`}
-            className="text-gray-600 hover:text-gray-900 flex items-center gap-2 text-sm transition-colors"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            {commonT("backToHome")}
-          </Link>
+            <Link
+              href={`/${locale}`}
+              className="text-gray-600 hover:text-gray-900 flex items-center gap-2 text-sm transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              {t("backToHome")}
+            </Link>
         </nav>
 
         <Card className="shadow-sm border-0 bg-white">
