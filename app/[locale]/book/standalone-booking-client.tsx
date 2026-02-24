@@ -10,6 +10,7 @@ import StepModel from "./steps/step-model"
 import StepService from "./steps/step-service"
 import BookingConfirmation from "./booking-confirmation"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Loader2, ArrowLeft, ChevronRight, Wrench } from "lucide-react"
 import { formatCurrency } from "@/lib/format-currency"
 
