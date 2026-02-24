@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -55,6 +55,14 @@ export default function BookingConfirmation({
 
   const [selectedDate, setSelectedDate] = useState<string>("")
   const [selectedTime, setSelectedTime] = useState<string>("")
+  const [localizedService, setLocalizedService] = useState(service)
+
+  // Re-fetch service data when locale changes to get proper translations
+  useEffect(() => {
+    if (service && model) {
+      setLocalizedService(service)
+    }
+  }, [locale, service, model])
 
   // Guard clause for missing data
   if (!brand || !model || !service || !onBack) {
@@ -124,10 +132,10 @@ export default function BookingConfirmation({
           comment: formData.comment,
           date: selectedDate,
           time: selectedTime,
-          service: service.name,
+          service: localizedService?.name,
           brand: brand.name,
           model: model.name,
-          price: service.price ? formatCurrency(service.price) : null,
+          price: localizedService?.price ? formatCurrency(localizedService.price) : null,
           locale,
         }),
       })
@@ -161,8 +169,8 @@ export default function BookingConfirmation({
   const phonePlaceholder = phoneCountryCode[locale] || "+1"
 
   // Format warranty text
-  const warrantyText = service.warranty_months ? `${service.warranty_months} ${t("months")}` : service.warranty_period || ""
-  const durationText = service.duration_hours ? `${service.duration_hours}h` : ""
+  const warrantyText = localizedService?.warranty_months ? `${localizedService.warranty_months} ${t("months")}` : localizedService?.warranty_period || ""
+  const durationText = localizedService?.duration_hours ? `${localizedService.duration_hours}h` : ""
 
   return (
     <div className="min-h-screen bg-gray-50 py-6 sm:py-12 px-4">
@@ -183,7 +191,7 @@ export default function BookingConfirmation({
         <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-6 mb-6 sm:mb-8">
           <div className="text-center space-y-3">
             {/* Service Name */}
-            <h2 className="text-lg sm:text-xl font-semibold text-gray-900">{service.name}</h2>
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900">{localizedService?.name}</h2>
 
             {/* Device Info */}
             <p className="text-gray-600">
@@ -194,7 +202,7 @@ export default function BookingConfirmation({
             <div className="flex flex-wrap justify-center items-center gap-4 pt-3 border-t border-gray-200">
               <div className="text-center">
                 <p className="text-2xl sm:text-3xl font-bold text-gray-900">
-                  {service.price ? formatCurrency(service.price) : "—"}
+                  {localizedService?.price ? formatCurrency(localizedService.price) : "—"}
                 </p>
               </div>
 
@@ -231,64 +239,68 @@ export default function BookingConfirmation({
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   {t("firstName")} <span className="text-red-500">*</span>
                 </label>
-                <Input
-                  type="text"
-                  name="firstName"
-                  value={formData.firstName}
-                  onChange={handleInputChange}
-                  placeholder={t("enterFirstName") || "Enter your first name"}
-                  required
-                  disabled={submitting}
-                  className="w-full border border-gray-300 rounded px-3 py-2"
-                />
+              <Input
+                type="text"
+                name="firstName"
+                value={formData.firstName}
+                onChange={handleInputChange}
+                placeholder={t("enterFirstName")}
+                autoComplete="given-name"
+                required
+                disabled={submitting}
+                className="border-0 border-b border-gray-300 rounded-none bg-transparent px-0 py-2 text-sm placeholder:text-gray-400 focus:border-gray-900 focus:ring-0"
+              />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   {t("lastName")} <span className="text-red-500">*</span>
                 </label>
-                <Input
-                  type="text"
-                  name="lastName"
-                  value={formData.lastName}
-                  onChange={handleInputChange}
-                  placeholder={t("enterLastName") || "Enter your last name"}
-                  required
-                  disabled={submitting}
-                  className="w-full border border-gray-300 rounded px-3 py-2"
-                />
+              <Input
+                type="text"
+                name="lastName"
+                value={formData.lastName}
+                onChange={handleInputChange}
+                placeholder={t("enterLastName")}
+                autoComplete="family-name"
+                required
+                disabled={submitting}
+                className="border-0 border-b border-gray-300 rounded-none bg-transparent px-0 py-2 text-sm placeholder:text-gray-400 focus:border-gray-900 focus:ring-0"
+              />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   {t("phone")} <span className="text-red-500">*</span>
                 </label>
-                <Input
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleInputChange}
-                  placeholder={phonePlaceholder + " 123 456 789"}
-                  required
-                  disabled={submitting}
-                  className="w-full border border-gray-300 rounded px-3 py-2"
-                />
+              <Input
+                type="tel"
+                name="phone"
+                value={formData.phone}
+                onChange={handleInputChange}
+                placeholder={`${phoneCountryCode[locale] || "+380"} ...`}
+                autoComplete="tel"
+                required
+                disabled={submitting}
+                className="border-0 border-b border-gray-300 rounded-none bg-transparent px-0 py-2 text-sm placeholder:text-gray-400 focus:border-gray-900 focus:ring-0"
+              />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   {t("email")} <span className="text-red-500">*</span>
                 </label>
-                <Input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  placeholder="example@email.com"
-                  required
-                  disabled={submitting}
-                  className="w-full border border-gray-300 rounded px-3 py-2"
-                />
+              <Input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                placeholder={t("email")}
+                autoComplete="email"
+                required
+                disabled={submitting}
+                className="border-0 border-b border-gray-300 rounded-none bg-transparent px-0 py-2 text-sm placeholder:text-gray-400 focus:border-gray-900 focus:ring-0"
+              />
               </div>
             </div>
           </div>

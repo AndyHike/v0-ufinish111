@@ -287,6 +287,7 @@ export default function StandaloneBookingClient({ locale }: StandaloneBookingCli
 
   const handleServiceSelect = (service: Service) => {
     setSelectedService(service)
+    setShowConfirmation(true)
   }
 
   const handleProceedToBooking = () => {
