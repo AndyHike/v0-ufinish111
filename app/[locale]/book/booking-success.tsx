@@ -14,133 +14,99 @@ export default function BookingSuccess({ locale, phone }: BookingSuccessProps) {
   const t = useTranslations("StandaloneBooking")
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-green-50 to-white flex items-center justify-center px-4 py-8">
-      <div className="max-w-lg w-full">
+    <div className="min-h-screen bg-white flex items-center justify-center px-4 py-6 sm:py-8">
+      <div className="max-w-sm w-full">
         {/* Success Icon */}
-        <div className="flex justify-center mb-6">
-          <div className="bg-green-100 rounded-full p-4">
-            <CheckCircle2 className="h-16 w-16 text-green-600" strokeWidth={1.5} />
+        <div className="flex justify-center mb-4">
+          <div className="bg-green-100 rounded-full p-3">
+            <CheckCircle2 className="h-12 w-12 text-green-600" strokeWidth={1.5} />
           </div>
         </div>
 
         {/* Main Message */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3">
+        <div className="text-center mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
             {t("successTitle")}
           </h1>
-          <p className="text-lg text-gray-600">
+          <p className="text-sm sm:text-base text-gray-600">
             {t("successMessage")}
           </p>
         </div>
 
-        {/* Next Steps */}
-        <div className="bg-white border border-gray-200 rounded-lg p-6 sm:p-8 mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
-            <Clock className="h-5 w-5 text-blue-600" />
+        {/* Next Steps - Compact */}
+        <div className="bg-gray-50 rounded-lg p-4 sm:p-5 mb-5">
+          <h2 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+            <Clock className="h-4 w-4 text-blue-600" />
             {t("nextSteps")}
           </h2>
 
-          <div className="space-y-5">
+          <div className="space-y-2">
             {/* Step 1 */}
-            <div className="flex gap-4">
-              <div className="flex-shrink-0">
-                <div className="flex items-center justify-center h-8 w-8 rounded-full bg-blue-100 text-blue-600 font-semibold text-sm">
-                  1
-                </div>
-              </div>
-              <div>
-                <p className="font-medium text-gray-900">{t("step1")}</p>
-              </div>
+            <div className="flex gap-3 text-sm">
+              <span className="flex-shrink-0 flex items-center justify-center h-6 w-6 rounded-full bg-blue-100 text-blue-600 font-semibold text-xs">
+                1
+              </span>
+              <p className="text-gray-700 pt-0.5">{t("step1")}</p>
             </div>
 
             {/* Step 2 */}
-            <div className="flex gap-4">
-              <div className="flex-shrink-0">
-                <div className="flex items-center justify-center h-8 w-8 rounded-full bg-blue-100 text-blue-600 font-semibold text-sm">
-                  2
-                </div>
-              </div>
-              <div>
-                <p className="font-medium text-gray-900">{t("step2")}</p>
-              </div>
+            <div className="flex gap-3 text-sm">
+              <span className="flex-shrink-0 flex items-center justify-center h-6 w-6 rounded-full bg-blue-100 text-blue-600 font-semibold text-xs">
+                2
+              </span>
+              <p className="text-gray-700 pt-0.5">{t("step2")}</p>
             </div>
 
             {/* Step 3 */}
-            <div className="flex gap-4">
-              <div className="flex-shrink-0">
-                <div className="flex items-center justify-center h-8 w-8 rounded-full bg-blue-100 text-blue-600 font-semibold text-sm">
-                  3
-                </div>
-              </div>
-              <div>
-                <p className="font-medium text-gray-900">{t("step3")}</p>
-              </div>
+            <div className="flex gap-3 text-sm">
+              <span className="flex-shrink-0 flex items-center justify-center h-6 w-6 rounded-full bg-blue-100 text-blue-600 font-semibold text-xs">
+                3
+              </span>
+              <p className="text-gray-700 pt-0.5">{t("step3")}</p>
             </div>
           </div>
         </div>
 
-        {/* Contact Information */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 sm:p-8 mb-8">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Наші контакти
-          </h3>
-
-          <div className="space-y-4">
-            {phone && (
-              <div className="flex items-center gap-3">
-                <Phone className="h-5 w-5 text-blue-600" />
-                <div>
-                  <p className="text-sm text-gray-600">Телефон</p>
-                  <p className="font-medium text-gray-900">{phone}</p>
-                </div>
-              </div>
-            )}
-
-            <div className="flex items-center gap-3">
-              <Mail className="h-5 w-5 text-blue-600" />
+        {/* Contact Information - Compact */}
+        <div className="bg-blue-50 rounded-lg p-4 sm:p-5 mb-5 space-y-3">
+          {phone && (
+            <div className="flex items-start gap-3">
+              <Phone className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
               <div>
-                <p className="text-sm text-gray-600">Email</p>
-                <p className="font-medium text-gray-900">contact@repair.cz</p>
+                <p className="text-xs text-gray-600 font-medium uppercase tracking-wide">{t("phoneLabel")}</p>
+                <p className="text-sm text-gray-900">{phone}</p>
               </div>
             </div>
+          )}
 
-            <div className="flex items-center gap-3">
-              <Clock className="h-5 w-5 text-blue-600" />
-              <div>
-                <p className="text-sm text-gray-600">{t("workingHours")}</p>
-                <p className="font-medium text-gray-900">Пн-Пт: 9:00 - 18:00</p>
-              </div>
+          <div className="flex items-start gap-3">
+            <Mail className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-xs text-gray-600 font-medium uppercase tracking-wide">{t("emailLabel")}</p>
+              <p className="text-sm text-gray-900">{t("emailValue")}</p>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-3">
+            <Clock className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-xs text-gray-600 font-medium uppercase tracking-wide">{t("workingHours")}</p>
+              <p className="text-sm text-gray-900">{t("workingHoursValue")}</p>
             </div>
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-3">
-          <Button
-            asChild
-            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-6 text-base font-semibold rounded-lg transition-colors"
-          >
-            <Link href={`/${locale}`}>
-              {t("backToHome")}
-            </Link>
-          </Button>
-
-          <Button
-            asChild
-            variant="outline"
-            className="flex-1 py-6 text-base font-semibold rounded-lg"
-          >
-            <Link href={`/${locale}/services`}>
-              Інші послуги
-            </Link>
-          </Button>
-        </div>
-
-        {/* Additional Info */}
-        <p className="text-center text-sm text-gray-600 mt-6">
-          Якщо у вас виникли питання, зв'яжіться з нами зразу
-        </p>
+        {/* Action Button - Single CTA */}
+        <Button
+          asChild
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 text-sm font-semibold rounded-lg transition-colors"
+        >
+          <Link href={`/${locale}`}>
+            {t("backToHome")}
+          </Link>
+        </Button>
       </div>
     </div>
   )
 }
+
