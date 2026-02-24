@@ -316,6 +316,7 @@ export default function BookingConfirmation({
                 autoComplete="tel"
                 required
                 disabled={submitting}
+                inputMode="tel"
                 className="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-opacity-20 focus:border-gray-900 transition-all disabled:bg-gray-50 disabled:cursor-not-allowed"
               />
               </div>

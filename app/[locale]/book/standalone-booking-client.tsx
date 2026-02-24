@@ -54,6 +54,7 @@ export default function StandaloneBookingClient({ locale }: StandaloneBookingCli
   const [showConfirmation, setShowConfirmation] = useState(false)
   const [loading, setLoading] = useState(false)
   const [isLoadingFromUrl, setIsLoadingFromUrl] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const [brands, setBrands] = useState<Brand[]>([])
   const [series, setSeries] = useState<Series[]>([])
@@ -149,16 +150,28 @@ export default function StandaloneBookingClient({ locale }: StandaloneBookingCli
       // Завантажуємо бренди
       const fetchBrands = async () => {
         setLoading(true)
+        setError(null)
         try {
+          console.log("[v0] Fetching brands from /api/admin/brands")
           const response = await fetch(`/api/admin/brands`)
+          console.log("[v0] Brands API response status:", response.status)
+          
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`)
           }
           const data = await response.json()
           console.log("[v0] Brands loaded:", data)
-          setBrands(Array.isArray(data) ? data : data?.data || [])
+          console.log("[v0] Brands is array:", Array.isArray(data), "Brands length:", Array.isArray(data) ? data.length : "N/A")
+          
+          const brandsArray = Array.isArray(data) ? data : data?.data || []
+          if (brandsArray.length === 0) {
+            console.warn("[v0] No brands found in response")
+            setError("No brands available")
+          }
+          setBrands(brandsArray)
         } catch (error) {
           console.error("[v0] Error fetching brands:", error)
+          setError(`Failed to load brands: ${error instanceof Error ? error.message : 'Unknown error'}`)
           setBrands([])
         } finally {
           setLoading(false)
@@ -450,9 +463,19 @@ export default function StandaloneBookingClient({ locale }: StandaloneBookingCli
                   <h3 className="text-lg font-medium text-gray-900">{t("selectBrand")}</h3>
                 </div>
 
+                {error && (
+                  <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-red-700 text-sm">{error}</p>
+                  </div>
+                )}
+
                 {loading ? (
                   <div className="flex items-center justify-center py-12">
                     <Loader2 className="h-6 w-6 animate-spin text-gray-600" />
+                  </div>
+                ) : brands.length === 0 ? (
+                  <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p className="text-yellow-700 text-sm">No brands available</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
