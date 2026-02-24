@@ -7,14 +7,14 @@ export async function GET(request: NextRequest) {
   const locale = request.nextUrl.pathname.split("/")[1] || "en"
 
   if (!token) {
-    return NextResponse.redirect(new URL(`/${locale}/auth/verification-error?error=missing_token`, request.url))
+    return NextResponse.redirect(new URL(`/${locale}/auth/verification-error?error=missing_token`, request.url), { status: 307 })
   }
 
   const verified = await verifyEmailToken(token)
 
   if (!verified) {
-    return NextResponse.redirect(new URL(`/${locale}/auth/verification-error?error=invalid_token`, request.url))
+    return NextResponse.redirect(new URL(`/${locale}/auth/verification-error?error=invalid_token`, request.url), { status: 307 })
   }
 
-  return NextResponse.redirect(new URL(`/${locale}/auth/signin?verified=true`, request.url))
+  return NextResponse.redirect(new URL(`/${locale}/auth/signin?verified=true`, request.url), { status: 307 })
 }
