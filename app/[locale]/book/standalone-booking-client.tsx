@@ -145,14 +145,15 @@ export default function StandaloneBookingClient({ locale }: StandaloneBookingCli
       const fetchBrands = async () => {
         setLoading(true)
         try {
-          const response = await fetch(`/api/brands?locale=${locale}`)
+          const response = await fetch(`/api/admin/brands`)
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`)
           }
           const data = await response.json()
+          console.log("[v0] Brands loaded:", data)
           setBrands(Array.isArray(data) ? data : data?.data || [])
         } catch (error) {
-          console.error("Error fetching brands:", error)
+          console.error("[v0] Error fetching brands:", error)
           setBrands([])
         } finally {
           setLoading(false)

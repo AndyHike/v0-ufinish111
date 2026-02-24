@@ -60,11 +60,12 @@ export default function BookingConfirmation({
 
   // Re-fetch service data when locale changes to get proper translations
   useEffect(() => {
+    console.log("[v0] Booking confirmation: locale changed to", locale)
     if (service?.slug && model?.id) {
       // Перезавантажуємо дані при зміні locale
       const refetchServiceData = async () => {
         try {
-          console.log("[v0] Refetching service data for locale:", locale, "model_id:", model.id)
+          console.log("[v0] Refetching service data for locale:", locale, "model_id:", model.id, "service_slug:", service.slug)
           const response = await fetch(`/api/admin/model-services?model_id=${model.id}&locale=${locale}`)
           if (!response.ok) return
           
@@ -91,10 +92,10 @@ export default function BookingConfirmation({
       
       refetchServiceData()
     }
-  }, [locale, service?.slug, model?.id])
+  }, [locale, service?.slug, model?.id, service])
 
   // Guard clause for missing data
-  if (!brand || !model || !service || !onBack) {
+  if (!brand || !model || !service) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
         <div className="text-center">
