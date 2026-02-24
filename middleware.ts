@@ -114,7 +114,7 @@ export async function middleware(request: NextRequest) {
     if (!sessionId) {
       const loginUrl = new URL(`/${locale}/auth/login`, request.url)
       loginUrl.searchParams.set("redirect", pathname)
-      return NextResponse.redirect(loginUrl)
+      return NextResponse.redirect(loginUrl, { status: 307 })
     }
   }
 
@@ -122,7 +122,7 @@ export async function middleware(request: NextRequest) {
     if (!pathname.includes("/maintenance") && !isPublicAuthRoute(pathname)) {
       const isAdmin = request.cookies.get("user_role")?.value === "admin"
       if (!isAdmin) {
-        return NextResponse.redirect(new URL(`/${locale}/maintenance`, request.url))
+        return NextResponse.redirect(new URL(`/${locale}/maintenance`, request.url), { status: 307 })
       }
     }
   }
