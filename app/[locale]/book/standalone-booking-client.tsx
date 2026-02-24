@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowLeft, Loader2, ChevronRight, Smartphone, Wrench } from "lucide-react"
 import Link from "next/link"
 import { formatCurrency } from "@/lib/format-currency"
+import BookingConfirmation from "./booking-confirmation"
 
 interface Brand {
   id: string
@@ -48,6 +49,7 @@ export default function StandaloneBookingClient({ locale }: Props) {
   const router = useRouter()
 
   const [step, setStep] = useState(1)
+  const [showConfirmation, setShowConfirmation] = useState(false)
   const [loading, setLoading] = useState(false)
 
   const [brands, setBrands] = useState<Brand[]>([])
@@ -140,6 +142,7 @@ export default function StandaloneBookingClient({ locale }: Props) {
           throw new Error(`HTTP error! status: ${response.status}`)
         }
         const data = await response.json()
+        console.log("[v0] Services loaded:", data)
 
         // Трансформуємо дані для відображення
         const servicesArray = Array.isArray(data) ? data : data?.data || []
@@ -150,9 +153,10 @@ export default function StandaloneBookingClient({ locale }: Props) {
           price: ms.price,
         }))
 
+        console.log("[v0] Transformed services:", transformedServices)
         setServices(transformedServices)
       } catch (error) {
-        console.error("Error fetching services:", error)
+        console.error("[v0] Error fetching services:", error)
         setServices([])
       } finally {
         setLoading(false)
@@ -188,15 +192,28 @@ export default function StandaloneBookingClient({ locale }: Props) {
   }
 
   const handleProceedToBooking = () => {
-    if (!selectedService || !selectedModel) return
-
-    // Показуємо успішний результат замість редиректу на видалену сторінку
-    alert(`Selected service: ${selectedService.name}\nSelected model: ${selectedModel.name}`)
-    // TODO: Implement actual booking functionality here
+    if (!selectedService || !selectedModel || !selectedBrand) {
+      console.log("[v0] Cannot proceed - Missing data:", {
+        selectedService: !!selectedService,
+        selectedModel: !!selectedModel,
+        selectedBrand: !!selectedBrand,
+      })
+      alert("Please select a service before proceeding")
+      return
+    }
+    console.log("[v0] Proceeding to booking confirmation with:", {
+      brand: selectedBrand.name,
+      model: selectedModel.name,
+      service: selectedService.name,
+      price: selectedService.price,
+    })
+    setShowConfirmation(true)
   }
 
   const handleBack = () => {
-    if (step === 4) {
+    if (showConfirmation) {
+      setShowConfirmation(false)
+    } else if (step === 4) {
       setStep(3)
       setSelectedService(null)
     } else if (step === 3) {
@@ -209,6 +226,47 @@ export default function StandaloneBookingClient({ locale }: Props) {
       setSelectedModel(null)
       setSelectedService(null)
     }
+  }
+
+  // Show confirmation form if requested
+  if (showConfirmation && selectedBrand && selectedModel && selectedService) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-2xl mx-auto px-4">
+          {/* Breadcrumb */}
+          <nav className="mb-6">
+            <Link
+              href={`/${locale}`}
+              className="text-gray-600 hover:text-gray-900 flex items-center gap-2 text-sm transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              {commonT("backToHome")}
+            </Link>
+          </nav>
+
+          <Card className="shadow-sm border-0 bg-white">
+            <CardHeader className="pb-6">
+              <CardTitle className="text-2xl font-semibold text-center text-gray-900">
+                {t("confirmBooking")}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <BookingConfirmation
+                locale={locale}
+                brand={{ name: selectedBrand.name, slug: selectedBrand.slug }}
+                model={{ name: selectedModel.name, slug: selectedModel.slug }}
+                service={{
+                  name: selectedService.name,
+                  slug: selectedService.slug,
+                  price: selectedService.price,
+                }}
+                onBack={handleBack}
+              />
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -402,6 +460,7 @@ export default function StandaloneBookingClient({ locale }: Props) {
                 {loading ? (
                   <div className="flex items-center justify-center py-12">
                     <Loader2 className="h-6 w-6 animate-spin text-gray-600" />
+                    <span className="ml-2 text-gray-600">{t("loading")}</span>
                   </div>
                 ) : services.length === 0 ? (
                   <p className="text-center text-gray-600 py-8">{t("noServices")}</p>
