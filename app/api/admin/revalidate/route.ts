@@ -36,7 +36,7 @@ export async function POST(request: Request) {
     if (type === "brands") {
       revalidatePath("/", "layout")
       // Re-render all brand pages for all locales
-      const locales = ["cs", "uk", "en"]
+      const locales = ["uk", "cs", "en"]
       for (const locale of locales) {
         revalidatePath(`/${locale}/brands`, "page")
       }
@@ -44,7 +44,7 @@ export async function POST(request: Request) {
     }
 
     if (type === "series") {
-      const locales = ["cs", "uk", "en"]
+      const locales = ["uk", "cs", "en"]
       for (const locale of locales) {
         revalidatePath(`/${locale}/series`, "page")
       }
@@ -52,7 +52,7 @@ export async function POST(request: Request) {
     }
 
     if (type === "models") {
-      const locales = ["cs", "uk", "en"]
+      const locales = ["uk", "cs", "en"]
       for (const locale of locales) {
         revalidatePath(`/${locale}/models`, "page")
       }

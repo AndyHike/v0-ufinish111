@@ -2,8 +2,8 @@ import { cookies, headers } from "next/headers"
 import { match } from "@formatjs/intl-localematcher"
 import Negotiator from "negotiator"
 
-const locales = ["cs", "uk", "en"]
-const defaultLocale = "cs"
+const locales = ["uk", "cs", "en"]
+const defaultLocale = "uk"
 
 export async function getLocale() {
   // Check if locale is set in cookie

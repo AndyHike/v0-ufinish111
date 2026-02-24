@@ -36,7 +36,7 @@ export async function generateStaticParams() {
       .order("position", { ascending: true })
       .limit(50) // Pre-render top 50 series
 
-    const locales = ["cs", "uk", "en"]
+    const locales = ["uk", "cs", "en"]
 
     return (
       seriesList?.flatMap((series) =>

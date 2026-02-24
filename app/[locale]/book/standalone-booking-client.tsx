@@ -86,11 +86,15 @@ export default function StandaloneBookingClient({ locale }: Props) {
       setLoading(true)
       try {
         const response = await fetch(`/api/admin/series?brand_id=${selectedBrand.id}`)
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
         const data = await response.json()
         console.log("[v0] Series loaded:", data)
-        setSeries(data)
+        setSeries(Array.isArray(data) ? data : data?.data || [])
       } catch (error) {
         console.error("Error fetching series:", error)
+        setSeries([])
       } finally {
         setLoading(false)
       }
@@ -107,11 +111,15 @@ export default function StandaloneBookingClient({ locale }: Props) {
       setLoading(true)
       try {
         const response = await fetch(`/api/admin/models?series_id=${selectedSeries.id}`)
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
         const data = await response.json()
         console.log("[v0] Models loaded:", data)
-        setModels(data)
+        setModels(Array.isArray(data) ? data : data?.data || [])
       } catch (error) {
         console.error("Error fetching models:", error)
+        setModels([])
       } finally {
         setLoading(false)
       }
@@ -127,27 +135,32 @@ export default function StandaloneBookingClient({ locale }: Props) {
     const fetchServices = async () => {
       setLoading(true)
       try {
-        const response = await fetch(`/api/admin/model-services?model_id=${selectedModel.id}`)
+        const response = await fetch(`/api/admin/model-services?model_id=${selectedModel.id}&locale=${locale}`)
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
         const data = await response.json()
 
         // Трансформуємо дані для відображення
-        const transformedServices = data.map((ms: any) => ({
-          id: ms.services.id,
-          slug: ms.services.slug,
-          name: ms.services.translation?.name || ms.services.name,
+        const servicesArray = Array.isArray(data) ? data : data?.data || []
+        const transformedServices = servicesArray.map((ms: any) => ({
+          id: ms.services?.id || ms.service_id,
+          slug: ms.services?.slug || '',
+          name: ms.services?.name || ms.name || 'Unknown Service',
           price: ms.price,
         }))
 
         setServices(transformedServices)
       } catch (error) {
         console.error("Error fetching services:", error)
+        setServices([])
       } finally {
         setLoading(false)
       }
     }
 
     fetchServices()
-  }, [selectedModel])
+  }, [selectedModel, locale])
 
   const handleBrandSelect = (brand: Brand) => {
     setSelectedBrand(brand)
@@ -177,11 +190,9 @@ export default function StandaloneBookingClient({ locale }: Props) {
   const handleProceedToBooking = () => {
     if (!selectedService || !selectedModel) return
 
-    const params = new URLSearchParams()
-    params.set("service_slug", selectedService.slug)
-    params.set("model_slug", selectedModel.slug)
-
-    router.push(`/${locale}/book-service?${params.toString()}`)
+    // Показуємо успішний результат замість редиректу на видалену сторінку
+    alert(`Selected service: ${selectedService.name}\nSelected model: ${selectedModel.name}`)
+    // TODO: Implement actual booking functionality here
   }
 
   const handleBack = () => {

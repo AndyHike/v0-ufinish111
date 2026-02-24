@@ -269,7 +269,7 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
       params.set("model_slug", modelParam)
     }
 
-    return `/${locale}/book-service?${params.toString()}`
+    return `/${locale}/book?${params.toString()}`
   })()
 
   return (
