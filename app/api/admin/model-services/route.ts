@@ -5,12 +5,32 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
     const modelId = searchParams.get("model_id")
+    const modelSlug = searchParams.get("model_slug")
     const locale = searchParams.get("locale") || "uk"
     const exportMode = searchParams.get("export") === "true"
 
     console.log(
-      `[GET] /api/admin/model-services - Request params: modelId=${modelId}, locale=${locale}, export=${exportMode}`,
+      `[GET] /api/admin/model-services - Request params: modelId=${modelId}, modelSlug=${modelSlug}, locale=${locale}, export=${exportMode}`,
     )
+
+    let finalModelId = modelId
+
+    // Если передан slug, найдем ID модели
+    if (modelSlug && !modelId) {
+      const supabase = createClient()
+      const { data: modelData, error: modelError } = await supabase
+        .from("models")
+        .select("id")
+        .eq("slug", modelSlug)
+        .single()
+
+      if (modelError || !modelData) {
+        console.error("[GET] /api/admin/model-services - Model not found for slug:", modelSlug)
+        return NextResponse.json({ error: "Model not found" }, { status: 404 })
+      }
+
+      finalModelId = modelData.id
+    }
 
     if (exportMode) {
       const supabase = createClient()
@@ -38,9 +58,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ services: modelServicesData })
     }
 
-    if (!modelId) {
-      console.error("[GET] /api/admin/model-services - Missing model_id parameter")
-      return NextResponse.json({ error: "Model ID is required" }, { status: 400 })
+    if (!finalModelId) {
+      console.error("[GET] /api/admin/model-services - Missing model_id or model_slug parameter")
+      return NextResponse.json({ error: "Model ID or slug is required" }, { status: 400 })
     }
 
     const supabase = createClient()
@@ -70,7 +90,7 @@ export async function GET(request: NextRequest) {
 
     console.log(`[GET] /api/admin/model-services - Found ${servicesData.length} services`)
 
-    console.log(`[GET] /api/admin/model-services - Fetching model services for model ${modelId}`)
+    console.log(`[GET] /api/admin/model-services - Fetching model services for model ${finalModelId}`)
     const { data: modelServicesData, error: modelServicesError } = await supabase
       .from("model_services")
       .select(`
@@ -86,7 +106,7 @@ export async function GET(request: NextRequest) {
         benefits,
         part_type
       `)
-      .eq("model_id", modelId)
+      .eq("model_id", finalModelId)
 
     if (modelServicesError) {
       console.error("[GET] /api/admin/model-services - Error fetching model services:", modelServicesError)

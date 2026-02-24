@@ -30,6 +30,7 @@ interface Model {
   id: string
   name: string
   slug: string
+  image_url?: string | null
 }
 
 interface Service {
@@ -52,14 +53,14 @@ export default function StandaloneBookingClient({ locale }: StandaloneBookingCli
   const searchParams = useSearchParams()
   
   // Визначаємо поточний крок на основі URL параметрів
-  const brandId = searchParams.get("brand_id")
-  const seriesId = searchParams.get("series_id")
-  const modelId = searchParams.get("model_id")
+  const brandSlug = searchParams.get("brand")
+  const seriesSlug = searchParams.get("series")
+  const modelSlug = searchParams.get("model")
   
   const getStep = () => {
-    if (modelId) return 4
-    if (seriesId) return 3
-    if (brandId) return 2
+    if (modelSlug) return 4
+    if (seriesSlug) return 3
+    if (brandSlug) return 2
     return 1
   }
   
@@ -130,12 +131,12 @@ export default function StandaloneBookingClient({ locale }: StandaloneBookingCli
 
   // Завантаження серій при виборі бренду
   useEffect(() => {
-    if (!brandId) return
+    if (!brandSlug) return
 
     const fetchSeries = async () => {
       setLoading(true)
       try {
-        const response = await fetch(`/api/admin/series?brand_id=${brandId}`)
+        const response = await fetch(`/api/admin/series?brand_slug=${brandSlug}`)
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`)
         }
@@ -143,7 +144,7 @@ export default function StandaloneBookingClient({ locale }: StandaloneBookingCli
         const seriesArray = Array.isArray(data) ? data : data?.data || []
         
         // Знаходимо вибраний бренд
-        const brand = brands.find(b => b.id === brandId)
+        const brand = brands.find(b => b.slug === brandSlug)
         if (brand) {
           setSelectedBrand(brand)
         }
@@ -157,16 +158,16 @@ export default function StandaloneBookingClient({ locale }: StandaloneBookingCli
     }
 
     fetchSeries()
-  }, [brandId, brands])
+  }, [brandSlug, brands])
 
   // Завантаження моделей при виборі серії
   useEffect(() => {
-    if (!seriesId) return
+    if (!seriesSlug) return
 
     const fetchModels = async () => {
       setLoading(true)
       try {
-        const response = await fetch(`/api/admin/models?series_id=${seriesId}`)
+        const response = await fetch(`/api/admin/models?series_slug=${seriesSlug}`)
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`)
         }
@@ -174,7 +175,7 @@ export default function StandaloneBookingClient({ locale }: StandaloneBookingCli
         const modelsArray = Array.isArray(data) ? data : data?.data || []
         
         // Знаходимо вибрану серію
-        const serie = series.find(s => s.id === seriesId)
+        const serie = series.find(s => s.slug === seriesSlug)
         if (serie) {
           setSelectedSeries(serie)
         }
@@ -188,16 +189,16 @@ export default function StandaloneBookingClient({ locale }: StandaloneBookingCli
     }
 
     fetchModels()
-  }, [seriesId, series])
+  }, [seriesSlug, series])
 
   // Завантаження послуг при виборі моделі
   useEffect(() => {
-    if (!modelId) return
+    if (!modelSlug) return
 
     const fetchServices = async () => {
       setLoading(true)
       try {
-        const response = await fetch(`/api/admin/model-services?model_id=${modelId}&locale=${locale}`)
+        const response = await fetch(`/api/admin/model-services?model_slug=${modelSlug}&locale=${locale}`)
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`)
         }
@@ -216,7 +217,7 @@ export default function StandaloneBookingClient({ locale }: StandaloneBookingCli
         }))
 
         // Знаходимо вибрану модель
-        const model = models.find(m => m.id === modelId)
+        const model = models.find(m => m.slug === modelSlug)
         if (model) {
           setSelectedModel(model)
         }
@@ -230,14 +231,14 @@ export default function StandaloneBookingClient({ locale }: StandaloneBookingCli
     }
 
     fetchServices()
-  }, [modelId, models, locale])
+  }, [modelSlug, models, locale])
 
   // Обробка прямого завантаження з параметрів (deep link)
   useEffect(() => {
     const serviceSlug = searchParams.get("service_slug")
-    const modelSlug = searchParams.get("model_slug")
+    const modelSlugParam = searchParams.get("model_slug")
     
-    if (serviceSlug && modelSlug && !modelId) {
+    if (serviceSlug && modelSlugParam && !modelSlug) {
       setIsLoadingFromUrl(true)
       if (typeof window !== 'undefined') {
         window.scrollTo(0, 0)
@@ -245,14 +246,14 @@ export default function StandaloneBookingClient({ locale }: StandaloneBookingCli
 
       const fetchModelAndService = async () => {
         try {
-          const modelResponse = await fetch(`/api/admin/models?slug=${modelSlug}`)
+          const modelResponse = await fetch(`/api/admin/models?slug=${modelSlugParam}`)
           if (modelResponse.ok) {
             const modelData = await modelResponse.json()
             const modelArray = Array.isArray(modelData) ? modelData : modelData?.data || []
             if (modelArray.length > 0) {
               const model = modelArray[0]
               
-              const servicesResponse = await fetch(`/api/admin/model-services?model_id=${model.id}&locale=${locale}`)
+              const servicesResponse = await fetch(`/api/admin/model-services?model_slug=${model.slug}&locale=${locale}`)
               if (servicesResponse.ok) {
                 const servicesData = await servicesResponse.json()
                 const servicesArray = Array.isArray(servicesData) ? servicesData : servicesData?.data || []
@@ -282,9 +283,9 @@ export default function StandaloneBookingClient({ locale }: StandaloneBookingCli
                   
                   // Оновлюємо URL з правильними параметрами
                   updateUrl({
-                    brand_id: model.brand_id,
-                    series_id: model.series_id || null,
-                    model_id: model.id,
+                    brand: model.brands?.slug || '',
+                    series: model.series?.slug || null,
+                    model: model.slug,
                   })
                 }
               }
@@ -299,26 +300,26 @@ export default function StandaloneBookingClient({ locale }: StandaloneBookingCli
       
       fetchModelAndService()
     }
-  }, [searchParams, locale, modelId])
+  }, [searchParams, locale, modelSlug])
 
   const handleBrandSelect = (brand: Brand) => {
     updateUrl({ 
-      brand_id: brand.id,
-      series_id: null,
-      model_id: null,
+      brand: brand.slug,
+      series: null,
+      model: null,
     })
   }
 
   const handleSeriesSelect = (serie: Series) => {
     updateUrl({ 
-      series_id: serie.id,
-      model_id: null,
+      series: serie.slug,
+      model: null,
     })
   }
 
   const handleModelSelect = (model: Model) => {
     updateUrl({ 
-      model_id: model.id,
+      model: model.slug,
     })
   }
 
@@ -331,11 +332,11 @@ export default function StandaloneBookingClient({ locale }: StandaloneBookingCli
     if (showConfirmation) {
       setShowConfirmation(false)
     } else if (step === 4) {
-      updateUrl({ model_id: null })
+      updateUrl({ model: null })
     } else if (step === 3) {
-      updateUrl({ series_id: null, model_id: null })
+      updateUrl({ series: null, model: null })
     } else if (step === 2) {
-      updateUrl({ brand_id: null, series_id: null, model_id: null })
+      updateUrl({ brand: null, series: null, model: null })
     } else if (step === 1) {
       router.push(`/${locale}`)
     }
@@ -526,15 +527,31 @@ export default function StandaloneBookingClient({ locale }: StandaloneBookingCli
                 ) : models.length === 0 ? (
                   <p className="text-center text-gray-600 py-8">{t("noModels")}</p>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {models.map((model) => (
                       <button
                         key={model.id}
                         onClick={() => handleModelSelect(model)}
-                        className="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all text-left group flex items-center justify-between"
+                        className="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all text-left group flex flex-col gap-3"
                       >
-                        <span className="font-medium text-gray-900 group-hover:text-blue-600">{model.name}</span>
-                        <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-blue-600" />
+                        {/* Model Image */}
+                        {model.image_url ? (
+                          <img
+                            src={model.image_url}
+                            alt={model.name}
+                            className="h-32 w-full object-contain bg-gray-50 rounded"
+                          />
+                        ) : (
+                          <div className="h-32 w-full bg-gray-100 rounded flex items-center justify-center">
+                            <Smartphone className="h-8 w-8 text-gray-400" />
+                          </div>
+                        )}
+                        
+                        {/* Model Name */}
+                        <div className="flex items-start justify-between gap-2">
+                          <span className="font-medium text-gray-900 group-hover:text-blue-600 text-sm flex-1">{model.name}</span>
+                          <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-blue-600 flex-shrink-0" />
+                        </div>
                       </button>
                     ))}
                   </div>

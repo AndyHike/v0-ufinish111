@@ -7,12 +7,26 @@ export async function GET(request: Request) {
   try {
     const url = new URL(request.url)
     const brandId = url.searchParams.get("brand_id")
+    const brandSlug = url.searchParams.get("brand_slug")
 
     const supabase = createClient()
     let query = supabase.from("series").select("*, brands(name)")
 
     if (brandId) {
       query = query.eq("brand_id", brandId)
+    } else if (brandSlug) {
+      // Спочатку знайдемо бренд за slug
+      const { data: brandData, error: brandError } = await supabase
+        .from("brands")
+        .select("id")
+        .eq("slug", brandSlug)
+        .single()
+
+      if (brandError || !brandData) {
+        return NextResponse.json({ error: "Brand not found" }, { status: 404 })
+      }
+
+      query = query.eq("brand_id", brandData.id)
     }
 
     const { data, error } = await query.order("position", { ascending: true, nullsLast: true })
