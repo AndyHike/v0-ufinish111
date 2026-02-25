@@ -1,3 +1,4 @@
+// Force rebuild - removed AnalyticsTracker
 import type React from "react"
 import type { Metadata } from "next"
 import { NextIntlClientProvider } from "next-intl"
