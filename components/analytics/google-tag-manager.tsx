@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import Script from "next/script"
 
 interface GoogleTagManagerProps {
@@ -15,8 +15,17 @@ declare global {
 }
 
 export function GoogleTagManager({ gtmId }: GoogleTagManagerProps) {
+  const [mounted, setMounted] = useState(false)
+
   useEffect(() => {
-    if (!gtmId || typeof window === "undefined") return
+    setMounted(true)
+
+    if (!gtmId || typeof window === "undefined") {
+      console.log("[v0] GTM not loaded - gtmId:", gtmId)
+      return
+    }
+
+    console.log("[v0] GTM initializing with ID:", gtmId)
 
     // Перевіряємо попередню згоду при завантаженні сторінки
     const storedConsent = localStorage.getItem("cookie-consent")
@@ -32,17 +41,19 @@ export function GoogleTagManager({ gtmId }: GoogleTagManagerProps) {
             analytics_storage: parsed.consent.analytics ? "granted" : "denied",
           }
 
+          console.log("[v0] GTM consent update:", consentStatus)
+
           if (window.gtag) {
             window.gtag("consent", "update", consentStatus)
           }
         }
       } catch (error) {
-        console.error("Error parsing stored consent for GTM:", error)
+        console.error("[v0] Error parsing stored consent for GTM:", error)
       }
     }
   }, [gtmId])
 
-  if (!gtmId) {
+  if (!mounted || !gtmId) {
     return null
   }
 
