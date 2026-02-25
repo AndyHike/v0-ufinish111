@@ -13,7 +13,7 @@ import { siteUrl } from "@/lib/site-config"
 import { PrevNextNav } from "@/components/prev-next-nav"
 import { BrandSeoSections } from "@/components/brand-seo-sections"
 import { ContactCTABanner } from "@/components/contact-cta-banner"
-
+import { unstable_cache } from "next/cache"
 
 // ISR Configuration
 export const revalidate = 3600 // Regenerate every 1 hour
@@ -54,19 +54,104 @@ export async function generateStaticParams() {
   }
 }
 
+// Cache brand data fetching
+const getCachedBrandData = unstable_cache(
+  async (slug: string) => {
+    const supabase = await createServerClient()
+
+    // First try to find by slug
+    let { data: brand, error: brandError } = await supabase
+      .from("brands")
+      .select("*, series(id, name, slug, position)")
+      .eq("slug", slug)
+      .single()
+
+    // If not found by slug, try to find by ID
+    if (!brand) {
+      const { data, error } = await supabase
+        .from("brands")
+        .select("*, series(id, name, slug, position)")
+        .eq("id", slug)
+        .single()
+
+      brand = data
+      brandError = error
+    }
+
+    if (brandError || !brand) {
+      return null
+    }
+
+    // Sort series on server
+    if (brand?.series) {
+      brand.series = (brand.series as any[]).sort((a, b) => {
+        const aPos = a.position || 999
+        const bPos = b.position || 999
+        return aPos - bPos
+      })
+    }
+
+    // Fetch models without series
+    const { data: modelsWithoutSeries } = await supabase
+      .from("models")
+      .select("id, name, slug, image_url")
+      .eq("brand_id", brand.id)
+      .is("series_id", null)
+      .order("position", { ascending: true })
+
+    return {
+      brand,
+      modelsWithoutSeries: modelsWithoutSeries || [],
+    }
+  },
+  ["brands"],
+  { revalidate: 3600, tags: ["brands"] }
+)
+
+// Cache all brands data
+const getCachedAllBrands = unstable_cache(
+  async () => {
+    const supabase = await createServerClient()
+    const { data: allBrands } = await supabase
+      .from("brands")
+      .select("name, slug")
+      .order("position", { ascending: true })
+    return allBrands || []
+  },
+  ["all-brands"],
+  { revalidate: 3600, tags: ["brands"] }
+)
+
+// Cache services data
+const getCachedServices = unstable_cache(
+  async (locale: string) => {
+    const supabase = await createServerClient()
+    const { data: topServices } = await supabase
+      .from("services")
+      .select(`id, slug, position, services_translations(name, locale), model_services(price)`)
+      .order("position", { ascending: true })
+      .limit(6)
+
+    return (topServices || []).map((svc: any) => {
+      const tr = (svc.services_translations as any[])?.find((t: any) => t.locale === locale) ?? svc.services_translations?.[0]
+      const prices = (svc.model_services as any[])?.map((ms: any) => ms.price).filter((p: any) => p != null && p > 0)
+      return {
+        id: svc.id,
+        slug: svc.slug,
+        name: tr?.name ?? svc.slug,
+        minPrice: prices && prices.length > 0 ? Math.min(...prices) : null,
+      }
+    })
+  },
+  ["services"],
+  { revalidate: 3600, tags: ["services"] }
+)
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug, locale } = await params
 
-  const supabase = await createServerClient()
-
-  // First try to find by slug
-  let { data: brand } = await supabase.from("brands").select("*").eq("slug", slug).single()
-
-  // If not found by slug, try to find by ID
-  if (!brand) {
-    const { data } = await supabase.from("brands").select("*").eq("id", slug).single()
-    brand = data
-  }
+  const brandData = await getCachedBrandData(slug)
+  const brand = brandData?.brand
 
   if (!brand) {
     return {
@@ -132,83 +217,24 @@ export default async function BrandPage({ params }: Props) {
   const { slug, locale } = await params
   const t = await getTranslations({ locale, namespace: "Brands" })
 
-  const supabase = await createServerClient()
-
-  // Спочатку спробуємо знайти за слагом
-  let { data: brand, error: brandError } = await supabase
-    .from("brands")
-    .select("*, series(id, name, slug, position)")
-    .eq("slug", slug)
-    .single()
-
-  // Якщо не знайдено за слагом, спробуємо знайти за ID
-  if (!brand) {
-    const { data, error } = await supabase
-      .from("brands")
-      .select("*, series(id, name, slug, position)")
-      .eq("id", slug)
-      .single()
-
-    brand = data
-    brandError = error
-  }
-
-  if (brandError || !brand) {
+  // Use cached data fetching
+  const brandData = await getCachedBrandData(slug)
+  
+  if (!brandData?.brand) {
     notFound()
   }
 
-  // Сортуємо серії на стороні сервера
-  if (brand?.series) {
-    brand.series = (brand.series as any[]).sort((a, b) => {
-      const aPos = a.position || 999
-      const bPos = b.position || 999
-      return aPos - bPos
-    })
-  }
+  const initialData = brandData
 
-  // Оновимо запит до бази даних, щоб отримати моделі без серії
-  const { data: modelsWithoutSeries, error: modelsError } = await supabase
-    .from("models")
-    .select("id, name, slug, image_url")
-    .eq("brand_id", brand.id)
-    .is("series_id", null)
-    .order("position", { ascending: true })
-
-  // Перевіряємо, чи є моделі без серії
-  const hasModelsWithoutSeries = modelsWithoutSeries && modelsWithoutSeries.length > 0
-
-  const initialData = {
-    brand,
-    modelsWithoutSeries: modelsWithoutSeries || [],
-  }
-
-  // Fetch all brands for prev/next navigation
-  const { data: allBrands } = await supabase
-    .from("brands")
-    .select("name, slug")
-    .order("position", { ascending: true })
+  // Fetch all brands for prev/next navigation (cached)
+  const allBrands = await getCachedAllBrands()
 
   const brandIndex = allBrands?.findIndex((b) => b.slug === slug) ?? -1
   const prevBrand = brandIndex > 0 ? allBrands![brandIndex - 1] : null
   const nextBrand = allBrands && brandIndex >= 0 && brandIndex < allBrands.length - 1 ? allBrands[brandIndex + 1] : null
 
-  // Fetch popular services with min prices for BrandSeoSections
-  const { data: topServices } = await supabase
-    .from("services")
-    .select(`id, slug, position, services_translations(name, locale), model_services(price)`)
-    .order("position", { ascending: true })
-    .limit(6)
-
-  const seoServices = (topServices || []).map((svc: any) => {
-    const tr = (svc.services_translations as any[])?.find((t: any) => t.locale === locale) ?? svc.services_translations?.[0]
-    const prices = (svc.model_services as any[])?.map((ms: any) => ms.price).filter((p: any) => p != null && p > 0)
-    return {
-      id: svc.id,
-      slug: svc.slug,
-      name: tr?.name ?? svc.slug,
-      minPrice: prices && prices.length > 0 ? Math.min(...prices) : null,
-    }
-  })
+  // Fetch popular services with min prices (cached)
+  const seoServices = await getCachedServices(locale)
 
   return (
     <div className="flex flex-col min-h-screen">
