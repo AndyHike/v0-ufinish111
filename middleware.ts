@@ -37,7 +37,7 @@ export async function middleware(request: NextRequest) {
     const locale = servicesMatch[1]
     const serviceSlug = servicesMatch[2]
     const modelSlug = searchParams.get("model")
-    
+
     return NextResponse.redirect(
       new URL(`/${locale}/services/${serviceSlug}/${modelSlug}`, request.url),
       { status: 301 }
@@ -68,7 +68,7 @@ export async function middleware(request: NextRequest) {
   // Check conditions that require a single unified redirect
   const hasWWW = hostname.startsWith("www.")
   const cleanHostname = hasWWW ? hostname.replace(/^www\./, "") : hostname
-  
+
   const pathnameHasLocale = supportedLocales.some(
     (locale) => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`,
   )
@@ -103,6 +103,31 @@ export async function middleware(request: NextRequest) {
       secure: process.env.NODE_ENV === "production",
       httpOnly: false,
     })
+
+    // Foward session cookies if they exist in the incoming request
+    const sessionId = request.cookies.get("session_id")?.value
+    const userRole = request.cookies.get("user_role")?.value
+
+    if (sessionId) {
+      response.cookies.set("session_id", sessionId, {
+        path: "/",
+        maxAge: 30 * 24 * 60 * 60,
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+        httpOnly: true,
+      })
+    }
+
+    if (userRole) {
+      response.cookies.set("user_role", userRole, {
+        path: "/",
+        maxAge: 30 * 24 * 60 * 60,
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+        httpOnly: true,
+      })
+    }
+
     return response
   }
 
@@ -113,7 +138,7 @@ export async function middleware(request: NextRequest) {
   }
 
   const savedLocale = request.cookies.get("NEXT_LOCALE")?.value
-  
+
   // Only build response if we need to set cookies
   if (savedLocale !== locale && supportedLocales.includes(locale)) {
     const response = NextResponse.next()
