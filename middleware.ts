@@ -52,17 +52,43 @@ export async function middleware(request: NextRequest) {
     )
   }
 
-  // CRITICAL: Handle www removal FIRST, BEFORE locale checks
-  // This prevents the 308 redirect issue where next-intl adds locale before www is removed
+  // CRITICAL: Handle www removal FIRST, BEFORE anything else
+  // This prevents next-intl from making a 308 redirect with www still present
   const hasWWW = hostname.startsWith("www.")
   const cleanHostname = hasWWW ? hostname.replace(/^www\./, "") : hostname
 
   if (hasWWW) {
-    // Always redirect www to non-www with 301
-    const url = new URL(`https://${cleanHostname}${pathname}`, request.url)
-    url.search = request.nextUrl.search
+    // For root path or path without locale, we need to redirect BEFORE next-intl touches it
+    // This prevents: www/ → 308 → www/cs → 301 → /cs
+    // And creates: www/ → 301 → /cs (single redirect)
+    const pathnameHasLocale = supportedLocales.some(
+      (locale) => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`,
+    )
+    
+    if (!pathnameHasLocale && pathname === "/") {
+      // Root path without locale - add locale while removing www
+      const savedLocale = request.cookies.get("NEXT_LOCALE")?.value
+      const preferredLocale = savedLocale && supportedLocales.includes(savedLocale) ? savedLocale : getDefaultLanguage()
 
-    return NextResponse.redirect(url, { status: 301 })
+      const url = new URL(`https://${cleanHostname}/${preferredLocale}${pathname}`, request.url)
+      url.search = request.nextUrl.search
+
+      const response = NextResponse.redirect(url, { status: 301 })
+      response.cookies.set("NEXT_LOCALE", preferredLocale, {
+        path: "/",
+        maxAge: 31536000,
+        sameSite: "strict",
+        secure: process.env.NODE_ENV === "production",
+        httpOnly: false,
+      })
+      return response
+    } else {
+      // Any other path with www - just remove www
+      const url = new URL(`https://${cleanHostname}${pathname}`, request.url)
+      url.search = request.nextUrl.search
+
+      return NextResponse.redirect(url, { status: 301 })
+    }
   }
 
   // Skip middleware for static files, API routes, webhooks, images, and special files
