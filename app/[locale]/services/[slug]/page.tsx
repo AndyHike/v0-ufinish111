@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import { notFound, permanentRedirect } from "next/navigation"
-import { createServerClient } from "@/utils/supabase/server"
+import { createClient } from "@/utils/supabase/client"
 import ServicePageClient from "./service-page-client"
 import { getPriceWithDiscount } from "@/lib/discounts/get-applicable-discounts"
 import { DeviceSelectionWrapper } from "./device-selection-wrapper"
@@ -32,7 +32,7 @@ type Props = {
 export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const { slug, locale } = await params
   const { model: modelSlug } = await searchParams
-  const supabase = await createServerClient()
+  const supabase = createClient()
 
   const { data: service } = await supabase
     .from("services")
@@ -170,7 +170,7 @@ export default async function ServicePage({ params, searchParams }: Props) {
   }
 
   const brandsT = await getTranslations({ locale, namespace: "Brands" })
-  const supabase = await createServerClient()
+  const supabase = createClient()
 
   const { data: service } = await supabase
     .from("services")

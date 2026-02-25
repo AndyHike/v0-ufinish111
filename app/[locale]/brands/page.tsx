@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import { getTranslations } from "next-intl/server"
 import Link from "next/link"
 import { Breadcrumb } from "@/components/breadcrumb"
-import { createServerClient } from "@/utils/supabase/server"
+import { createClient } from "@/utils/supabase/client"
 import { ArrowLeft } from "lucide-react"
 import { formatImageUrl } from "@/utils/image-url"
 import { ContactCTABanner } from "@/components/contact-cta-banner"
@@ -52,7 +52,7 @@ export default async function BrandsPage({ params }: Props) {
   const { locale } = await params
   const t = await getTranslations({ locale, namespace: "Brands" })
 
-  const supabase = await createServerClient()
+  const supabase = createClient()
 
   const { data: brands, error } = await supabase
     .from("brands")

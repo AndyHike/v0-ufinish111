@@ -1,8 +1,9 @@
 import { createServerClient } from "@/utils/supabase/server"
+import { createClient } from "@/utils/supabase/client"
 
 export async function getAppSetting(key: string): Promise<string | null> {
   try {
-    const supabase = await createServerClient()
+    const supabase = createClient()
     const { data, error } = await supabase.from("app_settings").select("value").eq("key", key).single()
 
     if (error) {

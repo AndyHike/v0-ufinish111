@@ -1,12 +1,12 @@
-import { createServerClient } from "@/lib/supabase/server"
+import { createClient } from "@/utils/supabase/client"
 import type { Discount, DiscountCalculation } from "./types"
 import { calculateDiscount, isDiscountActive } from "./utils"
 
 /**
  * Отримує всі застосовні знижки для послуги на певній моделі
  */
-export async function getApplicableDiscounts(serviceId: string, modelId: string): Promise<DiscountCalculation | null> {
-  const supabase = await createServerClient()
+export async function getApplicableDiscounts(serviceId: string, modelId: string): Promise<any> {
+  const supabase = createClient()
 
   const { data: model } = await supabase
     .from("models")

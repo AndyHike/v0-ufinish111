@@ -3,7 +3,7 @@ import { getTranslations } from "next-intl/server"
 import Link from "next/link"
 import Image from "next/image"
 import { notFound } from "next/navigation"
-import { createServerClient } from "@/utils/supabase/server"
+// import { createServerClient } removed
 import { createClient } from "@/utils/supabase/client"
 import { ArrowLeft, Smartphone } from "lucide-react"
 import { ContactCTABanner } from "@/components/contact-cta-banner"
@@ -55,7 +55,7 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug, locale } = await params
 
-  const supabase = await createServerClient()
+  const supabase = createClient()
 
   // Спочатку спробуємо знайти за слагом
   let { data: series } = await supabase.from("series").select("*, brands(name)").eq("slug", slug).single()
@@ -121,7 +121,7 @@ export default async function SeriesPage({ params }: Props) {
   const { slug, locale } = await params
   const t = await getTranslations({ locale, namespace: "Series" })
 
-  const supabase = await createServerClient()
+  const supabase = createClient()
 
   // Спочатку спробуємо знайти за слагом
   let { data: series, error: seriesError } = await supabase
