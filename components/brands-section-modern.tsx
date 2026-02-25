@@ -39,7 +39,18 @@ export function BrandsSectionModern() {
     const fetchBrands = async () => {
       try {
         setLoading(true)
-        const response = await fetch("/api/brands")
+        // Add cache option to enable ISR caching
+        // fetch defaults to 'force-cache' on server, but we need to be explicit for client
+        // 'no-store' would disable cache, we want 'revalidate-on-demand' behavior
+        const response = await fetch("/api/brands", {
+          // Use the dynamic caching strategy
+          // This tells Next.js to cache the response for 1 hour
+          cache: "revalidate",
+          next: {
+            revalidate: 3600, // Revalidate every 1 hour
+            tags: ["brands"], // Tag for on-demand revalidation
+          },
+        })
 
         if (!response.ok) {
           throw new Error(`Failed to fetch brands: ${response.status}`)

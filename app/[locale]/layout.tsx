@@ -241,9 +241,10 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
                 <GlobalDataProvider>
                   <DynamicFavicon />
                   <div className="flex min-h-screen flex-col">
-                    <Suspense fallback={<HeaderSkeleton />}>
-                      <Header />
-                    </Suspense>
+                    {/* Header is a client component and will hydrate quickly, 
+                        so we remove the Suspense fallback to avoid showing skeleton 
+                        on every navigation */}
+                    <Header />
                     <main className="flex-1">{children}</main>
                     <Footer />
                     <CookieBanner />
@@ -259,25 +260,5 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         </ThemeProvider>
       </body>
     </html>
-  )
-}
-
-function HeaderSkeleton() {
-  return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between px-2 md:px-4">
-        <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded bg-muted animate-pulse" />
-          <div className="h-5 w-24 rounded bg-muted animate-pulse" />
-        </div>
-        <div className="hidden md:flex flex-1 max-w-md mx-6">
-          <div className="h-10 w-full rounded bg-muted animate-pulse" />
-        </div>
-        <div className="flex items-center gap-4">
-          <div className="h-5 w-16 rounded bg-muted animate-pulse" />
-          <div className="h-8 w-8 rounded-full bg-muted animate-pulse" />
-        </div>
-      </div>
-    </header>
   )
 }

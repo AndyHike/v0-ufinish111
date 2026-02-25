@@ -10,7 +10,7 @@ import { Phone, MessageCircle, Clock, Shield, CheckCircle, ChevronDown, ArrowLef
 import { formatCurrency } from "@/lib/format-currency"
 import { formatImageUrl } from "@/utils/image-url"
 import { replaceFaqPlaceholders } from "@/lib/faq-placeholder-replacer"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, Suspense } from "react"
 import { ServicePriceDisplay } from "@/components/service-price-display"
 import { ContactCTABanner } from "@/components/contact-cta-banner"
 import { PartTypeBadges } from "@/components/part-type-badges"
@@ -74,7 +74,26 @@ interface Props {
   locale: string
 }
 
-export default function ServicePageClient({ serviceData, locale }: Props) {
+export default function ServicePageClient(props: Props) {
+  return (
+    <Suspense fallback={<ServicePageClientSkeleton />}>
+      <ServicePageClientContent {...props} />
+    </Suspense>
+  )
+}
+
+function ServicePageClientSkeleton() {
+  return (
+    <div className="container px-4 py-12 md:px-6 md:py-24">
+      <div className="mx-auto max-w-6xl text-center">
+        <div className="h-8 w-64 bg-gray-200 animate-pulse rounded mx-auto mb-4"></div>
+        <div className="h-4 w-96 bg-gray-200 animate-pulse rounded mx-auto"></div>
+      </div>
+    </div>
+  )
+}
+
+function ServicePageClientContent({ serviceData, locale }: Props) {
   const t = useTranslations("Services")
   const commonT = useTranslations("Common")
   const brandsT = useTranslations("Brands")

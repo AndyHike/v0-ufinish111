@@ -2,12 +2,15 @@ import type { Metadata } from "next"
 import { getTranslations } from "next-intl/server"
 import Link from "next/link"
 import { Breadcrumb } from "@/components/breadcrumb"
-import { createServerClient } from "@/utils/supabase/server"
+import { createClient } from "@/utils/supabase/client"
 import { ArrowLeft } from "lucide-react"
 import { formatImageUrl } from "@/utils/image-url"
 import { ContactCTABanner } from "@/components/contact-cta-banner"
 import { BrandSeoSections } from "@/components/brand-seo-sections"
 import { siteUrl } from "@/lib/site-config"
+
+// ISR - Revalidate every 1 hour (3600 seconds)
+export const revalidate = 3600
 
 type Props = {
   params: {
@@ -49,7 +52,7 @@ export default async function BrandsPage({ params }: Props) {
   const { locale } = await params
   const t = await getTranslations({ locale, namespace: "Brands" })
 
-  const supabase = await createServerClient()
+  const supabase = createClient()
 
   const { data: brands, error } = await supabase
     .from("brands")

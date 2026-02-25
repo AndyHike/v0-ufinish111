@@ -3,6 +3,8 @@ import { cookies } from "next/headers"
 
 let cachedClient: any = null
 
+// Use public client for build-time and ISR caching
+// This is safe because all the data we query is public
 export async function createClient() {
   if (cachedClient) return cachedClient
 
@@ -10,7 +12,7 @@ export async function createClient() {
 
   cachedClient = createSupabaseServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, // Use ANON_KEY instead of SERVICE_ROLE_KEY to enable ISR caching
     {
       cookies: {
         get(name: string) {

@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
-import { createServerClient } from "@/utils/supabase/server"
+// import { createServerClient } removed
 import { createClient } from "@/utils/supabase/client"
 import ModelPageClient, { ModelData } from "./model-page-client"
 import { getPriceWithDiscount } from "@/lib/discounts/get-applicable-discounts"
@@ -50,7 +50,7 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug, locale } = await params
-  const supabase = await createServerClient()
+  const supabase = createClient()
 
   const { data: model } = await supabase
     .from("models")
@@ -131,7 +131,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function ModelPage({ params }: Props) {
   const { slug, locale } = await params
 
-  const supabase = await createServerClient()
+  const supabase = createClient()
 
   try {
     const { data: model, error: modelError } = await supabase

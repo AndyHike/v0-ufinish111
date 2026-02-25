@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import { notFound, permanentRedirect } from "next/navigation"
-import { createServerClient } from "@/utils/supabase/server"
+import { createClient } from "@/utils/supabase/client"
 import ServicePageClient from "./service-page-client"
 import { getPriceWithDiscount } from "@/lib/discounts/get-applicable-discounts"
 import { DeviceSelectionWrapper } from "./device-selection-wrapper"
@@ -15,6 +15,10 @@ import Link from "next/link"
 
 import { BrandSeoSections } from "@/components/brand-seo-sections"
 
+// ISR Configuration
+export const revalidate = 3600 // Regenerate every 1 hour
+export const dynamicParams = true // Allow new slugs on-the-fly
+
 type Props = {
   params: Promise<{
     locale: string
@@ -25,10 +29,37 @@ type Props = {
   }>
 }
 
+// Pre-render popular services
+export async function generateStaticParams() {
+  const supabase = createClient()
+
+  try {
+    const { data: services } = await supabase
+      .from("services")
+      .select("slug")
+      .order("position", { ascending: true })
+      .limit(20)
+
+    const locales = ["uk", "cs", "en"]
+
+    return (
+      services?.flatMap((service) =>
+        locales.map((locale) => ({
+          locale,
+          slug: service.slug,
+        }))
+      ) || []
+    )
+  } catch (error) {
+    console.error("[v0] Error in generateStaticParams (services):", error)
+    return []
+  }
+}
+
 export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const { slug, locale } = await params
   const { model: modelSlug } = await searchParams
-  const supabase = await createServerClient()
+  const supabase = createClient()
 
   const { data: service } = await supabase
     .from("services")
@@ -166,7 +197,7 @@ export default async function ServicePage({ params, searchParams }: Props) {
   }
 
   const brandsT = await getTranslations({ locale, namespace: "Brands" })
-  const supabase = await createServerClient()
+  const supabase = createClient()
 
   const { data: service } = await supabase
     .from("services")

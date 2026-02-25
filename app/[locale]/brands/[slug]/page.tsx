@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import { getTranslations } from "next-intl/server"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { createServerClient } from "@/utils/supabase/server"
+// import { createServerClient } removed
 import { createClient } from "@/utils/supabase/client"
 import { ChevronRight, Smartphone, ArrowLeft } from "lucide-react"
 import { formatImageUrl } from "@/utils/image-url"
@@ -57,7 +57,7 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug, locale } = await params
 
-  const supabase = await createServerClient()
+  const supabase = createClient()
 
   // First try to find by slug
   let { data: brand } = await supabase.from("brands").select("*").eq("slug", slug).single()
@@ -132,7 +132,7 @@ export default async function BrandPage({ params }: Props) {
   const { slug, locale } = await params
   const t = await getTranslations({ locale, namespace: "Brands" })
 
-  const supabase = await createServerClient()
+  const supabase = createClient()
 
   // Спочатку спробуємо знайти за слагом
   let { data: brand, error: brandError } = await supabase
