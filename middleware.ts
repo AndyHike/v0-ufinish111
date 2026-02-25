@@ -28,6 +28,7 @@ function isPublicAuthRoute(pathname: string): boolean {
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
   const searchParams = request.nextUrl.searchParams
+  const hostname = request.headers.get("host") || ""
 
   // Handle 301 redirects for old URL formats with query parameters
   // Old format: /services/{slug}?model={model} → New format: /services/{slug}/{model}
@@ -51,6 +52,41 @@ export async function middleware(request: NextRequest) {
     )
   }
 
+  // Remove www subdomain and add locale in a single redirect (for SEO optimization)
+  const hasWWW = hostname.startsWith("www.")
+  const cleanHostname = hasWWW ? hostname.replace(/^www\./, "") : hostname
+
+  const pathnameHasLocale = supportedLocales.some(
+    (locale) => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`,
+  )
+
+  // If www is present, redirect to non-www + locale in one go
+  if (hasWWW) {
+    if (!pathnameHasLocale) {
+      const savedLocale = request.cookies.get("NEXT_LOCALE")?.value
+      const preferredLocale = savedLocale && supportedLocales.includes(savedLocale) ? savedLocale : getDefaultLanguage()
+
+      const url = new URL(`https://${cleanHostname}/${preferredLocale}${pathname}`, request.url)
+      url.search = request.nextUrl.search
+
+      const response = NextResponse.redirect(url, { status: 301 })
+      response.cookies.set("NEXT_LOCALE", preferredLocale, {
+        path: "/",
+        maxAge: 31536000,
+        sameSite: "strict",
+        secure: process.env.NODE_ENV === "production",
+        httpOnly: false,
+      })
+      return response
+    } else {
+      // www is present but locale is already there, just remove www
+      const url = new URL(`https://${cleanHostname}${pathname}`, request.url)
+      url.search = request.nextUrl.search
+
+      return NextResponse.redirect(url, { status: 301 })
+    }
+  }
+
   // Skip middleware for static files, API routes, webhooks, images, and special files
   if (
     pathname.startsWith("/_next") ||
@@ -64,10 +100,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  const pathnameHasLocale = supportedLocales.some(
-    (locale) => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`,
-  )
-
+  // Handle locale redirect for non-www requests
   if (!pathnameHasLocale) {
     const savedLocale = request.cookies.get("NEXT_LOCALE")?.value
     const preferredLocale = savedLocale && supportedLocales.includes(savedLocale) ? savedLocale : getDefaultLanguage()
