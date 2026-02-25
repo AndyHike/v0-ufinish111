@@ -74,6 +74,20 @@ const nextConfig = {
 
   async redirects() {
     return [
+      // Remove www from root and redirect to default locale
+      // This happens BEFORE next-intl processes the request
+      {
+        source: '/',
+        destination: '/cs',
+        permanent: true,
+        has: [
+          {
+            type: 'host',
+            value: 'www\\.',
+          },
+        ],
+      },
+      // Standard root redirect to default locale (when www is not present)
       {
         source: '/',
         destination: '/cs',

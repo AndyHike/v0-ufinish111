@@ -52,25 +52,21 @@ export async function middleware(request: NextRequest) {
     )
   }
 
-  // CRITICAL: Handle www removal FIRST, BEFORE anything else
-  // This prevents next-intl from making a 308 redirect with www still present
+  // CRITICAL: Handle www removal FIRST AND AGGRESSIVELY
+  // This MUST happen before next-intl touches the request
   const hasWWW = hostname.startsWith("www.")
   const cleanHostname = hasWWW ? hostname.replace(/^www\./, "") : hostname
 
+  // If www is present, ALWAYS redirect to non-www immediately
+  // Don't let next-intl process requests with www
   if (hasWWW) {
-    // For root path or path without locale, we need to redirect BEFORE next-intl touches it
-    // This prevents: www/ → 308 → www/cs → 301 → /cs
-    // And creates: www/ → 301 → /cs (single redirect)
-    const pathnameHasLocale = supportedLocales.some(
-      (locale) => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`,
-    )
-    
-    if (!pathnameHasLocale && pathname === "/") {
-      // Root path without locale - add locale while removing www
-      const savedLocale = request.cookies.get("NEXT_LOCALE")?.value
-      const preferredLocale = savedLocale && supportedLocales.includes(savedLocale) ? savedLocale : getDefaultLanguage()
+    const savedLocale = request.cookies.get("NEXT_LOCALE")?.value
+    const preferredLocale = savedLocale && supportedLocales.includes(savedLocale) ? savedLocale : getDefaultLanguage()
 
-      const url = new URL(`https://${cleanHostname}/${preferredLocale}${pathname}`, request.url)
+    // For root path without locale, add locale while removing www in one 301
+    if (pathname === "/") {
+      const targetUrl = `https://${cleanHostname}/${preferredLocale}${pathname}`
+      const url = new URL(targetUrl, request.url)
       url.search = request.nextUrl.search
 
       const response = NextResponse.redirect(url, { status: 301 })
@@ -82,13 +78,12 @@ export async function middleware(request: NextRequest) {
         httpOnly: false,
       })
       return response
-    } else {
-      // Any other path with www - just remove www
-      const url = new URL(`https://${cleanHostname}${pathname}`, request.url)
-      url.search = request.nextUrl.search
-
-      return NextResponse.redirect(url, { status: 301 })
     }
+
+    // For any other path with www, just remove www
+    const url = new URL(`https://${cleanHostname}${pathname}`, request.url)
+    url.search = request.nextUrl.search
+    return NextResponse.redirect(url, { status: 301 })
   }
 
   // Skip middleware for static files, API routes, webhooks, images, and special files
@@ -174,6 +169,7 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
+    // Match all paths including root
     "/((?!api|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|llms.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff|woff2|ttf|eot)).*)",
   ],
 }
