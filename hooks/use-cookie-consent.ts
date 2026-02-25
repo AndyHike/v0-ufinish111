@@ -62,7 +62,7 @@ export function useCookieConsent() {
     }
   }, [])
 
-  // Функція для оновлення Google Consent Mode v2
+  // Функція для оновлення Google Consent Mode v2 за допомогою ТІЛЬКИ команди 'update'
   const updateGoogleConsent = useCallback((consent: CookieConsent) => {
     if (typeof window === "undefined" || !window.gtag) return
 
@@ -74,6 +74,7 @@ export function useCookieConsent() {
     })
   }, [])
 
+  // useEffect при монтуванні: читає localStorage, якщо там є збережена згода - тихо викликає update
   useEffect(() => {
     const stored = localStorage.getItem(COOKIE_CONSENT_KEY)
     if (stored) {
@@ -84,24 +85,24 @@ export function useCookieConsent() {
         const daysDiff = (now.getTime() - consentDate.getTime()) / (1000 * 3600 * 24)
 
         if (daysDiff < CONSENT_EXPIRY_DAYS) {
+          // Є валідна попередня згода - тихо оновлюємо Google Consent без показу банера
           setState({
             consent: parsed.consent,
             showBanner: false,
             hasInteracted: true,
             consentDate: parsed.consentDate,
           })
-          // При завантаженні сторінки оновлюємо Google Consent Mode з попередньою згодою
+          // ТІЛЬКИ 'update' команда з збереженими значеннями
           updateGoogleConsent(parsed.consent)
-        } else {
-          setState((prev) => ({ ...prev, showBanner: true }))
+          return
         }
       } catch (error) {
         console.error("Error parsing stored consent:", error)
-        setState((prev) => ({ ...prev, showBanner: true }))
       }
-    } else {
-      setState((prev) => ({ ...prev, showBanner: true }))
     }
+
+    // Якщо немає попередньої згоди або вона застаріла - показуємо банер
+    setState((prev) => ({ ...prev, showBanner: true }))
   }, [updateGoogleConsent])
 
   const saveConsent = useCallback(
@@ -113,7 +114,7 @@ export function useCookieConsent() {
 
       localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(consentData))
 
-      // Оновлюємо Google Consent Mode при збереженні
+      // ТІЛЬКИ 'update' команда при збереженні
       updateGoogleConsent(consent)
 
       let needsReload = false
