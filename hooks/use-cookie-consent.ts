@@ -94,6 +94,16 @@ export function useCookieConsent() {
           })
           // ТІЛЬКИ 'update' команда з збереженими значеннями
           updateGoogleConsent(parsed.consent)
+
+          // Відправляємо подію в dataLayer для GTM при перезавантаженні, якщо маркетинг дозволено
+          if (parsed.consent.marketing) {
+            window.dataLayer = window.dataLayer || []
+            window.dataLayer.push({
+              event: "consent_updated",
+              consent_type: "marketing",
+              value: true,
+            })
+          }
           return
         }
       } catch (error) {
