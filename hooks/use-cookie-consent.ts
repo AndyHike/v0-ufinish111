@@ -117,6 +117,16 @@ export function useCookieConsent() {
       // ТІЛЬКИ 'update' команда при збереженні
       updateGoogleConsent(consent)
 
+      // Відправляємо подію в dataLayer для GTM, якщо маркетинг дозволено
+      if (typeof window !== "undefined" && consent.marketing) {
+        window.dataLayer = window.dataLayer || []
+        window.dataLayer.push({
+          event: "consent_updated",
+          consent_type: "marketing",
+          value: true,
+        })
+      }
+
       let needsReload = false
 
       if (previousConsent) {
