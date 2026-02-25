@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef } from "react"
 import Script from "next/script"
 
 interface GoogleTagManagerProps {
@@ -10,50 +10,39 @@ interface GoogleTagManagerProps {
 declare global {
   interface Window {
     dataLayer: any[]
-    gtag?: any
+    gtag?: (...args: any[]) => void
   }
 }
 
 export function GoogleTagManager({ gtmId }: GoogleTagManagerProps) {
-  const [mounted, setMounted] = useState(false)
+  const isInitialized = useRef(false)
 
   useEffect(() => {
-    setMounted(true)
+    if (!gtmId || typeof window === "undefined" || isInitialized.current) return
 
-    if (!gtmId || typeof window === "undefined") {
-      console.log("[v0] GTM not loaded - gtmId:", gtmId)
-      return
-    }
-
-    console.log("[v0] GTM initializing with ID:", gtmId)
-
-    // Перевіряємо попередню згоду при завантаженні сторінки
+    // перевіряємо попередню згоду з localStorage та обновляємо статуси
     const storedConsent = localStorage.getItem("cookie-consent")
     if (storedConsent) {
       try {
         const parsed = JSON.parse(storedConsent)
-        if (parsed.consent) {
-          // Якщо є попередня згода, одразу оновлюємо статуси
+        if (parsed.consent && window.gtag) {
           const consentStatus = {
             ad_storage: parsed.consent.marketing ? "granted" : "denied",
             ad_user_data: parsed.consent.marketing ? "granted" : "denied",
             ad_personalization: parsed.consent.marketing ? "granted" : "denied",
             analytics_storage: parsed.consent.analytics ? "granted" : "denied",
           }
-
-          console.log("[v0] GTM consent update:", consentStatus)
-
-          if (window.gtag) {
-            window.gtag("consent", "update", consentStatus)
-          }
+          window.gtag("consent", "update", consentStatus)
         }
       } catch (error) {
-        console.error("[v0] Error parsing stored consent for GTM:", error)
+        console.error("[v0] Error parsing stored consent:", error)
       }
     }
+
+    isInitialized.current = true
   }, [gtmId])
 
-  if (!mounted || !gtmId) {
+  if (!gtmId) {
     return null
   }
 
