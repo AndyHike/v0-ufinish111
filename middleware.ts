@@ -30,9 +30,6 @@ export async function middleware(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const hostname = request.headers.get("host") || ""
 
-  // Debug logging for redirect chain
-  console.log("[v0-redirect] Processing:", { pathname, hostname })
-
   // Handle 301 redirects for old URL formats with query parameters
   // Old format: /services/{slug}?model={model} → New format: /services/{slug}/{model}
   const servicesMatch = pathname.match(/^\/([a-z]{2})\/services\/([^/]+)$/)
@@ -73,14 +70,7 @@ export async function middleware(request: NextRequest) {
       const savedLocale = request.cookies.get("NEXT_LOCALE")?.value
       const preferredLocale = savedLocale && supportedLocales.includes(savedLocale) ? savedLocale : getDefaultLanguage()
 
-      const targetUrl = `https://${cleanHostname}/${preferredLocale}${pathname}`
-      console.log("[v0-redirect] www root → non-www with locale:", { 
-        from: `https://${hostname}${pathname}`,
-        to: targetUrl,
-        status: 301 
-      })
-
-      const url = new URL(targetUrl, request.url)
+      const url = new URL(`https://${cleanHostname}/${preferredLocale}${pathname}`, request.url)
       url.search = request.nextUrl.search
 
       const response = NextResponse.redirect(url, { status: 301 })
@@ -94,14 +84,7 @@ export async function middleware(request: NextRequest) {
       return response
     } else {
       // Any other path with www - just remove www
-      const targetUrl = `https://${cleanHostname}${pathname}`
-      console.log("[v0-redirect] www → non-www:", { 
-        from: `https://${hostname}${pathname}`,
-        to: targetUrl,
-        status: 301 
-      })
-
-      const url = new URL(targetUrl, request.url)
+      const url = new URL(`https://${cleanHostname}${pathname}`, request.url)
       url.search = request.nextUrl.search
 
       return NextResponse.redirect(url, { status: 301 })
@@ -131,14 +114,7 @@ export async function middleware(request: NextRequest) {
     const savedLocale = request.cookies.get("NEXT_LOCALE")?.value
     const preferredLocale = savedLocale && supportedLocales.includes(savedLocale) ? savedLocale : getDefaultLanguage()
 
-    const targetUrl = `/${preferredLocale}${pathname}`
-    console.log("[v0-redirect] no locale → with locale:", { 
-      from: pathname,
-      to: targetUrl,
-      status: 301 
-    })
-
-    const url = new URL(targetUrl, request.url)
+    const url = new URL(`/${preferredLocale}${pathname}`, request.url)
     url.search = request.nextUrl.search
 
     const response = NextResponse.redirect(url, { status: 301 })
