@@ -8,6 +8,10 @@ import { toOGLocale } from "@/lib/og-locale"
 import { siteUrl } from "@/lib/site-config"
 import { PrevNextNav } from "@/components/prev-next-nav"
 
+// ISR Configuration
+export const revalidate = 3600 // Regenerate every 1 hour
+export const dynamicParams = true // Allow new slugs on-the-fly
+
 type Props = {
   params: Promise<{
     locale: string

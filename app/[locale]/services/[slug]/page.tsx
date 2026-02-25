@@ -15,6 +15,10 @@ import Link from "next/link"
 
 import { BrandSeoSections } from "@/components/brand-seo-sections"
 
+// ISR Configuration
+export const revalidate = 3600 // Regenerate every 1 hour
+export const dynamicParams = true // Allow new slugs on-the-fly
+
 type Props = {
   params: Promise<{
     locale: string

@@ -1,5 +1,6 @@
 import { createClient } from "@/utils/supabase/server"
 import { cache } from "react"
+import { revalidateTag } from "next/cache"
 
 export type Brand = {
   id: string
@@ -16,6 +17,9 @@ export type Brand = {
       }[]
     | null
 }
+
+// ISR cache - 1 година (3600 секунд)
+const BRAND_CACHE_REVALIDATE = 3600
 
 export const getBrands = cache(async (): Promise<Brand[]> => {
   try {
@@ -43,3 +47,6 @@ export const getBrands = cache(async (): Promise<Brand[]> => {
     return []
   }
 })
+
+// Экспортуємо функцію для ISR тегів
+export { BRAND_CACHE_REVALIDATE }

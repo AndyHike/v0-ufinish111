@@ -9,6 +9,9 @@ import { ContactCTABanner } from "@/components/contact-cta-banner"
 import { BrandSeoSections } from "@/components/brand-seo-sections"
 import { siteUrl } from "@/lib/site-config"
 
+// ISR - Revalidate every 1 hour (3600 seconds)
+export const revalidate = 3600
+
 type Props = {
   params: {
     locale: string
