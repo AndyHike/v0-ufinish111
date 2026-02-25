@@ -29,7 +29,13 @@ export function useSiteSettings() {
 
     const fetchSettings = async () => {
       try {
-        const response = await fetch("/api/site-settings")
+        const response = await fetch("/api/site-settings", {
+          cache: "revalidate",
+          next: {
+            revalidate: 3600, // 1 hour for site settings
+            tags: ["site-settings"],
+          },
+        })
         if (!response.ok) {
           throw new Error("Failed to fetch settings")
         }

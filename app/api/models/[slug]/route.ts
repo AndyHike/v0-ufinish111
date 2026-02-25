@@ -1,6 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/utils/supabase/server"
 
+// ISR cache - 1 hour
+export const revalidate = 3600
+
 export async function GET(request: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   try {
     const { slug } = await params

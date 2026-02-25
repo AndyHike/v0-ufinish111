@@ -50,7 +50,13 @@ export function Header() {
   const [userLoaded, setUserLoaded] = useState(false)
 
   useEffect(() => {
-    fetch("/api/user/current")
+    fetch("/api/user/current", {
+      cache: "revalidate",
+      next: {
+        revalidate: 300, // 5 minutes for user session
+        tags: ["user-session"],
+      },
+    })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         setUser(data?.user || null)
