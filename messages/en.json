@@ -388,16 +388,7 @@
     "errorMessage": "Failed to send your message. Please try again later.",
     "sendAnother": "Send another message"
   },
-  "Articles": {
-    "title": "Articles & Guides",
-    "description": "Professional tips and guides for mobile device care and repair",
-    "metaTitleSuffix": " | Articles & Guides",
-    "loading": "Loading articles...",
-    "noArticles": "No articles available",
-    "readMore": "Read More",
-    "published": "Published",
-    "category": "Category"
-  },
+  "Auth": {
     "createAccount": "Create Account",
     "alreadyHaveAccount": "Already have an account?",
     "signIn": "Sign In",

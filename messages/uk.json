@@ -397,16 +397,7 @@
     "contact": "Контакти",
     "directionButton": "Прокласти маршрут"
   },
-  "Articles": {
-    "title": "Статті та поради",
-    "description": "Професійні поради та інструкції для догляду та ремонту мобільних пристроїв",
-    "metaTitleSuffix": " | Статті та поради",
-    "loading": "Завантаження статей...",
-    "noArticles": "Статей немає",
-    "readMore": "Читати далі",
-    "published": "Опубліковано",
-    "category": "Категорія"
-  },
+  "Auth": {
     "createAccount": "Створити обліковий запис",
     "alreadyHaveAccount": "Вже маєте обліковий запис?",
     "signIn": "Увійти",
@@ -690,7 +681,7 @@
     "orClickToUpload": "або натисніть, щоб завантажити",
     "rowsDetected": "рядків виявлено",
     "uploadAndProcess": "Завантажити та обробити",
-    "previewData": "Попередній перегляд даних",
+    "previewData": "Попередній пе��егляд даних",
     "andMoreRows": "...і ще {count} рядків",
     "importSuccess": "Імпорт успішно завершено",
     "importPartialSuccess": "Імпорт частково завершено",
