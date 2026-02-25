@@ -9,6 +9,14 @@ export function AnalyticsProvider() {
   const pixelId = process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID
   const gtmId = process.env.NEXT_PUBLIC_GTM_ID
 
+  // Debug logging
+  if (typeof window !== "undefined") {
+    console.log("[v0] AnalyticsProvider:", {
+      gtmId: gtmId ? "SET" : "NOT_SET",
+      pixelId: pixelId ? "SET" : "NOT_SET",
+    })
+  }
+
   return (
     <>
       {/* GTM завантажується завжди, без умов - статуси керуються Consent Mode v2 */}
