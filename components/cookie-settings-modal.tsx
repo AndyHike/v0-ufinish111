@@ -17,22 +17,17 @@ export function CookieSettingsModal({ open, onOpenChange }: CookieSettingsModalP
   const t = useTranslations("cookies")
   const { consent, updateCategory, saveCurrentSettings, acceptAll, acceptNecessary } = useCookieConsentContext()
 
-  console.log("⚙️ CookieSettingsModal render:", { open, consent })
-
   const handleSave = () => {
-    console.log("💾 User clicked Save in modal")
     saveCurrentSettings()
     onOpenChange(false)
   }
 
   const handleAcceptAll = () => {
-    console.log("✅ User clicked Accept All in modal")
     acceptAll()
     onOpenChange(false)
   }
 
   const handleAcceptNecessary = () => {
-    console.log("⚠️ User clicked Accept Necessary in modal")
     acceptNecessary()
     onOpenChange(false)
   }
@@ -84,7 +79,6 @@ export function CookieSettingsModal({ open, onOpenChange }: CookieSettingsModalP
                   id={category.id}
                   checked={consent[category.id]}
                   onCheckedChange={(checked) => {
-                    console.log(`🔄 Switch changed: ${category.id} = ${checked}`)
                     updateCategory(category.id, checked)
                   }}
                   disabled={category.required}

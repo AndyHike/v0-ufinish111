@@ -6,6 +6,12 @@ import type { CookieConsent, CookieConsentState } from "@/types/cookie-consent"
 const COOKIE_CONSENT_KEY = "cookie-consent"
 const CONSENT_EXPIRY_DAYS = 365
 
+declare global {
+  interface Window {
+    gtag?: (...args: any[]) => void
+  }
+}
+
 export function useCookieConsent() {
   const [state, setState] = useState<CookieConsentState>({
     consent: {
@@ -56,6 +62,18 @@ export function useCookieConsent() {
     }
   }, [])
 
+  // Функція для оновлення Google Consent Mode v2
+  const updateGoogleConsent = useCallback((consent: CookieConsent) => {
+    if (typeof window === "undefined" || !window.gtag) return
+
+    window.gtag("consent", "update", {
+      analytics_storage: consent.analytics ? "granted" : "denied",
+      ad_storage: consent.marketing ? "granted" : "denied",
+      ad_user_data: consent.marketing ? "granted" : "denied",
+      ad_personalization: consent.marketing ? "granted" : "denied",
+    })
+  }, [])
+
   useEffect(() => {
     const stored = localStorage.getItem(COOKIE_CONSENT_KEY)
     if (stored) {
@@ -72,6 +90,8 @@ export function useCookieConsent() {
             hasInteracted: true,
             consentDate: parsed.consentDate,
           })
+          // При завантаженні сторінки оновлюємо Google Consent Mode з попередньою згодою
+          updateGoogleConsent(parsed.consent)
         } else {
           setState((prev) => ({ ...prev, showBanner: true }))
         }
@@ -82,7 +102,7 @@ export function useCookieConsent() {
     } else {
       setState((prev) => ({ ...prev, showBanner: true }))
     }
-  }, [])
+  }, [updateGoogleConsent])
 
   const saveConsent = useCallback(
     (consent: CookieConsent, previousConsent?: CookieConsent) => {
@@ -92,6 +112,9 @@ export function useCookieConsent() {
       }
 
       localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(consentData))
+
+      // Оновлюємо Google Consent Mode при збереженні
+      updateGoogleConsent(consent)
 
       let needsReload = false
 
@@ -124,7 +147,7 @@ export function useCookieConsent() {
         }, 500)
       }
     },
-    [clearCookies],
+    [clearCookies, updateGoogleConsent],
   )
 
   const acceptAll = useCallback(() => {
