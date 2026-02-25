@@ -1,4 +1,5 @@
 import { getTranslations } from "next-intl/server"
+import { Suspense } from "react"
 import StandaloneBookingClient from "./standalone-booking-client"
 
 interface Props {
@@ -21,7 +22,9 @@ export default async function StandaloneBookingPage({ params }: Props) {
   
   return (
     <div className="min-h-screen bg-gray-50">
-      <StandaloneBookingClient locale={resolvedParams.locale} />
+      <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+        <StandaloneBookingClient locale={resolvedParams.locale} />
+      </Suspense>
     </div>
   )
 }
