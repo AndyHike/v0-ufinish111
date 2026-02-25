@@ -19,13 +19,16 @@ export function GoogleTagManager({ gtmId }: GoogleTagManagerProps) {
 
   useEffect(() => {
     setMounted(true)
+    console.log("[v0] GoogleTagManager mounted, gtmId:", gtmId)
+  }, [gtmId])
 
+  useEffect(() => {
     if (!gtmId || typeof window === "undefined") {
-      console.log("[v0] GTM not loaded - gtmId:", gtmId)
+      console.log("[v0] GTM not initializing - gtmId:", gtmId, "server?", typeof window)
       return
     }
 
-    console.log("[v0] GTM initializing with ID:", gtmId)
+    console.log("[v0] GTM useEffect running - checking stored consent")
 
     // Перевіряємо попередню згоду при завантаженні сторінки
     const storedConsent = localStorage.getItem("cookie-consent")
@@ -41,7 +44,7 @@ export function GoogleTagManager({ gtmId }: GoogleTagManagerProps) {
             analytics_storage: parsed.consent.analytics ? "granted" : "denied",
           }
 
-          console.log("[v0] GTM consent update:", consentStatus)
+          console.log("[v0] GTM consent update from stored:", consentStatus)
 
           if (window.gtag) {
             window.gtag("consent", "update", consentStatus)
@@ -62,8 +65,11 @@ export function GoogleTagManager({ gtmId }: GoogleTagManagerProps) {
       <Script
         id="gtm-script"
         strategy="afterInteractive"
+        onLoad={() => console.log("[v0] GTM Script loaded")}
+        onError={() => console.error("[v0] GTM Script failed to load")}
         dangerouslySetInnerHTML={{
           __html: `
+            console.log("[v0] GTM inline script executing");
             (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
             new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
             j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
