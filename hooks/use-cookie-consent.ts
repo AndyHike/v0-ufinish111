@@ -6,6 +6,12 @@ import type { CookieConsent, CookieConsentState } from "@/types/cookie-consent"
 const COOKIE_CONSENT_KEY = "cookie-consent"
 const CONSENT_EXPIRY_DAYS = 365
 
+declare global {
+  interface Window {
+    gtag?: (...args: any[]) => void
+  }
+}
+
 export function useCookieConsent() {
   const [state, setState] = useState<CookieConsentState>({
     consent: {
@@ -56,6 +62,19 @@ export function useCookieConsent() {
     }
   }, [])
 
+  // Функція для оновлення Google Consent Mode v2 за допомогою ТІЛЬКИ команди 'update'
+  const updateGoogleConsent = useCallback((consent: CookieConsent) => {
+    if (typeof window === "undefined" || !window.gtag) return
+
+    window.gtag("consent", "update", {
+      analytics_storage: consent.analytics ? "granted" : "denied",
+      ad_storage: consent.marketing ? "granted" : "denied",
+      ad_user_data: consent.marketing ? "granted" : "denied",
+      ad_personalization: consent.marketing ? "granted" : "denied",
+    })
+  }, [])
+
+  // useEffect при монтуванні: читає localStorage, якщо там є збережена згода - тихо викликає update
   useEffect(() => {
     const stored = localStorage.getItem(COOKIE_CONSENT_KEY)
     if (stored) {
@@ -66,23 +85,35 @@ export function useCookieConsent() {
         const daysDiff = (now.getTime() - consentDate.getTime()) / (1000 * 3600 * 24)
 
         if (daysDiff < CONSENT_EXPIRY_DAYS) {
+          // Є валідна попередня згода - тихо оновлюємо Google Consent без показу банера
           setState({
             consent: parsed.consent,
             showBanner: false,
             hasInteracted: true,
             consentDate: parsed.consentDate,
           })
-        } else {
-          setState((prev) => ({ ...prev, showBanner: true }))
+          // ТІЛЬКИ 'update' команда з збереженими значеннями
+          updateGoogleConsent(parsed.consent)
+
+          // Відправляємо подію в dataLayer для GTM при перезавантаженні, якщо маркетинг дозволено
+          if (parsed.consent.marketing) {
+            window.dataLayer = window.dataLayer || []
+            window.dataLayer.push({
+              event: "consent_updated",
+              consent_type: "marketing",
+              value: true,
+            })
+          }
+          return
         }
       } catch (error) {
         console.error("Error parsing stored consent:", error)
-        setState((prev) => ({ ...prev, showBanner: true }))
       }
-    } else {
-      setState((prev) => ({ ...prev, showBanner: true }))
     }
-  }, [])
+
+    // Якщо немає попередньої згоди або вона застаріла - показуємо банер
+    setState((prev) => ({ ...prev, showBanner: true }))
+  }, [updateGoogleConsent])
 
   const saveConsent = useCallback(
     (consent: CookieConsent, previousConsent?: CookieConsent) => {
@@ -92,6 +123,19 @@ export function useCookieConsent() {
       }
 
       localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(consentData))
+
+      // ТІЛЬКИ 'update' команда при збереженні
+      updateGoogleConsent(consent)
+
+      // Відправляємо подію в dataLayer для GTM, якщо маркетинг дозволено
+      if (typeof window !== "undefined" && consent.marketing) {
+        window.dataLayer = window.dataLayer || []
+        window.dataLayer.push({
+          event: "consent_updated",
+          consent_type: "marketing",
+          value: true,
+        })
+      }
 
       let needsReload = false
 
@@ -124,7 +168,7 @@ export function useCookieConsent() {
         }, 500)
       }
     },
-    [clearCookies],
+    [clearCookies, updateGoogleConsent],
   )
 
   const acceptAll = useCallback(() => {

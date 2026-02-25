@@ -1,5 +1,7 @@
+// Force rebuild - removed AnalyticsTracker
 import type React from "react"
 import type { Metadata } from "next"
+import Script from "next/script"
 import { NextIntlClientProvider } from "next-intl"
 import { notFound } from "next/navigation"
 import { Inter } from "next/font/google"
@@ -9,7 +11,6 @@ import { getMessages } from "@/lib/get-messages"
 import { CookieConsentProvider } from "@/contexts/cookie-consent-context"
 import { CookieBanner } from "@/components/cookie-banner"
 import { AnalyticsProvider } from "@/components/analytics/analytics-provider"
-import { AnalyticsTracker } from "@/components/analytics/analytics-tracker"
 import { Suspense } from "react"
 import { SessionProvider } from "@/components/providers/session-provider"
 import { ThemeProvider } from "@/components/theme-provider"
@@ -127,13 +128,16 @@ export default async function LocaleLayout({
   return (
     <html lang={locale} className={inter.variable} suppressHydrationWarning>
       <head>
-        {/* Google Consent Mode v2 - ініціалізація ПЕРЕД GTM */}
-        <script
-          id="consent-mode-init"
+        {/* Google Consent Mode v2 - beforeInteractive strategy для ранньої ініціалізації */}
+        <Script
+          id="google-consent-mode"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: `
               window.dataLayer = window.dataLayer || [];
               function gtag(){dataLayer.push(arguments);}
+              
+              // ЗАВЖДИ 'denied' для всіх полів - коректне встановлення за замовчуванням
               gtag('consent', 'default', {
                 'ad_storage': 'denied',
                 'ad_user_data': 'denied',
@@ -143,6 +147,19 @@ export default async function LocaleLayout({
               });
               gtag('set', {'url_passthrough': true});
             `,
+          }}
+        />
+
+        {/* Google Tag Manager - afterInteractive strategy */}
+        <Script
+          id="google-tag-manager"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-P8H3C553');`,
           }}
         />
 
@@ -223,9 +240,6 @@ export default async function LocaleLayout({
               <CookieConsentProvider>
                 <GlobalDataProvider>
                   <DynamicFavicon />
-                  <Suspense fallback={null}>
-                    <AnalyticsTracker />
-                  </Suspense>
                   <div className="flex min-h-screen flex-col">
                     <Suspense fallback={<HeaderSkeleton />}>
                       <Header />
