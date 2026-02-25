@@ -1,3 +1,5 @@
+"use client"
+
 import { useEffect, useState } from "react"
 
 interface AnalyticsSettings {
@@ -15,8 +17,13 @@ export function useAnalyticsSettings() {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const response = await fetch("/api/admin/cookie-settings")
-        if (!response.ok) throw new Error("Failed to fetch settings")
+        // Використовуємо публічний API endpoint без аутентифікації
+        const response = await fetch("/api/settings/public")
+        if (!response.ok) {
+          console.warn("[v0] Failed to fetch public settings:", response.status)
+          setLoading(false)
+          return
+        }
 
         const data = await response.json()
         setSettings({
@@ -24,7 +31,7 @@ export function useAnalyticsSettings() {
           pixelId: data.facebook_pixel_id || "",
         })
       } catch (error) {
-        console.error("[v0] Failed to load analytics settings:", error)
+        console.warn("[v0] Error loading analytics settings:", error)
       } finally {
         setLoading(false)
       }
