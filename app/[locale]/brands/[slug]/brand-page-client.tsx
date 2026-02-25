@@ -7,7 +7,6 @@ import { formatImageUrl } from "@/utils/image-url"
 import { Breadcrumb } from "@/components/breadcrumb"
 import { useGlobalData } from "@/hooks/use-global-data"
 import { useEffect, useState } from "react"
-import useSWR from "swr"
 
 type BrandData = {
   brand: any
@@ -20,43 +19,22 @@ type Props = {
   slug: string
 }
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json())
-
 export default function BrandPageClient({ initialData, locale, slug }: Props) {
   const t = useTranslations("Brands")
   const { setCachedBrand } = useGlobalData()
-  const [mounted, setMounted] = useState(false)
 
-  // SWR для кешування та фонового оновлення
-  const { data, isLoading } = useSWR(`/api/brands/${slug}`, fetcher, {
-    fallbackData: initialData,
-    revalidateOnFocus: false,
-    dedupingInterval: 60000, // 1 minute
-  })
+  // Use initialData directly - no need for SWR fetch on client
+  // Data is already rendered on server via ISR, no need for additional fetch
+  const brandData = initialData
 
   useEffect(() => {
-    setMounted(true)
-    // Зберігаємо дані в контекст для наступних навігацій
-    if (data?.brand) {
-      setCachedBrand(slug, data)
+    // Store in context for subsequent navigations
+    if (brandData?.brand) {
+      setCachedBrand(slug, brandData)
     }
-  }, [data, slug, setCachedBrand])
+  }, [slug, setCachedBrand, brandData])
 
-  // Використовуємо initialData як default, якщо SWR дані ще не завантажені
-  const brandData = data || initialData
-
-  // Показуємо помилку тільки якщо загрузка завершена і немає даних
-  if (!isLoading && !brandData?.brand) {
-    return (
-      <div className="container px-4 py-12 md:px-6 md:py-24">
-        <div className="mx-auto max-w-6xl text-center">
-          <p className="text-lg text-muted-foreground">Не вдалося завантажити дані про бренд. Спробуйте оновити сторінку.</p>
-        </div>
-      </div>
-    )
-  }
-
-  // Якщо немає даних загалом
+  // If no data at all
   if (!brandData?.brand) {
     return null
   }

@@ -6,8 +6,7 @@ import { useTranslations } from "next-intl"
 import { Smartphone } from "lucide-react"
 import { Breadcrumb } from "@/components/breadcrumb"
 import { useGlobalData } from "@/hooks/use-global-data"
-import { useEffect, useState, useRef } from "react"
-import useSWR from "swr"
+import { useEffect, useRef } from "react"
 
 type SeriesData = {
   series: any
@@ -20,46 +19,25 @@ type Props = {
   slug: string
 }
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json())
-
 export default function SeriesPageClient({ initialData, locale, slug }: Props) {
   const t = useTranslations("Series")
   const commonT = useTranslations("Common")
   const brandsT = useTranslations("Brands")
   const { setCachedSeries } = useGlobalData()
-  const [mounted, setMounted] = useState(false)
   const viewContentSent = useRef(false)
 
-  // SWR для кешування та фонового оновлення
-  const { data, isLoading } = useSWR(`/api/series/${slug}`, fetcher, {
-    fallbackData: initialData,
-    revalidateOnFocus: false,
-    dedupingInterval: 60000, // 1 minute
-  })
+  // Use initialData directly - no need for SWR fetch on client
+  // Data is already rendered on server via ISR, no need for additional fetch
+  const seriesData = initialData
 
   useEffect(() => {
-    setMounted(true)
-    // Зберігаємо дані в контекст для наступних навігацій
-    if (data?.series) {
-      setCachedSeries(slug, data)
+    // Store in context for subsequent navigations
+    if (seriesData?.series) {
+      setCachedSeries(slug, seriesData)
     }
-  }, [data, slug, setCachedSeries])
+  }, [slug, setCachedSeries, seriesData])
 
-  // Використовуємо initialData як default, якщо SWR дані ще не завантажені
-  const seriesData = data || initialData
-
-  // Показуємо помилку тільки якщо загрузка завершена і немає даних
-  if (!isLoading && !seriesData?.series) {
-    return (
-      <div className="container px-4 py-12 md:px-6 md:py-24">
-        <div className="mx-auto max-w-6xl text-center">
-          <p className="text-lg text-muted-foreground">Не вдалося завантажити дані про серію. Спробуйте оновити сторінку.</p>
-        </div>
-      </div>
-    )
-  }
-
-  // Якщо немає даних загалом
+  // If no data at all
   if (!seriesData?.series) {
     return null
   }
