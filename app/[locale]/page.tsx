@@ -124,13 +124,13 @@ export default async function HomePage() {
   return (
     <>
       <HeroSection />
-      <Suspense fallback={<GoogleReviewsSkeleton />}>
+      <Suspense fallback={null}>
         <GoogleReviewsAsync promise={googleReviewsPromise} />
       </Suspense>
-      <Suspense fallback={<BrandsSectionSkeleton />}>
+      <Suspense fallback={null}>
         <BrandsSectionAsync promise={brandsPromise} />
       </Suspense>
-      <Suspense fallback={<ContactSectionSkeleton />}>
+      <Suspense fallback={null}>
         <ContactSection />
       </Suspense>
     </>

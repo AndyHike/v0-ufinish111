@@ -10,7 +10,7 @@ interface SiteSettings {
 
 const DEFAULT_SETTINGS: SiteSettings = {
   defaultLanguage: "uk",
-  siteLogo: "", // Empty initially to match server
+  siteLogo: "/placeholder-logo.png", // Use same default as API
   siteFavicon: "/favicon.ico",
 }
 

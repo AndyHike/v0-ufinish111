@@ -4,12 +4,11 @@ import Link from "next/link"
 import { useTranslations } from "next-intl"
 import { Clock, Shield, ArrowRight } from "lucide-react"
 import { formatImageUrl } from "@/utils/image-url"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef } from "react"
 import { ServicePriceDisplay } from "@/components/service-price-display"
 import { ContactCTABanner } from "@/components/contact-cta-banner"
 import { PartTypeBadges } from "@/components/part-type-badges"
 import { Breadcrumb } from "@/components/breadcrumb"
-import useSWR from "swr"
 
 export interface ModelData {
   id: string
@@ -45,7 +44,7 @@ export interface ModelData {
     discounted_price?: number | null
     has_discount?: boolean
     discount?: any
-    actual_discount_percentage?: number | null // Added actual discount percentage to interface
+    actual_discount_percentage?: number | null
   }>
 }
 
@@ -54,29 +53,15 @@ interface Props {
   locale: string
 }
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json())
-
 export default function ModelPageClient({ modelData, locale }: Props) {
   const t = useTranslations("Models")
   const commonT = useTranslations("Common")
   const brandsT = useTranslations("Brands")
   const viewContentSent = useRef(false)
-  const [mounted, setMounted] = useState(false)
 
-  // SWR для кешування та фонового оновлення
-  const { data: currentModelData = modelData, isLoading } = useSWR(
-    `/api/models/${modelData.slug}?locale=${locale}`,
-    fetcher,
-    {
-      fallbackData: modelData,
-      revalidateOnFocus: false,
-      dedupingInterval: 60000, // 1 minute
-    }
-  )
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
+  // Use modelData directly - no need for SWR fetch on client
+  // Data is already rendered on server via ISR, no need for additional fetch
+  const currentModelData = modelData
 
   // ВАЖЛИВО: Всі useEffect перед умовними поверненнями
   useEffect(() => {
@@ -137,18 +122,7 @@ export default function ModelPageClient({ modelData, locale }: Props) {
   }, [currentModelData])
 
   // УМОВНЕ ПОВЕРНЕННЯ ПІСЛЯ ВСІХ HOOKS
-  // Показуємо помилку тільки якщо загрузка завершена і немає даних
-  if (mounted && !isLoading && (!currentModelData || !currentModelData.services)) {
-    return (
-      <div className="container px-4 py-12 md:px-6 md:py-24">
-        <div className="mx-auto max-w-6xl text-center">
-          <p className="text-lg text-muted-foreground">Не вдалося завантажити дані про модель. Спробуйте оновити сторінку.</p>
-        </div>
-      </div>
-    )
-  }
-
-  // Якщо немає даних загалом
+  // Якщо немає даних - нічого не показуємо
   if (!currentModelData || !currentModelData.services) {
     return null
   }
