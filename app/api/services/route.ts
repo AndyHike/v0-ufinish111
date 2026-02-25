@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
 
+// ISR cache - 1 hour
+export const revalidate = 3600
+
 export async function GET(request: Request) {
   try {
     const url = new URL(request.url)
@@ -37,7 +40,10 @@ export async function GET(request: Request) {
       description: service.services_translations[0]?.description || "",
     }))
 
-    return NextResponse.json({ services: transformedData })
+    // Create response with explicit cache headers
+    const response = NextResponse.json({ services: transformedData })
+    response.headers.set("Cache-Control", "public, s-maxage=3600, stale-while-revalidate=86400")
+    return response
   } catch (error) {
     console.error("Error fetching services:", error)
     return NextResponse.json({ error: "Failed to fetch services" }, { status: 500 })

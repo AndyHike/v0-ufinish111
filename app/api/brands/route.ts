@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/utils/supabase/server"
 
+// ISR cache - 1 hour
+export const revalidate = 3600
+
 export async function GET() {
   try {
     const supabase = await createClient()
@@ -20,7 +23,10 @@ export async function GET() {
 
     console.log(`[v0] Successfully fetched ${data?.length || 0} brands`)
 
-    return NextResponse.json(data)
+    // Create response with explicit cache headers
+    const response = NextResponse.json(data)
+    response.headers.set("Cache-Control", "public, s-maxage=3600, stale-while-revalidate=86400")
+    return response
   } catch (error) {
     console.error("[v0] Unexpected error fetching brands:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })

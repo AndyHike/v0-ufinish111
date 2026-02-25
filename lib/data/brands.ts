@@ -23,6 +23,7 @@ const BRAND_CACHE_REVALIDATE = 3600
 
 export const getBrands = cache(async (): Promise<Brand[]> => {
   try {
+    console.log("[v0] getBrands() called - checking cache...")
     const supabase = await createClient()
 
     const { data, error } = await supabase
@@ -33,17 +34,14 @@ export const getBrands = cache(async (): Promise<Brand[]> => {
       .limit(12)
 
     if (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("Error fetching brands:", error)
-      }
+      console.error("[v0] Error fetching brands:", error)
       return []
     }
 
+    console.log(`[v0] getBrands() returned ${data?.length || 0} brands from Supabase`)
     return data || []
   } catch (error) {
-    if (process.env.NODE_ENV === "development") {
-      console.error("Unexpected error fetching brands:", error)
-    }
+    console.error("[v0] Unexpected error in getBrands():", error)
     return []
   }
 })
