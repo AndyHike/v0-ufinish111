@@ -1,6 +1,7 @@
 // Force rebuild - removed AnalyticsTracker
 import type React from "react"
 import type { Metadata } from "next"
+import Script from "next/script"
 import { NextIntlClientProvider } from "next-intl"
 import { notFound } from "next/navigation"
 import { Inter } from "next/font/google"
@@ -127,9 +128,10 @@ export default async function LocaleLayout({
   return (
     <html lang={locale} className={inter.variable} suppressHydrationWarning>
       <head>
-        {/* Google Consent Mode v2 - ініціалізація з жорстко заданими 'denied' значеннями */}
-        <script
-          id="consent-mode-init"
+        {/* Google Consent Mode v2 - beforeInteractive strategy для ранньої ініціалізації */}
+        <Script
+          id="google-consent-mode"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: `
               window.dataLayer = window.dataLayer || [];
@@ -148,9 +150,10 @@ export default async function LocaleLayout({
           }}
         />
 
-        {/* Google Tag Manager Script */}
-        <script
-          id="gtm-init"
+        {/* Google Tag Manager - afterInteractive strategy */}
+        <Script
+          id="google-tag-manager"
+          strategy="afterInteractive"
           dangerouslySetInnerHTML={{
             __html: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
