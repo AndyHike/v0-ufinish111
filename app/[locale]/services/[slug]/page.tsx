@@ -29,6 +29,33 @@ type Props = {
   }>
 }
 
+// Pre-render popular services
+export async function generateStaticParams() {
+  const supabase = createClient()
+
+  try {
+    const { data: services } = await supabase
+      .from("services")
+      .select("slug")
+      .order("position", { ascending: true })
+      .limit(20)
+
+    const locales = ["uk", "cs", "en"]
+
+    return (
+      services?.flatMap((service) =>
+        locales.map((locale) => ({
+          locale,
+          slug: service.slug,
+        }))
+      ) || []
+    )
+  } catch (error) {
+    console.error("[v0] Error in generateStaticParams (services):", error)
+    return []
+  }
+}
+
 export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const { slug, locale } = await params
   const { model: modelSlug } = await searchParams

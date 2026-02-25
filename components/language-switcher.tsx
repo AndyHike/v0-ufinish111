@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, Suspense } from "react"
 import { usePathname, useParams, useSearchParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
@@ -36,6 +36,20 @@ const FlagIcons = {
 }
 
 export function LanguageSwitcher({ className }: LanguageSwitcherProps) {
+  return (
+    <Suspense fallback={<LanguageSwitcherSkeleton className={className} />}>
+      <LanguageSwitcherContent className={className} />
+    </Suspense>
+  )
+}
+
+function LanguageSwitcherSkeleton({ className }: LanguageSwitcherProps) {
+  return (
+    <div className={`w-9 h-9 rounded-md bg-transparent animate-pulse ${className || ""}`} />
+  )
+}
+
+function LanguageSwitcherContent({ className }: LanguageSwitcherProps) {
   const pathname = usePathname()
   const params = useParams()
   const searchParams = useSearchParams()
@@ -78,7 +92,7 @@ export function LanguageSwitcher({ className }: LanguageSwitcherProps) {
         // Fetch the localized slug for this article in the new language
         const url = `/api/articles/by-slug?slug=${encodeURIComponent(currentSlug)}&locale=${newLocale}`
         const response = await fetch(url)
-        
+
         if (response.ok) {
           const article = await response.json()
           // The API returns article data with article_translations array

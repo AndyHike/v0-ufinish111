@@ -20,6 +20,68 @@ type Props = {
   }>
 }
 
+// Pre-render popular service+model combinations
+export async function generateStaticParams() {
+  const supabase = createClient()
+
+  try {
+    // Get top 20 models
+    const { data: models } = await supabase
+      .from("models")
+      .select("id, slug")
+      .order("position", { ascending: true })
+      .limit(20)
+
+    if (!models || models.length === 0) return []
+
+    // Get top 10 services
+    const { data: services } = await supabase
+      .from("services")
+      .select("id, slug")
+      .order("position", { ascending: true })
+      .limit(10)
+
+    if (!services || services.length === 0) return []
+
+    const locales = ["uk", "cs", "en"]
+    const params = []
+
+    for (const model of models) {
+      // Get services mapped to this model
+      const { data: modelServices } = await supabase
+        .from("model_services")
+        .select("service_id")
+        .eq("model_id", model.id)
+        .in(
+          "service_id",
+          services.map((s) => s.id)
+        )
+
+      if (!modelServices) continue
+
+      const validServiceIds = modelServices.map((ms) => ms.service_id)
+      const validServices = services.filter((s) => validServiceIds.includes(s.id))
+
+      for (const service of validServices) {
+        if (!service.slug || !model.slug) continue
+
+        for (const locale of locales) {
+          params.push({
+            locale,
+            slug: service.slug,
+            model: model.slug,
+          })
+        }
+      }
+    }
+
+    return params
+  } catch (error) {
+    console.error("[v0] Error in generateStaticParams (service+model):", error)
+    return []
+  }
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug, locale, model: modelSlug } = await params
   const supabase = createClient()
