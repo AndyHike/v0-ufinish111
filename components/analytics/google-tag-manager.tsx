@@ -5,34 +5,44 @@ import Script from "next/script"
 
 interface GoogleTagManagerProps {
   gtmId: string
-  consent: boolean
 }
 
 declare global {
   interface Window {
     dataLayer: any[]
+    gtag?: any
   }
 }
 
-export function GoogleTagManager({ gtmId, consent }: GoogleTagManagerProps) {
+export function GoogleTagManager({ gtmId }: GoogleTagManagerProps) {
   useEffect(() => {
-    if (consent && gtmId) {
-      console.log(`Google Tag Manager initialized with ID: ${gtmId}`)
+    if (!gtmId || typeof window === "undefined") return
 
-      // Ініціалізуємо dataLayer для GTM
-      if (typeof window !== "undefined") {
-        window.dataLayer = window.dataLayer || []
-        window.dataLayer.push({
-          "gtm.start": new Date().getTime(),
-          event: "gtm.js",
-        })
+    // Перевіряємо попередню згоду при завантаженні сторінки
+    const storedConsent = localStorage.getItem("cookie-consent")
+    if (storedConsent) {
+      try {
+        const parsed = JSON.parse(storedConsent)
+        if (parsed.consent) {
+          // Якщо є попередня згода, одразу оновлюємо статуси
+          const consentStatus = {
+            ad_storage: parsed.consent.marketing ? "granted" : "denied",
+            ad_user_data: parsed.consent.marketing ? "granted" : "denied",
+            ad_personalization: parsed.consent.marketing ? "granted" : "denied",
+            analytics_storage: parsed.consent.analytics ? "granted" : "denied",
+          }
+
+          if (window.gtag) {
+            window.gtag("consent", "update", consentStatus)
+          }
+        }
+      } catch (error) {
+        console.error("Error parsing stored consent for GTM:", error)
       }
-    } else {
-      console.log("Google Tag Manager not loaded - consent:", consent, "gtmId:", gtmId)
     }
-  }, [gtmId, consent])
+  }, [gtmId])
 
-  if (!consent || !gtmId) {
+  if (!gtmId) {
     return null
   }
 

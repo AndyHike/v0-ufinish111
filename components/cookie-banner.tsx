@@ -8,10 +8,42 @@ import { Settings, X } from "lucide-react"
 import { useCookieConsentContext } from "@/contexts/cookie-consent-context"
 import { CookieSettingsModal } from "./cookie-settings-modal"
 
+declare global {
+  interface Window {
+    gtag?: any
+  }
+}
+
 export function CookieBanner() {
   const t = useTranslations("cookies")
   const { showBanner, acceptAll, acceptNecessary, setShowBanner } = useCookieConsentContext()
   const [showSettings, setShowSettings] = useState(false)
+
+  const handleAcceptAll = () => {
+    // Оновлюємо GTM Consent Mode v2 статуси перед викликом acceptAll
+    if (typeof window !== "undefined" && window.gtag) {
+      window.gtag("consent", "update", {
+        ad_storage: "granted",
+        ad_user_data: "granted",
+        ad_personalization: "granted",
+        analytics_storage: "granted",
+      })
+    }
+    acceptAll()
+  }
+
+  const handleAcceptNecessary = () => {
+    // Оновлюємо GTM Consent Mode v2 статуси на дениджанс для необов'язкових категорій
+    if (typeof window !== "undefined" && window.gtag) {
+      window.gtag("consent", "update", {
+        ad_storage: "denied",
+        ad_user_data: "denied",
+        ad_personalization: "denied",
+        analytics_storage: "denied",
+      })
+    }
+    acceptNecessary()
+  }
 
   if (!showBanner) return null
 
@@ -37,11 +69,11 @@ export function CookieBanner() {
                   {t("banner.customize")}
                 </Button>
 
-                <Button variant="outline" size="sm" onClick={acceptNecessary}>
+                <Button variant="outline" size="sm" onClick={handleAcceptNecessary}>
                   {t("banner.acceptNecessary")}
                 </Button>
 
-                <Button size="sm" onClick={acceptAll}>
+                <Button size="sm" onClick={handleAcceptAll}>
                   {t("banner.acceptAll")}
                 </Button>
 
