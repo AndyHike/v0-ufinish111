@@ -134,13 +134,33 @@ export default async function LocaleLayout({
             __html: `
               window.dataLayer = window.dataLayer || [];
               function gtag(){dataLayer.push(arguments);}
-              gtag('consent', 'default', {
+              
+              // Перевіряємо попередню згоду користувача перед встановленням дефолтних denied статусів
+              var storedConsent = localStorage.getItem('cookie-consent');
+              var consentStatus = {
                 'ad_storage': 'denied',
                 'ad_user_data': 'denied',
                 'ad_personalization': 'denied',
                 'analytics_storage': 'denied',
                 'wait_for_update': 500
-              });
+              };
+              
+              // Якщо є попередня згода, встановлюємо реальні статуси замість denied
+              if (storedConsent) {
+                try {
+                  var parsed = JSON.parse(storedConsent);
+                  if (parsed.consent) {
+                    consentStatus['ad_storage'] = parsed.consent.marketing ? 'granted' : 'denied';
+                    consentStatus['ad_user_data'] = parsed.consent.marketing ? 'granted' : 'denied';
+                    consentStatus['ad_personalization'] = parsed.consent.marketing ? 'granted' : 'denied';
+                    consentStatus['analytics_storage'] = parsed.consent.analytics ? 'granted' : 'denied';
+                  }
+                } catch(e) {
+                  // Якщо помилка при парсингу, залишаємо дефолтні denied статуси
+                }
+              }
+              
+              gtag('consent', 'default', consentStatus);
               gtag('set', {'url_passthrough': true});
             `,
           }}
