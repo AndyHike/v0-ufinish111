@@ -1,6 +1,6 @@
 import { createClient } from "@/utils/supabase/server"
 import { cache } from "react"
-import { unstable_cache } from "next/cache"
+import { revalidateTag } from "next/cache"
 
 export type Brand = {
   id: string
@@ -18,33 +18,33 @@ export type Brand = {
     | null
 }
 
-// Cache brands for 1 hour using Next.js unstable_cache
-// This bypasses Supabase cache-control headers and ensures ISR works
-const getCachedBrands = unstable_cache(
-  async (): Promise<Brand[]> => {
-    try {
-      const supabase = await createClient()
+// ISR cache - 1 година (3600 секунд)
+const BRAND_CACHE_REVALIDATE = 3600
 
-      const { data, error } = await supabase
-        .from("brands")
-        .select("id, name, slug, logo_url, position, series(id, name, position, slug)")
-        .order("position", { ascending: true, nullsLast: true })
-        .order("name", { ascending: true })
-        .limit(12)
+export const getBrands = cache(async (): Promise<Brand[]> => {
+  try {
+    console.log("[v0] getBrands() called - checking cache...")
+    const supabase = await createClient()
 
-      if (error) {
-        console.error("[v0] Error fetching brands:", error)
-        return []
-      }
+    const { data, error } = await supabase
+      .from("brands")
+      .select("id, name, slug, logo_url, position, series(id, name, position, slug)")
+      .order("position", { ascending: true, nullsLast: true })
+      .order("name", { ascending: true })
+      .limit(12)
 
-      return data || []
-    } catch (error) {
-      console.error("[v0] Unexpected error in getBrands():", error)
+    if (error) {
+      console.error("[v0] Error fetching brands:", error)
       return []
     }
-  },
-  ["brands"], // cache tag
-  { revalidate: 3600, tags: ["brands"] } // 1 hour ISR
-)
 
-export const getBrands = cache(getCachedBrands)
+    console.log(`[v0] getBrands() returned ${data?.length || 0} brands from Supabase`)
+    return data || []
+  } catch (error) {
+    console.error("[v0] Unexpected error in getBrands():", error)
+    return []
+  }
+})
+
+// Экспортуємо функцію для ISR тегів
+export { BRAND_CACHE_REVALIDATE }

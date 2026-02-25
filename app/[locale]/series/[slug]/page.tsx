@@ -12,11 +12,10 @@ import SeriesPageClient from "./series-page-client"
 import { siteUrl } from "@/lib/site-config"
 import { PrevNextNav } from "@/components/prev-next-nav"
 import { BrandSeoSections } from "@/components/brand-seo-sections"
-import { unstable_cache } from "next/cache"
 
 // ISR Configuration
-export const revalidate = 3600
-export const dynamicParams = true
+export const revalidate = 3600 // Regenerate every 1 hour
+export const dynamicParams = true // Allow new slugs on-the-fly
 
 type Props = {
   params: {
@@ -25,7 +24,9 @@ type Props = {
   }
 }
 
+// Pre-render popular series at build time
 export async function generateStaticParams() {
+  // Use public client for build-time static generation
   const supabase = createClient()
 
   try {
@@ -33,7 +34,7 @@ export async function generateStaticParams() {
       .from("series")
       .select("slug")
       .order("position", { ascending: true })
-      .limit(50)
+      .limit(50) // Pre-render top 50 series
 
     const locales = ["uk", "cs", "en"]
 
@@ -51,101 +52,49 @@ export async function generateStaticParams() {
   }
 }
 
-// Cache series data
-const getCachedSeriesData = unstable_cache(
-  async (slug: string) => {
-    const supabase = await createServerClient()
-
-    let { data: series } = await supabase
-      .from("series")
-      .select("*, brands(id, name, slug, logo_url), models(id, name, slug, image_url)")
-      .eq("slug", slug)
-      .single()
-
-    if (!series) {
-      const { data } = await supabase
-        .from("series")
-        .select("*, brands(id, name, slug, logo_url), models(id, name, slug, image_url)")
-        .eq("id", slug)
-        .single()
-      series = data
-    }
-
-    if (!series) return null
-
-    return {
-      series,
-      models: series.models || [],
-    }
-  },
-  ["series"],
-  { revalidate: 3600, tags: ["series"] }
-)
-
-// Cache sibling series for navigation
-const getCachedSiblingSeries = unstable_cache(
-  async (brandId: string) => {
-    const supabase = await createServerClient()
-    const { data: siblingSeries } = await supabase
-      .from("series")
-      .select("name, slug")
-      .eq("brand_id", brandId)
-      .order("position", { ascending: true })
-    return siblingSeries || []
-  },
-  ["sibling-series"],
-  { revalidate: 3600, tags: ["series"] }
-)
-
-// Cache services for SEO section
-const getCachedServices = unstable_cache(
-  async (locale: string) => {
-    const supabase = await createServerClient()
-    const { data: topServices } = await supabase
-      .from("services")
-      .select(`id, slug, position, services_translations(name, locale), model_services(price)`)
-      .order("position", { ascending: true })
-      .limit(6)
-
-    return (topServices || []).map((svc: any) => {
-      const tr = (svc.services_translations as any[])?.find((t: any) => t.locale === locale) ?? svc.services_translations?.[0]
-      const prices = (svc.model_services as any[])?.map((ms: any) => ms.price).filter((p: any) => p != null && p > 0)
-      return {
-        id: svc.id,
-        slug: svc.slug,
-        name: tr?.name ?? svc.slug,
-        minPrice: prices && prices.length > 0 ? Math.min(...prices) : null,
-      }
-    })
-  },
-  ["services"],
-  { revalidate: 3600, tags: ["services"] }
-)
-
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug, locale } = await params
-  const seriesData = await getCachedSeriesData(slug)
-  const series = seriesData?.series
+
+  const supabase = await createServerClient()
+
+  // Спочатку спробуємо знайти за слагом
+  let { data: series } = await supabase.from("series").select("*, brands(name)").eq("slug", slug).single()
+
+  // Якщо не знайдено за слагом, спробуємо знайти за ID
+  if (!series) {
+    const { data } = await supabase.from("series").select("*, brands(name)").eq("id", slug).single()
+    series = data
+  }
 
   if (!series) {
+    const titlePatterns = {
+      cs: "Série nenalezena | DeviceHelp",
+      en: "Series not found | DeviceHelp",
+      uk: "Серію не знайдено | DeviceHelp",
+    }
+
+    const descriptionPatterns = {
+      cs: "Požadovaná série zařízení nebyla nalezena.",
+      en: "The requested device series could not be found.",
+      uk: "Запитувану серію пристроїв не вдалося знайти.",
+    }
+
     return {
-      title: "Series Not Found | DeviceHelp",
-      description: "The requested series could not be found.",
+      title: titlePatterns[locale as keyof typeof titlePatterns] || titlePatterns.en,
+      description: descriptionPatterns[locale as keyof typeof descriptionPatterns] || descriptionPatterns.en,
     }
   }
 
-  const brandName = Array.isArray(series.brands) ? (series.brands as any[])[0]?.name : (series.brands as any)?.name
-
   const titlePatterns = {
-    cs: `Oprava zařízení ${series.name} ${brandName} | DeviceHelp`,
-    en: `Repair of ${series.name} ${brandName} devices | DeviceHelp`,
-    uk: `Ремонт пристроїв ${series.name} ${brandName} | DeviceHelp`,
+    cs: `Oprava zařízení ${series.name} ${series.brands?.name} | DeviceHelp`,
+    en: `Repair of ${series.name} ${series.brands?.name} devices | DeviceHelp`,
+    uk: `Ремонт пристроїв ${series.name} ${series.brands?.name} | DeviceHelp`,
   }
 
   const descriptionPatterns = {
-    cs: `Profesionální oprava všech modelů ${series.name} od ${brandName}. Rychlé a kvalitní služby s garancí.`,
-    en: `Professional repair of all ${series.name} models from ${brandName}. Fast and quality services with warranty.`,
-    uk: `Професійний ремонт усіх моделей ${series.name} від ${brandName}. Швидкі та якісні послуги з гарантією.`,
+    cs: `Profesionální oprava všech modelů ${series.name} od ${series.brands?.name}. Rychlé a kvalitní služby s garancí.`,
+    en: `Professional repair of all ${series.name} models from ${series.brands?.name}. Fast and quality services with warranty.`,
+    uk: `Професійний ремонт усіх моделей ${series.name} від ${series.brands?.name}. Швидкі та якісні послуги з гарантією.`,
   }
 
   return {
@@ -172,25 +121,76 @@ export default async function SeriesPage({ params }: Props) {
   const { slug, locale } = await params
   const t = await getTranslations({ locale, namespace: "Series" })
 
-  const seriesData = await getCachedSeriesData(slug)
+  const supabase = await createServerClient()
 
-  if (!seriesData?.series) {
+  // Спочатку спробуємо знайти за слагом
+  let { data: series, error: seriesError } = await supabase
+    .from("series")
+    .select("*, brands(id, name, slug, logo_url)")
+    .eq("slug", slug)
+    .single()
+
+  // Якщо не знайдено за слагом, спробуємо знайти за ID
+  if (!series) {
+    const { data, error } = await supabase
+      .from("series")
+      .select("*, brands(id, name, slug, logo_url)")
+      .eq("id", slug)
+      .single()
+
+    series = data
+    seriesError = error
+  }
+
+  if (seriesError || !series) {
     notFound()
   }
 
-  const { series, models } = seriesData
-  const initialData = { series, models }
+  // Fetch models for this series
+  const { data: models, error: modelsError } = await supabase
+    .from("models")
+    .select("id, name, slug, image_url, created_at")
+    .eq("series_id", series.id)
+    .order("position", { ascending: true })
 
-  // Fetch navigation data
+  const initialData = {
+    series,
+    models: models || [],
+  }
+
+  // Fetch prev/next series in same brand for navigation
   const brandId = Array.isArray(series.brands) ? (series.brands as any[])[0]?.id : (series.brands as any)?.id
-  const siblingSeries = brandId ? await getCachedSiblingSeries(brandId) : []
+  const { data: siblingSeries } = brandId
+    ? await supabase
+      .from("series")
+      .select("name, slug")
+      .eq("brand_id", brandId)
+      .order("position", { ascending: true })
+    : { data: null }
 
   const seriesIndex = siblingSeries?.findIndex((s) => s.slug === slug) ?? -1
   const prevSeries = seriesIndex > 0 ? siblingSeries![seriesIndex - 1] : null
-  const nextSeries = siblingSeries && seriesIndex >= 0 && seriesIndex < siblingSeries.length - 1 ? siblingSeries[seriesIndex + 1] : null
+  const nextSeries = siblingSeries && seriesIndex >= 0 && seriesIndex < siblingSeries.length - 1
+    ? siblingSeries[seriesIndex + 1]
+    : null
 
-  // Fetch services
-  const seoServices = await getCachedServices(locale)
+  // Fetch popular services for BrandSeoSections
+  const { data: topServices } = await supabase
+    .from("services")
+    .select(`id, slug, position, services_translations(name, locale), model_services(price)`)
+    .order("position", { ascending: true })
+    .limit(6)
+
+  const seoServices = (topServices || []).map((svc: any) => {
+    const tr = (svc.services_translations as any[])?.find((t: any) => t.locale === locale) ?? svc.services_translations?.[0]
+    const prices = (svc.model_services as any[])?.map((ms: any) => ms.price).filter((p: any) => p != null && p > 0)
+    return {
+      id: svc.id,
+      slug: svc.slug,
+      name: tr?.name ?? svc.slug,
+      minPrice: prices && prices.length > 0 ? Math.min(...prices) : null,
+    }
+  })
 
   return (
     <div className="flex flex-col min-h-screen">
