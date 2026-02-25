@@ -237,9 +237,6 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
               <CookieConsentProvider>
                 <GlobalDataProvider>
                   <DynamicFavicon />
-                  <Suspense fallback={null}>
-                    <AnalyticsTracker />
-                  </Suspense>
                   <div className="flex min-h-screen flex-col">
                     <Suspense fallback={<HeaderSkeleton />}>
                       <Header />
