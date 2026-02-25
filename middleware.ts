@@ -52,40 +52,6 @@ export async function middleware(request: NextRequest) {
     )
   }
 
-  // CRITICAL: Handle www removal FIRST AND AGGRESSIVELY
-  // This MUST happen before next-intl touches the request
-  const hasWWW = hostname.startsWith("www.")
-  const cleanHostname = hasWWW ? hostname.replace(/^www\./, "") : hostname
-
-  // If www is present, ALWAYS redirect to non-www immediately
-  // Don't let next-intl process requests with www
-  if (hasWWW) {
-    const savedLocale = request.cookies.get("NEXT_LOCALE")?.value
-    const preferredLocale = savedLocale && supportedLocales.includes(savedLocale) ? savedLocale : getDefaultLanguage()
-
-    // For root path without locale, add locale while removing www in one 301
-    if (pathname === "/") {
-      const targetUrl = `https://${cleanHostname}/${preferredLocale}${pathname}`
-      const url = new URL(targetUrl, request.url)
-      url.search = request.nextUrl.search
-
-      const response = NextResponse.redirect(url, { status: 301 })
-      response.cookies.set("NEXT_LOCALE", preferredLocale, {
-        path: "/",
-        maxAge: 31536000,
-        sameSite: "strict",
-        secure: process.env.NODE_ENV === "production",
-        httpOnly: false,
-      })
-      return response
-    }
-
-    // For any other path with www, just remove www
-    const url = new URL(`https://${cleanHostname}${pathname}`, request.url)
-    url.search = request.nextUrl.search
-    return NextResponse.redirect(url, { status: 301 })
-  }
-
   // Skip middleware for static files, API routes, webhooks, images, and special files
   if (
     pathname.startsWith("/_next") ||
@@ -99,17 +65,34 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // NOW check for locale - only if www is already handled
+  // Check conditions that require a single unified redirect
+  const hasWWW = hostname.startsWith("www.")
+  const cleanHostname = hasWWW ? hostname.replace(/^www\./, "") : hostname
+  
   const pathnameHasLocale = supportedLocales.some(
     (locale) => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`,
   )
 
-  // Handle locale redirect for non-www requests
-  if (!pathnameHasLocale) {
+  // UNIFIED REDIRECT LOGIC: if www present OR locale missing, do ONE 301 redirect with final URL
+  if (hasWWW || !pathnameHasLocale) {
     const savedLocale = request.cookies.get("NEXT_LOCALE")?.value
     const preferredLocale = savedLocale && supportedLocales.includes(savedLocale) ? savedLocale : getDefaultLanguage()
 
-    const url = new URL(`/${preferredLocale}${pathname}`, request.url)
+    // Build final path: if root path, use /${locale} (WITHOUT trailing slash)
+    // Otherwise keep the original path structure
+    let finalPath: string
+    if (pathname === "/") {
+      finalPath = `/${preferredLocale}`
+    } else if (!pathnameHasLocale) {
+      // Path exists but no locale - prepend locale
+      finalPath = `/${preferredLocale}${pathname}`
+    } else {
+      // Path already has locale, just keep it
+      finalPath = pathname
+    }
+
+    // Build absolute URL with scheme and proper hostname
+    const url = new URL(`https://${cleanHostname}${finalPath}`, request.url)
     url.search = request.nextUrl.search
 
     const response = NextResponse.redirect(url, { status: 301 })
