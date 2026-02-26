@@ -21,20 +21,41 @@ export const getGoogleReviews = cache(async (): Promise<GoogleReviewsData | null
     const placeId = process.env.GOOGLE_PLACES_ID
 
     if (!apiKey || !placeId) {
+      console.warn("[v0] Google Places API key or place ID not configured")
       return null
     }
 
-    // Use the new Places API endpoint instead of legacy API
-    const url = `https://places.googleapis.com/v1/places/${placeId}?fields=displayName,rating,userRatingCount,reviews&key=${apiKey}`
+    // Try multiple field combinations to get reviews
+    // First try: All fields
+    let url = `https://places.googleapis.com/v1/places/${placeId}?fields=displayName,rating,userRatingCount,reviews&key=${apiKey}`
 
-    const response = await fetch(url, {
+    console.log("[v0] Fetching from Google Places API...")
+    let response = await fetch(url, {
       headers: {
         "X-Goog-Api-Key": apiKey,
       },
       next: { revalidate: 3600 },
     })
 
-    const data = await response.json()
+    let data = await response.json()
+    console.log("[v0] Google API Response (attempt 1) - has reviews:", !!data.reviews, "reviews count:", data.reviews?.length || 0)
+
+    // If no reviews, try without key in URL (use header instead)
+    if (!data.reviews || data.reviews.length === 0) {
+      console.log("[v0] Trying alternative API request format...")
+      url = `https://places.googleapis.com/v1/places/${placeId}?fields=displayName,rating,userRatingCount,reviews`
+      
+      response = await fetch(url, {
+        headers: {
+          "X-Goog-Api-Key": apiKey,
+          "Content-Type": "application/json",
+        },
+        next: { revalidate: 3600 },
+      })
+      
+      data = await response.json()
+      console.log("[v0] Google API Response (attempt 2) - has reviews:", !!data.reviews, "reviews count:", data.reviews?.length || 0)
+    }
 
     if (!response.ok) {
       console.error("[v0] Google API error status:", response.status, data)
@@ -45,9 +66,25 @@ export const getGoogleReviews = cache(async (): Promise<GoogleReviewsData | null
       return null
     }
 
+    // Handle both new and legacy API responses
+    const reviews = data.reviews || []
+    
+    if (reviews.length === 0) {
+      console.warn("[v0] No reviews returned from Google API. Ensure you have:")
+      console.warn("[v0] - Places API enabled in Google Cloud Console")
+      console.warn("[v0] - 'Places API' product selected in your API key")
+      console.warn("[v0] - Reviews are available for this business on Google")
+      console.log("[v0] API Response structure:", {
+        rating: data.rating,
+        userRatingCount: data.userRatingCount,
+        displayName: data.displayName?.text,
+        reviewsAvailable: !!data.reviews,
+      })
+    }
+
     const result = {
       // Get ALL reviews and sort by newest first (highest timestamp first)
-      reviews: (data.reviews || [])
+      reviews: reviews
         .map((review: any) => ({
           author_name: review.authorAttribution?.displayName || "Anonymous",
           rating: review.rating || 0,
