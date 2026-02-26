@@ -12,10 +12,11 @@ import { syncClientToRemonline, updateRemonlineIdForUser } from "@/lib/services/
 import { hash } from "@/lib/auth/utils"
 import { revalidatePath } from "next/cache"
 
-function setSecureCookie(name: string, value: string, maxAge: number = 30 * 24 * 60 * 60) {
+async function setSecureCookie(name: string, value: string, maxAge: number = 30 * 24 * 60 * 60) {
   const isProduction = process.env.NODE_ENV === "production"
 
-  cookies().set(name, value, {
+  const cookieStore = await cookies()
+  cookieStore.set(name, value, {
     httpOnly: true,
     secure: isProduction,
     maxAge,
@@ -103,9 +104,9 @@ export async function checkUserExists(identifier: string): Promise<{
 
       if (data) {
         userData = {
-          id: data.users.id,
-          email: data.users.email,
-          name: `${data.users.first_name} ${data.users.last_name}`.trim(),
+          id: (data as any).users.id,
+          email: (data as any).users.email,
+          name: `${(data as any).users.first_name} ${(data as any).users.last_name}`.trim(),
           phone: data.phone,
         }
       }
@@ -115,10 +116,10 @@ export async function checkUserExists(identifier: string): Promise<{
       return {
         success: true,
         userData: {
-          id: userData.id,
-          email: userData.email,
-          name: userData.name,
-          phone: userData.phone,
+          id: (userData as any).id,
+          email: (userData as any).email,
+          name: (userData as any).name,
+          phone: (userData as any).phone,
         },
       }
     }
@@ -215,7 +216,7 @@ export async function verifyCode(
   identifier: string,
   code: string,
   type: "login" | "registration",
-): Promise<{ success: boolean; message?: string }> {
+): Promise<{ success: boolean; message?: string; role?: string }> {
   try {
     if (process.env.NODE_ENV === "development") {
       console.log(`[v0] Verifying code for ${identifier}: ${code}`)
@@ -318,8 +319,8 @@ export async function verifyCode(
         console.log(`[v0] Session created: ${session.id}, setting cookies...`)
       }
 
-      setSecureCookie("session_id", session.id)
-      setSecureCookie("user_role", userRole)
+      await setSecureCookie("session_id", session.id)
+      await setSecureCookie("user_role", userRole)
 
       if (process.env.NODE_ENV === "development") {
         console.log(`[v0] Cookies set successfully for user ${userId}`)
@@ -328,7 +329,7 @@ export async function verifyCode(
       revalidatePath("/", "layout")
     }
 
-    return { success: true }
+    return { success: true, role: userRole }
   } catch (error) {
     if (process.env.NODE_ENV === "development") {
       console.error("Verify code error:", error)
@@ -389,7 +390,7 @@ export async function createUser(userData: {
         }
       }
 
-      setSecureCookie("session_id", session.id)
+      await setSecureCookie("session_id", session.id)
 
       // Sync with RemOnline in the background
       syncClientToRemonline(userData)
@@ -480,7 +481,7 @@ export async function createUser(userData: {
       }
     }
 
-    setSecureCookie("session_id", session.id)
+    await setSecureCookie("session_id", session.id)
 
     // Sync with RemOnline in the background
     syncClientToRemonline({

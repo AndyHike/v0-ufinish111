@@ -51,18 +51,14 @@ export function Header() {
 
   useEffect(() => {
     fetch("/api/user/current", {
-      cache: "revalidate",
-      next: {
-        revalidate: 300, // 5 minutes for user session
-        tags: ["user-session"],
-      },
+      cache: "no-store",
     })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         setUser(data?.user || null)
         setUserLoaded(true)
       })
-      .catch(() => {
+      .catch((err) => {
         setUser(null)
         setUserLoaded(true)
       })
@@ -74,7 +70,7 @@ export function Header() {
   const [showResults, setShowResults] = useState(false)
   const [hasSearched, setHasSearched] = useState(false)
   const [isFirstSearch, setIsFirstSearch] = useState(true)
-  const searchTimeoutRef = useRef<NodeJS.Timeout>()
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
   const { settings } = useSiteSettings()
 
@@ -282,9 +278,8 @@ export function Header() {
                         <li key={item.href}>
                           <Link
                             href={item.href}
-                            className={`flex items-center rounded-md px-3 py-3 text-sm hover:bg-accent ${
-                              isActive(item.href) ? "font-medium text-foreground bg-accent/50" : "text-muted-foreground"
-                            }`}
+                            className={`flex items-center rounded-md px-3 py-3 text-sm hover:bg-accent ${isActive(item.href) ? "font-medium text-foreground bg-accent/50" : "text-muted-foreground"
+                              }`}
                           >
                             <span className="mr-3">{item.icon}</span>
                             {item.name}
@@ -417,9 +412,8 @@ export function Header() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`text-sm whitespace-nowrap ${
-                  isActive(item.href) ? "font-medium text-foreground" : "text-muted-foreground hover:text-foreground"
-                }`}
+                className={`text-sm whitespace-nowrap ${isActive(item.href) ? "font-medium text-foreground" : "text-muted-foreground hover:text-foreground"
+                  }`}
               >
                 {item.name}
               </Link>

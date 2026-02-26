@@ -90,7 +90,11 @@ export function ModernLoginForm({ locale }: ModernLoginFormProps) {
         return
       }
 
-      window.location.href = `/${locale}`
+      if (result.role === "admin") {
+        window.location.href = `/${locale}/admin`
+      } else {
+        window.location.href = `/${locale}/profile`
+      }
     } catch (error) {
       console.error("Verification error:", error)
       setError(t("somethingWentWrong"))
