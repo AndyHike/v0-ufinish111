@@ -211,7 +211,7 @@ export default function ContactPageClient() {
             <div className="w-full h-[300px] rounded-t-lg overflow-hidden">
               <iframe
                 title={t("mapTitle")}
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2561.9473756468813!2d14.3718826!3d50.0828941!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x470b94f21a6bc55f%3A0x4d61fc29d0c4b1ea!2sB%C4%9Blohorsk%C3%A1%20209%2F133%2C%20169%2000%20Praha%206-B%C5%99evnov!5e0!3m2!1sen!2scz!4v1717177177171!5m2!1sen!2scz"
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2560.151956802683!2d14.360191576380846!3d50.08344177152446!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x470b954f059a39d5%3A0x274774180cfc2ab9!2sDeviceHelp%20%E2%80%93%20servis%20mobiln%C3%ADch%20telefon%C5%AF%20v%C5%A1ech%20zna%C4%8Dek%20Praha%206!5e0!3m2!1suk!2scz!4v1772066360155!5m2!1suk!2scz"
                 width="100%"
                 height="100%"
                 style={{ border: 0 }}
@@ -315,7 +315,7 @@ export default function ContactPageClient() {
               <div className="w-full flex-grow rounded-b-xl overflow-hidden">
                 <iframe
                   title={t("mapTitle")}
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2561.9473756468813!2d14.3718826!3d50.0828941!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x470b94f21a6bc55f%3A0x4d61fc29d0c4b1ea!2sB%C4%9Blohorsk%C3%A1%20209%2F133%2C%20169%2000%20Praha%206-B%C5%99evnov!5e0!3m2!1sen!2scz!4v1717177177171!5m2!1sen!2scz"
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2560.151956802683!2d14.360191576380846!3d50.08344177152446!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x470b954f059a39d5%3A0x274774180cfc2ab9!2sDeviceHelp%20%E2%80%93%20servis%20mobiln%C3%ADch%20telefon%C5%AF%20v%C5%A1ech%20zna%C4%8Dek%20Praha%206!5e0!3m2!1suk!2scz!4v1772066360155!5m2!1suk!2scz"
                   width="100%"
                   height="100%"
                   style={{ border: 0, minHeight: "300px" }}
