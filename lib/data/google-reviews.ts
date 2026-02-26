@@ -35,7 +35,6 @@ export const getGoogleReviews = cache(async (): Promise<GoogleReviewsData | null
     })
 
     const data = await response.json()
-    console.log("[v0] Google API Full Response:", JSON.stringify(data, null, 2))
 
     if (!response.ok) {
       console.error("[v0] Google API error status:", response.status, data)
@@ -47,19 +46,22 @@ export const getGoogleReviews = cache(async (): Promise<GoogleReviewsData | null
     }
 
     const result = {
-      reviews: (data.reviews || []).slice(0, 6).map((review: any) => ({
-        author_name: review.authorAttribution?.displayName || "Anonymous",
-        rating: review.rating || 0,
-        text: review.originalText?.text || (typeof review.text === 'object' ? review.text?.text : (review.text || "")),
-        time: review.publishTime ? new Date(review.publishTime).getTime() / 1000 : 0,
-        profile_photo_url: review.authorAttribution?.photoUri,
-      })),
+      // Get ALL reviews and sort by newest first (highest timestamp first)
+      reviews: (data.reviews || [])
+        .map((review: any) => ({
+          author_name: review.authorAttribution?.displayName || "Anonymous",
+          rating: review.rating || 0,
+          text: review.originalText?.text || (typeof review.text === 'object' ? review.text?.text : (review.text || "")),
+          time: review.publishTime ? new Date(review.publishTime).getTime() / 1000 : 0,
+          profile_photo_url: review.authorAttribution?.photoUri,
+        }))
+        .sort((a: any, b: any) => b.time - a.time), // Sort by time descending (newest first)
       rating: data.rating || 0,
       totalReviews: data.userRatingCount || 0,
       businessName: data.displayName?.text,
     }
     
-    console.log("[v0] Returning reviews:", result.reviews.length)
+    console.log("[v0] Returning reviews:", result.reviews.length, "sorted by newest first")
     return result
   } catch (error) {
     console.error("[v0] Error fetching reviews:", error)
