@@ -41,7 +41,7 @@ const nextConfig = {
   output: 'standalone',
   compress: true,
   poweredByHeader: false,
-  
+
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',
   },
@@ -49,6 +49,7 @@ const nextConfig = {
   experimental: {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
     webVitalsAttribution: ['CLS', 'LCP', 'FCP', 'FID', 'TTFB'],
+    optimizeCss: true,
   },
 
   async headers() {
@@ -65,7 +66,7 @@ const nextConfig = {
         source: '/_next/static/:path*',
         headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
       },
-       {
+      {
         source: '/:path*',
         headers: [{ key: 'X-DNS-Prefetch-Control', value: 'on' }],
       },

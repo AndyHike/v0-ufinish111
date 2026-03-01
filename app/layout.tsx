@@ -17,5 +17,3 @@ export default function RootLayout({
 }) {
   return <>{children}</>
 }
-
-import './globals.css'
