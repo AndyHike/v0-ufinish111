@@ -2,6 +2,8 @@
 
 import { useSiteSettings } from "@/hooks/use-site-settings"
 
+import Image from "next/image"
+
 interface SiteLogoProps {
   className?: string
   size?: "sm" | "md" | "lg"
@@ -10,27 +12,30 @@ interface SiteLogoProps {
 export function SiteLogo({ className = "", size = "md" }: SiteLogoProps) {
   const { settings } = useSiteSettings()
 
-  // Якщо немає логотипу або він не завантажується, показуємо placeholder
-  const logoSrc = settings.siteLogo || "/placeholder-logo.png"
+  // Always prefer WebP placeholder
+  const logoSrc = settings.siteLogo || "/placeholder-logo.webp"
 
   const sizeClasses = getSizeClasses(size)
 
   return (
-    <img
-      src={logoSrc || "/placeholder.svg"}
-      alt="Site Logo"
-      className={`object-contain ${sizeClasses} ${className}`}
-      onError={(e) => {
-        const target = e.target as HTMLImageElement
-        // Якщо основний логотип не завантажується, спробуємо placeholder
-        if (target.src !== "/placeholder-logo.png") {
-          target.src = "/placeholder-logo.png"
-        } else {
-          // Якщо і placeholder не завантажується, ховаємо елемент
-          target.style.display = "none"
-        }
-      }}
-    />
+    <div className={`relative ${sizeClasses} ${className}`}>
+      <Image
+        src={logoSrc}
+        alt="Site Logo"
+        fill
+        sizes="(max-width: 768px) 48px, 48px"
+        priority // Critical for LCP in header
+        className="object-contain"
+        onError={(e) => {
+          const target = e.target as HTMLImageElement
+          if (!target.src.includes("/placeholder-logo.webp")) {
+            target.src = "/placeholder-logo.webp"
+          } else {
+            target.style.display = "none"
+          }
+        }}
+      />
+    </div>
   )
 }
 
