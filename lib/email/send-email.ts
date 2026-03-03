@@ -111,11 +111,12 @@ export async function sendNewContactMessageNotification(
   // Отримуємо адресу для сповіщень з env або використовуємо адресу відправника
   const notificationEmail = process.env.NOTIFICATION_EMAIL || process.env.EMAIL_FROM?.trim() || "info@devicehelp.cz"
 
-  return await sendEmail(notificationEmail, subject, emailTemplate)
+  // Передаємо email клієнта як replyTo, щоб можна було відповісти прямо
+  return await sendEmail(notificationEmail, subject, emailTemplate, contactMessage.email)
 }
 
 // Експортуємо функцію sendEmail для використання в інших модулях
-export async function sendEmail(to: string, subject: string, html: string) {
+export async function sendEmail(to: string, subject: string, html: string, replyTo?: string) {
   try {
     console.log(`Attempting to send email to ${to} with subject "${subject}"`)
 
@@ -126,12 +127,19 @@ export async function sendEmail(to: string, subject: string, html: string) {
       ? process.env.EMAIL_FROM.trim()
       : `"Mobile Repair Service" <noreply@example.com>`
 
-    const result = await transporter.sendMail({
+    const mailOptions: Record<string, string> = {
       from,
       to: to.trim(),
       subject,
       html,
-    })
+    }
+
+    // Якщо передано replyTo, додаємо його — щоб можна було відповісти прямо на email клієнта
+    if (replyTo) {
+      mailOptions.replyTo = replyTo.trim()
+    }
+
+    const result = await transporter.sendMail(mailOptions)
 
     console.log(`Email sent successfully to ${to}`)
     return true

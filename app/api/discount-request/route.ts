@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic"
 import { createClient } from "@/utils/supabase/server"
 import { type NextRequest, NextResponse } from "next/server"
 import { sendEmail } from "@/lib/email/send-email"
+import { sendTelegramNotification } from "@/lib/telegram/send-telegram"
 
 export async function POST(request: NextRequest) {
   try {
@@ -53,10 +54,33 @@ ${message || "Не вказано"}
 ${message ? `<p><strong>Zpráva:</strong><br/>${message}</p>` : ""}
     `
 
-    await sendEmail({
-      subject: emailSubject[locale as keyof typeof emailSubject] || emailSubject.cs,
-      html: emailBody,
-    })
+    // Отримуємо адресу для сповіщень
+    const notificationEmail = process.env.NOTIFICATION_EMAIL || process.env.EMAIL_FROM?.trim() || "info@devicehelp.cz"
+
+    await sendEmail(
+      notificationEmail,
+      emailSubject[locale as keyof typeof emailSubject] || emailSubject.cs,
+      emailBody,
+      email, // replyTo — email клієнта
+    )
+
+    // Відправляємо сповіщення в Telegram
+    const telegramMessage = [
+      `🏷️ <b>Нова заявка на знижку</b>`,
+      ``,
+      `<b>Акція:</b> ${promotion}`,
+      `<b>Ім'я:</b> ${name}`,
+      `<b>Email:</b> ${email}`,
+      `<b>Телефон:</b> ${phone}`,
+      device ? `<b>Пристрій:</b> ${device}` : null,
+      service ? `<b>Послуга:</b> ${service}` : null,
+      message ? `\n<b>Повідомлення:</b> ${message}` : null,
+    ]
+      .filter(Boolean)
+      .join("\n")
+
+    const telegramSent = await sendTelegramNotification(telegramMessage)
+    console.log("Telegram notification sent:", telegramSent)
 
     return NextResponse.json({ success: true })
   } catch (error) {

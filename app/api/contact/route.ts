@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
 import { sendNewContactMessageNotification } from "@/lib/email/send-email"
+import { sendTelegramNotification } from "@/lib/telegram/send-telegram"
 
 // Функція для створення таблиці contact_messages, якщо вона не існує
 async function ensureContactMessagesTable(supabase: any) {
@@ -86,6 +87,23 @@ export async function POST(request: Request) {
     const contactMessage = { name, email, phone, message }
     const emailSent = await sendNewContactMessageNotification(contactMessage, locale)
     console.log("Email notification sent:", emailSent)
+
+    // Відправляємо сповіщення в Telegram
+    const telegramMessage = [
+      `📩 <b>Нове повідомлення з контактної форми</b>`,
+      ``,
+      `<b>Ім'я:</b> ${name}`,
+      `<b>Email:</b> ${email}`,
+      phone ? `<b>Телефон:</b> ${phone}` : null,
+      ``,
+      `<b>Повідомлення:</b>`,
+      message,
+    ]
+      .filter(Boolean)
+      .join("\n")
+
+    const telegramSent = await sendTelegramNotification(telegramMessage)
+    console.log("Telegram notification sent:", telegramSent)
 
     // Успішна відповідь
     return NextResponse.json({ success: true })

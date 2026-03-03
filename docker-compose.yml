@@ -63,5 +63,9 @@ services:
       - 'GOOGLE_ANALYTICS_PRIVATE_KEY=${GOOGLE_ANALYTICS_PRIVATE_KEY}'
       - 'GOOGLE_ANALYTICS_CLIENT_EMAIL=${GOOGLE_ANALYTICS_CLIENT_EMAIL}'
       - 'NEXT_PUBLIC_FACEBOOK_PIXEL_ID=${NEXT_PUBLIC_FACEBOOK_PIXEL_ID}'
+      
+      # Telegram Bot
+      - 'TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}'
+      - 'TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}'
 
     # Healthcheck: Допомагає Coolify зрозуміти, коли перемикати трафік на новий контейнер

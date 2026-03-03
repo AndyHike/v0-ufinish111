@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { sendNewContactMessageNotification, sendEmail } from "@/lib/email/send-email"
+import { sendTelegramNotification } from "@/lib/telegram/send-telegram"
 
 export async function POST(request: NextRequest) {
   try {
@@ -76,6 +77,25 @@ ${comment ? `Додаткова інформація:\n${comment}` : ""}
     if (!clientEmailSent) {
       console.error("Failed to send client confirmation email")
     }
+
+    // Відправляємо сповіщення в Telegram
+    const telegramMessage = [
+      `📅 <b>Нове бронювання послуги</b>`,
+      ``,
+      `<b>Послуга:</b> ${serviceInfo}${priceInfo}`,
+      `<b>Дата:</b> ${formattedDate}`,
+      `<b>Час:</b> ${time}`,
+      ``,
+      `<b>Клієнт:</b> ${fullName}`,
+      `<b>Телефон:</b> ${phone}`,
+      `<b>Email:</b> ${email}`,
+      comment ? `\n<b>Коментар:</b> ${comment}` : null,
+    ]
+      .filter(Boolean)
+      .join("\n")
+
+    const telegramSent = await sendTelegramNotification(telegramMessage)
+    console.log("Telegram notification sent:", telegramSent)
 
     return NextResponse.json({
       success: true,
@@ -310,16 +330,15 @@ async function sendBookingConfirmationEmail(
           <span class="value">${bookingData.phone}</span>
         </div>
         
-        ${
-          bookingData.comment
-            ? `
+        ${bookingData.comment
+      ? `
         <div class="detail-row">
           <span class="label">${t.comment}</span>
           <span class="value">${bookingData.comment}</span>
         </div>
         `
-            : ""
-        }
+      : ""
+    }
       </div>
 
       <div class="address-section">

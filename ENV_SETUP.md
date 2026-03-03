@@ -46,3 +46,19 @@ NEXT_PUBLIC_DEFAULT_LOCALE=uk
 The middleware now uses `user_role` cookie instead of database queries to check admin access. This cookie is automatically set during login and removed during logout.
 
 **No action needed** - the authentication system will handle this automatically.
+
+## Telegram Bot Notifications
+
+Notifications are sent to a Telegram chat when a contact form, booking, or discount request is submitted.
+
+### TELEGRAM_BOT_TOKEN
+Bot API token obtained from [@BotFather](https://t.me/BotFather).
+
+- **Example**: `TELEGRAM_BOT_TOKEN=123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11`
+
+### TELEGRAM_CHAT_ID
+Your personal chat ID with the bot. You can get it by sending `/start` to your bot and then checking `https://api.telegram.org/bot<TOKEN>/getUpdates`.
+
+- **Example**: `TELEGRAM_CHAT_ID=123456789`
+
+If these variables are not set, Telegram notifications are silently skipped — email notifications still work independently.
