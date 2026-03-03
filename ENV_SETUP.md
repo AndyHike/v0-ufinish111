@@ -59,6 +59,9 @@ Bot API token obtained from [@BotFather](https://t.me/BotFather).
 ### TELEGRAM_CHAT_ID
 Your personal chat ID with the bot. You can get it by sending `/start` to your bot and then checking `https://api.telegram.org/bot<TOKEN>/getUpdates`.
 
-- **Example**: `TELEGRAM_CHAT_ID=123456789`
+**Supports multiple IDs**: you can provide a single ID or a comma-separated list of IDs if you want notifications to be sent to multiple people.
+
+- **Example (single)**: `TELEGRAM_CHAT_ID=123456789`
+- **Example (multiple)**: `TELEGRAM_CHAT_ID=123456789, 987654321`
 
 If these variables are not set, Telegram notifications are silently skipped — email notifications still work independently.
