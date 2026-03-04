@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
+import { revalidateUtils } from "@/lib/revalidate-utils"
+import { revalidatePath } from "next/cache"
 
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
@@ -33,6 +35,8 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       .single()
 
     if (error) throw error
+    // Revalidate paths to update UI instantly
+    revalidatePath("/", "layout")
 
     return NextResponse.json(data)
   } catch (error) {
@@ -44,9 +48,14 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 export async function DELETE(request: Request, { params }: { params: { id: string } }) {
   try {
     const supabase = createClient()
+    // Get brand info before deletion to know which paths to clear
+    const { data: brandData } = await supabase.from("brands").select("slug").eq("id", params.id).single()
+
     const { error } = await supabase.from("brands").delete().eq("id", params.id)
 
     if (error) throw error
+    // Revalidate paths to update UI instantly
+    revalidatePath("/", "layout")
 
     return NextResponse.json({ success: true })
   } catch (error) {

@@ -1,9 +1,9 @@
 import { createClient } from "@/lib/supabase"
 import { cookies } from "next/headers"
-import { createServerComponentClient } from "@supabase/auth-helpers-nextjs"
+import { createServerClient } from "@/utils/supabase/server"
 
 type ActivityType = "create" | "update" | "delete" | "view"
-type EntityType = "brand" | "model" | "repair" | "user" | "discount"
+type EntityType = "brand" | "series" | "model" | "repair" | "user" | "discount"
 
 interface LogActivityParams {
   entityId: string
@@ -14,13 +14,13 @@ interface LogActivityParams {
 }
 
 export async function logActivity({
-  userId,
+  userId = "system",
   actionType,
   entityType,
   entityId,
   details = {},
 }: {
-  userId: string
+  userId?: string | null
   actionType: ActivityType
   entityType: EntityType
   entityId: string
@@ -48,7 +48,7 @@ export async function logActivity({
 
 export async function logAdminActivity({ entityId, actionType, entityType, userId, details = {} }: LogActivityParams) {
   try {
-    const supabase = createServerComponentClient({ cookies })
+    const supabase = await createServerClient()
 
     // Get current admin user if userId is not provided
     let adminId = userId

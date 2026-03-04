@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
 import { logActivity } from "@/lib/admin/activity-logger"
+import { revalidateUtils } from "@/lib/revalidate-utils"
+import { revalidatePath } from "next/cache"
 
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
@@ -43,6 +45,8 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       userId: body.userId || null,
       details: { name: data.name },
     })
+    // Revalidate paths to update UI instantly
+    revalidatePath("/", "layout")
 
     return NextResponse.json(data)
   } catch (error) {
@@ -55,8 +59,8 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
   try {
     const supabase = createClient()
 
-    // Get series info before deletion for logging
-    const { data: seriesData } = await supabase.from("series").select("name, brand_id").eq("id", params.id).single()
+    // Get series info before deletion for logging and cache clearing
+    const { data: seriesData } = await supabase.from("series").select("slug, name, brand_id").eq("id", params.id).single()
 
     const { error } = await supabase.from("series").delete().eq("id", params.id)
 
@@ -72,6 +76,8 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
         details: { name: seriesData.name, brand_id: seriesData.brand_id },
       })
     }
+    // Revalidate paths to update UI instantly
+    revalidatePath("/", "layout")
 
     return NextResponse.json({ success: true })
   } catch (error) {
