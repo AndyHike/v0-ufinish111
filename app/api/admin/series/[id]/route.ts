@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
 import { logActivity } from "@/lib/admin/activity-logger"
+import { revalidateSeriesPages } from "@/lib/revalidate-helpers"
 
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
@@ -44,6 +45,10 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       details: { name: data.name },
     })
 
+    // Revalidate series + parent brand pages
+    const { data: brandData } = await supabase.from("brands").select("slug").eq("id", data.brand_id).single()
+    revalidateSeriesPages(data.slug, brandData?.slug)
+
     return NextResponse.json(data)
   } catch (error) {
     console.error("Error updating series:", error)
@@ -71,6 +76,12 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
         userId: null,
         details: { name: seriesData.name, brand_id: seriesData.brand_id },
       })
+    }
+
+    // Revalidate series + parent brand pages
+    if (seriesData) {
+      const { data: brandData } = await supabase.from("brands").select("slug").eq("id", seriesData.brand_id).single()
+      revalidateSeriesPages(seriesData.slug, brandData?.slug)
     }
 
     return NextResponse.json({ success: true })

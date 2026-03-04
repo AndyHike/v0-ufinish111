@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
 import { getSession } from "@/lib/auth/session"
 import { formatImageUrl } from "@/utils/image-url"
+import { revalidateBrandPages } from "@/lib/revalidate-helpers"
 
 export async function GET() {
   try {
@@ -95,6 +96,9 @@ export async function POST(request: Request) {
         },
       ])
     }
+
+    // Revalidate brand pages
+    revalidateBrandPages(data.slug)
 
     return NextResponse.json(data)
   } catch (error) {

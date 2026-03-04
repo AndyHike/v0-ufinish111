@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
+import { revalidateBrandPages } from "@/lib/revalidate-helpers"
 
 export async function POST(request: Request) {
   try {
@@ -17,6 +18,9 @@ export async function POST(request: Request) {
     })
 
     await Promise.all(updatePromises)
+
+    // Revalidate brand pages
+    revalidateBrandPages()
 
     return NextResponse.json({ success: true })
   } catch (error) {

@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
 import { logActivity } from "@/lib/admin/activity-logger"
 import { formatImageUrl } from "@/utils/image-url"
+import { revalidateModelPages } from "@/lib/revalidate-helpers"
 
 export async function GET(request: NextRequest) {
   try {
@@ -93,6 +94,19 @@ export async function POST(request: Request) {
       userId: body.userId || null,
       details: { name: data.name },
     })
+
+    // Revalidate model + parent pages
+    let seriesSlug: string | null = null
+    let brandSlug: string | null = null
+    if (data.series_id) {
+      const { data: seriesData } = await supabase.from("series").select("slug").eq("id", data.series_id).single()
+      seriesSlug = seriesData?.slug || null
+    }
+    if (data.brand_id) {
+      const { data: brandData } = await supabase.from("brands").select("slug").eq("id", data.brand_id).single()
+      brandSlug = brandData?.slug || null
+    }
+    revalidateModelPages(data.slug, seriesSlug, brandSlug)
 
     return NextResponse.json(data)
   } catch (error) {

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
 import { getSession } from "@/lib/auth/session"
 import { logActivity } from "@/lib/admin/activity-logger"
+import { revalidateSeriesPages } from "@/lib/revalidate-helpers"
 
 export async function GET(request: Request) {
   try {
@@ -88,6 +89,10 @@ export async function POST(request: Request) {
         details: { name: data.name, brand_id: data.brand_id },
       })
     }
+
+    // Revalidate series + parent brand pages
+    const { data: brandData } = await supabase.from("brands").select("slug").eq("id", body.brand_id).single()
+    revalidateSeriesPages(data.slug, brandData?.slug)
 
     return NextResponse.json(data)
   } catch (error) {

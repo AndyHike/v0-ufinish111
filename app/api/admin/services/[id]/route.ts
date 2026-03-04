@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/utils/supabase/server"
+import { revalidateServicePages } from "@/lib/revalidate-helpers"
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -115,6 +116,9 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       }
     }
 
+    // Revalidate service pages
+    revalidateServicePages(slug?.trim() || null)
+
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error("Error in PUT /api/admin/services/[id]:", error)
@@ -127,6 +131,9 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     const supabase = await createServerClient()
     const { id } = params
 
+    // Get service slug before deletion for revalidation
+    const { data: serviceData } = await supabase.from("services").select("slug").eq("id", id).single()
+
     // Спочатку видаляємо переклади
     await supabase.from("services_translations").delete().eq("service_id", id)
 
@@ -137,6 +144,9 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       console.error("Error deleting service:", error)
       return NextResponse.json({ error: "Failed to delete service" }, { status: 500 })
     }
+
+    // Revalidate service pages
+    revalidateServicePages(serviceData?.slug)
 
     return NextResponse.json({ success: true })
   } catch (error) {

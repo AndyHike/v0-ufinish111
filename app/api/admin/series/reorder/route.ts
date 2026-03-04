@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
+import { revalidateSeriesPages } from "@/lib/revalidate-helpers"
 
 export async function POST(request: Request) {
   try {
@@ -21,6 +22,9 @@ export async function POST(request: Request) {
 
       if (error) throw error
     }
+
+    // Revalidate series pages
+    revalidateSeriesPages()
 
     return NextResponse.json({ success: true })
   } catch (error) {

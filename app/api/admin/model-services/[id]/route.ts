@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
+import { revalidateModelServicePages } from "@/lib/revalidate-helpers"
 
 export async function DELETE(request: Request, { params }: { params: { id: string } }) {
   try {
@@ -36,6 +37,14 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
     }
 
     console.log(`[DELETE] /api/admin/model-services/${id} - Successfully deleted model service`)
+
+    // Revalidate model + service pages
+    if (modelService) {
+      const { data: modelInfo } = await supabase.from("models").select("slug").eq("id", modelService.model_id).single()
+      const { data: serviceInfo } = await supabase.from("services").select("slug").eq("id", modelService.service_id).single()
+      revalidateModelServicePages(modelInfo?.slug, serviceInfo?.slug)
+    }
+
     return NextResponse.json({ success: true, deletedService: modelService })
   } catch (error) {
     console.error(`[DELETE] /api/admin/model-services/${id} - Unexpected error:`, error)

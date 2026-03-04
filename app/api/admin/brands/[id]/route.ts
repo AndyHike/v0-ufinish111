@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
+import { revalidateBrandPages } from "@/lib/revalidate-helpers"
 
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
@@ -34,6 +35,9 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 
     if (error) throw error
 
+    // Revalidate brand pages
+    revalidateBrandPages(data.slug)
+
     return NextResponse.json(data)
   } catch (error) {
     console.error("Error updating brand:", error)
@@ -44,9 +48,16 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 export async function DELETE(request: Request, { params }: { params: { id: string } }) {
   try {
     const supabase = createClient()
+
+    // Fetch brand slug before deletion for revalidation
+    const { data: brandData } = await supabase.from("brands").select("slug").eq("id", params.id).single()
+
     const { error } = await supabase.from("brands").delete().eq("id", params.id)
 
     if (error) throw error
+
+    // Revalidate brand pages
+    revalidateBrandPages(brandData?.slug)
 
     return NextResponse.json({ success: true })
   } catch (error) {

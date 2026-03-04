@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/utils/supabase/server"
+import { revalidateServicePages } from "@/lib/revalidate-helpers"
 
 export async function GET() {
   try {
@@ -110,6 +111,9 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Failed to create translations" }, { status: 500 })
       }
     }
+
+    // Revalidate service pages
+    revalidateServicePages(service.slug)
 
     return NextResponse.json({ success: true, service })
   } catch (error) {

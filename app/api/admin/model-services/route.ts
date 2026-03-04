@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
+import { revalidateModelServicePages } from "@/lib/revalidate-helpers"
 
 export async function GET(request: NextRequest) {
   try {
@@ -252,6 +253,11 @@ export async function POST(request: Request) {
       console.log("[POST] /api/admin/model-services - Successfully created model service:", data)
       result = data
     }
+
+    // Revalidate model + service pages
+    const { data: modelInfo } = await supabase.from("models").select("slug").eq("id", body.modelId).single()
+    const { data: serviceInfo } = await supabase.from("services").select("slug").eq("id", body.serviceId).single()
+    revalidateModelServicePages(modelInfo?.slug, serviceInfo?.slug)
 
     return NextResponse.json(result)
   } catch (error) {
