@@ -3,7 +3,8 @@ import { revalidatePath } from "next/cache"
 const LOCALES = ["uk", "cs", "en"]
 
 /**
- * Revalidate a path for all locales
+ * Revalidate a path for all locales.
+ * Uses the format /${locale}/path which matches the URL structure.
  */
 function revalidateForAllLocales(pathTemplate: string) {
   for (const locale of LOCALES) {
@@ -21,16 +22,13 @@ function revalidateForAllLocales(pathTemplate: string) {
 export function revalidateBrandPages(brandSlug?: string | null) {
   console.log(`[revalidate] Brand pages${brandSlug ? ` (slug: ${brandSlug})` : ""}`)
 
-  // Brands list page
-  revalidateForAllLocales("/{locale}/brands")
+  // Homepage (shows brands)
+  revalidateForAllLocales("/{locale}")
 
   // Brand detail page
   if (brandSlug) {
     revalidateForAllLocales(`/{locale}/brands/${brandSlug}`)
   }
-
-  // Homepage (shows brands)
-  revalidateForAllLocales("/{locale}")
 }
 
 /**
