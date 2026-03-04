@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase"
 import { logActivity } from "@/lib/admin/activity-logger"
 import { formatImageUrl } from "@/utils/image-url"
 import { revalidateModelPages } from "@/lib/revalidate-helpers"
+import { generateSlug } from "@/lib/slug-utils"
 
 export async function GET(request: NextRequest) {
   try {
@@ -76,6 +77,7 @@ export async function POST(request: Request) {
       .from("models")
       .insert({
         name: body.name,
+        slug: body.slug || generateSlug(body.name),
         brand_id: body.brandId,
         series_id: body.seriesId || null,
         image_url: body.imageUrl || null,

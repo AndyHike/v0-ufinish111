@@ -29,18 +29,21 @@ export async function generateStaticParams() {
     const { data: models } = await supabase
       .from("models")
       .select("slug")
+      .not("slug", "is", null)
       .order("position", { ascending: true })
       .limit(100) // Pre-render top 100 models
 
     const locales = ["uk", "cs", "en"]
 
     return (
-      models?.flatMap((model) =>
-        locales.map((locale) => ({
-          locale,
-          slug: model.slug,
-        }))
-      ) || []
+      models
+        ?.filter((model) => model.slug && typeof model.slug === "string")
+        .flatMap((model) =>
+          locales.map((locale) => ({
+            locale,
+            slug: model.slug as string,
+          }))
+        ) || []
     )
   } catch (error) {
     console.error("[v0] Error in generateStaticParams (models):", error)

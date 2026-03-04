@@ -29,6 +29,7 @@ export async function generateStaticParams() {
     const { data: models } = await supabase
       .from("models")
       .select("id, slug")
+      .not("slug", "is", null)
       .order("position", { ascending: true })
       .limit(20)
 
@@ -38,6 +39,7 @@ export async function generateStaticParams() {
     const { data: services } = await supabase
       .from("services")
       .select("id, slug")
+      .not("slug", "is", null)
       .order("position", { ascending: true })
       .limit(10)
 

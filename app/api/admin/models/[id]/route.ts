@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
 import { logActivity } from "@/lib/admin/activity-logger"
 import { revalidateModelPages } from "@/lib/revalidate-helpers"
+import { generateSlug } from "@/lib/slug-utils"
 
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
@@ -29,6 +30,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       .from("models")
       .update({
         name: body.name,
+        slug: body.slug || generateSlug(body.name),
         brand_id: body.brandId,
         series_id: body.seriesId || null,
         image_url: body.imageUrl,

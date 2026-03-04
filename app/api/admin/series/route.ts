@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase"
 import { getSession } from "@/lib/auth/session"
 import { logActivity } from "@/lib/admin/activity-logger"
 import { revalidateSeriesPages } from "@/lib/revalidate-helpers"
+import { generateSlug } from "@/lib/slug-utils"
 
 export async function GET(request: Request) {
   try {
@@ -70,6 +71,7 @@ export async function POST(request: Request) {
       .insert([
         {
           name: body.name,
+          slug: body.slug || generateSlug(body.name),
           brand_id: body.brand_id,
           position: body.position || nextPosition,
         },
