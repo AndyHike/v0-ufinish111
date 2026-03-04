@@ -3,21 +3,21 @@ import { revalidatePath } from "next/cache"
 const LOCALES = ["uk", "cs", "en"]
 
 /**
- * Revalidate a path for all locales.
- * Uses the format /${locale}/path which matches the URL structure.
+ * Revalidate a specific URL path for all locales.
+ * Uses revalidatePath(path) WITHOUT "page" type — for concrete URL paths.
+ * (The "page" type is only for filesystem route patterns like /[locale]/models/[slug])
  */
 function revalidateForAllLocales(pathTemplate: string) {
   for (const locale of LOCALES) {
     const path = pathTemplate.replace("{locale}", locale)
-    revalidatePath(path, "page")
+    revalidatePath(path)
   }
 }
 
 /**
  * Revalidate brand-related pages:
- * - Brands list page (/{locale}/brands)
- * - Brand detail page (/{locale}/brands/{slug}) if slug provided
- * - Homepage (/{locale}) since it may show brands
+ * - Homepage (shows brands)
+ * - Brand detail page if slug provided
  */
 export function revalidateBrandPages(brandSlug?: string | null) {
   console.log(`[revalidate] Brand pages${brandSlug ? ` (slug: ${brandSlug})` : ""}`)
@@ -33,8 +33,8 @@ export function revalidateBrandPages(brandSlug?: string | null) {
 
 /**
  * Revalidate series-related pages:
- * - Series detail page (/{locale}/series/{slug}) if slug provided
- * - Parent brand page (/{locale}/brands/{brandSlug}) if brand slug provided
+ * - Series detail page if slug provided
+ * - Parent brand page if brand slug provided
  */
 export function revalidateSeriesPages(seriesSlug?: string | null, brandSlug?: string | null) {
   console.log(`[revalidate] Series pages${seriesSlug ? ` (slug: ${seriesSlug})` : ""}${brandSlug ? ` (brand: ${brandSlug})` : ""}`)
@@ -52,9 +52,9 @@ export function revalidateSeriesPages(seriesSlug?: string | null, brandSlug?: st
 
 /**
  * Revalidate model-related pages:
- * - Model detail page (/{locale}/models/{slug}) if slug provided
- * - Parent series page (/{locale}/series/{seriesSlug}) if series slug provided
- * - Parent brand page (/{locale}/brands/{brandSlug}) if brand slug provided
+ * - Model detail page if slug provided
+ * - Parent series page if series slug provided
+ * - Parent brand page if brand slug provided
  */
 export function revalidateModelPages(
   modelSlug?: string | null,
@@ -73,7 +73,7 @@ export function revalidateModelPages(
     revalidateForAllLocales(`/{locale}/series/${seriesSlug}`)
   }
 
-  // Parent brand page (models without series are listed on brand page)
+  // Parent brand page
   if (brandSlug) {
     revalidateForAllLocales(`/{locale}/brands/${brandSlug}`)
   }
@@ -81,8 +81,8 @@ export function revalidateModelPages(
 
 /**
  * Revalidate service-related pages:
- * - Services list / detail page (/{locale}/services/{slug}) if slug provided
- * - Homepage (/{locale}) since it may show services
+ * - Service detail page if slug provided
+ * - Homepage (may show services)
  */
 export function revalidateServicePages(serviceSlug?: string | null) {
   console.log(`[revalidate] Service pages${serviceSlug ? ` (slug: ${serviceSlug})` : ""}`)
@@ -99,7 +99,8 @@ export function revalidateServicePages(serviceSlug?: string | null) {
 /**
  * Revalidate model-service related pages:
  * - Model detail page (shows services for the model)
- * - Service + model combined page (/{locale}/services/{serviceSlug}/{modelSlug})
+ * - Service + model combined page
+ * - Service detail page
  */
 export function revalidateModelServicePages(
   modelSlug?: string | null,
