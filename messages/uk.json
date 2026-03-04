@@ -275,7 +275,8 @@
     "repairTime": "Ремонт від 30 хв",
     "originalParts": "Якісні запчастини",
     "selectYourDevice": "Оберіть ваш пристрій",
-    "back": "Назад"
+    "back": "Назад",
+    "noBrandsAvailable": "Бренди недоступні"
   },
   "Series": {
     "backToBrand": "Назад до {brand}",

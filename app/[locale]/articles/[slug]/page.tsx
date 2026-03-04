@@ -155,10 +155,12 @@ export async function generateStaticParams() {
   if (!translations) return []
 
   // Generate params for each locale-slug combination
-  return translations.map((translation) => ({
-    locale: translation.locale,
-    slug: translation.slug,
-  }))
+  return translations
+    .filter((translation) => typeof translation.slug === 'string' && translation.slug.trim() !== '')
+    .map((translation) => ({
+      locale: translation.locale,
+      slug: translation.slug,
+    }))
 }
 
 function ArticleContentSkeleton() {

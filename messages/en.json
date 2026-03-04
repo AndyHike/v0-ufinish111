@@ -273,7 +273,8 @@
     "repairTime": "Repair from 30 min",
     "originalParts": "Quality spare parts",
     "selectYourDevice": "Select your device",
-    "back": "Back"
+    "back": "Back",
+    "noBrandsAvailable": "No brands available"
   },
   "Series": {
     "backToBrand": "Back to {brand}",
@@ -624,6 +625,9 @@
     }
   },
   "Admin": {
+    "adminPanel": "Admin Panel",
+    "cancel": "Cancel",
+    "confirmDelete": "Confirm Delete",
     "articlesManagement": "Articles Management",
     "manageArticles": "Manage repair guides and professional tips",
     "addNewArticle": "Add New Article",

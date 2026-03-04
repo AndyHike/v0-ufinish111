@@ -39,12 +39,14 @@ export async function generateStaticParams() {
     const locales = ["uk", "cs", "en"]
 
     return (
-      seriesList?.flatMap((series) =>
-        locales.map((locale) => ({
-          locale,
-          slug: series.slug,
-        }))
-      ) || []
+      seriesList
+        ?.filter((series) => typeof series.slug === 'string' && series.slug.trim() !== '')
+        .flatMap((series) =>
+          locales.map((locale) => ({
+            locale,
+            slug: series.slug,
+          }))
+        ) || []
     )
   } catch (error) {
     console.error("[v0] Error in generateStaticParams (series):", error)

@@ -319,7 +319,8 @@
     "repairTime": "Oprava od 30 min",
     "originalParts": "Kvalitní díly",
     "selectYourDevice": "Vyberte své zařízení",
-    "back": "Zpět"
+    "back": "Zpět",
+    "noBrandsAvailable": "Žádné značky k dispozici"
   },
   "Models": {
     "executionTime": "Doba provádění",
@@ -513,6 +514,9 @@
     "registrationTemporarilyDisabled": "Registrace je dočasně nedostupná"
   },
   "Admin": {
+    "adminPanel": "Administrační panel",
+    "cancel": "Zrušit",
+    "confirmDelete": "Potvrdit smazání",
     "articlesManagement": "Správa článků",
     "manageArticles": "Spravujte průvodce a rady k opravám",
     "addNewArticle": "Přidat nový článek",
@@ -815,5 +819,10 @@
       "Review": "Recenze",
       "Tips & Tricks": "Tipy a triky"
     }
+  },
+  "Admin": {
+    "adminPanel": "Administrační panel",
+    "cancel": "Zrušit",
+    "confirmDelete": "Potvrdit smazání"
   }
 }
