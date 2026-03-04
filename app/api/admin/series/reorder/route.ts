@@ -23,8 +23,20 @@ export async function POST(request: Request) {
       if (error) throw error
     }
 
-    // Revalidate series pages
-    revalidateSeriesPages()
+    // Fetch parent brand slug for revalidation
+    let brandSlug: string | null = null
+    if (body.series.length > 0) {
+      const { data: seriesData } = await supabase
+        .from("series")
+        .select("brand_id, brands(slug)")
+        .eq("id", body.series[0].id)
+        .single()
+      const brandsObj = Array.isArray(seriesData?.brands) ? seriesData.brands[0] : seriesData?.brands
+      brandSlug = brandsObj?.slug || null
+    }
+
+    // Revalidate series + parent brand pages
+    revalidateSeriesPages(null, brandSlug)
 
     return NextResponse.json({ success: true })
   } catch (error) {
@@ -32,3 +44,4 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Failed to reorder series" }, { status: 500 })
   }
 }
+

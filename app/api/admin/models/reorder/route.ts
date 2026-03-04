@@ -15,8 +15,27 @@ export async function POST(request: Request) {
       if (error) throw error
     }
 
-    // Revalidate model pages
-    revalidateModelPages()
+    // Fetch parent series and brand slugs for revalidation
+    let seriesSlug: string | null = null
+    let brandSlug: string | null = null
+    if (models.length > 0) {
+      const { data: modelData } = await supabase
+        .from("models")
+        .select("series_id, brand_id")
+        .eq("id", models[0].id)
+        .single()
+      if (modelData?.series_id) {
+        const { data: seriesData } = await supabase.from("series").select("slug").eq("id", modelData.series_id).single()
+        seriesSlug = seriesData?.slug || null
+      }
+      if (modelData?.brand_id) {
+        const { data: brandData } = await supabase.from("brands").select("slug").eq("id", modelData.brand_id).single()
+        brandSlug = brandData?.slug || null
+      }
+    }
+
+    // Revalidate model + parent pages
+    revalidateModelPages(null, seriesSlug, brandSlug)
 
     return NextResponse.json({ success: true })
   } catch (error) {
@@ -24,3 +43,4 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Failed to reorder models" }, { status: 500 })
   }
 }
+
