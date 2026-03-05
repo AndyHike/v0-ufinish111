@@ -1,4 +1,4 @@
-import { createClient } from "@/utils/supabase/server"
+import { createClient } from "@/lib/supabase"
 
 export type InfoBannerData = {
   message: string
@@ -6,18 +6,23 @@ export type InfoBannerData = {
   color: string
 }
 
+/**
+ * Fetch info banner data using the non-cookie Supabase client.
+ * IMPORTANT: Uses @/lib/supabase (not @/utils/supabase/server) to avoid
+ * calling cookies(), which would make the entire layout dynamic and break SSG.
+ */
 export async function getInfoBanner(): Promise<InfoBannerData> {
   try {
-    const supabase = await createClient()
+    const supabase = createClient()
 
     const { data, error } = await supabase.from("settings").select("*").eq("key", "info_banner").single()
 
     if (error) {
-      // Return default if not found
+      // Return default (disabled) if not found
       if (error.code === "PGRST116") {
         return {
-          message: "Сайт знаходиться в режимі технічного обслуговування. Деякі функції можуть бути недоступні.",
-          enabled: true,
+          message: "",
+          enabled: false,
           color: "bg-amber-500 text-white",
         }
       }
