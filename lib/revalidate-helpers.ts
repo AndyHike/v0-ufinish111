@@ -21,6 +21,9 @@ export function revalidateBrandPages(brandSlug?: string | null) {
   // Homepage always shows brands list
   revalidateForAllLocales("/{locale}")
 
+  // Brands listing page
+  revalidateForAllLocales("/{locale}/brands")
+
   // Brand detail page
   if (brandSlug) {
     revalidateForAllLocales(`/{locale}/brands/${brandSlug}`)
