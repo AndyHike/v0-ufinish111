@@ -1,165 +1,79 @@
 import { NextResponse } from "next/server"
 import { PutObjectCommand } from "@aws-sdk/client-s3"
-import { createClient } from "@/lib/supabase"
 import { getSession } from "@/lib/auth/session"
-import { s3Client } from "@/lib/s3-client"
+import { getS3Client } from "@/lib/s3-client"
 import { processImage, validateImageFile } from "@/lib/image-processor"
+
+/**
+ * Get S3 folder path based on upload type
+ */
+function getS3Folder(uploadType: string): string {
+  switch (uploadType) {
+    case "article": return "articles"
+    case "brand": return "brands"
+    case "logo": return "brands"
+    case "model": return "models"
+    case "service": return "services"
+    default: return "uploads"
+  }
+}
 
 export async function POST(request: Request) {
   try {
-    console.log('[v0] Upload API called')
-    
     // Check authentication
     const session = await getSession()
     if (!session?.user || session.user.role !== "admin") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    console.log('[v0] User authenticated:', session.user.email)
-
     // Get the form data
     const formData = await request.formData()
     const file = formData.get("file") as File
     const uploadType = (formData.get("type") as string) || "model"
-    const slug = formData.get("slug") as string
-
-    console.log('[v0] Upload details - Type:', uploadType, 'File size:', file?.size, 'File type:', file?.type)
 
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 })
     }
 
-    // Handle article image uploads with S3
-    if (uploadType === "article") {
-      try {
-        console.log('[v0] Processing article image for S3')
-        
-        // Validate image file
-        await validateImageFile(file)
-        console.log('[v0] Image validation passed')
+    // Validate image file
+    await validateImageFile(file)
 
-        // Process image (resize, compress, convert to WebP)
-        const { buffer, mimeType, filename } = await processImage(file)
-        console.log('[v0] Image processed - Compressed size:', buffer.length, 'Filename:', filename)
+    // Process image with Sharp (resize, compress, convert to WebP)
+    const { buffer, mimeType, filename } = await processImage(file)
 
-        // Upload to Cloudflare S3
-        if (!process.env.CLOUDFLARE_BUCKET_NAME) {
-          throw new Error("CLOUDFLARE_BUCKET_NAME is not set")
-        }
-
-        const s3Key = `articles/${filename}`
-        console.log('[v0] Uploading to S3 with key:', s3Key)
-
-        const putCommand = new PutObjectCommand({
-          Bucket: process.env.CLOUDFLARE_BUCKET_NAME,
-          Key: s3Key,
-          Body: buffer,
-          ContentType: mimeType,
-          CacheControl: "max-age=86400", // 24 hours
-        })
-
-        await s3Client.send(putCommand)
-        console.log('[v0] Upload to S3 successful')
-
-        // Generate public URL
-        const publicUrl = `${process.env.CLOUDFLARE_PUBLIC_URL}/${s3Key}`
-        console.log('[v0] Public URL generated:', publicUrl)
-
-        return NextResponse.json({ 
-          url: publicUrl,
-          type: "s3",
-          filename: filename,
-        })
-      } catch (error) {
-        console.error("[v0] Error uploading article image to S3:", error)
-        const message = error instanceof Error ? error.message : "Failed to upload image"
-        return NextResponse.json({ error: message }, { status: 400 })
-      }
+    // Upload to Cloudflare S3
+    if (!process.env.CLOUDFLARE_BUCKET_NAME) {
+      throw new Error("CLOUDFLARE_BUCKET_NAME is not set")
+    }
+    if (!process.env.CLOUDFLARE_PUBLIC_URL) {
+      throw new Error("CLOUDFLARE_PUBLIC_URL is not set")
     }
 
-    // Existing logic for other upload types (logo, favicon, service, model)
-    // Define allowed types and max sizes based on upload type
-    const allowedTypes = {
-      logo: ["image/png", "image/jpeg", "image/jpg", "image/svg+xml"],
-      favicon: ["image/x-icon", "image/vnd.microsoft.icon", "image/png", "image/svg+xml"],
-      service: ["image/png", "image/jpeg", "image/jpg", "image/webp"],
-      model: ["image/png", "image/jpeg", "image/jpg", "image/webp"],
-      default: ["image/png", "image/jpeg", "image/jpg", "image/webp"],
-    }
+    const folder = getS3Folder(uploadType)
+    const s3Key = `${folder}/${filename}`
 
-    const maxSizes = {
-      logo: 5 * 1024 * 1024,
-      favicon: 1024 * 1024,
-      service: 5 * 1024 * 1024,
-      model: 5 * 1024 * 1024,
-      default: 2 * 1024 * 1024,
-    }
-
-    const allowedFileTypes = allowedTypes[uploadType as keyof typeof allowedTypes] || allowedTypes.default
-    const maxFileSize = maxSizes[uploadType as keyof typeof maxSizes] || maxSizes.default
-
-    // Validate file type - accept WebP (which is what we send after compression)
-    const isValidType = allowedFileTypes.includes(file.type) || file.type === "image/webp"
-    if (!isValidType) {
-      return NextResponse.json({ error: "Invalid file type" }, { status: 400 })
-    }
-
-    // Validate file size
-    if (file.size > maxFileSize) {
-      return NextResponse.json({ error: "File too large" }, { status: 400 })
-    }
-
-    // Convert file to buffer
-    const arrayBuffer = await file.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
-
-    // Generate filename based on upload type
-    let fileName: string
-    const fileExtension = file.name.split(".").pop() || "webp"
-
-    if (uploadType === "model" && slug) {
-      fileName = `models/${slug}.${fileExtension}`
-    } else if (uploadType === "service" && slug) {
-      fileName = `services/${slug}.${fileExtension}`
-    } else {
-      const timestamp = Date.now()
-      fileName = `${uploadType}/${timestamp}-${Math.random().toString(36).substring(2, 15)}.${fileExtension}`
-    }
-
-    // Upload to Supabase Storage
-    const supabase = createClient()
-
-    // Create the bucket if it doesn't exist
-    const bucketName = "site-assets"
-    const { data: buckets } = await supabase.storage.listBuckets()
-    if (!buckets?.find((bucket) => bucket.name === bucketName)) {
-      await supabase.storage.createBucket(bucketName, {
-        public: true,
-      })
-    }
-
-    // Delete old file if exists
-    if ((uploadType === "model" || uploadType === "service") && slug) {
-      await supabase.storage.from(bucketName).remove([fileName])
-    }
-
-    const { data, error } = await supabase.storage.from(bucketName).upload(fileName, buffer, {
-      contentType: file.type,
-      cacheControl: "3600",
-      upsert: true,
+    const s3 = getS3Client()
+    const putCommand = new PutObjectCommand({
+      Bucket: process.env.CLOUDFLARE_BUCKET_NAME,
+      Key: s3Key,
+      Body: buffer,
+      ContentType: mimeType,
+      CacheControl: "max-age=31536000", // 1 year (immutable content-addressed)
     })
 
-    if (error) {
-      console.error("Error uploading file:", error)
-      return NextResponse.json({ error: "Failed to upload file" }, { status: 500 })
-    }
+    await s3.send(putCommand)
 
-    // Get the public URL
-    const { data: publicUrl } = supabase.storage.from(bucketName).getPublicUrl(fileName)
+    // Generate public URL
+    const publicUrl = `${process.env.CLOUDFLARE_PUBLIC_URL}/${s3Key}`
 
-    return NextResponse.json({ url: publicUrl.publicUrl })
+    return NextResponse.json({
+      url: publicUrl,
+      type: "s3",
+      filename: filename,
+    })
   } catch (error) {
-    console.error("Error handling file upload:", error)
-    return NextResponse.json({ error: "Failed to process file" }, { status: 500 })
+    console.error("[upload] Error:", error)
+    const message = error instanceof Error ? error.message : "Failed to upload image"
+    return NextResponse.json({ error: message }, { status: 400 })
   }
 }

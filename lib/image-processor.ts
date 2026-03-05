@@ -46,11 +46,11 @@ export async function processImage(
 }
 
 export async function validateImageFile(file: File): Promise<void> {
-  const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
+  const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml', 'image/gif']
   const MAX_FILE_SIZE = 10 * 1024 * 1024
 
   if (!ALLOWED_TYPES.includes(file.type)) {
-    throw new Error('Invalid file type. Only JPEG, PNG, and WebP are allowed.')
+    throw new Error('Invalid file type. Only JPEG, PNG, WebP, SVG, and GIF are allowed.')
   }
 
   if (file.size > MAX_FILE_SIZE) {
