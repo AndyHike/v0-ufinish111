@@ -4,6 +4,10 @@ import createNextIntlPlugin from 'next-intl/plugin';
 // Створюємо обгортку (вона сама знайде файл i18n.ts у папці src)
 const withNextIntl = createNextIntlPlugin();
 
+// Build dynamic remotePatterns for images from Cloudflare R2
+const cfPublicUrl = process.env.CLOUDFLARE_PUBLIC_URL;
+const cfHostname = cfPublicUrl ? new URL(cfPublicUrl).hostname : null;
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Ігноруємо помилки
@@ -35,6 +39,17 @@ const nextConfig = {
         hostname: '**.supabase.co',
         port: '',
       },
+      {
+        protocol: 'https',
+        hostname: '**.r2.dev',
+        port: '',
+      },
+      // Dynamic: add hostname from CLOUDFLARE_PUBLIC_URL (for custom domains)
+      ...(cfHostname ? [{
+        protocol: 'https',
+        hostname: cfHostname,
+        port: '',
+      }] : []),
     ],
   },
 
