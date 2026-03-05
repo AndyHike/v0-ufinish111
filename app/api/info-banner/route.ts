@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase"
 import { type NextRequest, NextResponse } from "next/server"
+import { revalidatePath } from "next/cache"
 
 export async function GET() {
   try {
@@ -12,8 +13,8 @@ export async function GET() {
       // Якщо запис не знайдено, повертаємо значення за замовчуванням
       if (error.code === "PGRST116") {
         return NextResponse.json({
-          message: "Сайт знаходиться в режимі технічного обслуговування. Деякі функції можуть бути недоступні.",
-          enabled: true,
+          message: "",
+          enabled: false,
           color: "bg-amber-500 text-white",
         })
       }
@@ -48,9 +49,13 @@ export async function POST(request: NextRequest) {
       if (error) throw error
     }
 
+    // Revalidate all pages since banner is in the layout
+    revalidatePath("/", "layout")
+
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error("Error updating banner info:", error)
     return NextResponse.json({ error: "Failed to update banner info" }, { status: 500 })
   }
 }
+

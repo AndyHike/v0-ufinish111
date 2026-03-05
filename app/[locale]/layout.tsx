@@ -19,6 +19,8 @@ import { Toaster } from "@/components/ui/toaster"
 import { DynamicFavicon } from "@/components/dynamic-favicon"
 import { toOGLocale } from "@/lib/og-locale"
 import { siteUrl } from "@/lib/site-config"
+import { InfoBanner } from "@/components/info-banner"
+import { getInfoBanner } from "@/lib/data/info-banner"
 import "@/app/globals.css"
 
 const inter = Inter({
@@ -116,10 +118,13 @@ export default async function LocaleLayout({
   params: { locale: string }
 }) {
   const { locale } = await params
-  const messages = await getMessages(locale).catch((error) => {
-    console.error(`Failed to load messages for locale ${locale}:`, error)
-    return null
-  })
+  const [messages, bannerData] = await Promise.all([
+    getMessages(locale).catch((error) => {
+      console.error(`Failed to load messages for locale ${locale}:`, error)
+      return null
+    }),
+    getInfoBanner().catch(() => ({ message: "", enabled: false, color: "bg-amber-500 text-white" })),
+  ])
 
   if (!messages) {
     notFound()
@@ -244,6 +249,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
                     {/* Header is a client component and will hydrate quickly, 
                         so we remove the Suspense fallback to avoid showing skeleton 
                         on every navigation */}
+                    <InfoBanner data={bannerData} />
                     <Header />
                     <main className="flex-1">{children}</main>
                     <Footer />
