@@ -131,13 +131,36 @@ export async function getPriceWithDiscount(
 
   // Apply the better discount (higher percentage = better for customer)
   if (roleDiscountPercentage > 0 && roleDiscountPercentage > serviceDiscountPercentage) {
-    // Role discount is better
-    const roleDiscountedPrice = Math.round(originalPrice * (1 - roleDiscountPercentage / 100))
+    // We create a mock Discount object so `ServicePriceDisplay` and `calculateDiscount`
+    // can process the role discount identically to a service discount (including badges and proper ...90 Kč rounding)
+    const roleDiscountObj: Discount = {
+      id: "role-based",
+      name: "Спеціальна знижка",
+      code: "ROLE_DISCOUNT",
+      discountType: "percentage",
+      discountValue: roleDiscountPercentage,
+      description: "Персональна знижка клієнта",
+      serviceIds: [serviceId],
+      scopeType: "service",
+      brandId: null,
+      seriesId: null,
+      modelId: null,
+      isActive: true,
+      maxUses: null,
+      currentUses: 0,
+      maxUsesPerUser: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    } as any
+
+    const roleCalculation = calculateDiscount(originalPrice, roleDiscountObj)
+
     return {
       originalPrice,
-      discountedPrice: roleDiscountedPrice,
+      discountedPrice: roleCalculation.roundedFinalPrice,
       hasDiscount: true,
-      actualDiscountPercentage: roleDiscountPercentage,
+      actualDiscountPercentage: roleCalculation.actualDiscountPercentage,
+      discount: roleDiscountObj,
       discountSource: "role",
     }
   }

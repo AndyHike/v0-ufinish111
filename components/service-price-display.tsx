@@ -26,7 +26,7 @@ export function ServicePriceDisplay({
   priceOnRequest = false,
 }: ServicePriceDisplayProps) {
   const t = useTranslations("Services")
-  
+
   const sizeClasses = {
     sm: "text-base",
     md: "text-xl",
@@ -48,25 +48,29 @@ export function ServicePriceDisplay({
     )
   }
 
-  if (!hasDiscount || !discountedPrice) {
-    return (
-      <div className={`font-bold text-gray-900 ${sizeClasses[size]}`} suppressHydrationWarning>
-        {formatCurrency(originalPrice)}
-      </div>
-    )
-  }
-
   return (
-    <div className="flex flex-col gap-1" suppressHydrationWarning>
-      <div className="flex items-center gap-2 flex-wrap">
-        <div className={`font-bold text-gray-900 ${sizeClasses[size]}`}>{formatCurrency(discountedPrice)}</div>
-        {showBadge && discount && (
-          <Badge variant="destructive" className="text-xs">
-            -{formatDiscountValue(discount, actualDiscountPercentage)}
-          </Badge>
-        )}
-      </div>
-      <div className={`text-gray-500 line-through ${oldPriceSizeClasses[size]}`}>{formatCurrency(originalPrice)}</div>
+    <div className="relative transition-all duration-500 ease-in-out" suppressHydrationWarning>
+      {(!hasDiscount || !discountedPrice) ? (
+        <div className={`font-bold text-gray-900 ${sizeClasses[size]} animate-in fade-in duration-500`}>
+          {formatCurrency(originalPrice)}
+        </div>
+      ) : (
+        <div className="flex flex-col gap-1 animate-in fade-in slide-in-from-bottom-1 duration-500">
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className={`font-bold text-gray-900 ${sizeClasses[size]}`}>
+              {formatCurrency(discountedPrice)}
+            </div>
+            {showBadge && discount && (
+              <Badge variant="destructive" className="text-xs animate-in zoom-in duration-500">
+                -{formatDiscountValue(discount, actualDiscountPercentage)}
+              </Badge>
+            )}
+          </div>
+          <div className={`text-gray-500 line-through ${oldPriceSizeClasses[size]}`}>
+            {formatCurrency(originalPrice)}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
