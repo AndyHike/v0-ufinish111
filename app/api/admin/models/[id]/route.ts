@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
 import { logActivity } from "@/lib/admin/activity-logger"
+import { revalidateUtils } from "@/lib/revalidate-utils"
+import { revalidatePath } from "next/cache"
 
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
@@ -59,8 +61,8 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
     const id = params.id
     const supabase = createClient()
 
-    // Get model info before deletion for logging
-    const { data: modelData } = await supabase.from("models").select("name").eq("id", id).single()
+    // Get model info before deletion for logging and cache clearing
+    const { data: modelData } = await supabase.from("models").select("slug, name, brand_id, series_id").eq("id", id).single()
 
     const { error } = await supabase.from("models").delete().eq("id", id)
 
@@ -68,13 +70,31 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
 
     // Log activity
     if (modelData) {
+      // Get the current user for activity logging if not provided in request
+      // We don't have session here directly so we'll pass undefined and let logActivity handle it if needed
       await logActivity({
         entityId: id,
         entityType: "model",
         actionType: "delete",
-        userId: null, // We don't have userId in the request
+        userId: "system", // Fallback, normally we'd get session
         details: { name: modelData.name },
       })
+    }
+    // Fetch necessary slugs for targeted invalidation
+    if (modelData) {
+      const { data: brandData } = await supabase.from("brands").select("slug").eq("id", modelData.brand_id).single()
+
+      let seriesSlug = null
+      if (modelData.series_id) {
+        const { data: seriesData } = await supabase.from("series").select("slug").eq("id", modelData.series_id).single()
+        if (seriesData) seriesSlug = seriesData.slug
+      }
+
+      if (brandData?.slug) {
+        revalidateUtils.revalidateModel(brandData.slug, seriesSlug, modelData.slug)
+      } else {
+        revalidateUtils.revalidateBrand()
+      }
     }
 
     return NextResponse.json({ success: true })

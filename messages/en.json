@@ -273,7 +273,8 @@
     "repairTime": "Repair from 30 min",
     "originalParts": "Quality spare parts",
     "selectYourDevice": "Select your device",
-    "back": "Back"
+    "back": "Back",
+    "noBrandsAvailable": "No brands available"
   },
   "Series": {
     "backToBrand": "Back to {brand}",
@@ -284,6 +285,8 @@
     "seriesNotFoundDesc": "The requested series could not be found."
   },
   "Models": {
+    "servicesNotAddedYet": "Services not added yet",
+    "servicesInDevelopment": "Services in development",
     "executionTime": "Execution Time",
     "fromHours": "~ {hours} hours",
     "contactForTime": "contact for time",
@@ -463,7 +466,11 @@
     "verificationCode": "Verification Code",
     "registrationDisabled": "Registration Disabled",
     "registrationDisabledDescription": "We have temporarily disabled new user registrations.",
-    "registrationTemporarilyDisabled": "Registration is temporarily unavailable"
+    "registrationTemporarilyDisabled": "Registration is temporarily unavailable",
+    "b2bClient": "B2B Client",
+    "registrationPendingTitle": "Registration submitted",
+    "registrationPendingDescription": "Your B2B account registration has been submitted. Your account will be activated after administrator approval. You will be notified by email when activated.",
+    "accountPendingApproval": "Your account is pending administrator approval"
   },
   "BookService": {
     "pageTitle": "Book a Service",
@@ -624,6 +631,9 @@
     }
   },
   "Admin": {
+    "adminPanel": "Admin Panel",
+    "cancel": "Cancel",
+    "confirmDelete": "Confirm Delete",
     "articlesManagement": "Articles Management",
     "manageArticles": "Manage repair guides and professional tips",
     "addNewArticle": "Add New Article",
@@ -649,5 +659,65 @@
   "Privacy": {
     "title": "Privacy Policy",
     "contentPlaceholder": "Content will be added later."
+  },
+  "orders": {
+    "searchPlaceholder": "Search orders...",
+    "allStatuses": "All statuses",
+    "totalOrders": "Total orders",
+    "serialNumber": "Serial number",
+    "services": "Services",
+    "totalAmount": "Total amount",
+    "warranty": "Warranty"
+  },
+  "Profile": {
+    "userProfile": "User Profile",
+    "manageProfileAndOrders": "Manage your profile and orders",
+    "profile": "Profile",
+    "repairHistory": {
+      "title": "Repair History",
+      "description": "View the history and status of your repairs",
+      "allTab": "All",
+      "activeTab": "Active",
+      "completedTab": "Completed",
+      "refresh": "Refresh",
+      "refreshing": "Refreshing...",
+      "search": "Search...",
+      "noOrders": "You don't have any repair orders yet",
+      "noSearchResults": "No results for your search",
+      "errorFetching": "Error loading orders",
+      "loadingError": "Loading error",
+      "tryAgain": "Try again",
+      "idColumn": "ID",
+      "dateColumn": "Date",
+      "deviceColumn": "Device",
+      "serviceColumn": "Service",
+      "statusColumn": "Status",
+      "priceColumn": "Price",
+      "detailsColumn": "Details",
+      "showDetails": "Show details",
+      "orderDetails": "Order Details",
+      "orderId": "Order ID",
+      "creationDate": "Creation date",
+      "device": "Device",
+      "service": "Service",
+      "currentStatus": "Current status",
+      "price": "Price",
+      "currency": "грн",
+      "notSpecified": "Not specified",
+      "statusHistory": "Status history",
+      "orderNumber": "Order number"
+    },
+    "myDiscounts": "My Discounts",
+    "viewDiscounts": "View available discounts",
+    "noDiscountsYet": "You don't have any discounts yet",
+    "discountsWillBeAvailable": "Discounts will be available after certain conditions are met",
+    "expiresOn": "Expires on",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "accountId": "Account ID",
+    "copy": "Copy",
+    "editingNotAvailable": "Profile editing is currently unavailable. Please contact our support if you need to change your data.",
+    "roleLevel": "Level: {level}",
+    "roleDiscountDescription": "Additional discount for your role"
   }
 }

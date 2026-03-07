@@ -143,6 +143,7 @@ export async function checkUserExists(identifier: string): Promise<{
 export async function sendVerificationCode(
   identifier: string,
   type: "login" | "registration",
+  locale: string = "uk",
 ): Promise<{ success: boolean; message?: string; email?: string }> {
   try {
     if (process.env.NODE_ENV === "development") {
@@ -186,7 +187,7 @@ export async function sendVerificationCode(
 
     // Send email with code
     try {
-      await sendVerificationCodeEmail(email, code, "uk", type === "login")
+      await sendVerificationCodeEmail(email, code, locale, type === "login")
       if (process.env.NODE_ENV === "development") {
         console.log(`Verification code sent to ${email}`)
       }
@@ -271,7 +272,7 @@ export async function verifyCode(
       if (!userId) {
         const { data: userData } = await supabase
           .from("users")
-          .select("id, role")
+          .select("id, role, is_approved")
           .eq("email", email.toLowerCase())
           .maybeSingle()
 
@@ -282,13 +283,28 @@ export async function verifyCode(
           }
         }
 
+        // Check if user is approved
+        if (userData.is_approved === false) {
+          return {
+            success: false,
+            message: "accountPendingApproval",
+          }
+        }
+
         userId = userData.id
         userRole = userData.role || "user"
       } else {
-        // Get user role
-        const { data: userData } = await supabase.from("users").select("role").eq("id", userId).maybeSingle()
+        // Get user role and approval status
+        const { data: userData } = await supabase.from("users").select("role, is_approved").eq("id", userId).maybeSingle()
 
         if (userData) {
+          // Check if user is approved
+          if (userData.is_approved === false) {
+            return {
+              success: false,
+              message: "accountPendingApproval",
+            }
+          }
           userRole = userData.role || "user"
         }
       }
@@ -348,7 +364,10 @@ export async function createUser(userData: {
   email: string
   phone: string[]
   address?: string
-}): Promise<{ success: boolean; message?: string }> {
+  is_b2b?: boolean
+  ico?: string
+  dic?: string
+}): Promise<{ success: boolean; message?: string; needsApproval?: boolean }> {
   try {
     if (process.env.NODE_ENV === "development") {
       console.log("Creating user in database:", userData)
@@ -412,16 +431,52 @@ export async function createUser(userData: {
     const randomPassword = Math.random().toString(36).slice(-10)
     const passwordHash = await hash(randomPassword)
 
+    // Determine role based on B2B flag
+    let roleSlug = "user"
+    let autoApprove = true
+
+    if (userData.is_b2b) {
+      roleSlug = "b2b"
+    }
+
+    // Look up role from roles table
+    const { data: roleData } = await supabase
+      .from("roles")
+      .select("id, auto_approve")
+      .eq("slug", roleSlug)
+      .single()
+
+    // Fallback to default role if specific role not found
+    let roleId = roleData?.id
+    if (!roleId) {
+      const { data: defaultRole } = await supabase
+        .from("roles")
+        .select("id, auto_approve")
+        .eq("is_default", true)
+        .single()
+      roleId = defaultRole?.id
+      autoApprove = defaultRole?.auto_approve ?? true
+    } else {
+      autoApprove = roleData?.auto_approve ?? true
+    }
+
+    const isApproved = autoApprove
+
     // Create new user
     const { data: newUser, error } = await supabase
       .from("users")
       .insert({
         email: userData.email.toLowerCase(),
-        role: "user",
+        role: roleSlug,
+        role_id: roleId || null,
         first_name: userData.first_name,
         last_name: userData.last_name,
         password_hash: passwordHash,
         email_verified: true,
+        is_b2b: userData.is_b2b || false,
+        ico: userData.ico || null,
+        dic: userData.dic || null,
+        is_approved: isApproved,
       })
       .select("id")
       .single()
@@ -459,6 +514,33 @@ export async function createUser(userData: {
       }
     }
 
+    // Sync with RemOnline in the background
+    syncClientToRemonline({
+      first_name: userData.first_name,
+      last_name: userData.last_name,
+      email: userData.email,
+      phone: userData.phone,
+      address: userData.address,
+    })
+      .then((result) => {
+        if (result.success && result.remonlineId) {
+          updateRemonlineIdForUser(newUser.id, result.remonlineId)
+        }
+      })
+      .catch((error) => {
+        if (process.env.NODE_ENV === "development") {
+          console.error("Error syncing with RemOnline:", error)
+        }
+      })
+
+    // If user doesn't need approval, create session immediately
+    if (!isApproved) {
+      if (process.env.NODE_ENV === "development") {
+        console.log("User needs admin approval, skipping session creation")
+      }
+      return { success: true, needsApproval: true }
+    }
+
     // Create session
     const { data: session, error: sessionError } = await supabase
       .from("sessions")
@@ -482,25 +564,6 @@ export async function createUser(userData: {
     }
 
     await setSecureCookie("session_id", session.id)
-
-    // Sync with RemOnline in the background
-    syncClientToRemonline({
-      first_name: userData.first_name,
-      last_name: userData.last_name,
-      email: userData.email,
-      phone: userData.phone,
-      address: userData.address,
-    })
-      .then((result) => {
-        if (result.success && result.remonlineId) {
-          updateRemonlineIdForUser(newUser.id, result.remonlineId)
-        }
-      })
-      .catch((error) => {
-        if (process.env.NODE_ENV === "development") {
-          console.error("Error syncing with RemOnline:", error)
-        }
-      })
 
     return { success: true }
   } catch (error) {

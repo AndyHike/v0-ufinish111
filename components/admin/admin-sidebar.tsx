@@ -18,6 +18,7 @@ import {
   ArrowLeftRight,
   Megaphone,
   BookOpen,
+  Shield,
 } from "lucide-react"
 
 const sidebarItems = [
@@ -60,6 +61,11 @@ const sidebarItems = [
     title: "Користувачі",
     href: "/admin/users",
     icon: Users,
+  },
+  {
+    title: "Ролі",
+    href: "/admin/roles",
+    icon: Shield,
   },
   {
     title: "Повідомлення",

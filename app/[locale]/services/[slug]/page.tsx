@@ -43,12 +43,14 @@ export async function generateStaticParams() {
     const locales = ["uk", "cs", "en"]
 
     return (
-      services?.flatMap((service) =>
-        locales.map((locale) => ({
-          locale,
-          slug: service.slug,
-        }))
-      ) || []
+      services
+        ?.filter((service) => typeof service.slug === 'string' && service.slug.trim() !== '')
+        .flatMap((service) =>
+          locales.map((locale) => ({
+            locale,
+            slug: service.slug,
+          }))
+        ) || []
     )
   } catch (error) {
     console.error("[v0] Error in generateStaticParams (services):", error)

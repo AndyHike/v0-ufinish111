@@ -8,7 +8,7 @@ import { processImage, validateImageFile } from "@/lib/image-processor"
 export async function POST(request: Request) {
   try {
     console.log('[v0] Upload API called')
-    
+
     // Check authentication
     const session = await getSession()
     if (!session?.user || session.user.role !== "admin") {
@@ -29,25 +29,32 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 })
     }
 
-    // Handle article image uploads with S3
-    if (uploadType === "article") {
+    // Handle article and model image uploads with S3
+    if (uploadType === "article" || uploadType === "model") {
       try {
-        console.log('[v0] Processing article image for S3')
-        
+        console.log(`[v0] Processing ${uploadType} image for S3`)
+
         // Validate image file
         await validateImageFile(file)
         console.log('[v0] Image validation passed')
 
         // Process image (resize, compress, convert to WebP)
-        const { buffer, mimeType, filename } = await processImage(file)
-        console.log('[v0] Image processed - Compressed size:', buffer.length, 'Filename:', filename)
+        const { buffer, mimeType, filename: processedFilename } = await processImage(file)
+
+        // For models, we prefer to use the slug for the filename if available
+        let finalFilename = processedFilename
+        if (uploadType === "model" && slug) {
+          finalFilename = `${slug}.webp`
+        }
+
+        console.log('[v0] Image processed - Compressed size:', buffer.length, 'Filename:', finalFilename)
 
         // Upload to Cloudflare S3
         if (!process.env.CLOUDFLARE_BUCKET_NAME) {
           throw new Error("CLOUDFLARE_BUCKET_NAME is not set")
         }
 
-        const s3Key = `articles/${filename}`
+        const s3Key = uploadType === "article" ? `articles/${finalFilename}` : `models/${finalFilename}`
         console.log('[v0] Uploading to S3 with key:', s3Key)
 
         const putCommand = new PutObjectCommand({
@@ -65,13 +72,13 @@ export async function POST(request: Request) {
         const publicUrl = `${process.env.CLOUDFLARE_PUBLIC_URL}/${s3Key}`
         console.log('[v0] Public URL generated:', publicUrl)
 
-        return NextResponse.json({ 
+        return NextResponse.json({
           url: publicUrl,
           type: "s3",
-          filename: filename,
+          filename: finalFilename,
         })
       } catch (error) {
-        console.error("[v0] Error uploading article image to S3:", error)
+        console.error(`[v0] Error uploading ${uploadType} image to S3:`, error)
         const message = error instanceof Error ? error.message : "Failed to upload image"
         return NextResponse.json({ error: message }, { status: 400 })
       }
@@ -139,7 +146,7 @@ export async function POST(request: Request) {
     }
 
     // Delete old file if exists
-    if ((uploadType === "model" || uploadType === "service") && slug) {
+    if (uploadType === "service" && slug) {
       await supabase.storage.from(bucketName).remove([fileName])
     }
 

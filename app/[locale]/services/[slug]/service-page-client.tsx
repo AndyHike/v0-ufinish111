@@ -14,6 +14,8 @@ import { useEffect, useRef, useState, Suspense } from "react"
 import { ServicePriceDisplay } from "@/components/service-price-display"
 import { ContactCTABanner } from "@/components/contact-cta-banner"
 import { PartTypeBadges } from "@/components/part-type-badges"
+import { getDiscountsBatch } from "@/app/actions/discounts-api"
+import { discountCache } from "@/lib/discounts/client-cache"
 
 interface ServiceData {
   id: string
@@ -101,8 +103,18 @@ function ServicePageClientContent({ serviceData, locale }: Props) {
   const viewContentSent = useRef(false)
   const [mounted, setMounted] = useState(false)
 
+  // Початковий стан з SSG
+  const [currentServiceData, setCurrentServiceData] = useState<ServiceData>(serviceData)
+  // Start with loading=true for logged-in users so skeleton shows immediately
+  const [isClientLoading, setIsClientLoading] = useState(() => {
+    if (typeof document !== 'undefined') {
+      return document.cookie.includes("session")
+    }
+    return false
+  })
+
   // Показуємо помилку тільки якщо немає даних
-  if (!serviceData) {
+  if (!currentServiceData) {
     return (
       <div className="container px-4 py-12 md:px-6 md:py-24">
         <div className="mx-auto max-w-6xl text-center">
@@ -123,7 +135,74 @@ function ServicePageClientContent({ serviceData, locale }: Props) {
     hasDiscount,
     discount,
     modelSlug,
-  } = serviceData
+  } = currentServiceData
+
+  // Client-side discount fetching
+  useEffect(() => {
+    let isMounted = true
+    const hasSession = document.cookie.includes("sb-") || document.cookie.includes("session")
+
+    const fetchLiveDiscount = async () => {
+      // Fetch only if we actually selected a model and it has a price
+      if (!currentServiceData || !currentServiceData.sourceModel || currentServiceData.modelServicePrice === null || currentServiceData.modelServicePrice === undefined) {
+        setIsClientLoading(false)
+        return
+      }
+
+      const cachedDiscount = discountCache.get(currentServiceData.sourceModel.id, [currentServiceData.id])
+      if (cachedDiscount) {
+        const liveDiscount = cachedDiscount[currentServiceData.id]
+        if (liveDiscount) {
+          setCurrentServiceData(prev => ({
+            ...prev,
+            discountedPrice: liveDiscount.discountedPrice,
+            hasDiscount: liveDiscount.hasDiscount,
+            discount: liveDiscount.discount,
+          }))
+        }
+        setIsClientLoading(false)
+        return
+      }
+
+      if (hasSession) {
+        setIsClientLoading(true)
+      }
+
+      try {
+        const payload = [{
+          serviceId: currentServiceData.id,
+          modelId: currentServiceData.sourceModel.id,
+          originalPrice: currentServiceData.modelServicePrice
+        }]
+        const liveDiscounts = await getDiscountsBatch(payload)
+
+        if (!isMounted) return
+
+        discountCache.set(currentServiceData.sourceModel.id, [currentServiceData.id], liveDiscounts)
+
+        const liveDiscount = liveDiscounts[currentServiceData.id]
+        if (liveDiscount) {
+          setCurrentServiceData(prev => ({
+            ...prev,
+            discountedPrice: liveDiscount.discountedPrice,
+            hasDiscount: liveDiscount.hasDiscount,
+            discount: liveDiscount.discount,
+          }))
+        }
+      } catch (err) {
+        console.error("Failed to fetch client-side discount:", err)
+      } finally {
+        if (isMounted) setIsClientLoading(false)
+      }
+    }
+
+    fetchLiveDiscount()
+
+    return () => {
+      isMounted = false
+    }
+  }, [serviceData]) // Only run on initial mount using the static prop to bootstrap
+
 
   // Використовуємо modelSlug з пропса, якщо він є, інакше беремо з search params для зворотної сумісності
   const modelParam = modelSlug || searchParams.get("model")
@@ -296,7 +375,7 @@ function ServicePageClientContent({ serviceData, locale }: Props) {
       params.set("duration_hours", serviceData.duration_hours.toString())
     }
 
-    return `/${locale}/book?${params.toString()}`
+    return `/${locale}/book/confirm?${params.toString()}`
   })()
 
   return (
@@ -372,6 +451,7 @@ function ServicePageClientContent({ serviceData, locale }: Props) {
                     size="lg"
                     showBadge={true}
                     priceOnRequest={false}
+                    isLoading={isClientLoading}
                   />
                 ) : (
                   <ServicePriceDisplay

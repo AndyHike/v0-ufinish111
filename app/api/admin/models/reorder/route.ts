@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
+import { revalidateUtils } from "@/lib/revalidate-utils"
 
 export async function POST(request: Request) {
   try {
@@ -13,6 +14,9 @@ export async function POST(request: Request) {
 
       if (error) throw error
     }
+    // Target precise paths instead of full layout. Without explicit brand/series,
+    // we use a generic broader fallback because reorder can affect multiple unknown items visually.
+    revalidateUtils.revalidateBrand()
 
     return NextResponse.json({ success: true })
   } catch (error) {

@@ -13,7 +13,7 @@ export function calculateDiscount(price: number, discount: Discount): DiscountCa
   }
 
   const finalPrice = Math.max(0, price - discountAmount)
-  const roundedFinalPrice = roundToNearest90(finalPrice)
+  const roundedFinalPrice = roundDiscountedPrice(price, finalPrice)
 
   const actualDiscountPercentage = ((price - roundedFinalPrice) / price) * 100
 
@@ -28,20 +28,22 @@ export function calculateDiscount(price: number, discount: Discount): DiscountCa
 }
 
 /**
- * Округлення до найближчих 90 (90, 190, 290, 390, ...)
+ * Округлення ціни зі знижкою до цілого числа, що закінчується на 0 (100, 110, 150, 200, ...)
+ * Ми завжди округлюємо вниз до найближчого десятка, щоб гарантувати, 
+ * що ціна не перевищить математично розраховану знижку.
  */
-export function roundToNearest90(price: number): number {
-  if (price <= 0) return 0
+export function roundDiscountedPrice(originalPrice: number, discountedPrice: number): number {
+  if (discountedPrice <= 0) return 0
 
-  // Знаходимо найближче число, що закінчується на 90
-  const rounded = Math.round(price / 100) * 100 - 10
+  // Округлюємо вниз до найближчого десятка (щоб кінцева цифра була 0)
+  const rounded = Math.floor(discountedPrice / 10) * 10
 
-  // Якщо округлене значення менше ціни, додаємо 100
-  if (rounded < price) {
-    return rounded + 100
+  // Гарантуємо, що ціна не стала 0, якщо оригінальна ціна була значно вищою
+  if (rounded === 0 && discountedPrice > 0) {
+    return 10
   }
 
-  return Math.max(90, rounded)
+  return rounded
 }
 
 /**

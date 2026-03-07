@@ -1,6 +1,8 @@
 import { useTranslations } from "next-intl"
 import { formatCurrency } from "@/lib/format-currency"
+import { AnimatedPrice } from "@/components/animated-price"
 import { Badge } from "@/components/ui/badge"
+import { Skeleton } from "@/components/ui/skeleton"
 import { formatDiscountValue } from "@/lib/discounts/utils"
 import type { Discount } from "@/lib/discounts/types"
 
@@ -13,6 +15,7 @@ interface ServicePriceDisplayProps {
   size?: "sm" | "md" | "lg"
   showBadge?: boolean
   priceOnRequest?: boolean
+  isLoading?: boolean
 }
 
 export function ServicePriceDisplay({
@@ -24,9 +27,10 @@ export function ServicePriceDisplay({
   size = "md",
   showBadge = true,
   priceOnRequest = false,
+  isLoading = false,
 }: ServicePriceDisplayProps) {
   const t = useTranslations("Services")
-  
+
   const sizeClasses = {
     sm: "text-base",
     md: "text-xl",
@@ -48,25 +52,44 @@ export function ServicePriceDisplay({
     )
   }
 
-  if (!hasDiscount || !discountedPrice) {
+  if (isLoading) {
     return (
-      <div className={`font-bold text-gray-900 ${sizeClasses[size]}`} suppressHydrationWarning>
-        {formatCurrency(originalPrice)}
+      <div className="flex flex-col gap-1 w-24">
+        <Skeleton className={`h-7 w-full`} />
       </div>
     )
   }
 
+  // Determine the price to display — use animated counter
+  const displayPrice = hasDiscount && discountedPrice ? discountedPrice : originalPrice
+
   return (
-    <div className="flex flex-col gap-1" suppressHydrationWarning>
-      <div className="flex items-center gap-2 flex-wrap">
-        <div className={`font-bold text-gray-900 ${sizeClasses[size]}`}>{formatCurrency(discountedPrice)}</div>
-        {showBadge && discount && (
-          <Badge variant="destructive" className="text-xs">
-            -{formatDiscountValue(discount, actualDiscountPercentage)}
-          </Badge>
-        )}
-      </div>
-      <div className={`text-gray-500 line-through ${oldPriceSizeClasses[size]}`}>{formatCurrency(originalPrice)}</div>
+    <div className="relative" suppressHydrationWarning>
+      {(!hasDiscount || !discountedPrice) ? (
+        <AnimatedPrice
+          value={displayPrice}
+          className={`font-bold text-gray-900 ${sizeClasses[size]}`}
+        />
+      ) : (
+        <div className="flex flex-col gap-1 animate-in fade-in duration-300">
+          <div className="flex items-center gap-2 flex-wrap">
+            <AnimatedPrice
+              initialValue={originalPrice!}
+              value={discountedPrice}
+              className={`font-bold text-gray-900 ${sizeClasses[size]}`}
+              duration={600}
+            />
+            {showBadge && discount && (
+              <Badge variant="destructive" className="text-xs animate-in zoom-in duration-300">
+                -{formatDiscountValue(discount, actualDiscountPercentage)}
+              </Badge>
+            )}
+          </div>
+          <div className={`text-gray-500 line-through ${oldPriceSizeClasses[size]} animate-in fade-in duration-500`}>
+            {formatCurrency(originalPrice)}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

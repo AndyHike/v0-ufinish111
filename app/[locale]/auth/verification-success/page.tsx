@@ -3,8 +3,9 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 
-export default async function VerificationSuccessPage() {
-  const t = await getTranslations("Auth")
+export default async function VerificationSuccessPage({ params }: { params: { locale: string } }) {
+  const { locale } = await params
+  const t = await getTranslations({ locale, namespace: "Auth" })
 
   return (
     <div className="container flex min-h-screen flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8">

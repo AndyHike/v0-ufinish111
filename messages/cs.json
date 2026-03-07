@@ -319,9 +319,12 @@
     "repairTime": "Oprava od 30 min",
     "originalParts": "Kvalitní díly",
     "selectYourDevice": "Vyberte své zařízení",
-    "back": "Zpět"
+    "back": "Zpět",
+    "noBrandsAvailable": "Žádné značky k dispozici"
   },
   "Models": {
+    "servicesNotAddedYet": "Služby zatím nebyly přidány",
+    "servicesInDevelopment": "Služby ve vývoji",
     "executionTime": "Doba provádění",
     "fromHours": "~ {hours} hodiny",
     "contactForTime": "kontaktujte pro čas",
@@ -510,9 +513,16 @@
     "verificationCode": "Ověřovací kód",
     "registrationDisabled": "Registrace je vypnutá",
     "registrationDisabledDescription": "Registrace nových uživatelů byla dočasně vypnuta.",
-    "registrationTemporarilyDisabled": "Registrace je dočasně nedostupná"
+    "registrationTemporarilyDisabled": "Registrace je dočasně nedostupná",
+    "b2bClient": "B2B Klient",
+    "registrationPendingTitle": "Registrace odeslána",
+    "registrationPendingDescription": "Vaše registrace B2B účtu byla odeslána. Váš účet bude aktivován po schválení administrátorem. O aktivaci budete informováni e-mailem.",
+    "accountPendingApproval": "Váš účet čeká na schválení administrátorem"
   },
   "Admin": {
+    "adminPanel": "Administrační panel",
+    "cancel": "Zrušit",
+    "confirmDelete": "Potvrdit smazání",
     "articlesManagement": "Správa článků",
     "manageArticles": "Spravujte průvodce a rady k opravám",
     "addNewArticle": "Přidat nový článek",
@@ -589,6 +599,15 @@
     "contactUsWellHelp": "Kontaktujte nás a my vám pomůžeme",
     "contactUsDescription": "Náš tým je připraven odpovědět na všechny vaše dotazy a pomoci vám s výběrem správné služby"
   },
+  "orders": {
+    "searchPlaceholder": "Hledat objednávky...",
+    "allStatuses": "Všechny stavy",
+    "totalOrders": "Celkem objednávek",
+    "serialNumber": "Sériové číslo",
+    "services": "Služby",
+    "totalAmount": "Celková částka",
+    "warranty": "Záruka"
+  },
   "Profile": {
     "userProfile": "Profil uživatele",
     "manageProfileAndOrders": "Spravujte svůj profil a objednávky",
@@ -641,7 +660,11 @@
     "notSpecified": "Neuvedeno",
     "editingNotAvailable": "Úprava profilu není momentálně k dispozici",
     "device": "Zařízení",
-    "service": "Služba"
+    "service": "Služba",
+    "accountId": "ID Účtu",
+    "copy": "Kopírovat",
+    "roleLevel": "Úroveň: {level}",
+    "roleDiscountDescription": "Dodatečná sleva pro vaši roli"
   },
   "Terms": {
     "title": "Obchodní podmínky",

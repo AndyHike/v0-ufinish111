@@ -180,7 +180,7 @@ export async function sendVerificationCode(email: string, isLogin = false) {
 
   try {
     const supabase = createClient()
-    const locale = getLocale()
+    const locale = await getLocale()
 
     // For login, check if the user exists
     if (isLogin) {

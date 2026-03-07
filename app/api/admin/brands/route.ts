@@ -2,6 +2,8 @@ import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
 import { getSession } from "@/lib/auth/session"
 import { formatImageUrl } from "@/utils/image-url"
+import { generateSlug } from "@/lib/slug-utils"
+import { revalidateUtils } from "@/lib/revalidate-utils"
 
 export async function GET() {
   try {
@@ -11,7 +13,7 @@ export async function GET() {
     let { data, error } = await supabase
       .from("brands")
       .select("*")
-      .order("position", { ascending: true, nullsLast: true })
+      .order("position", { ascending: true })
 
     // If there's an error or no brands with position, try fetching without ordering
     if (error || !data || data.length === 0) {
@@ -69,11 +71,15 @@ export async function POST(request: Request) {
         ? (existingBrands[0].position || 0) + 1
         : 1
 
+    // Generate slug from name if not provided (always use uk rules for consistency)
+    const slug = body.slug || generateSlug(body.name, "uk")
+
     const { data, error } = await supabase
       .from("brands")
       .insert([
         {
           name: body.name,
+          slug: slug,
           logo_url: body.logo_url || null,
           position: body.position || nextPosition,
         },
@@ -95,6 +101,8 @@ export async function POST(request: Request) {
         },
       ])
     }
+    // Target precise paths instead of full layout
+    revalidateUtils.revalidateBrand(data.slug)
 
     return NextResponse.json(data)
   } catch (error) {

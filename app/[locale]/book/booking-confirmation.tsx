@@ -58,6 +58,30 @@ export default function BookingConfirmation({
   const [localizedService, setLocalizedService] = useState(service)
   const [bookingSuccess, setBookingSuccess] = useState(false)
 
+  // Fetch user data to auto-fill form for logged-in users
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await fetch("/api/user/current", { cache: "no-store" })
+        if (res.ok) {
+          const data = await res.json()
+          if (data?.user) {
+            setFormData(prev => ({
+              ...prev,
+              firstName: data.user.first_name || (data.user.name ? data.user.name.split(" ")[0] : prev.firstName),
+              lastName: data.user.last_name || (data.user.name ? data.user.name.split(" ").slice(1).join(" ") : prev.lastName),
+              email: data.user.email || prev.email,
+              phone: data.user.phone || prev.phone,
+            }))
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching user for auto-fill:", err)
+      }
+    }
+    fetchUser()
+  }, [])
+
   // Re-fetch service data when locale changes to get proper translations
   useEffect(() => {
     console.log("[v0] Booking confirmation: locale changed to", locale)
@@ -68,13 +92,13 @@ export default function BookingConfirmation({
           console.log("[v0] Refetching service data for locale:", locale, "model_id:", model.id, "service_slug:", service.slug)
           const response = await fetch(`/api/admin/model-services?model_id=${model.id}&locale=${locale}`)
           if (!response.ok) return
-          
+
           const data = await response.json()
           const servicesArray = Array.isArray(data) ? data : data?.data || []
-          
+
           // Шукаємо послугу за slug
           const foundService = servicesArray.find((ms: any) => (ms.services?.slug || "") === service.slug)
-          
+
           if (foundService) {
             console.log("[v0] Found service with updated data:", foundService)
             setLocalizedService({
@@ -89,7 +113,7 @@ export default function BookingConfirmation({
           console.error("[v0] Error refetching service data:", error)
         }
       }
-      
+
       refetchServiceData()
     }
   }, [locale, service?.slug, model?.id, service])
@@ -195,9 +219,9 @@ export default function BookingConfirmation({
   const selectedDateObj = selectedDate ? new Date(selectedDate) : null
   const formattedDate = selectedDateObj
     ? selectedDateObj.toLocaleDateString(locale, {
-        day: "numeric",
-        month: "short",
-      })
+      day: "numeric",
+      month: "short",
+    })
     : ""
 
   const phonePlaceholder = phoneCountryCode[locale] || "+1"
@@ -273,69 +297,69 @@ export default function BookingConfirmation({
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   {t("firstName")} <span className="text-red-500">*</span>
                 </label>
-              <Input
-                type="text"
-                name="firstName"
-                value={formData.firstName}
-                onChange={handleInputChange}
-                placeholder={t("enterFirstName")}
-                autoComplete="given-name"
-                required
-                disabled={submitting}
-                className="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-opacity-20 focus:border-gray-900 transition-all disabled:bg-gray-50 disabled:cursor-not-allowed"
-              />
+                <Input
+                  type="text"
+                  name="firstName"
+                  value={formData.firstName}
+                  onChange={handleInputChange}
+                  placeholder={t("enterFirstName")}
+                  autoComplete="given-name"
+                  required
+                  disabled={submitting}
+                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-opacity-20 focus:border-gray-900 transition-all disabled:bg-gray-50 disabled:cursor-not-allowed"
+                />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   {t("lastName")} <span className="text-red-500">*</span>
                 </label>
-              <Input
-                type="text"
-                name="lastName"
-                value={formData.lastName}
-                onChange={handleInputChange}
-                placeholder={t("enterLastName")}
-                autoComplete="family-name"
-                required
-                disabled={submitting}
-                className="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-opacity-20 focus:border-gray-900 transition-all disabled:bg-gray-50 disabled:cursor-not-allowed"
-              />
+                <Input
+                  type="text"
+                  name="lastName"
+                  value={formData.lastName}
+                  onChange={handleInputChange}
+                  placeholder={t("enterLastName")}
+                  autoComplete="family-name"
+                  required
+                  disabled={submitting}
+                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-opacity-20 focus:border-gray-900 transition-all disabled:bg-gray-50 disabled:cursor-not-allowed"
+                />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   {t("phone")} <span className="text-red-500">*</span>
                 </label>
-              <Input
-                type="tel"
-                name="phone"
-                value={formData.phone}
-                onChange={handleInputChange}
-                placeholder={`${phoneCountryCode[locale] || "+380"} ...`}
-                autoComplete="tel"
-                required
-                disabled={submitting}
-                inputMode="tel"
-                className="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-opacity-20 focus:border-gray-900 transition-all disabled:bg-gray-50 disabled:cursor-not-allowed"
-              />
+                <Input
+                  type="tel"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleInputChange}
+                  placeholder={`${phoneCountryCode[locale] || "+380"} ...`}
+                  autoComplete="tel"
+                  required
+                  disabled={submitting}
+                  inputMode="tel"
+                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-opacity-20 focus:border-gray-900 transition-all disabled:bg-gray-50 disabled:cursor-not-allowed"
+                />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   {t("email")} <span className="text-red-500">*</span>
                 </label>
-              <Input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleInputChange}
-                placeholder={t("email")}
-                autoComplete="email"
-                required
-                disabled={submitting}
-                className="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-opacity-20 focus:border-gray-900 transition-all disabled:bg-gray-50 disabled:cursor-not-allowed"
-              />
+                <Input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  placeholder={t("email")}
+                  autoComplete="email"
+                  required
+                  disabled={submitting}
+                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-opacity-20 focus:border-gray-900 transition-all disabled:bg-gray-50 disabled:cursor-not-allowed"
+                />
               </div>
             </div>
           </div>
@@ -388,11 +412,10 @@ export default function BookingConfirmation({
                                 setSelectedDate(dateStr)
                                 setShowDatePicker(false)
                               }}
-                              className={`p-2 text-xs font-medium rounded transition-all ${
-                                isSelected
+                              className={`p-2 text-xs font-medium rounded transition-all ${isSelected
                                   ? "bg-gray-900 text-white"
                                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                              }`}
+                                }`}
                             >
                               {date.getDate()}
                             </button>
@@ -440,13 +463,12 @@ export default function BookingConfirmation({
                               setSelectedTime(`${slot.hour.toString().padStart(2, "0")}:00`)
                               setShowTimePicker(false)
                             }}
-                            className={`p-2 text-xs font-medium rounded transition-all ${
-                              selectedTime === `${slot.hour.toString().padStart(2, "0")}:00`
+                            className={`p-2 text-xs font-medium rounded transition-all ${selectedTime === `${slot.hour.toString().padStart(2, "0")}:00`
                                 ? "bg-gray-900 text-white"
                                 : slot.available
                                   ? "bg-gray-100 text-gray-700 hover:bg-gray-200"
                                   : "bg-gray-50 text-gray-300 cursor-not-allowed"
-                            }`}
+                              }`}
                           >
                             {slot.hour}:00
                           </button>

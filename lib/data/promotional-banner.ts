@@ -1,4 +1,4 @@
-import { createClient } from "@/utils/supabase/server"
+import { createClient } from "@supabase/supabase-js"
 
 export type PromotionalBannerData = {
   id: string
@@ -14,7 +14,14 @@ export type PromotionalBannerData = {
 
 export async function getPromotionalBanner(): Promise<PromotionalBannerData | null> {
   try {
-    const supabase = await createClient()
+    // For SSG compatibility, we use the standard supabase-js client
+    // instead of the Next.js server component client which opts into dynamic rendering
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ""
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
+
+    if (!supabaseUrl || !supabaseKey) return null
+
+    const supabase = createClient(supabaseUrl, supabaseKey)
 
     const { data, error } = await supabase
       .from("promotional_banners")

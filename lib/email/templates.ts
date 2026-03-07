@@ -243,3 +243,62 @@ export function getNewContactMessageTemplate(
     </html>
   `
 }
+
+export function getAccountApprovedEmailTemplate(loginLink: string, locale: string): string {
+  const translations = {
+    en: {
+      title: "Your account has been approved!",
+      greeting: "Hello,",
+      message: "Great news! Your account has been reviewed and approved by our team. You can now log in and start using all the features available to you.",
+      buttonText: "Log In to Your Account",
+      footer: "If you did not register on our website, please ignore this email.",
+    },
+    uk: {
+      title: "Ваш акаунт підтверджено!",
+      greeting: "Вітаємо,",
+      message: "Чудові новини! Ваш акаунт було перевірено та схвалено нашою командою. Тепер ви можете увійти та користуватися всіма доступними функціями.",
+      buttonText: "Увійти в акаунт",
+      footer: "Якщо ви не реєструвалися на нашому сайті, будь ласка, ігноруйте цей лист.",
+    },
+    cs: {
+      title: "Váš účet byl schválen!",
+      greeting: "Dobrý den,",
+      message: "Skvělé zprávy! Váš účet byl přezkoumán a schválen naším týmem. Nyní se můžete přihlásit a začít využívat všechny dostupné funkce.",
+      buttonText: "Přihlásit se do účtu",
+      footer: "Pokud jste se na našem webu neregistrovali, ignorujte prosím tento e-mail.",
+    },
+  }
+
+  const t = translations[locale as keyof typeof translations] || translations.en
+
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <title>${t.title}</title>
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+        .container { border: 1px solid #ddd; border-radius: 5px; padding: 20px; }
+        .success-icon { text-align: center; margin: 20px 0; }
+        .success-icon span { display: inline-block; width: 60px; height: 60px; line-height: 60px; border-radius: 50%; background-color: #10B981; color: white; font-size: 30px; }
+        .button { background-color: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; margin-top: 20px; font-weight: bold; }
+        .footer { margin-top: 30px; font-size: 0.8em; color: #666; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="success-icon"><span>✓</span></div>
+        <h2 style="text-align: center;">${t.title}</h2>
+        <p>${t.greeting}</p>
+        <p>${t.message}</p>
+        <div style="text-align: center;">
+          <a href="${loginLink}" class="button">${t.buttonText}</a>
+        </div>
+        <p class="footer">${t.footer}</p>
+      </div>
+    </body>
+    </html>
+  `
+}
+

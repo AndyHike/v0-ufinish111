@@ -57,6 +57,15 @@
     "adminDashboard": "Панель адміністратора",
     "logout": "Вийти"
   },
+  "orders": {
+    "searchPlaceholder": "Пошук замовлень...",
+    "allStatuses": "Усі статуси",
+    "totalOrders": "Всього замовлень",
+    "serialNumber": "Серійний номер",
+    "services": "Послуги",
+    "totalAmount": "Загальна сума",
+    "warranty": "Гарантія"
+  },
   "Search": {
     "title": "Пошук",
     "placeholder": "Шукати моделі, бренди, послуги...",
@@ -275,7 +284,8 @@
     "repairTime": "Ремонт від 30 хв",
     "originalParts": "Якісні запчастини",
     "selectYourDevice": "Оберіть ваш пристрій",
-    "back": "Назад"
+    "back": "Назад",
+    "noBrandsAvailable": "Бренди недоступні"
   },
   "Series": {
     "backToBrand": "Назад до {brand}",
@@ -286,6 +296,8 @@
     "seriesNotFoundDesc": "Запитана серія не знайдена."
   },
   "Models": {
+    "servicesNotAddedYet": "Services not added yet",
+    "servicesInDevelopment": "Services in development",
     "executionTime": "Час виконання",
     "fromHours": "~ {hours} години",
     "contactForTime": "уточнюйте час",
@@ -466,7 +478,7 @@
     "missingToken": "Відсутній токен",
     "passwordResetError": "Помилка скидання пароля",
     "missingTokenDescription": "Відсутній токен підтвердження. Спробуйте ще раз.",
-    "passwordResetErrorDescription": "Не вдалося скинути пароль. Посилання на скидання пароля мог��о закінчитися або є недійсним.",
+    "passwordResetErrorDescription": "Не вдалося скинути пароль. Посилання на скидання пароля могло закінчитися або є недійсним.",
     "continueLogin": "Продовжити",
     "verifyAndLogin": "Перевірити та увійти",
     "backToLogin": "Повернутися на головну",
@@ -481,7 +493,11 @@
     "verificationCode": "Код підтвердження",
     "registrationDisabled": "Реєстрацію вимкнено",
     "registrationDisabledDescription": "Ми тимчасово вимкнули реєстрацію нових користувачів.",
-    "registrationTemporarilyDisabled": "Реєстрацію тимчасово недоступна"
+    "registrationTemporarilyDisabled": "Реєстрацію тимчасово недоступна",
+    "b2bClient": "B2B Клієнт",
+    "registrationPendingTitle": "Реєстрацію надіслано",
+    "registrationPendingDescription": "Вашу реєстрацію B2B акаунту надіслано. Ваш акаунт буде активовано після підтвердження адміністратором. Про активацію ви будете повідомлені електронною поштою.",
+    "accountPendingApproval": "Ваш акаунт очікує на підтвердження адміністратором"
   },
   "Admin": {
     "adminPanel": "Панель адміністратора",
@@ -681,7 +697,7 @@
     "orClickToUpload": "або натисніть, щоб завантажити",
     "rowsDetected": "рядків виявлено",
     "uploadAndProcess": "Завантажити та обробити",
-    "previewData": "Попередній пе��егляд даних",
+    "previewData": "Попередній перегляд даних",
     "andMoreRows": "...і ще {count} рядків",
     "importSuccess": "Імпорт успішно завершено",
     "importPartialSuccess": "Імпорт частково завершено",
@@ -968,7 +984,12 @@
     "discountsWillBeAvailable": "Знижки будуть доступні після виконання певних умов",
     "expiresOn": "Діє до",
     "firstName": "Ім'я",
-    "lastName": "Прізвище"
+    "lastName": "Прізвище",
+    "accountId": "ID Акаунту",
+    "copy": "Скопіювати",
+    "editingNotAvailable": "Редагування профілю наразі недоступне. Будь ласка, зверніться до нашої підтримки, якщо вам потрібно змінити дані.",
+    "roleLevel": "Рівень: {level}",
+    "roleDiscountDescription": "Додаткова знижка для вашої ролі"
   },
   "Navigation": {
     "home": "Головна",
@@ -1079,7 +1100,7 @@
     "nextSteps": "Що далі?",
     "step1": "Ви отримаєте підтвердження на email",
     "step2": "Наш менеджер зв'яжеться з вами найближчим часом",
-    "step3": "Ми підтверд��мо час вашої зустрічі",
+    "step3": "Ми підтвердємо час вашої зустрічі",
     "workingHours": "Робочі години",
     "workingHoursValue": "9:00 - 19:00",
     "contactLabel": "Контакти",

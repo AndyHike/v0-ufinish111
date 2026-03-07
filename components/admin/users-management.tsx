@@ -27,9 +27,16 @@ import {
 } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
-import { Loader2, MoreHorizontal, Search, Trash2, UserPlus } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { Loader2, MoreHorizontal, Search, Trash2, UserPlus, CheckCircle } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
 import { formatPhoneNumber } from "@/utils/format-phone"
+
+interface Role {
+  id: string
+  name: string
+  slug: string
+}
 
 interface User {
   id: string
@@ -38,6 +45,12 @@ interface User {
   last_name: string | null
   full_name: string | null
   role: string
+  role_id: string | null
+  role_name: string | null
+  ico: string | null
+  dic: string | null
+  is_b2b: boolean
+  is_approved: boolean
   phone: string | null
   avatar_url: string | null
   created_at: string
@@ -46,6 +59,7 @@ interface User {
 export function UsersManagement() {
   const router = useRouter()
   const [users, setUsers] = useState<User[]>([])
+  const [roles, setRoles] = useState<Role[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [roleFilter, setRoleFilter] = useState<string | null>(null)
@@ -60,8 +74,12 @@ export function UsersManagement() {
     first_name: "",
     last_name: "",
     role: "user",
+    role_id: "",
     phone: "",
     password: "",
+    ico: "",
+    dic: "",
+    is_b2b: false,
   })
   const [formErrors, setFormErrors] = useState({
     email: "",
@@ -69,12 +87,24 @@ export function UsersManagement() {
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  const fetchRoles = async () => {
+    try {
+      const response = await fetch("/api/admin/roles")
+      if (response.ok) {
+        const data = await response.json()
+        setRoles(data)
+      }
+    } catch (error) {
+      console.error("Error fetching roles:", error)
+    }
+  }
+
   const fetchUsers = async () => {
     setLoading(true)
     try {
       const queryParams = new URLSearchParams()
       if (searchQuery) queryParams.set("query", searchQuery)
-      if (roleFilter) queryParams.set("role", roleFilter)
+      if (roleFilter && roleFilter !== "all") queryParams.set("role", roleFilter)
       queryParams.set("page", page.toString())
       queryParams.set("limit", "10")
 
@@ -97,8 +127,43 @@ export function UsersManagement() {
   }
 
   useEffect(() => {
+    fetchRoles()
+  }, [])
+
+  useEffect(() => {
     fetchUsers()
   }, [searchQuery, roleFilter, page])
+
+  const handleApproveUser = async (userId: string) => {
+    setIsSubmitting(true)
+    try {
+      const response = await fetch(`/api/admin/users/${userId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ is_approved: true }),
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || "Failed to approve user")
+      }
+
+      toast({
+        title: "Успіх",
+        description: "Користувача підтверджено",
+      })
+      fetchUsers()
+    } catch (error) {
+      console.error("Error approving user:", error)
+      toast({
+        title: "Помилка",
+        description: error instanceof Error ? error.message : "Не вдалося підтвердити користувача",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -128,8 +193,8 @@ export function UsersManagement() {
       }
 
       toast({
-        title: "Success",
-        description: "User created successfully",
+        title: "Успіх",
+        description: "Користувача створено",
       })
       setIsCreateDialogOpen(false)
       setFormData({
@@ -137,15 +202,19 @@ export function UsersManagement() {
         first_name: "",
         last_name: "",
         role: "user",
+        role_id: "",
         phone: "",
         password: "",
+        ico: "",
+        dic: "",
+        is_b2b: false,
       })
       fetchUsers()
     } catch (error) {
       console.error("Error creating user:", error)
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to create user",
+        title: "Помилка",
+        description: error instanceof Error ? error.message : "Не вдалося створити користувача",
         variant: "destructive",
       })
     } finally {
@@ -167,7 +236,11 @@ export function UsersManagement() {
           first_name: formData.first_name,
           last_name: formData.last_name,
           role: formData.role,
+          role_id: formData.role_id || null,
           phone: formData.phone,
+          ico: formData.ico || null,
+          dic: formData.dic || null,
+          is_b2b: formData.is_b2b,
         }),
       })
 
@@ -177,16 +250,16 @@ export function UsersManagement() {
       }
 
       toast({
-        title: "Success",
-        description: "User updated successfully",
+        title: "Успіх",
+        description: "Користувача оновлено",
       })
       setIsEditDialogOpen(false)
       fetchUsers()
     } catch (error) {
       console.error("Error updating user:", error)
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to update user",
+        title: "Помилка",
+        description: error instanceof Error ? error.message : "Не вдалося оновити користувача",
         variant: "destructive",
       })
     } finally {
@@ -209,16 +282,16 @@ export function UsersManagement() {
       }
 
       toast({
-        title: "Success",
-        description: "User deleted successfully",
+        title: "Успіх",
+        description: "Користувача видалено",
       })
       setIsDeleteDialogOpen(false)
       fetchUsers()
     } catch (error) {
       console.error("Error deleting user:", error)
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to delete user",
+        title: "Помилка",
+        description: error instanceof Error ? error.message : "Не вдалося видалити користувача",
         variant: "destructive",
       })
     } finally {
@@ -233,8 +306,12 @@ export function UsersManagement() {
       first_name: user.first_name || "",
       last_name: user.last_name || "",
       role: user.role,
+      role_id: user.role_id || "",
       phone: user.phone || "",
-      password: "", // Not needed for edit
+      password: "",
+      ico: user.ico || "",
+      dic: user.dic || "",
+      is_b2b: user.is_b2b,
     })
     setIsEditDialogOpen(true)
   }
@@ -250,6 +327,12 @@ export function UsersManagement() {
       month: "long",
       day: "numeric",
     })
+  }
+
+  const getRoleLabel = (user: User) => {
+    if (user.role_name) return user.role_name
+    if (user.role === "admin") return "Адміністратор"
+    return "Користувач"
   }
 
   return (
@@ -291,7 +374,11 @@ export function UsersManagement() {
                 <SelectContent>
                   <SelectItem value="all">Всі ролі</SelectItem>
                   <SelectItem value="admin">Адміністратор</SelectItem>
-                  <SelectItem value="user">Користувач</SelectItem>
+                  {roles.map((role) => (
+                    <SelectItem key={role.id} value={role.slug}>
+                      {role.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -308,16 +395,19 @@ export function UsersManagement() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Користувач</TableHead>
+                      <TableHead>ID</TableHead>
                       <TableHead>Роль</TableHead>
+                      <TableHead>Статус</TableHead>
                       <TableHead className="hidden md:table-cell">Телефон</TableHead>
+                      <TableHead className="hidden lg:table-cell">IČO</TableHead>
                       <TableHead className="hidden md:table-cell">Дата реєстрації</TableHead>
-                      <TableHead className="w-[50px]"></TableHead>
+                      <TableHead className="w-[50px]" />
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {users.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={5} className="h-24 text-center">
+                        <TableCell colSpan={8} className="h-24 text-center">
                           Користувачів не знайдено
                         </TableCell>
                       </TableRow>
@@ -343,22 +433,51 @@ export function UsersManagement() {
                                 </AvatarFallback>
                               </Avatar>
                               <div>
-                                <p className="font-medium">{user.full_name || "Не вказано"}</p>
+                                <div className="flex items-center gap-1.5">
+                                  <p className="font-medium">{user.full_name || "Не вказано"}</p>
+                                  {user.is_b2b && (
+                                    <Badge variant="outline" className="text-xs border-blue-300 text-blue-700">
+                                      B2B
+                                    </Badge>
+                                  )}
+                                </div>
                                 <p className="text-xs text-muted-foreground">{user.email}</p>
                               </div>
                             </div>
                           </TableCell>
                           <TableCell>
+                            <code className="bg-muted px-1.5 py-0.5 rounded text-[10px] font-mono select-all">
+                              {user.id}
+                            </code>
+                          </TableCell>
+                          <TableCell>
                             <span
-                              className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                                user.role === "admin" ? "bg-blue-100 text-blue-800" : "bg-gray-100 text-gray-800"
-                              }`}
+                              className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${user.role === "admin"
+                                ? "bg-blue-100 text-blue-800"
+                                : user.is_b2b
+                                  ? "bg-purple-100 text-purple-800"
+                                  : "bg-gray-100 text-gray-800"
+                                }`}
                             >
-                              {user.role === "admin" ? "Адміністратор" : "Користувач"}
+                              {getRoleLabel(user)}
                             </span>
+                          </TableCell>
+                          <TableCell>
+                            {user.is_approved ? (
+                              <Badge variant="default" className="bg-green-600">
+                                Підтверджено
+                              </Badge>
+                            ) : (
+                              <Badge variant="secondary" className="bg-amber-100 text-amber-800">
+                                Очікує підтвердження
+                              </Badge>
+                            )}
                           </TableCell>
                           <TableCell className="hidden md:table-cell">
                             {user.phone ? formatPhoneNumber(user.phone) : "Не вказано"}
+                          </TableCell>
+                          <TableCell className="hidden lg:table-cell">
+                            {user.ico || "—"}
                           </TableCell>
                           <TableCell className="hidden md:table-cell">{formatDate(user.created_at)}</TableCell>
                           <TableCell>
@@ -372,6 +491,15 @@ export function UsersManagement() {
                               <DropdownMenuContent align="end">
                                 <DropdownMenuLabel>Дії</DropdownMenuLabel>
                                 <DropdownMenuSeparator />
+                                {!user.is_approved && (
+                                  <DropdownMenuItem
+                                    onClick={() => handleApproveUser(user.id)}
+                                    disabled={isSubmitting}
+                                  >
+                                    <CheckCircle className="mr-2 h-4 w-4 text-green-600" />
+                                    Підтвердити
+                                  </DropdownMenuItem>
+                                )}
                                 <DropdownMenuItem onClick={() => openEditDialog(user)}>Редагувати</DropdownMenuItem>
                                 <DropdownMenuItem className="text-destructive" onClick={() => openDeleteDialog(user)}>
                                   Видалити
@@ -420,7 +548,7 @@ export function UsersManagement() {
           <DialogHeader>
             <DialogTitle>Додати нового користувача</DialogTitle>
             <DialogDescription>
-              Створіть новий обліковий запис користувача. Користувач отримає електронний лист із підтвердженням.
+              Створіть новий обліковий запис користувача.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleCreateUser}>
@@ -460,18 +588,32 @@ export function UsersManagement() {
                   id="phone"
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  placeholder="+380XXXXXXXXX"
+                  placeholder="+420XXXXXXXXX"
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="role">Роль</Label>
-                <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })}>
+                <Select
+                  value={formData.role}
+                  onValueChange={(value) => {
+                    const selectedRole = roles.find((r) => r.slug === value)
+                    setFormData({
+                      ...formData,
+                      role: value,
+                      role_id: selectedRole?.id || "",
+                    })
+                  }}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Виберіть роль" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="user">Користувач</SelectItem>
                     <SelectItem value="admin">Адміністратор</SelectItem>
+                    {roles.map((role) => (
+                      <SelectItem key={role.id} value={role.slug}>
+                        {role.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -505,7 +647,7 @@ export function UsersManagement() {
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Редагувати користувача</DialogTitle>
-            <DialogDescription>Оновіть інформацію про користувача. Зміни будуть застосовані негайно.</DialogDescription>
+            <DialogDescription>Оновіть інформацію про користувача.</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleEditUser}>
             <div className="grid gap-4 py-4">
@@ -543,20 +685,55 @@ export function UsersManagement() {
                   id="edit_phone"
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  placeholder="+380XXXXXXXXX"
+                  placeholder="+420XXXXXXXXX"
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit_role">Роль</Label>
-                <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })}>
+                <Select
+                  value={formData.role}
+                  onValueChange={(value) => {
+                    const selectedRole = roles.find((r) => r.slug === value)
+                    setFormData({
+                      ...formData,
+                      role: value,
+                      role_id: selectedRole?.id || "",
+                    })
+                  }}
+                >
                   <SelectTrigger id="edit_role">
                     <SelectValue placeholder="Виберіть роль" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="user">Користувач</SelectItem>
                     <SelectItem value="admin">Адміністратор</SelectItem>
+                    {roles.map((role) => (
+                      <SelectItem key={role.id} value={role.slug}>
+                        {role.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
+              </div>
+              {/* B2B fields */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit_ico">IČO</Label>
+                  <Input
+                    id="edit_ico"
+                    value={formData.ico}
+                    onChange={(e) => setFormData({ ...formData, ico: e.target.value })}
+                    placeholder="12345678"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit_dic">DIČ</Label>
+                  <Input
+                    id="edit_dic"
+                    value={formData.dic}
+                    onChange={(e) => setFormData({ ...formData, dic: e.target.value })}
+                    placeholder="CZ12345678"
+                  />
+                </div>
               </div>
             </div>
             <DialogFooter>
