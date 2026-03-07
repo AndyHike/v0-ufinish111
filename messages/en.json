@@ -285,6 +285,8 @@
     "seriesNotFoundDesc": "The requested series could not be found."
   },
   "Models": {
+    "servicesNotAddedYet": "Services not added yet",
+    "servicesInDevelopment": "Services in development",
     "executionTime": "Execution Time",
     "fromHours": "~ {hours} hours",
     "contactForTime": "contact for time",
@@ -657,6 +659,15 @@
   "Privacy": {
     "title": "Privacy Policy",
     "contentPlaceholder": "Content will be added later."
+  },
+  "orders": {
+    "searchPlaceholder": "Search orders...",
+    "allStatuses": "All statuses",
+    "totalOrders": "Total orders",
+    "serialNumber": "Serial number",
+    "services": "Services",
+    "totalAmount": "Total amount",
+    "warranty": "Warranty"
   },
   "Profile": {
     "userProfile": "User Profile",

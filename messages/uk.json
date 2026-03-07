@@ -57,6 +57,15 @@
     "adminDashboard": "Панель адміністратора",
     "logout": "Вийти"
   },
+  "orders": {
+    "searchPlaceholder": "Пошук замовлень...",
+    "allStatuses": "Усі статуси",
+    "totalOrders": "Всього замовлень",
+    "serialNumber": "Серійний номер",
+    "services": "Послуги",
+    "totalAmount": "Загальна сума",
+    "warranty": "Гарантія"
+  },
   "Search": {
     "title": "Пошук",
     "placeholder": "Шукати моделі, бренди, послуги...",
@@ -287,6 +296,8 @@
     "seriesNotFoundDesc": "Запитана серія не знайдена."
   },
   "Models": {
+    "servicesNotAddedYet": "Services not added yet",
+    "servicesInDevelopment": "Services in development",
     "executionTime": "Час виконання",
     "fromHours": "~ {hours} години",
     "contactForTime": "уточнюйте час",
@@ -467,7 +478,7 @@
     "missingToken": "Відсутній токен",
     "passwordResetError": "Помилка скидання пароля",
     "missingTokenDescription": "Відсутній токен підтвердження. Спробуйте ще раз.",
-    "passwordResetErrorDescription": "Не вдалося скинути пароль. Посилання на скидання пароля мог��о закінчитися або є недійсним.",
+    "passwordResetErrorDescription": "Не вдалося скинути пароль. Посилання на скидання пароля могло закінчитися або є недійсним.",
     "continueLogin": "Продовжити",
     "verifyAndLogin": "Перевірити та увійти",
     "backToLogin": "Повернутися на головну",
@@ -686,7 +697,7 @@
     "orClickToUpload": "або натисніть, щоб завантажити",
     "rowsDetected": "рядків виявлено",
     "uploadAndProcess": "Завантажити та обробити",
-    "previewData": "Попередній пе��егляд даних",
+    "previewData": "Попередній перегляд даних",
     "andMoreRows": "...і ще {count} рядків",
     "importSuccess": "Імпорт успішно завершено",
     "importPartialSuccess": "Імпорт частково завершено",
@@ -1089,7 +1100,7 @@
     "nextSteps": "Що далі?",
     "step1": "Ви отримаєте підтвердження на email",
     "step2": "Наш менеджер зв'яжеться з вами найближчим часом",
-    "step3": "Ми підтверд��мо час вашої зустрічі",
+    "step3": "Ми підтвердємо час вашої зустрічі",
     "workingHours": "Робочі години",
     "workingHoursValue": "9:00 - 19:00",
     "contactLabel": "Контакти",

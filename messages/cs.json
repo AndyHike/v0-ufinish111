@@ -323,6 +323,8 @@
     "noBrandsAvailable": "Žádné značky k dispozici"
   },
   "Models": {
+    "servicesNotAddedYet": "Služby zatím nebyly přidány",
+    "servicesInDevelopment": "Služby ve vývoji",
     "executionTime": "Doba provádění",
     "fromHours": "~ {hours} hodiny",
     "contactForTime": "kontaktujte pro čas",
@@ -596,6 +598,15 @@
     "cantFindWhatYouLooking": "Nenašli jste, co hledáte?",
     "contactUsWellHelp": "Kontaktujte nás a my vám pomůžeme",
     "contactUsDescription": "Náš tým je připraven odpovědět na všechny vaše dotazy a pomoci vám s výběrem správné služby"
+  },
+  "orders": {
+    "searchPlaceholder": "Hledat objednávky...",
+    "allStatuses": "Všechny stavy",
+    "totalOrders": "Celkem objednávek",
+    "serialNumber": "Sériové číslo",
+    "services": "Služby",
+    "totalAmount": "Celková částka",
+    "warranty": "Záruka"
   },
   "Profile": {
     "userProfile": "Profil uživatele",
