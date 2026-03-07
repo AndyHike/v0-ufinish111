@@ -1,6 +1,7 @@
 "use server"
 
 import { getPriceWithDiscount } from "@/lib/discounts/get-applicable-discounts"
+import { getSession } from "@/lib/auth/session"
 
 export interface DiscountBatchRequest {
     serviceId: string
@@ -26,6 +27,8 @@ export interface DiscountBatchResponse {
 export async function getDiscountsBatch(requests: DiscountBatchRequest[]): Promise<DiscountBatchResponse> {
     try {
         const results: DiscountBatchResponse = {}
+        const session = await getSession()
+        const userId = session?.user?.id
 
         // Process all requests in parallel
         const promises = requests.map(async (req) => {
@@ -41,7 +44,7 @@ export async function getDiscountsBatch(requests: DiscountBatchRequest[]): Promi
                 }
             }
 
-            const discountInfo = await getPriceWithDiscount(req.serviceId, req.modelId, req.originalPrice)
+            const discountInfo = await getPriceWithDiscount(req.serviceId, req.modelId, req.originalPrice, userId)
 
             return {
                 serviceId: req.serviceId,
