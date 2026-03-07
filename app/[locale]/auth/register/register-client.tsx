@@ -478,7 +478,7 @@ export default function RegisterClient() {
             <Button
               type="button"
               className="w-full h-10 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
-              onClick={() => router.push(`/${locale}`)}
+              onClick={() => window.location.href = `/${locale}`}
             >
               {t("goToHomePage")}
             </Button>
@@ -499,7 +499,7 @@ export default function RegisterClient() {
             <Button
               type="button"
               className="w-full h-10 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
-              onClick={() => router.push(`/${locale}`)}
+              onClick={() => window.location.href = `/${locale}`}
             >
               {t("goToHomePage")}
             </Button>

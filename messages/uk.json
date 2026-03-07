@@ -482,7 +482,11 @@
     "verificationCode": "Код підтвердження",
     "registrationDisabled": "Реєстрацію вимкнено",
     "registrationDisabledDescription": "Ми тимчасово вимкнули реєстрацію нових користувачів.",
-    "registrationTemporarilyDisabled": "Реєстрацію тимчасово недоступна"
+    "registrationTemporarilyDisabled": "Реєстрацію тимчасово недоступна",
+    "b2bClient": "B2B Клієнт",
+    "registrationPendingTitle": "Реєстрацію надіслано",
+    "registrationPendingDescription": "Вашу реєстрацію B2B акаунту надіслано. Ваш акаунт буде активовано після підтвердження адміністратором. Про активацію ви будете повідомлені електронною поштою.",
+    "accountPendingApproval": "Ваш акаунт очікує на підтвердження адміністратором"
   },
   "Admin": {
     "adminPanel": "Панель адміністратора",

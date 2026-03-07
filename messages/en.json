@@ -464,7 +464,11 @@
     "verificationCode": "Verification Code",
     "registrationDisabled": "Registration Disabled",
     "registrationDisabledDescription": "We have temporarily disabled new user registrations.",
-    "registrationTemporarilyDisabled": "Registration is temporarily unavailable"
+    "registrationTemporarilyDisabled": "Registration is temporarily unavailable",
+    "b2bClient": "B2B Client",
+    "registrationPendingTitle": "Registration submitted",
+    "registrationPendingDescription": "Your B2B account registration has been submitted. Your account will be activated after administrator approval. You will be notified by email when activated.",
+    "accountPendingApproval": "Your account is pending administrator approval"
   },
   "BookService": {
     "pageTitle": "Book a Service",

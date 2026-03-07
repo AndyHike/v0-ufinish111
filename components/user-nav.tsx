@@ -90,6 +90,12 @@ export function UserNav({ user }: UserNavProps) {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href={`/${locale}/profile`}>
+            <User className="mr-2 h-4 w-4" />
+            {t("profile")}
+          </Link>
+        </DropdownMenuItem>
         {isAdmin && (
           <DropdownMenuItem asChild>
             <Link href={`/${locale}/admin`}>

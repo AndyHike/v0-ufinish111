@@ -511,7 +511,11 @@
     "verificationCode": "Ověřovací kód",
     "registrationDisabled": "Registrace je vypnutá",
     "registrationDisabledDescription": "Registrace nových uživatelů byla dočasně vypnuta.",
-    "registrationTemporarilyDisabled": "Registrace je dočasně nedostupná"
+    "registrationTemporarilyDisabled": "Registrace je dočasně nedostupná",
+    "b2bClient": "B2B Klient",
+    "registrationPendingTitle": "Registrace odeslána",
+    "registrationPendingDescription": "Vaše registrace B2B účtu byla odeslána. Váš účet bude aktivován po schválení administrátorem. O aktivaci budete informováni e-mailem.",
+    "accountPendingApproval": "Váš účet čeká na schválení administrátorem"
   },
   "Admin": {
     "adminPanel": "Administrační panel",
