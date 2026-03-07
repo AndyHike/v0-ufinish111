@@ -25,11 +25,13 @@ export default function ProfileContent({
       </div>
 
       <Tabs defaultValue="profile" className="space-y-4">
-        <TabsList className="w-full grid grid-cols-3">
-          <TabsTrigger value="profile">{t("profile")}</TabsTrigger>
-          <TabsTrigger value="orders">{t("repairHistory.title")}</TabsTrigger>
-          <TabsTrigger value="discounts">{t("myDiscounts")}</TabsTrigger>
-        </TabsList>
+        <div className="w-full overflow-x-auto pb-2 -mb-2 scrollbar-none">
+          <TabsList className="w-full inline-flex sm:grid sm:grid-cols-3 min-w-[max-content] sm:min-w-0 h-auto p-1">
+            <TabsTrigger value="profile" className="px-4 py-2">{t("profile")}</TabsTrigger>
+            <TabsTrigger value="orders" className="px-4 py-2">{t("repairHistory.title")}</TabsTrigger>
+            <TabsTrigger value="discounts" className="px-4 py-2">{t("myDiscounts")}</TabsTrigger>
+          </TabsList>
+        </div>
         <TabsContent value="profile" className="space-y-4">
           <UserProfile user={userData} locale={locale} />
         </TabsContent>
