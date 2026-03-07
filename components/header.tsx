@@ -7,7 +7,7 @@ import Link from "next/link"
 import { usePathname, useParams, useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet"
 import {
   Menu,
   Smartphone,
@@ -278,14 +278,16 @@ export function Header() {
                     <ul className="grid gap-2">
                       {navigation.map((item) => (
                         <li key={item.href}>
-                          <Link
-                            href={item.href}
-                            className={`flex items-center rounded-md px-3 py-3 text-sm hover:bg-accent ${isActive(item.href) ? "font-medium text-foreground bg-accent/50" : "text-muted-foreground"
-                              }`}
-                          >
-                            <span className="mr-3">{item.icon}</span>
-                            {item.name}
-                          </Link>
+                          <SheetClose asChild>
+                            <Link
+                              href={item.href}
+                              className={`flex items-center rounded-md px-3 py-3 text-sm hover:bg-accent ${isActive(item.href) ? "font-medium text-foreground bg-accent/50" : "text-muted-foreground"
+                                }`}
+                            >
+                              <span className="mr-3">{item.icon}</span>
+                              {item.name}
+                            </Link>
+                          </SheetClose>
                         </li>
                       ))}
                     </ul>
@@ -294,15 +296,19 @@ export function Header() {
                     <div className="px-3">
                       {userLoaded ? (
                         user ? (
-                          <Link href={`/${locale}/profile`} className="flex items-center w-full rounded-md bg-primary/10 px-3 py-2 text-sm font-medium text-primary hover:bg-primary/20">
-                            <User className="mr-2 h-4 w-4" />
-                            {t("profile") || "Мій профіль"}
-                          </Link>
+                          <SheetClose asChild>
+                            <Link href={`/${locale}/profile`} className="flex items-center w-full rounded-md bg-primary/10 px-3 py-2 text-sm font-medium text-primary hover:bg-primary/20">
+                              <User className="mr-2 h-4 w-4" />
+                              {t("profile") || "Мій профіль"}
+                            </Link>
+                          </SheetClose>
                         ) : (
-                          <Link href={`/${locale}/auth/signin`} className="flex items-center w-full rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
-                            <LogIn className="mr-2 h-4 w-4" />
-                            {t("signIn") || "Увійти"}
-                          </Link>
+                          <SheetClose asChild>
+                            <Link href={`/${locale}/auth/signin`} className="flex items-center w-full rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+                              <LogIn className="mr-2 h-4 w-4" />
+                              {t("signIn") || "Увійти"}
+                            </Link>
+                          </SheetClose>
                         )
                       ) : (
                         <div className="h-9 w-full rounded-md bg-muted animate-pulse"></div>
