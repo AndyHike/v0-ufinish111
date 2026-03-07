@@ -60,6 +60,7 @@ export function DiscountForm({ initialData, onSubmit, onCancel, submitting }: Di
     expiresAt: initialData?.expiresAt ? new Date(initialData.expiresAt).toISOString().split("T")[0] : "",
     maxUses: initialData?.maxUses || "",
     maxUsesPerUser: initialData?.maxUsesPerUser || "",
+    userId: initialData?.userId || "",
   })
 
   const [brands, setBrands] = useState<Brand[]>([])
@@ -175,6 +176,7 @@ export function DiscountForm({ initialData, onSubmit, onCancel, submitting }: Di
         maxUsesPerUser: formData.maxUsesPerUser ? Number.parseInt(formData.maxUsesPerUser as string) : null,
         startsAt: formData.startsAt || null,
         expiresAt: formData.expiresAt || null,
+        userId: formData.userId || null,
       })
     } finally {
       setLoading(false)
@@ -405,6 +407,20 @@ export function DiscountForm({ initialData, onSubmit, onCancel, submitting }: Di
             onChange={(e) => setFormData({ ...formData, maxUsesPerUser: e.target.value })}
             placeholder="Необмежено"
           />
+        </div>
+
+        <div className="col-span-2">
+          <Label htmlFor="userId">ID Користувача (Персональна знижка)</Label>
+          <Input
+            id="userId"
+            type="text"
+            value={formData.userId}
+            onChange={(e) => setFormData({ ...formData, userId: e.target.value.trim() })}
+            placeholder="Введіть UUID користувача (опційно)"
+          />
+          <p className="text-xs text-muted-foreground mt-1">
+            Якщо вказано ID, знижка працюватиме ТІЛЬКИ для цього користувача. Залиште порожнім для глобальної знижки.
+          </p>
         </div>
       </div>
 

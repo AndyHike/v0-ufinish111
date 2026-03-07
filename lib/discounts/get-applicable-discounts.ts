@@ -5,7 +5,7 @@ import { calculateDiscount, isDiscountActive } from "./utils"
 /**
  * Отримує всі застосовні знижки для послуги на певній моделі
  */
-export async function getApplicableDiscounts(serviceId: string, modelId: string): Promise<any> {
+export async function getApplicableDiscounts(serviceId: string, modelId: string, userId?: string): Promise<any> {
   const supabase = createClient()
 
   const { data: model } = await supabase
@@ -27,6 +27,11 @@ export async function getApplicableDiscounts(serviceId: string, modelId: string)
   const applicableDiscounts = discounts.filter((discount) => {
     const isActive = isDiscountActive(discount as any)
     if (!isActive) {
+      return false
+    }
+
+    // Checking personal discount restriction
+    if (discount.user_id && discount.user_id !== userId) {
       return false
     }
 
@@ -72,7 +77,7 @@ export async function getPriceWithDiscount(
   discountSource?: "service" | "role"
 }> {
   const supabase = createClient()
-  const discount = await getApplicableDiscounts(serviceId, modelId)
+  const discount = await getApplicableDiscounts(serviceId, modelId, userId)
 
   // Get role-based discount if userId is provided
   let roleDiscountPercentage = 0
@@ -145,6 +150,7 @@ export async function getPriceWithDiscount(
       brandId: null,
       seriesId: null,
       modelId: null,
+      userId: userId,
       isActive: true,
       maxUses: null,
       currentUses: 0,

@@ -63,24 +63,30 @@ export default function ModelPageClient({ modelData, locale }: Props) {
 
   // 1. Maintain local state initialized with SSG data
   const [currentModelData, setCurrentModelData] = useState<ModelData>(modelData)
+  const [isClientLoading, setIsClientLoading] = useState(false)
 
   // 2. Fetch live discounts on mount safely
   useEffect(() => {
     let isMounted = true
+    const hasSession = document.cookie.includes("sb-") || document.cookie.includes("session")
 
     const fetchLiveDiscounts = async () => {
       if (!modelData || !modelData.services || modelData.services.length === 0) return
 
       // Extract all valid pricing requests for the batch
       const discountRequests = modelData.services
-        .filter(s => s.price !== null && s.price !== undefined)
-        .map(s => ({
+        .filter((s) => s.price !== null && s.price !== undefined)
+        .map((s) => ({
           serviceId: s.id,
           modelId: modelData.id,
-          originalPrice: s.price!
+          originalPrice: s.price!,
         }))
 
       if (discountRequests.length === 0) return
+
+      if (hasSession) {
+        setIsClientLoading(true)
+      }
 
       try {
         const liveDiscounts = await getDiscountsBatch(discountRequests)
@@ -88,8 +94,8 @@ export default function ModelPageClient({ modelData, locale }: Props) {
         if (!isMounted) return
 
         // Merge live discount values back into our localized state
-        setCurrentModelData(prevData => {
-          const updatedServices = prevData.services.map(service => {
+        setCurrentModelData((prevData) => {
+          const updatedServices = prevData.services.map((service) => {
             const liveDiscountForService = liveDiscounts[service.id]
 
             if (liveDiscountForService) {
@@ -106,12 +112,13 @@ export default function ModelPageClient({ modelData, locale }: Props) {
 
           return {
             ...prevData,
-            services: updatedServices
+            services: updatedServices,
           }
         })
-
       } catch (err) {
         console.error("Failed to fetch client-side discounts:", err)
+      } finally {
+        if (isMounted) setIsClientLoading(false)
       }
     }
 
@@ -321,6 +328,7 @@ export default function ModelPageClient({ modelData, locale }: Props) {
                             hasDiscount={service.has_discount}
                             discount={service.discount}
                             actualDiscountPercentage={service.actual_discount_percentage || undefined}
+                            isLoading={isClientLoading}
                             size="md"
                             showBadge={true}
                             priceOnRequest={false}

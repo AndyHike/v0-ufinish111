@@ -13,7 +13,7 @@ export function calculateDiscount(price: number, discount: Discount): DiscountCa
   }
 
   const finalPrice = Math.max(0, price - discountAmount)
-  const roundedFinalPrice = roundToNearest90(finalPrice)
+  const roundedFinalPrice = roundDiscountedPrice(price, finalPrice)
 
   const actualDiscountPercentage = ((price - roundedFinalPrice) / price) * 100
 
@@ -28,20 +28,25 @@ export function calculateDiscount(price: number, discount: Discount): DiscountCa
 }
 
 /**
- * Округлення до найближчих 90 (90, 190, 290, 390, ...)
+ * Округлення ціни зі знижкою до найближчих 90 (90, 190, 290, 390, ...)
+ * Якщо округлення до найближчого 90 зводить знижку нанівець (або робить ціну вищою за оригінальну), 
+ * або ж занадто сильно викривляє розмір знижки (більше 30 крон),
+ * ми просто залишаємо математично правильну суму, округлену вниз до цілого числа.
  */
-export function roundToNearest90(price: number): number {
-  if (price <= 0) return 0
+export function roundDiscountedPrice(originalPrice: number, discountedPrice: number): number {
+  if (discountedPrice <= 0) return 0
 
   // Знаходимо найближче число, що закінчується на 90
-  const rounded = Math.round(price / 100) * 100 - 10
+  const nearest90 = Math.round((discountedPrice + 10) / 100) * 100 - 10
 
-  // Якщо округлене значення менше ціни, додаємо 100
-  if (rounded < price) {
-    return rounded + 100
+  // Якщо традиційне округлення робить ціну такою ж як без знижки (або вищою),
+  // або ж якщо різниця між чесною зниженою ціною і nearest90 є завеликою (> 30 Kč)
+  // тоді ми просто відмовляємося від красивих "90", щоб показати реальну суму.
+  if (nearest90 >= originalPrice || Math.abs(nearest90 - discountedPrice) > 30) {
+    return Math.floor(discountedPrice)
   }
 
-  return Math.max(90, rounded)
+  return Math.max(90, nearest90)
 }
 
 /**

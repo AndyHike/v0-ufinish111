@@ -6,7 +6,15 @@ import { UserProfile } from "@/components/profile/user-profile"
 import { UserOrders } from "@/components/profile/user-orders"
 import { UserDiscounts } from "@/components/profile/user-discounts"
 
-export default function ProfileContent({ userData, locale }: { userData: any; locale: string }) {
+export default function ProfileContent({
+  userData,
+  locale,
+  discounts = []
+}: {
+  userData: any;
+  locale: string;
+  discounts?: any[]
+}) {
   const t = useTranslations("Profile")
 
   return (
@@ -29,7 +37,7 @@ export default function ProfileContent({ userData, locale }: { userData: any; lo
           <UserOrders />
         </TabsContent>
         <TabsContent value="discounts" className="space-y-4">
-          <UserDiscounts discounts={[]} />
+          <UserDiscounts discounts={discounts} />
         </TabsContent>
       </Tabs>
     </div>

@@ -44,6 +44,7 @@ export async function POST(request: Request) {
       expiresAt: body.expiresAt,
       maxUses: body.maxUses,
       maxUsesPerUser: body.maxUsesPerUser,
+      userId: body.userId,
     })
 
     return NextResponse.json(discount)

@@ -46,5 +46,53 @@ export default async function ProfilePage() {
 
   console.log("User data being passed to profile component:", userData)
 
-  return <ProfileContent userData={userData} locale={locale} />
+  // Get active user-specific discounts
+  const { data: personalDiscountsData } = await supabase
+    .from("discounts")
+    .select("*")
+    .eq("user_id", session.user.id)
+    .eq("is_active", true)
+
+  const userDiscounts: any[] = []
+
+  if (personalDiscountsData) {
+    personalDiscountsData.forEach((d) => {
+      userDiscounts.push({
+        id: d.id,
+        code: d.code,
+        description: d.description || "Персональна знижка",
+        amount: Number(d.discount_value),
+        isPercentage: d.discount_type === "percentage",
+        expiresAt: d.expires_at,
+      })
+    })
+  }
+
+  // Get user role discount
+  const { data: userRole } = await supabase
+    .from("users")
+    .select("role_id")
+    .eq("id", session.user.id)
+    .single()
+
+  if (userRole?.role_id) {
+    const { data: roleData } = await supabase
+      .from("roles")
+      .select("name, discount_percentage")
+      .eq("id", userRole.role_id)
+      .single()
+
+    if (roleData && roleData.discount_percentage && Number(roleData.discount_percentage) > 0) {
+      userDiscounts.push({
+        id: `role-${userRole.role_id}`,
+        code: `РІВЕНЬ: ${roleData.name.toUpperCase()}`,
+        description: `Постійна знижка статусу ${roleData.name}`,
+        amount: Number(roleData.discount_percentage),
+        isPercentage: true,
+        expiresAt: null,
+      })
+    }
+  }
+
+  return <ProfileContent userData={userData} locale={locale} discounts={userDiscounts} />
 }

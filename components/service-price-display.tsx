@@ -1,6 +1,7 @@
 import { useTranslations } from "next-intl"
 import { formatCurrency } from "@/lib/format-currency"
 import { Badge } from "@/components/ui/badge"
+import { Skeleton } from "@/components/ui/skeleton"
 import { formatDiscountValue } from "@/lib/discounts/utils"
 import type { Discount } from "@/lib/discounts/types"
 
@@ -13,6 +14,7 @@ interface ServicePriceDisplayProps {
   size?: "sm" | "md" | "lg"
   showBadge?: boolean
   priceOnRequest?: boolean
+  isLoading?: boolean
 }
 
 export function ServicePriceDisplay({
@@ -24,6 +26,7 @@ export function ServicePriceDisplay({
   size = "md",
   showBadge = true,
   priceOnRequest = false,
+  isLoading = false,
 }: ServicePriceDisplayProps) {
   const t = useTranslations("Services")
 
@@ -44,6 +47,14 @@ export function ServicePriceDisplay({
     return (
       <div className={`font-bold text-gray-900 ${sizeClasses[size]}`} suppressHydrationWarning>
         {t("priceOnRequest")}
+      </div>
+    )
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col gap-1 w-24">
+        <Skeleton className={`h-7 w-full`} />
       </div>
     )
   }

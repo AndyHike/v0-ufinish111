@@ -104,6 +104,7 @@ function ServicePageClientContent({ serviceData, locale }: Props) {
 
   // Початковий стан з SSG
   const [currentServiceData, setCurrentServiceData] = useState<ServiceData>(serviceData)
+  const [isClientLoading, setIsClientLoading] = useState(false)
 
   // Показуємо помилку тільки якщо немає даних
   if (!currentServiceData) {
@@ -132,11 +133,16 @@ function ServicePageClientContent({ serviceData, locale }: Props) {
   // Client-side discount fetching
   useEffect(() => {
     let isMounted = true
+    const hasSession = document.cookie.includes("sb-") || document.cookie.includes("session")
 
     const fetchLiveDiscount = async () => {
       // Fetch only if we actually selected a model and it has a price
       if (!currentServiceData || !currentServiceData.sourceModel || currentServiceData.modelServicePrice === null || currentServiceData.modelServicePrice === undefined) {
         return
+      }
+
+      if (hasSession) {
+        setIsClientLoading(true)
       }
 
       try {
@@ -159,6 +165,8 @@ function ServicePageClientContent({ serviceData, locale }: Props) {
         }
       } catch (err) {
         console.error("Failed to fetch client-side discount:", err)
+      } finally {
+        if (isMounted) setIsClientLoading(false)
       }
     }
 
@@ -417,6 +425,7 @@ function ServicePageClientContent({ serviceData, locale }: Props) {
                     size="lg"
                     showBadge={true}
                     priceOnRequest={false}
+                    isLoading={isClientLoading}
                   />
                 ) : (
                   <ServicePriceDisplay

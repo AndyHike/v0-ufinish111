@@ -212,6 +212,7 @@ export default function DiscountsPage() {
               <TableHead>Код</TableHead>
               <TableHead>Знижка</TableHead>
               <TableHead>Застосування</TableHead>
+              <TableHead>Тип</TableHead>
               <TableHead>Статус</TableHead>
               <TableHead>Дійсна до</TableHead>
               <TableHead>Використано</TableHead>
@@ -221,13 +222,13 @@ export default function DiscountsPage() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={8} className="h-24 text-center">
+                <TableCell colSpan={9} className="h-24 text-center">
                   Завантаження...
                 </TableCell>
               </TableRow>
             ) : filteredDiscounts.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="h-24 text-center">
+                <TableCell colSpan={9} className="h-24 text-center">
                   {searchQuery ? "Нічого не знайдено" : "Немає знижок"}
                 </TableCell>
               </TableRow>
@@ -240,6 +241,17 @@ export default function DiscountsPage() {
                   </TableCell>
                   <TableCell>{getDiscountLabel(discount)}</TableCell>
                   <TableCell>{getScopeLabel(discount)}</TableCell>
+                  <TableCell>
+                    {discount.userId ? (
+                      <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">
+                        Персональна
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-xs bg-gray-50 text-gray-700">
+                        Глобальна
+                      </Badge>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <Badge variant={discount.isActive ? "default" : "secondary"}>
                       {discount.isActive ? "Активна" : "Неактивна"}

@@ -1,5 +1,5 @@
 export type DiscountType = "percentage" | "fixed"
-export type DiscountScopeType = "brand" | "series" | "model" | "all_models"
+export type DiscountScopeType = "brand" | "series" | "model" | "all_models" | "service" | "all_services"
 
 export interface Discount {
   id: string
@@ -19,6 +19,7 @@ export interface Discount {
   maxUses?: number
   currentUses: number
   maxUsesPerUser?: number
+  userId?: string
   createdAt: Date
   updatedAt: Date
 }

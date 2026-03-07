@@ -38,6 +38,7 @@ export async function getActiveDiscounts(): Promise<Discount[]> {
     maxUses: row.max_uses,
     currentUses: row.current_uses,
     maxUsesPerUser: row.max_uses_per_user,
+    userId: row.user_id,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }))
@@ -101,6 +102,7 @@ export async function findApplicableDiscounts(serviceId: string, modelId: string
       maxUses: row.max_uses,
       currentUses: row.current_uses,
       maxUsesPerUser: row.max_uses_per_user,
+      userId: row.user_id,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     },
@@ -145,6 +147,7 @@ export async function findDiscountByCode(code: string): Promise<Discount | null>
     maxUses: data.max_uses,
     currentUses: data.current_uses,
     maxUsesPerUser: data.max_uses_per_user,
+    userId: data.user_id,
     createdAt: data.created_at,
     updatedAt: data.updated_at,
   }
@@ -176,6 +179,7 @@ export async function createDiscount(
       expires_at: discount.expiresAt || null,
       max_uses: discount.maxUses || null,
       max_uses_per_user: discount.maxUsesPerUser || null,
+      user_id: discount.userId || null,
     })
     .select()
     .single()
@@ -203,6 +207,7 @@ export async function createDiscount(
     maxUses: data.max_uses,
     currentUses: data.current_uses,
     maxUsesPerUser: data.max_uses_per_user,
+    userId: data.user_id,
     createdAt: data.created_at,
     updatedAt: data.updated_at,
   }
@@ -222,6 +227,7 @@ export async function updateDiscount(id: string, updates: Partial<Discount>): Pr
   if (updates.isActive !== undefined) updateData.is_active = updates.isActive
   if (updates.expiresAt !== undefined) updateData.expires_at = updates.expiresAt
   if (updates.maxUses !== undefined) updateData.max_uses = updates.maxUses
+  if (updates.userId !== undefined) updateData.user_id = updates.userId
 
   const { data, error } = await supabase.from("discounts").update(updateData).eq("id", id).select().single()
 
@@ -248,6 +254,7 @@ export async function updateDiscount(id: string, updates: Partial<Discount>): Pr
     maxUses: data.max_uses,
     currentUses: data.current_uses,
     maxUsesPerUser: data.max_uses_per_user,
+    userId: data.user_id,
     createdAt: data.created_at,
     updatedAt: data.updated_at,
   }
