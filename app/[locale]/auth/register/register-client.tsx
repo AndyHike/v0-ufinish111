@@ -16,28 +16,47 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { DevEmailNotification } from "@/components/dev-email-notification"
 import { CustomPhoneInput } from "@/components/phone-input/custom-phone-input"
-import { UserPlus, CheckCircle, ArrowLeft, Shield } from "lucide-react"
+import { Checkbox } from "@/components/ui/checkbox"
+import { UserPlus, CheckCircle, ArrowLeft, Shield, Clock } from "lucide-react"
 
 import { checkUserExists, sendVerificationCode, verifyCode, createUser } from "@/app/actions/auth-api"
 
-const initialSchema = z.object({
-  email: z.string().email(),
-  phone: z
-    .string()
-    .min(1, { message: "Phone number is required" })
-    .refine((val) => isValidPhoneNumber(val), {
-      message: "Invalid phone number",
-    }),
-  firstName: z.string().min(2),
-  lastName: z.string().min(2),
-})
+const initialSchema = z
+  .object({
+    email: z.string().email(),
+    phone: z
+      .string()
+      .min(1, { message: "Phone number is required" })
+      .refine((val) => isValidPhoneNumber(val), {
+        message: "Invalid phone number",
+      }),
+    firstName: z.string().min(2),
+    lastName: z.string().min(2),
+    isB2B: z.boolean().default(false),
+    ico: z.string().optional(),
+    dic: z.string().optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.isB2B) {
+        return !!data.ico && data.ico.length >= 2
+      }
+      return true
+    },
+    { message: "IČO je povinné pro B2B", path: ["ico"] },
+  )
+  .refine(
+    (data) => {
+      if (data.isB2B) {
+        return !!data.dic && data.dic.length >= 2
+      }
+      return true
+    },
+    { message: "DIČ je povinné pro B2B", path: ["dic"] },
+  )
 
 const verificationSchema = z.object({
   code: z.string().length(6),
-})
-
-const registrationSchema = z.object({
-  address: z.string().optional(),
 })
 
 export default function RegisterClient() {
@@ -46,8 +65,16 @@ export default function RegisterClient() {
   const params = useParams()
   const locale = params.locale as string
 
-  const [step, setStep] = useState<"initial" | "verification" | "registration" | "success">("initial")
-  const [identifier, setIdentifier] = useState({ email: "", phone: "", firstName: "", lastName: "" })
+  const [step, setStep] = useState<"initial" | "verification" | "success" | "pending_approval">("initial")
+  const [identifier, setIdentifier] = useState({
+    email: "",
+    phone: "",
+    firstName: "",
+    lastName: "",
+    isB2B: false,
+    ico: "",
+    dic: "",
+  })
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
@@ -55,9 +82,12 @@ export default function RegisterClient() {
     resolver: zodResolver(initialSchema),
     defaultValues: {
       email: "",
-      phone: "+420", // Czech Republic code by default
+      phone: "+420",
       firstName: "",
       lastName: "",
+      isB2B: false,
+      ico: "",
+      dic: "",
     },
   })
 
@@ -68,42 +98,45 @@ export default function RegisterClient() {
     },
   })
 
-  const registrationForm = useForm({
-    resolver: zodResolver(registrationSchema),
-    defaultValues: {
-      address: "",
-    },
-  })
+  const watchIsB2B = initialForm.watch("isB2B")
 
-  const handleInitialSubmit = async (data: { email: string; phone: string; firstName: string; lastName: string }) => {
+  const handleInitialSubmit = async (data: {
+    email: string
+    phone: string
+    firstName: string
+    lastName: string
+    isB2B: boolean
+    ico?: string
+    dic?: string
+  }) => {
     setError(null)
     setIsLoading(true)
 
     try {
-      console.log("Registration initial data:", data)
-      setIdentifier(data)
+      setIdentifier({
+        email: data.email,
+        phone: data.phone,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        isB2B: data.isB2B,
+        ico: data.ico || "",
+        dic: data.dic || "",
+      })
 
-      // Check if user already exists
       const userExists = await checkUserExists(data.email)
-      console.log("User exists check result:", userExists)
-
       if (userExists.success) {
         setError(t("userAlreadyExists"))
         setIsLoading(false)
         return
       }
 
-      // Send verification code
       const result = await sendVerificationCode(data.email, "registration")
-      console.log("Send verification code result:", result)
-
       if (!result.success) {
         setError(result.message || t("somethingWentWrong"))
         setIsLoading(false)
         return
       }
 
-      // Move to verification step
       setStep("verification")
     } catch (error) {
       console.error("Registration error:", error)
@@ -118,10 +151,7 @@ export default function RegisterClient() {
     setIsLoading(true)
 
     try {
-      console.log(`Verifying code for ${identifier.email}: ${data.code}`)
-
       const result = await verifyCode(identifier.email, data.code, "registration")
-      console.log("Verification result:", result)
 
       if (!result.success) {
         setError(result.message || t("invalidVerificationCode"))
@@ -129,18 +159,16 @@ export default function RegisterClient() {
         return
       }
 
-      // Automatically create user after verification
-      console.log("Creating user with data:", { ...identifier })
-
       const createResult = await createUser({
         first_name: identifier.firstName,
         last_name: identifier.lastName,
         email: identifier.email,
         phone: [identifier.phone],
         address: "",
+        is_b2b: identifier.isB2B,
+        ico: identifier.ico || undefined,
+        dic: identifier.dic || undefined,
       })
-
-      console.log("Create user result:", createResult)
 
       if (!createResult.success) {
         setError(createResult.message || t("registrationFailed"))
@@ -148,8 +176,11 @@ export default function RegisterClient() {
         return
       }
 
-      // Move to success step
-      setStep("success")
+      if (createResult.needsApproval) {
+        setStep("pending_approval")
+      } else {
+        setStep("success")
+      }
     } catch (error) {
       console.error("Verification error:", error)
       setError(t("unexpectedError"))
@@ -163,11 +194,7 @@ export default function RegisterClient() {
     setIsLoading(true)
 
     try {
-      console.log(`Resending verification code to ${identifier.email}`)
-
       const result = await sendVerificationCode(identifier.email, "registration")
-      console.log("Resend verification code result:", result)
-
       if (!result.success) {
         setError(result.message || t("somethingWentWrong"))
       }
@@ -186,15 +213,21 @@ export default function RegisterClient() {
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-green-500 to-emerald-600 shadow-lg">
             {step === "success" ? (
               <CheckCircle className="h-6 w-6 text-white" />
+            ) : step === "pending_approval" ? (
+              <Clock className="h-6 w-6 text-white" />
             ) : (
               <UserPlus className="h-6 w-6 text-white" />
             )}
           </div>
           <div className="text-center space-y-1">
             <CardTitle className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
-              {step === "success" ? t("registrationSuccessful") : t("createAccount")}
+              {step === "success"
+                ? t("registrationSuccessful")
+                : step === "pending_approval"
+                  ? t("registrationPendingTitle") || "Registrace odeslána"
+                  : t("createAccount")}
             </CardTitle>
-            {step !== "success" && (
+            {step !== "success" && step !== "pending_approval" && (
               <CardDescription className="text-xs text-gray-600">
                 {t("alreadyHaveAccount")}{" "}
                 <Link
@@ -283,6 +316,64 @@ export default function RegisterClient() {
                 />
               )}
             />
+
+            {/* B2B Checkbox */}
+            <div className="flex items-center space-x-2 rounded-lg border border-gray-200 p-3 bg-gray-50">
+              <Controller
+                name="isB2B"
+                control={initialForm.control}
+                render={({ field }) => (
+                  <Checkbox
+                    id="isB2B"
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                    disabled={isLoading}
+                  />
+                )}
+              />
+              <Label htmlFor="isB2B" className="text-sm font-medium text-gray-700 cursor-pointer">
+                {t("b2bClient") || "B2B Klient"}
+              </Label>
+            </div>
+
+            {/* B2B Fields - IČO & DIČ */}
+            {watchIsB2B && (
+              <div className="grid grid-cols-2 gap-4 rounded-lg border border-blue-200 p-3 bg-blue-50">
+                <div className="space-y-2">
+                  <Label htmlFor="ico" className="text-sm font-medium text-gray-700">
+                    IČO *
+                  </Label>
+                  <Input
+                    id="ico"
+                    type="text"
+                    placeholder="12345678"
+                    {...initialForm.register("ico")}
+                    disabled={isLoading}
+                    className="h-10 border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg bg-white"
+                  />
+                  {initialForm.formState.errors.ico && (
+                    <p className="text-sm text-red-600">{initialForm.formState.errors.ico.message}</p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="dic" className="text-sm font-medium text-gray-700">
+                    DIČ *
+                  </Label>
+                  <Input
+                    id="dic"
+                    type="text"
+                    placeholder="CZ12345678"
+                    {...initialForm.register("dic")}
+                    disabled={isLoading}
+                    className="h-10 border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg bg-white"
+                  />
+                  {initialForm.formState.errors.dic && (
+                    <p className="text-sm text-red-600">{initialForm.formState.errors.dic.message}</p>
+                  )}
+                </div>
+              </div>
+            )}
+
             <Button
               type="submit"
               className="w-full h-10 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
@@ -365,6 +456,32 @@ export default function RegisterClient() {
                 {t("resendCode")}
               </Button>
             </form>
+          </div>
+        )}
+
+        {step === "pending_approval" && (
+          <div className="space-y-4 text-center">
+            <div className="space-y-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 mx-auto">
+                <Clock className="h-6 w-6 text-amber-600" />
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold text-amber-600">
+                  {t("registrationPendingTitle") || "Registrace odeslána"}
+                </h3>
+                <p className="mt-2 text-gray-600">
+                  {t("registrationPendingDescription") ||
+                    "Vaše registrace B2B účtu byla odeslána. Váš účet bude aktivován po schválení administrátorem. O aktivaci budete informováni e-mailem."}
+                </p>
+              </div>
+            </div>
+            <Button
+              type="button"
+              className="w-full h-10 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
+              onClick={() => router.push(`/${locale}`)}
+            >
+              {t("goToHomePage")}
+            </Button>
           </div>
         )}
 

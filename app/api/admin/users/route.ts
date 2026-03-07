@@ -21,10 +21,16 @@ export async function GET(request: Request) {
         email, 
         first_name,
         last_name,
-        role, 
+        role,
+        role_id,
+        ico,
+        dic,
+        is_b2b,
+        is_approved,
         created_at, 
         updated_at,
-        profiles!left(phone, avatar_url)
+        profiles!left(phone, avatar_url),
+        roles!left(name, slug, discount_percentage)
       `,
       { count: "exact" },
     )
@@ -56,13 +62,19 @@ export async function GET(request: Request) {
     }
 
     // Transform the data to flatten the structure
-    const transformedUsers = users.map((user) => ({
+    const transformedUsers = users.map((user: any) => ({
       id: user.id,
       email: user.email,
       first_name: user.first_name,
       last_name: user.last_name,
       full_name: `${user.first_name || ""} ${user.last_name || ""}`.trim() || null,
       role: user.role,
+      role_id: user.role_id,
+      role_name: user.roles?.name || null,
+      ico: user.ico,
+      dic: user.dic,
+      is_b2b: user.is_b2b || false,
+      is_approved: user.is_approved ?? true,
       created_at: user.created_at,
       updated_at: user.updated_at,
       phone: user.profiles?.phone || null,
@@ -85,7 +97,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { email, first_name, last_name, role, phone, password } = body
+    const { email, first_name, last_name, role, phone, password, role_id, ico, dic, is_b2b } = body
 
     const supabase = createClient()
 
@@ -114,7 +126,12 @@ export async function POST(request: Request) {
         email,
         first_name,
         last_name,
-        role,
+        role: role || "user",
+        role_id: role_id || null,
+        ico: ico || null,
+        dic: dic || null,
+        is_b2b: is_b2b || false,
+        is_approved: true,
       })
       .select()
       .single()

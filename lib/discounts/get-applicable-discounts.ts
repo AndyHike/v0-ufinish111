@@ -56,57 +56,108 @@ export async function getApplicableDiscounts(serviceId: string, modelId: string)
 
 /**
  * Розраховує ціну зі знижкою для послуги
+ * Враховує як знижку сервісу, так і знижку ролі користувача (застосовується більша)
  */
 export async function getPriceWithDiscount(
   serviceId: string,
   modelId: string,
   originalPrice: number,
+  userId?: string,
 ): Promise<{
   originalPrice: number
   discountedPrice: number
   hasDiscount: boolean
   discount?: Discount
   actualDiscountPercentage?: number
+  discountSource?: "service" | "role"
 }> {
+  const supabase = createClient()
   const discount = await getApplicableDiscounts(serviceId, modelId)
 
-  if (!discount) {
-    return {
-      originalPrice,
-      discountedPrice: originalPrice,
-      hasDiscount: false,
+  // Get role-based discount if userId is provided
+  let roleDiscountPercentage = 0
+  if (userId) {
+    const { data: userData } = await supabase
+      .from("users")
+      .select("role_id")
+      .eq("id", userId)
+      .single()
+
+    if (userData?.role_id) {
+      const { data: roleData } = await supabase
+        .from("roles")
+        .select("discount_percentage")
+        .eq("id", userData.role_id)
+        .single()
+
+      if (roleData?.discount_percentage) {
+        roleDiscountPercentage = Number(roleData.discount_percentage)
+      }
     }
   }
 
-  const discountForCalc: Discount = {
-    id: discount.id,
-    name: discount.name,
-    code: discount.code,
-    description: discount.description,
-    discountType: discount.discount_type,
-    discountValue: discount.discount_value,
-    serviceIds: discount.service_ids,
-    scopeType: discount.scope_type,
-    brandId: discount.brand_id,
-    seriesId: discount.series_id,
-    modelId: discount.model_id,
-    isActive: discount.is_active,
-    startsAt: discount.starts_at,
-    expiresAt: discount.expires_at,
-    maxUses: discount.max_uses,
-    currentUses: discount.current_uses,
-    maxUsesPerUser: discount.max_uses_per_user,
-    createdAt: discount.created_at,
-    updatedAt: discount.updated_at,
+  // Calculate service-level discount
+  let serviceDiscountPercentage = 0
+  let serviceDiscountedPrice = originalPrice
+  let discountForCalc: Discount | null = null
+
+  if (discount) {
+    discountForCalc = {
+      id: discount.id,
+      name: discount.name,
+      code: discount.code,
+      description: discount.description,
+      discountType: discount.discount_type,
+      discountValue: discount.discount_value,
+      serviceIds: discount.service_ids,
+      scopeType: discount.scope_type,
+      brandId: discount.brand_id,
+      seriesId: discount.series_id,
+      modelId: discount.model_id,
+      isActive: discount.is_active,
+      startsAt: discount.starts_at,
+      expiresAt: discount.expires_at,
+      maxUses: discount.max_uses,
+      currentUses: discount.current_uses,
+      maxUsesPerUser: discount.max_uses_per_user,
+      createdAt: discount.created_at,
+      updatedAt: discount.updated_at,
+    }
+
+    const calculation = calculateDiscount(originalPrice, discountForCalc)
+    serviceDiscountPercentage = calculation.actualDiscountPercentage
+    serviceDiscountedPrice = calculation.roundedFinalPrice
   }
 
-  const calculation = calculateDiscount(originalPrice, discountForCalc)
+  // Apply the better discount (higher percentage = better for customer)
+  if (roleDiscountPercentage > 0 && roleDiscountPercentage > serviceDiscountPercentage) {
+    // Role discount is better
+    const roleDiscountedPrice = Math.round(originalPrice * (1 - roleDiscountPercentage / 100))
+    return {
+      originalPrice,
+      discountedPrice: roleDiscountedPrice,
+      hasDiscount: true,
+      actualDiscountPercentage: roleDiscountPercentage,
+      discountSource: "role",
+    }
+  }
 
+  if (discountForCalc) {
+    // Service discount is better (or equal)
+    return {
+      originalPrice,
+      discountedPrice: serviceDiscountedPrice,
+      hasDiscount: true,
+      discount: discountForCalc,
+      actualDiscountPercentage: serviceDiscountPercentage,
+      discountSource: "service",
+    }
+  }
+
+  // No discounts at all
   return {
     originalPrice,
-    discountedPrice: calculation.roundedFinalPrice,
-    hasDiscount: true,
-    discount: discountForCalc,
-    actualDiscountPercentage: calculation.actualDiscountPercentage,
+    discountedPrice: originalPrice,
+    hasDiscount: false,
   }
 }

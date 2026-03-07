@@ -15,7 +15,12 @@ export async function GET(request: Request, { params }: { params: { id: string }
         email, 
         first_name, 
         last_name, 
-        role, 
+        role,
+        role_id,
+        ico,
+        dic,
+        is_b2b,
+        is_approved,
         created_at,
         profiles!inner(phone)
       `)
@@ -37,14 +42,15 @@ export async function GET(request: Request, { params }: { params: { id: string }
     }
 
     // Transform to flatten the structure
+    const u = user as any
     const transformedUser = {
-      id: user.id,
-      email: user.email,
-      first_name: user.first_name,
-      last_name: user.last_name,
-      role: user.role,
-      created_at: user.created_at,
-      phone: user.profiles?.phone || null,
+      id: u.id,
+      email: u.email,
+      first_name: u.first_name,
+      last_name: u.last_name,
+      role: u.role,
+      created_at: u.created_at,
+      phone: u.profiles?.phone || null,
     }
 
     return NextResponse.json(transformedUser)
@@ -58,20 +64,28 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   try {
     const id = params.id
     const body = await request.json()
-    const { first_name, last_name, email, role, phone } = body
+    const { first_name, last_name, email, role, phone, is_approved, role_id, ico, dic, is_b2b } = body
 
     const supabase = createClient()
 
-    // Update user in users table (without phone)
+    // Build update object with only provided fields
+    const updateData: Record<string, any> = {
+      updated_at: new Date().toISOString(),
+    }
+    if (first_name !== undefined) updateData.first_name = first_name
+    if (last_name !== undefined) updateData.last_name = last_name
+    if (email !== undefined) updateData.email = email
+    if (role !== undefined) updateData.role = role
+    if (is_approved !== undefined) updateData.is_approved = is_approved
+    if (role_id !== undefined) updateData.role_id = role_id
+    if (ico !== undefined) updateData.ico = ico
+    if (dic !== undefined) updateData.dic = dic
+    if (is_b2b !== undefined) updateData.is_b2b = is_b2b
+
+    // Update user in users table
     const { data: user, error } = await supabase
       .from("users")
-      .update({
-        first_name,
-        last_name,
-        email,
-        role,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updateData)
       .eq("id", id)
       .select()
       .single()
@@ -125,21 +139,36 @@ export async function PATCH(request: Request, { params }: { params: { id: string
         email, 
         first_name, 
         last_name, 
-        role, 
+        role,
+        role_id,
+        ico,
+        dic,
+        is_b2b,
+        is_approved,
         created_at,
         profiles!inner(phone)
       `)
       .eq("id", id)
       .single()
 
+    if (!updatedUser) {
+      return NextResponse.json({ error: "Failed to fetch updated user" }, { status: 500 })
+    }
+
+    const u = updatedUser as any
     const transformedUser = {
-      id: updatedUser.id,
-      email: updatedUser.email,
-      first_name: updatedUser.first_name,
-      last_name: updatedUser.last_name,
-      role: updatedUser.role,
-      created_at: updatedUser.created_at,
-      phone: updatedUser.profiles?.phone || null,
+      id: u.id,
+      email: u.email,
+      first_name: u.first_name,
+      last_name: u.last_name,
+      role: u.role,
+      role_id: u.role_id,
+      ico: u.ico,
+      dic: u.dic,
+      is_b2b: u.is_b2b,
+      is_approved: u.is_approved,
+      created_at: u.created_at,
+      phone: u.profiles?.phone || null,
     }
 
     return NextResponse.json(transformedUser)
