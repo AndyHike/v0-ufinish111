@@ -973,7 +973,12 @@
     "discountsWillBeAvailable": "Знижки будуть доступні після виконання певних умов",
     "expiresOn": "Діє до",
     "firstName": "Ім'я",
-    "lastName": "Прізвище"
+    "lastName": "Прізвище",
+    "accountId": "ID Акаунту",
+    "copy": "Скопіювати",
+    "editingNotAvailable": "Редагування профілю наразі недоступне. Будь ласка, зверніться до нашої підтримки, якщо вам потрібно змінити дані.",
+    "roleLevel": "Рівень: {level}",
+    "roleDiscountDescription": "Додаткова знижка для вашої ролі"
   },
   "Navigation": {
     "home": "Головна",

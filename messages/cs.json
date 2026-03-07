@@ -649,7 +649,11 @@
     "notSpecified": "Neuvedeno",
     "editingNotAvailable": "Úprava profilu není momentálně k dispozici",
     "device": "Zařízení",
-    "service": "Služba"
+    "service": "Služba",
+    "accountId": "ID Účtu",
+    "copy": "Kopírovat",
+    "roleLevel": "Úroveň: {level}",
+    "roleDiscountDescription": "Dodatečná sleva pro vaši roli"
   },
   "Terms": {
     "title": "Obchodní podmínky",
@@ -823,10 +827,5 @@
       "Review": "Recenze",
       "Tips & Tricks": "Tipy a triky"
     }
-  },
-  "Admin": {
-    "adminPanel": "Administrační panel",
-    "cancel": "Zrušit",
-    "confirmDelete": "Potvrdit smazání"
   }
 }

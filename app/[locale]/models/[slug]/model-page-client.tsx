@@ -11,6 +11,7 @@ import { ContactCTABanner } from "@/components/contact-cta-banner"
 import { PartTypeBadges } from "@/components/part-type-badges"
 import { Breadcrumb } from "@/components/breadcrumb"
 import { getDiscountsBatch } from "@/app/actions/discounts-api"
+import { discountCache } from "@/lib/discounts/client-cache"
 
 export interface ModelData {
   id: string
@@ -84,6 +85,35 @@ export default function ModelPageClient({ modelData, locale }: Props) {
 
       if (discountRequests.length === 0) return
 
+      const serviceIds = discountRequests.map((r) => r.serviceId)
+      const cachedDiscounts = discountCache.get(modelData.id, serviceIds)
+
+      if (cachedDiscounts) {
+        // Use cached data instantly, no loading state
+        setCurrentModelData((prevData) => {
+          const updatedServices = prevData.services.map((service) => {
+            const liveDiscountForService = cachedDiscounts[service.id]
+
+            if (liveDiscountForService) {
+              return {
+                ...service,
+                discounted_price: liveDiscountForService.discountedPrice,
+                has_discount: liveDiscountForService.hasDiscount,
+                discount: liveDiscountForService.discount,
+                actual_discount_percentage: liveDiscountForService.actualDiscountPercentage,
+              }
+            }
+            return service
+          })
+
+          return {
+            ...prevData,
+            services: updatedServices,
+          }
+        })
+        return
+      }
+
       if (hasSession) {
         setIsClientLoading(true)
       }
@@ -92,6 +122,9 @@ export default function ModelPageClient({ modelData, locale }: Props) {
         const liveDiscounts = await getDiscountsBatch(discountRequests)
 
         if (!isMounted) return
+
+        // Cache the result for subsequent rapid navigaion
+        discountCache.set(modelData.id, serviceIds, liveDiscounts)
 
         // Merge live discount values back into our localized state
         setCurrentModelData((prevData) => {

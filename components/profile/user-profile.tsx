@@ -4,7 +4,10 @@ import { useEffect } from "react"
 import { useTranslations } from "next-intl"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { CalendarDays, Mail, Phone, UserIcon, MapPin } from "lucide-react"
+import { CalendarDays, Mail, Phone, UserIcon, MapPin, Copy, Check, ShieldCheck, Percent } from "lucide-react"
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 
 interface UserProfileProps {
   user: {
@@ -18,6 +21,8 @@ interface UserProfileProps {
     phone?: string | null
     address?: string | null
     role?: string
+    role_name?: string | null
+    role_discount_percentage?: number
     created_at?: string
   }
   locale?: string
@@ -26,6 +31,14 @@ interface UserProfileProps {
 export function UserProfile({ user, locale = "uk" }: UserProfileProps) {
   // Використовуємо переклади
   const t = useTranslations("Profile")
+  const [copied, setCopied] = useState(false)
+
+  const copyToClipboard = () => {
+    if (!user?.id) return
+    navigator.clipboard.writeText(user.id)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   // Debug log to see what user data we have
   useEffect(() => {
@@ -86,6 +99,26 @@ export function UserProfile({ user, locale = "uk" }: UserProfileProps) {
                 {user?.phone || t("notSpecified")}
               </span>
             </CardDescription>
+            {user?.id && (
+              <div className="mt-2 flex items-center justify-center sm:justify-start space-x-2">
+                <code className="px-2 py-0.5 rounded bg-muted text-[10px] sm:text-xs font-mono text-muted-foreground truncate max-w-[150px] sm:max-w-none">
+                  ID: {user.id}
+                </code>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={copyToClipboard}
+                  title={t("copy")}
+                >
+                  {copied ? (
+                    <Check className="h-3 w-3 text-green-500" />
+                  ) : (
+                    <Copy className="h-3 w-3" />
+                  )}
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </CardHeader>
@@ -140,6 +173,30 @@ export function UserProfile({ user, locale = "uk" }: UserProfileProps) {
                 <div className="rounded-md border px-3 py-2 w-full bg-muted/30">{formatDate(user?.created_at)}</div>
               </div>
             </div>
+
+            {user?.role_name && (
+              <div className="space-y-3 sm:col-span-2 p-4 rounded-lg bg-primary/5 border border-primary/10">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <ShieldCheck className="h-5 w-5 text-primary" />
+                    <h3 className="font-semibold text-primary">
+                      {t("roleLevel", { level: user.role_name })}
+                    </h3>
+                  </div>
+                  {user.role_discount_percentage && user.role_discount_percentage > 0 && (
+                    <Badge variant="secondary" className="bg-primary/20 text-primary border-primary/20">
+                      -{user.role_discount_percentage}%
+                    </Badge>
+                  )}
+                </div>
+                {user.role_discount_percentage && user.role_discount_percentage > 0 && (
+                  <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                    <Percent className="h-4 w-4" />
+                    <p>{t("roleDiscountDescription")}</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           <div className="text-sm text-muted-foreground mt-4 text-center">
             <p>{t("editingNotAvailable")}</p>

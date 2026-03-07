@@ -395,6 +395,7 @@ export function UsersManagement() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Користувач</TableHead>
+                      <TableHead>ID</TableHead>
                       <TableHead>Роль</TableHead>
                       <TableHead>Статус</TableHead>
                       <TableHead className="hidden md:table-cell">Телефон</TableHead>
@@ -406,7 +407,7 @@ export function UsersManagement() {
                   <TableBody>
                     {users.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={7} className="h-24 text-center">
+                        <TableCell colSpan={8} className="h-24 text-center">
                           Користувачів не знайдено
                         </TableCell>
                       </TableRow>
@@ -445,12 +446,17 @@ export function UsersManagement() {
                             </div>
                           </TableCell>
                           <TableCell>
+                            <code className="bg-muted px-1.5 py-0.5 rounded text-[10px] font-mono select-all">
+                              {user.id}
+                            </code>
+                          </TableCell>
+                          <TableCell>
                             <span
                               className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${user.role === "admin"
-                                  ? "bg-blue-100 text-blue-800"
-                                  : user.is_b2b
-                                    ? "bg-purple-100 text-purple-800"
-                                    : "bg-gray-100 text-gray-800"
+                                ? "bg-blue-100 text-blue-800"
+                                : user.is_b2b
+                                  ? "bg-purple-100 text-purple-800"
+                                  : "bg-gray-100 text-gray-800"
                                 }`}
                             >
                               {getRoleLabel(user)}

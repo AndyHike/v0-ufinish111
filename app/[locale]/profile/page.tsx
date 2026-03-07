@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import { redirect } from "next/navigation"
-import { getLocale } from "next-intl/server"
+import { getLocale, getTranslations } from "next-intl/server"
 import { getSession } from "@/lib/auth/session"
 import { createClient } from "@/lib/supabase"
 import { syncUserProfile } from "@/lib/user/profile-sync"
@@ -42,6 +42,8 @@ export default async function ProfilePage() {
     phone: profile?.phone || session.user.phone || null,
     address: profile?.address || null,
     created_at: profile?.created_at || new Date().toISOString(),
+    role_name: null as string | null,
+    role_discount_percentage: 0 as number,
   }
 
   console.log("User data being passed to profile component:", userData)
@@ -75,6 +77,8 @@ export default async function ProfilePage() {
     .eq("id", session.user.id)
     .single()
 
+  const t = await getTranslations("Profile")
+
   if (userRole?.role_id) {
     const { data: roleData } = await supabase
       .from("roles")
@@ -82,15 +86,20 @@ export default async function ProfilePage() {
       .eq("id", userRole.role_id)
       .single()
 
-    if (roleData && roleData.discount_percentage && Number(roleData.discount_percentage) > 0) {
-      userDiscounts.push({
-        id: `role-${userRole.role_id}`,
-        code: `РІВЕНЬ: ${roleData.name.toUpperCase()}`,
-        description: `Постійна знижка статусу ${roleData.name}`,
-        amount: Number(roleData.discount_percentage),
-        isPercentage: true,
-        expiresAt: null,
-      })
+    if (roleData) {
+      userData.role_name = roleData.name
+      userData.role_discount_percentage = Number(roleData.discount_percentage) || 0
+
+      if (userData.role_discount_percentage > 0) {
+        userDiscounts.push({
+          id: `role-${userRole.role_id}`,
+          code: t("roleLevel", { level: roleData.name.toUpperCase() }),
+          description: t("roleDiscountDescription"),
+          amount: userData.role_discount_percentage,
+          isPercentage: true,
+          expiresAt: null,
+        })
+      }
     }
   }
 

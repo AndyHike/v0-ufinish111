@@ -15,6 +15,7 @@ import { ServicePriceDisplay } from "@/components/service-price-display"
 import { ContactCTABanner } from "@/components/contact-cta-banner"
 import { PartTypeBadges } from "@/components/part-type-badges"
 import { getDiscountsBatch } from "@/app/actions/discounts-api"
+import { discountCache } from "@/lib/discounts/client-cache"
 
 interface ServiceData {
   id: string
@@ -141,18 +142,35 @@ function ServicePageClientContent({ serviceData, locale }: Props) {
         return
       }
 
+      const cachedDiscount = discountCache.get(currentServiceData.sourceModel.id, [currentServiceData.id])
+      if (cachedDiscount) {
+        const liveDiscount = cachedDiscount[currentServiceData.id]
+        if (liveDiscount) {
+          setCurrentServiceData(prev => ({
+            ...prev,
+            discountedPrice: liveDiscount.discountedPrice,
+            hasDiscount: liveDiscount.hasDiscount,
+            discount: liveDiscount.discount,
+          }))
+        }
+        return
+      }
+
       if (hasSession) {
         setIsClientLoading(true)
       }
 
       try {
-        const liveDiscounts = await getDiscountsBatch([{
+        const payload = [{
           serviceId: currentServiceData.id,
           modelId: currentServiceData.sourceModel.id,
           originalPrice: currentServiceData.modelServicePrice
-        }])
+        }]
+        const liveDiscounts = await getDiscountsBatch(payload)
 
         if (!isMounted) return
+
+        discountCache.set(currentServiceData.sourceModel.id, [currentServiceData.id], liveDiscounts)
 
         const liveDiscount = liveDiscounts[currentServiceData.id]
         if (liveDiscount) {
