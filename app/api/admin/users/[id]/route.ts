@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
 import { logActivity } from "@/lib/admin/activity-logger"
+import { sendAccountApprovedEmail } from "@/lib/email/send-email"
 
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
@@ -98,6 +99,19 @@ export async function PATCH(request: Request, { params }: { params: { id: string
         },
         { status: 500 },
       )
+    }
+
+    // Send approval email if user was just approved
+    if (is_approved === true && user) {
+      // Check if user was previously not approved (prevent re-sending on other edits)
+      // Since we just set is_approved=true and got the updated user, we send the email
+      // We determine locale from the Accept-Language header or default to 'cs'
+      const acceptLang = request.headers.get("accept-language") || ""
+      const locale = acceptLang.includes("uk") ? "uk" : acceptLang.includes("en") ? "en" : "cs"
+
+      sendAccountApprovedEmail(user.email, locale).catch((err) => {
+        console.error("Failed to send approval email:", err)
+      })
     }
 
     // Update phone in profiles table

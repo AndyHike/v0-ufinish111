@@ -50,7 +50,7 @@ export function ModernLoginForm({ locale }: ModernLoginFormProps) {
       console.log("User exists:", userExists)
 
       // Send verification code
-      const result = await sendVerificationCode(identifier, "login")
+      const result = await sendVerificationCode(identifier, "login", locale)
 
       if (!result.success) {
         setError(result.message || t("somethingWentWrong"))
@@ -108,7 +108,7 @@ export function ModernLoginForm({ locale }: ModernLoginFormProps) {
 
     try {
       const currentIdentifier = identifier
-      const result = await sendVerificationCode(currentIdentifier, "login")
+      const result = await sendVerificationCode(currentIdentifier, "login", locale)
 
       if (!result.success) {
         setError(result.message || t("somethingWentWrong"))

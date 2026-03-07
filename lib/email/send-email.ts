@@ -4,6 +4,7 @@ import {
   getPasswordResetEmailTemplate,
   getVerificationCodeEmailTemplate,
   getNewContactMessageTemplate,
+  getAccountApprovedEmailTemplate,
 } from "./templates"
 
 // Configure email transporter
@@ -113,6 +114,23 @@ export async function sendNewContactMessageNotification(
 
   // Передаємо email клієнта як replyTo, щоб можна було відповісти прямо
   return await sendEmail(notificationEmail, subject, emailTemplate, contactMessage.email)
+}
+
+export async function sendAccountApprovedEmail(email: string, locale = "uk") {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ? process.env.NEXT_PUBLIC_APP_URL.trim() : ""
+  const loginLink = `${appUrl}/${locale}/auth/signin`
+
+  const emailTemplate = getAccountApprovedEmailTemplate(loginLink, locale)
+
+  const translations = {
+    en: "Your account has been approved!",
+    uk: "Ваш акаунт підтверджено!",
+    cs: "Váš účet byl schválen!",
+  }
+
+  const subject = translations[locale as keyof typeof translations] || translations.en
+
+  return await sendEmail(email, subject, emailTemplate)
 }
 
 // Експортуємо функцію sendEmail для використання в інших модулях

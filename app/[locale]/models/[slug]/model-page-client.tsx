@@ -64,7 +64,14 @@ export default function ModelPageClient({ modelData, locale }: Props) {
 
   // 1. Maintain local state initialized with SSG data
   const [currentModelData, setCurrentModelData] = useState<ModelData>(modelData)
-  const [isClientLoading, setIsClientLoading] = useState(false)
+  // Start with loading=true for logged-in users so skeleton shows immediately
+  // instead of flashing SSG prices before discounts load
+  const [isClientLoading, setIsClientLoading] = useState(() => {
+    if (typeof document !== 'undefined') {
+      return document.cookie.includes("session")
+    }
+    return false
+  })
 
   // 2. Fetch live discounts on mount safely
   useEffect(() => {
@@ -72,7 +79,10 @@ export default function ModelPageClient({ modelData, locale }: Props) {
     const hasSession = document.cookie.includes("sb-") || document.cookie.includes("session")
 
     const fetchLiveDiscounts = async () => {
-      if (!modelData || !modelData.services || modelData.services.length === 0) return
+      if (!modelData || !modelData.services || modelData.services.length === 0) {
+        setIsClientLoading(false)
+        return
+      }
 
       // Extract all valid pricing requests for the batch
       const discountRequests = modelData.services
@@ -83,7 +93,10 @@ export default function ModelPageClient({ modelData, locale }: Props) {
           originalPrice: s.price!,
         }))
 
-      if (discountRequests.length === 0) return
+      if (discountRequests.length === 0) {
+        setIsClientLoading(false)
+        return
+      }
 
       const serviceIds = discountRequests.map((r) => r.serviceId)
       const cachedDiscounts = discountCache.get(modelData.id, serviceIds)
@@ -111,6 +124,7 @@ export default function ModelPageClient({ modelData, locale }: Props) {
             services: updatedServices,
           }
         })
+        setIsClientLoading(false)
         return
       }
 

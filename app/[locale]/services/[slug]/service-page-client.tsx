@@ -105,7 +105,13 @@ function ServicePageClientContent({ serviceData, locale }: Props) {
 
   // Початковий стан з SSG
   const [currentServiceData, setCurrentServiceData] = useState<ServiceData>(serviceData)
-  const [isClientLoading, setIsClientLoading] = useState(false)
+  // Start with loading=true for logged-in users so skeleton shows immediately
+  const [isClientLoading, setIsClientLoading] = useState(() => {
+    if (typeof document !== 'undefined') {
+      return document.cookie.includes("session")
+    }
+    return false
+  })
 
   // Показуємо помилку тільки якщо немає даних
   if (!currentServiceData) {
@@ -139,6 +145,7 @@ function ServicePageClientContent({ serviceData, locale }: Props) {
     const fetchLiveDiscount = async () => {
       // Fetch only if we actually selected a model and it has a price
       if (!currentServiceData || !currentServiceData.sourceModel || currentServiceData.modelServicePrice === null || currentServiceData.modelServicePrice === undefined) {
+        setIsClientLoading(false)
         return
       }
 
@@ -153,6 +160,7 @@ function ServicePageClientContent({ serviceData, locale }: Props) {
             discount: liveDiscount.discount,
           }))
         }
+        setIsClientLoading(false)
         return
       }
 

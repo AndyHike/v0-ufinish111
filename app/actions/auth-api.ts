@@ -143,6 +143,7 @@ export async function checkUserExists(identifier: string): Promise<{
 export async function sendVerificationCode(
   identifier: string,
   type: "login" | "registration",
+  locale: string = "uk",
 ): Promise<{ success: boolean; message?: string; email?: string }> {
   try {
     if (process.env.NODE_ENV === "development") {
@@ -186,7 +187,7 @@ export async function sendVerificationCode(
 
     // Send email with code
     try {
-      await sendVerificationCodeEmail(email, code, "uk", type === "login")
+      await sendVerificationCodeEmail(email, code, locale, type === "login")
       if (process.env.NODE_ENV === "development") {
         console.log(`Verification code sent to ${email}`)
       }

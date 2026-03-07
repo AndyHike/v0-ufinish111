@@ -130,7 +130,7 @@ export default function RegisterClient() {
         return
       }
 
-      const result = await sendVerificationCode(data.email, "registration")
+      const result = await sendVerificationCode(data.email, "registration", locale)
       if (!result.success) {
         setError(result.message || t("somethingWentWrong"))
         setIsLoading(false)
@@ -194,7 +194,7 @@ export default function RegisterClient() {
     setIsLoading(true)
 
     try {
-      const result = await sendVerificationCode(identifier.email, "registration")
+      const result = await sendVerificationCode(identifier.email, "registration", locale)
       if (!result.success) {
         setError(result.message || t("somethingWentWrong"))
       }
