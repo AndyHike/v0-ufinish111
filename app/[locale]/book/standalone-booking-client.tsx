@@ -4,7 +4,6 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useTranslations } from "next-intl"
 import { useRouter, useSearchParams } from "next/navigation"
-import BookingConfirmation from "./booking-confirmation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Loader2, ArrowLeft, ChevronRight, Wrench, Smartphone } from "lucide-react"
@@ -82,7 +81,6 @@ export default function StandaloneBookingClient({ locale }: StandaloneBookingCli
   const [selectedSeries, setSelectedSeries] = useState<Series | null>(null)
   const [selectedModel, setSelectedModel] = useState<Model | null>(null)
   const [selectedService, setSelectedService] = useState<Service | null>(null)
-  const [showConfirmation, setShowConfirmation] = useState(false)
 
   // Функція для оновлення URL
   const updateUrl = (params: Record<string, string | null>) => {
@@ -344,14 +342,9 @@ export default function StandaloneBookingClient({ locale }: StandaloneBookingCli
                   setSelectedService(service)
                   setSelectedModel(model)
                   setSelectedBrand({ id: model.brand_id, name: model.brands?.name || '', slug: model.brands?.slug || '' })
-                  setShowConfirmation(true)
 
-                  // Оновлюємо URL з правильними параметрами
-                  updateUrl({
-                    brand: model.brands?.slug || '',
-                    series: model.series?.slug || null,
-                    model: model.slug,
-                  })
+                  // Redirect to confirmation page instead of showing inline
+                  router.push(`/${locale}/book/confirm?model_slug=${model.slug}&service_slug=${service.slug}${urlWarrantyMonths ? `&warranty_months=${urlWarrantyMonths}` : ''}${urlDurationHours ? `&duration_hours=${urlDurationHours}` : ''}`)
                 }
               }
             }
@@ -390,13 +383,15 @@ export default function StandaloneBookingClient({ locale }: StandaloneBookingCli
 
   const handleServiceSelect = (service: Service) => {
     setSelectedService(service)
-    setShowConfirmation(true)
+
+    // Proceed to confirmation page
+    if (selectedModel) {
+      router.push(`/${locale}/book/confirm?model_slug=${selectedModel.slug}&service_slug=${service.slug}`)
+    }
   }
 
   const handleBack = () => {
-    if (showConfirmation) {
-      setShowConfirmation(false)
-    } else if (step === 4) {
+    if (step === 4) {
       updateUrl({ model: null })
     } else if (step === 3) {
       updateUrl({ series: null, model: null })
@@ -407,24 +402,7 @@ export default function StandaloneBookingClient({ locale }: StandaloneBookingCli
     }
   }
 
-  // Show confirmation form if requested
-  if (showConfirmation && selectedBrand && selectedModel && selectedService) {
-    return (
-      <BookingConfirmation
-        locale={locale}
-        brand={{ name: selectedBrand.name, slug: selectedBrand.slug }}
-        model={{ name: selectedModel.name, slug: selectedModel.slug, id: selectedModel.id }}
-        service={{
-          name: selectedService.name,
-          slug: selectedService.slug,
-          price: selectedService.price,
-          warranty_months: selectedService.warranty_months,
-          duration_hours: selectedService.duration_hours,
-          warranty_period: selectedService.warranty_period,
-        }}
-      />
-    )
-  }
+  // Removed inline confirmation form
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">

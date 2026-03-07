@@ -42,8 +42,9 @@ export const getCurrentUser = cache(async () => {
     return null
   }
 
-  const userData = data.users
-  const profileData = userData.profiles?.[0]
+  // data.users could be an array or object depending on the generated types
+  const userData: any = Array.isArray(data.users) ? data.users[0] : data.users
+  const profileData = userData?.profiles ? (Array.isArray(userData.profiles) ? userData.profiles[0] : userData.profiles) : null
 
   // Combine first_name and last_name for full name
   const fullName = [profileData?.first_name || userData.first_name, profileData?.last_name || userData.last_name]

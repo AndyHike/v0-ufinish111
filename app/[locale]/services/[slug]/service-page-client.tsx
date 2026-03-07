@@ -375,7 +375,7 @@ function ServicePageClientContent({ serviceData, locale }: Props) {
       params.set("duration_hours", serviceData.duration_hours.toString())
     }
 
-    return `/${locale}/book?${params.toString()}`
+    return `/${locale}/book/confirm?${params.toString()}`
   })()
 
   return (
