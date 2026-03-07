@@ -22,6 +22,8 @@ import {
   Layers,
   Wrench,
   Globe,
+  User,
+  LogIn,
 } from "lucide-react"
 import { LanguageSwitcher } from "@/components/language-switcher"
 import { UserNav } from "@/components/user-nav"
@@ -289,6 +291,23 @@ export function Header() {
                     </ul>
                   </nav>
                   <div className="border-t py-4 space-y-4">
+                    <div className="px-3">
+                      {userLoaded ? (
+                        user ? (
+                          <Link href={`/${locale}/profile`} className="flex items-center w-full rounded-md bg-primary/10 px-3 py-2 text-sm font-medium text-primary hover:bg-primary/20">
+                            <User className="mr-2 h-4 w-4" />
+                            {t("profile") || "Мій профіль"}
+                          </Link>
+                        ) : (
+                          <Link href={`/${locale}/auth/signin`} className="flex items-center w-full rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+                            <LogIn className="mr-2 h-4 w-4" />
+                            {t("signIn") || "Увійти"}
+                          </Link>
+                        )
+                      ) : (
+                        <div className="h-9 w-full rounded-md bg-muted animate-pulse"></div>
+                      )}
+                    </div>
                     <div className="px-3 space-y-1">
                       <div className="flex items-center gap-2">
                         <Phone className="h-4 w-4 text-primary" />

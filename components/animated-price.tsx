@@ -5,6 +5,7 @@ import { formatCurrency } from "@/lib/format-currency"
 
 interface AnimatedPriceProps {
     value: number
+    initialValue?: number
     className?: string
     duration?: number // ms
 }
@@ -16,9 +17,10 @@ interface AnimatedPriceProps {
  * On first mount it renders immediately (no animation).
  * On subsequent value changes it animates the transition.
  */
-export function AnimatedPrice({ value, className = "", duration = 400 }: AnimatedPriceProps) {
-    const [displayValue, setDisplayValue] = useState(value)
-    const prevValueRef = useRef(value)
+export function AnimatedPrice({ value, initialValue, className = "", duration = 400 }: AnimatedPriceProps) {
+    const defaultInitial = initialValue !== undefined ? initialValue : value
+    const [displayValue, setDisplayValue] = useState(defaultInitial)
+    const prevValueRef = useRef(defaultInitial)
     const rafRef = useRef<number | null>(null)
 
     useEffect(() => {

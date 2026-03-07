@@ -74,6 +74,7 @@ export function ServicePriceDisplay({
         <div className="flex flex-col gap-1 animate-in fade-in duration-300">
           <div className="flex items-center gap-2 flex-wrap">
             <AnimatedPrice
+              initialValue={originalPrice!}
               value={discountedPrice}
               className={`font-bold text-gray-900 ${sizeClasses[size]}`}
               duration={600}
