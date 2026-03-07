@@ -1,14 +1,16 @@
 "use client"
 
 import Link from "next/link"
+
 import { useTranslations } from "next-intl"
 import { Clock, Shield, ArrowRight } from "lucide-react"
 import { formatImageUrl } from "@/utils/image-url"
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import { ServicePriceDisplay } from "@/components/service-price-display"
 import { ContactCTABanner } from "@/components/contact-cta-banner"
 import { PartTypeBadges } from "@/components/part-type-badges"
 import { Breadcrumb } from "@/components/breadcrumb"
+import { getDiscountsBatch } from "@/app/actions/discounts-api"
 
 export interface ModelData {
   id: string
@@ -59,9 +61,66 @@ export default function ModelPageClient({ modelData, locale }: Props) {
   const brandsT = useTranslations("Brands")
   const viewContentSent = useRef(false)
 
-  // Use modelData directly - no need for SWR fetch on client
-  // Data is already rendered on server via ISR, no need for additional fetch
-  const currentModelData = modelData
+  // 1. Maintain local state initialized with SSG data
+  const [currentModelData, setCurrentModelData] = useState<ModelData>(modelData)
+
+  // 2. Fetch live discounts on mount safely
+  useEffect(() => {
+    let isMounted = true
+
+    const fetchLiveDiscounts = async () => {
+      if (!modelData || !modelData.services || modelData.services.length === 0) return
+
+      // Extract all valid pricing requests for the batch
+      const discountRequests = modelData.services
+        .filter(s => s.price !== null && s.price !== undefined)
+        .map(s => ({
+          serviceId: s.id,
+          modelId: modelData.id,
+          originalPrice: s.price!
+        }))
+
+      if (discountRequests.length === 0) return
+
+      try {
+        const liveDiscounts = await getDiscountsBatch(discountRequests)
+
+        if (!isMounted) return
+
+        // Merge live discount values back into our localized state
+        setCurrentModelData(prevData => {
+          const updatedServices = prevData.services.map(service => {
+            const liveDiscountForService = liveDiscounts[service.id]
+
+            if (liveDiscountForService) {
+              return {
+                ...service,
+                discounted_price: liveDiscountForService.discountedPrice,
+                has_discount: liveDiscountForService.hasDiscount,
+                discount: liveDiscountForService.discount,
+                actual_discount_percentage: liveDiscountForService.actualDiscountPercentage,
+              }
+            }
+            return service
+          })
+
+          return {
+            ...prevData,
+            services: updatedServices
+          }
+        })
+
+      } catch (err) {
+        console.error("Failed to fetch client-side discounts:", err)
+      }
+    }
+
+    fetchLiveDiscounts()
+
+    return () => {
+      isMounted = false
+    }
+  }, [modelData])
 
   // ВАЖЛИВО: Всі useEffect перед умовними поверненнями
   useEffect(() => {

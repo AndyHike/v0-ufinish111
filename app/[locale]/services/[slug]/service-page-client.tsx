@@ -14,6 +14,7 @@ import { useEffect, useRef, useState, Suspense } from "react"
 import { ServicePriceDisplay } from "@/components/service-price-display"
 import { ContactCTABanner } from "@/components/contact-cta-banner"
 import { PartTypeBadges } from "@/components/part-type-badges"
+import { getDiscountsBatch } from "@/app/actions/discounts-api"
 
 interface ServiceData {
   id: string
@@ -101,8 +102,11 @@ function ServicePageClientContent({ serviceData, locale }: Props) {
   const viewContentSent = useRef(false)
   const [mounted, setMounted] = useState(false)
 
+  // Початковий стан з SSG
+  const [currentServiceData, setCurrentServiceData] = useState<ServiceData>(serviceData)
+
   // Показуємо помилку тільки якщо немає даних
-  if (!serviceData) {
+  if (!currentServiceData) {
     return (
       <div className="container px-4 py-12 md:px-6 md:py-24">
         <div className="mx-auto max-w-6xl text-center">
@@ -123,7 +127,48 @@ function ServicePageClientContent({ serviceData, locale }: Props) {
     hasDiscount,
     discount,
     modelSlug,
-  } = serviceData
+  } = currentServiceData
+
+  // Client-side discount fetching
+  useEffect(() => {
+    let isMounted = true
+
+    const fetchLiveDiscount = async () => {
+      // Fetch only if we actually selected a model and it has a price
+      if (!currentServiceData || !currentServiceData.sourceModel || currentServiceData.modelServicePrice === null || currentServiceData.modelServicePrice === undefined) {
+        return
+      }
+
+      try {
+        const liveDiscounts = await getDiscountsBatch([{
+          serviceId: currentServiceData.id,
+          modelId: currentServiceData.sourceModel.id,
+          originalPrice: currentServiceData.modelServicePrice
+        }])
+
+        if (!isMounted) return
+
+        const liveDiscount = liveDiscounts[currentServiceData.id]
+        if (liveDiscount) {
+          setCurrentServiceData(prev => ({
+            ...prev,
+            discountedPrice: liveDiscount.discountedPrice,
+            hasDiscount: liveDiscount.hasDiscount,
+            discount: liveDiscount.discount,
+          }))
+        }
+      } catch (err) {
+        console.error("Failed to fetch client-side discount:", err)
+      }
+    }
+
+    fetchLiveDiscount()
+
+    return () => {
+      isMounted = false
+    }
+  }, [serviceData]) // Only run on initial mount using the static prop to bootstrap
+
 
   // Використовуємо modelSlug з пропса, якщо він є, інакше беремо з search params для зворотної сумісності
   const modelParam = modelSlug || searchParams.get("model")
