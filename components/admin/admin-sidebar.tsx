@@ -18,6 +18,8 @@ import {
   ArrowLeftRight,
   Megaphone,
   ImageIcon,
+  BookOpen,
+  Shield,
 } from "lucide-react"
 
 const sidebarItems = [
