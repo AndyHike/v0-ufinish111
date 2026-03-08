@@ -5,22 +5,24 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { CheckCircle, ArrowRight, Smartphone, Phone } from "lucide-react"
 import { useParams } from "next/navigation"
+import { CarouselData } from "@/types/hero-carousel"
 import { HeroCarouselDisplay } from "@/components/hero-carousel-display"
 
-export function HeroSection() {
+export function HeroSection({ initialCarouselData }: { initialCarouselData?: CarouselData | null }) {
   const t = useTranslations("Hero")
   const params = useParams()
   const locale = params.locale as string
 
   return (
-    <section className="hero-section w-full py-6 md:py-16 lg:py-24 bg-white">
-      <div className="container px-4 md:px-6">
-        <div className="flex flex-col md:grid md:gap-6 lg:grid-cols-[1fr_450px] lg:gap-10 items-center">
-          <div className="order-first md:order-last mb-4 md:mb-0">
+    <section className="hero-section w-full py-6 md:py-16 lg:py-24 bg-white overflow-hidden">
+      <div className="container px-4 md:px-6 mx-auto">
+        <div className="flex flex-col md:grid md:gap-6 lg:grid-cols-[1fr_450px] lg:gap-10 md:items-center w-full">
+          <div className="order-first md:order-last mb-4 md:mb-0 w-full flex justify-center">
             <HeroCarouselDisplay
               fallbackImage="/focused-phone-fix.webp"
               fallbackAlt={t("imageAlt")}
               mobileTitle={t("title")}
+              initialData={initialCarouselData}
             />
           </div>
 

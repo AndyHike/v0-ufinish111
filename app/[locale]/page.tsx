@@ -116,14 +116,17 @@ function GoogleReviewsSkeleton() {
   )
 }
 
+import { getHeroCarouselData } from "@/lib/data/hero-carousel"
+
 export default async function HomePage() {
   const brandsPromise = getBrands()
   const googleReviewsPromise = getGoogleReviews()
+  const carouselData = await getHeroCarouselData()
 
   // Don't await here - let hero render immediately
   return (
     <>
-      <HeroSection />
+      <HeroSection initialCarouselData={carouselData} />
       <Suspense fallback={null}>
         <GoogleReviewsAsync promise={googleReviewsPromise} />
       </Suspense>

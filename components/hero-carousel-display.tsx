@@ -4,29 +4,27 @@ import { useState, useEffect, useCallback } from "react"
 import Image from "next/image"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 
-interface CarouselData {
-    enabled: boolean
-    autoplay_interval: number
-    slides: {
-        id: string
-        image_url: string
-        link: string
-    }[]
-}
+import { CarouselData } from "@/types/hero-carousel"
 
 export function HeroCarouselDisplay({
     fallbackImage,
     fallbackAlt,
-    mobileTitle
+    mobileTitle,
+    initialData
 }: {
     fallbackImage: string
     fallbackAlt: string
     mobileTitle: string
+    initialData?: CarouselData | null
 }) {
-    const [data, setData] = useState<CarouselData | null>(null)
+    const [data, setData] = useState<CarouselData | null>(initialData || null)
     const [currentIndex, setCurrentIndex] = useState(0)
 
     useEffect(() => {
+        // Only fetch if initialData was not provided at all (is undefined).
+        // If it's null, it means the server explicitly found no data.
+        if (initialData !== undefined) return
+
         const fetchCarousel = async () => {
             try {
                 const res = await fetch("/api/hero-carousel")
@@ -39,7 +37,7 @@ export function HeroCarouselDisplay({
             }
         }
         fetchCarousel()
-    }, [])
+    }, [initialData])
 
     const nextSlide = useCallback(() => {
         if (!data?.slides?.length) return
@@ -61,7 +59,7 @@ export function HeroCarouselDisplay({
     // If disabled or no slides, show fallback
     if (!data?.enabled || !data?.slides?.length) {
         return (
-            <div className="relative w-full h-[250px] md:h-[350px] rounded-xl overflow-hidden shadow-lg shrink-0">
+            <div className="relative w-full h-[250px] min-h-[250px] md:h-[350px] rounded-xl overflow-hidden shadow-lg bg-gray-50">
                 <Image
                     src={fallbackImage}
                     alt={fallbackAlt}
@@ -82,7 +80,7 @@ export function HeroCarouselDisplay({
     }
 
     return (
-        <div className="relative w-full h-[250px] md:h-[350px] rounded-xl overflow-hidden shadow-lg group shrink-0">
+        <div className="relative w-full h-[250px] min-h-[250px] md:h-[350px] rounded-xl overflow-hidden shadow-lg group bg-gray-50">
             {data.slides.map((slide, index) => (
                 <a
                     key={slide.id}
