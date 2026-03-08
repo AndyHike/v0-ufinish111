@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic"
 
 import { createClient } from "@/utils/supabase/server"
 import { NextResponse } from "next/server"
+import { revalidatePath } from "next/cache"
 
 export async function GET() {
   try {
@@ -96,6 +97,9 @@ export async function POST(request: Request) {
 
       console.log("[v0] Banner created successfully")
     }
+
+    revalidatePath("/")
+    revalidatePath("/[locale]", "page")
 
     return NextResponse.json({ success: true })
   } catch (error) {

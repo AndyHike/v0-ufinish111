@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic"
 
 import { createClient } from "@/utils/supabase/server"
 import { NextResponse } from "next/server"
+import { revalidatePath } from "next/cache"
 
 // GET: Fetch carousel settings + slides
 export async function GET() {
@@ -147,6 +148,9 @@ export async function DELETE(request: Request) {
             .eq("id", id)
 
         if (error) throw error
+
+        revalidatePath("/")
+        revalidatePath("/[locale]", "page")
 
         return NextResponse.json({ success: true })
     } catch (error) {

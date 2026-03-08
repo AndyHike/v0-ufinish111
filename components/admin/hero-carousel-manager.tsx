@@ -159,6 +159,11 @@ export function HeroCarouselManager() {
             const updatedSlide = slides.find(s => s.id === slideId)
             if (updatedSlide) {
                 const payload = { ...updatedSlide, image_url: data.url }
+
+                // Update local state first to feel responsive
+                setSlides(slides.map(s => s.id === slideId ? payload : s))
+
+                // Save to database
                 await handleUpdateSlide(payload)
             }
         } catch (error) {
@@ -269,6 +274,8 @@ export function HeroCarouselManager() {
                                             onChange={(e) => {
                                                 if (e.target.files?.[0]) {
                                                     handleImageUpload(slide.id, e.target.files[0])
+                                                    // Reset input so the same file can be uploaded again if needed
+                                                    e.target.value = ''
                                                 }
                                             }}
                                             disabled={uploadingSlideId === slide.id}
