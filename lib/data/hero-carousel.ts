@@ -1,9 +1,9 @@
-import { createClient } from "@/utils/supabase/server"
+import { createClient } from "@/utils/supabase/client"
 import { CarouselData } from "@/types/hero-carousel"
 
 export async function getHeroCarouselData(): Promise<CarouselData | null> {
     try {
-        const supabase = await createClient()
+        const supabase = createClient()
 
         const { data: settings } = await supabase
             .from("hero_carousel_settings")

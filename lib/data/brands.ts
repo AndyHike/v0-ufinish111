@@ -1,4 +1,4 @@
-import { createClient } from "@/utils/supabase/server"
+import { createClient } from "@/utils/supabase/client"
 import { cache } from "react"
 import { revalidateTag } from "next/cache"
 
@@ -9,13 +9,13 @@ export type Brand = {
   position: number | null
   slug: string | null
   series:
-    | {
-        id: string
-        name: string
-        position: number
-        slug: string | null
-      }[]
-    | null
+  | {
+    id: string
+    name: string
+    position: number
+    slug: string | null
+  }[]
+  | null
 }
 
 // ISR cache - 1 година (3600 секунд)
@@ -24,7 +24,7 @@ const BRAND_CACHE_REVALIDATE = 3600
 export const getBrands = cache(async (): Promise<Brand[]> => {
   try {
     console.log("[v0] getBrands() called - checking cache...")
-    const supabase = await createClient()
+    const supabase = createClient()
 
     const { data, error } = await supabase
       .from("brands")
