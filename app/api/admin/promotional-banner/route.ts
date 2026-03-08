@@ -63,6 +63,7 @@ export async function POST(request: Request) {
           button_text_cs: body.button_text_cs,
           button_text_en: body.button_text_en,
           button_text_uk: body.button_text_uk,
+          button_link: body.button_link,
           updated_at: new Date().toISOString(),
         })
         .eq("id", existingBanner.id)
@@ -84,6 +85,7 @@ export async function POST(request: Request) {
           button_text_cs: body.button_text_cs,
           button_text_en: body.button_text_en,
           button_text_uk: body.button_text_uk,
+          button_link: body.button_link,
         },
       ])
 

@@ -20,6 +20,8 @@ import { DynamicFavicon } from "@/components/dynamic-favicon"
 import { toOGLocale } from "@/lib/og-locale"
 import { siteUrl } from "@/lib/site-config"
 import { InfoBannerClient } from "@/components/info-banner-client"
+import { PromotionalBanner } from "@/components/promotional-banner"
+import { getPromotionalBanner } from "@/lib/data/promotional-banner"
 import "@/app/globals.css"
 
 const inter = Inter({
@@ -121,6 +123,8 @@ export default async function LocaleLayout({
     console.error(`Failed to load messages for locale ${locale}:`, error)
     return null
   })
+
+  const promotionalBanner = await getPromotionalBanner()
 
   if (!messages) {
     notFound()
@@ -245,6 +249,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
                     {/* Header is a client component and will hydrate quickly, 
                         so we remove the Suspense fallback to avoid showing skeleton 
                         on every navigation */}
+                    <PromotionalBanner data={promotionalBanner} locale={locale} />
                     <InfoBannerClient />
                     <Header />
                     <main className="flex-1">{children}</main>
