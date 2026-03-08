@@ -199,7 +199,7 @@ export function RolesManagement() {
             .slice(0, 50)
     }
 
-    const RoleFormFields = ({ isEdit = false }: { isEdit?: boolean }) => (
+    const renderRoleFormFields = (isEdit: boolean = false) => (
         <div className="grid gap-4 py-4">
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -413,7 +413,7 @@ export function RolesManagement() {
                         </DialogDescription>
                     </DialogHeader>
                     <form onSubmit={handleCreate}>
-                        <RoleFormFields />
+                        {renderRoleFormFields(false)}
                         <DialogFooter>
                             <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
                                 Скасувати
@@ -435,7 +435,7 @@ export function RolesManagement() {
                         <DialogDescription>Оновіть налаштування ролі.</DialogDescription>
                     </DialogHeader>
                     <form onSubmit={handleEdit}>
-                        <RoleFormFields isEdit />
+                        {renderRoleFormFields(true)}
                         <DialogFooter>
                             <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
                                 Скасувати

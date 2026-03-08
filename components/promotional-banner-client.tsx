@@ -48,8 +48,10 @@ export function PromotionalBannerClient({ data, locale }: PromotionalBannerClien
 
                 {buttonText && (
                     <Link
-                        href={`/${locale}/contact`}
+                        href={data.button_link?.startsWith('http') ? data.button_link : `/${locale}${data.button_link?.startsWith('/') ? '' : '/'}${data.button_link || 'contact'}`}
                         className="shrink-0 text-xs font-semibold px-4 py-1.5 rounded-full bg-white/20 hover:bg-white/30 transition-colors inline-flex items-center gap-1.5"
+                        target={data.button_link?.startsWith('http') ? "_blank" : undefined}
+                        rel={data.button_link?.startsWith('http') ? "noopener noreferrer" : undefined}
                     >
                         {buttonText}
                         <ArrowRight className="w-3.5 h-3.5" />

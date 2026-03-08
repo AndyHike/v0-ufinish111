@@ -10,6 +10,7 @@ export type PromotionalBannerData = {
   button_text_cs: string
   button_text_en: string
   button_text_uk: string
+  button_link: string
 }
 
 export async function getPromotionalBanner(): Promise<PromotionalBannerData | null> {

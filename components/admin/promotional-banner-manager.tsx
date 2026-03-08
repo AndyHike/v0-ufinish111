@@ -26,6 +26,7 @@ export function PromotionalBannerManager() {
     button_text_cs: "Získat slevu",
     button_text_en: "Get discount",
     button_text_uk: "Отримати знижку",
+    button_link: "/contact",
   })
 
   useEffect(() => {
@@ -139,6 +140,16 @@ export function PromotionalBannerManager() {
               ))}
             </SelectContent>
           </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="banner-link">Посилання для кнопки</Label>
+          <Input
+            id="banner-link"
+            value={banner.button_link || ""}
+            onChange={(e) => setBanner({ ...banner, button_link: e.target.value })}
+            placeholder="Наприклад: /contact або https://..."
+          />
         </div>
 
         <Tabs defaultValue="cs" className="w-full">
