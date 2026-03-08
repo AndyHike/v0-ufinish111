@@ -41,9 +41,9 @@ export async function POST(request: Request) {
         // Process image (resize, compress, convert to WebP)
         const { buffer, mimeType, filename: processedFilename } = await processImage(file)
 
-        // For models, we prefer to use the slug for the filename if available
+        // For models and hero-carousel, use slug if available
         let finalFilename = processedFilename
-        if (uploadType === "model" && slug) {
+        if ((uploadType === "model" || uploadType === "hero-carousel") && slug) {
           finalFilename = `${slug}.webp`
         }
 
@@ -54,7 +54,11 @@ export async function POST(request: Request) {
           throw new Error("CLOUDFLARE_BUCKET_NAME is not set")
         }
 
-        const s3Key = uploadType === "article" ? `articles/${finalFilename}` : `models/${finalFilename}`
+        const s3Key = uploadType === "article"
+          ? `articles/${finalFilename}`
+          : uploadType === "hero-carousel"
+            ? `hero-carousel/${finalFilename}`
+            : `models/${finalFilename}`
         console.log('[v0] Uploading to S3 with key:', s3Key)
 
         const putCommand = new PutObjectCommand({
@@ -91,6 +95,7 @@ export async function POST(request: Request) {
       favicon: ["image/x-icon", "image/vnd.microsoft.icon", "image/png", "image/svg+xml"],
       service: ["image/png", "image/jpeg", "image/jpg", "image/webp"],
       model: ["image/png", "image/jpeg", "image/jpg", "image/webp"],
+      "hero-carousel": ["image/png", "image/jpeg", "image/jpg", "image/webp"],
       default: ["image/png", "image/jpeg", "image/jpg", "image/webp"],
     }
 
@@ -99,6 +104,7 @@ export async function POST(request: Request) {
       favicon: 1024 * 1024,
       service: 5 * 1024 * 1024,
       model: 5 * 1024 * 1024,
+      "hero-carousel": 5 * 1024 * 1024,
       default: 2 * 1024 * 1024,
     }
 

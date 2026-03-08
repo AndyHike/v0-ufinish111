@@ -5,7 +5,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { CheckCircle, ArrowRight, Smartphone, Phone } from "lucide-react"
 import { useParams } from "next/navigation"
-import Image from "next/image"
+import { HeroCarouselDisplay } from "@/components/hero-carousel-display"
 
 export function HeroSection() {
   const t = useTranslations("Hero")
@@ -16,24 +16,12 @@ export function HeroSection() {
     <section className="hero-section w-full py-6 md:py-16 lg:py-24 bg-white">
       <div className="container px-4 md:px-6">
         <div className="flex flex-col md:grid md:gap-6 lg:grid-cols-[1fr_450px] lg:gap-10 items-center">
-          {/* Mobile Image Container (Top) & Desktop Image Container (Right) */}
-          <div className="order-first md:order-last relative w-full h-[250px] md:h-[350px] rounded-xl overflow-hidden shadow-lg mb-4 md:mb-0">
-            <Image
-              src="/focused-phone-fix.webp"
-              alt={t("imageAlt")}
-              fill
-              priority
-              fetchPriority="high"
-              className="hero-image object-cover object-center"
-              sizes="(max-width: 768px) 100vw, 450px"
-              quality={85}
+          <div className="order-first md:order-last mb-4 md:mb-0">
+            <HeroCarouselDisplay
+              fallbackImage="/focused-phone-fix.webp"
+              fallbackAlt={t("imageAlt")}
+              mobileTitle={t("title")}
             />
-            {/* Mobile Gradient Overlay & Title (Hidden on Desktop) */}
-            <div className="md:hidden absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-6 flex items-end">
-              <h1 className="hero-title text-2xl font-bold tracking-tight !text-white !drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
-                {t("title")}
-              </h1>
-            </div>
           </div>
 
           {/* Content Container */}

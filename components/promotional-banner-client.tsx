@@ -3,28 +3,52 @@
 import { useState, useEffect } from "react"
 import { X, ArrowRight } from "lucide-react"
 import { cn } from "@/lib/utils"
-import type { PromotionalBannerData } from "@/lib/data/promotional-banner"
 import Link from "next/link"
 
+interface BannerData {
+    id: string
+    enabled: boolean
+    color: string
+    text_cs: string
+    text_en: string
+    text_uk: string
+    button_text_cs: string
+    button_text_en: string
+    button_text_uk: string
+    button_link: string
+}
+
 interface PromotionalBannerClientProps {
-    data: PromotionalBannerData
     locale: string
 }
 
-export function PromotionalBannerClient({ data, locale }: PromotionalBannerClientProps) {
+export function PromotionalBannerClient({ locale }: PromotionalBannerClientProps) {
+    const [data, setData] = useState<BannerData | null>(null)
     const [isVisible, setIsVisible] = useState(false)
 
     useEffect(() => {
-        // Check if dismissed in this session
-        if (typeof window !== "undefined") {
-            const isDismissed = sessionStorage.getItem(`banner_dismissed_${data.id}`)
-            if (!isDismissed) {
+        const fetchBanner = async () => {
+            try {
+                const response = await fetch("/api/promotional-banner")
+                if (!response.ok) return
+                const bannerData = await response.json()
+                if (!bannerData || !bannerData.enabled) return
+
+                // Check if dismissed in this session
+                const isDismissed = sessionStorage.getItem(`banner_dismissed_${bannerData.id}`)
+                if (isDismissed) return
+
+                setData(bannerData)
                 setIsVisible(true)
+            } catch (error) {
+                console.error("Error fetching banner:", error)
             }
         }
-    }, [data.id])
 
-    if (!isVisible) {
+        fetchBanner()
+    }, [])
+
+    if (!isVisible || !data) {
         return null
     }
 

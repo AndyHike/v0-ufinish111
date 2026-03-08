@@ -1,16 +1,11 @@
-import { getPromotionalBanner } from "@/lib/data/promotional-banner"
+"use client"
+
 import { PromotionalBannerClient } from "./promotional-banner-client"
+import { useParams } from "next/navigation"
 
-interface PromotionalBannerProps {
-    locale: string
-}
+export function PromotionalBanner() {
+    const params = useParams()
+    const locale = (params?.locale as string) || "cs"
 
-export async function PromotionalBanner({ locale }: PromotionalBannerProps) {
-    const bannerData = await getPromotionalBanner()
-
-    if (!bannerData || !bannerData.enabled) {
-        return null
-    }
-
-    return <PromotionalBannerClient data={bannerData} locale={locale} />
+    return <PromotionalBannerClient locale={locale} />
 }

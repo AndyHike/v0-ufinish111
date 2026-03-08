@@ -242,9 +242,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
                 <GlobalDataProvider>
                   <DynamicFavicon />
                   <div className="flex min-h-screen flex-col">
-                    <Suspense fallback={null}>
-                      <PromotionalBanner locale={locale} />
-                    </Suspense>
+                    <PromotionalBanner />
                     {/* Header is a client component and will hydrate quickly, 
                         so we remove the Suspense fallback to avoid showing skeleton 
                         on every navigation */}

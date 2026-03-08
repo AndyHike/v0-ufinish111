@@ -17,8 +17,7 @@ import {
   Upload,
   ArrowLeftRight,
   Megaphone,
-  BookOpen,
-  Shield,
+  ImageIcon,
 } from "lucide-react"
 
 const sidebarItems = [
@@ -86,6 +85,11 @@ const sidebarItems = [
     title: "Банер",
     href: "/admin/banner",
     icon: Upload,
+  },
+  {
+    title: "Hero Карусель",
+    href: "/admin/hero-carousel",
+    icon: ImageIcon,
   },
   {
     title: "Акційний банер",
