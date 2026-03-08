@@ -61,19 +61,19 @@ export function HeroCarouselDisplay({
     // If disabled or no slides, show fallback
     if (!data?.enabled || !data?.slides?.length) {
         return (
-            <div className="relative w-full h-[250px] md:h-[350px] rounded-xl overflow-hidden shadow-lg">
+            <div className="relative w-full h-[250px] md:h-[350px] rounded-xl overflow-hidden shadow-lg shrink-0">
                 <Image
                     src={fallbackImage}
                     alt={fallbackAlt}
                     fill
                     priority
                     fetchPriority="high"
-                    className="hero-image object-cover object-center"
+                    className="object-cover object-center"
                     sizes="(max-width: 768px) 100vw, 450px"
                     quality={85}
                 />
-                <div className="md:hidden absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-6 flex items-end">
-                    <h1 className="hero-title text-2xl font-bold tracking-tight !text-white !drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+                <div className="md:hidden absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-6 flex items-end">
+                    <h1 className="hero-title text-2xl font-bold tracking-tight text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
                         {mobileTitle}
                     </h1>
                 </div>
@@ -82,7 +82,7 @@ export function HeroCarouselDisplay({
     }
 
     return (
-        <div className="relative w-full h-[250px] md:h-[350px] rounded-xl overflow-hidden shadow-lg group">
+        <div className="relative w-full h-[250px] md:h-[350px] rounded-xl overflow-hidden shadow-lg group shrink-0">
             {data.slides.map((slide, index) => (
                 <a
                     key={slide.id}
@@ -97,7 +97,7 @@ export function HeroCarouselDisplay({
                         alt={`Slide ${index + 1}`}
                         fill
                         priority={index === 0}
-                        className="hero-image object-cover object-center"
+                        className="object-cover object-center"
                         sizes="(max-width: 768px) 100vw, 450px"
                         quality={85}
                         unoptimized // Useful for external URLs
@@ -141,8 +141,8 @@ export function HeroCarouselDisplay({
             )}
 
             {/* Mobile Title Overlay - kept visible on top of slides so design stays consistent */}
-            <div className="md:hidden absolute z-10 inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-6 flex items-end pointer-events-none">
-                <h1 className="hero-title text-2xl font-bold tracking-tight !text-white !drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+            <div className="md:hidden absolute z-30 inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-6 flex items-end pointer-events-none">
+                <h1 className="hero-title text-2xl font-bold tracking-tight text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
                     {mobileTitle}
                 </h1>
             </div>

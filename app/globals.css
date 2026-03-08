@@ -68,8 +68,7 @@
 
   /* Critical CSS for hero section performance */
   .hero-section {
-    contain: layout style paint;
-    will-change: auto;
+    /* Removed aggressive containment that breaks absolute positioning inside hero on mobile */
   }
 
   /* Optimize animations for better performance */
@@ -98,8 +97,6 @@
 
     .hero-image {
       height: 250px;
-      transform: translateZ(0);
-      content-visibility: auto;
     }
 
     .container {
