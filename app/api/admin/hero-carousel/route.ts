@@ -80,6 +80,9 @@ export async function POST(request: Request) {
             if (error) throw error
         }
 
+        revalidatePath("/")
+        revalidatePath("/[locale]", "page")
+
         return NextResponse.json({ success: true })
     } catch (error) {
         console.error("[hero-carousel] Settings save error:", error)
@@ -120,6 +123,9 @@ export async function PUT(request: Request) {
 
             if (error) throw error
         }
+
+        revalidatePath("/")
+        revalidatePath("/[locale]", "page")
 
         return NextResponse.json({ success: true })
     } catch (error) {

@@ -100,6 +100,7 @@ export async function POST(request: Request) {
 
     revalidatePath("/")
     revalidatePath("/[locale]", "page")
+    revalidatePath("/[locale]", "layout")
 
     return NextResponse.json({ success: true })
   } catch (error) {
