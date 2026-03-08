@@ -138,12 +138,6 @@ export function HeroCarouselDisplay({
                 </div>
             )}
 
-            {/* Mobile Title Overlay - kept visible on top of slides so design stays consistent */}
-            <div className="md:hidden absolute z-30 inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-6 flex items-end pointer-events-none">
-                <h1 className="hero-title text-2xl font-bold tracking-tight text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
-                    {mobileTitle}
-                </h1>
-            </div>
         </div>
     )
 }
