@@ -6,16 +6,16 @@ import { ChevronLeft } from "lucide-react"
 import { ModelServicesManager } from "@/components/admin/model-services-manager"
 
 type Props = {
-  params: {
+  params: Promise<{
     locale: string
     id: string
-  }
+  }>
 }
 
 export default async function ModelServicesPage({ params }: Props) {
-  const { id, locale } = params
+  const { id, locale } = await params
 
-  const supabase = createServerClient()
+  const supabase = await createServerClient()
 
   // Fetch the model with its brand
   const { data: model, error: modelError } = await supabase
