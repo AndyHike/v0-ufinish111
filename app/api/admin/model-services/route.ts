@@ -262,7 +262,23 @@ export async function POST(request: Request) {
       result = data
     }
 
-    return NextResponse.json(result)
+    // Transform result to ensure all fields are serializable primitives
+    const transformedResult = {
+      id: String(result.id),
+      model_id: String(result.model_id),
+      service_id: String(result.service_id),
+      price: result.price !== null ? Number(result.price) : null,
+      warranty_months: result.warranty_months !== null ? Number(result.warranty_months) : null,
+      duration_hours: result.duration_hours !== null ? Number(result.duration_hours) : null,
+      warranty_period: String(result.warranty_period || "months"),
+      detailed_description: result.detailed_description ? String(result.detailed_description) : null,
+      what_included: result.what_included ? String(result.what_included) : null,
+      benefits: result.benefits ? String(result.benefits) : null,
+      part_type: result.part_type ? String(result.part_type) : null,
+    }
+
+    console.log("[POST] /api/admin/model-services - Returning transformed result:", transformedResult)
+    return NextResponse.json(transformedResult)
   } catch (error) {
     console.error("[POST] /api/admin/model-services - Unexpected error:", error)
     return NextResponse.json({ error: "Failed to create/update model service", details: error }, { status: 500 })
