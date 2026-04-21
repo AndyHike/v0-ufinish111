@@ -55,7 +55,20 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: "Failed to fetch model services", details: error }, { status: 500 })
       }
 
-      return NextResponse.json({ services: modelServicesData })
+      // Transform exported data to ensure all fields are serializable primitives
+      const transformedExportData = modelServicesData.map((service) => ({
+        id: String(service.id),
+        model_id: String(service.model_id),
+        service_id: String(service.service_id),
+        price: service.price !== null ? Number(service.price) : null,
+        warranty_months: service.warranty_months !== null ? Number(service.warranty_months) : null,
+        duration_hours: service.duration_hours !== null ? Number(service.duration_hours) : null,
+        detailed_description: service.detailed_description ? String(service.detailed_description) : null,
+        benefits: service.benefits ? String(service.benefits) : null,
+        part_type: service.part_type ? String(service.part_type) : null,
+      }))
+
+      return NextResponse.json({ services: transformedExportData })
     }
 
     if (!finalModelId) {
@@ -122,21 +135,21 @@ export async function GET(request: NextRequest) {
     servicesData.forEach((service) => {
       const translations = service.services_translations.filter((translation: any) => translation.locale === locale)
 
-      servicesMap.set(service.id, {
-        id: service.id,
-        slug: service.slug,
-        position: service.position,
-        image_url: service.image_url,
-        default_warranty_months: service.warranty_months,
-        default_duration_hours: service.duration_hours,
-        name: translations[0]?.name || "",
-        description: translations[0]?.description || "",
+      servicesMap.set(String(service.id), {
+        id: String(service.id),
+        slug: String(service.slug),
+        position: Number(service.position),
+        image_url: service.image_url ? String(service.image_url) : null,
+        default_warranty_months: Number(service.warranty_months),
+        default_duration_hours: Number(service.duration_hours),
+        name: String(translations[0]?.name || ""),
+        description: String(translations[0]?.description || ""),
       })
     })
 
     const transformedData = modelServicesData
       .map((modelService) => {
-        const serviceInfo = servicesMap.get(modelService.service_id)
+        const serviceInfo = servicesMap.get(String(modelService.service_id))
         if (!serviceInfo) {
           console.warn(
             `[GET] /api/admin/model-services - Service not found for model service: ${JSON.stringify(modelService)}`,
