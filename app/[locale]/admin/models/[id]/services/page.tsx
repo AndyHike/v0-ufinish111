@@ -15,17 +15,26 @@ type Props = {
 export default async function ModelServicesPage({ params }: Props) {
   const { id, locale } = params
 
-  const supabase = createServerClient()
+  const supabase = await createServerClient()
 
   // Fetch the model with its brand
-  const { data: model, error: modelError } = await supabase
+  const { data: modelData, error: modelError } = await supabase
     .from("models")
-    .select("*, brands(id, name)")
+    .select("id, name, brand_id, brands(id, name)")
     .eq("id", id)
     .single()
 
-  if (modelError || !model) {
+  if (modelError || !modelData) {
     notFound()
+  }
+
+  // Serialize only the primitive fields we need to avoid non-serializable objects
+  const model = {
+    id: String(modelData.id),
+    name: String(modelData.name),
+    brandName: modelData.brands && !Array.isArray(modelData.brands)
+      ? String((modelData.brands as { name: string }).name)
+      : "",
   }
 
   return (
@@ -34,7 +43,7 @@ export default async function ModelServicesPage({ params }: Props) {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Послуги для {model.name}</h1>
           <p className="text-muted-foreground">
-            Керування послугами та цінами для {model.name} від {model.brands?.name}
+            Керування послугами та цінами для {model.name} від {model.brandName}
           </p>
         </div>
         <Link href={`/${locale}/admin/models`}>
