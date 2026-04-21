@@ -55,7 +55,8 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
       if (modelInfo?.slug) {
         revalidateUtils.revalidateModelServices(
           String(modelInfo.slug),
-          serviceInfo?.slug ? String(serviceInfo.slug) : undefined
+          serviceInfo?.slug ? String(serviceInfo.slug) : undefined,
+          String(modelService.model_id)
         )
       }
     } catch (revalidateError) {
