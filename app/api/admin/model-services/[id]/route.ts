@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
+import { revalidateUtils } from "@/lib/revalidate-utils"
 
 export async function DELETE(request: Request, { params }: { params: { id: string } }) {
   try {
@@ -36,7 +37,31 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
     }
 
     console.log(`[DELETE] /api/admin/model-services/${id} - Successfully deleted model service`)
-    
+
+    // Revalidate model page and service/model page after deletion
+    try {
+      const { data: modelInfo } = await supabase
+        .from("models")
+        .select("slug")
+        .eq("id", modelService.model_id)
+        .single()
+
+      const { data: serviceInfo } = await supabase
+        .from("services")
+        .select("slug")
+        .eq("id", modelService.service_id)
+        .single()
+
+      if (modelInfo?.slug) {
+        revalidateUtils.revalidateModelServices(
+          String(modelInfo.slug),
+          serviceInfo?.slug ? String(serviceInfo.slug) : undefined
+        )
+      }
+    } catch (revalidateError) {
+      console.error(`[DELETE] /api/admin/model-services/${id} - Revalidation error (non-fatal):`, revalidateError)
+    }
+
     // Transform the deleted service to ensure it's serializable
     const transformedService = {
       id: String(modelService.id),

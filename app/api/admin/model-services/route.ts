@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
+import { revalidateUtils } from "@/lib/revalidate-utils"
 
 export async function GET(request: NextRequest) {
   try {
@@ -273,6 +274,30 @@ export async function POST(request: Request) {
 
       console.log("[POST] /api/admin/model-services - Successfully created model service:", data)
       result = data
+    }
+
+    // Revalidate model page and service/model page after save
+    try {
+      const { data: modelInfo } = await supabase
+        .from("models")
+        .select("slug")
+        .eq("id", body.modelId)
+        .single()
+
+      const { data: serviceInfo } = await supabase
+        .from("services")
+        .select("slug")
+        .eq("id", body.serviceId)
+        .single()
+
+      if (modelInfo?.slug) {
+        revalidateUtils.revalidateModelServices(
+          String(modelInfo.slug),
+          serviceInfo?.slug ? String(serviceInfo.slug) : undefined
+        )
+      }
+    } catch (revalidateError) {
+      console.error("[POST] /api/admin/model-services - Revalidation error (non-fatal):", revalidateError)
     }
 
     // Transform result to ensure all fields are serializable primitives
