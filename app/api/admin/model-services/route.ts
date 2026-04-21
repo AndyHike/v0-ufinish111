@@ -145,18 +145,27 @@ export async function GET(request: NextRequest) {
         }
 
         return {
-          id: modelService.id,
-          model_id: modelService.model_id,
-          service_id: modelService.service_id,
-          price: modelService.price,
-          warranty_months: modelService.warranty_months ?? serviceInfo.default_warranty_months,
-          duration_hours: modelService.duration_hours ?? serviceInfo.default_duration_hours,
-          warranty_period: modelService.warranty_period || "months",
-          detailed_description: modelService.detailed_description,
-          what_included: modelService.what_included,
-          benefits: modelService.benefits,
-          part_type: modelService.part_type,
-          services: serviceInfo,
+          id: String(modelService.id),
+          model_id: String(modelService.model_id),
+          service_id: String(modelService.service_id),
+          price: modelService.price !== null ? Number(modelService.price) : null,
+          warranty_months: modelService.warranty_months !== null ? Number(modelService.warranty_months) : (serviceInfo.default_warranty_months || null),
+          duration_hours: modelService.duration_hours !== null ? Number(modelService.duration_hours) : (serviceInfo.default_duration_hours || null),
+          warranty_period: String(modelService.warranty_period || "months"),
+          detailed_description: modelService.detailed_description ? String(modelService.detailed_description) : null,
+          what_included: modelService.what_included ? String(modelService.what_included) : null,
+          benefits: modelService.benefits ? String(modelService.benefits) : null,
+          part_type: modelService.part_type ? String(modelService.part_type) : null,
+          services: {
+            id: String(serviceInfo.id),
+            slug: String(serviceInfo.slug),
+            position: Number(serviceInfo.position),
+            image_url: serviceInfo.image_url ? String(serviceInfo.image_url) : null,
+            default_warranty_months: Number(serviceInfo.default_warranty_months),
+            default_duration_hours: Number(serviceInfo.default_duration_hours),
+            name: String(serviceInfo.name),
+            description: String(serviceInfo.description),
+          },
         }
       })
       .filter((item) => item !== null)
