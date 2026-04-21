@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
+import { unstable_cache } from "next/cache"
 import { createClient } from "@/utils/supabase/client"
 import ServicePageClient from "../service-page-client"
 import { getPriceWithDiscount } from "@/lib/discounts/get-applicable-discounts"
@@ -374,17 +375,24 @@ export default async function ServicePageWithModel({ params }: Props) {
           } : null,
         }
 
-        // Get model-specific service data
-        const { data: modelService } = await supabase
-          .from("model_services")
-          .select(`
-            price,
-            warranty_months,
-            duration_hours
-          `)
-          .eq("model_id", model.id)
-          .eq("service_id", service.id)
-          .single()
+        // Get model-specific service data — cached with tag for revalidation
+        const getModelService = unstable_cache(
+          async (modelId: string, serviceId: string) => {
+            const { data } = await supabase
+              .from("model_services")
+              .select(`price, warranty_months, duration_hours`)
+              .eq("model_id", modelId)
+              .eq("service_id", serviceId)
+              .single()
+            return data
+          },
+          [`model-service-${model.id}-${service.id}`],
+          {
+            tags: [`model-services`, `model-services-${model.id}`, `model-${modelSlug}`],
+            revalidate: 3600,
+          }
+        )
+        const modelService = await getModelService(model.id, service.id)
 
         if (modelService) {
           modelServicePrice = modelService.price
@@ -478,7 +486,7 @@ export default async function ServicePageWithModel({ params }: Props) {
 
 
     const pageDescription = locale === "cs"
-      ? `Profesionální ${translation.name.toLowerCase()} ${sourceModel?.brands?.name || ""} ${sourceModel?.name || ""} v Praze 6. Záruka 6 měsíců.`
+      ? `Profesionální ${translation.name.toLowerCase()} ${sourceModel?.brands?.name || ""} ${sourceModel?.name || ""} v Praze 6. Záruka 6 m��síců.`
       : locale === "uk"
         ? `Професійний ${translation.name.toLowerCase()} ${sourceModel?.brands?.name || ""} ${sourceModel?.name || ""} в Празі 6. Гарантія 6 місяців.`
         : `Professional ${translation.name.toLowerCase()} ${sourceModel?.brands?.name || ""} ${sourceModel?.name || ""} in Prague 6. 6-month warranty.`

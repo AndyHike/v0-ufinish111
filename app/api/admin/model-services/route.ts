@@ -293,7 +293,8 @@ export async function POST(request: Request) {
       if (modelInfo?.slug) {
         revalidateUtils.revalidateModelServices(
           String(modelInfo.slug),
-          serviceInfo?.slug ? String(serviceInfo.slug) : undefined
+          serviceInfo?.slug ? String(serviceInfo.slug) : undefined,
+          String(body.modelId)
         )
       }
     } catch (revalidateError) {

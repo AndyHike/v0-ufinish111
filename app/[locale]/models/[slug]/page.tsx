@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
-// import { createServerClient } removed
+import { unstable_cache } from "next/cache"
 import { createClient } from "@/utils/supabase/client"
 import ModelPageClient, { ModelData } from "./model-page-client"
 import { getPriceWithDiscount } from "@/lib/discounts/get-applicable-discounts"
@@ -171,34 +171,46 @@ export default async function ModelPage({ params }: Props) {
     console.log(`[MODEL PAGE] Found model: ${model.id} - ${model.name}`)
 
     // Отримуємо послуги для моделі з правильною логікою пріоритетів
-    const { data: modelServices } = await supabase
-      .from("model_services")
-      .select(`
-        id,
-        price,
-        warranty_months,
-        duration_hours,
-        warranty_period,
-        detailed_description,
-        what_included,
-        benefits,
-        part_type,
-        services(
-          id,
-          slug,
-          position,
-          warranty_months,
-          duration_hours,
-          image_url,
-          services_translations(
-            name,
-            description,
-            locale
-          )
-        )
-      `)
-      .eq("model_id", model.id)
-      .order("services(position)", { ascending: true })
+    // Використовуємо unstable_cache з тегом для підтримки revalidateTag
+    const getModelServices = unstable_cache(
+      async (modelId: string) => {
+        const { data } = await supabase
+          .from("model_services")
+          .select(`
+            id,
+            price,
+            warranty_months,
+            duration_hours,
+            warranty_period,
+            detailed_description,
+            what_included,
+            benefits,
+            part_type,
+            services(
+              id,
+              slug,
+              position,
+              warranty_months,
+              duration_hours,
+              image_url,
+              services_translations(
+                name,
+                description,
+                locale
+              )
+            )
+          `)
+          .eq("model_id", modelId)
+          .order("services(position)", { ascending: true })
+        return data
+      },
+      [`model-services-${model.id}`],
+      {
+        tags: [`model-services`, `model-services-${model.id}`, `model-${slug}`],
+        revalidate: 3600,
+      }
+    )
+    const modelServices = await getModelServices(model.id)
 
     console.log(`[MODEL PAGE] Found ${modelServices?.length || 0} model services`)
 

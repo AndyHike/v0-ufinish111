@@ -1,4 +1,4 @@
-import { revalidatePath } from "next/cache"
+import { revalidatePath, revalidateTag } from "next/cache"
 
 const locales = ["uk", "en", "cs"]
 
@@ -61,21 +61,24 @@ export const revalidateUtils = {
     },
 
     /**
-     * Clears model page + all service/model combination pages when model services are changed
+     * Clears model page + all service/model combination pages when model services are changed.
+     * Uses revalidateTag for cache entries wrapped in unstable_cache, plus revalidatePath as fallback.
      */
-    revalidateModelServices: (modelSlug: string, serviceSlug?: string) => {
-        locales.forEach((locale) => {
-            // Оновлюємо сторінку моделі
-            revalidatePath(`/${locale}/models/${modelSlug}`, "page")
+    revalidateModelServices: (modelSlug: string, serviceSlug?: string, modelId?: string) => {
+        // Tag-based invalidation — скидає всі запити, закешовані з цим тегом
+        revalidateTag(`model-${modelSlug}`)
+        revalidateTag(`model-services`)
+        if (modelId) {
+            revalidateTag(`model-services-${modelId}`)
+        }
 
-            // Якщо відома конкретна послуга - оновлюємо тільки її сторінку з моделлю
+        // Path-based fallback — на випадок сторінок без unstable_cache
+        locales.forEach((locale) => {
+            revalidatePath(`/${locale}/models/${modelSlug}`, "page")
             if (serviceSlug) {
                 revalidatePath(`/${locale}/services/${serviceSlug}/${modelSlug}`, "page")
-            } else {
-                // Якщо послуга невідома - оновлюємо список послуг (service index)
-                revalidatePath(`/${locale}/services`, "page")
             }
         })
-        console.log(`[Cache] Revalidated ModelServices paths for: Model ${modelSlug}, Service ${serviceSlug || 'all'}`)
+        console.log(`[Cache] Revalidated ModelServices tags+paths for: Model ${modelSlug}, Service ${serviceSlug || 'all'}, ModelId ${modelId || 'unknown'}`)
     }
 }
