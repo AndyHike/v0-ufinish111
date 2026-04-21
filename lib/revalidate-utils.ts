@@ -58,5 +58,24 @@ export const revalidateUtils = {
             }
         })
         console.log(`[Cache] Revalidated Model paths for: Brand ${brandSlug}, Series ${seriesSlug || 'none'}, Model ${modelSlug || 'none'}`)
+    },
+
+    /**
+     * Clears model page + all service/model combination pages when model services are changed
+     */
+    revalidateModelServices: (modelSlug: string, serviceSlug?: string) => {
+        locales.forEach((locale) => {
+            // Оновлюємо сторінку моделі
+            revalidatePath(`/${locale}/models/${modelSlug}`, "page")
+
+            // Якщо відома конкретна послуга - оновлюємо тільки її сторінку з моделлю
+            if (serviceSlug) {
+                revalidatePath(`/${locale}/services/${serviceSlug}/${modelSlug}`, "page")
+            } else {
+                // Якщо послуга невідома - оновлюємо список послуг (service index)
+                revalidatePath(`/${locale}/services`, "page")
+            }
+        })
+        console.log(`[Cache] Revalidated ModelServices paths for: Model ${modelSlug}, Service ${serviceSlug || 'all'}`)
     }
 }
