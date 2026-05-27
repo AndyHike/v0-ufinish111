@@ -6,10 +6,11 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 export default async function VerificationErrorPage({
   searchParams,
 }: {
-  searchParams: { error?: string }
+  searchParams: Promise<{ error?: string }>
 }) {
   const t = await getTranslations("Auth")
-  const error = searchParams.error || "unknown_error"
+  const { error: verificationError } = await searchParams
+  const error = verificationError || "unknown_error"
 
   const errorTitle = t("verificationFailed")
   let errorMessage = t("verificationErrorGeneric")

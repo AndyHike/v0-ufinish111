@@ -58,7 +58,7 @@ async function findOrCreateSeries(supabase: any, seriesName: string, brandId: st
 export async function POST(request: NextRequest) {
   try {
     const { data, createMissing } = await request.json()
-    const supabase = createClient()
+    const supabase = await createClient()
 
     let created = 0
     let updated = 0

@@ -3,10 +3,10 @@ import { createClient } from "@/lib/supabase"
 import { revalidateUtils } from "@/lib/revalidate-utils"
 import { revalidatePath } from "next/cache"
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const supabase = createClient()
-    const { data, error } = await supabase.from("brands").select("*").eq("id", params.id).single()
+    const { data, error } = await supabase.from("brands").select("*").eq("id", (await params).id).single()
 
     if (error) throw error
 
@@ -17,7 +17,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const supabase = createClient()
     const body = await request.json()
@@ -30,7 +30,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         position: body.position,
         updated_at: new Date().toISOString(),
       })
-      .eq("id", params.id)
+      .eq("id", (await params).id)
       .select()
       .single()
 
@@ -45,13 +45,13 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const supabase = createClient()
     // Get brand info before deletion to know which paths to clear
-    const { data: brandData } = await supabase.from("brands").select("slug").eq("id", params.id).single()
+    const { data: brandData } = await supabase.from("brands").select("slug").eq("id", (await params).id).single()
 
-    const { error } = await supabase.from("brands").delete().eq("id", params.id)
+    const { error } = await supabase.from("brands").delete().eq("id", (await params).id)
 
     if (error) throw error
     // Revalidate paths to update UI instantly

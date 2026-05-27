@@ -17,7 +17,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, message: "Missing required fields" }, { status: 400 })
     }
 
-    const supabase = createClient()
+    const supabase = await createClient()
 
     // Check if user already exists
     const { data: existingUser } = await supabase.from("users").select("id").eq("email", email.toLowerCase()).single()

@@ -38,7 +38,7 @@ export async function generateStaticParams() {
 export async function generateMetadata({
   params,
 }: {
-  params: { locale: string }
+  params: Promise<{ locale: string }>
 }): Promise<Metadata> {
   const { locale } = await params
   const baseUrl = siteUrl
@@ -114,7 +114,7 @@ export default async function LocaleLayout({
   params,
 }: {
   children: React.ReactNode
-  params: { locale: string }
+  params: Promise<{ locale: string }>
 }) {
   const { locale } = await params
   const messages = await getMessages(locale).catch((error) => {
@@ -214,8 +214,6 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         <link rel="dns-prefetch" href="https://devicehelp.cz" />
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <meta name="seznam-wmt" content="5VWPSjprwBjXXCI2HRoOVfvKcmdPB1Om" />
-        <link rel="preload" href="/focused-phone-fix.webp" as="image" type="image/webp" fetchPriority="high" />
-
         <style
           dangerouslySetInnerHTML={{
             __html: `

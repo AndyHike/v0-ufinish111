@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
 
     if (!parsedPayload.success) {
       console.error("❌ Invalid webhook payload:", parsedPayload.error)
-      console.error("❌ Validation errors:", JSON.stringify(parsedPayload.error.errors, null, 2))
+      console.error("❌ Validation errors:", JSON.stringify(parsedPayload.error.issues, null, 2))
 
       // For Order.Status.Changed, let's try to process it anyway if it has the basic structure
       if (payload.event_name === "Order.Status.Changed" && payload.context?.object_id && payload.metadata?.new?.id) {
@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
       }
 
       return NextResponse.json(
-        { error: "Invalid webhook payload", details: parsedPayload.error.errors },
+        { error: "Invalid webhook payload", details: parsedPayload.error.issues },
         { status: 400 },
       )
     }

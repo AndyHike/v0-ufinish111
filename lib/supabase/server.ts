@@ -1,42 +1,31 @@
-import { createServerClient as createSupabaseServerClient, type CookieOptions } from "@supabase/ssr"
+import { createServerClient as createSupabaseServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
-
-let cachedClient: any = null
 
 // Use public client for build-time and ISR caching
 // This is safe because all the data we query is public
 export async function createClient() {
-  if (cachedClient) return cachedClient
-
   const cookieStore = await cookies()
 
-  cachedClient = createSupabaseServerClient(
+  return createSupabaseServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, // Use ANON_KEY instead of SERVICE_ROLE_KEY to enable ISR caching
     {
       cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value
+        getAll() {
+          return cookieStore.getAll()
         },
-        set(name: string, value: string, options: CookieOptions) {
+        setAll(cookiesToSet) {
           try {
-            cookieStore.set({ name, value, ...options })
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set({ name, value, ...options })
+            })
           } catch (error) {
             console.error("[v0] Cookie set error:", error)
-          }
-        },
-        remove(name: string, options: CookieOptions) {
-          try {
-            cookieStore.set({ name, value: "", ...options })
-          } catch (error) {
-            console.error("[v0] Cookie remove error:", error)
           }
         },
       },
     }
   )
-
-  return cachedClient
 }
 
 // Export for compatibility

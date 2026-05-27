@@ -6,14 +6,14 @@ import { ChevronLeft } from "lucide-react"
 import { ModelServicesManager } from "@/components/admin/model-services-manager"
 
 type Props = {
-  params: {
+  params: Promise<{
     locale: string
     id: string
-  }
+  }>
 }
 
 export default async function ModelServicesPage({ params }: Props) {
-  const { id, locale } = params
+  const { id, locale } = await params
 
   const supabase = await createServerClient()
 

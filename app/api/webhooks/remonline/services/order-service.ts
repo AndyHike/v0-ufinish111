@@ -3,7 +3,7 @@ import { getStatusByRemOnlineId } from "@/lib/order-status-utils"
 export class OrderService {
   constructor(private supabase: any) {}
 
-  async createOrder(userId: string, remonlineOrderId: number, orderData: any, orderItems: any[]) {
+  async createOrder(userId: string, remonlineOrderId: number, orderData: any, orderItems: any[]): Promise<any> {
     try {
       console.log(`💾 OrderService.createOrder called with:`)
       console.log(`   - userId: ${userId}`)
@@ -96,7 +96,7 @@ export class OrderService {
     }
   }
 
-  async updateOrder(userId: string, remonlineOrderId: number, orderData: any, orderItems: any[]) {
+  async updateOrder(userId: string, remonlineOrderId: number, orderData: any, orderItems: any[]): Promise<any> {
     try {
       console.log(`🔄 OrderService.updateOrder called for order ${remonlineOrderId}`)
 

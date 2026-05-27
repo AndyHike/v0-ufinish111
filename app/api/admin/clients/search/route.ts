@@ -19,7 +19,7 @@ export async function GET(request: Request) {
     }
 
     // Authenticate with Remonline API
-    const authResult = await remonline.auth(process.env.REMONLINE_API_TOKEN)
+    const authResult = await remonline.auth()
     if (!authResult.success) {
       return NextResponse.json(
         {

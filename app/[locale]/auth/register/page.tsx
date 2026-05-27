@@ -7,7 +7,8 @@ import { AlertCircle } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 
-export default async function RegisterPage({ params: { locale } }: { params: { locale: string } }) {
+export default async function RegisterPage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params
   const t = await getTranslations({ locale, namespace: "Auth" })
   const registrationEnabled = await isRegistrationEnabled()
 

@@ -4,9 +4,9 @@ import { logActivity } from "@/lib/admin/activity-logger"
 import { revalidateUtils } from "@/lib/revalidate-utils"
 import { revalidatePath } from "next/cache"
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const id = params.id
+    const id = (await params).id
     const supabase = createClient()
 
     const { data, error } = await supabase.from("models").select("*, brands(name), series(name)").eq("id", id).single()
@@ -20,9 +20,9 @@ export async function GET(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const id = params.id
+    const id = (await params).id
     const body = await request.json()
     const supabase = createClient()
 
@@ -56,9 +56,9 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const id = params.id
+    const id = (await params).id
     const supabase = createClient()
 
     // Get model info before deletion for logging and cache clearing

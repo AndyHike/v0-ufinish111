@@ -45,7 +45,7 @@ export function BrandsSectionModern() {
         const response = await fetch("/api/brands", {
           // Use the dynamic caching strategy
           // This tells Next.js to cache the response for 1 hour
-          cache: "revalidate",
+          cache: "force-cache",
           next: {
             revalidate: 3600, // Revalidate every 1 hour
             tags: ["brands"], // Tag for on-demand revalidation

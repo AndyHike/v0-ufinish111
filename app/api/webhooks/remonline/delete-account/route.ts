@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     if (!parsedPayload.success) {
       console.error("Invalid webhook payload:", parsedPayload.error)
       return NextResponse.json(
-        { error: "Invalid webhook payload", details: parsedPayload.error.errors },
+        { error: "Invalid webhook payload", details: parsedPayload.error.issues },
         { status: 400 },
       )
     }

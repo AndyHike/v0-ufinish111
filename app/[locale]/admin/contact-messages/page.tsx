@@ -4,12 +4,13 @@ import { ContactMessagesList } from "@/components/admin/contact-messages-list"
 import { Skeleton } from "@/components/ui/skeleton"
 
 interface ContactMessagesPageProps {
-  params: {
+  params: Promise<{
     locale: string
-  }
+  }>
 }
 
-export default function ContactMessagesPage({ params: { locale } }: ContactMessagesPageProps) {
+export default async function ContactMessagesPage({ params }: ContactMessagesPageProps) {
+  const { locale } = await params
   const translations: Record<string, Record<string, string>> = {
     uk: {
       title: "Повідомлення з контактної форми",

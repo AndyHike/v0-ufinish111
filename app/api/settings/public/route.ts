@@ -3,7 +3,7 @@ import { createClient } from "@/utils/supabase/server"
 
 export async function GET() {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
 
     // Публічний endpoint - без потреби аутентифікації
     const { data: settings, error } = await supabase

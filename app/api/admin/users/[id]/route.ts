@@ -3,9 +3,9 @@ import { createClient } from "@/lib/supabase"
 import { logActivity } from "@/lib/admin/activity-logger"
 import { sendAccountApprovedEmail } from "@/lib/email/send-email"
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const id = params.id
+    const id = (await params).id
     const supabase = createClient()
 
     // Join with profiles to get phone
@@ -61,9 +61,9 @@ export async function GET(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const id = params.id
+    const id = (await params).id
     const body = await request.json()
     const { first_name, last_name, email, role, phone, is_approved, role_id, ico, dic, is_b2b } = body
 
@@ -192,9 +192,9 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const id = params.id
+    const id = (await params).id
     const supabase = createClient()
 
     // Get user email before deletion for activity log

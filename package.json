@@ -9,8 +9,7 @@
     "start": "next start"
   },
   "dependencies": {
-    "@auth/core": "latest",
-    "@aws-sdk/client-s3": "^3.995.0",
+    "@aws-sdk/client-s3": "^3.1054.0",
     "@emotion/is-prop-valid": "latest",
     "@formatjs/intl-localematcher": "latest",
     "@hello-pangea/dnd": "latest",
@@ -43,18 +42,14 @@
     "@radix-ui/react-toggle": "latest",
     "@radix-ui/react-toggle-group": "latest",
     "@radix-ui/react-tooltip": "latest",
-    "@simplewebauthn/browser": "latest",
-    "@simplewebauthn/server": "latest",
-    "@supabase/auth-helpers-nextjs": "latest",
-    "@supabase/ssr": "latest",
-    "@supabase/supabase-js": "latest",
+    "@supabase/ssr": "^0.10.3",
+    "@supabase/supabase-js": "^2.106.2",
     "@vercel/analytics": "latest",
     "autoprefixer": "^10.4.20",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "latest",
     "critters": "^0.0.23",
-    "crypto": "latest",
     "date-fns": "latest",
     "embla-carousel-react": "latest",
     "framer-motion": "latest",
@@ -62,16 +57,16 @@
     "libphonenumber-js": "latest",
     "lucide-react": "^0.454.0",
     "negotiator": "latest",
-    "next": "15.2.8",
-    "next-auth": "latest",
-    "next-intl": "latest",
+    "next": "15.5.18",
+    "next-auth": "^4.24.14",
+    "next-intl": "^4.12.0",
     "next-themes": "latest",
-    "nodemailer": "latest",
+    "nodemailer8": "npm:nodemailer@^8.0.9",
     "papaparse": "latest",
-    "react": "^19",
+    "react": "^19.2.6",
     "react-csv": "latest",
     "react-day-picker": "latest",
-    "react-dom": "^19",
+    "react-dom": "^19.2.6",
     "react-hook-form": "latest",
     "react-markdown": "latest",
     "react-phone-number-input": "latest",
@@ -83,17 +78,41 @@
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",
     "transliteration": "^2.3.0",
-    "uuid": "latest",
+    "uuid": "^14.0.0",
     "vaul": "latest",
-    "xlsx": "latest",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
     "zod": "latest"
   },
   "devDependencies": {
+    "@types/negotiator": "^0.6.4",
     "@types/node": "^22",
+    "@types/nodemailer": "^8.0.0",
+    "@types/papaparse": "^5.5.2",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "postcss": "^8.5",
+    "postcss": "8.5.15",
     "tailwindcss": "^3.4.17",
     "typescript": "^5"
+  },
+  "overrides": {
+    "postcss": "8.5.15",
+    "next-auth": {
+      "uuid": "11.1.1"
+    },
+    "anymatch": {
+      "picomatch": "2.3.2"
+    },
+    "micromatch": {
+      "picomatch": "2.3.2"
+    },
+    "readdirp": {
+      "picomatch": "2.3.2"
+    },
+    "@parcel/watcher": {
+      "picomatch": "4.0.4"
+    },
+    "tinyglobby": {
+      "picomatch": "4.0.4"
+    }
   }
 }

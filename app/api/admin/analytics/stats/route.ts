@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
-import { activeSessions } from '@/app/api/analytics/ping/route'
+import { activeSessions } from '@/lib/analytics/active-sessions'
 
 export async function GET() {
   try {

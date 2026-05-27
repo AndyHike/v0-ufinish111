@@ -5,13 +5,13 @@ import ReactMarkdown from "react-markdown"
 import { siteUrl } from "@/lib/site-config"
 
 type Props = {
-  params: {
+  params: Promise<{
     locale: string
-  }
+  }>
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { locale } = params
+  const { locale } = await params
 
   const titlePatterns = {
     cs: "Podmínky služby | DeviceHelp",
@@ -47,9 +47,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function TermsPage({
   params,
 }: {
-  params: { locale: string }
+  params: Promise<{ locale: string }>
 }) {
-  const { locale } = params
+  const { locale } = await params
   const t = await getTranslations({ locale, namespace: "Terms" })
   const termsContent = await getAppSetting("terms_of_service_content")
 

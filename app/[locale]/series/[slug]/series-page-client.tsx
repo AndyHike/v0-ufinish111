@@ -33,7 +33,7 @@ export default function SeriesPageClient({ initialData, locale, slug }: Props) {
   useEffect(() => {
     // Store in context for subsequent navigations
     if (seriesData?.series) {
-      setCachedSeries(slug, seriesData)
+      setCachedSeries(slug, seriesData.series)
     }
   }, [slug, setCachedSeries, seriesData])
 

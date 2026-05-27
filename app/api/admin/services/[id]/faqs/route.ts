@@ -1,10 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/utils/supabase/server"
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const supabase = await createServerClient()
-    const { id: serviceId } = params
+    const { id: serviceId } = await params
 
     const { data: faqs, error } = await supabase
       .from("service_faqs")
@@ -33,10 +33,10 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const supabase = await createServerClient()
-    const { id: serviceId } = params
+    const { id: serviceId } = await params
     const body = await request.json()
     const { position, translations } = body
 

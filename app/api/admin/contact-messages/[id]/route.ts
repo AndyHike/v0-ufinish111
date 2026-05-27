@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
 import { getSession } from "@/lib/auth/session"
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     // Отримуємо сесію користувача
     const session = await getSession()
@@ -15,7 +15,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
     console.log("[contact-message] User ID:", session.user.id)
     console.log("[contact-message] User role:", session.user.role)
 
-    const id = params.id
+    const id = (await params).id
 
     // Створюємо клієнта Supabase
     const supabase = createClient()
@@ -40,7 +40,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     // Отримуємо сесію користувача
     const session = await getSession()
@@ -53,7 +53,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     console.log("[contact-message] User ID:", session.user.id)
     console.log("[contact-message] User role:", session.user.role)
 
-    const id = params.id
+    const id = (await params).id
     const body = await request.json()
     const { status } = body
 

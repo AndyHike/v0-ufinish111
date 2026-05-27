@@ -213,7 +213,9 @@
       "estimatedTime": "1-2 дні",
       "priceRange": "від 1000 Kč",
       "warranty": "1 місяць"
-    }
+    },
+    "relatedArticles": "Також може бути цікаво",
+    "relatedArticlesDescription": "Читайте наші останні поради, інструкції та цікаві факти зі світу ремонту електроніки."
   },
   "ServicesSection": {
     "title": "Наші послуги",

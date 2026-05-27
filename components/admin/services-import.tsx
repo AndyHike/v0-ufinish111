@@ -425,7 +425,8 @@ export function ServicesImport() {
           return updatedRow
         }
 
-        updatedRow[field as keyof ServiceData] = value as any
+        const mutableRow = updatedRow as Record<string, any>
+        mutableRow[field] = value
 
         // Каскадне оновлення при зміні бренду
         if (field === "brandId") {

@@ -3,10 +3,11 @@ import { DescriptionsList } from "@/components/admin/descriptions-list"
 import type { Metadata } from "next"
 
 export async function generateMetadata({
-  params: { locale },
+  params,
 }: {
-  params: { locale: string }
+  params: Promise<{ locale: string }>
 }): Promise<Metadata> {
+  const { locale } = await params
   const t = await getTranslations({ locale, namespace: "Admin" })
   return {
     title: t("descriptions"),

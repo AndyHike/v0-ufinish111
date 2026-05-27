@@ -20,10 +20,10 @@ export const revalidate = 3600 // Regenerate every 1 hour
 export const dynamicParams = true // Allow new slugs on-the-fly
 
 type Props = {
-  params: {
+  params: Promise<{
     locale: string
     slug: string
-  }
+  }>
 }
 
 // Pre-render popular brands at build time

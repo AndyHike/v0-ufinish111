@@ -23,13 +23,34 @@ import {
 
 declare global {
   interface Window {
-    testFacebookPixel: () => void
-    FB_PIXEL_INITIALIZED: boolean
+    testFacebookPixel?: () => void
+    FB_PIXEL_INITIALIZED?: boolean
   }
 }
 
+interface FacebookPixelTestResults {
+  pixelLoaded: boolean
+  pixelInitialized: boolean
+  cookiesPresent: boolean
+  fbpCookie: boolean
+  fbcCookie: boolean
+  duplicateCookies: boolean
+  eventsWorking: boolean
+  connectionWorking: boolean
+  pixelId: string
+  cookies: string[]
+  allCookies: string
+  fbqFunction: boolean
+  fbqLoaded: boolean
+  fbqCallMethod: boolean
+  globalFlag: boolean
+  errors: string[]
+  warnings: string[]
+  debugInfo: Record<string, unknown>
+}
+
 export function FacebookPixelTest() {
-  const [testResults, setTestResults] = useState<any>(null)
+  const [testResults, setTestResults] = useState<FacebookPixelTestResults | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [eventLog, setEventLog] = useState<string[]>([])
   const [pixelStatus, setPixelStatus] = useState<string>("Unknown")
@@ -72,7 +93,7 @@ export function FacebookPixelTest() {
     setConnectionStatus("Testing...")
 
     try {
-      const testPromises = []
+      const testPromises: Promise<boolean>[] = []
 
       // Тест 1: Основний Facebook Pixel endpoint
       const img1 = new Image()
@@ -145,7 +166,7 @@ export function FacebookPixelTest() {
 
     setIsLoading(true)
 
-    const results = {
+    const results: FacebookPixelTestResults = {
       pixelLoaded: false,
       pixelInitialized: false,
       cookiesPresent: false,

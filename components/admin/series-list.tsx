@@ -707,8 +707,8 @@ export function SeriesList({ brandId }: SeriesListProps) {
                   max={series.length}
                   value={editSeries.position || ""}
                   onChange={(e) => {
-                    const newPosition = e.target.value ? parseInt(e.target.value, 10) : null
-                    if (newPosition === null || (newPosition >= 1 && newPosition <= series.length)) {
+                    const newPosition = e.target.value ? parseInt(e.target.value, 10) : 1
+                    if (newPosition >= 1 && newPosition <= series.length) {
                       setEditSeries({ ...editSeries, position: newPosition })
                     }
                   }}
@@ -740,7 +740,7 @@ export function SeriesList({ brandId }: SeriesListProps) {
           </DialogHeader>
           <div className="py-4">
             <p>
-              {t("deleteSeriesConfirmation", { series: seriesToDelete?.name }) ||
+              {t("deleteSeriesConfirmation", { series: seriesToDelete?.name || "" }) ||
                 `Are you sure you want to delete "${seriesToDelete?.name}"? This action cannot be undone.`}
             </p>
           </div>

@@ -4,7 +4,8 @@ import { cookies } from "next/headers"
 import { createClient } from "@/lib/supabase"
 
 export async function clearUserSession() {
-  cookies().delete("session_id")
+  const cookieStore = await cookies()
+  cookieStore.delete("session_id")
   return { success: true }
 }
 

@@ -2,10 +2,11 @@ import { getTranslations } from "next-intl/server"
 import { ServicesManagement } from "@/components/admin/services-management"
 
 export default async function AdminServicesPage({
-  params: { locale },
+  params,
 }: {
-  params: { locale: string }
+  params: Promise<{ locale: string }>
 }) {
+  const { locale } = await params
   const t = await getTranslations({ locale, namespace: "Admin" })
 
   return (

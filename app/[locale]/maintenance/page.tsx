@@ -4,10 +4,11 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 
 export default async function MaintenancePage({
-  params: { locale },
+  params,
 }: {
-  params: { locale: string }
+  params: Promise<{ locale: string }>
 }) {
+  const { locale } = await params
   // Check if maintenance mode is still enabled
   const maintenanceEnabled = await getAppSetting("maintenance_mode_enabled")
 

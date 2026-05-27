@@ -14,7 +14,6 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { User, LogOut, Settings } from "lucide-react"
-import { logout } from "@/app/actions/auth"
 import { useEffect, useState } from "react"
 
 interface UserNavProps {
@@ -48,7 +47,15 @@ export function UserNav({ user }: UserNavProps) {
   const handleLogout = async () => {
     try {
       setIsLoggingOut(true)
-      await logout()
+      const response = await fetch("/api/auth/logout", {
+        method: "POST",
+        cache: "no-store",
+      })
+
+      if (!response.ok) {
+        throw new Error("Logout request failed")
+      }
+
       const channel = new BroadcastChannel("auth_channel")
       channel.postMessage("logout")
       channel.close()

@@ -2,14 +2,14 @@ import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
 import { logActivity } from "@/lib/admin/activity-logger"
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
         const supabase = createClient()
 
         const { data: role, error } = await supabase
             .from("roles")
             .select("*")
-            .eq("id", params.id)
+            .eq("id", (await params).id)
             .single()
 
         if (error || !role) {
@@ -23,7 +23,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
     }
 }
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
         const body = await request.json()
         const { name, slug, is_default, auto_approve, discount_percentage, description } = body
@@ -35,7 +35,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
             await supabase
                 .from("roles")
                 .update({ is_default: false })
-                .neq("id", params.id)
+                .neq("id", (await params).id)
         }
 
         const { data: role, error } = await supabase
@@ -48,7 +48,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
                 discount_percentage: discount_percentage ?? 0,
                 description: description || null,
             })
-            .eq("id", params.id)
+            .eq("id", (await params).id)
             .select()
             .single()
 
@@ -68,7 +68,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         await logActivity({
             action: "update",
             entity: "role",
-            entityId: params.id,
+            entityId: (await params).id,
             details: `Updated role: ${name}`,
         })
 
@@ -79,7 +79,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
         const supabase = createClient()
 
@@ -87,7 +87,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
         const { data: role } = await supabase
             .from("roles")
             .select("name, slug, is_default")
-            .eq("id", params.id)
+            .eq("id", (await params).id)
             .single()
 
         if (!role) {
@@ -105,7 +105,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
         const { count } = await supabase
             .from("users")
             .select("id", { count: "exact", head: true })
-            .eq("role_id", params.id)
+            .eq("role_id", (await params).id)
 
         if (count && count > 0) {
             return NextResponse.json(
@@ -117,7 +117,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
         const { error } = await supabase
             .from("roles")
             .delete()
-            .eq("id", params.id)
+            .eq("id", (await params).id)
 
         if (error) {
             return NextResponse.json(
@@ -129,7 +129,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
         await logActivity({
             action: "delete",
             entity: "role",
-            entityId: params.id,
+            entityId: (await params).id,
             details: `Deleted role: ${role.name} (${role.slug})`,
         })
 

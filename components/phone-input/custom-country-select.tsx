@@ -56,7 +56,11 @@ export function CustomCountrySelect({ value, onChange, labels, disabled }: Count
   // Get flag component for a country
   const getFlag = (country: CountryCode) => {
     const Flag = flags[country]
-    return Flag ? <Flag className="h-4 w-6 mr-2" /> : null
+    return Flag ? (
+      <span className="mr-2 inline-flex h-4 w-6 overflow-hidden">
+        <Flag title={labels[country] || en[country] || country} />
+      </span>
+    ) : null
   }
 
   return (

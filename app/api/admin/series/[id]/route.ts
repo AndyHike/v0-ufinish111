@@ -4,10 +4,10 @@ import { logActivity } from "@/lib/admin/activity-logger"
 import { revalidateUtils } from "@/lib/revalidate-utils"
 import { revalidatePath } from "next/cache"
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const supabase = createClient()
-    const { data, error } = await supabase.from("series").select("*, brands(name)").eq("id", params.id).single()
+    const { data, error } = await supabase.from("series").select("*, brands(name)").eq("id", (await params).id).single()
 
     if (error) throw error
 
@@ -18,7 +18,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const supabase = createClient()
     const body = await request.json()
@@ -31,7 +31,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         position: body.position,
         updated_at: new Date().toISOString(),
       })
-      .eq("id", params.id)
+      .eq("id", (await params).id)
       .select()
       .single()
 
@@ -39,7 +39,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 
     // Log activity
     await logActivity({
-      entityId: params.id,
+      entityId: (await params).id,
       entityType: "series",
       actionType: "update",
       userId: body.userId || null,
@@ -55,21 +55,21 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const supabase = createClient()
 
     // Get series info before deletion for logging and cache clearing
-    const { data: seriesData } = await supabase.from("series").select("slug, name, brand_id").eq("id", params.id).single()
+    const { data: seriesData } = await supabase.from("series").select("slug, name, brand_id").eq("id", (await params).id).single()
 
-    const { error } = await supabase.from("series").delete().eq("id", params.id)
+    const { error } = await supabase.from("series").delete().eq("id", (await params).id)
 
     if (error) throw error
 
     // Log activity
     if (seriesData) {
       await logActivity({
-        entityId: params.id,
+        entityId: (await params).id,
         entityType: "series",
         actionType: "delete",
         userId: null,

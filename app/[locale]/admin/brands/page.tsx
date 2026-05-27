@@ -76,7 +76,7 @@ export default function BrandsPage() {
       if (!response.ok) {
         throw new Error(`Failed to fetch brands: ${response.status}`)
       }
-      const data = await response.json()
+      const data: Brand[] = await response.json()
 
       // Check if any brands don't have a position and assign positions if needed
       const needsPositionUpdate = data.some((brand) => brand.position === null || brand.position === undefined)

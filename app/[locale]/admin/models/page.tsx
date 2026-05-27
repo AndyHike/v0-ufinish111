@@ -659,7 +659,7 @@ export default function ModelsPage() {
             <DialogDescription>{t("deleteModelDescription")}</DialogDescription>
           </DialogHeader>
           <div className="py-4">
-            <p>{t("deleteModelConfirmation", { model: modelToDelete?.name })}</p>
+            <p>{t("deleteModelConfirmation", { model: modelToDelete?.name || "" })}</p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)} disabled={isDeleteLoading}>

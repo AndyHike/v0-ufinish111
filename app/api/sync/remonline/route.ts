@@ -15,7 +15,7 @@ const SearchSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     const body = await request.json()
     const searchParams = SearchSchema.parse(body)
 
@@ -68,13 +68,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const clientsData = clientsResponse.data
+    const clientsData = clientsResponse.clients || []
 
-    console.log(`Fetched ${clientsData.data?.length || 0} clients from RemOnline`)
+    console.log(`Fetched ${clientsData.length} clients from RemOnline`)
 
     // Process clients and sync to database
     let processedCount = 0
-    for (const client of clientsData.data || []) {
+    for (const client of clientsData) {
       if (!client.email && !client.phone) {
         console.log(`Skipping client ${client.id} - no email or phone`)
         continue
@@ -199,7 +199,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: "Sync completed successfully",
-      total: clientsData.count || 0,
+      total: clientsData.length,
       processed: processedCount,
     })
   } catch (error) {

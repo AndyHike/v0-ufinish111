@@ -30,7 +30,7 @@ export function useSiteSettings() {
     const fetchSettings = async () => {
       try {
         const response = await fetch("/api/site-settings", {
-          cache: "revalidate",
+          cache: "force-cache",
           next: {
             revalidate: 3600, // 1 hour for site settings
             tags: ["site-settings"],

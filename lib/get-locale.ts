@@ -7,14 +7,14 @@ const defaultLocale = "uk"
 
 export async function getLocale() {
   // Check if locale is set in cookie
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const localeCookie = cookieStore.get("NEXT_LOCALE")
   if (localeCookie?.value && locales.includes(localeCookie.value)) {
     return localeCookie.value
   }
 
   // Check if locale is in the pathname
-  const headersList = headers()
+  const headersList = await headers()
   const pathname = headersList.get("x-pathname") || ""
   const segments = pathname.split("/")
   const pathnameLocale = segments[1]

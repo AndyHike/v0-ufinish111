@@ -25,21 +25,19 @@ export function AuthForm({ children, action, successRedirect, submitText }: Auth
 
     const formData = new FormData(event.currentTarget)
 
-    startTransition(async () => {
-      try {
-        const result = await action(formData)
+    startTransition(() => {
+      void (async () => {
+        try {
+          const result = await action(formData)
 
-        if (!result.success) {
-          setError(result.message || t("somethingWentWrong"))
-          return result
+          if (!result.success) {
+            setError(result.message || t("somethingWentWrong"))
+          }
+        } catch (error) {
+          console.error("Authentication error:", error)
+          setError(t("unexpectedError"))
         }
-
-        return result
-      } catch (error) {
-        console.error("Authentication error:", error)
-        setError(t("unexpectedError"))
-        return { success: false, message: t("unexpectedError") }
-      }
+      })()
     })
   }
 

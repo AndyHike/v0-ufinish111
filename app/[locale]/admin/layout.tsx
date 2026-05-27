@@ -6,10 +6,11 @@ import { getSession } from "@/lib/auth/session"
 import { redirect } from "next/navigation"
 
 export async function generateMetadata({
-  params: { locale },
+  params,
 }: {
-  params: { locale: string }
+  params: Promise<{ locale: string }>
 }): Promise<Metadata> {
+  const { locale } = await params
   const t = await getTranslations({ locale, namespace: "Admin" })
   return {
     title: t("adminPanel"),
@@ -18,11 +19,12 @@ export async function generateMetadata({
 
 export default async function AdminLayout({
   children,
-  params: { locale },
+  params,
 }: {
   children: React.ReactNode
-  params: { locale: string }
+  params: Promise<{ locale: string }>
 }) {
+  const { locale } = await params
   const session = await getSession()
 
   if (!session?.user || session.user.role !== "admin") {

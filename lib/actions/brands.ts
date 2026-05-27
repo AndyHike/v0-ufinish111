@@ -10,7 +10,7 @@ export async function getBrands() {
     let { data, error } = await supabase
       .from("brands")
       .select("*, series(id, name, position, slug)")
-      .order("position", { ascending: true, nullsLast: true })
+      .order("position", { ascending: true, nullsFirst: false })
 
     // If there's an error or no brands with position, try fetching without ordering
     if (error || !data || data.length === 0) {

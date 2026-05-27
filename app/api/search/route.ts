@@ -1,6 +1,15 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 
+type SearchResult = {
+  id: string
+  type: "brand" | "series" | "model" | "service"
+  name: string
+  slug: string
+  url: string
+  breadcrumb: string | null
+}
+
 export async function GET(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -24,7 +33,7 @@ export async function GET(request: NextRequest) {
     const searchTerm = query.toLowerCase().trim()
     console.log(`🔍 Searching for "${searchTerm}" in locale "${locale}"`)
 
-    const results = []
+    const results: SearchResult[] = []
 
     // Пошук брендів (без is_active)
     try {
@@ -75,13 +84,14 @@ export async function GET(request: NextRequest) {
         console.error("❌ Series search error:", seriesError)
       } else if (series) {
         series.forEach((serie) => {
+          const brand = Array.isArray(serie.brands) ? serie.brands[0] : serie.brands
           results.push({
             id: serie.id,
             type: "series",
             name: serie.name,
             slug: serie.slug,
             url: `/${locale}/series/${serie.slug}`,
-            breadcrumb: serie.brands?.name || null,
+            breadcrumb: brand?.name || null,
           })
         })
       }
@@ -115,7 +125,7 @@ export async function GET(request: NextRequest) {
       if (modelsError) {
         console.error("❌ Models search error:", modelsError)
       } else if (models) {
-        models.forEach((model) => {
+        models.forEach((model: any) => {
           results.push({
             id: model.id,
             type: "model",

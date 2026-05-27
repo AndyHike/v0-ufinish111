@@ -6,15 +6,15 @@ import { useState, useEffect, forwardRef } from "react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { parsePhoneNumber, AsYouType, getCountries, getCountryCallingCode } from "libphonenumber-js"
+import { parsePhoneNumber, AsYouType, getCountries, getCountryCallingCode, type CountryCode } from "libphonenumber-js"
 import flags from "react-phone-number-input/flags"
 import en from "react-phone-number-input/locale/en.json"
 
 // Define popular countries to show at the top
-const POPULAR_COUNTRIES = ["CZ", "SK", "PL", "DE", "GB", "US", "UA"]
+const POPULAR_COUNTRIES: CountryCode[] = ["CZ", "SK", "PL", "DE", "GB", "US", "UA"]
 
 // Get all available countries and sort them
-const allCountries = getCountries()
+const allCountries = getCountries() as CountryCode[]
 const popularCountriesFiltered = POPULAR_COUNTRIES.filter((country) => allCountries.includes(country))
 
 // Sort the remaining countries alphabetically by name
@@ -39,7 +39,7 @@ interface CustomPhoneInputProps {
 export const CustomPhoneInput = forwardRef<HTMLInputElement, CustomPhoneInputProps>(
   ({ value, onChange, placeholder, disabled, error, label, required, id }, ref) => {
     // Extract country code from the phone number
-    const getInitialCountry = () => {
+    const getInitialCountry = (): CountryCode => {
       if (!value) return "CZ" // Default to Czech Republic
       try {
         const parsed = parsePhoneNumber(value)
@@ -49,7 +49,7 @@ export const CustomPhoneInput = forwardRef<HTMLInputElement, CustomPhoneInputPro
       }
     }
 
-    const [country, setCountry] = useState(getInitialCountry())
+    const [country, setCountry] = useState<CountryCode>(getInitialCountry())
     const [nationalNumber, setNationalNumber] = useState(() => {
       if (!value) return ""
       try {
@@ -85,7 +85,7 @@ export const CustomPhoneInput = forwardRef<HTMLInputElement, CustomPhoneInputPro
 
     // Handle country change
     const handleCountryChange = (newCountry: string) => {
-      setCountry(newCountry)
+      setCountry(newCountry as CountryCode)
     }
 
     // Handle national number change
@@ -133,7 +133,7 @@ export const CustomPhoneInput = forwardRef<HTMLInputElement, CustomPhoneInputPro
     }
 
     // Format the national number for display
-    const formatNationalNumber = (number: string, countryCode: string) => {
+    const formatNationalNumber = (number: string, countryCode: CountryCode) => {
       if (!number || !countryCode) return number
       try {
         const formatter = new AsYouType(countryCode)
@@ -147,9 +147,13 @@ export const CustomPhoneInput = forwardRef<HTMLInputElement, CustomPhoneInputPro
     const displayNumber = formatNationalNumber(nationalNumber, country)
 
     // Get flag component for a country
-    const getFlag = (country: string) => {
+    const getFlag = (country: CountryCode) => {
       const Flag = flags[country]
-      return Flag ? <Flag className="h-4 w-6 mr-2" /> : null
+      return Flag ? (
+        <span className="mr-2 inline-flex h-4 w-6 overflow-hidden">
+          <Flag title={en[country] || country} />
+        </span>
+      ) : null
     }
 
     return (

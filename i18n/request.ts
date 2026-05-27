@@ -4,8 +4,10 @@ const locales = ["cs", "uk", "en"]
 const defaultLocale = "cs"
 
 export default getRequestConfig(async ({ locale }) => {
+  const requestedLocale = locale || defaultLocale
+
   // Validate that the incoming `locale` parameter is valid
-  if (!locales.includes(locale)) {
+  if (!locales.includes(requestedLocale)) {
     return {
       messages: {},
       locale: defaultLocale,
@@ -13,10 +15,10 @@ export default getRequestConfig(async ({ locale }) => {
   }
 
   // Load messages for the requested locale
-  const messages = await import(`../messages/${locale}.json`).then((module) => module.default).catch(() => ({}))
+  const messages = await import(`../messages/${requestedLocale}.json`).then((module) => module.default).catch(() => ({}))
 
   return {
-    locale,
+    locale: requestedLocale,
     messages,
     timeZone: "Europe/Kiev",
   }

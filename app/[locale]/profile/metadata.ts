@@ -5,4 +5,4 @@ export const metadata: Metadata = {
     robots: { index: false, follow: false },
 }
 
-export { default } from "./profile-content-wrapper"
+export { default } from "./profile-content"

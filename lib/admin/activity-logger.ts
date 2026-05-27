@@ -3,39 +3,46 @@ import { cookies } from "next/headers"
 import { createServerClient } from "@/utils/supabase/server"
 
 type ActivityType = "create" | "update" | "delete" | "view"
-type EntityType = "brand" | "series" | "model" | "repair" | "user" | "discount"
+type EntityType = "brand" | "series" | "model" | "repair" | "user" | "discount" | "role"
 
 interface LogActivityParams {
   entityId: string
-  actionType: ActivityType
-  entityType: EntityType
-  userId?: string
-  details?: Record<string, any>
+  actionType?: ActivityType
+  entityType?: EntityType
+  action?: ActivityType
+  entity?: EntityType
+  userId?: string | null
+  details?: Record<string, any> | string
 }
 
 export async function logActivity({
   userId = "system",
   actionType,
   entityType,
+  action,
+  entity,
   entityId,
   details = {},
-}: {
-  userId?: string | null
-  actionType: ActivityType
-  entityType: EntityType
-  entityId: string
-  details?: Record<string, any>
-}) {
+}: LogActivityParams & { userId?: string | null }) {
   try {
+    const resolvedActionType = actionType || action
+    const resolvedEntityType = entityType || entity
+
+    if (!resolvedActionType || !resolvedEntityType) {
+      console.error("Missing action/entity for activity logging")
+      return false
+    }
+
     const supabase = createClient()
+    const normalizedDetails = typeof details === "string" ? { message: details } : details
 
     await supabase.from("activities").insert([
       {
         user_id: userId,
-        action_type: actionType,
-        entity_type: entityType,
+        action_type: resolvedActionType,
+        entity_type: resolvedEntityType,
         entity_id: entityId,
-        details,
+        details: normalizedDetails,
       },
     ])
 
@@ -46,8 +53,16 @@ export async function logActivity({
   }
 }
 
-export async function logAdminActivity({ entityId, actionType, entityType, userId, details = {} }: LogActivityParams) {
+export async function logAdminActivity({ entityId, actionType, entityType, action, entity, userId, details = {} }: LogActivityParams) {
   try {
+    const resolvedActionType = actionType || action
+    const resolvedEntityType = entityType || entity
+
+    if (!resolvedActionType || !resolvedEntityType) {
+      console.error("Missing action/entity for admin activity logging")
+      return false
+    }
+
     const supabase = await createServerClient()
 
     // Get current admin user if userId is not provided
@@ -67,10 +82,10 @@ export async function logAdminActivity({ entityId, actionType, entityType, userI
     await supabase.from("activities").insert([
       {
         user_id: adminId,
-        action_type: actionType,
-        entity_type: entityType,
+        action_type: resolvedActionType,
+        entity_type: resolvedEntityType,
         entity_id: entityId,
-        details,
+        details: typeof details === "string" ? { message: details } : details,
       },
     ])
 

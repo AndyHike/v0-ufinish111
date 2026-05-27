@@ -43,12 +43,13 @@ export function generateSessionToken(): string {
 }
 
 // Set session cookie
-export function setSessionCookie(sessionId: string): void {
+export async function setSessionCookie(sessionId: string): Promise<void> {
   // Set cookie to expire in 7 days
   const expires = new Date()
   expires.setDate(expires.getDate() + 7)
 
-  cookies().set("session_id", sessionId, {
+  const cookieStore = await cookies()
+  cookieStore.set("session_id", sessionId, {
     expires,
     httpOnly: true,
     path: "/",
@@ -58,19 +59,21 @@ export function setSessionCookie(sessionId: string): void {
 }
 
 // Clear session cookie
-export function clearSessionCookie(): void {
-  cookies().delete("session_id")
+export async function clearSessionCookie(): Promise<void> {
+  const cookieStore = await cookies()
+  cookieStore.delete("session_id")
 }
 
 // Get current user from session
 export async function getCurrentUser() {
-  const sessionId = cookies().get("session_id")?.value
+  const cookieStore = await cookies()
+  const sessionId = cookieStore.get("session_id")?.value
 
   if (!sessionId) {
     return null
   }
 
-  const supabase = createServerSupabaseClient()
+  const supabase = await createServerSupabaseClient()
 
   // Get session
   const { data: sessionData } = await supabase
@@ -81,7 +84,7 @@ export async function getCurrentUser() {
 
   if (!sessionData || new Date(sessionData.expires_at) < new Date()) {
     // Session expired or not found
-    clearSessionCookie()
+    await clearSessionCookie()
     return null
   }
 
@@ -93,7 +96,7 @@ export async function getCurrentUser() {
     .single()
 
   if (!userData) {
-    clearSessionCookie()
+    await clearSessionCookie()
     return null
   }
 

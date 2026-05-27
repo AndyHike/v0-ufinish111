@@ -46,7 +46,8 @@ export async function verifyPassword(password: string, storedHash: string): Prom
 
 // Get current user from session
 export async function getCurrentUser(supabase: any) {
-  const sessionId = cookies().get("session_id")?.value
+  const cookieStore = await cookies()
+  const sessionId = cookieStore.get("session_id")?.value
 
   if (!sessionId) {
     return null
@@ -61,7 +62,7 @@ export async function getCurrentUser(supabase: any) {
 
   if (!sessionData || new Date(sessionData.expires_at) < new Date()) {
     // Session expired or not found
-    cookies().delete("session_id")
+    cookieStore.delete("session_id")
     return null
   }
 
@@ -73,7 +74,7 @@ export async function getCurrentUser(supabase: any) {
     .single()
 
   if (!userData) {
-    cookies().delete("session_id")
+    cookieStore.delete("session_id")
     return null
   }
 

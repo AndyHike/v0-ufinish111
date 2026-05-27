@@ -142,11 +142,13 @@ export async function getArticleBySlug(
     }
   }
 
-  const article = translation.articles
+  const article = Array.isArray(translation.articles) ? translation.articles[0] : translation.articles
+  if (!article) return null
+  const { articles: _articles, ...articleTranslation } = translation
 
   return {
     ...article,
-    translation,
+    translation: articleTranslation as ArticleTranslation,
   }
 }
 
@@ -236,7 +238,7 @@ export async function getArticlesByService(serviceId: string, locale: string = "
 
   if (linksError || !links) return []
 
-  const articleIds = links.map((link: ArticleServiceLink) => link.article_id)
+  const articleIds = links.map((link) => String(link.article_id))
   if (articleIds.length === 0) return []
 
   const { data: articles } = await supabase

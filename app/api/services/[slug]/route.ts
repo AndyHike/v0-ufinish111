@@ -113,7 +113,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         }
       })
       .filter(Boolean)
-      .sort((a, b) => a.position - b.position)
+      .sort((a, b) => (a?.position || 0) - (b?.position || 0))
 
     // Отримуємо дані для конкретної моделі якщо вказана
     let sourceModel = null

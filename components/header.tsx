@@ -93,8 +93,9 @@ export function Header() {
 
   const trackSearchEvent = (query: string, resultsCount: number) => {
     if (typeof window !== "undefined" && window.fbq && query.length >= 3) {
+      const fbq = window.fbq
       setTimeout(() => {
-        window.fbq("track", "Search", {
+        fbq("track", "Search", {
           search_string: query,
           content_category: "site_search",
           custom_parameters: {
@@ -179,8 +180,9 @@ export function Header() {
 
   const handleResultClick = (result: SearchResult) => {
     if (typeof window !== "undefined" && window.fbq) {
+      const fbq = window.fbq
       setTimeout(() => {
-        window.fbq("track", "ViewContent", {
+        fbq("track", "ViewContent", {
           content_type: result.type,
           content_name: result.name,
           content_category: "search_result",
@@ -306,7 +308,7 @@ export function Header() {
                           <SheetClose asChild>
                             <Link href={`/${locale}/auth/signin`} className="flex items-center w-full rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
                               <LogIn className="mr-2 h-4 w-4" />
-                              {t("signIn") || "Увійти"}
+                              {t("login") || "Увійти"}
                             </Link>
                           </SheetClose>
                         )

@@ -1,4 +1,4 @@
-import nodemailer from "nodemailer"
+import nodemailer from "nodemailer8"
 import {
   getVerificationEmailTemplate,
   getPasswordResetEmailTemplate,
@@ -39,7 +39,7 @@ function createTransporter() {
       // Disable secure context checking
       secureContext: false,
     },
-  })
+  } as any)
 }
 
 export async function sendVerificationEmail(email: string, token: string, locale = "uk") {

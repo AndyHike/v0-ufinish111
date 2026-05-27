@@ -1,14 +1,15 @@
 "use server"
 
 import { revalidatePath, revalidateTag } from "next/cache"
-import { createServerClient } from "@/utils/supabase/server"
+import { cookies } from "next/headers"
 import { NextResponse } from "next/server"
 
 export async function POST(request: Request) {
   try {
     // Check for admin authorization
     const authHeader = request.headers.get("authorization")
-    const sessionId = request.cookies.get("session_id")?.value
+    const cookieStore = await cookies()
+    const sessionId = cookieStore.get("session_id")?.value
 
     if (!authHeader?.startsWith("Bearer ") && !sessionId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })

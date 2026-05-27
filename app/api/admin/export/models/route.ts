@@ -7,7 +7,7 @@ export async function GET() {
     const supabase = createClient()
 
     // Get all models with brand information
-    const { data: models, error } = await supabase.from("models").select(`
+    const { data: rawModels, error } = await supabase.from("models").select(`
         id,
         name,
         image_url,
@@ -22,11 +22,16 @@ export async function GET() {
     }
 
     // Transform data for CSV export
-    const csvData = models.map((model) => ({
-      brand: model.brands.name,
-      model: model.name,
-      image_url: model.image_url || "",
-    }))
+    const models = rawModels || []
+    const csvData = models.map((model) => {
+      const brand = Array.isArray(model.brands) ? model.brands[0] : model.brands
+
+      return {
+        brand: brand?.name || "",
+        model: model.name,
+        image_url: model.image_url || "",
+      }
+    })
 
     // Convert to CSV
     const csv = Papa.unparse(csvData)

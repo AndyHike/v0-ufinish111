@@ -16,10 +16,11 @@ function createServerClient() {
   })
 }
 
-function setSecureCookie(name: string, value: string, maxAge: number = 30 * 24 * 60 * 60) {
+async function setSecureCookie(name: string, value: string, maxAge: number = 30 * 24 * 60 * 60) {
   const isProduction = process.env.NODE_ENV === "production"
+  const cookieStore = await cookies()
 
-  cookies().set(name, value, {
+  cookieStore.set(name, value, {
     httpOnly: true,
     secure: isProduction,
     maxAge,
@@ -145,8 +146,8 @@ export async function register(formData: FormData) {
       return { success: false, message: "Failed to create session" }
     }
 
-    setSecureCookie("session_id", session.id)
-    setSecureCookie("user_role", "user")
+    await setSecureCookie("session_id", session.id)
+    await setSecureCookie("user_role", "user")
 
     revalidatePath("/", "layout")
 
@@ -209,8 +210,8 @@ export async function login(formData: FormData) {
       return { success: false, message: "loginFailed" }
     }
 
-    setSecureCookie("session_id", session.id)
-    setSecureCookie("user_role", userData.role || "user")
+    await setSecureCookie("session_id", session.id)
+    await setSecureCookie("user_role", userData.role || "user")
 
     revalidatePath("/", "layout")
 
@@ -225,7 +226,8 @@ export async function login(formData: FormData) {
 
 // Logout user
 export async function logout() {
-  const sessionId = cookies().get("session_id")?.value
+  const cookieStore = await cookies()
+  const sessionId = cookieStore.get("session_id")?.value
 
   if (sessionId) {
     // Delete the session from the database
@@ -233,8 +235,8 @@ export async function logout() {
     await supabase.from("sessions").delete().eq("id", sessionId)
   }
 
-  cookies().delete("session_id")
-  cookies().delete("user_role")
+  cookieStore.delete("session_id")
+  cookieStore.delete("user_role")
 
   revalidatePath("/", "layout")
 

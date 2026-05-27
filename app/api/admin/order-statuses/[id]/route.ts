@@ -2,9 +2,9 @@ import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
 import { clearStatusCache } from "@/lib/order-status-utils"
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const id = params.id
+    const id = (await params).id
     const body = await request.json()
     const { remonline_status_id, name_uk, name_en, name_cs, color } = body
 
@@ -70,9 +70,9 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const id = params.id
+    const id = (await params).id
 
     const supabase = createClient()
 

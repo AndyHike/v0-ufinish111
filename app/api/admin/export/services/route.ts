@@ -71,14 +71,16 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    const { data: modelServices, error } = await query
+    const { data: rawModelServices, error } = await query
 
     if (error) {
       throw error
     }
 
-    console.log("[v0] Export API - Retrieved model services:", modelServices?.length || 0)
-    if (modelServices && modelServices.length > 0) {
+    const modelServices = rawModelServices || []
+
+    console.log("[v0] Export API - Retrieved model services:", modelServices.length)
+    if (modelServices.length > 0) {
       console.log("[v0] First service warranty_months:", modelServices[0].warranty_months)
       console.log("[v0] First service object keys:", Object.keys(modelServices[0]))
     }
@@ -93,11 +95,12 @@ export async function GET(request: NextRequest) {
     }
 
     // Group translations by service_id and locale
-    const translationsByService = allTranslations.reduce((acc, translation) => {
-      if (!acc[translation.service_id]) {
-        acc[translation.service_id] = {}
+    const translationsByService = (allTranslations || []).reduce<Record<string, Record<string, { name: string; description: string | null }>>>((acc, translation) => {
+      const serviceId = String(translation.service_id)
+      if (!acc[serviceId]) {
+        acc[serviceId] = {}
       }
-      acc[translation.service_id][translation.locale] = {
+      acc[serviceId][translation.locale] = {
         name: translation.name,
         description: translation.description,
       }
@@ -106,12 +109,16 @@ export async function GET(request: NextRequest) {
 
     // Transform data for CSV export
     const csvData = modelServices.map((ms) => {
-      const translations = translationsByService[ms.services.id] || {}
+      const model = Array.isArray(ms.models) ? ms.models[0] : ms.models
+      const service = Array.isArray(ms.services) ? ms.services[0] : ms.services
+      const brand = Array.isArray(model?.brands) ? model?.brands[0] : model?.brands
+      const series = Array.isArray(model?.series) ? model?.series[0] : model?.series
+      const translations = translationsByService[String(service?.id)] || {}
 
       return {
-        brand: ms.models.brands.name,
-        series: ms.models.series.name,
-        model: ms.models.name,
+        brand: brand?.name || "",
+        series: series?.name || "",
+        model: model?.name || "",
         service_uk: translations.uk?.name || "",
         description_uk: translations.uk?.description || "",
         service_en: translations.en?.name || "",
@@ -131,13 +138,18 @@ export async function GET(request: NextRequest) {
     // Create filename based on filter
     let filename = "services_export"
     if (modelId) {
-      const modelName = modelServices[0]?.models?.name || "model"
+      const model = Array.isArray(modelServices[0]?.models) ? modelServices[0]?.models?.[0] : modelServices[0]?.models
+      const modelName = model?.name || "model"
       filename = `services_export_${modelName.replace(/[^a-z0-9]/gi, "_").toLowerCase()}`
     } else if (seriesId) {
-      const seriesName = modelServices[0]?.models?.series?.name || "series"
+      const model = Array.isArray(modelServices[0]?.models) ? modelServices[0]?.models?.[0] : modelServices[0]?.models
+      const series = Array.isArray(model?.series) ? model?.series[0] : model?.series
+      const seriesName = series?.name || "series"
       filename = `services_export_${seriesName.replace(/[^a-z0-9]/gi, "_").toLowerCase()}`
     } else if (brandId) {
-      const brandName = modelServices[0]?.models?.brands?.name || "brand"
+      const model = Array.isArray(modelServices[0]?.models) ? modelServices[0]?.models?.[0] : modelServices[0]?.models
+      const brand = Array.isArray(model?.brands) ? model?.brands[0] : model?.brands
+      const brandName = brand?.name || "brand"
       filename = `services_export_${brandName.replace(/[^a-z0-9]/gi, "_").toLowerCase()}`
     }
     filename += `_${new Date().toISOString().split("T")[0]}.csv`

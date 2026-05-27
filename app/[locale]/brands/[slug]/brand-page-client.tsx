@@ -30,7 +30,7 @@ export default function BrandPageClient({ initialData, locale, slug }: Props) {
   useEffect(() => {
     // Store in context for subsequent navigations
     if (brandData?.brand) {
-      setCachedBrand(slug, brandData)
+      setCachedBrand(slug, brandData.brand)
     }
   }, [slug, setCachedBrand, brandData])
 

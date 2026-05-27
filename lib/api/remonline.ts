@@ -441,7 +441,7 @@ class RemonlineClient {
   }
 
   async getClients(
-    page = 1,
+    pageOrParams: number | { page?: number; limit?: number; query?: string; email?: string; phone?: string } = 1,
     limit = 50,
   ): Promise<{
     success: boolean
@@ -450,7 +450,27 @@ class RemonlineClient {
     total?: number
   }> {
     try {
-      const result = await this.makeRequest(`/clients/?page=${page}&limit=${limit}`)
+      const params =
+        typeof pageOrParams === "number"
+          ? { page: pageOrParams, limit }
+          : {
+              page: pageOrParams.page ?? 1,
+              limit: pageOrParams.limit ?? limit,
+              query: pageOrParams.query,
+              email: pageOrParams.email,
+              phone: pageOrParams.phone,
+            }
+
+      const searchParams = new URLSearchParams({
+        page: String(params.page),
+        limit: String(params.limit),
+      })
+
+      if (params.query) searchParams.set("query", params.query)
+      if (params.email) searchParams.set("email", params.email)
+      if (params.phone) searchParams.set("phone", params.phone)
+
+      const result = await this.makeRequest(`/clients/?${searchParams.toString()}`)
 
       if (result.success) {
         return {
@@ -533,6 +553,42 @@ class RemonlineClient {
     }
   }
 
+  async getClientByPhone(phone: string): Promise<{
+    success: boolean
+    exists: boolean
+    client?: any
+    message?: string
+  }> {
+    try {
+      const result = await this.makeRequest(`/clients/?phone=${encodeURIComponent(phone)}`)
+
+      if (result.success) {
+        const clients = result.data.data || result.data
+        const client = Array.isArray(clients)
+          ? clients.find((c: any) => Array.isArray(c.phone) ? c.phone.includes(phone) : c.phone === phone)
+          : null
+
+        return {
+          success: true,
+          exists: !!client,
+          client: client || null,
+        }
+      }
+
+      return {
+        success: false,
+        exists: false,
+        message: result.message || "Failed to search client",
+      }
+    } catch (error) {
+      return {
+        success: false,
+        exists: false,
+        message: error instanceof Error ? error.message : "Failed to search client",
+      }
+    }
+  }
+
   async createClient(clientData: {
     first_name: string
     last_name: string
@@ -545,7 +601,13 @@ class RemonlineClient {
     message?: string
   }> {
     try {
-      const body = {
+      const body: {
+        first_name: string
+        last_name: string
+        email: string
+        address: string
+        phone?: string
+      } = {
         first_name: clientData.first_name,
         last_name: clientData.last_name,
         email: clientData.email,

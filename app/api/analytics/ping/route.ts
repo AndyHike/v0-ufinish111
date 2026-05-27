@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import crypto from 'crypto'
+import { activeSessions } from '@/lib/analytics/active-sessions'
 
 function maskIP(ip: string): string {
   const parts = ip.split('.')
@@ -14,16 +15,6 @@ function generateVisitorHash(maskedIP: string, userAgent: string, date: string, 
   const data = `${maskedIP}::${userAgent}::${date}::${salt}`
   return crypto.createHash('sha256').update(data).digest('hex')
 }
-
-// In-memory Map for tracking active sessions
-// Key: visitorHash (stable across F5 reloads within the same day)
-// Value: { lastSeen: timestamp, pageCount: number }
-interface SessionEntry {
-  lastSeen: number
-  pageCount: number
-}
-
-export const activeSessions = new Map<string, SessionEntry>()
 
 // Cleanup old sessions every 30 seconds
 const CLEANUP_INTERVAL = 30 * 1000 // 30 seconds

@@ -7,15 +7,15 @@ import { ArticleCard } from "@/components/articles/article-card"
 import { siteUrl } from "@/lib/site-config"
 
 type Props = {
-  params: {
+  params: Promise<{
     locale: string
-  }
-  searchParams: {
+  }>
+  searchParams: Promise<{
     search?: string
     page?: string
     sort?: string
     category?: string
-  }
+  }>
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

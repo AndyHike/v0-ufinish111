@@ -5,12 +5,13 @@ import { resetPassword } from "@/lib/auth/actions"
 export default async function ResetPasswordPage({
   searchParams,
 }: {
-  searchParams: { token?: string; error?: string; mismatch?: string }
+  searchParams: Promise<{ token?: string; error?: string; mismatch?: string }>
 }) {
   const locale = await getLocale()
-  const token = searchParams.token || ""
-  const showError = searchParams.error === "true"
-  const showMismatchError = searchParams.mismatch === "true"
+  const { token: resetToken, error, mismatch } = await searchParams
+  const token = resetToken || ""
+  const showError = error === "true"
+  const showMismatchError = mismatch === "true"
 
   async function resetPasswordAction(formData: FormData) {
     "use server"

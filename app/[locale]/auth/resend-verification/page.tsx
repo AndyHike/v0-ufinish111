@@ -1,5 +1,6 @@
 import { getTranslations } from "next-intl/server"
 import Link from "next/link"
+import { redirect } from "next/navigation"
 import { getLocale } from "next-intl/server"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
@@ -9,12 +10,12 @@ import { resendVerificationEmail } from "@/lib/auth/actions"
 export default async function ResendVerificationPage({
   searchParams,
 }: {
-  searchParams: { userId?: string; sent?: string }
+  searchParams: Promise<{ userId?: string; sent?: string }>
 }) {
   const locale = await getLocale()
   const t = await getTranslations("Auth")
-  const userId = searchParams.userId
-  const showSentMessage = searchParams.sent === "true"
+  const { userId, sent } = await searchParams
+  const showSentMessage = sent === "true"
 
   if (!userId) {
     return (
@@ -53,7 +54,7 @@ export default async function ResendVerificationPage({
             action={async () => {
               "use server"
               await resendVerificationEmail(userId, locale)
-              return { redirect: `/${locale}/auth/resend-verification?userId=${userId}&sent=true` }
+              redirect(`/${locale}/auth/resend-verification?userId=${userId}&sent=true`)
             }}
             className="flex justify-center"
           >

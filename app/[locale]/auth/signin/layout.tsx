@@ -27,11 +27,12 @@ async function isMaintenanceModeEnabled(): Promise<boolean> {
 
 export default async function SignInLayout({
   children,
-  params: { locale },
+  params,
 }: {
   children: React.ReactNode
-  params: { locale: string }
+  params: Promise<{ locale: string }>
 }) {
+  const { locale } = await params
   const messages = await getMessages(locale)
   const maintenanceMode = await isMaintenanceModeEnabled()
 

@@ -55,6 +55,7 @@ export async function GET(request: NextRequest) {
             locale,
             title,
             content,
+            meta_description,
             slug
           )
         )
@@ -67,7 +68,14 @@ export async function GET(request: NextRequest) {
 
     if (translation?.articles) {
       // Found with localized slug and locale
-      const article = translation.articles
+      const article = Array.isArray(translation.articles) ? translation.articles[0] : translation.articles
+      if (!article) {
+        return NextResponse.json(
+          { error: "Article not found" },
+          { status: 404 }
+        )
+      }
+
       return NextResponse.json({
         id: article.id,
         slug: article.slug,
@@ -118,6 +126,7 @@ export async function GET(request: NextRequest) {
           locale,
           title,
           content,
+          meta_description,
           slug
         )
       `

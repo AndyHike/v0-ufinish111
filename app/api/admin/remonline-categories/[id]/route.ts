@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
 import { getSession } from "@/lib/auth/session"
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getSession()
     if (!session?.user || session.user.role !== "admin") {
@@ -25,7 +25,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         description: description || null,
         updated_at: new Date().toISOString(),
       })
-      .eq("id", params.id)
+      .eq("id", (await params).id)
       .select()
       .single()
 
@@ -41,7 +41,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getSession()
     if (!session?.user || session.user.role !== "admin") {
@@ -50,7 +50,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
 
     const supabase = createClient()
 
-    const { error } = await supabase.from("remonline_categories").delete().eq("id", params.id)
+    const { error } = await supabase.from("remonline_categories").delete().eq("id", (await params).id)
 
     if (error) {
       console.error("Error deleting RemOnline category:", error)

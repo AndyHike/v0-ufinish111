@@ -3,7 +3,8 @@ import { getTranslations } from "next-intl/server"
 import SignInClient from "./signin-client"
 import SignInSkeleton from "./signin-skeleton"
 
-export async function generateMetadata({ params: { locale } }: { params: { locale: string } }) {
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params
   const t = await getTranslations({ locale, namespace: "Auth" })
   return {
     title: t("signIn"),

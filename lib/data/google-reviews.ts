@@ -21,7 +21,6 @@ export const getGoogleReviews = cache(async (): Promise<GoogleReviewsData | null
     const placeId = process.env.GOOGLE_PLACES_ID
 
     if (!apiKey || !placeId) {
-      console.warn("[v0] Google Places API key or place ID not configured")
       return null
     }
 
@@ -37,12 +36,14 @@ export const getGoogleReviews = cache(async (): Promise<GoogleReviewsData | null
       next: { revalidate: 3600 },
     })
 
-    const data = await response.json()
-
     if (!response.ok) {
-      console.error("[v0] Google API error status:", response.status)
+      if (process.env.DEBUG_GOOGLE_REVIEWS === "true") {
+        console.warn("[v0] Google API error status:", response.status)
+      }
       return null
     }
+
+    const data = await response.json()
 
     if (!data) {
       return null

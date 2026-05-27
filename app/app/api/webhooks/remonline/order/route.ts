@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
       headers: request.headers,
       body: requestText,
       duplex: "half", // Add this option to fix the error
-    })
+    } as RequestInit & { duplex: "half" })
 
     // Return the response from the actual handler
     return new Response(response.body, {

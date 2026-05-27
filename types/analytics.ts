@@ -24,9 +24,14 @@ export interface AnalyticsSettings {
 
 declare global {
   interface Window {
-    gtag: (...args: any[]) => void
+    gtag?: (...args: any[]) => void
     dataLayer: any[]
-    fbq: (...args: any[]) => void
-    _fbq: any
+    fbq?: ((...args: any[]) => void) & {
+      loaded?: boolean
+      callMethod?: (...args: any[]) => void
+      version?: string
+      queue?: any[]
+    }
+    _fbq?: any
   }
 }

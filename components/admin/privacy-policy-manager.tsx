@@ -166,9 +166,9 @@ export function PrivacyPolicyManager() {
             <Label>Preview</Label>
             <div className="border rounded-lg p-4 min-h-[400px] bg-white">
               {content ? (
-                <ReactMarkdown
-                  className="prose prose-sm max-w-none"
-                  components={{
+                <div className="prose prose-sm max-w-none">
+                  <ReactMarkdown
+                    components={{
                     h1: ({ children }) => <h1 className="text-2xl font-bold mt-6 mb-3 text-gray-900">{children}</h1>,
                     h2: ({ children }) => <h2 className="text-xl font-semibold mt-5 mb-2 text-gray-800">{children}</h2>,
                     h3: ({ children }) => <h3 className="text-lg font-medium mt-4 mb-2 text-gray-700">{children}</h3>,
@@ -198,10 +198,11 @@ export function PrivacyPolicyManager() {
                         {children}
                       </a>
                     ),
-                  }}
-                >
-                  {content}
-                </ReactMarkdown>
+                    }}
+                  >
+                    {content}
+                  </ReactMarkdown>
+                </div>
               ) : (
                 <p className="text-gray-400 italic">No content to preview</p>
               )}

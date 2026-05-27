@@ -10,10 +10,10 @@ import Script from "next/script"
 import { siteUrl } from "@/lib/site-config"
 
 type Props = {
-  params: {
+  params: Promise<{
     locale: string
     slug: string
-  }
+  }>
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

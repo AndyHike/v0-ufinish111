@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
 import { getSession } from "@/lib/auth/session"
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getSession()
     if (!session?.user || session.user.role !== "admin") {
@@ -24,7 +24,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         needs_review: needs_review || false,
         updated_at: new Date().toISOString(),
       })
-      .eq("id", params.id)
+      .eq("id", (await params).id)
       .select()
       .single()
 

@@ -6,20 +6,22 @@ import { Button } from "@/components/ui/button"
 import { ChevronLeft } from "lucide-react"
 
 export async function generateMetadata({
-  params: { locale },
+  params,
 }: {
-  params: { locale: string }
+  params: Promise<{ locale: string }>
 }): Promise<Metadata> {
+  const { locale } = await params
   return {
     title: "Edit Article",
   }
 }
 
-export default function EditArticlePage({
-  params: { id, locale },
+export default async function EditArticlePage({
+  params,
 }: {
-  params: { id: string; locale: string }
+  params: Promise<{ id: string; locale: string }>
 }) {
+  const { id, locale } = await params
   return (
     <div className="space-y-6">
       <Link href={`/${locale}/admin/articles`}>

@@ -2,9 +2,11 @@ import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
 import { revalidateUtils } from "@/lib/revalidate-utils"
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  let id = "unknown"
   try {
-    const id = params.id
+    const resolvedParams = await params
+    id = resolvedParams.id
     console.log(`[DELETE] /api/admin/model-services/${id} - Attempting to delete model service`)
 
     const supabase = createClient()

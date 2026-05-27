@@ -153,7 +153,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         }
       })
       .filter(Boolean)
-      .sort((a, b) => (a.position || 0) - (b.position || 0))
+      .sort((a, b) => (a?.position || 0) - (b?.position || 0))
 
     console.log("Transformed services with model-specific data:", services?.length || 0)
 

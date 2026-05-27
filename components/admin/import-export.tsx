@@ -279,13 +279,7 @@ export function ImportExport() {
       XLSX.writeFile(wb, fileName)
     } catch (error) {
       console.error("Export error:", error)
-      setModal({
-        open: true,
-        title: "Помилка експорту",
-        message: (error as Error).message,
-        confirmText: "OK",
-        isConfirm: false,
-      })
+      window.alert((error as Error).message)
     }
   }
 

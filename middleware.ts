@@ -91,8 +91,9 @@ export async function middleware(request: NextRequest) {
       finalPath = pathname
     }
 
-    // Build absolute URL with scheme and proper hostname
-    const url = new URL(`https://${cleanHostname}${finalPath}`, request.url)
+    // Use HTTPS for production redirects, but keep the local dev server on HTTP.
+    const protocol = process.env.NODE_ENV === "production" ? "https:" : request.nextUrl.protocol
+    const url = new URL(`${protocol}//${cleanHostname}${finalPath}`, request.url)
     url.search = request.nextUrl.search
 
     const response = NextResponse.redirect(url, { status: 301 })
