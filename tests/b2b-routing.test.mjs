@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises"
 import ts from "typescript"
 
 const source = await readFile(new URL("../lib/b2b-routing.ts", import.meta.url), "utf8")
+const middlewareSource = await readFile(new URL("../middleware.ts", import.meta.url), "utf8")
 const { outputText } = ts.transpileModule(source, {
   compilerOptions: {
     module: ts.ModuleKind.ESNext,
@@ -39,8 +40,9 @@ test("detects B2B hosts", () => {
   assert.equal(isB2BHost("notb2b.devicehelp.cz"), false)
 })
 
-test("allows only localized B2B microsite paths", () => {
+test("allows B2B microsite paths", () => {
   assert.equal(isAllowedB2BPath("/"), true)
+  assert.equal(isAllowedB2BPath("/faq"), true)
   assert.equal(isAllowedB2BPath("/cs"), true)
   assert.equal(isAllowedB2BPath("/uk"), true)
   assert.equal(isAllowedB2BPath("/en"), true)
@@ -48,6 +50,29 @@ test("allows only localized B2B microsite paths", () => {
   assert.equal(isAllowedB2BPath("/uk/faq/"), true)
   assert.equal(isAllowedB2BPath("/en/brands"), false)
   assert.equal(isAllowedB2BPath("/cs/auth/register"), false)
+})
+
+test("keeps unlocalized B2B FAQ on the B2B host for locale normalization", () => {
+  const target = getB2BRedirectTarget({
+    host: "b2b.devicehelp.cz",
+    pathname: "/faq",
+    search: "",
+    mainBaseUrl: "https://devicehelp.cz",
+  })
+
+  assert.equal(target, null)
+})
+
+test("checks B2B redirect before old service URL normalization", () => {
+  const staticSkipIndex = middlewareSource.indexOf("Skip middleware for static files")
+  const b2bRedirectIndex = middlewareSource.indexOf("const b2bRedirectTarget")
+  const servicesMatchIndex = middlewareSource.indexOf("const servicesMatch")
+
+  assert.notEqual(staticSkipIndex, -1)
+  assert.notEqual(b2bRedirectIndex, -1)
+  assert.notEqual(servicesMatchIndex, -1)
+  assert.ok(staticSkipIndex < b2bRedirectIndex)
+  assert.ok(b2bRedirectIndex < servicesMatchIndex)
 })
 
 test("builds default localized B2B path", () => {

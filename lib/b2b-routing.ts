@@ -52,7 +52,10 @@ export function isAllowedB2BPath(pathname: string): boolean {
 
   const locale = getPathLocale(normalizedPath)
   if (!locale) {
-    return false
+    return (
+      normalizedPath.startsWith("/") &&
+      B2B_ALLOWED_SUFFIXES.includes(normalizedPath as (typeof B2B_ALLOWED_SUFFIXES)[number])
+    )
   }
 
   const suffix = normalizedPath.replace(`/${locale}`, "") || ""

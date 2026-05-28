@@ -32,20 +32,6 @@ export async function middleware(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const hostname = request.headers.get("host") || ""
 
-  // Handle 301 redirects for old URL formats with query parameters
-  // Old format: /services/{slug}?model={model} → New format: /services/{slug}/{model}
-  const servicesMatch = pathname.match(/^\/([a-z]{2})\/services\/([^/]+)$/)
-  if (servicesMatch && searchParams.has("model")) {
-    const locale = servicesMatch[1]
-    const serviceSlug = servicesMatch[2]
-    const modelSlug = searchParams.get("model")
-
-    return NextResponse.redirect(
-      new URL(`/${locale}/services/${serviceSlug}/${modelSlug}`, request.url),
-      { status: 301 }
-    )
-  }
-
   // Force HTTPS redirect for HTTP requests
   if (request.headers.get("x-forwarded-proto") !== "https" && process.env.NODE_ENV === "production") {
     return NextResponse.redirect(
@@ -76,6 +62,19 @@ export async function middleware(request: NextRequest) {
 
   if (b2bRedirectTarget) {
     return NextResponse.redirect(b2bRedirectTarget, { status: 308 })
+  }
+
+  // Handle 301 redirects for old URL formats with query parameters.
+  const servicesMatch = pathname.match(/^\/([a-z]{2})\/services\/([^/]+)$/)
+  if (servicesMatch && searchParams.has("model")) {
+    const locale = servicesMatch[1]
+    const serviceSlug = servicesMatch[2]
+    const modelSlug = searchParams.get("model")
+
+    return NextResponse.redirect(
+      new URL(`/${locale}/services/${serviceSlug}/${modelSlug}`, request.url),
+      { status: 301 }
+    )
   }
 
   // Check conditions that require a single unified redirect
