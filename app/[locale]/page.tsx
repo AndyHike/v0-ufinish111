@@ -12,7 +12,7 @@ import { Suspense } from "react"
 import { toOGLocale } from "@/lib/og-locale"
 import { b2bSiteUrl, siteUrl } from "@/lib/site-config"
 
-export const revalidate = 3600 // Revalidate every hour
+export const dynamic = "force-dynamic"
 
 export async function generateMetadata({
   params,

@@ -33,9 +33,7 @@ const inter = Inter({
   fallback: ["system-ui", "arial"],
 })
 
-export async function generateStaticParams() {
-  return [{ locale: "cs" }, { locale: "en" }, { locale: "uk" }]
-}
+export const dynamic = "force-dynamic"
 
 export async function generateMetadata({
   params,
@@ -169,14 +167,15 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
           }}
         />
 
-        <script
+        {!isB2B && (
+          <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "LocalBusiness",
-              "@id": "https://devicehelp.cz/#business",
-              url: "https://devicehelp.cz",
+              "@id": `${mainSiteUrl}/#business`,
+              url: mainSiteUrl,
               name: "DeviceHelp",
               description: locale === "cs"
                 ? "Profesionální oprava mobilních telefonů v Praze 6 Břevnov. iPhone, Samsung, Xiaomi. Garancia 6 měsíců."
@@ -212,7 +211,8 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
               ],
             }),
           }}
-        />
+          />
+        )}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://xnwoqomipsesacphoczp.supabase.co" />

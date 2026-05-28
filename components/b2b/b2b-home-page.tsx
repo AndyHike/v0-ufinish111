@@ -18,11 +18,19 @@ interface B2BHomePageProps {
   locale: string
 }
 
+function getStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return []
+  }
+
+  return value.filter((item): item is string => typeof item === "string")
+}
+
 export async function B2BHomePage({ locale }: B2BHomePageProps) {
   const t = await getTranslations({ locale, namespace: "B2B.home" })
-  const audiences = t.raw("audiences") as string[]
-  const benefits = t.raw("benefits") as string[]
-  const process = t.raw("process") as string[]
+  const audiences = getStringArray(t.raw("audiences"))
+  const benefits = getStringArray(t.raw("benefits"))
+  const process = getStringArray(t.raw("process"))
   const registerHref = `${mainSiteUrl}/${locale}/auth/register?b2b=1`
 
   return (
