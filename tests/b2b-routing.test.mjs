@@ -67,6 +67,17 @@ test("redirects B2B disallowed localized paths to the main domain", () => {
   assert.equal(target?.toString(), "https://devicehelp.cz/cs/brands/apple?from=ad")
 })
 
+test("redirects B2B auth registration to the main domain with query string", () => {
+  const target = getB2BRedirectTarget({
+    host: "b2b.devicehelp.cz",
+    pathname: "/cs/auth/register",
+    search: "?b2b=1",
+    mainBaseUrl: "https://devicehelp.cz",
+  })
+
+  assert.equal(target?.toString(), "https://devicehelp.cz/cs/auth/register?b2b=1")
+})
+
 test("redirects B2B disallowed unlocalized paths to the main Czech path", () => {
   const target = getB2BRedirectTarget({
     host: "b2b.devicehelp.cz",

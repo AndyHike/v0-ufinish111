@@ -1,3 +1,5 @@
+import { getB2BRedirectTarget } from "@/lib/b2b-routing"
+import { siteUrl } from "@/lib/site-config"
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
@@ -63,6 +65,17 @@ export async function middleware(request: NextRequest) {
     /\.(jpg|jpeg|png|gif|svg|ico|css|js|woff|woff2|ttf|eot|webp)$/.test(pathname)
   ) {
     return NextResponse.next()
+  }
+
+  const b2bRedirectTarget = getB2BRedirectTarget({
+    host: hostname,
+    pathname,
+    search: request.nextUrl.search,
+    mainBaseUrl: siteUrl,
+  })
+
+  if (b2bRedirectTarget) {
+    return NextResponse.redirect(b2bRedirectTarget, { status: 308 })
   }
 
   // Check conditions that require a single unified redirect
