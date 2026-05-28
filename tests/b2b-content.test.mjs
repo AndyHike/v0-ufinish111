@@ -2,6 +2,8 @@ import test from "node:test"
 import assert from "node:assert/strict"
 import { readFile } from "node:fs/promises"
 
+const rawB2BAccountWording = /B2B\s+(?:account|účet|účtu|акаунт)/i
+
 async function pathExists(path) {
   try {
     await readFile(new URL(path, import.meta.url), "utf8")
@@ -68,6 +70,9 @@ test("B2B home messages expose redesigned sections for every supported locale", 
 
     assert.ok(Array.isArray(home?.proofRows), `${locale} proof rows`)
     assert.equal(home.proofRows.length, 3, `${locale} proof row count`)
+    for (const proofRow of home.proofRows) {
+      assert.equal(typeof proofRow, "string", `${locale} proof row`)
+    }
 
     assert.equal(typeof home?.cooperationTitle, "string", `${locale} cooperation title`)
     assert.equal(typeof home?.cooperationText, "string", `${locale} cooperation text`)
@@ -95,7 +100,7 @@ test("B2B home messages expose redesigned sections for every supported locale", 
     }
 
     const content = JSON.stringify(home)
-    assert.doesNotMatch(content, /B2B account|B2B účet|B2B акаунт/i)
+    assert.doesNotMatch(content, rawB2BAccountWording)
   }
 })
 
@@ -103,12 +108,15 @@ test("B2B navigation exposes redesigned section anchors", async () => {
   const headerSource = await readFile(new URL("../components/header.tsx", import.meta.url), "utf8")
   const mobileSource = await readFile(new URL("../components/mobile-nav.tsx", import.meta.url), "utf8")
 
-  assert.match(headerSource, /#benefits/)
-  assert.match(headerSource, /#account/)
-  assert.match(headerSource, /#how-it-works/)
+  assert.match(headerSource, /href\s*:\s*(?:`[^`]*#benefits[^`]*`|"[^"]*#benefits[^"]*"|'[^']*#benefits[^']*')/)
+  assert.match(headerSource, /href\s*:\s*(?:`[^`]*#account[^`]*`|"[^"]*#account[^"]*"|'[^']*#account[^']*')/)
+  assert.match(
+    headerSource,
+    /href\s*:\s*(?:`[^`]*#how-it-works[^`]*`|"[^"]*#how-it-works[^"]*"|'[^']*#how-it-works[^']*')/,
+  )
   assert.match(headerSource, /auth\/register\?b2b=1/)
-  assert.match(mobileSource, /#benefits/)
-  assert.match(mobileSource, /#account/)
+  assert.match(mobileSource, /href\s*:\s*(?:`[^`]*#benefits[^`]*`|"[^"]*#benefits[^"]*"|'[^']*#benefits[^']*')/)
+  assert.match(mobileSource, /href\s*:\s*(?:`[^`]*#account[^`]*`|"[^"]*#account[^"]*"|'[^']*#account[^']*')/)
 })
 
 test("business registration query preselects the company account flow", async () => {
@@ -122,7 +130,7 @@ test("business registration query preselects the company account flow", async ()
   assert.match(source, /isB2B:\s*isBusinessRegistration/)
   assert.match(source, /setValue\("isB2B", true/)
   assert.match(source, /businessClient/)
-  assert.doesNotMatch(source, /B2B (účtu|account|акаун)/i)
+  assert.doesNotMatch(source, rawB2BAccountWording)
 })
 
 test("business account labels avoid raw B2B account wording", async () => {
