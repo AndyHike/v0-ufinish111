@@ -725,5 +725,51 @@
     "editingNotAvailable": "Profile editing is currently unavailable. Please contact our support if you need to change your data.",
     "roleLevel": "Level: {level}",
     "roleDiscountDescription": "Additional discount for your role"
+  },
+  "B2B": {
+    "home": {
+      "eyebrow": "Company mobile phone service",
+      "title": "Mobile phone repair for companies and entrepreneurs",
+      "subtitle": "We repair company phones for businesses, entrepreneurs, offices, and organizations in Prague. Clear communication, warranty, and business account registration.",
+      "primaryCta": "Register a business account",
+      "secondaryCta": "Contact service",
+      "trust1": "For companies and entrepreneurs",
+      "trust2": "Company details in registration",
+      "trust3": "Warranty on repairs",
+      "audienceTitle": "Who the company service is for",
+      "audienceSubtitle": "A practical option for teams that need work phones back in use quickly.",
+      "audiences": [
+        "Companies with employee phones",
+        "Entrepreneurs and small businesses",
+        "Offices and small teams",
+        "Organizations with recurring repairs"
+      ],
+      "benefitsTitle": "Benefits of company service",
+      "benefits": [
+        "Business account with company details",
+        "Registration with company identifiers",
+        "Account approval by an administrator",
+        "Clear repair communication",
+        "Warranty on completed service",
+        "Fast model and service lookup"
+      ],
+      "processTitle": "How cooperation works",
+      "process": [
+        "Register a business account",
+        "Fill in contact and company details",
+        "Confirm your email",
+        "After account approval, we can handle repairs for company devices"
+      ],
+      "contactTitle": "Want to talk first?",
+      "contactText": "Write to us or call us. We will help choose the best process for your company.",
+      "finalTitle": "Start company cooperation with DeviceHelp",
+      "finalText": "Business account registration takes only a few minutes. After checking your details, we will inform you about activation."
+    },
+    "faq": {
+      "metadataTitle": "Company service FAQ | DeviceHelp",
+      "metadataDescription": "Frequently asked questions about DeviceHelp mobile phone repair for companies, entrepreneurs, and organizations.",
+      "title": "Company service FAQ",
+      "subtitle": "Short answers about registration, account approval, and repairs for company devices."
+    }
   }
 }

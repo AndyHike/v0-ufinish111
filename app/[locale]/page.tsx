@@ -1,13 +1,16 @@
 import type { Metadata } from "next"
+import { headers } from "next/headers"
+import { B2BHomePage } from "@/components/b2b/b2b-home-page"
 import { HeroSection } from "@/components/hero-section"
 import { ContactSection } from "@/components/contact-section"
 import { BrandsSection } from "@/components/brands-section"
 import { GoogleReviewsCarousel } from "@/components/google-reviews-carousel"
+import { isB2BHost } from "@/lib/b2b-routing"
 import { getBrands } from "@/lib/data/brands"
 import { getGoogleReviews } from "@/lib/data/google-reviews"
 import { Suspense } from "react"
 import { toOGLocale } from "@/lib/og-locale"
-import { siteUrl } from "@/lib/site-config"
+import { b2bSiteUrl, siteUrl } from "@/lib/site-config"
 
 export const revalidate = 3600 // Revalidate every hour
 
@@ -17,6 +20,60 @@ export async function generateMetadata({
   params: Promise<{ locale: string }>
 }): Promise<Metadata> {
   const { locale } = await params
+  const requestHeaders = await headers()
+  const host = requestHeaders.get("host") || ""
+
+  if (isB2BHost(host)) {
+    const b2bSeoData = {
+      cs: {
+        title: "B2B servis mobilních telefonů pro firmy | DeviceHelp",
+        description:
+          "Opravy firemních mobilních telefonů pro firmy, OSVČ a organizace v Praze. Registrace firemního účtu, záruka a jasná komunikace.",
+      },
+      uk: {
+        title: "Ремонт мобільних телефонів для компаній | DeviceHelp",
+        description:
+          "Ремонт службових мобільних телефонів для компаній, підприємців та організацій у Празі. Реєстрація акаунта для компанії, гарантія та зрозуміла комунікація.",
+      },
+      en: {
+        title: "Mobile Phone Repair for Companies | DeviceHelp",
+        description:
+          "Company mobile phone repairs for businesses, entrepreneurs, and organizations in Prague. Business account registration, warranty, and clear communication.",
+      },
+    }
+
+    const currentSeo = b2bSeoData[locale as keyof typeof b2bSeoData] || b2bSeoData.cs
+    const canonicalUrl = `${b2bSiteUrl}/${locale}`
+
+    return {
+      title: currentSeo.title,
+      description: currentSeo.description,
+      metadataBase: new URL(b2bSiteUrl),
+      alternates: {
+        canonical: canonicalUrl,
+        languages: {
+          cs: `${b2bSiteUrl}/cs`,
+          uk: `${b2bSiteUrl}/uk`,
+          en: `${b2bSiteUrl}/en`,
+          "x-default": `${b2bSiteUrl}/cs`,
+        },
+      },
+      openGraph: {
+        title: currentSeo.title,
+        description: currentSeo.description,
+        url: canonicalUrl,
+        siteName: "DeviceHelp",
+        locale: toOGLocale(locale),
+        type: "website",
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: currentSeo.title,
+        description: currentSeo.description,
+      },
+    }
+  }
+
   const baseUrl = siteUrl
   const canonicalUrl = `${baseUrl}/${locale}`
 
@@ -116,11 +173,22 @@ function GoogleReviewsSkeleton() {
   )
 }
 
-export default async function HomePage() {
+export default async function HomePage({
+  params,
+}: {
+  params: Promise<{ locale: string }>
+}) {
+  const { locale } = await params
+  const requestHeaders = await headers()
+  const host = requestHeaders.get("host") || ""
+
+  if (isB2BHost(host)) {
+    return <B2BHomePage locale={locale} />
+  }
+
   const brandsPromise = getBrands()
   const googleReviewsPromise = getGoogleReviews()
 
-  // Don't await here - let hero render immediately
   return (
     <>
       <HeroSection />
