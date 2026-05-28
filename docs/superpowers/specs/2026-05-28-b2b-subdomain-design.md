@@ -143,9 +143,11 @@ The B2B homepage should include these sections:
 
 ## CTA Behavior
 
-Primary CTA links to the existing registration page with a B2B hint:
+Primary CTA links to the existing registration page on the main domain with a B2B hint:
 
-`/{locale}/auth/register?b2b=1`
+`https://devicehelp.cz/{locale}/auth/register?b2b=1`
+
+When writing route-local code, the path portion is `/{locale}/auth/register?b2b=1`, but links rendered on the B2B subdomain should use the main-domain URL directly to avoid creating a B2B-subdomain auth duplicate.
 
 The registration form should read this query parameter and preselect the company/B2B checkbox. The user can still edit the form normally.
 
