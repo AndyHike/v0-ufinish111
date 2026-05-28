@@ -769,7 +769,29 @@
       "metadataTitle": "Company service FAQ | DeviceHelp",
       "metadataDescription": "Frequently asked questions about DeviceHelp mobile phone repair for companies, entrepreneurs, and organizations.",
       "title": "Company service FAQ",
-      "subtitle": "Short answers about registration, account approval, and repairs for company devices."
+      "subtitle": "Short answers about registration, account approval, and repairs for company devices.",
+      "items": [
+        {
+          "question": "Can an entrepreneur or small business register?",
+          "answer": "Yes. A business account is suitable for companies, entrepreneurs, and small teams that need to repair work devices."
+        },
+        {
+          "question": "Can a company register with only one phone?",
+          "answer": "Yes. Registration can still make sense for one device if you want company details and communication separated from regular consumer orders."
+        },
+        {
+          "question": "What happens after registration?",
+          "answer": "After email confirmation, we check the company details. Once approved, we notify you by email."
+        },
+        {
+          "question": "Are repairs covered by warranty?",
+          "answer": "Yes. Completed repairs include warranty depending on the service type and parts used."
+        },
+        {
+          "question": "Can we talk before registering?",
+          "answer": "Yes. You can call us or email us first, and we will help choose the most convenient cooperation process."
+        }
+      ]
     }
   }
 }

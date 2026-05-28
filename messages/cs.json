@@ -888,7 +888,29 @@
       "metadataTitle": "FAQ firemního servisu | DeviceHelp",
       "metadataDescription": "Časté otázky k firemnímu servisu mobilních telefonů DeviceHelp pro firmy, OSVČ a organizace.",
       "title": "Časté otázky k firemnímu servisu",
-      "subtitle": "Krátké odpovědi k registraci, schválení účtu a opravám firemních zařízení."
+      "subtitle": "Krátké odpovědi k registraci, schválení účtu a opravám firemních zařízení.",
+      "items": [
+        {
+          "question": "Může se registrovat i OSVČ nebo malý podnikatel?",
+          "answer": "Ano. Firemní účet je vhodný pro firmy, OSVČ i menší týmy, které potřebují řešit pracovní zařízení."
+        },
+        {
+          "question": "Můžeme se registrovat i s jedním telefonem?",
+          "answer": "Ano. Registrace není jen pro velké firmy. Dává smysl i tehdy, když chcete mít firemní údaje a komunikaci odděleně od běžných zakázek."
+        },
+        {
+          "question": "Co se stane po registraci?",
+          "answer": "Po potvrzení e-mailu zkontrolujeme firemní údaje. Po schválení vás informujeme e-mailem."
+        },
+        {
+          "question": "Je na opravy záruka?",
+          "answer": "Ano. Na provedené opravy poskytujeme záruku podle typu služby a použitých dílů."
+        },
+        {
+          "question": "Můžeme se nejdřív domluvit bez registrace?",
+          "answer": "Ano. Můžete nám zavolat nebo napsat e-mail a domluvit se na nejvhodnějším postupu."
+        }
+      ]
     }
   }
 }
