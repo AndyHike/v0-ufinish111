@@ -29,6 +29,7 @@ import { LanguageSwitcher } from "@/components/language-switcher"
 import { UserNav } from "@/components/user-nav"
 import { MobileNav } from "@/components/mobile-nav"
 import { useSiteSettings } from "@/hooks/use-site-settings"
+import { mainSiteUrl } from "@/lib/site-config"
 
 interface SearchResult {
   id: number
@@ -44,7 +45,7 @@ interface HeaderProps {
   mainDomainBaseUrl?: string
 }
 
-export function Header({ variant = "default", mainDomainBaseUrl = "" }: HeaderProps) {
+export function Header({ variant = "default", mainDomainBaseUrl = mainSiteUrl }: HeaderProps) {
   const t = useTranslations("Header")
   const pathname = usePathname()
   const params = useParams()

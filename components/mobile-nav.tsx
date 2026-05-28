@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation"
 import { Home, Smartphone, MessageSquare, Wrench } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { cn } from "@/lib/utils"
+import { mainSiteUrl } from "@/lib/site-config"
 import { motion } from "framer-motion"
 import { useEffect, useState } from "react"
 
@@ -13,7 +14,7 @@ interface MobileNavProps {
   mainDomainBaseUrl?: string
 }
 
-export function MobileNav({ variant = "default", mainDomainBaseUrl = "" }: MobileNavProps) {
+export function MobileNav({ variant = "default", mainDomainBaseUrl = mainSiteUrl }: MobileNavProps) {
   const pathname = usePathname()
   const t = useTranslations()
   const [isVisible, setIsVisible] = useState(true)
