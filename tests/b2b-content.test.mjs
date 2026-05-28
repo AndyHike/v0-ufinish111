@@ -55,6 +55,62 @@ test("B2B FAQ messages exist for every supported locale", async () => {
   }
 })
 
+test("B2B home messages expose redesigned sections for every supported locale", async () => {
+  for (const locale of ["cs", "uk", "en"]) {
+    const raw = await readFile(new URL(`../messages/${locale}.json`, import.meta.url), "utf8")
+    const messages = JSON.parse(raw)
+    const home = messages.B2B?.home
+
+    assert.equal(typeof home?.title, "string", `${locale} title`)
+    assert.equal(typeof home?.subtitle, "string", `${locale} subtitle`)
+    assert.equal(typeof home?.primaryCta, "string", `${locale} primary CTA`)
+    assert.equal(typeof home?.secondaryCta, "string", `${locale} secondary CTA`)
+
+    assert.ok(Array.isArray(home?.proofRows), `${locale} proof rows`)
+    assert.equal(home.proofRows.length, 3, `${locale} proof row count`)
+
+    assert.equal(typeof home?.cooperationTitle, "string", `${locale} cooperation title`)
+    assert.equal(typeof home?.cooperationText, "string", `${locale} cooperation text`)
+    assert.ok(Array.isArray(home?.cooperationBenefits), `${locale} cooperation benefits`)
+    assert.equal(home.cooperationBenefits.length, 6, `${locale} cooperation benefit count`)
+
+    assert.equal(typeof home?.accountTitle, "string", `${locale} account title`)
+    assert.equal(typeof home?.accountText, "string", `${locale} account text`)
+    assert.ok(Array.isArray(home?.accountFeatures), `${locale} account features`)
+    assert.equal(home.accountFeatures.length, 5, `${locale} account feature count`)
+
+    assert.equal(typeof home?.processText, "string", `${locale} process text`)
+    assert.ok(Array.isArray(home?.processSteps), `${locale} process steps`)
+    assert.equal(home.processSteps.length, 4, `${locale} process step count`)
+
+    for (const [key, items] of Object.entries({
+      cooperationBenefits: home.cooperationBenefits,
+      accountFeatures: home.accountFeatures,
+      processSteps: home.processSteps,
+    })) {
+      for (const item of items) {
+        assert.equal(typeof item.title, "string", `${locale} ${key} title`)
+        assert.equal(typeof item.text, "string", `${locale} ${key} text`)
+      }
+    }
+
+    const content = JSON.stringify(home)
+    assert.doesNotMatch(content, /B2B account|B2B účet|B2B акаунт/i)
+  }
+})
+
+test("B2B navigation exposes redesigned section anchors", async () => {
+  const headerSource = await readFile(new URL("../components/header.tsx", import.meta.url), "utf8")
+  const mobileSource = await readFile(new URL("../components/mobile-nav.tsx", import.meta.url), "utf8")
+
+  assert.match(headerSource, /#benefits/)
+  assert.match(headerSource, /#account/)
+  assert.match(headerSource, /#how-it-works/)
+  assert.match(headerSource, /auth\/register\?b2b=1/)
+  assert.match(mobileSource, /#benefits/)
+  assert.match(mobileSource, /#account/)
+})
+
 test("business registration query preselects the company account flow", async () => {
   const source = await readFile(
     new URL("../app/[locale]/auth/register/register-client.tsx", import.meta.url),
