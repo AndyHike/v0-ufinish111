@@ -11,6 +11,7 @@ export function stripHostPort(host: string): string {
 
 export function isB2BHost(host: string): boolean {
   const cleanHost = stripHostPort(host)
+  // Intentionally broad so preview and local B2B subdomains route like production.
   return cleanHost === "b2b.devicehelp.cz" || cleanHost.startsWith(`${B2B_SUBDOMAIN}.`)
 }
 

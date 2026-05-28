@@ -7,7 +7,7 @@
     "dev": "next dev",
     "lint": "next lint",
     "start": "next start",
-    "test:b2b-routing": "node --test tests/b2b-routing.test.ts"
+    "test:b2b-routing": "node --test tests/b2b-routing.test.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1054.0",
