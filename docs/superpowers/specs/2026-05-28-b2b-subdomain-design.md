@@ -56,7 +56,7 @@ The page should target:
 - Offices and teams with multiple devices.
 - Organizations that need recurring or accountable repair handling.
 
-The page should avoid consumer-first language such as "repair my phone" as the primary message. It should use business-oriented language such as "B2B mobile phone service for companies" and "register a B2B account".
+The page should avoid consumer-first language such as "repair my phone" as the primary message. It should use business-oriented language such as "mobile phone service for companies" and "register a company account". Avoid using `B2B` as the main visible CTA wording when a clearer business/customer-friendly phrase works better.
 
 ## Navigation
 
@@ -71,7 +71,7 @@ Recommended B2B navigation:
 - Benefits.
 - FAQ.
 - Contact.
-- Primary action: register B2B account.
+- Primary action: register a company/business account.
 
 General repair-discovery tools may remain available, but they should not create indexable B2B copies of the main catalog:
 
@@ -91,9 +91,9 @@ The B2B homepage should include these sections:
 
    Czech headline direction: "B2B servis mobilnich telefonu pro firmy".
 
-   The hero should explain that DeviceHelp repairs company phones for firms, entrepreneurs, offices, and organizations in Prague. It should emphasize clear communication, warranty, and business account registration.
+   The hero should explain that DeviceHelp repairs company phones for firms, entrepreneurs, offices, and organizations in Prague. It should emphasize clear communication, warranty, and company account registration.
 
-   Primary CTA: "Registrovat B2B ucet".
+   Primary CTA: "Registrovat firemni ucet".
 
    Secondary CTA may link to contact or phone/email.
 
@@ -110,7 +110,7 @@ The B2B homepage should include these sections:
 
    Focus on practical business value:
 
-   - B2B account with company details.
+   - Company account with business details.
    - IČO / DIČ registration.
    - Admin approval before account activation.
    - Clear repair communication.
@@ -121,7 +121,7 @@ The B2B homepage should include these sections:
 
    Explain the process:
 
-   - Register a B2B account.
+   - Register a company/business account.
    - Fill in company details including IČO and DIČ.
    - Confirm email.
    - Wait for admin approval.
@@ -147,13 +147,15 @@ Primary CTA links to the existing registration page with a B2B hint:
 
 `/{locale}/auth/register?b2b=1`
 
-The registration form should read this query parameter and preselect the B2B checkbox. The user can still edit the form normally.
+The registration form should read this query parameter and preselect the company/B2B checkbox. The user can still edit the form normally.
+
+Visible copy should prefer human-readable "company", "business", or "entrepreneur" language over raw `B2B` wording. `B2B` may remain in technical names, route logic, and internal query parameters.
 
 CTA labels:
 
-- Czech: `Registrovat B2B účet`
-- Ukrainian: `Зареєструвати B2B акаунт`
-- English: `Register B2B account`
+- Czech: `Registrovat firemní účet`
+- Ukrainian: `Зареєструвати акаунт для компанії`
+- English: `Register a business account`
 
 ## Localization
 
@@ -170,7 +172,7 @@ The B2B page metadata should be separate from the consumer homepage. Only true B
 Recommended Czech SEO direction:
 
 - Title: `B2B servis mobilních telefonů pro firmy | DeviceHelp`
-- Description: `Opravy firemních mobilních telefonů pro firmy, OSVČ a organizace v Praze. Registrace B2B účtu, záruka a jasná komunikace.`
+- Description: `Opravy firemních mobilních telefonů pro firmy, OSVČ a organizace v Praze. Registrace firemního účtu, záruka a jasná komunikace.`
 
 The first viewport must clearly show the business audience. This reduces ambiguity for ad review and visitors.
 
