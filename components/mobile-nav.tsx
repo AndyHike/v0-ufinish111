@@ -8,7 +8,12 @@ import { cn } from "@/lib/utils"
 import { motion } from "framer-motion"
 import { useEffect, useState } from "react"
 
-export function MobileNav() {
+interface MobileNavProps {
+  variant?: "default" | "b2b"
+  mainDomainBaseUrl?: string
+}
+
+export function MobileNav({ variant = "default", mainDomainBaseUrl = "" }: MobileNavProps) {
   const pathname = usePathname()
   const t = useTranslations()
   const [isVisible, setIsVisible] = useState(true)
@@ -44,7 +49,8 @@ export function MobileNav() {
     return pathname === fullPath || pathname?.startsWith(fullPath + "/")
   }
 
-  const navigation = [
+  const mainDomain = mainDomainBaseUrl.replace(/\/$/, "")
+  const defaultNavigation = [
     {
       name: t("Header.home"),
       href: `/${locale}`,
@@ -66,6 +72,31 @@ export function MobileNav() {
       icon: <MessageSquare className="h-5 w-5" />,
     },
   ]
+
+  const b2bNavigation = [
+    {
+      name: t("Header.b2bHome"),
+      href: `/${locale}`,
+      icon: <Home className="h-5 w-5" />,
+    },
+    {
+      name: t("Header.b2bBenefits"),
+      href: `/${locale}#benefits`,
+      icon: <Wrench className="h-5 w-5" />,
+    },
+    {
+      name: t("Header.b2bFaq"),
+      href: `/${locale}/faq`,
+      icon: <MessageSquare className="h-5 w-5" />,
+    },
+    {
+      name: t("Header.businessAccount"),
+      href: `${mainDomain}/${locale}/auth/register?b2b=1`,
+      icon: <Smartphone className="h-5 w-5" />,
+    },
+  ]
+
+  const navigation = variant === "b2b" ? b2bNavigation : defaultNavigation
 
   return (
     <motion.div

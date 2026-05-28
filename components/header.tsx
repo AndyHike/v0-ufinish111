@@ -39,7 +39,12 @@ interface SearchResult {
   breadcrumb?: string | null
 }
 
-export function Header() {
+interface HeaderProps {
+  variant?: "default" | "b2b"
+  mainDomainBaseUrl?: string
+}
+
+export function Header({ variant = "default", mainDomainBaseUrl = "" }: HeaderProps) {
   const t = useTranslations("Header")
   const pathname = usePathname()
   const params = useParams()
@@ -76,12 +81,23 @@ export function Header() {
   const searchInputRef = useRef<HTMLInputElement>(null)
   const { settings } = useSiteSettings()
 
-  const navigation = [
+  const defaultNavigation = [
     { name: t("home"), href: `/${locale}`, icon: <Home className="h-5 w-5" /> },
     { name: t("chooseModel"), href: `/${locale}/brands`, icon: <Smartphone className="h-5 w-5" /> },
     { name: t("articles"), href: `/${locale}/articles`, icon: <Wrench className="h-5 w-5" /> },
     { name: t("contact"), href: `/${locale}/contact`, icon: <MessageSquare className="h-5 w-5" /> },
   ]
+
+  const mainDomain = mainDomainBaseUrl.replace(/\/$/, "")
+  const b2bNavigation = [
+    { name: t("b2bHome"), href: `/${locale}`, icon: <Building2 className="h-5 w-5" /> },
+    { name: t("b2bHowItWorks"), href: `/${locale}#how-it-works`, icon: <Layers className="h-5 w-5" /> },
+    { name: t("b2bBenefits"), href: `/${locale}#benefits`, icon: <Wrench className="h-5 w-5" /> },
+    { name: t("b2bFaq"), href: `/${locale}/faq`, icon: <MessageSquare className="h-5 w-5" /> },
+    { name: t("chooseModel"), href: `${mainDomain}/${locale}/brands`, icon: <Smartphone className="h-5 w-5" /> },
+  ]
+
+  const navigation = variant === "b2b" ? b2bNavigation : defaultNavigation
 
   // Helper function to check if a path is active
   const isActive = (path: string) => {
@@ -359,6 +375,11 @@ export function Header() {
                 />
               )}
               <span className="font-semibold md:truncate-none truncate">DeviceHelp</span>
+              {variant === "b2b" && (
+                <span className="rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                  {t("businessAccount")}
+                </span>
+              )}
             </Link>
           </div>
 
@@ -449,6 +470,13 @@ export function Header() {
 
           {/* Мова та кор�����стувач */}
           <div className="flex items-center gap-2 flex-shrink-0">
+            {variant === "b2b" && (
+              <Button asChild size="sm" className="hidden lg:inline-flex">
+                <Link href={`${mainDomain}/${locale}/auth/register?b2b=1`}>
+                  {t("registerBusinessAccount")}
+                </Link>
+              </Button>
+            )}
             <Suspense
               fallback={
                 <Button variant="ghost" size="icon" className="flex">
@@ -465,7 +493,7 @@ export function Header() {
         </div>
       </header>
 
-      <MobileNav />
+      <MobileNav variant={variant} mainDomainBaseUrl={mainDomainBaseUrl} />
     </>
   )
 }

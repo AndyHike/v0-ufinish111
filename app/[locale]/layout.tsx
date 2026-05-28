@@ -1,6 +1,7 @@
 // Force rebuild - removed AnalyticsTracker
 import type React from "react"
 import type { Metadata } from "next"
+import { headers } from "next/headers"
 import Script from "next/script"
 import { NextIntlClientProvider } from "next-intl"
 import { notFound } from "next/navigation"
@@ -19,7 +20,8 @@ import { GlobalDataProvider } from "@/providers/global-data-provider"
 import { Toaster } from "@/components/ui/toaster"
 import { DynamicFavicon } from "@/components/dynamic-favicon"
 import { toOGLocale } from "@/lib/og-locale"
-import { siteUrl } from "@/lib/site-config"
+import { mainSiteUrl, siteUrl } from "@/lib/site-config"
+import { isB2BHost } from "@/lib/b2b-routing"
 import "@/app/globals.css"
 
 const inter = Inter({
@@ -117,6 +119,9 @@ export default async function LocaleLayout({
   params: Promise<{ locale: string }>
 }) {
   const { locale } = await params
+  const requestHeaders = await headers()
+  const host = requestHeaders.get("host") || ""
+  const isB2B = isB2BHost(host)
   const messages = await getMessages(locale).catch((error) => {
     console.error(`Failed to load messages for locale ${locale}:`, error)
     return null
@@ -246,7 +251,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
                     {/* Header is a client component and will hydrate quickly, 
                         so we remove the Suspense fallback to avoid showing skeleton 
                         on every navigation */}
-                    <Header />
+                    <Header variant={isB2B ? "b2b" : "default"} mainDomainBaseUrl={mainSiteUrl} />
                     <main className="flex-1">{children}</main>
                     <Footer />
                     <CookieBanner />
