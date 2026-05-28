@@ -1,5 +1,5 @@
 /**
- * Shared site URL config — reads NEXT_PUBLIC_SITE_URL at runtime.
+ * Shared site URL config - reads NEXT_PUBLIC_SITE_URL at runtime.
  *
  * On production set: NEXT_PUBLIC_SITE_URL=https://devicehelp.cz
  * On staging set:    NEXT_PUBLIC_SITE_URL=https://test2.mobil-brevnov.cz
@@ -8,4 +8,9 @@
  * fixing the "No self-referencing hreflang" error on staging.
  */
 export const siteUrl =
-    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ?? "https://devicehelp.cz"
+  process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ?? "https://devicehelp.cz"
+
+export const mainSiteUrl = siteUrl
+
+export const b2bSiteUrl =
+  process.env.NEXT_PUBLIC_B2B_SITE_URL?.replace(/\/$/, "") ?? "https://b2b.devicehelp.cz"
