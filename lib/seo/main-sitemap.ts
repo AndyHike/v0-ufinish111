@@ -1,71 +1,37 @@
-import type { MetadataRoute } from "next"
+import type { SitemapEntry } from "@/lib/seo/sitemap-xml"
+import { mainSiteUrl } from "@/lib/site-config"
 import { createServerClient } from "@/utils/supabase/server"
 
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = "https://devicehelp.cz"
-  const locales = ["uk", "cs", "en"] as const
-  const defaultLocale = "uk"
+const locales = ["uk", "cs", "en"] as const
+const defaultLocale = "uk"
 
+export async function getMainSitemapEntries(): Promise<SitemapEntry[]> {
+  const baseUrl = mainSiteUrl
   const supabase = await createServerClient()
-  const sitemapEntries: MetadataRoute.Sitemap = []
+  const sitemapEntries: SitemapEntry[] = []
 
-  // Helper function to create sitemap entry with hreflang alternates
-  function createSitemapEntry(path: string, lastModified?: Date): MetadataRoute.Sitemap[0] {
-    const alternates: Record<string, string> = {}
-
-    // Add all language versions
-    locales.forEach((locale) => {
-      alternates[locale] = `${baseUrl}/${locale}${path}`
-    })
-
-    // Add x-default pointing to default locale
-    alternates["x-default"] = `${baseUrl}/${defaultLocale}${path}`
-
-    return {
-      url: `${baseUrl}/${defaultLocale}${path}`,
-      lastModified: lastModified || new Date(),
-      alternates: {
-        languages: alternates,
-      },
-    }
-  }
-
-  // Helper function to add entries for all locales
   function addMultilingualEntries(path: string, lastModified?: Date) {
     locales.forEach((locale) => {
       const alternates: Record<string, string> = {}
 
-      // Add all language versions
       locales.forEach((altLocale) => {
         alternates[altLocale] = `${baseUrl}/${altLocale}${path}`
       })
 
-      // Add x-default pointing to default locale
       alternates["x-default"] = `${baseUrl}/${defaultLocale}${path}`
 
       sitemapEntries.push({
         url: `${baseUrl}/${locale}${path}`,
-        lastModified: lastModified || new Date(),
-        alternates: {
-          languages: alternates,
-        },
+        lastModified: lastModified ?? new Date(),
+        alternates,
       })
     })
   }
 
   try {
-    // Add homepage
     addMultilingualEntries("")
+    ;["/contact", "/brands"].forEach((page) => addMultilingualEntries(page))
 
-    // Static pages
-    // Only include pages that actually exist as routes
-    const staticPages = ["/contact", "/brands"]
-
-    staticPages.forEach((page) => {
-      addMultilingualEntries(page)
-    })
-
-    // Fetch and add dynamic brand pages
     const { data: brands, error: brandsError } = await supabase
       .from("brands")
       .select("slug, updated_at")
@@ -82,7 +48,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       console.warn("[SITEMAP] Error fetching brands:", brandsError.message)
     }
 
-    // Fetch and add dynamic series pages
     const { data: series, error: seriesError } = await supabase
       .from("series")
       .select("slug, updated_at")
@@ -99,7 +64,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       console.warn("[SITEMAP] Error fetching series:", seriesError.message)
     }
 
-    // Fetch and add dynamic model pages
     const { data: models, error: modelsError } = await supabase
       .from("models")
       .select("slug, updated_at")
@@ -116,7 +80,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       console.warn("[SITEMAP] Error fetching models:", modelsError.message)
     }
 
-    // Fetch services and all their model combinations in two queries (no N+1)
     const { data: services, error: servicesError } = await supabase
       .from("services")
       .select("id, slug, created_at")
@@ -124,79 +87,77 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     console.log("[SITEMAP] Services fetched:", { count: services?.length, error: servicesError?.message })
     if (!servicesError && services) {
-      // Add basic service pages
       services.forEach((service) => {
         if (service.slug) {
           addMultilingualEntries(
             `/services/${service.slug}`,
-            service.created_at ? new Date(service.created_at) : new Date()
+            service.created_at ? new Date(service.created_at) : new Date(),
           )
         }
       })
 
-      // Single query for ALL service+model combinations (no N+1)
-      const serviceIds = services.map((s) => s.id)
-      const { data: allModelServices, error: msError } = await supabase
+      const serviceIds = services.map((service) => service.id)
+      const { data: allModelServices, error: modelServicesError } = await supabase
         .from("model_services")
         .select("service_id, models(slug), services(slug, created_at)")
         .in("service_id", serviceIds)
         .not("models.slug", "is", null)
 
-      if (!msError && allModelServices) {
+      if (!modelServicesError && allModelServices) {
         console.log(`[SITEMAP] Found ${allModelServices.length} service+model combinations`)
-        allModelServices.forEach((ms) => {
-          const model = (ms.models as unknown) as { slug: string } | null
-          const service = (ms.services as unknown) as { slug: string; created_at: string } | null
+        allModelServices.forEach((modelService) => {
+          const model = modelService.models as unknown as { slug: string } | null
+          const service = modelService.services as unknown as { slug: string; created_at: string } | null
+
           if (model?.slug && service?.slug) {
             addMultilingualEntries(
               `/services/${service.slug}/${model.slug}`,
-              service.created_at ? new Date(service.created_at) : new Date()
+              service.created_at ? new Date(service.created_at) : new Date(),
             )
           }
         })
-      } else if (msError) {
-        console.warn("[SITEMAP] Error fetching model services:", msError.message)
+      } else if (modelServicesError) {
+        console.warn("[SITEMAP] Error fetching model services:", modelServicesError.message)
       }
     } else if (servicesError) {
       console.warn("[SITEMAP] Error fetching services:", servicesError.message)
     }
 
-    // Add articles hub pages
     addMultilingualEntries("/articles")
 
-    // Fetch and add dynamic article pages with localized slugs
     const { data: articleTranslations, error: articlesError } = await supabase
       .from("article_translations")
-      .select("slug, locale, updated_at, articles(updated_at, published)")
+      .select("article_id, slug, locale, updated_at, articles(updated_at, published)")
       .eq("articles.published", true)
       .not("slug", "is", null)
 
-    console.log("[SITEMAP] Article translations fetched:", { count: articleTranslations?.length, error: articlesError?.message })
+    console.log("[SITEMAP] Article translations fetched:", {
+      count: articleTranslations?.length,
+      error: articlesError?.message,
+    })
+
     if (!articlesError && articleTranslations) {
-      // For each unique article, create sitemap entries with proper hreflang alternates
       const processedArticles = new Set<string>()
 
-      articleTranslations.forEach((trans: any) => {
-        const articleId = trans.article_id
+      articleTranslations.forEach((translation: any) => {
+        const articleId = translation.article_id
         if (processedArticles.has(articleId)) return
 
-        // Get all translations for this article to build proper alternates
-        const allTranslations = articleTranslations.filter((t: any) => t.article_id === articleId)
-
+        const allTranslations = articleTranslations.filter((item: any) => item.article_id === articleId)
         const alternates: Record<string, string> = {}
-        allTranslations.forEach((t: any) => {
-          alternates[t.locale] = `${baseUrl}/${t.locale}/articles/${t.slug}`
-        })
-        alternates["x-default"] = `${baseUrl}/${defaultLocale}/articles/${allTranslations.find((t: any) => t.locale === defaultLocale)?.slug || allTranslations[0].slug}`
 
-        // Add one entry per locale for this article
-        allTranslations.forEach((trans: any) => {
+        allTranslations.forEach((item: any) => {
+          alternates[item.locale] = `${baseUrl}/${item.locale}/articles/${item.slug}`
+        })
+
+        alternates["x-default"] =
+          `${baseUrl}/${defaultLocale}/articles/${allTranslations.find((item: any) => item.locale === defaultLocale)?.slug || allTranslations[0].slug}`
+
+        allTranslations.forEach((item: any) => {
           sitemapEntries.push({
-            url: `${baseUrl}/${trans.locale}/articles/${trans.slug}`,
-            lastModified: trans.updated_at ? new Date(trans.updated_at) : new Date(),
-            alternates: {
-              languages: alternates,
-            },
+            url: `${baseUrl}/${item.locale}/articles/${item.slug}`,
+            lastModified: item.updated_at ? new Date(item.updated_at) : new Date(),
+            alternates,
           })
         })
 
