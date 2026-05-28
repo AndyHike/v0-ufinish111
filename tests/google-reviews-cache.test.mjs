@@ -1,0 +1,19 @@
+import test from "node:test"
+import assert from "node:assert/strict"
+import { readFile } from "node:fs/promises"
+
+test("Google reviews use a persistent server cache instead of per-request React cache", async () => {
+  const source = await readFile(new URL("../lib/data/google-reviews.ts", import.meta.url), "utf8")
+
+  assert.match(source, /unstable_cache/)
+  assert.match(source, /revalidate:\s*3600/)
+  assert.doesNotMatch(source, /from "react"/)
+  assert.doesNotMatch(source, /key=\$\{apiKey\}/)
+})
+
+test("homepage keeps the Google reviews section visible when the API returns no data", async () => {
+  const source = await readFile(new URL("../app/[locale]/page.tsx", import.meta.url), "utf8")
+
+  assert.match(source, /EMPTY_GOOGLE_REVIEWS/)
+  assert.match(source, /googleReviews \?\? EMPTY_GOOGLE_REVIEWS/)
+})

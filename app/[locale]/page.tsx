@@ -11,8 +11,15 @@ import { getGoogleReviews } from "@/lib/data/google-reviews"
 import { Suspense } from "react"
 import { toOGLocale } from "@/lib/og-locale"
 import { b2bSiteUrl, siteUrl } from "@/lib/site-config"
+import type { GoogleReviewsData } from "@/lib/data/google-reviews"
 
 export const dynamic = "force-dynamic"
+
+const EMPTY_GOOGLE_REVIEWS: GoogleReviewsData = {
+  reviews: [],
+  rating: 0,
+  totalReviews: 0,
+}
 
 export async function generateMetadata({
   params,
@@ -213,9 +220,9 @@ async function BrandsSectionAsync({ promise }: { promise: Promise<any> }) {
 async function GoogleReviewsAsync({ promise }: { promise: Promise<any> }) {
   try {
     const googleReviews = await promise
-    return googleReviews ? <GoogleReviewsCarousel data={googleReviews} /> : null
+    return <GoogleReviewsCarousel data={googleReviews ?? EMPTY_GOOGLE_REVIEWS} />
   } catch (error) {
     console.error("GoogleReviewsAsync error:", error)
-    return null
+    return <GoogleReviewsCarousel data={EMPTY_GOOGLE_REVIEWS} />
   }
 }

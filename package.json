@@ -9,7 +9,8 @@
     "start": "next start",
     "test:b2b-routing": "node --test tests/b2b-routing.test.mjs",
     "test:b2b-content": "node --test tests/b2b-content.test.mjs",
-    "test:b2b-seo": "node --test tests/b2b-seo.test.mjs"
+    "test:b2b-seo": "node --test tests/b2b-seo.test.mjs",
+    "test:google-reviews-cache": "node --test tests/google-reviews-cache.test.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1054.0",
