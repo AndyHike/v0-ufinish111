@@ -119,6 +119,14 @@ test("B2B navigation exposes redesigned section anchors", async () => {
   assert.match(mobileSource, /href\s*:\s*(?:`[^`]*#account[^`]*`|"[^"]*#account[^"]*"|'[^']*#account[^']*')/)
 })
 
+test("B2B home page exposes redesigned section target IDs", async () => {
+  const homeSource = await readFile(new URL("../components/b2b/b2b-home-page.tsx", import.meta.url), "utf8")
+
+  assert.match(homeSource, /id\s*=\s*["']benefits["']/)
+  assert.match(homeSource, /id\s*=\s*["']account["']/)
+  assert.match(homeSource, /id\s*=\s*["']how-it-works["']/)
+})
+
 test("business registration query preselects the company account flow", async () => {
   const source = await readFile(
     new URL("../app/[locale]/auth/register/register-client.tsx", import.meta.url),
