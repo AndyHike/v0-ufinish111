@@ -473,9 +473,10 @@
     "registrationDisabled": "Registration Disabled",
     "registrationDisabledDescription": "We have temporarily disabled new user registrations.",
     "registrationTemporarilyDisabled": "Registration is temporarily unavailable",
-    "b2bClient": "B2B Client",
+    "b2bClient": "Business account / entrepreneur",
+    "businessClient": "Business account / entrepreneur",
     "registrationPendingTitle": "Registration submitted",
-    "registrationPendingDescription": "Your B2B account registration has been submitted. Your account will be activated after administrator approval. You will be notified by email when activated.",
+    "registrationPendingDescription": "Your business account registration has been submitted. Your account will be activated after administrator approval. You will be notified by email when activated.",
     "accountPendingApproval": "Your account is pending administrator approval"
   },
   "BookService": {

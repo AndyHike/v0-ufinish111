@@ -54,3 +54,33 @@ test("B2B FAQ messages exist for every supported locale", async () => {
     }
   }
 })
+
+test("business registration query preselects the company account flow", async () => {
+  const source = await readFile(
+    new URL("../app/[locale]/auth/register/register-client.tsx", import.meta.url),
+    "utf8",
+  )
+
+  assert.match(source, /useSearchParams/)
+  assert.match(source, /searchParams\.get\("b2b"\) === "1"/)
+  assert.match(source, /isB2B:\s*isBusinessRegistration/)
+  assert.match(source, /setValue\("isB2B", true/)
+  assert.match(source, /businessClient/)
+  assert.doesNotMatch(source, /B2B (účtu|account|акаун)/i)
+})
+
+test("business account labels avoid raw B2B account wording", async () => {
+  const expected = {
+    cs: "Firemní účet / podnikatel",
+    uk: "Акаунт для компанії / підприємця",
+    en: "Business account / entrepreneur",
+  }
+
+  for (const [locale, label] of Object.entries(expected)) {
+    const raw = await readFile(new URL(`../messages/${locale}.json`, import.meta.url), "utf8")
+    const messages = JSON.parse(raw)
+
+    assert.equal(messages.Auth?.businessClient, label)
+    assert.doesNotMatch(messages.Auth.businessClient, /B2B/i)
+  }
+})

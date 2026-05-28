@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useTranslations } from "next-intl"
 import Link from "next/link"
-import { useParams, useRouter } from "next/navigation"
+import { useParams, useRouter, useSearchParams } from "next/navigation"
 import { z } from "zod"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -63,7 +63,9 @@ export default function RegisterClient() {
   const t = useTranslations("Auth")
   const router = useRouter()
   const params = useParams()
+  const searchParams = useSearchParams()
   const locale = params.locale as string
+  const isBusinessRegistration = searchParams.get("b2b") === "1"
 
   const [step, setStep] = useState<"initial" | "verification" | "success" | "pending_approval">("initial")
   const [identifier, setIdentifier] = useState({
@@ -85,7 +87,7 @@ export default function RegisterClient() {
       phone: "+420",
       firstName: "",
       lastName: "",
-      isB2B: false,
+      isB2B: isBusinessRegistration,
       ico: "",
       dic: "",
     },
@@ -99,6 +101,12 @@ export default function RegisterClient() {
   })
 
   const watchIsB2B = initialForm.watch("isB2B")
+
+  useEffect(() => {
+    if (isBusinessRegistration) {
+      initialForm.setValue("isB2B", true, { shouldDirty: false, shouldValidate: false })
+    }
+  }, [initialForm, isBusinessRegistration])
 
   const handleInitialSubmit = async (data: {
     email: string
@@ -332,7 +340,7 @@ export default function RegisterClient() {
                 )}
               />
               <Label htmlFor="isB2B" className="text-sm font-medium text-gray-700 cursor-pointer">
-                {t("b2bClient") || "B2B Klient"}
+                {t("businessClient") || t("b2bClient") || "Firemní účet / podnikatel"}
               </Label>
             </div>
 
@@ -471,7 +479,7 @@ export default function RegisterClient() {
                 </h3>
                 <p className="mt-2 text-gray-600">
                   {t("registrationPendingDescription") ||
-                    "Vaše registrace B2B účtu byla odeslána. Váš účet bude aktivován po schválení administrátorem. O aktivaci budete informováni e-mailem."}
+                    "Vaše registrace firemního účtu byla odeslána. Váš účet bude aktivován po schválení administrátorem. O aktivaci budete informováni e-mailem."}
                 </p>
               </div>
             </div>
