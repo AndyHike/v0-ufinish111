@@ -7,11 +7,16 @@ export const metadata: Metadata = {
   description: "Manage users in your system",
 }
 
-export default async function UsersPage() {
-  const t = await getTranslations("Admin")
+export default async function UsersPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>
+}) {
+  const { locale } = await params
+  const t = await getTranslations({ locale, namespace: "Admin" })
 
   return (
-    <div className="flex-1 space-y-4 p-8 pt-6">
+    <div className="flex-1 space-y-4 p-4 md:p-8 md:pt-6">
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">{t("users")}</h2>
       </div>

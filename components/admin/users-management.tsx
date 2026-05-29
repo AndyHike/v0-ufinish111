@@ -575,9 +575,9 @@ export function UsersManagement() {
   return (
     <div className="space-y-4">
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 pb-2">
           <CardTitle className="text-xl font-bold">Користувачі</CardTitle>
-          <Button onClick={() => setIsCreateDialogOpen(true)}>
+          <Button className="w-full sm:w-auto" onClick={() => setIsCreateDialogOpen(true)}>
             <UserPlus className="mr-2 h-4 w-4" />
             Додати користувача
           </Button>
@@ -627,8 +627,8 @@ export function UsersManagement() {
             </div>
           ) : (
             <>
-              <div className="rounded-md border">
-                <Table>
+              <div className="rounded-md border overflow-x-auto">
+                <Table className="min-w-[980px]">
                   <TableHeader>
                     <TableRow>
                       <TableHead>Користувач</TableHead>
@@ -638,7 +638,7 @@ export function UsersManagement() {
                       <TableHead className="hidden md:table-cell">Телефон</TableHead>
                       <TableHead className="hidden lg:table-cell">IČO</TableHead>
                       <TableHead className="hidden md:table-cell">Дата реєстрації</TableHead>
-                      <TableHead className="w-[50px]" />
+                      <TableHead className="sticky right-0 z-20 w-[52px] bg-background shadow-[-8px_0_12px_-12px_rgba(15,23,42,0.45)]" />
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -719,7 +719,7 @@ export function UsersManagement() {
                             {user.ico || "—"}
                           </TableCell>
                           <TableCell className="hidden md:table-cell">{formatDate(user.created_at)}</TableCell>
-                          <TableCell>
+                          <TableCell className="sticky right-0 z-10 bg-background shadow-[-8px_0_12px_-12px_rgba(15,23,42,0.45)]">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="icon">

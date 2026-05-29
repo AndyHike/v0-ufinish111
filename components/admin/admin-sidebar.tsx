@@ -103,17 +103,17 @@ export function AdminSidebar() {
   const pathname = usePathname()
 
   return (
-    <div className="pb-12 w-64">
-      <div className="space-y-4 py-4">
+    <div className="w-full shrink-0 border-b bg-background md:h-screen md:w-64 md:border-b-0 md:border-r md:overflow-y-auto">
+      <div className="space-y-3 py-3 md:space-y-4 md:py-4">
         <div className="px-3 py-2">
           <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">Адміністрування</h2>
-          <div className="space-y-1">
+          <div className="flex gap-1 overflow-x-auto pb-1 md:block md:space-y-1 md:overflow-x-visible md:pb-0">
             {sidebarItems.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex items-center rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
+                  "flex shrink-0 items-center rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
                   pathname === item.href ? "bg-accent text-accent-foreground" : "transparent",
                 )}
               >
