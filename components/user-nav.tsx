@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { User, LogOut, Settings } from "lucide-react"
+import { Building2, User, LogOut, Settings } from "lucide-react"
 import { useEffect, useState } from "react"
 
 interface UserNavProps {
@@ -21,14 +21,23 @@ interface UserNavProps {
     email: string
     role?: string
   } | null
+  variant?: "default" | "b2b"
+  businessRegisterHref?: string
+  businessRegisterLabel?: string
 }
 
-export function UserNav({ user }: UserNavProps) {
+export function UserNav({
+  user,
+  variant = "default",
+  businessRegisterHref,
+  businessRegisterLabel,
+}: UserNavProps) {
   const t = useTranslations("UserNav")
   const params = useParams()
   const locale = params.locale as string
   const router = useRouter()
   const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const isB2BVariant = variant === "b2b"
 
   useEffect(() => {
     const channel = new BroadcastChannel("auth_channel")
@@ -67,13 +76,17 @@ export function UserNav({ user }: UserNavProps) {
   }
 
   if (!user || isLoggingOut) {
+    const guestHref = isB2BVariant ? businessRegisterHref ?? `/${locale}/auth/register?b2b=1` : `/${locale}/auth/login`
+    const guestLabel = isB2BVariant ? businessRegisterLabel ?? t("login") : t("login")
+    const GuestIcon = isB2BVariant ? Building2 : User
+
     return (
-      <Link href={`/${locale}/auth/login`} suppressHydrationWarning>
-        <Button variant="outline" size="sm">
-          <User className="mr-2 h-4 w-4" />
-          {t("login")}
-        </Button>
-      </Link>
+      <Button asChild variant={isB2BVariant ? "default" : "outline"} size="sm" className="whitespace-nowrap">
+        <Link href={guestHref} suppressHydrationWarning>
+          <GuestIcon className="mr-2 h-4 w-4" />
+          {guestLabel}
+        </Link>
+      </Button>
     )
   }
 

@@ -171,6 +171,38 @@ test("B2B header preserves the host-derived variant during hydration", async () 
   assert.doesNotMatch(headerSource, /const isB2BVariant = variant === "b2b" \|\| \(typeof window/)
 })
 
+test("B2B header uses one account CTA instead of a duplicated register button", async () => {
+  const headerSource = await readFile(new URL("../components/header.tsx", import.meta.url), "utf8")
+  const userNavSource = await readFile(new URL("../components/user-nav.tsx", import.meta.url), "utf8")
+
+  assert.doesNotMatch(
+    headerSource,
+    /isB2BVariant\s*&&\s*\(\s*<Button asChild size="sm"[\s\S]*?registerBusinessAccount[\s\S]*?<\/Button>\s*\)/,
+    "standalone B2B register button is removed from Header",
+  )
+  assert.match(headerSource, /<UserNav[\s\S]*variant=\{isB2BVariant \? "b2b" : "default"\}/)
+  assert.match(headerSource, /businessRegisterHref=\{`\$\{mainDomain\}\/\$\{locale\}\/auth\/register\?b2b=1`\}/)
+  assert.match(headerSource, /businessRegisterLabel=\{t\("registerBusinessAccount"\)\}/)
+
+  assert.match(userNavSource, /variant\?: "default" \| "b2b"/)
+  assert.match(userNavSource, /businessRegisterHref\?: string/)
+  assert.match(userNavSource, /businessRegisterLabel\?: string/)
+  assert.match(userNavSource, /variant === "b2b"/)
+  assert.match(userNavSource, /businessRegisterHref \?\? `\/\$\{locale\}\/auth\/register\?b2b=1`/)
+  assert.match(userNavSource, /<Button asChild variant=\{isB2BVariant \? "default" : "outline"\}/)
+  assert.match(userNavSource, /variant=\{isB2BVariant \? "default" : "outline"\}/)
+})
+
+test("B2B header delays dense desktop controls until wider breakpoints", async () => {
+  const headerSource = await readFile(new URL("../components/header.tsx", import.meta.url), "utf8")
+
+  assert.match(headerSource, /desktopMenuTriggerClassName = isB2BVariant \? "xl:hidden" : "md:hidden"/)
+  assert.match(headerSource, /desktopSearchClassName = isB2BVariant/)
+  assert.match(headerSource, /"hidden 2xl:flex flex-1 min-w-\[14rem\] max-w-sm mx-4"/)
+  assert.match(headerSource, /desktopNavClassName = isB2BVariant/)
+  assert.match(headerSource, /"hidden min-w-0 items-center gap-3 xl:flex xl:gap-4"/)
+})
+
 test("mobile B2B navigation keeps the approved four-item scope", async () => {
   const mobileSource = await readFile(new URL("../components/mobile-nav.tsx", import.meta.url), "utf8")
   const b2bNavigation = extractB2BNavigationSource(mobileSource, "mobile")

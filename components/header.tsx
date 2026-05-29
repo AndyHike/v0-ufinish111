@@ -107,6 +107,15 @@ export function Header({ variant = "default", mainDomainBaseUrl = mainSiteUrl }:
   ]
 
   const navigation = isB2BVariant ? b2bNavigation : defaultNavigation
+  const desktopMenuTriggerClassName = isB2BVariant ? "xl:hidden" : "md:hidden"
+  const desktopSearchClassName = isB2BVariant
+    ? "hidden 2xl:flex flex-1 min-w-[14rem] max-w-sm mx-4"
+    : "hidden md:flex flex-1 max-w-md mx-6"
+  const desktopNavClassName = isB2BVariant
+    ? "hidden min-w-0 items-center gap-3 xl:flex xl:gap-4"
+    : "hidden md:flex md:gap-6"
+  const mobileAccountHref = isB2BVariant ? `${mainDomain}/${locale}/auth/register?b2b=1` : `/${locale}/auth/signin`
+  const mobileAccountLabel = isB2BVariant ? t("registerBusinessAccount") : t("login")
 
   // Helper function to check if a path is active
   const isActive = (path: string) => {
@@ -274,12 +283,12 @@ export function Header({ variant = "default", mainDomainBaseUrl = mainSiteUrl }:
   return (
     <>
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 items-center justify-between px-2 md:px-4">
+        <div className="container flex h-16 items-center justify-between gap-2 px-2 md:px-4">
           {/* Логотип */}
-          <div className="flex items-center gap-2 md:gap-4">
+          <div className="flex min-w-0 items-center gap-2 md:gap-4">
             <Sheet>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="md:hidden">
+                <Button variant="ghost" size="icon" className={desktopMenuTriggerClassName}>
                   <Menu className="h-5 w-5" />
                   <span className="sr-only">{t("openMenu")}</span>
                 </Button>
@@ -331,9 +340,9 @@ export function Header({ variant = "default", mainDomainBaseUrl = mainSiteUrl }:
                           </SheetClose>
                         ) : (
                           <SheetClose asChild>
-                            <Link href={`/${locale}/auth/signin`} className="flex items-center w-full rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
-                              <LogIn className="mr-2 h-4 w-4" />
-                              {t("login") || "Увійти"}
+                            <Link href={mobileAccountHref} className="flex items-center w-full rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+                              {isB2BVariant ? <Building2 className="mr-2 h-4 w-4" /> : <LogIn className="mr-2 h-4 w-4" />}
+                              {mobileAccountLabel}
                             </Link>
                           </SheetClose>
                         )
@@ -393,7 +402,7 @@ export function Header({ variant = "default", mainDomainBaseUrl = mainSiteUrl }:
           </div>
 
           {/* Пошук між логотипом та навігацією */}
-          <div className="hidden md:flex flex-1 max-w-md mx-6" ref={searchInputRef}>
+          <div className={desktopSearchClassName} ref={searchInputRef}>
             <div className="relative w-full">
               <form onSubmit={handleSearchSubmit} className="flex items-center">
                 <div className="relative w-full">
@@ -464,7 +473,7 @@ export function Header({ variant = "default", mainDomainBaseUrl = mainSiteUrl }:
           </div>
 
           {/* Навігація */}
-          <nav className="hidden md:flex md:gap-6">
+          <nav className={desktopNavClassName}>
             {navigation.map((item) => (
               <Link
                 key={item.href}
@@ -479,13 +488,6 @@ export function Header({ variant = "default", mainDomainBaseUrl = mainSiteUrl }:
 
           {/* Мова та кор�����стувач */}
           <div className="flex items-center gap-2 flex-shrink-0">
-            {isB2BVariant && (
-              <Button asChild size="sm" className="hidden lg:inline-flex">
-                <Link href={`${mainDomain}/${locale}/auth/register?b2b=1`}>
-                  {t("registerBusinessAccount")}
-                </Link>
-              </Button>
-            )}
             <Suspense
               fallback={
                 <Button variant="ghost" size="icon" className="flex">
@@ -496,7 +498,16 @@ export function Header({ variant = "default", mainDomainBaseUrl = mainSiteUrl }:
               <LanguageSwitcher className="flex" />
             </Suspense>
             <div className="hidden md:block">
-              {userLoaded ? <UserNav user={user} /> : <div className="h-8 w-8 rounded-full bg-muted animate-pulse" />}
+              {userLoaded ? (
+                <UserNav
+                  user={user}
+                  variant={isB2BVariant ? "b2b" : "default"}
+                  businessRegisterHref={`${mainDomain}/${locale}/auth/register?b2b=1`}
+                  businessRegisterLabel={t("registerBusinessAccount")}
+                />
+              ) : (
+                <div className="h-8 w-8 rounded-full bg-muted animate-pulse" />
+              )}
             </div>
           </div>
         </div>
