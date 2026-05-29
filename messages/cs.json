@@ -850,38 +850,92 @@
     "home": {
       "eyebrow": "Firemní servis mobilních telefonů",
       "title": "Servis mobilních telefonů pro firmy a podnikatele",
-      "subtitle": "Opravujeme firemní telefony pro firmy, OSVČ, kanceláře a organizace v Praze. Jasná komunikace, záruka a registrace firemního účtu.",
+      "subtitle": "Firemní účet pro rychlé zadání oprav, přehled stavu, fakturaci a výhodnější podmínky pro opakovaný servis.",
       "primaryCta": "Registrovat firemní účet",
       "secondaryCta": "Kontaktovat servis",
-      "trust1": "Pro firmy a OSVČ",
-      "trust2": "IČO / DIČ v registraci",
-      "trust3": "Záruka na opravy",
-      "audienceTitle": "Pro koho je firemní spolupráce",
-      "audienceSubtitle": "Praktické řešení pro týmy, které potřebují mít pracovní telefony rychle zpět v provozu.",
-      "audiences": [
-        "Firmy se služebními telefony",
-        "OSVČ a menší podnikatelé",
-        "Kanceláře a malé týmy",
-        "Organizace s opakovanými opravami"
+      "proofRows": [
+        "Svoz po Praze",
+        "Zaslání po celé ČR",
+        "Online přehled oprav"
       ],
-      "benefitsTitle": "Výhody firemního servisu",
-      "benefits": [
-        "Firemní účet s údaji společnosti",
-        "Registrace přes IČO a DIČ",
-        "Schválení účtu administrátorem",
-        "Jasná komunikace o opravách",
-        "Záruka na provedený servis",
-        "Možnost rychle vyhledat model a službu"
+      "cooperationTitle": "Výhody spolupráce",
+      "cooperationText": "Navrhli jsme firemní servis tak, aby šetřil čas, zjednodušil celý proces a přinesl lepší podmínky pro pracovní zařízení.",
+      "cooperationBenefits": [
+        {
+          "title": "Svoz a předání v Praze",
+          "text": "Vyzvedneme zařízení přímo u vás a po opravě je bezpečně vrátíme zpět."
+        },
+        {
+          "title": "Zaslání po celé České republice",
+          "text": "Zařízení nám jednoduše pošlete. O průběh opravy a dokončení se postaráme."
+        },
+        {
+          "title": "Výhodnější ceny pro firemní účet",
+          "text": "Registrované firmy a podnikatelé mohou využít lepší ceny a podmínky pro opakovaný servis."
+        },
+        {
+          "title": "Priorita při zpracování",
+          "text": "Firemní zakázky mají jasný postup, rychlou komunikaci a kratší čekací dobu."
+        },
+        {
+          "title": "Záruka na provedený servis",
+          "text": "Na provedené opravy poskytujeme záruku podle typu služby a použitých dílů."
+        },
+        {
+          "title": "Průběžný přehled stavu opravy",
+          "text": "Stav zakázky můžete sledovat online, takže vždy víte, co se právě děje."
+        }
+      ],
+      "accountTitle": "Firemní účet",
+      "accountText": "Přehledné místo pro správu oprav, dokumentů, fakturace a firemních údajů.",
+      "accountFeatures": [
+        {
+          "title": "Stav oprav v reálném čase",
+          "text": "Okamžitý přehled o každé zakázce od převzetí po dokončení."
+        },
+        {
+          "title": "Historie zakázek",
+          "text": "Všechny opravy firemních zařízení na jednom místě."
+        },
+        {
+          "title": "Faktury a dokumenty online",
+          "text": "Faktury, daňové doklady a servisní dokumenty dostupné v účtu."
+        },
+        {
+          "title": "Firemní údaje na jednom místě",
+          "text": "Správa adres, kontaktů a fakturačních údajů bez opakovaného vyplňování."
+        },
+        {
+          "title": "Slevy a podmínky pro opakovaný servis",
+          "text": "Individuální ceny a zvýhodnění pro pravidelnou spolupráci."
+        }
       ],
       "processTitle": "Jak spolupráce funguje",
-      "process": [
-        "Zaregistrujete firemní účet",
-        "Vyplníte kontaktní a firemní údaje",
-        "Potvrdíte e-mail",
-        "Po schválení účtu můžeme řešit opravy firemních zařízení"
+      "processText": "Čtyři jednoduché kroky k rychlé a spolehlivé opravě vašich zařízení.",
+      "processSteps": [
+        {
+          "title": "Registrace účtu",
+          "text": "Vytvoříte firemní účet během pár minut online."
+        },
+        {
+          "title": "Schválení firemních údajů",
+          "text": "Ověříme údaje a aktivujeme účet pro firemní spolupráci."
+        },
+        {
+          "title": "Předání zařízení nebo zaslání poštou",
+          "text": "Zařízení předáte v Praze, nebo ho pošlete odkudkoli po ČR."
+        },
+        {
+          "title": "Oprava, stav online a dokončení",
+          "text": "Opravu sledujete online a po dokončení zařízení převezmete nebo vám ho vrátíme."
+        }
       ],
-      "contactTitle": "Chcete se nejdřív domluvit?",
-      "contactText": "Napište nám nebo zavolejte. Pomůžeme vybrat nejvhodnější postup pro vaši firmu.",
+      "contactTitle": "Připraveni spolupracovat?",
+      "contactText": "Zaregistrujte si firemní účet a získejte výhodnější servis pro pracovní zařízení.",
+      "contactHelpTitle": "Potřebujete poradit?",
+      "contactHelpText": "Jsme tu pro vás v pracovní dny 9:00–18:00.",
+      "emailLabel": "Odpovíme obvykle do 1 hodiny.",
+      "phoneLabel": "Zavolejte nám nebo napište.",
       "finalTitle": "Začněte firemní spolupráci s DeviceHelp",
       "finalText": "Registrace firemního účtu zabere jen chvíli. Po kontrole údajů vás budeme informovat o aktivaci."
     },

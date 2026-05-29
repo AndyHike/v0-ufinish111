@@ -731,38 +731,92 @@
     "home": {
       "eyebrow": "Company mobile phone service",
       "title": "Mobile phone repair for companies and entrepreneurs",
-      "subtitle": "We repair company phones for businesses, entrepreneurs, offices, and organizations in Prague. Clear communication, warranty, and business account registration.",
+      "subtitle": "A business account for fast repair requests, repair status overview, invoicing, and better conditions for repeated service.",
       "primaryCta": "Register a business account",
       "secondaryCta": "Contact service",
-      "trust1": "For companies and entrepreneurs",
-      "trust2": "Company details in registration",
-      "trust3": "Warranty on repairs",
-      "audienceTitle": "Who the company service is for",
-      "audienceSubtitle": "A practical option for teams that need work phones back in use quickly.",
-      "audiences": [
-        "Companies with employee phones",
-        "Entrepreneurs and small businesses",
-        "Offices and small teams",
-        "Organizations with recurring repairs"
+      "proofRows": [
+        "Pickup in Prague",
+        "Shipping across Czechia",
+        "Online repair overview"
       ],
-      "benefitsTitle": "Benefits of company service",
-      "benefits": [
-        "Business account with company details",
-        "Registration with company identifiers",
-        "Account approval by an administrator",
-        "Clear repair communication",
-        "Warranty on completed service",
-        "Fast model and service lookup"
+      "cooperationTitle": "Cooperation benefits",
+      "cooperationText": "We designed the company service to save time, simplify the process, and offer better conditions for work devices.",
+      "cooperationBenefits": [
+        {
+          "title": "Pickup and return in Prague",
+          "text": "We pick up devices directly from you and safely return them after repair."
+        },
+        {
+          "title": "Shipping across the Czech Republic",
+          "text": "Send us the device from anywhere. We handle the repair flow and completion."
+        },
+        {
+          "title": "Better prices for a business account",
+          "text": "Registered companies and entrepreneurs can use better prices and conditions for repeated service."
+        },
+        {
+          "title": "Priority processing",
+          "text": "Company repairs get a clear process, fast communication, and shorter waiting time."
+        },
+        {
+          "title": "Warranty on completed service",
+          "text": "Completed repairs include warranty depending on the service type and parts used."
+        },
+        {
+          "title": "Ongoing repair status overview",
+          "text": "Track repair progress online so you always know what is happening."
+        }
+      ],
+      "accountTitle": "Business account",
+      "accountText": "A clear place to manage repairs, documents, invoices, and company details.",
+      "accountFeatures": [
+        {
+          "title": "Real-time repair status",
+          "text": "Immediate overview of every repair from intake to completion."
+        },
+        {
+          "title": "Order history",
+          "text": "All repairs of company devices in one place."
+        },
+        {
+          "title": "Invoices and documents online",
+          "text": "Invoices, tax documents, and service documents available in the account."
+        },
+        {
+          "title": "Company details in one place",
+          "text": "Manage addresses, contacts, and billing details without entering them repeatedly."
+        },
+        {
+          "title": "Discounts and conditions for repeated service",
+          "text": "Individual prices and benefits for regular cooperation."
+        }
       ],
       "processTitle": "How cooperation works",
-      "process": [
-        "Register a business account",
-        "Fill in contact and company details",
-        "Confirm your email",
-        "After account approval, we can handle repairs for company devices"
+      "processText": "Four simple steps to fast and reliable repair of your devices.",
+      "processSteps": [
+        {
+          "title": "Account registration",
+          "text": "Create a business account online in a few minutes."
+        },
+        {
+          "title": "Company details approval",
+          "text": "We verify the details and activate the account for company cooperation."
+        },
+        {
+          "title": "Device handoff or postal shipping",
+          "text": "Hand off the device in Prague or send it from anywhere in the Czech Republic."
+        },
+        {
+          "title": "Repair, online status, and completion",
+          "text": "Track the repair online and receive the device back after completion."
+        }
       ],
-      "contactTitle": "Want to talk first?",
-      "contactText": "Write to us or call us. We will help choose the best process for your company.",
+      "contactTitle": "Ready to cooperate?",
+      "contactText": "Register a business account and get better service for work devices.",
+      "contactHelpTitle": "Need advice?",
+      "contactHelpText": "We are available on business days from 9:00 to 18:00.",
+      "emailLabel": "We usually reply within 1 hour.",
+      "phoneLabel": "Call us or write to us.",
       "finalTitle": "Start company cooperation with DeviceHelp",
       "finalText": "Business account registration takes only a few minutes. After checking your details, we will inform you about activation."
     },
