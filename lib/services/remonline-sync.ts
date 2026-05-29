@@ -53,7 +53,11 @@ function getAttemptCount(user: any) {
   return Number.isFinite(attempts) && attempts >= 0 ? attempts : 0
 }
 
-function getExistingRemonlineId(user: any) {
+function getExistingRemonlineId(user: any, contactType: "person" | "organization") {
+  const storedType = user?.remonline_contact_type
+  if (storedType && storedType !== contactType) return null
+  if (!storedType && contactType === "organization") return null
+
   const id = Number(user?.remonline_id)
   return Number.isFinite(id) && id > 0 ? id : null
 }
@@ -146,7 +150,7 @@ export async function syncUserToRemonline(userId: string, options: SyncOptions =
     const nextAttempts = getAttemptCount(user) + 1
     attemptedContactType = payload.contactType
     attemptedCount = nextAttempts
-    const result = await sendContactPayload(payload, getExistingRemonlineId(user))
+    const result = await sendContactPayload(payload, getExistingRemonlineId(user, payload.contactType))
 
     if (!result.success || !result.id) {
       const message = result.message || "RO App did not return a contact id"

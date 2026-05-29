@@ -21,6 +21,8 @@ test("RemOnline sync service syncs one local user and writes sync state", async 
   assert.match(source, /profiles!left\(phone, address, billing_street, billing_city, billing_postal_code, billing_country\)/)
   assert.match(source, /createOrganization|updateOrganization/)
   assert.match(source, /createPerson|updatePerson/)
+  assert.match(source, /getExistingRemonlineId\(user, payload\.contactType\)/)
+  assert.match(source, /if \(!storedType && contactType === "organization"\) return null/)
 })
 
 test("admin manual RemOnline sync endpoint checks admin session and syncs requested user", async () => {

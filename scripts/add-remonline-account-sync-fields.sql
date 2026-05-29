@@ -56,3 +56,15 @@ END $$;
 
 CREATE INDEX IF NOT EXISTS idx_users_remonline_sync_status ON public.users(remonline_sync_status);
 CREATE INDEX IF NOT EXISTS idx_users_remonline_contact_type ON public.users(remonline_contact_type);
+
+-- Existing non-B2B RemOnline IDs were created by the previous client sync flow.
+-- Treat them as synced people so they do not appear broken after adding sync state.
+UPDATE public.users
+SET
+  remonline_contact_type = 'person',
+  remonline_sync_status = 'synced',
+  remonline_sync_error = NULL
+WHERE remonline_id IS NOT NULL
+  AND COALESCE(is_b2b, false) = false
+  AND remonline_contact_type IS NULL
+  AND remonline_sync_status IS NULL;

@@ -28,4 +28,6 @@ test("RemOnline account sync migration adds contact type and sync tracking field
   assert.match(sql, guardedColumn("remonline_sync_error"))
   assert.match(sql, guardedColumn("remonline_synced_at"))
   assert.match(sql, guardedColumn("remonline_sync_attempts"))
+  assert.match(sql, /UPDATE public\.users[\s\S]*remonline_contact_type = 'person'[\s\S]*remonline_sync_status = 'synced'/i)
+  assert.match(sql, /WHERE remonline_id IS NOT NULL[\s\S]*COALESCE\(is_b2b, false\) = false/i)
 })
