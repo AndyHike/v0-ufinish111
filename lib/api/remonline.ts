@@ -1,13 +1,17 @@
+import rateLimitModule from "@/lib/api/remonline-rate-limit"
+
+const { createRemonlineRateLimiter } = rateLimitModule
+
+const LEGACY_BASE_URL = "https://api.remonline.app"
+const RO_APP_BASE_URL = "https://api.roapp.io/v2"
+
 // Environment variables
-const REMONLINE_API_KEY = process.env.REMONLINE_API_KEY
+const REMONLINE_API_KEY = process.env.REMONLINE_API_KEY || process.env.REMONLINE_API_TOKEN
 
 if (!REMONLINE_API_KEY) {
   console.error("❌ RemOnline API key not found in environment variables")
-  console.error("Expected: REMONLINE_API_KEY")
+  console.error("Expected: REMONLINE_API_KEY or REMONLINE_API_TOKEN")
 }
-
-// Base URL for RemOnline API
-const BASE_URL = "https://api.remonline.app"
 
 // Types
 interface RemOnlineResponse<T = any> {
@@ -82,27 +86,42 @@ interface RemOnlineService {
   prices: Record<string, number>
 }
 
+interface RemonlineRateLimiter {
+  waitForSlot(): Promise<void>
+}
+
+type RemonlineContactType = "person" | "organization"
+
+type RemonlineContactResult = {
+  success: boolean
+  contactType?: RemonlineContactType
+  id?: number
+  data?: any
+  message?: string
+  details?: any
+}
+
 class RemonlineClient {
   private apiKey: string
   private baseUrl: string
+  private roAppBaseUrl: string
+  private limiter: RemonlineRateLimiter
   private requestCount = 0
   private lastRequestTime = 0
   private readonly RATE_LIMIT = 3 // 3 requests per second
   private readonly RATE_LIMIT_WINDOW = 1000 // 1 second in milliseconds
 
   constructor() {
-    this.apiKey = process.env.REMONLINE_API_KEY || ""
-    this.baseUrl = "https://api.remonline.app"
+    this.apiKey = process.env.REMONLINE_API_KEY || process.env.REMONLINE_API_TOKEN || ""
+    this.baseUrl = LEGACY_BASE_URL
+    this.roAppBaseUrl = RO_APP_BASE_URL
+    this.limiter = createRemonlineRateLimiter()
 
     if (!this.apiKey) {
       console.error("❌ RemOnline API key not found in environment variables")
-      console.error("Expected: REMONLINE_API_KEY")
+      console.error("Expected: REMONLINE_API_KEY or REMONLINE_API_TOKEN")
     } else {
-      console.log("✅ RemOnline API client initialized")
-      console.log(`🔑 API key length: ${this.apiKey.length}`)
-      console.log(
-        `🔑 API key preview: ${this.apiKey.substring(0, 8)}...${this.apiKey.substring(this.apiKey.length - 4)}`,
-      )
+      console.log("RemOnline API client initialized")
     }
   }
 
@@ -179,6 +198,184 @@ class RemonlineClient {
         message: error instanceof Error ? error.message : "Unknown error",
       }
     }
+  }
+
+  private async sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms))
+  }
+
+  private async parseRoAppResponse(response: Response): Promise<any> {
+    const text = await response.text()
+
+    if (!text) {
+      return null
+    }
+
+    try {
+      return JSON.parse(text)
+    } catch {
+      return text
+    }
+  }
+
+  private getRetryDelay(response: Response, retryNumber: number): number {
+    const retryAfter = response.headers.get("retry-after")
+
+    if (retryAfter) {
+      const retryAfterSeconds = Number(retryAfter)
+
+      if (Number.isFinite(retryAfterSeconds) && retryAfterSeconds >= 0) {
+        return retryAfterSeconds * 1000
+      }
+
+      const retryAfterDate = Date.parse(retryAfter)
+
+      if (Number.isFinite(retryAfterDate)) {
+        return Math.max(retryAfterDate - Date.now(), 0)
+      }
+    }
+
+    return 1000 * retryNumber
+  }
+
+  private getRoAppErrorMessage(details: any, fallback: string): string {
+    if (details && typeof details === "object") {
+      if (typeof details.message === "string") return details.message
+      if (typeof details.error === "string") return details.error
+      if (typeof details.detail === "string") return details.detail
+    }
+
+    if (typeof details === "string") {
+      return details
+    }
+
+    return fallback
+  }
+
+  private async makeRoAppRequest(
+    endpoint: string,
+    options: RequestInit = {},
+    retryCount = 0,
+  ): Promise<{ success: boolean; data?: any; message?: string; details?: any }> {
+    await this.limiter.waitForSlot()
+
+    const headers = new Headers({
+      accept: "application/json",
+      authorization: `Bearer ${this.apiKey}`,
+    })
+
+    if (options.headers) {
+      new Headers(options.headers).forEach((value, key) => headers.set(key, value))
+    }
+
+    if (options.body != null && !headers.has("content-type")) {
+      headers.set("content-type", "application/json")
+    }
+
+    const response = await fetch(`${this.roAppBaseUrl}${endpoint}`, {
+      ...options,
+      headers,
+    })
+
+    if (response.status === 429 && retryCount < 2) {
+      const delay = this.getRetryDelay(response, retryCount + 1)
+
+      if (delay > 0) {
+        await this.sleep(delay)
+      }
+
+      return this.makeRoAppRequest(endpoint, options, retryCount + 1)
+    }
+
+    const details = await this.parseRoAppResponse(response)
+
+    if (!response.ok) {
+      const fallbackMessage = `RO App request failed with status ${response.status}`
+
+      return {
+        success: false,
+        message: this.getRoAppErrorMessage(details, fallbackMessage),
+        details,
+      }
+    }
+
+    return {
+      success: true,
+      data: details,
+    }
+  }
+
+  private getContactId(data: any, fallbackId?: number): number | undefined {
+    const rawId = data?.id ?? data?.data?.id ?? fallbackId
+
+    if (typeof rawId === "number") {
+      return rawId
+    }
+
+    if (typeof rawId === "string") {
+      const parsedId = Number(rawId)
+      return Number.isFinite(parsedId) ? parsedId : undefined
+    }
+
+    return undefined
+  }
+
+  private buildContactResult(
+    contactType: RemonlineContactType,
+    result: { success: boolean; data?: any; message?: string; details?: any },
+    fallbackId?: number,
+  ): RemonlineContactResult {
+    if (!result.success) {
+      return {
+        success: false,
+        message: result.message,
+        details: result.details,
+      }
+    }
+
+    return {
+      success: true,
+      contactType,
+      id: this.getContactId(result.data, fallbackId),
+      data: result.data,
+    }
+  }
+
+  private async sendContactRequest(
+    contactType: RemonlineContactType,
+    endpoint: string,
+    method: "POST" | "PATCH",
+    body: any,
+    fallbackId?: number,
+  ): Promise<RemonlineContactResult> {
+    const result = await this.makeRoAppRequest(endpoint, {
+      method,
+      body: JSON.stringify(body ?? {}),
+    })
+
+    return this.buildContactResult(contactType, result, fallbackId)
+  }
+
+  async createPerson(body: any): Promise<RemonlineContactResult> {
+    return this.sendContactRequest("person", "/contacts/people", "POST", body)
+  }
+
+  async createOrganization(body: any): Promise<RemonlineContactResult> {
+    return this.sendContactRequest("organization", "/contacts/organizations", "POST", body)
+  }
+
+  async updatePerson(id: number, body: any): Promise<RemonlineContactResult> {
+    return this.sendContactRequest("person", `/contacts/people/${encodeURIComponent(String(id))}`, "PATCH", body, id)
+  }
+
+  async updateOrganization(id: number, body: any): Promise<RemonlineContactResult> {
+    return this.sendContactRequest(
+      "organization",
+      `/contacts/organizations/${encodeURIComponent(String(id))}`,
+      "PATCH",
+      body,
+      id,
+    )
   }
 
   async auth(): Promise<{ success: boolean; message?: string }> {
