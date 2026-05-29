@@ -22,3 +22,12 @@ test("RemOnline sync service syncs one local user and writes sync state", async 
   assert.match(source, /createOrganization|updateOrganization/)
   assert.match(source, /createPerson|updatePerson/)
 })
+
+test("admin manual RemOnline sync endpoint checks admin session and syncs requested user", async () => {
+  const route = await read("../app/api/admin/users/[id]/remonline-sync/route.ts")
+
+  assert.match(route, /getSession/)
+  assert.match(route, /session\.user\.role !== "admin"/)
+  assert.match(route, /syncUserToRemonline\(id\)/)
+  assert.match(route, /export async function POST/)
+})
