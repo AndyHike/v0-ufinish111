@@ -57,6 +57,9 @@ Local end customer:
 - Create or update one RO App Person.
 - Store the RO App person id in `users.remonline_id`.
 - Store contact type as `person`.
+- Send local email as `email`.
+- Send local billing/profile address as `address`.
+- Send local phone as the primary item in `phones` when present.
 
 Local B2B account:
 - `users.is_b2b = true`
@@ -65,10 +68,13 @@ Local B2B account:
 - Store the RO App organization id in `users.remonline_id`.
 - Store contact type as `organization`.
 - Send `company_name` as `name`.
+- Send local email as `email`.
+- Send local billing/profile address as `address`.
+- Send local phone as the primary item in `phones` when present.
 - Send `ico` as `business_registration_number`.
 - Send `dic` as `tax_identification_number`.
 
-Phone payloads should use RO App's `phones` array with a single primary phone when a local phone exists.
+Phone payloads should use RO App's `phones` array with a single primary phone when a local phone exists. Address should prefer the structured billing/profile address already collected during registration; if only a legacy `profiles.address` value exists, use that.
 
 ## Sync State
 
@@ -130,6 +136,7 @@ If the secret is missing in production, return a server error and do not process
 Tests should cover:
 - Mapping a normal user to a Person payload.
 - Mapping a B2B user to an Organization payload with ICO/DIC.
+- Passing email, phone, and address into both Person and Organization payloads.
 - Marking local sync as `error` when RO App create fails.
 - Marking local sync as `synced` and storing `remonline_id` when RO App create succeeds.
 - Manual retry endpoint requires admin access and syncs only the requested user.
