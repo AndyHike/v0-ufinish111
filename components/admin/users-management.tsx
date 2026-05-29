@@ -28,7 +28,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { Loader2, MoreHorizontal, Search, Trash2, UserPlus, CheckCircle } from "lucide-react"
+import { Loader2, MoreHorizontal, Search, Trash2, UserPlus, CheckCircle, RefreshCw } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
 import { formatPhoneNumber } from "@/utils/format-phone"
 
@@ -58,6 +58,12 @@ interface User {
   billing_city: string | null
   billing_postal_code: string | null
   billing_country: string | null
+  remonline_id: number | null
+  remonline_contact_type: "person" | "organization" | null
+  remonline_sync_status: "pending" | "synced" | "error" | null
+  remonline_sync_error: string | null
+  remonline_synced_at: string | null
+  remonline_sync_attempts: number | null
   created_at: string
 }
 
@@ -168,6 +174,33 @@ export function UsersManagement() {
       toast({
         title: "Помилка",
         description: error instanceof Error ? error.message : "Не вдалося підтвердити користувача",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleSyncRemonline = async (userId: string) => {
+    setIsSubmitting(true)
+    try {
+      const response = await fetch(`/api/admin/users/${userId}/remonline-sync`, { method: "POST" })
+      const data = await response.json()
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || data.error || "RemOnline sync failed")
+      }
+
+      toast({
+        title: "Success",
+        description: "RemOnline sync completed",
+      })
+      fetchUsers()
+    } catch (error) {
+      console.error("Error syncing user with RemOnline:", error)
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "RemOnline sync failed",
         variant: "destructive",
       })
     } finally {
@@ -360,6 +393,35 @@ export function UsersManagement() {
     return "Користувач"
   }
 
+  const getRemonlineBadge = (user: User) => {
+    if (user.remonline_sync_status === "synced") {
+      return (
+        <Badge variant="outline" className="border-green-300 bg-green-50 text-green-700">
+          RO {user.remonline_contact_type || "contact"}
+          {user.remonline_id ? ` #${user.remonline_id}` : ""}
+        </Badge>
+      )
+    }
+
+    if (user.remonline_sync_status === "error") {
+      return (
+        <Badge variant="destructive" title={user.remonline_sync_error || "RemOnline sync failed"}>
+          RO error
+        </Badge>
+      )
+    }
+
+    if (user.remonline_sync_status === "pending") {
+      return (
+        <Badge variant="secondary" className="bg-amber-100 text-amber-800">
+          RO pending
+        </Badge>
+      )
+    }
+
+    return <Badge variant="outline">RO not synced</Badge>
+  }
+
   return (
     <div className="space-y-4">
       <Card>
@@ -468,6 +530,7 @@ export function UsersManagement() {
                                 </div>
                                 <p className="text-xs text-muted-foreground">{user.email}</p>
                                 {user.company_name && <p className="text-xs text-muted-foreground">{user.company_name}</p>}
+                                <div className="mt-1">{getRemonlineBadge(user)}</div>
                               </div>
                             </div>
                           </TableCell>
@@ -524,6 +587,15 @@ export function UsersManagement() {
                                   >
                                     <CheckCircle className="mr-2 h-4 w-4 text-green-600" />
                                     Підтвердити
+                                  </DropdownMenuItem>
+                                )}
+                                {(user.remonline_sync_status === "error" || !user.remonline_id) && (
+                                  <DropdownMenuItem
+                                    onClick={() => handleSyncRemonline(user.id)}
+                                    disabled={isSubmitting}
+                                  >
+                                    <RefreshCw className="mr-2 h-4 w-4" />
+                                    Sync RemOnline
                                   </DropdownMenuItem>
                                 )}
                                 <DropdownMenuItem onClick={() => openEditDialog(user)}>Редагувати</DropdownMenuItem>
