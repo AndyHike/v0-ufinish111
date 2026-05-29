@@ -108,9 +108,7 @@ export function Header({ variant = "default", mainDomainBaseUrl = mainSiteUrl }:
 
   const navigation = isB2BVariant ? b2bNavigation : defaultNavigation
   const desktopMenuTriggerClassName = isB2BVariant ? "xl:hidden" : "md:hidden"
-  const desktopSearchClassName = isB2BVariant
-    ? "hidden 2xl:flex flex-1 min-w-[14rem] max-w-sm mx-4"
-    : "hidden md:flex flex-1 max-w-md mx-6"
+  const desktopSearchClassName = isB2BVariant ? "hidden" : "hidden md:flex flex-1 max-w-md mx-6"
   const desktopNavClassName = isB2BVariant
     ? "hidden min-w-0 items-center gap-3 xl:flex xl:gap-4"
     : "hidden md:flex md:gap-6"

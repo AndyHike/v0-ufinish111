@@ -198,7 +198,7 @@ test("B2B header delays dense desktop controls until wider breakpoints", async (
 
   assert.match(headerSource, /desktopMenuTriggerClassName = isB2BVariant \? "xl:hidden" : "md:hidden"/)
   assert.match(headerSource, /desktopSearchClassName = isB2BVariant/)
-  assert.match(headerSource, /"hidden 2xl:flex flex-1 min-w-\[14rem\] max-w-sm mx-4"/)
+  assert.match(headerSource, /desktopSearchClassName = isB2BVariant \? "hidden" : "hidden md:flex flex-1 max-w-md mx-6"/)
   assert.match(headerSource, /desktopNavClassName = isB2BVariant/)
   assert.match(headerSource, /"hidden min-w-0 items-center gap-3 xl:flex xl:gap-4"/)
 })
