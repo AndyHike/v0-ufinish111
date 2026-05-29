@@ -29,6 +29,7 @@ import { LanguageSwitcher } from "@/components/language-switcher"
 import { UserNav } from "@/components/user-nav"
 import { MobileNav } from "@/components/mobile-nav"
 import { useSiteSettings } from "@/hooks/use-site-settings"
+import { isB2BHost } from "@/lib/b2b-routing"
 import { mainSiteUrl } from "@/lib/site-config"
 
 interface SearchResult {
@@ -90,6 +91,7 @@ export function Header({ variant = "default", mainDomainBaseUrl = mainSiteUrl }:
   ]
 
   const mainDomain = mainDomainBaseUrl.replace(/\/$/, "")
+  const isB2BVariant = variant === "b2b" || (typeof window !== "undefined" && isB2BHost(window.location.host))
   const b2bNavigation = [
     { name: t("b2bHome"), href: `/${locale}`, icon: <Building2 className="h-5 w-5" /> },
     { name: t("b2bBenefits"), href: `/${locale}#benefits`, icon: <Wrench className="h-5 w-5" /> },
@@ -99,7 +101,7 @@ export function Header({ variant = "default", mainDomainBaseUrl = mainSiteUrl }:
     { name: t("chooseModel"), href: `${mainDomain}/${locale}/brands`, icon: <Smartphone className="h-5 w-5" /> },
   ]
 
-  const navigation = variant === "b2b" ? b2bNavigation : defaultNavigation
+  const navigation = isB2BVariant ? b2bNavigation : defaultNavigation
 
   // Helper function to check if a path is active
   const isActive = (path: string) => {
@@ -377,7 +379,7 @@ export function Header({ variant = "default", mainDomainBaseUrl = mainSiteUrl }:
                 />
               )}
               <span className="font-semibold md:truncate-none truncate">DeviceHelp</span>
-              {variant === "b2b" && (
+              {isB2BVariant && (
                 <span className="rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
                   {t("businessAccount")}
                 </span>
@@ -472,7 +474,7 @@ export function Header({ variant = "default", mainDomainBaseUrl = mainSiteUrl }:
 
           {/* Мова та кор�����стувач */}
           <div className="flex items-center gap-2 flex-shrink-0">
-            {variant === "b2b" && (
+            {isB2BVariant && (
               <Button asChild size="sm" className="hidden lg:inline-flex">
                 <Link href={`${mainDomain}/${locale}/auth/register?b2b=1`}>
                   {t("registerBusinessAccount")}
@@ -495,7 +497,7 @@ export function Header({ variant = "default", mainDomainBaseUrl = mainSiteUrl }:
         </div>
       </header>
 
-      <MobileNav variant={variant} mainDomainBaseUrl={mainDomainBaseUrl} />
+      <MobileNav variant={isB2BVariant ? "b2b" : "default"} mainDomainBaseUrl={mainDomainBaseUrl} />
     </>
   )
 }

@@ -67,6 +67,12 @@ test("B2B FAQ component links registration to the main-domain business account f
   assert.match(source, /auth\/register\?b2b=1/)
 })
 
+test("B2B layout does not render the main-site promotional banner", async () => {
+  const source = await readFile(new URL("../app/[locale]/layout.tsx", import.meta.url), "utf8")
+
+  assert.match(source, /!\s*isB2B\s*&&\s*\(\s*<Suspense[\s\S]*?<PromotionalBanner/)
+})
+
 test("B2B FAQ messages exist for every supported locale", async () => {
   for (const locale of ["cs", "uk", "en"]) {
     const raw = await readFile(new URL(`../messages/${locale}.json`, import.meta.url), "utf8")
@@ -153,6 +159,15 @@ test("desktop B2B navigation exposes redesigned href order", async () => {
   )
 })
 
+test("B2B header preserves the host-derived variant during hydration", async () => {
+  const headerSource = await readFile(new URL("../components/header.tsx", import.meta.url), "utf8")
+
+  assert.match(headerSource, /isB2BHost/)
+  assert.match(headerSource, /window\.location\.host/)
+  assert.match(headerSource, /const isB2BVariant =/)
+  assert.match(headerSource, /variant=\{isB2BVariant \? "b2b" : "default"\}/)
+})
+
 test("mobile B2B navigation keeps the approved four-item scope", async () => {
   const mobileSource = await readFile(new URL("../components/mobile-nav.tsx", import.meta.url), "utf8")
   const b2bNavigation = extractB2BNavigationSource(mobileSource, "mobile")
@@ -170,6 +185,8 @@ test("mobile B2B navigation keeps the approved four-item scope", async () => {
     ],
     "mobile B2B nav",
   )
+  assert.match(mobileSource, /flex-1/)
+  assert.doesNotMatch(mobileSource, /w-1\/4/)
 })
 
 test("B2B home page exposes redesigned section target IDs", async () => {

@@ -105,7 +105,7 @@ export function MobileNav({ variant = "default", mainDomainBaseUrl = mainSiteUrl
       animate={{ translateY: isVisible ? 0 : 100 }}
       transition={{ duration: 0.3 }}
     >
-      <div className="flex justify-around items-center">
+      <div className="flex items-center">
         {navigation.map((item) => {
           const active = isActive(item.href)
           return (
@@ -113,7 +113,7 @@ export function MobileNav({ variant = "default", mainDomainBaseUrl = mainSiteUrl
               key={item.href}
               href={item.href}
               className={cn(
-                "flex flex-col items-center justify-center w-1/4 p-1 relative",
+                "relative flex min-w-0 flex-1 flex-col items-center justify-center p-1",
                 active ? "text-primary" : "text-muted-foreground",
               )}
             >

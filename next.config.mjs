@@ -1,8 +1,11 @@
 // 👇 1. Імпортуємо плагін перекладів (Це те, чого не вистачало!)
 import createNextIntlPlugin from 'next-intl/plugin';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 // Створюємо обгортку (вона сама знайде файл i18n.ts у папці src)
 const withNextIntl = createNextIntlPlugin();
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -40,6 +43,7 @@ const nextConfig = {
   },
 
   output: 'standalone',
+  outputFileTracingRoot: __dirname,
   compress: true,
   poweredByHeader: false,
 
