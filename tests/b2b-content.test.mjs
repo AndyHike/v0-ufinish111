@@ -4,6 +4,36 @@ import { readFile } from "node:fs/promises"
 
 const rawB2BAccountWording = /B2B\s+(?:account|účet|účtu|акаунт)/i
 
+function assertNonEmptyString(value, label) {
+  assert.equal(typeof value, "string", label)
+  assert.notEqual(value.trim(), "", `${label} is not empty`)
+}
+
+function countMatches(source, pattern) {
+  return source.match(pattern)?.length ?? 0
+}
+
+function extractB2BNavigationSource(source, label) {
+  const startMarker = "const b2bNavigation = ["
+  const start = source.indexOf(startMarker)
+  assert.notEqual(start, -1, `${label} b2bNavigation declaration`)
+
+  const end = source.indexOf("const navigation", start)
+  assert.notEqual(end, -1, `${label} navigation marker`)
+
+  return source.slice(start, end)
+}
+
+function assertOrderedSourceMatches(source, checks, label) {
+  let searchStart = 0
+
+  for (const { description, pattern } of checks) {
+    const match = pattern.exec(source.slice(searchStart))
+    assert.ok(match, `${label} ${description}`)
+    searchStart += match.index + match[0].length
+  }
+}
+
 async function pathExists(path) {
   try {
     await readFile(new URL(path, import.meta.url), "utf8")
@@ -63,28 +93,28 @@ test("B2B home messages expose redesigned sections for every supported locale", 
     const messages = JSON.parse(raw)
     const home = messages.B2B?.home
 
-    assert.equal(typeof home?.title, "string", `${locale} title`)
-    assert.equal(typeof home?.subtitle, "string", `${locale} subtitle`)
-    assert.equal(typeof home?.primaryCta, "string", `${locale} primary CTA`)
-    assert.equal(typeof home?.secondaryCta, "string", `${locale} secondary CTA`)
+    assertNonEmptyString(home?.title, `${locale} title`)
+    assertNonEmptyString(home?.subtitle, `${locale} subtitle`)
+    assertNonEmptyString(home?.primaryCta, `${locale} primary CTA`)
+    assertNonEmptyString(home?.secondaryCta, `${locale} secondary CTA`)
 
     assert.ok(Array.isArray(home?.proofRows), `${locale} proof rows`)
     assert.equal(home.proofRows.length, 3, `${locale} proof row count`)
     for (const proofRow of home.proofRows) {
-      assert.equal(typeof proofRow, "string", `${locale} proof row`)
+      assertNonEmptyString(proofRow, `${locale} proof row`)
     }
 
-    assert.equal(typeof home?.cooperationTitle, "string", `${locale} cooperation title`)
-    assert.equal(typeof home?.cooperationText, "string", `${locale} cooperation text`)
+    assertNonEmptyString(home?.cooperationTitle, `${locale} cooperation title`)
+    assertNonEmptyString(home?.cooperationText, `${locale} cooperation text`)
     assert.ok(Array.isArray(home?.cooperationBenefits), `${locale} cooperation benefits`)
     assert.equal(home.cooperationBenefits.length, 6, `${locale} cooperation benefit count`)
 
-    assert.equal(typeof home?.accountTitle, "string", `${locale} account title`)
-    assert.equal(typeof home?.accountText, "string", `${locale} account text`)
+    assertNonEmptyString(home?.accountTitle, `${locale} account title`)
+    assertNonEmptyString(home?.accountText, `${locale} account text`)
     assert.ok(Array.isArray(home?.accountFeatures), `${locale} account features`)
     assert.equal(home.accountFeatures.length, 5, `${locale} account feature count`)
 
-    assert.equal(typeof home?.processText, "string", `${locale} process text`)
+    assertNonEmptyString(home?.processText, `${locale} process text`)
     assert.ok(Array.isArray(home?.processSteps), `${locale} process steps`)
     assert.equal(home.processSteps.length, 4, `${locale} process step count`)
 
@@ -94,8 +124,8 @@ test("B2B home messages expose redesigned sections for every supported locale", 
       processSteps: home.processSteps,
     })) {
       for (const item of items) {
-        assert.equal(typeof item.title, "string", `${locale} ${key} title`)
-        assert.equal(typeof item.text, "string", `${locale} ${key} text`)
+        assertNonEmptyString(item.title, `${locale} ${key} title`)
+        assertNonEmptyString(item.text, `${locale} ${key} text`)
       }
     }
 
@@ -104,27 +134,50 @@ test("B2B home messages expose redesigned sections for every supported locale", 
   }
 })
 
-test("B2B navigation exposes redesigned section anchors", async () => {
+test("desktop B2B navigation exposes redesigned href order", async () => {
   const headerSource = await readFile(new URL("../components/header.tsx", import.meta.url), "utf8")
-  const mobileSource = await readFile(new URL("../components/mobile-nav.tsx", import.meta.url), "utf8")
+  const b2bNavigation = extractB2BNavigationSource(headerSource, "desktop")
 
-  assert.match(headerSource, /href\s*:\s*(?:`[^`]*#benefits[^`]*`|"[^"]*#benefits[^"]*"|'[^']*#benefits[^']*')/)
-  assert.match(headerSource, /href\s*:\s*(?:`[^`]*#account[^`]*`|"[^"]*#account[^"]*"|'[^']*#account[^']*')/)
-  assert.match(
-    headerSource,
-    /href\s*:\s*(?:`[^`]*#how-it-works[^`]*`|"[^"]*#how-it-works[^"]*"|'[^']*#how-it-works[^']*')/,
+  assert.equal(countMatches(b2bNavigation, /\bhref\s*:/g), 6, "desktop B2B nav href count")
+  assertOrderedSourceMatches(
+    b2bNavigation,
+    [
+      { description: "home href", pattern: /href\s*:\s*`\/\$\{locale\}`/ },
+      { description: "benefits href", pattern: /href\s*:\s*`\/\$\{locale\}#benefits`/ },
+      { description: "account href", pattern: /href\s*:\s*`\/\$\{locale\}#account`/ },
+      { description: "how it works href", pattern: /href\s*:\s*`\/\$\{locale\}#how-it-works`/ },
+      { description: "FAQ href", pattern: /href\s*:\s*`\/\$\{locale\}\/faq`/ },
+      { description: "main-domain brands href", pattern: /href\s*:\s*`\$\{mainDomain\}\/\$\{locale\}\/brands`/ },
+    ],
+    "desktop B2B nav",
   )
-  assert.match(headerSource, /auth\/register\?b2b=1/)
-  assert.match(mobileSource, /href\s*:\s*(?:`[^`]*#benefits[^`]*`|"[^"]*#benefits[^"]*"|'[^']*#benefits[^']*')/)
-  assert.match(mobileSource, /href\s*:\s*(?:`[^`]*#account[^`]*`|"[^"]*#account[^"]*"|'[^']*#account[^']*')/)
+})
+
+test("mobile B2B navigation keeps the approved four-item scope", async () => {
+  const mobileSource = await readFile(new URL("../components/mobile-nav.tsx", import.meta.url), "utf8")
+  const b2bNavigation = extractB2BNavigationSource(mobileSource, "mobile")
+
+  assert.equal(countMatches(b2bNavigation, /\bhref\s*:/g), 4, "mobile B2B nav href count")
+  assert.doesNotMatch(b2bNavigation, /#how-it-works/)
+  assert.doesNotMatch(b2bNavigation, /auth\/register\?b2b=1/)
+  assertOrderedSourceMatches(
+    b2bNavigation,
+    [
+      { description: "home href", pattern: /href\s*:\s*`\/\$\{locale\}`/ },
+      { description: "benefits href", pattern: /href\s*:\s*`\/\$\{locale\}#benefits`/ },
+      { description: "account href", pattern: /href\s*:\s*`\/\$\{locale\}#account`/ },
+      { description: "FAQ href", pattern: /href\s*:\s*`\/\$\{locale\}\/faq`/ },
+    ],
+    "mobile B2B nav",
+  )
 })
 
 test("B2B home page exposes redesigned section target IDs", async () => {
   const homeSource = await readFile(new URL("../components/b2b/b2b-home-page.tsx", import.meta.url), "utf8")
 
-  assert.match(homeSource, /id\s*=\s*["']benefits["']/)
-  assert.match(homeSource, /id\s*=\s*["']account["']/)
-  assert.match(homeSource, /id\s*=\s*["']how-it-works["']/)
+  assert.match(homeSource, /<section\b[^>]*\bid\s*=\s*["']benefits["']/)
+  assert.match(homeSource, /<section\b[^>]*\bid\s*=\s*["']account["']/)
+  assert.match(homeSource, /<section\b[^>]*\bid\s*=\s*["']how-it-works["']/)
 })
 
 test("business registration query preselects the company account flow", async () => {
