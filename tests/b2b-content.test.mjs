@@ -164,8 +164,11 @@ test("B2B header preserves the host-derived variant during hydration", async () 
 
   assert.match(headerSource, /isB2BHost/)
   assert.match(headerSource, /window\.location\.host/)
+  assert.match(headerSource, /useState\(false\)/)
+  assert.match(headerSource, /setHostDerivedVariant\(isB2BHost\(window\.location\.host\)\)/)
   assert.match(headerSource, /const isB2BVariant =/)
   assert.match(headerSource, /variant=\{isB2BVariant \? "b2b" : "default"\}/)
+  assert.doesNotMatch(headerSource, /const isB2BVariant = variant === "b2b" \|\| \(typeof window/)
 })
 
 test("mobile B2B navigation keeps the approved four-item scope", async () => {

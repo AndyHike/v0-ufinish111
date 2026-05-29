@@ -82,6 +82,7 @@ export function Header({ variant = "default", mainDomainBaseUrl = mainSiteUrl }:
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
   const { settings } = useSiteSettings()
+  const [hostDerivedVariant, setHostDerivedVariant] = useState(false)
 
   const defaultNavigation = [
     { name: t("home"), href: `/${locale}`, icon: <Home className="h-5 w-5" /> },
@@ -91,7 +92,11 @@ export function Header({ variant = "default", mainDomainBaseUrl = mainSiteUrl }:
   ]
 
   const mainDomain = mainDomainBaseUrl.replace(/\/$/, "")
-  const isB2BVariant = variant === "b2b" || (typeof window !== "undefined" && isB2BHost(window.location.host))
+  useEffect(() => {
+    setHostDerivedVariant(isB2BHost(window.location.host))
+  }, [])
+
+  const isB2BVariant = variant === "b2b" || hostDerivedVariant
   const b2bNavigation = [
     { name: t("b2bHome"), href: `/${locale}`, icon: <Building2 className="h-5 w-5" /> },
     { name: t("b2bBenefits"), href: `/${locale}#benefits`, icon: <Wrench className="h-5 w-5" /> },

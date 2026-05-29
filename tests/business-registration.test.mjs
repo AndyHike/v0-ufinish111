@@ -47,6 +47,29 @@ test("business registration form starts with ICO lookup and treats DIC as option
   assert.doesNotMatch(source, /path:\s*\["dic"\]/)
 })
 
+test("business registration form isolates company billing autofill from account data", async () => {
+  const source = await read("../app/[locale]/auth/register/register-client.tsx")
+  const companySectionPosition = source.indexOf('data-form-section="company-billing"')
+  const accountSectionPosition = source.indexOf('data-form-section="account-contact"')
+  const billingStreetPosition = source.indexOf('id="billingStreet"')
+
+  assert.ok(companySectionPosition > -1, "company and billing section exists")
+  assert.ok(accountSectionPosition > -1, "account section exists")
+  assert.ok(companySectionPosition < accountSectionPosition, "company and billing section is before account data")
+  assert.ok(billingStreetPosition < accountSectionPosition, "billing address stays inside company section")
+
+  assert.match(source, /data-ares-lookup-row/)
+  assert.match(source, /autoComplete="off"/)
+  assert.match(source, /autoComplete="section-company organization"/)
+  assert.match(source, /autoComplete="section-company billing address-line1"/)
+  assert.match(source, /autoComplete="section-company billing address-level2"/)
+  assert.match(source, /autoComplete="section-company billing postal-code"/)
+  assert.match(source, /autoComplete="section-account given-name"/)
+  assert.match(source, /autoComplete="section-account family-name"/)
+  assert.match(source, /autoComplete="section-account email"/)
+  assert.match(source, /autoComplete="section-account tel"/)
+})
+
 test("registration persistence stores company and billing address fields", async () => {
   const source = await read("../app/actions/auth-api.ts")
 

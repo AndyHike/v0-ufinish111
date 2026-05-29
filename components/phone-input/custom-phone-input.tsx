@@ -34,10 +34,11 @@ interface CustomPhoneInputProps {
   label?: string
   required?: boolean
   id?: string
+  autoComplete?: string
 }
 
 export const CustomPhoneInput = forwardRef<HTMLInputElement, CustomPhoneInputProps>(
-  ({ value, onChange, placeholder, disabled, error, label, required, id }, ref) => {
+  ({ value, onChange, placeholder, disabled, error, label, required, id, autoComplete }, ref) => {
     // Extract country code from the phone number
     const getInitialCountry = (): CountryCode => {
       if (!value) return "CZ" // Default to Czech Republic
@@ -198,6 +199,7 @@ export const CustomPhoneInput = forwardRef<HTMLInputElement, CustomPhoneInputPro
               onPaste={handlePaste}
               placeholder={placeholder}
               disabled={disabled}
+              autoComplete={autoComplete}
               className={error ? "border-destructive" : ""}
             />
           </div>

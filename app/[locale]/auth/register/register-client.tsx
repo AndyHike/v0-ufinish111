@@ -338,7 +338,7 @@ export default function RegisterClient() {
 
         {step === "initial" && (
           <form onSubmit={initialForm.handleSubmit(handleInitialSubmit)} className="space-y-5">
-            <div className="space-y-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
+            <div data-form-section="company-billing" className="space-y-5 rounded-lg border border-gray-200 bg-gray-50 p-4">
               <div className="flex items-start gap-3">
                 <Controller
                   name="isB2B"
@@ -369,13 +369,14 @@ export default function RegisterClient() {
                     <Label htmlFor="ico" className="text-sm font-medium text-gray-700">
                       IČO *
                     </Label>
-                    <div className="flex gap-2">
+                    <div data-ares-lookup-row className="grid grid-cols-[minmax(0,1fr)_44px] gap-2">
                       <Input
                         id="ico"
                         type="text"
                         inputMode="numeric"
                         maxLength={8}
                         placeholder="12345678"
+                        autoComplete="off"
                         {...initialForm.register("ico")}
                         disabled={isLoading || isAresLoading}
                         className="h-10 border-gray-200 bg-white focus:border-green-500 focus:ring-green-500 rounded-lg"
@@ -398,16 +399,18 @@ export default function RegisterClient() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="dic" className="text-sm font-medium text-gray-700">
-                      DIČ <span className="font-normal text-gray-500">(pouze plátci DPH)</span>
+                      DIČ
                     </Label>
                     <Input
                       id="dic"
                       type="text"
                       placeholder="CZ12345678"
+                      autoComplete="off"
                       {...initialForm.register("dic")}
                       disabled={isLoading || isAresLoading}
                       className="h-10 border-gray-200 bg-white focus:border-green-500 focus:ring-green-500 rounded-lg"
                     />
+                    <p className="text-xs text-gray-500">Pouze plátci DPH</p>
                   </div>
                   <div className="space-y-2 sm:col-span-2">
                     <Label htmlFor="companyName" className="text-sm font-medium text-gray-700">
@@ -417,6 +420,7 @@ export default function RegisterClient() {
                       id="companyName"
                       type="text"
                       placeholder="Název firmy"
+                      autoComplete="section-company organization"
                       {...initialForm.register("companyName")}
                       disabled={isLoading || isAresLoading}
                       className="h-10 border-gray-200 bg-white focus:border-green-500 focus:ring-green-500 rounded-lg"
@@ -426,43 +430,111 @@ export default function RegisterClient() {
                     )}
                   </div>
                   {aresMessage && <p className="text-xs text-gray-600 sm:col-span-2">{aresMessage}</p>}
+                  <div className="space-y-4 border-t border-gray-200 pt-4 sm:col-span-2">
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-900">Fakturační adresa</h3>
+                      <p className="mt-1 text-xs text-gray-600">ARES ji doplní automaticky, případně ji upravte ručně.</p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="billingStreet" className="text-sm font-medium text-gray-700">
+                        Ulice a číslo domu *
+                      </Label>
+                      <Input
+                        id="billingStreet"
+                        type="text"
+                        placeholder="Např. Vodičkova 12"
+                        autoComplete="section-company billing address-line1"
+                        {...initialForm.register("billingStreet")}
+                        disabled={isLoading || isAresLoading}
+                        className="h-10 border-gray-200 bg-white focus:border-green-500 focus:ring-green-500 rounded-lg"
+                      />
+                      {initialForm.formState.errors.billingStreet && (
+                        <p className="text-sm text-red-600">{initialForm.formState.errors.billingStreet.message}</p>
+                      )}
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-[1fr_140px]">
+                      <div className="space-y-2">
+                        <Label htmlFor="billingCity" className="text-sm font-medium text-gray-700">
+                          Město *
+                        </Label>
+                        <Input
+                          id="billingCity"
+                          type="text"
+                          placeholder="Praha"
+                          autoComplete="section-company billing address-level2"
+                          {...initialForm.register("billingCity")}
+                          disabled={isLoading || isAresLoading}
+                          className="h-10 border-gray-200 bg-white focus:border-green-500 focus:ring-green-500 rounded-lg"
+                        />
+                        {initialForm.formState.errors.billingCity && (
+                          <p className="text-sm text-red-600">{initialForm.formState.errors.billingCity.message}</p>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="billingPostalCode" className="text-sm font-medium text-gray-700">
+                          PSČ *
+                        </Label>
+                        <Input
+                          id="billingPostalCode"
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="11000"
+                          autoComplete="section-company billing postal-code"
+                          {...initialForm.register("billingPostalCode")}
+                          disabled={isLoading || isAresLoading}
+                          className="h-10 border-gray-200 bg-white focus:border-green-500 focus:ring-green-500 rounded-lg"
+                        />
+                        {initialForm.formState.errors.billingPostalCode && (
+                          <p className="text-sm text-red-600">{initialForm.formState.errors.billingPostalCode.message}</p>
+                        )}
+                      </div>
+                    </div>
+                    <input type="hidden" autoComplete="section-company billing country" {...initialForm.register("billingCountry")} />
+                  </div>
                 </div>
               )}
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="firstName" className="text-sm font-medium text-gray-700">
-                  {t("firstName")}
-                </Label>
-                <Input
-                  id="firstName"
-                  type="text"
-                  placeholder={t("firstNamePlaceholder")}
-                  {...initialForm.register("firstName")}
-                  disabled={isLoading}
-                  className="h-10 border-gray-200 focus:border-green-500 focus:ring-green-500 rounded-lg"
-                />
-                {initialForm.formState.errors.firstName && (
-                  <p className="text-sm text-red-600">{initialForm.formState.errors.firstName.message}</p>
-                )}
+            <div data-form-section="account-contact" className="space-y-4 rounded-lg border border-gray-200 p-4">
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900">Údaje k účtu</h3>
+                <p className="mt-1 text-xs text-gray-600">Kontaktní údaje osoby, která bude firemní účet spravovat.</p>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="lastName" className="text-sm font-medium text-gray-700">
-                  {t("lastName")}
-                </Label>
-                <Input
-                  id="lastName"
-                  type="text"
-                  placeholder={t("lastNamePlaceholder")}
-                  {...initialForm.register("lastName")}
-                  disabled={isLoading}
-                  className="h-10 border-gray-200 focus:border-green-500 focus:ring-green-500 rounded-lg"
-                />
-                {initialForm.formState.errors.lastName && (
-                  <p className="text-sm text-red-600">{initialForm.formState.errors.lastName.message}</p>
-                )}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="firstName" className="text-sm font-medium text-gray-700">
+                    {t("firstName")}
+                  </Label>
+                  <Input
+                    id="firstName"
+                    type="text"
+                    placeholder={t("firstNamePlaceholder")}
+                    autoComplete="section-account given-name"
+                    {...initialForm.register("firstName")}
+                    disabled={isLoading}
+                    className="h-10 border-gray-200 focus:border-green-500 focus:ring-green-500 rounded-lg"
+                  />
+                  {initialForm.formState.errors.firstName && (
+                    <p className="text-sm text-red-600">{initialForm.formState.errors.firstName.message}</p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lastName" className="text-sm font-medium text-gray-700">
+                    {t("lastName")}
+                  </Label>
+                  <Input
+                    id="lastName"
+                    type="text"
+                    placeholder={t("lastNamePlaceholder")}
+                    autoComplete="section-account family-name"
+                    {...initialForm.register("lastName")}
+                    disabled={isLoading}
+                    className="h-10 border-gray-200 focus:border-green-500 focus:ring-green-500 rounded-lg"
+                  />
+                  {initialForm.formState.errors.lastName && (
+                    <p className="text-sm text-red-600">{initialForm.formState.errors.lastName.message}</p>
+                  )}
+                </div>
               </div>
-            </div>
             <div className="space-y-2">
               <Label htmlFor="email" className="text-sm font-medium text-gray-700">
                 {t("email")}
@@ -471,6 +543,7 @@ export default function RegisterClient() {
                 id="email"
                 type="email"
                 placeholder={t("emailPlaceholder")}
+                autoComplete="section-account email"
                 {...initialForm.register("email")}
                 disabled={isLoading}
                 className="h-10 border-gray-200 focus:border-green-500 focus:ring-green-500 rounded-lg"
@@ -489,13 +562,16 @@ export default function RegisterClient() {
                   value={field.value}
                   onChange={field.onChange}
                   placeholder={t("phonePlaceholder")}
+                  autoComplete="section-account tel"
                   disabled={isLoading}
                   error={initialForm.formState.errors.phone?.message}
                   required
                 />
               )}
             />
+            </div>
 
+            {!watchIsB2B && (
             <div className="space-y-4 rounded-lg border border-gray-200 p-4">
               <div>
                 <h3 className="text-sm font-semibold text-gray-900">Fakturační adresa</h3>
@@ -509,6 +585,7 @@ export default function RegisterClient() {
                   id="billingStreet"
                   type="text"
                   placeholder="Např. Vodičkova 12"
+                  autoComplete="section-account billing address-line1"
                   {...initialForm.register("billingStreet")}
                   disabled={isLoading}
                   className="h-10 border-gray-200 focus:border-green-500 focus:ring-green-500 rounded-lg"
@@ -526,6 +603,7 @@ export default function RegisterClient() {
                     id="billingCity"
                     type="text"
                     placeholder="Praha"
+                    autoComplete="section-account billing address-level2"
                     {...initialForm.register("billingCity")}
                     disabled={isLoading}
                     className="h-10 border-gray-200 focus:border-green-500 focus:ring-green-500 rounded-lg"
@@ -543,6 +621,7 @@ export default function RegisterClient() {
                     type="text"
                     inputMode="numeric"
                     placeholder="11000"
+                    autoComplete="section-account billing postal-code"
                     {...initialForm.register("billingPostalCode")}
                     disabled={isLoading}
                     className="h-10 border-gray-200 focus:border-green-500 focus:ring-green-500 rounded-lg"
@@ -552,8 +631,9 @@ export default function RegisterClient() {
                   )}
                 </div>
               </div>
-              <input type="hidden" {...initialForm.register("billingCountry")} />
+              <input type="hidden" autoComplete="section-account billing country" {...initialForm.register("billingCountry")} />
             </div>
+            )}
 
             <Button
               type="submit"
