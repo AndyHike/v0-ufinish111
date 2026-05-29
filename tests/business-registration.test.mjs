@@ -9,11 +9,12 @@ async function read(path) {
 test("business billing migration adds company and billing address fields", async () => {
   const source = await read("../scripts/add-business-billing-fields.sql")
 
-  assert.match(source, /ALTER TABLE users ADD COLUMN company_name/i)
-  assert.match(source, /ALTER TABLE profiles ADD COLUMN billing_street/i)
-  assert.match(source, /ALTER TABLE profiles ADD COLUMN billing_city/i)
-  assert.match(source, /ALTER TABLE profiles ADD COLUMN billing_postal_code/i)
-  assert.match(source, /ALTER TABLE profiles ADD COLUMN billing_country/i)
+  assert.match(source, /table_schema\s*=\s*'public'/i)
+  assert.match(source, /ALTER TABLE public\.users ADD COLUMN company_name/i)
+  assert.match(source, /ALTER TABLE public\.profiles ADD COLUMN billing_street/i)
+  assert.match(source, /ALTER TABLE public\.profiles ADD COLUMN billing_city/i)
+  assert.match(source, /ALTER TABLE public\.profiles ADD COLUMN billing_postal_code/i)
+  assert.match(source, /ALTER TABLE public\.profiles ADD COLUMN billing_country/i)
 })
 
 test("ARES company API validates ICO and normalizes company details", async () => {

@@ -28,9 +28,10 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { Loader2, MoreHorizontal, Search, Trash2, UserPlus, CheckCircle, RefreshCw } from "lucide-react"
+import { Loader2, MoreHorizontal, Search, Trash2, UserPlus, CheckCircle, RefreshCw, Ban } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
 import { formatPhoneNumber } from "@/utils/format-phone"
+import { Switch } from "@/components/ui/switch"
 
 interface Role {
   id: string
@@ -66,6 +67,40 @@ interface User {
   remonline_sync_attempts: number | null
   created_at: string
 }
+
+type BusinessFieldIds = {
+  is_b2b: string
+  company_name: string
+  ico: string
+  dic: string
+  billing_street: string
+  billing_city: string
+  billing_postal_code: string
+  billing_country: string
+}
+
+const businessFieldIds = {
+  create: {
+    is_b2b: "create_is_b2b",
+    company_name: "create_company_name",
+    ico: "create_ico",
+    dic: "create_dic",
+    billing_street: "create_billing_street",
+    billing_city: "create_billing_city",
+    billing_postal_code: "create_billing_postal_code",
+    billing_country: "create_billing_country",
+  },
+  edit: {
+    is_b2b: "edit_is_b2b",
+    company_name: "edit_company_name",
+    ico: "edit_ico",
+    dic: "edit_dic",
+    billing_street: "edit_billing_street",
+    billing_city: "edit_billing_city",
+    billing_postal_code: "edit_billing_postal_code",
+    billing_country: "edit_billing_country",
+  },
+} satisfies Record<"create" | "edit", BusinessFieldIds>
 
 export function UsersManagement() {
   const router = useRouter()
@@ -174,6 +209,37 @@ export function UsersManagement() {
       toast({
         title: "Помилка",
         description: error instanceof Error ? error.message : "Не вдалося підтвердити користувача",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleBlockUser = async (userId: string) => {
+    setIsSubmitting(true)
+    try {
+      const response = await fetch(`/api/admin/users/${userId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ is_approved: false }),
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || "Failed to block user")
+      }
+
+      toast({
+        title: "Успіх",
+        description: "Доступ користувача заблоковано",
+      })
+      fetchUsers()
+    } catch (error) {
+      console.error("Error blocking user:", error)
+      toast({
+        title: "Помилка",
+        description: error instanceof Error ? error.message : "Не вдалося заблокувати користувача",
         variant: "destructive",
       })
     } finally {
@@ -422,6 +488,90 @@ export function UsersManagement() {
     return <Badge variant="outline">RO not synced</Badge>
   }
 
+  const renderBusinessFields = (ids: BusinessFieldIds) => (
+    <>
+      <div className="flex items-center justify-between rounded-md border p-3">
+        <div className="space-y-0.5">
+          <Label htmlFor={ids.is_b2b}>B2B / компанія</Label>
+          <p className="text-xs text-muted-foreground">У RemOnline буде створена компанія замість фізичної особи.</p>
+        </div>
+        <Switch
+          id={ids.is_b2b}
+          checked={formData.is_b2b}
+          onCheckedChange={(checked) => setFormData({ ...formData, is_b2b: checked })}
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor={ids.company_name}>Назва компанії</Label>
+        <Input
+          id={ids.company_name}
+          value={formData.company_name}
+          onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
+          placeholder="Název firmy"
+        />
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor={ids.ico}>IČO</Label>
+          <Input
+            id={ids.ico}
+            value={formData.ico}
+            onChange={(e) => setFormData({ ...formData, ico: e.target.value })}
+            placeholder="12345678"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor={ids.dic}>DIČ</Label>
+          <Input
+            id={ids.dic}
+            value={formData.dic}
+            onChange={(e) => setFormData({ ...formData, dic: e.target.value })}
+            placeholder="CZ12345678"
+          />
+        </div>
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor={ids.billing_street}>Адреса</Label>
+        <Input
+          id={ids.billing_street}
+          value={formData.billing_street}
+          onChange={(e) => setFormData({ ...formData, billing_street: e.target.value })}
+          placeholder="Ulice a číslo domu"
+        />
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor={ids.billing_city}>Місто</Label>
+          <Input
+            id={ids.billing_city}
+            value={formData.billing_city}
+            onChange={(e) => setFormData({ ...formData, billing_city: e.target.value })}
+            placeholder="Praha"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor={ids.billing_postal_code}>PSČ</Label>
+          <Input
+            id={ids.billing_postal_code}
+            value={formData.billing_postal_code}
+            onChange={(e) => setFormData({ ...formData, billing_postal_code: e.target.value })}
+            placeholder="11000"
+          />
+        </div>
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor={ids.billing_country}>Країна</Label>
+        <Input
+          id={ids.billing_country}
+          value={formData.billing_country}
+          onChange={(e) => setFormData({ ...formData, billing_country: e.target.value.toUpperCase() })}
+          placeholder="CZ"
+          maxLength={2}
+        />
+      </div>
+    </>
+  )
+
   return (
     <div className="space-y-4">
       <Card>
@@ -558,7 +708,7 @@ export function UsersManagement() {
                               </Badge>
                             ) : (
                               <Badge variant="secondary" className="bg-amber-100 text-amber-800">
-                                Очікує підтвердження
+                                Не підтверджено / заблоковано
                               </Badge>
                             )}
                           </TableCell>
@@ -580,13 +730,22 @@ export function UsersManagement() {
                               <DropdownMenuContent align="end">
                                 <DropdownMenuLabel>Дії</DropdownMenuLabel>
                                 <DropdownMenuSeparator />
-                                {!user.is_approved && (
+                                {!user.is_approved ? (
                                   <DropdownMenuItem
                                     onClick={() => handleApproveUser(user.id)}
                                     disabled={isSubmitting}
                                   >
                                     <CheckCircle className="mr-2 h-4 w-4 text-green-600" />
                                     Підтвердити
+                                  </DropdownMenuItem>
+                                ) : (
+                                  <DropdownMenuItem
+                                    onClick={() => handleBlockUser(user.id)}
+                                    disabled={isSubmitting}
+                                    className="text-destructive"
+                                  >
+                                    <Ban className="mr-2 h-4 w-4" />
+                                    Заблокувати доступ
                                   </DropdownMenuItem>
                                 )}
                                 {(user.remonline_sync_status === "error" || !user.remonline_id) && (
@@ -642,7 +801,7 @@ export function UsersManagement() {
 
       {/* Create User Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-[640px]">
           <DialogHeader>
             <DialogTitle>Додати нового користувача</DialogTitle>
             <DialogDescription>
@@ -689,6 +848,7 @@ export function UsersManagement() {
                   placeholder="+420XXXXXXXXX"
                 />
               </div>
+              {renderBusinessFields(businessFieldIds.create)}
               <div className="space-y-2">
                 <Label htmlFor="role">Роль</Label>
                 <Select
@@ -742,7 +902,7 @@ export function UsersManagement() {
 
       {/* Edit User Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-[640px]">
           <DialogHeader>
             <DialogTitle>Редагувати користувача</DialogTitle>
             <DialogDescription>Оновіть інформацію про користувача.</DialogDescription>
@@ -812,65 +972,7 @@ export function UsersManagement() {
                   </SelectContent>
                 </Select>
               </div>
-              {/* B2B fields */}
-              <div className="space-y-2">
-                <Label htmlFor="edit_company_name">Název společnosti</Label>
-                <Input
-                  id="edit_company_name"
-                  value={formData.company_name}
-                  onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
-                  placeholder="Název firmy"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="edit_ico">IČO</Label>
-                  <Input
-                    id="edit_ico"
-                    value={formData.ico}
-                    onChange={(e) => setFormData({ ...formData, ico: e.target.value })}
-                    placeholder="12345678"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit_dic">DIČ</Label>
-                  <Input
-                    id="edit_dic"
-                    value={formData.dic}
-                    onChange={(e) => setFormData({ ...formData, dic: e.target.value })}
-                    placeholder="CZ12345678"
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit_billing_street">Fakturační adresa</Label>
-                <Input
-                  id="edit_billing_street"
-                  value={formData.billing_street}
-                  onChange={(e) => setFormData({ ...formData, billing_street: e.target.value })}
-                  placeholder="Ulice a číslo domu"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="edit_billing_city">Město</Label>
-                  <Input
-                    id="edit_billing_city"
-                    value={formData.billing_city}
-                    onChange={(e) => setFormData({ ...formData, billing_city: e.target.value })}
-                    placeholder="Praha"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit_billing_postal_code">PSČ</Label>
-                  <Input
-                    id="edit_billing_postal_code"
-                    value={formData.billing_postal_code}
-                    onChange={(e) => setFormData({ ...formData, billing_postal_code: e.target.value })}
-                    placeholder="11000"
-                  />
-                </div>
-              </div>
+              {renderBusinessFields(businessFieldIds.edit)}
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>

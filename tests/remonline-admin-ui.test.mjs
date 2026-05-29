@@ -18,3 +18,33 @@ test("admin users table shows RemOnline sync state and retry action", async () =
   assert.match(text, /getRemonlineBadge/)
   assert.match(text, /Sync RemOnline/)
 })
+
+test("admin create and edit dialogs expose company identity and billing address fields", async () => {
+  const text = await source()
+
+  for (const field of [
+    "is_b2b",
+    "company_name",
+    "ico",
+    "dic",
+    "billing_street",
+    "billing_city",
+    "billing_postal_code",
+    "billing_country",
+  ]) {
+    assert.match(text, new RegExp(`${field}: "create_${field}"`))
+    assert.match(text, new RegExp(`${field}: "edit_${field}"`))
+    assert.match(text, new RegExp(`id=\\{ids\\.${field}\\}`))
+  }
+
+  assert.match(text, /@\/components\/ui\/switch/)
+})
+
+test("admin users menu can block and unblock account access", async () => {
+  const text = await source()
+
+  assert.match(text, /handleBlockUser/)
+  assert.match(text, /is_approved:\s*false/)
+  assert.match(text, /handleApproveUser\(user\.id\)/)
+  assert.match(text, /handleBlockUser\(user\.id\)/)
+})
