@@ -1,6 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
 import { z } from "zod"
+import webhookSecurity from "@/lib/api/remonline-webhook-security"
+
+const { verifyRemonlineWebhookSignature } = webhookSecurity
+const DELETE_ACCOUNT_WEBHOOK_SECRET = process.env.REMONLINE_DELETE_ACCOUNT_WEBHOOK_SECRET || ""
 
 // Define a schema for the RemOnline webhook payload for account deletion
 const remonlineDeleteWebhookSchema = z.object({
@@ -20,9 +24,27 @@ const remonlineDeleteWebhookSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    // Save original request for logging
-    const clonedRequest = request.clone()
-    const payload = await clonedRequest.json()
+    const payloadText = await request.text()
+    let payload: any
+
+    try {
+      payload = JSON.parse(payloadText)
+    } catch (error) {
+      console.error("Invalid RemOnline delete account webhook JSON:", error)
+      return NextResponse.json({ success: false, error: "Invalid webhook JSON" }, { status: 400 })
+    }
+
+    const signature = request.headers.get("x-signature") || request.headers.get("X-Signature")
+
+    if (!DELETE_ACCOUNT_WEBHOOK_SECRET) {
+      console.error("REMONLINE_DELETE_ACCOUNT_WEBHOOK_SECRET is not configured")
+      return NextResponse.json({ success: false, error: "Webhook secret is not configured" }, { status: 500 })
+    }
+
+    if (!verifyRemonlineWebhookSignature({ payload, signature, secret: DELETE_ACCOUNT_WEBHOOK_SECRET })) {
+      return NextResponse.json({ success: false, error: "Invalid webhook signature" }, { status: 401 })
+    }
+
     console.log("RemOnline delete account webhook received:", payload)
 
     // Validate the webhook payload against the schema

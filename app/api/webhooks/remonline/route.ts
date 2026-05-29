@@ -2,10 +2,13 @@ import { type NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { handleOrderEvents } from "./handlers/order-handler"
 import { handleClientEvents } from "./handlers/client-handler"
+import webhookSecurity from "@/lib/api/remonline-webhook-security"
+
+const { verifyRemonlineWebhookSignature } = webhookSecurity
 
 // Different secret keys for different webhook types
-const ORDER_WEBHOOK_SECRET = process.env.REMONLINE_ORDER_WEBHOOK_SECRET || "your-order-webhook-secret"
-const GENERAL_WEBHOOK_SECRET = process.env.REMONLINE_WEBHOOK_SECRET || "your-webhook-secret"
+const ORDER_WEBHOOK_SECRET = process.env.REMONLINE_ORDER_WEBHOOK_SECRET || ""
+const GENERAL_WEBHOOK_SECRET = process.env.REMONLINE_WEBHOOK_SECRET || ""
 
 // Define a schema for the RemOnline webhook payload
 const remonlineWebhookSchema = z.object({
@@ -65,9 +68,28 @@ const remonlineWebhookSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    // Clone request for logging
-    const clonedRequest = request.clone()
-    const payload = await clonedRequest.json()
+    const payloadText = await request.text()
+    let payload: any
+
+    try {
+      payload = JSON.parse(payloadText)
+    } catch (error) {
+      console.error("Invalid RemOnline webhook JSON:", error)
+      return NextResponse.json({ success: false, error: "Invalid webhook JSON" }, { status: 400 })
+    }
+
+    const eventName = payload.event_name || ""
+    const signature = request.headers.get("x-signature") || request.headers.get("X-Signature")
+    const secret = eventName.startsWith("Order.") ? ORDER_WEBHOOK_SECRET : GENERAL_WEBHOOK_SECRET
+
+    if (!secret) {
+      console.error(`RemOnline webhook secret is not configured for event: ${eventName || "unknown"}`)
+      return NextResponse.json({ success: false, error: "Webhook secret is not configured" }, { status: 500 })
+    }
+
+    if (!verifyRemonlineWebhookSignature({ payload, signature, secret })) {
+      return NextResponse.json({ success: false, error: "Invalid webhook signature" }, { status: 401 })
+    }
 
     console.log("🔔 RemOnline webhook received:")
     console.log("📋 Payload:", JSON.stringify(payload, null, 2))
