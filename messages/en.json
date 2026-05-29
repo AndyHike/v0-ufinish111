@@ -731,12 +731,12 @@
     "home": {
       "eyebrow": "Company mobile phone service",
       "title": "Mobile phone repair for companies and entrepreneurs",
-      "subtitle": "A business account for fast repair requests, repair status overview, invoicing, and better conditions for repeated service.",
+      "subtitle": "A business account for fast repair requests, repair status overview, invoicing, and better terms for recurring service.",
       "primaryCta": "Register a business account",
       "secondaryCta": "Contact service",
       "proofRows": [
         "Pickup in Prague",
-        "Shipping across Czechia",
+        "Shipping across the Czech Republic",
         "Online repair overview"
       ],
       "cooperationTitle": "Cooperation benefits",
@@ -811,13 +811,13 @@
           "text": "Track the repair online and receive the device back after completion."
         }
       ],
-      "contactTitle": "Ready to cooperate?",
+      "contactTitle": "Ready to start?",
       "contactText": "Register a business account and get better service for work devices.",
       "contactHelpTitle": "Need advice?",
       "contactHelpText": "We are available on business days from 9:00 to 18:00.",
-      "emailLabel": "We usually reply within 1 hour.",
+      "emailLabel": "We will reply as soon as possible.",
       "phoneLabel": "Call us or write to us.",
-      "finalTitle": "Start company cooperation with DeviceHelp",
+      "finalTitle": "Start working with DeviceHelp",
       "finalText": "Business account registration takes only a few minutes. After checking your details, we will inform you about activation."
     },
     "faq": {
