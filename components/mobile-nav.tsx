@@ -86,14 +86,14 @@ export function MobileNav({ variant = "default", mainDomainBaseUrl = mainSiteUrl
       icon: <Wrench className="h-5 w-5" />,
     },
     {
+      name: t("Header.businessAccount"),
+      href: `/${locale}#account`,
+      icon: <Smartphone className="h-5 w-5" />,
+    },
+    {
       name: t("Header.b2bFaq"),
       href: `/${locale}/faq`,
       icon: <MessageSquare className="h-5 w-5" />,
-    },
-    {
-      name: t("Header.businessAccount"),
-      href: `${mainDomain}/${locale}/auth/register?b2b=1`,
-      icon: <Smartphone className="h-5 w-5" />,
     },
   ]
 

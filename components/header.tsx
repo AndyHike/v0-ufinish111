@@ -92,8 +92,9 @@ export function Header({ variant = "default", mainDomainBaseUrl = mainSiteUrl }:
   const mainDomain = mainDomainBaseUrl.replace(/\/$/, "")
   const b2bNavigation = [
     { name: t("b2bHome"), href: `/${locale}`, icon: <Building2 className="h-5 w-5" /> },
-    { name: t("b2bHowItWorks"), href: `/${locale}#how-it-works`, icon: <Layers className="h-5 w-5" /> },
     { name: t("b2bBenefits"), href: `/${locale}#benefits`, icon: <Wrench className="h-5 w-5" /> },
+    { name: t("businessAccount"), href: `/${locale}#account`, icon: <User className="h-5 w-5" /> },
+    { name: t("b2bHowItWorks"), href: `/${locale}#how-it-works`, icon: <Layers className="h-5 w-5" /> },
     { name: t("b2bFaq"), href: `/${locale}/faq`, icon: <MessageSquare className="h-5 w-5" /> },
     { name: t("chooseModel"), href: `${mainDomain}/${locale}/brands`, icon: <Smartphone className="h-5 w-5" /> },
   ]
