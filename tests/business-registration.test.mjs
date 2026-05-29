@@ -64,10 +64,39 @@ test("business registration form isolates company billing autofill from account 
   assert.match(source, /autoComplete="section-company billing address-line1"/)
   assert.match(source, /autoComplete="section-company billing address-level2"/)
   assert.match(source, /autoComplete="section-company billing postal-code"/)
-  assert.match(source, /autoComplete="section-account given-name"/)
-  assert.match(source, /autoComplete="section-account family-name"/)
-  assert.match(source, /autoComplete="section-account email"/)
-  assert.match(source, /autoComplete="section-account tel"/)
+  assert.match(source, /const personalAutocompletePrefix = watchIsB2B \? "section-account " : ""/)
+  assert.match(source, /firstName: `\$\{personalAutocompletePrefix\}given-name`/)
+  assert.match(source, /lastName: `\$\{personalAutocompletePrefix\}family-name`/)
+  assert.match(source, /email: `\$\{personalAutocompletePrefix\}email`/)
+  assert.match(source, /phone: `\$\{personalAutocompletePrefix\}tel`/)
+})
+
+test("consumer registration keeps personal and billing autofill in one browser profile", async () => {
+  const source = await read("../app/[locale]/auth/register/register-client.tsx")
+
+  assert.match(source, /const personalAutocompletePrefix = watchIsB2B \? "section-account " : ""/)
+  assert.match(source, /data-form-section="consumer-billing"/)
+  assert.match(source, /autoComplete=\{accountAutocomplete\.firstName\}/)
+  assert.match(source, /autoComplete=\{accountAutocomplete\.lastName\}/)
+  assert.match(source, /autoComplete=\{accountAutocomplete\.email\}/)
+  assert.match(source, /autoComplete=\{accountAutocomplete\.phone\}/)
+  assert.match(source, /autoComplete="address-line1"/)
+  assert.match(source, /autoComplete="address-level2"/)
+  assert.match(source, /autoComplete="postal-code"/)
+  assert.match(source, /autoComplete="country"/)
+  assert.doesNotMatch(source, /autoComplete="section-account billing/)
+})
+
+test("registration page uses a wider responsive desktop form layout", async () => {
+  const pageSource = await read("../app/[locale]/auth/register/page.tsx")
+  const clientSource = await read("../app/[locale]/auth/register/register-client.tsx")
+
+  assert.match(pageSource, /max-w-5xl/)
+  assert.doesNotMatch(pageSource, /sm:w-\[400px\]/)
+  assert.match(clientSource, /max-w-5xl/)
+  assert.match(clientSource, /lg:grid/)
+  assert.match(clientSource, /lg:grid-cols-2/)
+  assert.match(clientSource, /lg:col-span-2/)
 })
 
 test("registration persistence stores company and billing address fields", async () => {

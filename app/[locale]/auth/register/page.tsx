@@ -15,7 +15,7 @@ export default async function RegisterPage({ params }: { params: Promise<{ local
   if (!registrationEnabled) {
     return (
       <div className="container flex min-h-screen w-full flex-col items-center justify-center py-8">
-        <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[400px]">
+        <div className="mx-auto flex w-full max-w-md flex-col justify-center space-y-6">
           <Card>
             <CardHeader>
               <CardTitle className="text-center">{t("registrationDisabled")}</CardTitle>
@@ -40,7 +40,7 @@ export default async function RegisterPage({ params }: { params: Promise<{ local
 
   return (
     <div className="container flex min-h-screen w-full flex-col items-center justify-center py-8">
-      <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[400px]">
+      <div className="mx-auto flex w-full max-w-5xl flex-col justify-center space-y-6">
         <Suspense fallback={<div>Loading...</div>}>
           <RegisterClient />
         </Suspense>

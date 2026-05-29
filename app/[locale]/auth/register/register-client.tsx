@@ -132,6 +132,13 @@ export default function RegisterClient() {
   })
 
   const watchIsB2B = initialForm.watch("isB2B")
+  const personalAutocompletePrefix = watchIsB2B ? "section-account " : ""
+  const accountAutocomplete = {
+    firstName: `${personalAutocompletePrefix}given-name`,
+    lastName: `${personalAutocompletePrefix}family-name`,
+    email: `${personalAutocompletePrefix}email`,
+    phone: `${personalAutocompletePrefix}tel`,
+  }
 
   useEffect(() => {
     if (isBusinessRegistration) {
@@ -295,7 +302,7 @@ export default function RegisterClient() {
   }
 
   return (
-    <Card className="w-full max-w-xl shadow-xl border-0 bg-white">
+    <Card className="w-full max-w-5xl shadow-xl border-0 bg-white">
       <CardHeader className="space-y-2 pb-4">
         <div className="flex flex-col items-center space-y-2">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-green-500 to-emerald-600 shadow-lg">
@@ -337,8 +344,11 @@ export default function RegisterClient() {
         )}
 
         {step === "initial" && (
-          <form onSubmit={initialForm.handleSubmit(handleInitialSubmit)} className="space-y-5">
-            <div data-form-section="company-billing" className="space-y-5 rounded-lg border border-gray-200 bg-gray-50 p-4">
+          <form onSubmit={initialForm.handleSubmit(handleInitialSubmit)} className="space-y-5 lg:grid lg:grid-cols-2 lg:items-start lg:gap-5 lg:space-y-0">
+            <div
+              data-form-section="company-billing"
+              className={`space-y-5 rounded-lg border border-gray-200 bg-gray-50 p-4 ${watchIsB2B ? "lg:col-span-1" : "lg:col-span-2"}`}
+            >
               <div className="flex items-start gap-3">
                 <Controller
                   name="isB2B"
@@ -494,10 +504,14 @@ export default function RegisterClient() {
                 </div>
               )}
             </div>
-            <div data-form-section="account-contact" className="space-y-4 rounded-lg border border-gray-200 p-4">
+            <div data-form-section="account-contact" className="space-y-4 rounded-lg border border-gray-200 p-4 lg:col-span-1">
               <div>
                 <h3 className="text-sm font-semibold text-gray-900">Údaje k účtu</h3>
-                <p className="mt-1 text-xs text-gray-600">Kontaktní údaje osoby, která bude firemní účet spravovat.</p>
+                <p className="mt-1 text-xs text-gray-600">
+                  {watchIsB2B
+                    ? "Kontaktní údaje osoby, která bude firemní účet spravovat."
+                    : "Kontaktní údaje pro váš účet a servisní komunikaci."}
+                </p>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
@@ -508,7 +522,7 @@ export default function RegisterClient() {
                     id="firstName"
                     type="text"
                     placeholder={t("firstNamePlaceholder")}
-                    autoComplete="section-account given-name"
+                    autoComplete={accountAutocomplete.firstName}
                     {...initialForm.register("firstName")}
                     disabled={isLoading}
                     className="h-10 border-gray-200 focus:border-green-500 focus:ring-green-500 rounded-lg"
@@ -525,7 +539,7 @@ export default function RegisterClient() {
                     id="lastName"
                     type="text"
                     placeholder={t("lastNamePlaceholder")}
-                    autoComplete="section-account family-name"
+                    autoComplete={accountAutocomplete.lastName}
                     {...initialForm.register("lastName")}
                     disabled={isLoading}
                     className="h-10 border-gray-200 focus:border-green-500 focus:ring-green-500 rounded-lg"
@@ -543,7 +557,7 @@ export default function RegisterClient() {
                 id="email"
                 type="email"
                 placeholder={t("emailPlaceholder")}
-                autoComplete="section-account email"
+                autoComplete={accountAutocomplete.email}
                 {...initialForm.register("email")}
                 disabled={isLoading}
                 className="h-10 border-gray-200 focus:border-green-500 focus:ring-green-500 rounded-lg"
@@ -562,7 +576,7 @@ export default function RegisterClient() {
                   value={field.value}
                   onChange={field.onChange}
                   placeholder={t("phonePlaceholder")}
-                  autoComplete="section-account tel"
+                  autoComplete={accountAutocomplete.phone}
                   disabled={isLoading}
                   error={initialForm.formState.errors.phone?.message}
                   required
@@ -572,7 +586,7 @@ export default function RegisterClient() {
             </div>
 
             {!watchIsB2B && (
-            <div className="space-y-4 rounded-lg border border-gray-200 p-4">
+            <div data-form-section="consumer-billing" className="space-y-4 rounded-lg border border-gray-200 p-4 lg:col-span-1">
               <div>
                 <h3 className="text-sm font-semibold text-gray-900">Fakturační adresa</h3>
                 <p className="mt-1 text-xs text-gray-600">Údaje použijeme pro faktury a servisní dokumenty.</p>
@@ -585,7 +599,7 @@ export default function RegisterClient() {
                   id="billingStreet"
                   type="text"
                   placeholder="Např. Vodičkova 12"
-                  autoComplete="section-account billing address-line1"
+                  autoComplete="address-line1"
                   {...initialForm.register("billingStreet")}
                   disabled={isLoading}
                   className="h-10 border-gray-200 focus:border-green-500 focus:ring-green-500 rounded-lg"
@@ -603,7 +617,7 @@ export default function RegisterClient() {
                     id="billingCity"
                     type="text"
                     placeholder="Praha"
-                    autoComplete="section-account billing address-level2"
+                    autoComplete="address-level2"
                     {...initialForm.register("billingCity")}
                     disabled={isLoading}
                     className="h-10 border-gray-200 focus:border-green-500 focus:ring-green-500 rounded-lg"
@@ -621,7 +635,7 @@ export default function RegisterClient() {
                     type="text"
                     inputMode="numeric"
                     placeholder="11000"
-                    autoComplete="section-account billing postal-code"
+                    autoComplete="postal-code"
                     {...initialForm.register("billingPostalCode")}
                     disabled={isLoading}
                     className="h-10 border-gray-200 focus:border-green-500 focus:ring-green-500 rounded-lg"
@@ -631,13 +645,13 @@ export default function RegisterClient() {
                   )}
                 </div>
               </div>
-              <input type="hidden" autoComplete="section-account billing country" {...initialForm.register("billingCountry")} />
+              <input type="hidden" autoComplete="country" {...initialForm.register("billingCountry")} />
             </div>
             )}
 
             <Button
               type="submit"
-              className="w-full h-10 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
+              className="h-10 w-full bg-gradient-to-r from-green-600 to-emerald-600 font-medium text-white shadow-lg transition-all duration-200 hover:from-green-700 hover:to-emerald-700 hover:shadow-xl lg:col-span-2"
               disabled={isLoading}
             >
               {isLoading ? (
