@@ -8,7 +8,7 @@ import {
   verifyCode as verifyCodeLib,
 } from "@/lib/auth/verification-code"
 import { sendVerificationCode as sendVerificationCodeEmail } from "@/lib/email/send-email"
-import { syncClientToRemonline, updateRemonlineIdForUser } from "@/lib/services/remonline-sync"
+import { syncUserToRemonline } from "@/lib/services/remonline-sync"
 import { hash } from "@/lib/auth/utils"
 import { revalidatePath } from "next/cache"
 
@@ -393,13 +393,6 @@ export async function createUser(userData: {
 
     const supabase = createClient()
     const billingAddress = userData.address || buildBillingAddress(userData)
-    const remonlineUserData = {
-      first_name: userData.first_name,
-      last_name: userData.last_name,
-      email: userData.email,
-      phone: userData.phone,
-      address: billingAddress,
-    }
 
     // Check if user already exists
     const { data: existingUser } = await supabase
@@ -437,18 +430,11 @@ export async function createUser(userData: {
 
       await setSecureCookie("session_id", session.id)
 
-      // Sync with RemOnline in the background
-      syncClientToRemonline(remonlineUserData)
-        .then((result) => {
-          if (result.success && result.remonlineId) {
-            updateRemonlineIdForUser(existingUser.id, result.remonlineId)
-          }
-        })
-        .catch((error) => {
-          if (process.env.NODE_ENV === "development") {
-            console.error("Error syncing with RemOnline:", error)
-          }
-        })
+      syncUserToRemonline(existingUser.id).catch((error) => {
+        if (process.env.NODE_ENV === "development") {
+          console.error("Error syncing existing user with RemOnline:", error)
+        }
+      })
 
       return { success: true }
     }
@@ -504,6 +490,8 @@ export async function createUser(userData: {
         dic: userData.dic || null,
         company_name: userData.companyName || null,
         is_approved: isApproved,
+        remonline_sync_status: "pending",
+        remonline_sync_attempts: 0,
       })
       .select("id")
       .single()
@@ -545,18 +533,11 @@ export async function createUser(userData: {
       }
     }
 
-    // Sync with RemOnline in the background
-    syncClientToRemonline(remonlineUserData)
-      .then((result) => {
-        if (result.success && result.remonlineId) {
-          updateRemonlineIdForUser(newUser.id, result.remonlineId)
-        }
-      })
-      .catch((error) => {
-        if (process.env.NODE_ENV === "development") {
-          console.error("Error syncing with RemOnline:", error)
-        }
-      })
+    syncUserToRemonline(newUser.id).catch((error) => {
+      if (process.env.NODE_ENV === "development") {
+        console.error("Error syncing user with RemOnline:", error)
+      }
+    })
 
     // If user doesn't need approval, create session immediately
     if (!isApproved) {

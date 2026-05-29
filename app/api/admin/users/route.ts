@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
 import { logActivity } from "@/lib/admin/activity-logger"
+import { syncUserToRemonline } from "@/lib/services/remonline-sync"
 
 function buildBillingAddress({
   billing_street,
@@ -46,6 +47,12 @@ export async function GET(request: Request) {
         company_name,
         is_b2b,
         is_approved,
+        remonline_id,
+        remonline_contact_type,
+        remonline_sync_status,
+        remonline_sync_error,
+        remonline_synced_at,
+        remonline_sync_attempts,
         created_at, 
         updated_at,
         profiles!left(phone, avatar_url, billing_street, billing_city, billing_postal_code, billing_country),
@@ -97,6 +104,12 @@ export async function GET(request: Request) {
       company_name: user.company_name,
       is_b2b: user.is_b2b || false,
       is_approved: user.is_approved ?? true,
+      remonline_id: user.remonline_id || null,
+      remonline_contact_type: user.remonline_contact_type || null,
+      remonline_sync_status: user.remonline_sync_status || null,
+      remonline_sync_error: user.remonline_sync_error || null,
+      remonline_synced_at: user.remonline_synced_at || null,
+      remonline_sync_attempts: user.remonline_sync_attempts ?? null,
       created_at: user.created_at,
       updated_at: user.updated_at,
       phone: user.profiles?.phone || null,
@@ -187,6 +200,8 @@ export async function POST(request: Request) {
         company_name: normalizedCompanyName,
         is_b2b: is_b2b || false,
         is_approved: true,
+        remonline_sync_status: "pending",
+        remonline_sync_attempts: 0,
       })
       .select()
       .single()
@@ -232,6 +247,10 @@ export async function POST(request: Request) {
       details: `Created user: ${email}`,
     })
 
+    syncUserToRemonline(authUser.user.id).catch((error) => {
+      console.error("Failed to sync admin-created user to RemOnline:", error)
+    })
+
     return NextResponse.json({
       id: authUser.user.id,
       email,
@@ -244,6 +263,8 @@ export async function POST(request: Request) {
       billing_city: normalizedBilling.billing_city,
       billing_postal_code: normalizedBilling.billing_postal_code,
       billing_country: normalizedBilling.billing_country,
+      remonline_sync_status: "pending",
+      remonline_sync_attempts: 0,
       created_at: new Date().toISOString(),
     })
   } catch (error) {

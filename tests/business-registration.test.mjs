@@ -126,3 +126,31 @@ test("admin users API exposes company and billing address fields", async () => {
     assert.match(source, /billing_country/)
   }
 })
+
+test("registration marks RemOnline sync pending and syncs by user id", async () => {
+  const source = await read("../app/actions/auth-api.ts")
+
+  assert.match(source, /syncUserToRemonline/)
+  assert.match(source, /remonline_sync_status:\s*"pending"/)
+  assert.match(source, /remonline_sync_attempts:\s*0/)
+  assert.match(source, /syncUserToRemonline\(newUser\.id\)/)
+  assert.match(source, /syncUserToRemonline\(existingUser\.id\)/)
+  assert.doesNotMatch(source, /syncClientToRemonline\(remonlineUserData\)/)
+})
+
+test("admin users API exposes RemOnline sync fields", async () => {
+  const listSource = await read("../app/api/admin/users/route.ts")
+  const detailSource = await read("../app/api/admin/users/[id]/route.ts")
+
+  for (const source of [listSource, detailSource]) {
+    assert.match(source, /remonline_id/)
+    assert.match(source, /remonline_contact_type/)
+    assert.match(source, /remonline_sync_status/)
+    assert.match(source, /remonline_sync_error/)
+    assert.match(source, /remonline_synced_at/)
+    assert.match(source, /remonline_sync_attempts/)
+  }
+
+  assert.match(listSource, /syncUserToRemonline\(authUser\.user\.id\)/)
+  assert.match(detailSource, /syncUserToRemonline\(id\)/)
+})

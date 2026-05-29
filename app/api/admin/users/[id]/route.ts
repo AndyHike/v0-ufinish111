@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
 import { logActivity } from "@/lib/admin/activity-logger"
 import { sendAccountApprovedEmail } from "@/lib/email/send-email"
+import { syncUserToRemonline } from "@/lib/services/remonline-sync"
 
 function buildBillingAddress({
   billing_street,
@@ -41,6 +42,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         company_name,
         is_b2b,
         is_approved,
+        remonline_id,
+        remonline_contact_type,
+        remonline_sync_status,
+        remonline_sync_error,
+        remonline_synced_at,
+        remonline_sync_attempts,
         created_at,
         profiles!inner(phone, billing_street, billing_city, billing_postal_code, billing_country)
       `)
@@ -75,6 +82,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       company_name: u.company_name,
       is_b2b: u.is_b2b,
       is_approved: u.is_approved,
+      remonline_id: u.remonline_id || null,
+      remonline_contact_type: u.remonline_contact_type || null,
+      remonline_sync_status: u.remonline_sync_status || null,
+      remonline_sync_error: u.remonline_sync_error || null,
+      remonline_synced_at: u.remonline_synced_at || null,
+      remonline_sync_attempts: u.remonline_sync_attempts ?? null,
       created_at: u.created_at,
       phone: u.profiles?.phone || null,
       billing_street: u.profiles?.billing_street || null,
@@ -227,6 +240,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       details: `Updated user: ${email}`,
     })
 
+    syncUserToRemonline(id).catch((error) => {
+      console.error("Failed to sync updated user to RemOnline:", error)
+    })
+
     // Return updated user with phone
     const { data: updatedUser } = await supabase
       .from("users")
@@ -242,6 +259,12 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         company_name,
         is_b2b,
         is_approved,
+        remonline_id,
+        remonline_contact_type,
+        remonline_sync_status,
+        remonline_sync_error,
+        remonline_synced_at,
+        remonline_sync_attempts,
         created_at,
         profiles!inner(phone, billing_street, billing_city, billing_postal_code, billing_country)
       `)
@@ -265,6 +288,12 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       company_name: u.company_name,
       is_b2b: u.is_b2b,
       is_approved: u.is_approved,
+      remonline_id: u.remonline_id || null,
+      remonline_contact_type: u.remonline_contact_type || null,
+      remonline_sync_status: u.remonline_sync_status || null,
+      remonline_sync_error: u.remonline_sync_error || null,
+      remonline_synced_at: u.remonline_synced_at || null,
+      remonline_sync_attempts: u.remonline_sync_attempts ?? null,
       created_at: u.created_at,
       phone: u.profiles?.phone || null,
       billing_street: u.profiles?.billing_street || null,
