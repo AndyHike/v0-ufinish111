@@ -3,6 +3,24 @@ import { createClient } from "@/lib/supabase"
 import { logActivity } from "@/lib/admin/activity-logger"
 import { sendAccountApprovedEmail } from "@/lib/email/send-email"
 
+function buildBillingAddress({
+  billing_street,
+  billing_city,
+  billing_postal_code,
+  billing_country,
+}: {
+  billing_street?: string
+  billing_city?: string
+  billing_postal_code?: string
+  billing_country?: string
+}) {
+  const hasBillingAddress = Boolean(billing_street || billing_city || billing_postal_code)
+  if (!hasBillingAddress) return undefined
+
+  const cityLine = [billing_postal_code, billing_city].filter(Boolean).join(" ")
+  return [billing_street, cityLine, billing_country || "CZ"].filter(Boolean).join(", ")
+}
+
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const id = (await params).id
@@ -20,10 +38,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         role_id,
         ico,
         dic,
+        company_name,
         is_b2b,
         is_approved,
         created_at,
-        profiles!inner(phone)
+        profiles!inner(phone, billing_street, billing_city, billing_postal_code, billing_country)
       `)
       .eq("id", id)
       .single()
@@ -50,8 +69,18 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       first_name: u.first_name,
       last_name: u.last_name,
       role: u.role,
+      role_id: u.role_id,
+      ico: u.ico,
+      dic: u.dic,
+      company_name: u.company_name,
+      is_b2b: u.is_b2b,
+      is_approved: u.is_approved,
       created_at: u.created_at,
       phone: u.profiles?.phone || null,
+      billing_street: u.profiles?.billing_street || null,
+      billing_city: u.profiles?.billing_city || null,
+      billing_postal_code: u.profiles?.billing_postal_code || null,
+      billing_country: u.profiles?.billing_country || null,
     }
 
     return NextResponse.json(transformedUser)
@@ -65,7 +94,35 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   try {
     const id = (await params).id
     const body = await request.json()
-    const { first_name, last_name, email, role, phone, is_approved, role_id, ico, dic, is_b2b } = body
+    const {
+      first_name,
+      last_name,
+      email,
+      role,
+      phone,
+      is_approved,
+      role_id,
+      ico,
+      dic,
+      is_b2b,
+      company_name,
+      companyName,
+      billing_street,
+      billingStreet,
+      billing_city,
+      billingCity,
+      billing_postal_code,
+      billingPostalCode,
+      billing_country,
+      billingCountry,
+    } = body
+    const normalizedCompanyName = companyName ?? company_name
+    const normalizedBilling = {
+      billing_street: billingStreet ?? billing_street,
+      billing_city: billingCity ?? billing_city,
+      billing_postal_code: billingPostalCode ?? billing_postal_code,
+      billing_country: billingCountry ?? billing_country,
+    }
 
     const supabase = createClient()
 
@@ -82,6 +139,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     if (ico !== undefined) updateData.ico = ico
     if (dic !== undefined) updateData.dic = dic
     if (is_b2b !== undefined) updateData.is_b2b = is_b2b
+    if (normalizedCompanyName !== undefined) updateData.company_name = normalizedCompanyName
 
     // Update user in users table
     const { data: user, error } = await supabase
@@ -114,16 +172,40 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       })
     }
 
-    // Update phone in profiles table
-    if (phone !== undefined) {
+    // Update phone and billing fields in profiles table
+    const shouldUpdateProfile =
+      phone !== undefined ||
+      first_name !== undefined ||
+      last_name !== undefined ||
+      normalizedBilling.billing_street !== undefined ||
+      normalizedBilling.billing_city !== undefined ||
+      normalizedBilling.billing_postal_code !== undefined ||
+      normalizedBilling.billing_country !== undefined
+
+    if (shouldUpdateProfile) {
+      const profileUpdate: Record<string, any> = {
+        updated_at: new Date().toISOString(),
+      }
+      if (phone !== undefined) profileUpdate.phone = phone
+      if (first_name !== undefined) profileUpdate.first_name = first_name
+      if (last_name !== undefined) profileUpdate.last_name = last_name
+      if (normalizedBilling.billing_street !== undefined) profileUpdate.billing_street = normalizedBilling.billing_street
+      if (normalizedBilling.billing_city !== undefined) profileUpdate.billing_city = normalizedBilling.billing_city
+      if (normalizedBilling.billing_postal_code !== undefined) {
+        profileUpdate.billing_postal_code = normalizedBilling.billing_postal_code
+      }
+      if (normalizedBilling.billing_country !== undefined) profileUpdate.billing_country = normalizedBilling.billing_country || "CZ"
+      const billingAddress = buildBillingAddress({
+        billing_street: profileUpdate.billing_street,
+        billing_city: profileUpdate.billing_city,
+        billing_postal_code: profileUpdate.billing_postal_code,
+        billing_country: profileUpdate.billing_country,
+      })
+      if (billingAddress !== undefined) profileUpdate.address = billingAddress
+
       const { error: profileError } = await supabase
         .from("profiles")
-        .update({
-          phone,
-          first_name,
-          last_name,
-          updated_at: new Date().toISOString(),
-        })
+        .update(profileUpdate)
         .eq("id", id)
 
       if (profileError) {
@@ -157,10 +239,11 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         role_id,
         ico,
         dic,
+        company_name,
         is_b2b,
         is_approved,
         created_at,
-        profiles!inner(phone)
+        profiles!inner(phone, billing_street, billing_city, billing_postal_code, billing_country)
       `)
       .eq("id", id)
       .single()
@@ -179,10 +262,15 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       role_id: u.role_id,
       ico: u.ico,
       dic: u.dic,
+      company_name: u.company_name,
       is_b2b: u.is_b2b,
       is_approved: u.is_approved,
       created_at: u.created_at,
       phone: u.profiles?.phone || null,
+      billing_street: u.profiles?.billing_street || null,
+      billing_city: u.profiles?.billing_city || null,
+      billing_postal_code: u.profiles?.billing_postal_code || null,
+      billing_country: u.profiles?.billing_country || null,
     }
 
     return NextResponse.json(transformedUser)

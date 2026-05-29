@@ -29,6 +29,19 @@ async function setSecureCookie(name: string, value: string, maxAge: number = 30 
   }
 }
 
+function buildBillingAddress(userData: {
+  billingStreet?: string
+  billingCity?: string
+  billingPostalCode?: string
+  billingCountry?: string
+}) {
+  const hasBillingAddress = Boolean(userData.billingStreet || userData.billingCity || userData.billingPostalCode)
+  if (!hasBillingAddress) return ""
+
+  const cityLine = [userData.billingPostalCode, userData.billingCity].filter(Boolean).join(" ")
+  return [userData.billingStreet, cityLine, userData.billingCountry || "CZ"].filter(Boolean).join(", ")
+}
+
 // Check if user exists in our database
 export async function checkUserExists(identifier: string): Promise<{
   success: boolean
@@ -367,6 +380,11 @@ export async function createUser(userData: {
   is_b2b?: boolean
   ico?: string
   dic?: string
+  companyName?: string
+  billingStreet?: string
+  billingCity?: string
+  billingPostalCode?: string
+  billingCountry?: string
 }): Promise<{ success: boolean; message?: string; needsApproval?: boolean }> {
   try {
     if (process.env.NODE_ENV === "development") {
@@ -374,6 +392,14 @@ export async function createUser(userData: {
     }
 
     const supabase = createClient()
+    const billingAddress = userData.address || buildBillingAddress(userData)
+    const remonlineUserData = {
+      first_name: userData.first_name,
+      last_name: userData.last_name,
+      email: userData.email,
+      phone: userData.phone,
+      address: billingAddress,
+    }
 
     // Check if user already exists
     const { data: existingUser } = await supabase
@@ -412,7 +438,7 @@ export async function createUser(userData: {
       await setSecureCookie("session_id", session.id)
 
       // Sync with RemOnline in the background
-      syncClientToRemonline(userData)
+      syncClientToRemonline(remonlineUserData)
         .then((result) => {
           if (result.success && result.remonlineId) {
             updateRemonlineIdForUser(existingUser.id, result.remonlineId)
@@ -476,6 +502,7 @@ export async function createUser(userData: {
         is_b2b: userData.is_b2b || false,
         ico: userData.ico || null,
         dic: userData.dic || null,
+        company_name: userData.companyName || null,
         is_approved: isApproved,
       })
       .select("id")
@@ -498,7 +525,11 @@ export async function createUser(userData: {
       last_name: userData.last_name,
       phone: userData.phone[0] || null,
       email: userData.email.toLowerCase(),
-      address: userData.address || null,
+      address: billingAddress || null,
+      billing_street: userData.billingStreet || null,
+      billing_city: userData.billingCity || null,
+      billing_postal_code: userData.billingPostalCode || null,
+      billing_country: userData.billingCountry || "CZ",
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })
@@ -515,13 +546,7 @@ export async function createUser(userData: {
     }
 
     // Sync with RemOnline in the background
-    syncClientToRemonline({
-      first_name: userData.first_name,
-      last_name: userData.last_name,
-      email: userData.email,
-      phone: userData.phone,
-      address: userData.address,
-    })
+    syncClientToRemonline(remonlineUserData)
       .then((result) => {
         if (result.success && result.remonlineId) {
           updateRemonlineIdForUser(newUser.id, result.remonlineId)

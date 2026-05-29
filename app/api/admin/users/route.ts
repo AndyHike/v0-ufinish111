@@ -2,6 +2,24 @@ import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
 import { logActivity } from "@/lib/admin/activity-logger"
 
+function buildBillingAddress({
+  billing_street,
+  billing_city,
+  billing_postal_code,
+  billing_country,
+}: {
+  billing_street?: string
+  billing_city?: string
+  billing_postal_code?: string
+  billing_country?: string
+}) {
+  const hasBillingAddress = Boolean(billing_street || billing_city || billing_postal_code)
+  if (!hasBillingAddress) return null
+
+  const cityLine = [billing_postal_code, billing_city].filter(Boolean).join(" ")
+  return [billing_street, cityLine, billing_country || "CZ"].filter(Boolean).join(", ")
+}
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
@@ -25,11 +43,12 @@ export async function GET(request: Request) {
         role_id,
         ico,
         dic,
+        company_name,
         is_b2b,
         is_approved,
         created_at, 
         updated_at,
-        profiles!left(phone, avatar_url),
+        profiles!left(phone, avatar_url, billing_street, billing_city, billing_postal_code, billing_country),
         roles!left(name, slug, discount_percentage)
       `,
       { count: "exact" },
@@ -37,7 +56,9 @@ export async function GET(request: Request) {
 
     // Apply search filter if query is provided
     if (query) {
-      supabaseQuery = supabaseQuery.or(`email.ilike.%${query}%,first_name.ilike.%${query}%,last_name.ilike.%${query}%`)
+      supabaseQuery = supabaseQuery.or(
+        `email.ilike.%${query}%,first_name.ilike.%${query}%,last_name.ilike.%${query}%,company_name.ilike.%${query}%,ico.ilike.%${query}%`,
+      )
     }
 
     // Apply role filter if provided
@@ -73,12 +94,17 @@ export async function GET(request: Request) {
       role_name: user.roles?.name || null,
       ico: user.ico,
       dic: user.dic,
+      company_name: user.company_name,
       is_b2b: user.is_b2b || false,
       is_approved: user.is_approved ?? true,
       created_at: user.created_at,
       updated_at: user.updated_at,
       phone: user.profiles?.phone || null,
       avatar_url: user.profiles?.avatar_url || null,
+      billing_street: user.profiles?.billing_street || null,
+      billing_city: user.profiles?.billing_city || null,
+      billing_postal_code: user.profiles?.billing_postal_code || null,
+      billing_country: user.profiles?.billing_country || null,
     }))
 
     return NextResponse.json({
@@ -97,7 +123,35 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { email, first_name, last_name, role, phone, password, role_id, ico, dic, is_b2b } = body
+    const {
+      email,
+      first_name,
+      last_name,
+      role,
+      phone,
+      password,
+      role_id,
+      ico,
+      dic,
+      is_b2b,
+      company_name,
+      companyName,
+      billing_street,
+      billingStreet,
+      billing_city,
+      billingCity,
+      billing_postal_code,
+      billingPostalCode,
+      billing_country,
+      billingCountry,
+    } = body
+    const normalizedCompanyName = companyName || company_name || null
+    const normalizedBilling = {
+      billing_street: billingStreet || billing_street || null,
+      billing_city: billingCity || billing_city || null,
+      billing_postal_code: billingPostalCode || billing_postal_code || null,
+      billing_country: billingCountry || billing_country || "CZ",
+    }
 
     const supabase = createClient()
 
@@ -130,6 +184,7 @@ export async function POST(request: Request) {
         role_id: role_id || null,
         ico: ico || null,
         dic: dic || null,
+        company_name: normalizedCompanyName,
         is_b2b: is_b2b || false,
         is_approved: true,
       })
@@ -152,6 +207,11 @@ export async function POST(request: Request) {
       first_name,
       last_name,
       phone,
+      address: buildBillingAddress(normalizedBilling),
+      billing_street: normalizedBilling.billing_street,
+      billing_city: normalizedBilling.billing_city,
+      billing_postal_code: normalizedBilling.billing_postal_code,
+      billing_country: normalizedBilling.billing_country,
     })
 
     if (profileError) {
@@ -179,6 +239,11 @@ export async function POST(request: Request) {
       last_name,
       role,
       phone,
+      company_name: normalizedCompanyName,
+      billing_street: normalizedBilling.billing_street,
+      billing_city: normalizedBilling.billing_city,
+      billing_postal_code: normalizedBilling.billing_postal_code,
+      billing_country: normalizedBilling.billing_country,
       created_at: new Date().toISOString(),
     })
   } catch (error) {

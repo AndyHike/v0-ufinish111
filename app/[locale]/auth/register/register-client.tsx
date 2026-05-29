@@ -17,7 +17,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { DevEmailNotification } from "@/components/dev-email-notification"
 import { CustomPhoneInput } from "@/components/phone-input/custom-phone-input"
 import { Checkbox } from "@/components/ui/checkbox"
-import { UserPlus, CheckCircle, ArrowLeft, Shield, Clock } from "lucide-react"
+import { UserPlus, CheckCircle, ArrowLeft, Shield, Clock, Search, Loader2 } from "lucide-react"
 
 import { checkUserExists, sendVerificationCode, verifyCode, createUser } from "@/app/actions/auth-api"
 
@@ -35,25 +35,44 @@ const initialSchema = z
     isB2B: z.boolean().default(false),
     ico: z.string().optional(),
     dic: z.string().optional(),
+    companyName: z.string().optional(),
+    billingStreet: z.string().min(2, { message: "Billing street is required" }),
+    billingCity: z.string().min(2, { message: "Billing city is required" }),
+    billingPostalCode: z.string().min(3, { message: "Billing postal code is required" }),
+    billingCountry: z.string().default("CZ"),
   })
-  .refine(
-    (data) => {
-      if (data.isB2B) {
-        return !!data.ico && data.ico.length >= 2
-      }
-      return true
-    },
-    { message: "IČO je povinné pro B2B", path: ["ico"] },
-  )
-  .refine(
-    (data) => {
-      if (data.isB2B) {
-        return !!data.dic && data.dic.length >= 2
-      }
-      return true
-    },
-    { message: "DIČ je povinné pro B2B", path: ["dic"] },
-  )
+  .superRefine((data, ctx) => {
+    if (!data.isB2B) return
+
+    if (!/^\d{8}$/.test((data.ico || "").replace(/\D/g, ""))) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "ICO musi mit 8 cislic",
+        path: ["ico"],
+      })
+    }
+
+    if (!data.companyName?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Nazev spolecnosti je povinny",
+        path: ["companyName"],
+      })
+    }
+  })
+
+type InitialFormValues = z.infer<typeof initialSchema>
+
+type AresCompany = {
+  ico: string
+  companyName: string
+  dic: string
+  address: string
+  billingStreet: string
+  billingCity: string
+  billingPostalCode: string
+  billingCountry: string
+}
 
 const verificationSchema = z.object({
   code: z.string().length(6),
@@ -76,9 +95,16 @@ export default function RegisterClient() {
     isB2B: false,
     ico: "",
     dic: "",
+    companyName: "",
+    billingStreet: "",
+    billingCity: "",
+    billingPostalCode: "",
+    billingCountry: "CZ",
   })
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [isAresLoading, setIsAresLoading] = useState(false)
+  const [aresMessage, setAresMessage] = useState<string | null>(null)
 
   const initialForm = useForm({
     resolver: zodResolver(initialSchema),
@@ -90,6 +116,11 @@ export default function RegisterClient() {
       isB2B: isBusinessRegistration,
       ico: "",
       dic: "",
+      companyName: "",
+      billingStreet: "",
+      billingCity: "",
+      billingPostalCode: "",
+      billingCountry: "CZ",
     },
   })
 
@@ -108,15 +139,55 @@ export default function RegisterClient() {
     }
   }, [initialForm, isBusinessRegistration])
 
-  const handleInitialSubmit = async (data: {
-    email: string
-    phone: string
-    firstName: string
-    lastName: string
-    isB2B: boolean
-    ico?: string
-    dic?: string
-  }) => {
+  const handleAresLookup = async () => {
+    const ico = (initialForm.getValues("ico") || "").replace(/\D/g, "")
+    initialForm.setValue("ico", ico, { shouldDirty: true, shouldValidate: true })
+    setAresMessage(null)
+    setError(null)
+
+    if (!/^\d{8}$/.test(ico)) {
+      initialForm.setError("ico", {
+        type: "manual",
+        message: "ICO musi mit 8 cislic",
+      })
+      return
+    }
+
+    setIsAresLoading(true)
+
+    try {
+      const response = await fetch(`/api/ares/company?ico=${encodeURIComponent(ico)}`)
+      const result = (await response.json()) as { success: boolean; message?: string; company?: AresCompany }
+
+      if (!response.ok || !result.success || !result.company) {
+        setAresMessage(result.message || "Firmu se nepodarilo najit v ARES.")
+        return
+      }
+
+      const company = result.company
+      initialForm.setValue("companyName", company.companyName, { shouldDirty: true, shouldValidate: true })
+      initialForm.setValue("dic", company.dic || "", { shouldDirty: true, shouldValidate: false })
+      initialForm.setValue("billingStreet", company.billingStreet, { shouldDirty: true, shouldValidate: true })
+      initialForm.setValue("billingCity", company.billingCity, { shouldDirty: true, shouldValidate: true })
+      initialForm.setValue("billingPostalCode", company.billingPostalCode, {
+        shouldDirty: true,
+        shouldValidate: true,
+      })
+      initialForm.setValue("billingCountry", company.billingCountry || "CZ", {
+        shouldDirty: true,
+        shouldValidate: true,
+      })
+      initialForm.clearErrors(["ico", "companyName", "billingStreet", "billingCity", "billingPostalCode"])
+      setAresMessage(company.companyName ? `Nalezeno: ${company.companyName}` : "Udaje byly nacteny z ARES.")
+    } catch (error) {
+      console.error("ARES lookup error:", error)
+      setAresMessage("ARES je docasne nedostupny. Udaje muzete vyplnit rucne.")
+    } finally {
+      setIsAresLoading(false)
+    }
+  }
+
+  const handleInitialSubmit = async (data: InitialFormValues) => {
     setError(null)
     setIsLoading(true)
 
@@ -129,6 +200,11 @@ export default function RegisterClient() {
         isB2B: data.isB2B,
         ico: data.ico || "",
         dic: data.dic || "",
+        companyName: data.companyName || "",
+        billingStreet: data.billingStreet,
+        billingCity: data.billingCity,
+        billingPostalCode: data.billingPostalCode,
+        billingCountry: data.billingCountry || "CZ",
       })
 
       const userExists = await checkUserExists(data.email)
@@ -172,10 +248,14 @@ export default function RegisterClient() {
         last_name: identifier.lastName,
         email: identifier.email,
         phone: [identifier.phone],
-        address: "",
         is_b2b: identifier.isB2B,
         ico: identifier.ico || undefined,
         dic: identifier.dic || undefined,
+        companyName: identifier.companyName || undefined,
+        billingStreet: identifier.billingStreet,
+        billingCity: identifier.billingCity,
+        billingPostalCode: identifier.billingPostalCode,
+        billingCountry: identifier.billingCountry,
       })
 
       if (!createResult.success) {
@@ -215,7 +295,7 @@ export default function RegisterClient() {
   }
 
   return (
-    <Card className="w-full max-w-md shadow-xl border-0 bg-white">
+    <Card className="w-full max-w-xl shadow-xl border-0 bg-white">
       <CardHeader className="space-y-2 pb-4">
         <div className="flex flex-col items-center space-y-2">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-green-500 to-emerald-600 shadow-lg">
@@ -257,7 +337,98 @@ export default function RegisterClient() {
         )}
 
         {step === "initial" && (
-          <form onSubmit={initialForm.handleSubmit(handleInitialSubmit)} className="space-y-4">
+          <form onSubmit={initialForm.handleSubmit(handleInitialSubmit)} className="space-y-5">
+            <div className="space-y-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
+              <div className="flex items-start gap-3">
+                <Controller
+                  name="isB2B"
+                  control={initialForm.control}
+                  render={({ field }) => (
+                    <Checkbox
+                      id="isB2B"
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      disabled={isLoading}
+                      className="mt-0.5"
+                    />
+                  )}
+                />
+                <div className="space-y-1">
+                  <Label htmlFor="isB2B" className="cursor-pointer text-sm font-semibold text-gray-900">
+                    {t("businessClient") || t("b2bClient") || "Firemní účet / podnikatel"}
+                  </Label>
+                  <p className="text-xs leading-relaxed text-gray-600">
+                    Pro firmy a podnikatele lze IČO dohledat v ARES a fakturační údaje doplnit automaticky.
+                  </p>
+                </div>
+              </div>
+
+              {watchIsB2B && (
+                <div className="grid gap-4 border-t border-gray-200 pt-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="ico" className="text-sm font-medium text-gray-700">
+                      IČO *
+                    </Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="ico"
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={8}
+                        placeholder="12345678"
+                        {...initialForm.register("ico")}
+                        disabled={isLoading || isAresLoading}
+                        className="h-10 border-gray-200 bg-white focus:border-green-500 focus:ring-green-500 rounded-lg"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={handleAresLookup}
+                        disabled={isLoading || isAresLoading}
+                        className="h-10 w-10 shrink-0"
+                        aria-label="Vyhledat v ARES"
+                      >
+                        {isAresLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                    {initialForm.formState.errors.ico && (
+                      <p className="text-sm text-red-600">{initialForm.formState.errors.ico.message}</p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="dic" className="text-sm font-medium text-gray-700">
+                      DIČ <span className="font-normal text-gray-500">(pouze plátci DPH)</span>
+                    </Label>
+                    <Input
+                      id="dic"
+                      type="text"
+                      placeholder="CZ12345678"
+                      {...initialForm.register("dic")}
+                      disabled={isLoading || isAresLoading}
+                      className="h-10 border-gray-200 bg-white focus:border-green-500 focus:ring-green-500 rounded-lg"
+                    />
+                  </div>
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label htmlFor="companyName" className="text-sm font-medium text-gray-700">
+                      Název společnosti *
+                    </Label>
+                    <Input
+                      id="companyName"
+                      type="text"
+                      placeholder="Název firmy"
+                      {...initialForm.register("companyName")}
+                      disabled={isLoading || isAresLoading}
+                      className="h-10 border-gray-200 bg-white focus:border-green-500 focus:ring-green-500 rounded-lg"
+                    />
+                    {initialForm.formState.errors.companyName && (
+                      <p className="text-sm text-red-600">{initialForm.formState.errors.companyName.message}</p>
+                    )}
+                  </div>
+                  {aresMessage && <p className="text-xs text-gray-600 sm:col-span-2">{aresMessage}</p>}
+                </div>
+              )}
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="firstName" className="text-sm font-medium text-gray-700">
@@ -325,62 +496,64 @@ export default function RegisterClient() {
               )}
             />
 
-            {/* B2B Checkbox */}
-            <div className="flex items-center space-x-2 rounded-lg border border-gray-200 p-3 bg-gray-50">
-              <Controller
-                name="isB2B"
-                control={initialForm.control}
-                render={({ field }) => (
-                  <Checkbox
-                    id="isB2B"
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                    disabled={isLoading}
-                  />
+            <div className="space-y-4 rounded-lg border border-gray-200 p-4">
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900">Fakturační adresa</h3>
+                <p className="mt-1 text-xs text-gray-600">Údaje použijeme pro faktury a servisní dokumenty.</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="billingStreet" className="text-sm font-medium text-gray-700">
+                  Ulice a číslo domu *
+                </Label>
+                <Input
+                  id="billingStreet"
+                  type="text"
+                  placeholder="Např. Vodičkova 12"
+                  {...initialForm.register("billingStreet")}
+                  disabled={isLoading}
+                  className="h-10 border-gray-200 focus:border-green-500 focus:ring-green-500 rounded-lg"
+                />
+                {initialForm.formState.errors.billingStreet && (
+                  <p className="text-sm text-red-600">{initialForm.formState.errors.billingStreet.message}</p>
                 )}
-              />
-              <Label htmlFor="isB2B" className="text-sm font-medium text-gray-700 cursor-pointer">
-                {t("businessClient") || t("b2bClient") || "Firemní účet / podnikatel"}
-              </Label>
-            </div>
-
-            {/* B2B Fields - IČO & DIČ */}
-            {watchIsB2B && (
-              <div className="grid grid-cols-2 gap-4 rounded-lg border border-blue-200 p-3 bg-blue-50">
+              </div>
+              <div className="grid gap-4 sm:grid-cols-[1fr_140px]">
                 <div className="space-y-2">
-                  <Label htmlFor="ico" className="text-sm font-medium text-gray-700">
-                    IČO *
+                  <Label htmlFor="billingCity" className="text-sm font-medium text-gray-700">
+                    Město *
                   </Label>
                   <Input
-                    id="ico"
+                    id="billingCity"
                     type="text"
-                    placeholder="12345678"
-                    {...initialForm.register("ico")}
+                    placeholder="Praha"
+                    {...initialForm.register("billingCity")}
                     disabled={isLoading}
-                    className="h-10 border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg bg-white"
+                    className="h-10 border-gray-200 focus:border-green-500 focus:ring-green-500 rounded-lg"
                   />
-                  {initialForm.formState.errors.ico && (
-                    <p className="text-sm text-red-600">{initialForm.formState.errors.ico.message}</p>
+                  {initialForm.formState.errors.billingCity && (
+                    <p className="text-sm text-red-600">{initialForm.formState.errors.billingCity.message}</p>
                   )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="dic" className="text-sm font-medium text-gray-700">
-                    DIČ *
+                  <Label htmlFor="billingPostalCode" className="text-sm font-medium text-gray-700">
+                    PSČ *
                   </Label>
                   <Input
-                    id="dic"
+                    id="billingPostalCode"
                     type="text"
-                    placeholder="CZ12345678"
-                    {...initialForm.register("dic")}
+                    inputMode="numeric"
+                    placeholder="11000"
+                    {...initialForm.register("billingPostalCode")}
                     disabled={isLoading}
-                    className="h-10 border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg bg-white"
+                    className="h-10 border-gray-200 focus:border-green-500 focus:ring-green-500 rounded-lg"
                   />
-                  {initialForm.formState.errors.dic && (
-                    <p className="text-sm text-red-600">{initialForm.formState.errors.dic.message}</p>
+                  {initialForm.formState.errors.billingPostalCode && (
+                    <p className="text-sm text-red-600">{initialForm.formState.errors.billingPostalCode.message}</p>
                   )}
                 </div>
               </div>
-            )}
+              <input type="hidden" {...initialForm.register("billingCountry")} />
+            </div>
 
             <Button
               type="submit"

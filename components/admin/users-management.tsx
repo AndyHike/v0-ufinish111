@@ -49,10 +49,15 @@ interface User {
   role_name: string | null
   ico: string | null
   dic: string | null
+  company_name: string | null
   is_b2b: boolean
   is_approved: boolean
   phone: string | null
   avatar_url: string | null
+  billing_street: string | null
+  billing_city: string | null
+  billing_postal_code: string | null
+  billing_country: string | null
   created_at: string
 }
 
@@ -79,7 +84,12 @@ export function UsersManagement() {
     password: "",
     ico: "",
     dic: "",
+    company_name: "",
     is_b2b: false,
+    billing_street: "",
+    billing_city: "",
+    billing_postal_code: "",
+    billing_country: "CZ",
   })
   const [formErrors, setFormErrors] = useState({
     email: "",
@@ -207,7 +217,12 @@ export function UsersManagement() {
         password: "",
         ico: "",
         dic: "",
+        company_name: "",
         is_b2b: false,
+        billing_street: "",
+        billing_city: "",
+        billing_postal_code: "",
+        billing_country: "CZ",
       })
       fetchUsers()
     } catch (error) {
@@ -240,7 +255,12 @@ export function UsersManagement() {
           phone: formData.phone,
           ico: formData.ico || null,
           dic: formData.dic || null,
+          company_name: formData.company_name || null,
           is_b2b: formData.is_b2b,
+          billing_street: formData.billing_street || null,
+          billing_city: formData.billing_city || null,
+          billing_postal_code: formData.billing_postal_code || null,
+          billing_country: formData.billing_country || "CZ",
         }),
       })
 
@@ -311,7 +331,12 @@ export function UsersManagement() {
       password: "",
       ico: user.ico || "",
       dic: user.dic || "",
+      company_name: user.company_name || "",
       is_b2b: user.is_b2b,
+      billing_street: user.billing_street || "",
+      billing_city: user.billing_city || "",
+      billing_postal_code: user.billing_postal_code || "",
+      billing_country: user.billing_country || "CZ",
     })
     setIsEditDialogOpen(true)
   }
@@ -442,6 +467,7 @@ export function UsersManagement() {
                                   )}
                                 </div>
                                 <p className="text-xs text-muted-foreground">{user.email}</p>
+                                {user.company_name && <p className="text-xs text-muted-foreground">{user.company_name}</p>}
                               </div>
                             </div>
                           </TableCell>
@@ -715,6 +741,15 @@ export function UsersManagement() {
                 </Select>
               </div>
               {/* B2B fields */}
+              <div className="space-y-2">
+                <Label htmlFor="edit_company_name">Název společnosti</Label>
+                <Input
+                  id="edit_company_name"
+                  value={formData.company_name}
+                  onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
+                  placeholder="Název firmy"
+                />
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="edit_ico">IČO</Label>
@@ -732,6 +767,35 @@ export function UsersManagement() {
                     value={formData.dic}
                     onChange={(e) => setFormData({ ...formData, dic: e.target.value })}
                     placeholder="CZ12345678"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit_billing_street">Fakturační adresa</Label>
+                <Input
+                  id="edit_billing_street"
+                  value={formData.billing_street}
+                  onChange={(e) => setFormData({ ...formData, billing_street: e.target.value })}
+                  placeholder="Ulice a číslo domu"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit_billing_city">Město</Label>
+                  <Input
+                    id="edit_billing_city"
+                    value={formData.billing_city}
+                    onChange={(e) => setFormData({ ...formData, billing_city: e.target.value })}
+                    placeholder="Praha"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit_billing_postal_code">PSČ</Label>
+                  <Input
+                    id="edit_billing_postal_code"
+                    value={formData.billing_postal_code}
+                    onChange={(e) => setFormData({ ...formData, billing_postal_code: e.target.value })}
+                    placeholder="11000"
                   />
                 </div>
               </div>
