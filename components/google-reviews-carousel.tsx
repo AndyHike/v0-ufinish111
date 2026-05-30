@@ -85,7 +85,7 @@ export function GoogleReviewsCarousel({ data }: GoogleReviewsCarouselProps) {
   return (
     <section className="py-12 bg-white border-b">
       <div className="container px-4 mx-auto">
-        <div className="text-center mb-12">
+        <div className={hasReviews ? "text-center mb-12" : "text-center mb-6"}>
           <h2 className="text-3xl font-bold mb-4">{t("title")}</h2>
           {hasReviews ? (
             <div className="flex items-center justify-center gap-2 mb-4">
@@ -100,7 +100,7 @@ export function GoogleReviewsCarousel({ data }: GoogleReviewsCarouselProps) {
           )}
         </div>
 
-        {hasReviews ? (
+        {hasReviews && (
           <>
             {/* Mobile Carousel View with Fixed Navigation */}
             <div className="md:hidden">
@@ -192,10 +192,6 @@ export function GoogleReviewsCarousel({ data }: GoogleReviewsCarouselProps) {
               )}
             </div>
           </>
-        ) : (
-          <div className="text-center py-8">
-            <p className="text-gray-500">{t("loading")}</p>
-          </div>
         )}
 
         {/* Google Business Link */}

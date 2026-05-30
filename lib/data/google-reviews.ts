@@ -25,22 +25,29 @@ async function fetchGoogleReviewsFromApi(): Promise<GoogleReviewsData | null> {
 
   const url = `https://places.googleapis.com/v1/places/${placeId}?fields=displayName,rating,userRatingCount,reviews`
 
-  console.log("[v0] Fetching all available reviews from Google Places API...")
-  const response = await fetch(url, {
-    headers: {
-      "X-Goog-Api-Key": apiKey,
-    },
-    cache: "no-store",
-  })
+  let data: any
 
-  if (!response.ok) {
-    if (process.env.DEBUG_GOOGLE_REVIEWS === "true") {
-      console.warn("[v0] Google API error status:", response.status)
+  try {
+    console.log("[v0] Fetching all available reviews from Google Places API...")
+    const response = await fetch(url, {
+      headers: {
+        "X-Goog-Api-Key": apiKey,
+      },
+      cache: "no-store",
+    })
+
+    if (!response.ok) {
+      if (process.env.DEBUG_GOOGLE_REVIEWS === "true") {
+        console.warn("[v0] Google API error status:", response.status)
+      }
+      return null
     }
-    throw new Error(`Google Places API returned ${response.status}`)
-  }
 
-  const data = await response.json()
+    data = await response.json()
+  } catch (error) {
+    console.error("[v0] Google Places API request failed:", error)
+    return null
+  }
 
   if (!data) {
     return null
