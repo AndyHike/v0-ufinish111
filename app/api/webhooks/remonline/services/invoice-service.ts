@@ -59,6 +59,11 @@ function extractInvoicePayload(input: JsonRecord): JsonRecord {
   return input
 }
 
+function hasInvoiceNumber(input: JsonRecord): boolean {
+  const invoice = extractInvoicePayload(input)
+  return [invoice.number, invoice.name, invoice.id_label, invoice.label].some((value) => value !== undefined)
+}
+
 function extractInvoiceId(input: JsonRecord, invoice: JsonRecord): number | null {
   return toNumber(firstPresent(invoice.id, invoice.invoice_id, input.context?.object_id, input.object_id))
 }
@@ -151,7 +156,11 @@ export function normalizeInvoicePayload(input: JsonRecord, userId: string | null
   }
 }
 
-function mergeInvoiceForUpsert(normalized: JsonRecord, existing: JsonRecord | null) {
+function mergeInvoiceForUpsert(
+  normalized: JsonRecord,
+  existing: JsonRecord | null,
+  options: { preserveIfExisting?: Iterable<string> } = {},
+) {
   if (!existing) return normalized
 
   const alwaysFreshFields = new Set([
@@ -164,11 +173,16 @@ function mergeInvoiceForUpsert(normalized: JsonRecord, existing: JsonRecord | nu
     "updated_at",
     "remonline_invoice_id",
   ])
+  const preserveIfExisting = new Set(options.preserveIfExisting ?? [])
 
   return Object.fromEntries(
     Object.entries(normalized).map(([key, value]) => [
       key,
-      alwaysFreshFields.has(key) || (value !== null && value !== undefined) ? value : existing[key],
+      preserveIfExisting.has(key)
+        ? existing[key]
+        : alwaysFreshFields.has(key) || (value !== null && value !== undefined)
+          ? value
+          : existing[key],
     ]),
   )
 }
@@ -213,7 +227,8 @@ export class InvoiceService {
     const userId = await this.findUserId(clientId)
     const normalized = normalizeInvoicePayload(input, userId, source)
     const existing = await this.findExistingInvoice(normalized.remonline_invoice_id)
-    const row = mergeInvoiceForUpsert(normalized, existing)
+    const preserveIfExisting = existing && !hasInvoiceNumber(input) ? ["invoice_number"] : []
+    const row = mergeInvoiceForUpsert(normalized, existing, { preserveIfExisting })
 
     const { data, error } = await this.supabase
       .from("user_invoices")
