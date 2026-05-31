@@ -38,6 +38,12 @@ interface OrderResponse {
   message?: string
 }
 
+interface InvoiceResponse {
+  success: boolean
+  invoice?: any
+  message?: string
+}
+
 interface OrdersResponse {
   success: boolean
   orders?: any[]
@@ -250,6 +256,15 @@ class RemonlineClient {
     }
 
     return fallback
+  }
+
+  private getFirstListItem(data: any): any | null {
+    if (Array.isArray(data)) return data[0] ?? null
+    if (Array.isArray(data?.data)) return data.data[0] ?? null
+    if (Array.isArray(data?.items)) return data.items[0] ?? null
+    if (Array.isArray(data?.results)) return data.results[0] ?? null
+
+    return null
   }
 
   private async makeRoAppRequest(
@@ -633,6 +648,41 @@ class RemonlineClient {
       return {
         success: false,
         message: error instanceof Error ? error.message : "Failed to fetch order items",
+      }
+    }
+  }
+
+  async getInvoiceById(invoiceId: number): Promise<InvoiceResponse> {
+    try {
+      const searchParams = new URLSearchParams({
+        ids: String(invoiceId),
+      })
+      const result = await this.makeRoAppRequest(`/invoices?${searchParams.toString()}`)
+
+      if (result.success) {
+        const invoice = this.getFirstListItem(result.data)
+
+        if (!invoice) {
+          return {
+            success: false,
+            message: "Invoice not found",
+          }
+        }
+
+        return {
+          success: true,
+          invoice,
+        }
+      }
+
+      return {
+        success: false,
+        message: result.message || "Failed to fetch invoice",
+      }
+    } catch (error) {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "Failed to fetch invoice",
       }
     }
   }
