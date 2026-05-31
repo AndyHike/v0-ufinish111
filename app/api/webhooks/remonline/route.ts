@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { handleOrderEvents } from "./handlers/order-handler"
 import { handleClientEvents } from "./handlers/client-handler"
+import { handleInvoiceEvents } from "./handlers/invoice-handler"
 import webhookSecurity from "@/lib/api/remonline-webhook-security"
 
 const { verifyRemonlineWebhookSignature } = webhookSecurity
@@ -54,6 +55,40 @@ const remonlineWebhookSchema = z.object({
         .object({
           id: z.number(),
         })
+        .optional(),
+      invoice: z
+        .object({
+          id: z.number().optional(),
+          number: z.string().optional(),
+          name: z.string().optional(),
+          status: z
+            .object({
+              id: z.number().optional(),
+              name: z.string().optional(),
+              title: z.string().optional(),
+              group: z.string().optional(),
+            })
+            .passthrough()
+            .optional(),
+        })
+        .passthrough()
+        .optional(),
+      payer: z
+        .object({
+          id: z.number().optional(),
+          fullname: z.string().optional(),
+          name: z.string().optional(),
+          full_name: z.string().optional(),
+        })
+        .passthrough()
+        .optional(),
+      manager: z
+        .object({
+          id: z.number().optional(),
+          full_name: z.string().optional(),
+          name: z.string().optional(),
+        })
+        .passthrough()
         .optional(),
     })
     .optional(),
@@ -144,6 +179,11 @@ export async function POST(request: NextRequest) {
     if (eventType.startsWith("Client.")) {
       console.log("👤 Routing to client handler...")
       return await handleClientEvents(webhookData)
+    }
+
+    if (eventType.startsWith("Invoice.")) {
+      console.log("Routing to invoice handler...")
+      return await handleInvoiceEvents(webhookData)
     }
 
     // Handle other event types as needed
