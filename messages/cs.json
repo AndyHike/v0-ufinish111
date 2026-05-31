@@ -613,7 +613,11 @@
     "serialNumber": "Sériové číslo",
     "services": "Služby",
     "totalAmount": "Celková částka",
-    "warranty": "Záruka"
+    "warranty": "Záruka",
+    "noOrders": "Zatím nemáte žádné objednávky oprav",
+    "noOrdersDescription": "Jakmile vzniknou objednávky oprav, zobrazí se tady s aktuálním stavem a detaily.",
+    "noOrdersFound": "Žádné objednávky nenalezeny",
+    "noOrdersFoundDescription": "Zkuste změnit vyhledávání nebo filtr podle stavu."
   },
   "Profile": {
     "userProfile": "Profil uživatele",

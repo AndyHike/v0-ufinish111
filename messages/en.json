@@ -674,7 +674,11 @@
     "serialNumber": "Serial number",
     "services": "Services",
     "totalAmount": "Total amount",
-    "warranty": "Warranty"
+    "warranty": "Warranty",
+    "noOrders": "You don't have any repair orders yet",
+    "noOrdersDescription": "When your repair orders are created, they will appear here with their current status and details.",
+    "noOrdersFound": "No orders found",
+    "noOrdersFoundDescription": "Try changing the search query or status filter."
   },
   "Profile": {
     "userProfile": "User Profile",
