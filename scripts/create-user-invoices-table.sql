@@ -43,7 +43,9 @@ CREATE INDEX IF NOT EXISTS idx_user_invoices_payer_id ON public.user_invoices(pa
 CREATE INDEX IF NOT EXISTS idx_user_invoices_issue_date ON public.user_invoices(issue_date);
 CREATE INDEX IF NOT EXISTS idx_user_invoices_due_date ON public.user_invoices(due_date);
 CREATE INDEX IF NOT EXISTS idx_user_invoices_status_id ON public.user_invoices(status_id);
-CREATE INDEX IF NOT EXISTS idx_user_invoices_is_deleted ON public.user_invoices(is_deleted);
+CREATE INDEX IF NOT EXISTS idx_user_invoices_is_deleted
+    ON public.user_invoices(user_id, issue_date DESC)
+    WHERE is_deleted = FALSE;
 
 ALTER TABLE public.user_invoices ENABLE ROW LEVEL SECURITY;
 
@@ -53,4 +55,4 @@ CREATE POLICY "Users can view their own invoices" ON public.user_invoices
 
 DROP POLICY IF EXISTS "Service can manage invoices" ON public.user_invoices;
 CREATE POLICY "Service can manage invoices" ON public.user_invoices
-    FOR ALL USING (true);
+    FOR ALL TO service_role USING (true) WITH CHECK (true);
