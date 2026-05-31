@@ -61,7 +61,7 @@ function extractInvoicePayload(input: JsonRecord): JsonRecord {
 
 function hasInvoiceNumber(input: JsonRecord): boolean {
   const invoice = extractInvoicePayload(input)
-  return [invoice.number, invoice.name, invoice.id_label, invoice.label].some((value) => value !== undefined)
+  return [invoice.number, invoice.name, invoice.id_label, invoice.label].some((value) => value !== undefined && value !== null)
 }
 
 function extractInvoiceId(input: JsonRecord, invoice: JsonRecord): number | null {
