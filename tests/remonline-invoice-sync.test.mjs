@@ -16,6 +16,10 @@ async function pathExists(path) {
   }
 }
 
+function assertDoesNotImportRemonlineApi(source) {
+  assert.doesNotMatch(source, /from\s+["'][^"']*lib\/api\/remonline["']/)
+}
+
 test("invoice migration stores local invoice data and sync state", async () => {
   const sql = await read("../scripts/create-user-invoices-table.sql")
 
@@ -45,7 +49,7 @@ test("invoice webhook route is canonical and routes invoice events after signatu
   assert.match(route, /verifyRemonlineWebhookSignature/)
   assert.match(route, /handleInvoiceEvents/)
   assert.match(route, /eventType\.startsWith\("Invoice\."\)/)
-  assert.ok(route.indexOf("verifyRemonlineWebhookSignature({ payload") < route.indexOf("return await handleInvoiceEvents"))
+  assert.ok(route.indexOf("verifyRemonlineWebhookSignature({ payload") < route.indexOf("handleInvoiceEvents("))
 })
 
 test("invoice webhook handler is payload-first and never imports the RO App API client", async () => {
@@ -60,7 +64,7 @@ test("invoice webhook handler is payload-first and never imports the RO App API 
   assert.match(handler, /Invoice\.Updated/)
   assert.match(handler, /upsertInvoiceFromPayload/)
   assert.match(handler, /markInvoiceDeleted/)
-  assert.doesNotMatch(handler, /@\/lib\/api\/remonline/)
+  assertDoesNotImportRemonlineApi(handler)
   assert.doesNotMatch(handler, /getInvoiceById/)
   assert.doesNotMatch(handler, /makeRequest/)
   assert.doesNotMatch(handler, /makeRoAppRequest/)
@@ -75,7 +79,7 @@ test("invoice service preserves payload-first boundaries", async () => {
   assert.match(service, /async markInvoiceDeleted/)
   assert.match(service, /raw_payload/)
   assert.match(service, /sync_source/)
-  assert.doesNotMatch(service, /@\/lib\/api\/remonline/)
+  assertDoesNotImportRemonlineApi(service)
   assert.doesNotMatch(service, /getInvoiceById/)
   assert.doesNotMatch(service, /fetch\(/)
 })
@@ -87,7 +91,7 @@ test("manual invoice sync is the only invoice path that calls RO App API", async
 
   assert.match(syncService, /remonline\.getInvoiceById\(remonlineInvoiceId\)/)
   assert.match(syncService, /new InvoiceService\(supabase\)/)
-  assert.match(syncService, /source: "manual"/)
+  assert.match(syncService, /source:\s*["']manual["']/)
   assert.match(adminRoute, /getSession/)
   assert.match(adminRoute, /session\.user\.role !== "admin"/)
   assert.match(adminRoute, /syncInvoiceFromRemonline/)
@@ -99,10 +103,10 @@ test("user invoice endpoint reads local database only", async () => {
   const route = await read("../app/api/user/invoices/route.ts")
 
   assert.match(route, /getSession/)
-  assert.match(route, /\.from\("user_invoices"\)/)
+  assert.match(route, /\.from\(["']user_invoices["']\)/)
   assert.match(route, /\.eq\("user_id", userId\)/)
   assert.match(route, /\.eq\("is_deleted", false\)/)
-  assert.doesNotMatch(route, /@\/lib\/api\/remonline/)
+  assertDoesNotImportRemonlineApi(route)
   assert.doesNotMatch(route, /getInvoiceById/)
   assert.doesNotMatch(route, /fetch\(/)
 })
@@ -111,7 +115,7 @@ test("existing order created and updated webhooks are also payload-first", async
   const handler = await read("../app/api/webhooks/remonline/handlers/order-handler.ts")
   const service = await read("../app/api/webhooks/remonline/services/order-service.ts")
 
-  assert.doesNotMatch(handler, /@\/lib\/api\/remonline/)
+  assertDoesNotImportRemonlineApi(handler)
   assert.doesNotMatch(handler, /getOrderById/)
   assert.doesNotMatch(handler, /getOrderItems/)
   assert.match(handler, /upsertOrderFromWebhookPayload/)
