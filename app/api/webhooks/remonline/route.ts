@@ -157,6 +157,15 @@ export async function POST(request: NextRequest) {
         }
       }
 
+      if (
+        typeof payload.event_name === "string" &&
+        payload.event_name.startsWith("Invoice.") &&
+        (payload.context?.object_id != null || payload.metadata?.invoice?.id != null)
+      ) {
+        console.log("Validation failed but trying to process sparse Invoice webhook anyway...")
+        return await handleInvoiceEvents(payload)
+      }
+
       return NextResponse.json(
         { error: "Invalid webhook payload", details: parsedPayload.error.issues },
         { status: 400 },
