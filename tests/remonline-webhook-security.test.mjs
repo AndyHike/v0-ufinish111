@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises"
+import { readFile, stat } from "node:fs/promises"
 import assert from "node:assert/strict"
 import crypto from "node:crypto"
 import test from "node:test"
@@ -22,22 +22,35 @@ test("rejects invalid or missing RO App webhook signature inputs", () => {
   assert.equal(verifyRemonlineWebhookSignature({ payload, signature: "bad", secret: "" }), false)
 })
 
-test("RemOnline webhook routes verify X-Signature before handlers mutate data", async () => {
-  const mainRoute = await readFile(new URL("../app/api/webhooks/remonline/route.ts", import.meta.url), "utf8")
-  const deleteRoute = await readFile(
-    new URL("../app/api/webhooks/remonline/delete-account/route.ts", import.meta.url),
-    "utf8",
-  )
-
-  for (const route of [mainRoute, deleteRoute]) {
-    assert.match(route, /verifyRemonlineWebhookSignature/)
-    assert.match(route, /request\.text\(\)/)
-    assert.match(route, /x-signature/)
-    assert.doesNotMatch(route, /your-webhook-secret/)
-    assert.doesNotMatch(route, /webhook verification will be skipped/i)
+async function pathExists(path) {
+  try {
+    await stat(new URL(path, import.meta.url))
+    return true
+  } catch (error) {
+    if (error?.code === "ENOENT") return false
+    throw error
   }
+}
+
+test("RemOnline canonical webhook route uses one shared secret before handlers mutate data", async () => {
+  const mainRoute = await readFile(new URL("../app/api/webhooks/remonline/route.ts", import.meta.url), "utf8")
+
+  assert.match(mainRoute, /verifyRemonlineWebhookSignature/)
+  assert.match(mainRoute, /request\.text\(\)/)
+  assert.match(mainRoute, /x-signature/)
+  assert.match(mainRoute, /REMONLINE_WEBHOOK_SECRET/)
+  assert.doesNotMatch(mainRoute, /REMONLINE_ORDER_WEBHOOK_SECRET/)
+  assert.doesNotMatch(mainRoute, /REMONLINE_DELETE_ACCOUNT_WEBHOOK_SECRET/)
+  assert.doesNotMatch(mainRoute, /your-webhook-secret/)
+  assert.doesNotMatch(mainRoute, /webhook verification will be skipped/i)
 
   assert.ok(mainRoute.indexOf("verifyRemonlineWebhookSignature({ payload") < mainRoute.indexOf("return await handleOrderEvents"))
   assert.ok(mainRoute.indexOf("verifyRemonlineWebhookSignature({ payload") < mainRoute.indexOf("return await handleClientEvents"))
-  assert.ok(deleteRoute.indexOf("verifyRemonlineWebhookSignature({ payload") < deleteRoute.indexOf("await handleClientDeletion"))
+})
+
+test("RemOnline legacy webhook routes are removed in favor of the canonical endpoint", async () => {
+  assert.equal(await pathExists("../app/api/webhooks/remonline/delete-account/route.ts"), false)
+  assert.equal(await pathExists("../app/api/webhooks/remonline/order/route.ts"), false)
+  assert.equal(await pathExists("../app/app/api/webhooks/remonline/order/route.ts"), false)
+  assert.equal(await pathExists("../app/api/webhook/remonline/route.ts"), false)
 })

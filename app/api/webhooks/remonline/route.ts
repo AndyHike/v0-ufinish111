@@ -6,9 +6,7 @@ import webhookSecurity from "@/lib/api/remonline-webhook-security"
 
 const { verifyRemonlineWebhookSignature } = webhookSecurity
 
-// Different secret keys for different webhook types
-const ORDER_WEBHOOK_SECRET = process.env.REMONLINE_ORDER_WEBHOOK_SECRET || ""
-const GENERAL_WEBHOOK_SECRET = process.env.REMONLINE_WEBHOOK_SECRET || ""
+const REMONLINE_WEBHOOK_SECRET = process.env.REMONLINE_WEBHOOK_SECRET || ""
 
 // Define a schema for the RemOnline webhook payload
 const remonlineWebhookSchema = z.object({
@@ -78,16 +76,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Invalid webhook JSON" }, { status: 400 })
     }
 
-    const eventName = payload.event_name || ""
     const signature = request.headers.get("x-signature") || request.headers.get("X-Signature")
-    const secret = eventName.startsWith("Order.") ? ORDER_WEBHOOK_SECRET : GENERAL_WEBHOOK_SECRET
 
-    if (!secret) {
-      console.error(`RemOnline webhook secret is not configured for event: ${eventName || "unknown"}`)
+    if (!REMONLINE_WEBHOOK_SECRET) {
+      console.error("REMONLINE_WEBHOOK_SECRET is not configured")
       return NextResponse.json({ success: false, error: "Webhook secret is not configured" }, { status: 500 })
     }
 
-    if (!verifyRemonlineWebhookSignature({ payload, signature, secret })) {
+    if (!verifyRemonlineWebhookSignature({ payload, signature, secret: REMONLINE_WEBHOOK_SECRET })) {
       return NextResponse.json({ success: false, error: "Invalid webhook signature" }, { status: 401 })
     }
 
@@ -102,10 +98,6 @@ export async function POST(request: NextRequest) {
       console.log("📊 Old Status ID:", payload.metadata?.old?.id)
       console.log("📊 Order Name:", payload.metadata?.order?.name)
     }
-
-    console.log("🔑 Available secrets:")
-    console.log("   - ORDER_WEBHOOK_SECRET:", ORDER_WEBHOOK_SECRET ? "✅ Set" : "❌ Missing")
-    console.log("   - GENERAL_WEBHOOK_SECRET:", GENERAL_WEBHOOK_SECRET ? "✅ Set" : "❌ Missing")
 
     // Validate the webhook payload against the schema
     const parsedPayload = remonlineWebhookSchema.safeParse(payload)
