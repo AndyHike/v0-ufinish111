@@ -151,6 +151,28 @@ export function normalizeInvoicePayload(input: JsonRecord, userId: string | null
   }
 }
 
+function mergeInvoiceForUpsert(normalized: JsonRecord, existing: JsonRecord | null) {
+  if (!existing) return normalized
+
+  const alwaysFreshFields = new Set([
+    "raw_payload",
+    "sync_source",
+    "sync_status",
+    "sync_error",
+    "is_deleted",
+    "last_synced_at",
+    "updated_at",
+    "remonline_invoice_id",
+  ])
+
+  return Object.fromEntries(
+    Object.entries(normalized).map(([key, value]) => [
+      key,
+      alwaysFreshFields.has(key) || (value !== null && value !== undefined) ? value : existing[key],
+    ]),
+  )
+}
+
 export class InvoiceService {
   constructor(private supabase: any) {}
 
@@ -170,12 +192,28 @@ export class InvoiceService {
     return data?.id ?? null
   }
 
+  private async findExistingInvoice(remonlineInvoiceId: number) {
+    const { data, error } = await this.supabase
+      .from("user_invoices")
+      .select("*")
+      .eq("remonline_invoice_id", remonlineInvoiceId)
+      .maybeSingle()
+
+    if (error) {
+      throw new Error(`Failed to read invoice ${remonlineInvoiceId}: ${error.message}`)
+    }
+
+    return data ?? null
+  }
+
   async upsertInvoiceFromPayload(input: JsonRecord, options: InvoicePayloadOptions = {}) {
     const source = options.source ?? "webhook"
     const invoice = extractInvoicePayload(input)
     const clientId = extractClientId(invoice)
     const userId = await this.findUserId(clientId)
-    const row = normalizeInvoicePayload(input, userId, source)
+    const normalized = normalizeInvoicePayload(input, userId, source)
+    const existing = await this.findExistingInvoice(normalized.remonline_invoice_id)
+    const row = mergeInvoiceForUpsert(normalized, existing)
 
     const { data, error } = await this.supabase
       .from("user_invoices")
@@ -201,12 +239,12 @@ export class InvoiceService {
       })
       .eq("remonline_invoice_id", remonlineInvoiceId)
       .select("id, remonline_invoice_id, invoice_number, is_deleted, sync_status")
-      .single()
+      .maybeSingle()
 
     if (error) {
       throw new Error(`Failed to mark invoice ${remonlineInvoiceId} as deleted: ${error.message}`)
     }
 
-    return data
+    return data ?? null
   }
 }
