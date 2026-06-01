@@ -56,6 +56,24 @@ test("order sync issue service records, resolves, ignores, and lists issues", as
   assertDoesNotImportRemonlineApi(service)
 })
 
+test("order sync issue recording preserves terminal issue status on replay", async () => {
+  const service = await read("../lib/services/remonline-order-sync-issues.ts")
+  const recordStart = service.indexOf("export async function recordOrderSyncIssue")
+  const recordEnd = service.indexOf("export async function resolveOrderSyncIssues")
+  assert.notEqual(recordStart, -1)
+  assert.notEqual(recordEnd, -1)
+
+  const recordSource = service.slice(recordStart, recordEnd)
+
+  assert.match(recordSource, /\.select\(["']id,\s*attempts,\s*status["']\)/)
+  assert.match(recordSource, /status:\s*\(existingIssue\?\.status \|\| ["']open["']\) as OrderSyncIssueStatus/)
+  assert.doesNotMatch(recordSource, /status:\s*["']open["'] as OrderSyncIssueStatus/)
+  assert.doesNotMatch(recordSource, /resolved_at:\s*null/)
+  assert.doesNotMatch(recordSource, /resolved_by:\s*null/)
+  assert.doesNotMatch(recordSource, /ignored_at:\s*null/)
+  assert.doesNotMatch(recordSource, /ignored_by:\s*null/)
+})
+
 test("order webhook handler records ignored order events without fetching RemOnline", async () => {
   const handler = await read("../app/api/webhooks/remonline/handlers/order-handler.ts")
 

@@ -54,7 +54,7 @@ export async function recordOrderSyncIssue(input: RecordOrderSyncIssueInput) {
 
   const { data: existingIssue } = await supabase
     .from("remonline_order_sync_issues")
-    .select("id, attempts")
+    .select("id, attempts, status")
     .eq("remonline_event_id", remonlineEventId)
     .maybeSingle()
 
@@ -63,7 +63,7 @@ export async function recordOrderSyncIssue(input: RecordOrderSyncIssueInput) {
     event_name: String(input.payload?.event_name || "unknown"),
     remonline_order_id: getPayloadOrderId(input.payload),
     remonline_client_id: getPayloadClientId(input.payload),
-    status: "open" as OrderSyncIssueStatus,
+    status: (existingIssue?.status || "open") as OrderSyncIssueStatus,
     reason: input.reason,
     details: input.details || null,
     raw_payload: input.payload || {},
