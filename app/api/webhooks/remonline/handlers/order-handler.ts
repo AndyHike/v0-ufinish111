@@ -1,6 +1,19 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
-import { OrderService } from "../services/order-service"
+import { OrderService, RemonlineWebhookOrderError } from "../services/order-service"
+
+function orderWebhookErrorResponse(error: unknown, message: string) {
+  const status = error instanceof RemonlineWebhookOrderError ? error.statusCode : 500
+
+  return NextResponse.json(
+    {
+      success: false,
+      error: message,
+      details: error instanceof Error ? error.message : String(error),
+    },
+    { status },
+  )
+}
 
 export async function handleOrderEvents(webhookData: any) {
   try {
@@ -41,14 +54,7 @@ async function handleOrderCreated(webhookData: any) {
 
     return NextResponse.json({ success: true, message: "Order synced from webhook payload", order })
   } catch (error) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Failed to create order from webhook payload",
-        details: error instanceof Error ? error.message : String(error),
-      },
-      { status: 500 },
-    )
+    return orderWebhookErrorResponse(error, "Failed to create order from webhook payload")
   }
 }
 
@@ -60,14 +66,7 @@ async function handleOrderUpdated(webhookData: any) {
 
     return NextResponse.json({ success: true, message: "Order updated from webhook payload", order })
   } catch (error) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Failed to update order from webhook payload",
-        details: error instanceof Error ? error.message : String(error),
-      },
-      { status: 500 },
-    )
+    return orderWebhookErrorResponse(error, "Failed to update order from webhook payload")
   }
 }
 

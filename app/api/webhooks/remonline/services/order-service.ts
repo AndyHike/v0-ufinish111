@@ -1,5 +1,15 @@
 import { getStatusByRemOnlineId } from "@/lib/order-status-utils"
 
+export class RemonlineWebhookOrderError extends Error {
+  constructor(
+    message: string,
+    public readonly statusCode: number,
+  ) {
+    super(message)
+    this.name = "RemonlineWebhookOrderError"
+  }
+}
+
 export class OrderService {
   constructor(private supabase: any) {}
 
@@ -241,28 +251,9 @@ export class OrderService {
 
   async upsertOrderFromWebhookPayload(webhookData: any): Promise<any> {
     const remonlineOrderId = Number(webhookData?.context?.object_id)
-    const clientId = Number(webhookData?.metadata?.client?.id)
 
-    if (!Number.isFinite(remonlineOrderId)) {
-      throw new Error("RemOnline order id is missing")
-    }
-
-    if (!Number.isFinite(clientId)) {
-      throw new Error("RemOnline client id is missing")
-    }
-
-    const { data: user, error: userError } = await this.supabase
-      .from("users")
-      .select("id, locale")
-      .eq("remonline_id", clientId)
-      .maybeSingle()
-
-    if (userError) {
-      throw new Error(`Failed to find user by RemOnline client id ${clientId}: ${userError.message}`)
-    }
-
-    if (!user) {
-      throw new Error(`User with RemOnline client id ${clientId} was not found`)
+    if (!Number.isInteger(remonlineOrderId) || remonlineOrderId <= 0) {
+      throw new RemonlineWebhookOrderError("RemOnline order id is missing", 400)
     }
 
     const { data: existingOrder, error: existingError } = await this.supabase
@@ -270,6 +261,7 @@ export class OrderService {
       .select(
         `
         id,
+        user_id,
         document_id,
         creation_date,
         device_serial_number,
@@ -286,7 +278,38 @@ export class OrderService {
       .maybeSingle()
 
     if (existingError) {
-      throw new Error(`Failed to read existing order ${remonlineOrderId}: ${existingError.message}`)
+      throw new RemonlineWebhookOrderError(`Failed to read existing order ${remonlineOrderId}: ${existingError.message}`, 500)
+    }
+
+    let userId = existingOrder?.user_id
+    let userLocale = "uk"
+
+    if (!existingOrder) {
+      const clientId = Number(webhookData?.metadata?.client?.id)
+
+      if (!Number.isInteger(clientId) || clientId <= 0) {
+        throw new RemonlineWebhookOrderError("RemOnline client id is missing", 400)
+      }
+
+      const { data: user, error: userError } = await this.supabase
+        .from("users")
+        .select("id, locale")
+        .eq("remonline_id", clientId)
+        .maybeSingle()
+
+      if (userError) {
+        throw new RemonlineWebhookOrderError(
+          `Failed to find user by RemOnline client id ${clientId}: ${userError.message}`,
+          500,
+        )
+      }
+
+      if (!user) {
+        throw new RemonlineWebhookOrderError(`User with RemOnline client id ${clientId} was not found`, 404)
+      }
+
+      userId = user.id
+      userLocale = user.locale || "uk"
     }
 
     const order = webhookData?.metadata?.order || {}
@@ -294,7 +317,7 @@ export class OrderService {
     const statusIdRaw = webhookData?.metadata?.status?.id ?? webhookData?.metadata?.new?.id
     const statusId = statusIdRaw === undefined || statusIdRaw === null ? null : Number(statusIdRaw)
     const hasStatusId = statusId !== null && Number.isFinite(statusId)
-    const statusInfo = hasStatusId ? await getStatusByRemOnlineId(statusId, user.locale || "uk", true) : null
+    const statusInfo = hasStatusId ? await getStatusByRemOnlineId(statusId, userLocale, true) : null
     const now = new Date().toISOString()
 
     const deviceBrand = asset.brand ?? existingOrder?.device_brand ?? null
@@ -304,7 +327,7 @@ export class OrderService {
 
     const baseRow = {
       remonline_order_id: remonlineOrderId,
-      user_id: user.id,
+      user_id: userId,
       document_id: order.name || order.id_label || existingOrder?.document_id || String(remonlineOrderId),
       creation_date: existingOrder?.creation_date || order.created_at || webhookData?.created_at || now,
       device_serial_number: asset.uid || asset.serial_number || existingOrder?.device_serial_number || "N/A",
@@ -327,7 +350,7 @@ export class OrderService {
         .single()
 
       if (updateError) {
-        throw new Error(`Failed to update order ${remonlineOrderId}: ${updateError.message}`)
+        throw new RemonlineWebhookOrderError(`Failed to update order ${remonlineOrderId}: ${updateError.message}`, 500)
       }
 
       return updatedOrder
@@ -343,7 +366,7 @@ export class OrderService {
       .single()
 
     if (insertError) {
-      throw new Error(`Failed to create order ${remonlineOrderId}: ${insertError.message}`)
+      throw new RemonlineWebhookOrderError(`Failed to create order ${remonlineOrderId}: ${insertError.message}`, 500)
     }
 
     return newOrder
