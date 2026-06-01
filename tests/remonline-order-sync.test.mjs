@@ -123,3 +123,19 @@ test("admin order sync issue APIs are admin-only", async () => {
   assert.match(issueRoute, /session\.user\.role !== "admin"/)
   assert.match(issueRoute, /ignoreOrderSyncIssue/)
 })
+
+test("admin order sync UI exposes manual recovery without adding user profile sync", async () => {
+  const page = await read("../app/[locale]/admin/remonline-orders/page.tsx")
+  const component = await read("../components/admin/remonline-order-sync-issues.tsx")
+  const sidebar = await read("../components/admin/admin-sidebar.tsx")
+  const profileOrders = await read("../components/profile/user-orders.tsx")
+
+  assert.match(page, /RemonlineOrderSyncIssues/)
+  assert.match(component, /\/api\/admin\/remonline\/order-sync-issues/)
+  assert.match(component, /\/api\/admin\/remonline\/orders\/\$\{orderId\}\/sync/)
+  assert.match(component, /ignoreOrderSyncIssue/)
+  assert.match(sidebar, /\/admin\/remonline-orders/)
+
+  assert.doesNotMatch(profileOrders, /\/api\/admin\/remonline\/orders/)
+  assert.doesNotMatch(profileOrders, /order-sync-issues/)
+})
