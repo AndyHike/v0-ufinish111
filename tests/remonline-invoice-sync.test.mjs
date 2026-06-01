@@ -79,7 +79,7 @@ test("signed sparse and unsupported webhooks are acknowledged instead of disabli
   assert.match(route, /eventType\.startsWith\("Client\."\)/)
   assert.match(route, /status:\s*200/)
 
-  assert.match(orderHandler, /WEBHOOK_ACKNOWLEDGED_ERROR_STATUSES/)
+  assert.match(orderHandler, /recordOrderSyncIssue/)
   assert.match(orderHandler, /ignored:\s*true/)
   assert.match(orderHandler, /Order not found in database/)
   assert.match(orderHandler, /status:\s*200/)
@@ -91,6 +91,18 @@ test("signed sparse and unsupported webhooks are acknowledged instead of disabli
   assert.match(invoiceHandler, /invoiceWebhookIgnoredResponse/)
   assert.match(invoiceHandler, /ignored:\s*true/)
   assert.match(invoiceHandler, /status:\s*200/)
+})
+
+test("signed webhook handler processing errors are acknowledged with 200", async () => {
+  const handlers = [
+    await read("../app/api/webhooks/remonline/handlers/order-handler.ts"),
+    await read("../app/api/webhooks/remonline/handlers/client-handler.ts"),
+    await read("../app/api/webhooks/remonline/handlers/invoice-handler.ts"),
+  ]
+
+  for (const handler of handlers) {
+    assert.doesNotMatch(handler, /status:\s*500/)
+  }
 })
 
 test("invoice webhook handler is payload-first and never imports the RO App API client", async () => {

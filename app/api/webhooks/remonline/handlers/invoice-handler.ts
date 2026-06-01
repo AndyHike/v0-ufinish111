@@ -48,17 +48,9 @@ export async function handleInvoiceEvents(webhookData: any) {
         return NextResponse.json({ success: true, message: "Invoice event received but no action taken" })
     }
   } catch (error) {
-    if (error instanceof Error && error.message === "RemOnline invoice id is missing") {
-      return invoiceWebhookIgnoredResponse("Failed to process invoice event", error.message)
-    }
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Failed to process invoice event",
-        details: error instanceof Error ? error.message : String(error),
-      },
-      { status: 500 },
+    return invoiceWebhookIgnoredResponse(
+      "Failed to process invoice event",
+      error instanceof Error ? error.message : String(error),
     )
   }
 }

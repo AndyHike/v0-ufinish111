@@ -3,29 +3,29 @@ import { createClient } from "@/lib/supabase"
 import { recordOrderSyncIssue } from "@/lib/services/remonline-order-sync-issues"
 import { OrderService, RemonlineWebhookOrderError } from "../services/order-service"
 
-const WEBHOOK_ACKNOWLEDGED_ERROR_STATUSES = new Set([400, 404])
-
 async function orderWebhookErrorResponse(error: unknown, message: string, webhookData?: any) {
   const status = error instanceof RemonlineWebhookOrderError ? error.statusCode : 500
-  const shouldAcknowledge =
-    error instanceof RemonlineWebhookOrderError && WEBHOOK_ACKNOWLEDGED_ERROR_STATUSES.has(status)
 
-  if (shouldAcknowledge && webhookData) {
-    await recordOrderSyncIssue({
-      payload: webhookData,
-      reason: error instanceof Error ? error.message : message,
-      details: message,
-    })
+  if (webhookData) {
+    try {
+      await recordOrderSyncIssue({
+        payload: webhookData,
+        reason: error instanceof Error ? error.message : message,
+        details: `${message} (internal status ${status})`,
+      })
+    } catch (issueError) {
+      console.error("Failed to record RemOnline order sync issue:", issueError)
+    }
   }
 
   return NextResponse.json(
     {
       success: false,
-      ignored: shouldAcknowledge,
+      ignored: true,
       error: message,
       details: error instanceof Error ? error.message : String(error),
     },
-    { status: shouldAcknowledge ? 200 : status },
+    { status: 200 },
   )
 }
 
@@ -52,10 +52,11 @@ export async function handleOrderEvents(webhookData: any) {
     return NextResponse.json(
       {
         success: false,
+        ignored: true,
         error: "Failed to process order event",
         details: error instanceof Error ? error.message : String(error),
       },
-      { status: 500 },
+      { status: 200 },
     )
   }
 }
@@ -99,14 +100,7 @@ async function handleOrderDeleted(webhookData: any) {
     return NextResponse.json({ success: true, message: "Order deleted successfully" })
   } catch (error) {
     console.error("💥 Error in handleOrderDeleted:", error)
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Failed to delete order",
-        details: error instanceof Error ? error.message : String(error),
-      },
-      { status: 500 },
-    )
+    return await orderWebhookErrorResponse(error, "Failed to delete order", webhookData)
   }
 }
 
@@ -162,7 +156,15 @@ async function handleOrderStatusChanged(webhookData: any) {
         )
       }
 
-      return NextResponse.json({ success: false, error: "Failed to check order in database" }, { status: 500 })
+      await recordOrderSyncIssue({
+        payload: webhookData,
+        reason: "Failed to check order in database",
+        details: orderCheckError.message,
+      })
+      return NextResponse.json(
+        { success: false, ignored: true, error: "Failed to check order in database" },
+        { status: 200 },
+      )
     }
 
     if (!existingOrder) {
@@ -216,13 +218,6 @@ async function handleOrderStatusChanged(webhookData: any) {
   } catch (error) {
     console.error("💥💥💥 Error in handleOrderStatusChanged:", error)
     console.error("💥 Error stack:", error instanceof Error ? error.stack : "No stack trace")
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Failed to update order status",
-        details: error instanceof Error ? error.message : String(error),
-      },
-      { status: 500 },
-    )
+    return await orderWebhookErrorResponse(error, "Failed to update order status", webhookData)
   }
 }
