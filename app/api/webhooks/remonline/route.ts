@@ -138,6 +138,7 @@ export async function POST(request: NextRequest) {
     const parsedPayload = remonlineWebhookSchema.safeParse(payload)
 
     if (!parsedPayload.success) {
+      const eventType = typeof payload.event_name === "string" ? payload.event_name : ""
       console.error("❌ Invalid webhook payload:", parsedPayload.error)
       console.error("❌ Validation errors:", JSON.stringify(parsedPayload.error.issues, null, 2))
 
@@ -158,8 +159,7 @@ export async function POST(request: NextRequest) {
       }
 
       if (
-        typeof payload.event_name === "string" &&
-        payload.event_name.startsWith("Order.") &&
+        eventType.startsWith("Order.") &&
         payload.context?.object_id != null
       ) {
         console.log("Validation failed but trying to process sparse Order webhook anyway...")
@@ -167,12 +167,31 @@ export async function POST(request: NextRequest) {
       }
 
       if (
-        typeof payload.event_name === "string" &&
-        payload.event_name.startsWith("Invoice.") &&
+        eventType.startsWith("Client.") &&
+        payload.context?.object_id != null
+      ) {
+        console.log("Validation failed but trying to process sparse Client webhook anyway...")
+        return await handleClientEvents(payload)
+      }
+
+      if (
+        eventType.startsWith("Invoice.") &&
         (payload.context?.object_id != null || payload.metadata?.invoice?.id != null)
       ) {
         console.log("Validation failed but trying to process sparse Invoice webhook anyway...")
         return await handleInvoiceEvents(payload)
+      }
+
+      if (eventType) {
+        return NextResponse.json(
+          {
+            success: true,
+            ignored: true,
+            message: "Signed webhook received but no local action was taken",
+            event: eventType,
+          },
+          { status: 200 },
+        )
       }
 
       return NextResponse.json(

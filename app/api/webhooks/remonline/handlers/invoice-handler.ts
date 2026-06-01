@@ -2,6 +2,18 @@ import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
 import { InvoiceService } from "../services/invoice-service"
 
+function invoiceWebhookIgnoredResponse(error: string, details?: string) {
+  return NextResponse.json(
+    {
+      success: false,
+      ignored: true,
+      error,
+      details,
+    },
+    { status: 200 },
+  )
+}
+
 function getRemonlineInvoiceId(webhookData: any): number | null {
   const rawId = webhookData?.metadata?.invoice?.id ?? webhookData?.context?.object_id
   const id = Number(rawId)
@@ -25,7 +37,7 @@ export async function handleInvoiceEvents(webhookData: any) {
         const invoiceId = getRemonlineInvoiceId(webhookData)
 
         if (!invoiceId) {
-          return NextResponse.json({ success: false, error: "No invoice ID found" }, { status: 400 })
+          return invoiceWebhookIgnoredResponse("No invoice ID found")
         }
 
         const invoice = await invoiceService.markInvoiceDeleted(invoiceId)
@@ -37,14 +49,7 @@ export async function handleInvoiceEvents(webhookData: any) {
     }
   } catch (error) {
     if (error instanceof Error && error.message === "RemOnline invoice id is missing") {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Failed to process invoice event",
-          details: error.message,
-        },
-        { status: 400 },
-      )
+      return invoiceWebhookIgnoredResponse("Failed to process invoice event", error.message)
     }
 
     return NextResponse.json(

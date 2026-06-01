@@ -55,12 +55,42 @@ test("invoice webhook route is canonical and routes invoice events after signatu
 test("sparse order webhook fallback is signed and payload-first", async () => {
   const route = await read("../app/api/webhooks/remonline/route.ts")
   const signatureIndex = route.indexOf("verifyRemonlineWebhookSignature({ payload")
-  const fallbackIndex = route.indexOf('payload.event_name.startsWith("Order.")')
+  const fallbackIndex = route.indexOf('eventType.startsWith("Order.")')
 
   assert.notEqual(signatureIndex, -1)
   assert.notEqual(fallbackIndex, -1)
   assert.ok(signatureIndex < fallbackIndex)
-  assert.match(route, /if\s*\(\s*typeof payload\.event_name === "string"[\s\S]*payload\.event_name\.startsWith\("Order\."\)[\s\S]*payload\.context\?\.object_id != null[\s\S]*handleOrderEvents\(payload\)/)
+  assert.match(route, /if\s*\([\s\S]*eventType\.startsWith\("Order\."\)[\s\S]*payload\.context\?\.object_id != null[\s\S]*handleOrderEvents\(payload\)/)
+})
+
+test("signed sparse and unsupported webhooks are acknowledged instead of disabling RO App webhook", async () => {
+  const route = await read("../app/api/webhooks/remonline/route.ts")
+  const orderHandler = await read("../app/api/webhooks/remonline/handlers/order-handler.ts")
+  const clientHandler = await read("../app/api/webhooks/remonline/handlers/client-handler.ts")
+  const invoiceHandler = await read("../app/api/webhooks/remonline/handlers/invoice-handler.ts")
+
+  const signatureIndex = route.indexOf("verifyRemonlineWebhookSignature({ payload")
+  const clientFallbackIndex = route.indexOf("Validation failed but trying to process sparse Client webhook anyway")
+  const signedFallbackIndex = route.indexOf("Signed webhook received but no local action was taken")
+
+  assert.notEqual(signatureIndex, -1)
+  assert.ok(signatureIndex < clientFallbackIndex)
+  assert.ok(signatureIndex < signedFallbackIndex)
+  assert.match(route, /eventType\.startsWith\("Client\."\)/)
+  assert.match(route, /status:\s*200/)
+
+  assert.match(orderHandler, /WEBHOOK_ACKNOWLEDGED_ERROR_STATUSES/)
+  assert.match(orderHandler, /ignored:\s*true/)
+  assert.match(orderHandler, /Order not found in database/)
+  assert.match(orderHandler, /status:\s*200/)
+
+  assert.match(clientHandler, /clientWebhookProcessingErrorResponse/)
+  assert.match(clientHandler, /ignored:\s*true/)
+  assert.match(clientHandler, /status:\s*200/)
+
+  assert.match(invoiceHandler, /invoiceWebhookIgnoredResponse/)
+  assert.match(invoiceHandler, /ignored:\s*true/)
+  assert.match(invoiceHandler, /status:\s*200/)
 })
 
 test("invoice webhook handler is payload-first and never imports the RO App API client", async () => {

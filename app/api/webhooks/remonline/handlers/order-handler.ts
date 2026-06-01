@@ -2,16 +2,21 @@ import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
 import { OrderService, RemonlineWebhookOrderError } from "../services/order-service"
 
+const WEBHOOK_ACKNOWLEDGED_ERROR_STATUSES = new Set([400, 404])
+
 function orderWebhookErrorResponse(error: unknown, message: string) {
   const status = error instanceof RemonlineWebhookOrderError ? error.statusCode : 500
+  const shouldAcknowledge =
+    error instanceof RemonlineWebhookOrderError && WEBHOOK_ACKNOWLEDGED_ERROR_STATUSES.has(status)
 
   return NextResponse.json(
     {
       success: false,
+      ignored: shouldAcknowledge,
       error: message,
       details: error instanceof Error ? error.message : String(error),
     },
-    { status },
+    { status: shouldAcknowledge ? 200 : status },
   )
 }
 
@@ -112,7 +117,10 @@ async function handleOrderStatusChanged(webhookData: any) {
       console.error("❌ No new status ID found in webhook metadata")
       console.error("❌ Expected path: metadata.new.id")
       console.error("❌ Received metadata:", JSON.stringify(webhookData.metadata, null, 2))
-      return NextResponse.json({ success: false, error: "No new status ID found" }, { status: 400 })
+      return NextResponse.json(
+        { success: false, ignored: true, error: "No new status ID found" },
+        { status: 200 },
+      )
     }
 
     const supabase = createClient()
@@ -129,12 +137,22 @@ async function handleOrderStatusChanged(webhookData: any) {
     if (orderCheckError) {
       console.error("❌ Error checking for existing order:", orderCheckError)
       console.error("❌ This might mean the order doesn't exist in our database yet")
-      return NextResponse.json({ success: false, error: "Order not found in database" }, { status: 404 })
+      if (orderCheckError.code === "PGRST116") {
+        return NextResponse.json(
+          { success: false, ignored: true, error: "Order not found in database", orderId },
+          { status: 200 },
+        )
+      }
+
+      return NextResponse.json({ success: false, error: "Failed to check order in database" }, { status: 500 })
     }
 
     if (!existingOrder) {
       console.error(`❌ Order ${orderId} not found in our database`)
-      return NextResponse.json({ success: false, error: "Order not found" }, { status: 404 })
+      return NextResponse.json(
+        { success: false, ignored: true, error: "Order not found in database", orderId },
+        { status: 200 },
+      )
     }
 
     console.log(`✅ Found existing order:`, existingOrder)

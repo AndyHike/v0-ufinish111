@@ -2,6 +2,18 @@ import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
 import { ClientService } from "../services/client-service"
 
+function clientWebhookProcessingErrorResponse(error: unknown, message: string) {
+  return NextResponse.json(
+    {
+      success: false,
+      ignored: true,
+      error: message,
+      details: error instanceof Error ? error.message : String(error),
+    },
+    { status: 200 },
+  )
+}
+
 export async function handleClientEvents(webhookData: any) {
   try {
     const eventType = webhookData.event_name
@@ -45,14 +57,7 @@ async function handleClientCreated(webhookData: any) {
     return NextResponse.json({ success: true, message: "Client created successfully" })
   } catch (error) {
     console.error("💥 Error in handleClientCreated:", error)
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Failed to create client",
-        details: error instanceof Error ? error.message : String(error),
-      },
-      { status: 500 },
-    )
+    return clientWebhookProcessingErrorResponse(error, "Failed to create client")
   }
 }
 
@@ -70,14 +75,7 @@ async function handleClientUpdated(webhookData: any) {
     return NextResponse.json({ success: true, message: "Client updated successfully" })
   } catch (error) {
     console.error("💥 Error in handleClientUpdated:", error)
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Failed to update client",
-        details: error instanceof Error ? error.message : String(error),
-      },
-      { status: 500 },
-    )
+    return clientWebhookProcessingErrorResponse(error, "Failed to update client")
   }
 }
 
@@ -95,13 +93,6 @@ async function handleClientDeleted(webhookData: any) {
     return NextResponse.json({ success: true, message: "Client deleted successfully" })
   } catch (error) {
     console.error("💥 Error in handleClientDeleted:", error)
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Failed to delete client",
-        details: error instanceof Error ? error.message : String(error),
-      },
-      { status: 500 },
-    )
+    return clientWebhookProcessingErrorResponse(error, "Failed to delete client")
   }
 }
