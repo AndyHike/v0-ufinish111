@@ -111,7 +111,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Invalid webhook JSON" }, { status: 400 })
     }
 
-    const signature = request.headers.get("x-signature") || request.headers.get("X-Signature")
+    const bodySignature = typeof payload?.["x-signature"] === "string" ? payload?.["x-signature"] : undefined
+    const signature = request.headers.get("x-signature") || request.headers.get("X-Signature") || bodySignature
 
     if (!REMONLINE_WEBHOOK_SECRET) {
       console.error("REMONLINE_WEBHOOK_SECRET is not configured")

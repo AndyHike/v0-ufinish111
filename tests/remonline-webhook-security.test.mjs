@@ -38,6 +38,7 @@ test("RemOnline canonical webhook route uses one shared secret before handlers m
   assert.match(mainRoute, /verifyRemonlineWebhookSignature/)
   assert.match(mainRoute, /request\.text\(\)/)
   assert.match(mainRoute, /x-signature/)
+  assert.match(mainRoute, /payload\?\.\["x-signature"\]/)
   assert.match(mainRoute, /REMONLINE_WEBHOOK_SECRET/)
   assert.doesNotMatch(mainRoute, /REMONLINE_ORDER_WEBHOOK_SECRET/)
   assert.doesNotMatch(mainRoute, /REMONLINE_DELETE_ACCOUNT_WEBHOOK_SECRET/)
