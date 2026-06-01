@@ -85,6 +85,15 @@ test("order webhook handler records ignored order events without fetching RemOnl
   assert.doesNotMatch(handler, /getOrderById|getOrderItems/)
 })
 
+test("order webhooks do not require a users.locale database column", async () => {
+  const handler = await read("../app/api/webhooks/remonline/handlers/order-handler.ts")
+  const orderService = await read("../app/api/webhooks/remonline/services/order-service.ts")
+
+  assert.doesNotMatch(handler, /\.select\(["']locale["']\)/)
+  assert.doesNotMatch(orderService, /\.select\(["']id,\s*locale["']\)/)
+  assert.match(orderService, /userLocale = "uk"/)
+})
+
 test("manual order sync is admin-only and is the only order path that fetches full RemOnline data", async () => {
   const syncService = await read("../lib/services/remonline-order-sync.ts")
   const adminRoute = await read("../app/api/admin/remonline/orders/[id]/sync/route.ts")
