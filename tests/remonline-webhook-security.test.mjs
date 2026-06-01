@@ -14,6 +14,15 @@ test("validates RO App webhook signature from webhook id and secret", () => {
   assert.equal(verifyRemonlineWebhookSignature({ payload, signature, secret }), true)
 })
 
+test("validates RO App webhook signature from x-webhook-id when provided", () => {
+  const payload = { id: "body-event-id", event_name: "Order.Created" }
+  const webhookId = "dd0c43bd-6802-4c6e-97d3-355b68ce1db3"
+  const secret = "secret"
+  const signature = crypto.createHash("sha256").update(`${webhookId}${secret}`).digest("hex")
+
+  assert.equal(verifyRemonlineWebhookSignature({ payload, signature, secret, webhookId }), true)
+})
+
 test("rejects invalid or missing RO App webhook signature inputs", () => {
   const payload = { id: "9cba80cc-93b5-459b-bfd3-445e724dafc5", event_name: "Client.Created" }
 
@@ -38,6 +47,7 @@ test("RemOnline canonical webhook route uses one shared secret before handlers m
   assert.match(mainRoute, /verifyRemonlineWebhookSignature/)
   assert.match(mainRoute, /request\.text\(\)/)
   assert.match(mainRoute, /x-signature/)
+  assert.match(mainRoute, /x-webhook-id/)
   assert.match(mainRoute, /payload\?\.\["x-signature"\]/)
   assert.match(mainRoute, /REMONLINE_WEBHOOK_SECRET/)
   assert.doesNotMatch(mainRoute, /REMONLINE_ORDER_WEBHOOK_SECRET/)

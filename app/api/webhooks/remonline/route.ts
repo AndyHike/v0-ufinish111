@@ -112,14 +112,16 @@ export async function POST(request: NextRequest) {
     }
 
     const bodySignature = typeof payload?.["x-signature"] === "string" ? payload?.["x-signature"] : undefined
+    const bodyWebhookId = typeof payload?.["x-webhook-id"] === "string" ? payload?.["x-webhook-id"] : undefined
     const signature = request.headers.get("x-signature") || request.headers.get("X-Signature") || bodySignature
+    const webhookId = request.headers.get("x-webhook-id") || request.headers.get("X-Webhook-Id") || bodyWebhookId
 
     if (!REMONLINE_WEBHOOK_SECRET) {
       console.error("REMONLINE_WEBHOOK_SECRET is not configured")
       return NextResponse.json({ success: false, error: "Webhook secret is not configured" }, { status: 500 })
     }
 
-    if (!verifyRemonlineWebhookSignature({ payload, signature, secret: REMONLINE_WEBHOOK_SECRET })) {
+    if (!verifyRemonlineWebhookSignature({ payload, signature, secret: REMONLINE_WEBHOOK_SECRET, webhookId })) {
       return NextResponse.json({ success: false, error: "Invalid webhook signature" }, { status: 401 })
     }
 
