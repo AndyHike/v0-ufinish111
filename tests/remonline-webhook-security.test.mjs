@@ -9,7 +9,7 @@ const { verifyRemonlineWebhookSignature } = webhookSecurity
 test("validates RO App webhook signature from webhook id and secret", () => {
   const payload = { id: "9cba80cc-93b5-459b-bfd3-445e724dafc5", event_name: "Client.Created" }
   const secret = "secret"
-  const signature = crypto.createHash("sha256").update(`${payload.id}${secret}`).digest("hex")
+  const signature = crypto.createHmac("sha256", secret).update(payload.id).digest("hex")
 
   assert.equal(verifyRemonlineWebhookSignature({ payload, signature, secret }), true)
 })
@@ -18,7 +18,16 @@ test("validates RO App webhook signature from x-webhook-id when provided", () =>
   const payload = { id: "body-event-id", event_name: "Order.Created" }
   const webhookId = "dd0c43bd-6802-4c6e-97d3-355b68ce1db3"
   const secret = "secret"
-  const signature = crypto.createHash("sha256").update(`${webhookId}${secret}`).digest("hex")
+  const signature = crypto.createHmac("sha256", secret).update(webhookId).digest("hex")
+
+  assert.equal(verifyRemonlineWebhookSignature({ payload, signature, secret, webhookId }), true)
+})
+
+test("validates a captured RO App HMAC signature", () => {
+  const webhookId = "ae06197e-620d-4848-904d-fd2e36e0d114"
+  const payload = { id: webhookId, event_name: "Order.Status.Changed" }
+  const secret = "yf5aIpojT_CcTuwNMlawv"
+  const signature = "c98b450daf2a8755cac9a5f623e619f63287f23cbf69a27545a6d3725477bbd7"
 
   assert.equal(verifyRemonlineWebhookSignature({ payload, signature, secret, webhookId }), true)
 })
@@ -27,7 +36,7 @@ test("falls back to payload id when x-webhook-id does not match the signature so
   const payload = { id: "body-event-id", event_name: "Order.Created" }
   const webhookId = "different-header-id"
   const secret = "secret"
-  const signature = crypto.createHash("sha256").update(`${payload.id}${secret}`).digest("hex")
+  const signature = crypto.createHmac("sha256", secret).update(payload.id).digest("hex")
 
   assert.equal(verifyRemonlineWebhookSignature({ payload, signature, secret, webhookId }), true)
 })
