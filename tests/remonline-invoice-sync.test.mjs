@@ -52,6 +52,17 @@ test("invoice webhook route is canonical and routes invoice events after signatu
   assert.ok(route.indexOf("verifyRemonlineWebhookSignature({ payload") < route.indexOf("handleInvoiceEvents("))
 })
 
+test("sparse order webhook fallback is signed and payload-first", async () => {
+  const route = await read("../app/api/webhooks/remonline/route.ts")
+  const signatureIndex = route.indexOf("verifyRemonlineWebhookSignature({ payload")
+  const fallbackIndex = route.indexOf('payload.event_name.startsWith("Order.")')
+
+  assert.notEqual(signatureIndex, -1)
+  assert.notEqual(fallbackIndex, -1)
+  assert.ok(signatureIndex < fallbackIndex)
+  assert.match(route, /if\s*\(\s*typeof payload\.event_name === "string"[\s\S]*payload\.event_name\.startsWith\("Order\."\)[\s\S]*payload\.context\?\.object_id != null[\s\S]*handleOrderEvents\(payload\)/)
+})
+
 test("invoice webhook handler is payload-first and never imports the RO App API client", async () => {
   const handlerPath = "../app/api/webhooks/remonline/handlers/invoice-handler.ts"
   assert.equal(await pathExists(handlerPath), true)
@@ -79,6 +90,10 @@ test("invoice service preserves payload-first boundaries", async () => {
   assert.match(service, /async markInvoiceDeleted/)
   assert.match(service, /raw_payload/)
   assert.match(service, /sync_source/)
+  assert.match(service, /metadata\?\.payer/)
+  assert.match(service, /metadata\?\.manager/)
+  assert.match(service, /metadata\?\.client/)
+  assert.match(service, /extractClientId\(invoice\) \?\? extractPayerId\(invoice\)/)
   assertDoesNotImportRemonlineApi(service)
   assert.doesNotMatch(service, /getInvoiceById/)
   assert.doesNotMatch(service, /fetch\(/)

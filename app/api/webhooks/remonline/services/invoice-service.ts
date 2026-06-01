@@ -47,8 +47,20 @@ function getNestedName(value: unknown): string | null {
 }
 
 function extractInvoicePayload(input: JsonRecord): JsonRecord {
-  const metadataInvoice = input.metadata?.invoice
-  if (isRecord(metadataInvoice)) return metadataInvoice
+  const metadata = isRecord(input.metadata) ? input.metadata : undefined
+  const metadataInvoice = metadata?.invoice
+  if (isRecord(metadataInvoice)) {
+    const client = isRecord(metadata?.client) ? metadata?.client : undefined
+    const payer = isRecord(metadata?.payer) ? metadata?.payer : undefined
+    const manager = isRecord(metadata?.manager) ? metadata?.manager : undefined
+
+    return {
+      ...metadataInvoice,
+      ...(metadataInvoice.client === undefined && client !== undefined ? { client } : {}),
+      ...(metadataInvoice.payer === undefined && payer !== undefined ? { payer } : {}),
+      ...(metadataInvoice.manager === undefined && manager !== undefined ? { manager } : {}),
+    }
+  }
 
   const directInvoice = input.invoice
   if (isRecord(directInvoice)) return directInvoice
@@ -223,8 +235,8 @@ export class InvoiceService {
   async upsertInvoiceFromPayload(input: JsonRecord, options: InvoicePayloadOptions = {}) {
     const source = options.source ?? "webhook"
     const invoice = extractInvoicePayload(input)
-    const clientId = extractClientId(invoice)
-    const userId = await this.findUserId(clientId)
+    const ownerId = extractClientId(invoice) ?? extractPayerId(invoice)
+    const userId = await this.findUserId(ownerId)
     const normalized = normalizeInvoicePayload(input, userId, source)
     const existing = await this.findExistingInvoice(normalized.remonline_invoice_id)
     const preserveIfExisting = existing && !hasInvoiceNumber(input) ? ["invoice_number"] : []

@@ -159,6 +159,15 @@ export async function POST(request: NextRequest) {
 
       if (
         typeof payload.event_name === "string" &&
+        payload.event_name.startsWith("Order.") &&
+        payload.context?.object_id != null
+      ) {
+        console.log("Validation failed but trying to process sparse Order webhook anyway...")
+        return await handleOrderEvents(payload)
+      }
+
+      if (
+        typeof payload.event_name === "string" &&
         payload.event_name.startsWith("Invoice.") &&
         (payload.context?.object_id != null || payload.metadata?.invoice?.id != null)
       ) {
