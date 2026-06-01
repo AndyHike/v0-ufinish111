@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
-import remonline from "@/lib/api/remonline"
 import { OrderService } from "../services/order-service"
 
 export async function handleOrderEvents(webhookData: any) {
@@ -36,77 +35,16 @@ export async function handleOrderEvents(webhookData: any) {
 
 async function handleOrderCreated(webhookData: any) {
   try {
-    const orderId = webhookData.context.object_id
-    const clientId = webhookData.metadata?.client?.id
-
-    console.log(`📦 Processing Order.Created for order ${orderId}, client ${clientId}`)
-
-    if (!clientId) {
-      console.error("❌ No client ID found in webhook metadata")
-      return NextResponse.json({ success: false, error: "No client ID found" }, { status: 400 })
-    }
-
     const supabase = createClient()
-
-    // Find user by remonline_id
-    console.log(`🔍 Looking for user with remonline_id: ${clientId}`)
-    const { data: user, error: userError } = await supabase
-      .from("users")
-      .select("id, email, first_name, last_name, remonline_id")
-      .eq("remonline_id", clientId)
-      .single()
-
-    if (userError || !user) {
-      console.log(`❌ No user found with remonline_id ${clientId}`)
-      console.log("User search error:", userError)
-
-      // Let's also try to find all users to debug
-      const { data: allUsers } = await supabase.from("users").select("id, email, remonline_id").limit(10)
-
-      console.log("📋 Sample users in database:", allUsers)
-
-      return NextResponse.json({ success: false, error: "User not found" }, { status: 404 })
-    }
-
-    console.log(`✅ Found user ${user.id} (${user.email}) for remonline client ${clientId}`)
-
-    // Get full order details from RemOnline API
-    console.log(`🌐 Fetching order details from RemOnline API for order ${orderId}`)
-    const orderResult = await remonline.getOrderById(orderId)
-
-    if (!orderResult.success || !orderResult.order) {
-      console.error("❌ Failed to fetch order details from RemOnline:", orderResult.message)
-      return NextResponse.json({ success: false, error: "Failed to fetch order details" }, { status: 500 })
-    }
-
-    const orderData = orderResult.order
-    console.log("📋 Full order data:", JSON.stringify(orderData, null, 2))
-
-    // Get order items (services) from RemOnline API
-    console.log(`🛍️ Fetching order items from RemOnline API for order ${orderId}`)
-    const itemsResult = await remonline.getOrderItems(orderId)
-    let orderItems = []
-
-    if (itemsResult.success && itemsResult.items) {
-      orderItems = itemsResult.items
-      console.log("📋 Order items:", JSON.stringify(orderItems, null, 2))
-    } else {
-      console.log("⚠️ No items found or failed to fetch items:", itemsResult.message)
-    }
-
-    // Use OrderService to create the order
-    console.log(`💾 Creating order in database...`)
     const orderService = new OrderService(supabase)
-    const result = await orderService.createOrder(user.id, orderId, orderData, orderItems)
+    const order = await orderService.upsertOrderFromWebhookPayload(webhookData)
 
-    console.log(`✅ Order created successfully:`, result)
-    return NextResponse.json({ success: true, message: "Order created successfully" })
+    return NextResponse.json({ success: true, message: "Order synced from webhook payload", order })
   } catch (error) {
-    console.error("💥 Error in handleOrderCreated:", error)
     return NextResponse.json(
       {
         success: false,
-        error: "Failed to create order",
+        error: "Failed to create order from webhook payload",
         details: error instanceof Error ? error.message : String(error),
       },
       { status: 500 },
@@ -116,59 +54,16 @@ async function handleOrderCreated(webhookData: any) {
 
 async function handleOrderUpdated(webhookData: any) {
   try {
-    const orderId = webhookData.context.object_id
-    const clientId = webhookData.metadata?.client?.id
-
-    console.log(`📦 Processing Order.Updated for order ${orderId}, client ${clientId}`)
-
-    if (!clientId) {
-      console.error("❌ No client ID found in webhook metadata")
-      return NextResponse.json({ success: false, error: "No client ID found" }, { status: 400 })
-    }
-
     const supabase = createClient()
-
-    // Find user by remonline_id
-    const { data: user, error: userError } = await supabase
-      .from("users")
-      .select("id, email, first_name, last_name")
-      .eq("remonline_id", clientId)
-      .single()
-
-    if (userError || !user) {
-      console.log(`❌ No user found with remonline_id ${clientId}`)
-      return NextResponse.json({ success: false, error: "User not found" }, { status: 404 })
-    }
-
-    // Get full order details from RemOnline API
-    const orderResult = await remonline.getOrderById(orderId)
-
-    if (!orderResult.success || !orderResult.order) {
-      console.error("❌ Failed to fetch order details from RemOnline:", orderResult.message)
-      return NextResponse.json({ success: false, error: "Failed to fetch order details" }, { status: 500 })
-    }
-
-    const orderData = orderResult.order
-
-    // Get order items (services) from RemOnline API
-    const itemsResult = await remonline.getOrderItems(orderId)
-    let orderItems = []
-
-    if (itemsResult.success && itemsResult.items) {
-      orderItems = itemsResult.items
-    }
-
-    // Use OrderService to update the order
     const orderService = new OrderService(supabase)
-    await orderService.updateOrder(user.id, orderId, orderData, orderItems)
+    const order = await orderService.upsertOrderFromWebhookPayload(webhookData)
 
-    return NextResponse.json({ success: true, message: "Order updated successfully" })
+    return NextResponse.json({ success: true, message: "Order updated from webhook payload", order })
   } catch (error) {
-    console.error("💥 Error in handleOrderUpdated:", error)
     return NextResponse.json(
       {
         success: false,
-        error: "Failed to update order",
+        error: "Failed to update order from webhook payload",
         details: error instanceof Error ? error.message : String(error),
       },
       { status: 500 },

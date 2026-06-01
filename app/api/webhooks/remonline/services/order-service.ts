@@ -239,6 +239,116 @@ export class OrderService {
     }
   }
 
+  async upsertOrderFromWebhookPayload(webhookData: any): Promise<any> {
+    const remonlineOrderId = Number(webhookData?.context?.object_id)
+    const clientId = Number(webhookData?.metadata?.client?.id)
+
+    if (!Number.isFinite(remonlineOrderId)) {
+      throw new Error("RemOnline order id is missing")
+    }
+
+    if (!Number.isFinite(clientId)) {
+      throw new Error("RemOnline client id is missing")
+    }
+
+    const { data: user, error: userError } = await this.supabase
+      .from("users")
+      .select("id, locale")
+      .eq("remonline_id", clientId)
+      .maybeSingle()
+
+    if (userError) {
+      throw new Error(`Failed to find user by RemOnline client id ${clientId}: ${userError.message}`)
+    }
+
+    if (!user) {
+      throw new Error(`User with RemOnline client id ${clientId} was not found`)
+    }
+
+    const { data: existingOrder, error: existingError } = await this.supabase
+      .from("user_repair_orders")
+      .select(
+        `
+        id,
+        document_id,
+        creation_date,
+        device_serial_number,
+        device_name,
+        device_brand,
+        device_model,
+        total_amount,
+        overall_status,
+        overall_status_name,
+        overall_status_color
+      `,
+      )
+      .eq("remonline_order_id", remonlineOrderId)
+      .maybeSingle()
+
+    if (existingError) {
+      throw new Error(`Failed to read existing order ${remonlineOrderId}: ${existingError.message}`)
+    }
+
+    const order = webhookData?.metadata?.order || {}
+    const asset = webhookData?.metadata?.asset || {}
+    const statusIdRaw = webhookData?.metadata?.status?.id ?? webhookData?.metadata?.new?.id
+    const statusId = statusIdRaw === undefined || statusIdRaw === null ? null : Number(statusIdRaw)
+    const hasStatusId = statusId !== null && Number.isFinite(statusId)
+    const statusInfo = hasStatusId ? await getStatusByRemOnlineId(statusId, user.locale || "uk", true) : null
+    const now = new Date().toISOString()
+
+    const deviceBrand = asset.brand ?? existingOrder?.device_brand ?? null
+    const deviceModel = asset.model ?? existingOrder?.device_model ?? null
+    const inferredDeviceName = [deviceBrand, deviceModel].filter(Boolean).join(" ").trim()
+    const deviceName = asset.name ?? existingOrder?.device_name ?? inferredDeviceName
+
+    const baseRow = {
+      remonline_order_id: remonlineOrderId,
+      user_id: user.id,
+      document_id: order.name || order.id_label || existingOrder?.document_id || String(remonlineOrderId),
+      creation_date: existingOrder?.creation_date || order.created_at || webhookData?.created_at || now,
+      device_serial_number: asset.uid || asset.serial_number || existingOrder?.device_serial_number || "N/A",
+      device_name: deviceName || "Unknown",
+      device_brand: deviceBrand,
+      device_model: deviceModel,
+      total_amount: existingOrder?.total_amount ?? 0,
+      overall_status: hasStatusId ? String(statusId) : existingOrder?.overall_status || "unknown",
+      overall_status_name: statusInfo?.name || existingOrder?.overall_status_name || "Unknown",
+      overall_status_color: statusInfo?.color || existingOrder?.overall_status_color || "#6b7280",
+      updated_at: now,
+    }
+
+    if (existingOrder) {
+      const { data: updatedOrder, error: updateError } = await this.supabase
+        .from("user_repair_orders")
+        .update(baseRow)
+        .eq("remonline_order_id", remonlineOrderId)
+        .select("id, remonline_order_id, document_id, user_id")
+        .single()
+
+      if (updateError) {
+        throw new Error(`Failed to update order ${remonlineOrderId}: ${updateError.message}`)
+      }
+
+      return updatedOrder
+    }
+
+    const { data: newOrder, error: insertError } = await this.supabase
+      .from("user_repair_orders")
+      .insert({
+        ...baseRow,
+        created_at: now,
+      })
+      .select("id, remonline_order_id, document_id, user_id")
+      .single()
+
+    if (insertError) {
+      throw new Error(`Failed to create order ${remonlineOrderId}: ${insertError.message}`)
+    }
+
+    return newOrder
+  }
+
   async deleteOrder(remonlineOrderId: number) {
     try {
       console.log(`🗑️ Deleting order ${remonlineOrderId}`)
