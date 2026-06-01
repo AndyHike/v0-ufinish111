@@ -84,3 +84,42 @@ test("order webhook handler records ignored order events without fetching RemOnl
   assertDoesNotImportRemonlineApi(handler)
   assert.doesNotMatch(handler, /getOrderById|getOrderItems/)
 })
+
+test("manual order sync is admin-only and is the only order path that fetches full RemOnline data", async () => {
+  const syncService = await read("../lib/services/remonline-order-sync.ts")
+  const adminRoute = await read("../app/api/admin/remonline/orders/[id]/sync/route.ts")
+  const apiClient = await read("../lib/api/remonline.ts")
+  const orderService = await read("../app/api/webhooks/remonline/services/order-service.ts")
+  const userOrdersRoute = await read("../app/api/user/repair-orders/route.ts")
+
+  assert.match(syncService, /remonline\.getOrderById\(remonlineOrderId\)/)
+  assert.match(syncService, /remonline\.getOrderItems\(remonlineOrderId\)/)
+  assert.match(syncService, /resolveOrderSyncIssues\(remonlineOrderId/)
+  assert.match(syncService, /upsertOrderFromRemonlineApi/)
+
+  assert.match(adminRoute, /getSession/)
+  assert.match(adminRoute, /session\.user\.role !== "admin"/)
+  assert.match(adminRoute, /syncOrderFromRemonline/)
+  assert.match(adminRoute, /Invalid order id/)
+
+  assert.match(apiClient, /async getOrderById/)
+  assert.match(apiClient, /async getOrderItems/)
+  assert.match(orderService, /async upsertOrderFromRemonlineApi/)
+  assert.match(orderService, /\.from\(["']user_repair_order_services["']\)\.delete\(\)\.eq\(["']order_id["'], orderDbId\)/)
+  assert.match(orderService, /storeOrderServices\(orderDbId, remonlineOrderId, orderItems\)/)
+
+  assertDoesNotImportRemonlineApi(userOrdersRoute)
+  assert.doesNotMatch(userOrdersRoute, /getOrderById|getOrderItems|fetch\(/)
+})
+
+test("admin order sync issue APIs are admin-only", async () => {
+  const listRoute = await read("../app/api/admin/remonline/order-sync-issues/route.ts")
+  const issueRoute = await read("../app/api/admin/remonline/order-sync-issues/[id]/route.ts")
+
+  assert.match(listRoute, /getSession/)
+  assert.match(listRoute, /session\.user\.role !== "admin"/)
+  assert.match(listRoute, /listOrderSyncIssues/)
+  assert.match(issueRoute, /getSession/)
+  assert.match(issueRoute, /session\.user\.role !== "admin"/)
+  assert.match(issueRoute, /ignoreOrderSyncIssue/)
+})

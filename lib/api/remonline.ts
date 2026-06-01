@@ -601,10 +601,11 @@ class RemonlineClient {
       const result = await this.makeRequest(`/orders/${orderId}`)
 
       if (result.success) {
-        console.log("📋 Order details:", JSON.stringify(result.data, null, 2))
+        const order = result.data?.data || result.data?.order || result.data
+        console.log("📋 Order details:", JSON.stringify(order, null, 2))
         return {
           success: true,
-          order: result.data,
+          order,
         }
       }
 
@@ -630,7 +631,7 @@ class RemonlineClient {
       const result = await this.makeRequest(`/orders/${orderId}/items`)
 
       if (result.success) {
-        const items = Array.isArray(result.data) ? result.data : result.data.items || []
+        const items = Array.isArray(result.data) ? result.data : result.data?.data || result.data?.items || []
         console.log(`📋 Found ${items.length} items for order ${orderId}`)
         console.log("📋 Sample item structure:", JSON.stringify(items[0] || {}, null, 2))
 

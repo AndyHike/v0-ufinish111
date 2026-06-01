@@ -372,6 +372,40 @@ export class OrderService {
     return newOrder
   }
 
+  async upsertOrderFromRemonlineApi(
+    userId: string,
+    remonlineOrderId: number,
+    orderData: any,
+    orderItems: any[],
+  ): Promise<any> {
+    const { data: existingOrder, error: existingError } = await this.supabase
+      .from("user_repair_orders")
+      .select("id")
+      .eq("remonline_order_id", remonlineOrderId)
+      .maybeSingle()
+
+    if (existingError) {
+      throw new Error(`Failed to read existing order ${remonlineOrderId}: ${existingError.message}`)
+    }
+
+    const savedOrder = existingOrder
+      ? await this.updateOrder(userId, remonlineOrderId, orderData, orderItems)
+      : await this.createOrder(userId, remonlineOrderId, orderData, orderItems)
+    const orderDbId = existingOrder?.id || savedOrder?.id
+
+    if (!orderDbId) {
+      throw new Error(`Failed to resolve local order id for RemOnline order ${remonlineOrderId}`)
+    }
+
+    await this.supabase.from("user_repair_order_services").delete().eq("order_id", orderDbId)
+
+    if (orderItems.length > 0) {
+      await this.storeOrderServices(orderDbId, remonlineOrderId, orderItems)
+    }
+
+    return savedOrder
+  }
+
   async deleteOrder(remonlineOrderId: number) {
     try {
       console.log(`🗑️ Deleting order ${remonlineOrderId}`)
