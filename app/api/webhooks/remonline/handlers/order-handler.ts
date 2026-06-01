@@ -1,13 +1,22 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
+import { recordOrderSyncIssue } from "@/lib/services/remonline-order-sync-issues"
 import { OrderService, RemonlineWebhookOrderError } from "../services/order-service"
 
 const WEBHOOK_ACKNOWLEDGED_ERROR_STATUSES = new Set([400, 404])
 
-function orderWebhookErrorResponse(error: unknown, message: string) {
+async function orderWebhookErrorResponse(error: unknown, message: string, webhookData?: any) {
   const status = error instanceof RemonlineWebhookOrderError ? error.statusCode : 500
   const shouldAcknowledge =
     error instanceof RemonlineWebhookOrderError && WEBHOOK_ACKNOWLEDGED_ERROR_STATUSES.has(status)
+
+  if (shouldAcknowledge && webhookData) {
+    await recordOrderSyncIssue({
+      payload: webhookData,
+      reason: error instanceof Error ? error.message : message,
+      details: message,
+    })
+  }
 
   return NextResponse.json(
     {
@@ -59,7 +68,7 @@ async function handleOrderCreated(webhookData: any) {
 
     return NextResponse.json({ success: true, message: "Order synced from webhook payload", order })
   } catch (error) {
-    return orderWebhookErrorResponse(error, "Failed to create order from webhook payload")
+    return await orderWebhookErrorResponse(error, "Failed to create order from webhook payload", webhookData)
   }
 }
 
@@ -71,7 +80,7 @@ async function handleOrderUpdated(webhookData: any) {
 
     return NextResponse.json({ success: true, message: "Order updated from webhook payload", order })
   } catch (error) {
-    return orderWebhookErrorResponse(error, "Failed to update order from webhook payload")
+    return await orderWebhookErrorResponse(error, "Failed to update order from webhook payload", webhookData)
   }
 }
 
@@ -117,6 +126,10 @@ async function handleOrderStatusChanged(webhookData: any) {
       console.error("❌ No new status ID found in webhook metadata")
       console.error("❌ Expected path: metadata.new.id")
       console.error("❌ Received metadata:", JSON.stringify(webhookData.metadata, null, 2))
+      await recordOrderSyncIssue({
+        payload: webhookData,
+        reason: "No new status ID found",
+      })
       return NextResponse.json(
         { success: false, ignored: true, error: "No new status ID found" },
         { status: 200 },
@@ -138,6 +151,11 @@ async function handleOrderStatusChanged(webhookData: any) {
       console.error("❌ Error checking for existing order:", orderCheckError)
       console.error("❌ This might mean the order doesn't exist in our database yet")
       if (orderCheckError.code === "PGRST116") {
+        await recordOrderSyncIssue({
+          payload: webhookData,
+          reason: "Order not found in database",
+          details: orderCheckError.message,
+        })
         return NextResponse.json(
           { success: false, ignored: true, error: "Order not found in database", orderId },
           { status: 200 },
@@ -149,6 +167,11 @@ async function handleOrderStatusChanged(webhookData: any) {
 
     if (!existingOrder) {
       console.error(`❌ Order ${orderId} not found in our database`)
+      await recordOrderSyncIssue({
+        payload: webhookData,
+        reason: "Order not found in database",
+        details: `No local order found for RemOnline order ${orderId}`,
+      })
       return NextResponse.json(
         { success: false, ignored: true, error: "Order not found in database", orderId },
         { status: 200 },

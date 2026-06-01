@@ -39,3 +39,30 @@ test("order sync issue migration stores webhook recovery state", async () => {
   assert.match(sql, /idx_remonline_order_sync_issues_order_id/)
   assert.match(sql, /FOR ALL TO service_role USING \(true\) WITH CHECK \(true\)/)
 })
+
+test("order sync issue service records, resolves, ignores, and lists issues", async () => {
+  const servicePath = "../lib/services/remonline-order-sync-issues.ts"
+  assert.equal(await pathExists(servicePath), true)
+
+  const service = await read(servicePath)
+
+  assert.match(service, /export async function recordOrderSyncIssue/)
+  assert.match(service, /export async function resolveOrderSyncIssues/)
+  assert.match(service, /export async function ignoreOrderSyncIssue/)
+  assert.match(service, /export async function listOrderSyncIssues/)
+  assert.match(service, /\.from\(["']remonline_order_sync_issues["']\)/)
+  assert.match(service, /onConflict:\s*["']remonline_event_id["']/)
+  assert.match(service, /attempts:\s*\(existingIssue\?\.attempts \|\| 0\) \+ 1/)
+  assertDoesNotImportRemonlineApi(service)
+})
+
+test("order webhook handler records ignored order events without fetching RemOnline", async () => {
+  const handler = await read("../app/api/webhooks/remonline/handlers/order-handler.ts")
+
+  assert.match(handler, /recordOrderSyncIssue/)
+  assert.match(handler, /Order not found in database/)
+  assert.match(handler, /ignored:\s*true/)
+  assert.match(handler, /status:\s*200/)
+  assertDoesNotImportRemonlineApi(handler)
+  assert.doesNotMatch(handler, /getOrderById|getOrderItems/)
+})
