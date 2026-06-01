@@ -7,6 +7,38 @@ function toAmount(value: unknown): number {
   return Number.isFinite(amount) ? amount : 0
 }
 
+function mapLinkedOrder(order: any, remonlineOrderId: number) {
+  if (!order) {
+    return {
+      id: null,
+      remonlineOrderId,
+      documentId: null,
+      creationDate: null,
+      deviceName: null,
+      deviceBrand: null,
+      deviceModel: null,
+      totalAmount: 0,
+      overallStatus: null,
+      overallStatusName: null,
+      overallStatusColor: null,
+    }
+  }
+
+  return {
+    id: order.id,
+    remonlineOrderId: order.remonline_order_id,
+    documentId: order.document_id,
+    creationDate: order.creation_date,
+    deviceName: order.device_name,
+    deviceBrand: order.device_brand,
+    deviceModel: order.device_model,
+    totalAmount: toAmount(order.total_amount),
+    overallStatus: order.overall_status,
+    overallStatusName: order.overall_status_name,
+    overallStatusColor: order.overall_status_color,
+  }
+}
+
 export async function GET() {
   try {
     const session = await getSession()
@@ -49,6 +81,62 @@ export async function GET() {
       return NextResponse.json({ success: false, error: "Failed to fetch invoices" }, { status: 500 })
     }
 
+    const invoiceIds = (invoices || []).map((invoice) => invoice.id)
+    const ordersByInvoiceId = new Map<string, any[]>()
+
+    if (invoiceIds.length > 0) {
+      const { data: invoiceOrderLinks, error: invoiceOrderLinksError } = await supabase
+        .from("user_invoice_orders")
+        .select("invoice_id, order_id, remonline_order_id")
+        .eq("user_id", userId)
+        .in("invoice_id", invoiceIds)
+
+      if (invoiceOrderLinksError) {
+        return NextResponse.json({ success: false, error: "Failed to fetch invoice order links" }, { status: 500 })
+      }
+
+      const orderIds = Array.from(
+        new Set((invoiceOrderLinks || []).map((link) => link.order_id).filter(Boolean)),
+      )
+      const ordersById = new Map<string, any>()
+
+      if (orderIds.length > 0) {
+        const { data: linkedOrders, error: linkedOrdersError } = await supabase
+          .from("user_repair_orders")
+          .select(
+            `
+            id,
+            remonline_order_id,
+            document_id,
+            creation_date,
+            device_name,
+            device_brand,
+            device_model,
+            total_amount,
+            overall_status,
+            overall_status_name,
+            overall_status_color
+          `,
+          )
+          .eq("user_id", userId)
+          .in("id", orderIds)
+
+        if (linkedOrdersError) {
+          return NextResponse.json({ success: false, error: "Failed to fetch linked orders" }, { status: 500 })
+        }
+
+        for (const order of linkedOrders || []) {
+          ordersById.set(order.id, order)
+        }
+      }
+
+      for (const link of invoiceOrderLinks || []) {
+        const invoiceOrders = ordersByInvoiceId.get(link.invoice_id) || []
+        invoiceOrders.push(mapLinkedOrder(ordersById.get(link.order_id), Number(link.remonline_order_id)))
+        ordersByInvoiceId.set(link.invoice_id, invoiceOrders)
+      }
+    }
+
     return NextResponse.json({
       success: true,
       invoices: (invoices || []).map((invoice) => ({
@@ -69,6 +157,7 @@ export async function GET() {
         balanceAmount: toAmount(invoice.balance_amount),
         currency: invoice.currency,
         updatedAt: invoice.updated_at,
+        orders: ordersByInvoiceId.get(invoice.id) || [],
       })),
     })
   } catch (error) {

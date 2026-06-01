@@ -5,6 +5,10 @@ type InvoicePayloadOptions = {
 }
 
 type JsonRecord = Record<string, any>
+type InvoiceOrderLinkState = {
+  present: boolean
+  orderIds: number[]
+}
 
 function isRecord(value: unknown): value is JsonRecord {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value)
@@ -44,6 +48,10 @@ function getNestedId(value: unknown): number | null {
 function getNestedName(value: unknown): string | null {
   if (!isRecord(value)) return null
   return toText(value.name) ?? toText(value.fullname) ?? toText(value.full_name) ?? toText(value.title)
+}
+
+function hasOwnValue(record: JsonRecord, key: string): boolean {
+  return Object.prototype.hasOwnProperty.call(record, key)
 }
 
 function extractInvoicePayload(input: JsonRecord): JsonRecord {
@@ -115,6 +123,63 @@ function extractAmount(invoice: JsonRecord, ...keys: string[]): number | null {
     if (value !== null) return value
   }
   return null
+}
+
+function addOrderId(orderIds: Set<number>, value: unknown) {
+  const id = toNumber(value)
+  if (id && Number.isInteger(id) && id > 0) orderIds.add(id)
+}
+
+function collectOrderIds(value: unknown, orderIds: Set<number>, allowGenericId = false) {
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      collectOrderIds(item, orderIds, allowGenericId)
+    }
+    return
+  }
+
+  if (!isRecord(value)) {
+    addOrderId(orderIds, value)
+    return
+  }
+
+  addOrderId(orderIds, firstPresent(value.order_id, value.orderId, value.remonline_order_id, value.remonlineOrderId))
+
+  const type = toText(firstPresent(value.object_type, value.objectType, value.document_type, value.documentType, value.type))
+  const looksLikeOrder = !type || /order/i.test(type)
+
+  if (allowGenericId && looksLikeOrder) {
+    addOrderId(orderIds, value.id)
+    addOrderId(orderIds, firstPresent(value.object_id, value.objectId))
+  }
+}
+
+function extractInvoiceOrderLinkState(input: JsonRecord): InvoiceOrderLinkState {
+  const invoice = extractInvoicePayload(input)
+  const metadata = isRecord(input.metadata) ? input.metadata : {}
+  const orderIds = new Set<number>()
+  const candidates: Array<{ value: unknown; allowGenericId?: boolean }> = []
+
+  if (hasOwnValue(invoice, "orders")) candidates.push({ value: invoice.orders, allowGenericId: true })
+  if (hasOwnValue(invoice, "order")) candidates.push({ value: invoice.order, allowGenericId: true })
+  if (hasOwnValue(invoice, "order_ids")) candidates.push({ value: invoice.order_ids })
+  if (hasOwnValue(invoice, "orderIds")) candidates.push({ value: invoice.orderIds })
+  if (hasOwnValue(invoice, "remonline_order_ids")) candidates.push({ value: invoice.remonline_order_ids })
+  if (hasOwnValue(invoice, "remonlineOrderIds")) candidates.push({ value: invoice.remonlineOrderIds })
+  if (hasOwnValue(invoice, "documents")) candidates.push({ value: invoice.documents, allowGenericId: true })
+  if (hasOwnValue(invoice, "docs")) candidates.push({ value: invoice.docs, allowGenericId: true })
+  if (hasOwnValue(metadata, "order")) candidates.push({ value: metadata.order, allowGenericId: true })
+  if (hasOwnValue(metadata, "orders")) candidates.push({ value: metadata.orders, allowGenericId: true })
+  if (hasOwnValue(metadata, "documents")) candidates.push({ value: metadata.documents, allowGenericId: true })
+
+  for (const candidate of candidates) {
+    collectOrderIds(candidate.value, orderIds, Boolean(candidate.allowGenericId))
+  }
+
+  return {
+    present: candidates.length > 0,
+    orderIds: [...orderIds],
+  }
 }
 
 export function normalizeInvoicePayload(input: JsonRecord, userId: string | null, source: InvoiceSyncSource = "webhook") {
@@ -232,6 +297,57 @@ export class InvoiceService {
     return data ?? null
   }
 
+  private async syncInvoiceOrderLinks(
+    invoiceId: string,
+    remonlineInvoiceId: number,
+    linkState: InvoiceOrderLinkState,
+    rawPayload: JsonRecord,
+    fallbackUserId: string | null,
+  ) {
+    if (!linkState.present) return
+
+    const { error: deleteError } = await this.supabase.from("user_invoice_orders").delete().eq("invoice_id", invoiceId)
+
+    if (deleteError) {
+      throw new Error(`Failed to clear invoice ${remonlineInvoiceId} order links: ${deleteError.message}`)
+    }
+
+    if (linkState.orderIds.length === 0) return
+
+    const { data: orders, error: ordersError } = await this.supabase
+      .from("user_repair_orders")
+      .select("id, remonline_order_id, user_id")
+      .in("remonline_order_id", linkState.orderIds)
+
+    if (ordersError) {
+      throw new Error(`Failed to read linked orders for invoice ${remonlineInvoiceId}: ${ordersError.message}`)
+    }
+
+    const ordersByRemonlineId = new Map<number, JsonRecord>(
+      (orders || []).map((order: JsonRecord) => [Number(order.remonline_order_id), order]),
+    )
+    const now = new Date().toISOString()
+    const rows = linkState.orderIds.map((remonlineOrderId) => {
+      const order = ordersByRemonlineId.get(remonlineOrderId)
+
+      return {
+        invoice_id: invoiceId,
+        remonline_invoice_id: remonlineInvoiceId,
+        order_id: order?.id ?? null,
+        remonline_order_id: remonlineOrderId,
+        user_id: order?.user_id ?? fallbackUserId,
+        raw_payload: rawPayload,
+        updated_at: now,
+      }
+    })
+
+    const { error: insertError } = await this.supabase.from("user_invoice_orders").insert(rows)
+
+    if (insertError) {
+      throw new Error(`Failed to store invoice ${remonlineInvoiceId} order links: ${insertError.message}`)
+    }
+  }
+
   async upsertInvoiceFromPayload(input: JsonRecord, options: InvoicePayloadOptions = {}) {
     const source = options.source ?? "webhook"
     const invoice = extractInvoicePayload(input)
@@ -241,6 +357,7 @@ export class InvoiceService {
     const existing = await this.findExistingInvoice(normalized.remonline_invoice_id)
     const preserveIfExisting = existing && !hasInvoiceNumber(input) ? ["invoice_number"] : []
     const row = mergeInvoiceForUpsert(normalized, existing, { preserveIfExisting })
+    const linkState = extractInvoiceOrderLinkState(input)
 
     const { data, error } = await this.supabase
       .from("user_invoices")
@@ -251,6 +368,8 @@ export class InvoiceService {
     if (error) {
       throw new Error(`Failed to upsert invoice ${row.remonline_invoice_id}: ${error.message}`)
     }
+
+    await this.syncInvoiceOrderLinks(data.id, row.remonline_invoice_id, linkState, input, data.user_id ?? row.user_id)
 
     return data
   }

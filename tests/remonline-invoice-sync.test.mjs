@@ -42,6 +42,26 @@ test("invoice migration stores local invoice data and sync state", async () => {
   assert.match(sql, /Users can view their own invoices/)
 })
 
+test("invoice order link migration supports one invoice connected to multiple orders", async () => {
+  const migrationPath = "../scripts/create-user-invoice-orders-table.sql"
+  assert.equal(await pathExists(migrationPath), true)
+
+  const sql = await read(migrationPath)
+
+  assert.match(sql, /CREATE TABLE IF NOT EXISTS public\.user_invoice_orders/)
+  assert.match(sql, /invoice_id UUID NOT NULL REFERENCES public\.user_invoices\(id\) ON DELETE CASCADE/)
+  assert.match(sql, /remonline_invoice_id INTEGER NOT NULL/)
+  assert.match(sql, /order_id UUID REFERENCES public\.user_repair_orders\(id\) ON DELETE SET NULL/)
+  assert.match(sql, /remonline_order_id INTEGER NOT NULL/)
+  assert.match(sql, /user_id UUID REFERENCES public\.users\(id\) ON DELETE SET NULL/)
+  assert.match(sql, /UNIQUE \(remonline_invoice_id, remonline_order_id\)/)
+  assert.match(sql, /idx_user_invoice_orders_invoice_id/)
+  assert.match(sql, /idx_user_invoice_orders_order_id/)
+  assert.match(sql, /idx_user_invoice_orders_remonline_order_id/)
+  assert.match(sql, /Users can view their own invoice order links/)
+  assert.match(sql, /Service can manage invoice order links/)
+})
+
 test("invoice webhook route is canonical and routes invoice events after signature verification", async () => {
   const route = await read("../app/api/webhooks/remonline/route.ts")
 
@@ -141,6 +161,24 @@ test("invoice service preserves payload-first boundaries", async () => {
   assert.doesNotMatch(service, /fetch\(/)
 })
 
+test("invoice service synchronizes linked orders from webhook and manual payloads", async () => {
+  const service = await read("../app/api/webhooks/remonline/services/invoice-service.ts")
+
+  assert.match(service, /function extractInvoiceOrderLinkState/)
+  assert.match(service, /async syncInvoiceOrderLinks/)
+  assert.match(service, /linkState\.present/)
+  assert.match(service, /invoice\.orders/)
+  assert.match(service, /invoice\.order_ids/)
+  assert.match(service, /invoice\.documents/)
+  assert.match(service, /\.from\(["']user_repair_orders["']\)/)
+  assert.match(service, /\.from\(["']user_invoice_orders["']\)/)
+  assert.match(service, /\.delete\(\)\.eq\(["']invoice_id["'], invoiceId\)/)
+  assert.match(service, /\.insert\(rows\)/)
+  assert.match(service, /remonline_invoice_id:\s*remonlineInvoiceId/)
+  assert.match(service, /remonline_order_id:\s*remonlineOrderId/)
+  assertDoesNotImportRemonlineApi(service)
+})
+
 test("manual invoice sync is the only invoice path that calls RO App API", async () => {
   const syncService = await read("../lib/services/remonline-invoice-sync.ts")
   const adminRoute = await read("../app/api/admin/remonline/invoices/[id]/sync/route.ts")
@@ -161,8 +199,12 @@ test("user invoice endpoint reads local database only", async () => {
 
   assert.match(route, /getSession/)
   assert.match(route, /\.from\(["']user_invoices["']\)/)
+  assert.match(route, /\.from\(["']user_invoice_orders["']\)/)
+  assert.match(route, /\.from\(["']user_repair_orders["']\)/)
   assert.match(route, /\.eq\("user_id", userId\)/)
   assert.match(route, /\.eq\("is_deleted", false\)/)
+  assert.match(route, /ordersByInvoiceId/)
+  assert.match(route, /orders:\s*ordersByInvoiceId\.get\(invoice\.id\) \|\| \[\]/)
   assertDoesNotImportRemonlineApi(route)
   assert.doesNotMatch(route, /getInvoiceById/)
   assert.doesNotMatch(route, /fetch\(/)
