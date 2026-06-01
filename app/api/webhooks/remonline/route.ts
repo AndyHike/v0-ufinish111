@@ -122,7 +122,16 @@ export async function POST(request: NextRequest) {
     }
 
     if (!verifyRemonlineWebhookSignature({ payload, signature, secret: REMONLINE_WEBHOOK_SECRET, webhookId })) {
-      return NextResponse.json({ success: false, error: "Invalid webhook signature" }, { status: 401 })
+      console.error("Invalid RemOnline webhook signature; webhook acknowledged without processing", {
+        event: payload?.event_name,
+        objectId: payload?.context?.object_id,
+        hasSignature: Boolean(signature),
+        hasWebhookId: Boolean(webhookId),
+      })
+      return NextResponse.json(
+        { success: false, ignored: true, error: "Invalid webhook signature" },
+        { status: 200 },
+      )
     }
 
     console.log("🔔 RemOnline webhook received:")

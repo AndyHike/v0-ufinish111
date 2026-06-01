@@ -23,6 +23,15 @@ test("validates RO App webhook signature from x-webhook-id when provided", () =>
   assert.equal(verifyRemonlineWebhookSignature({ payload, signature, secret, webhookId }), true)
 })
 
+test("falls back to payload id when x-webhook-id does not match the signature source", () => {
+  const payload = { id: "body-event-id", event_name: "Order.Created" }
+  const webhookId = "different-header-id"
+  const secret = "secret"
+  const signature = crypto.createHash("sha256").update(`${payload.id}${secret}`).digest("hex")
+
+  assert.equal(verifyRemonlineWebhookSignature({ payload, signature, secret, webhookId }), true)
+})
+
 test("rejects invalid or missing RO App webhook signature inputs", () => {
   const payload = { id: "9cba80cc-93b5-459b-bfd3-445e724dafc5", event_name: "Client.Created" }
 
@@ -49,6 +58,8 @@ test("RemOnline canonical webhook route uses one shared secret before handlers m
   assert.match(mainRoute, /x-signature/)
   assert.match(mainRoute, /x-webhook-id/)
   assert.match(mainRoute, /payload\?\.\["x-signature"\]/)
+  assert.match(mainRoute, /ignored:\s*true[\s\S]*Invalid webhook signature/)
+  assert.match(mainRoute, /status:\s*200/)
   assert.match(mainRoute, /REMONLINE_WEBHOOK_SECRET/)
   assert.doesNotMatch(mainRoute, /REMONLINE_ORDER_WEBHOOK_SECRET/)
   assert.doesNotMatch(mainRoute, /REMONLINE_DELETE_ACCOUNT_WEBHOOK_SECRET/)
