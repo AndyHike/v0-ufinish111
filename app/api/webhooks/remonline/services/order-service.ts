@@ -293,7 +293,7 @@ export class OrderService {
 
       const { data: user, error: userError } = await this.supabase
         .from("users")
-        .select("id")
+        .select("id, locale")
         .eq("remonline_id", clientId)
         .maybeSingle()
 
@@ -309,6 +309,7 @@ export class OrderService {
       }
 
       userId = user.id
+      userLocale = user.locale || "uk"
     }
 
     const order = webhookData?.metadata?.order || {}

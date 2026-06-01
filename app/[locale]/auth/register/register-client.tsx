@@ -263,6 +263,7 @@ export default function RegisterClient() {
         billingCity: identifier.billingCity,
         billingPostalCode: identifier.billingPostalCode,
         billingCountry: identifier.billingCountry,
+        locale: locale,
       })
 
       if (!createResult.success) {

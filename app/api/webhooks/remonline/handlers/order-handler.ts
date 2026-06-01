@@ -180,8 +180,22 @@ async function handleOrderStatusChanged(webhookData: any) {
 
     console.log(`✅ Found existing order:`, existingOrder)
 
+    const { data: user, error: userError } = await supabase
+      .from("users")
+      .select("locale")
+      .eq("id", existingOrder.user_id)
+      .single()
+
     let userLocale = "uk" // Default to Ukrainian
-    console.log(`👤 Using default webhook locale: ${userLocale}`)
+    if (!userError && user?.locale) {
+      userLocale = user.locale
+      console.log(`👤 Using user locale from database: ${userLocale}`)
+    } else {
+      console.log(`⚠️ Could not get user locale from database, using default: ${userLocale}`)
+      if (userError) {
+        console.log("User error:", userError)
+      }
+    }
 
     // Use OrderService to update the order status
     console.log(`🔄 Calling OrderService.updateOrderStatus...`)

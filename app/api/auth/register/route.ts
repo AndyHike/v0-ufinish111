@@ -12,6 +12,7 @@ export async function POST(request: Request) {
     const phone = formData.get("phone") as string
     const password = formData.get("password") as string
     const locale = (formData.get("locale") as string) || "en"
+    const userLocale = ["uk", "en", "cs"].includes(locale) ? locale : "uk"
 
     if (!email || !password || !name) {
       return NextResponse.json({ success: false, message: "Missing required fields" }, { status: 400 })
@@ -37,6 +38,7 @@ export async function POST(request: Request) {
         password_hash: hashedPassword,
         role: "user",
         email_verified: false,
+        locale: userLocale,
       })
       .select("id")
       .single()

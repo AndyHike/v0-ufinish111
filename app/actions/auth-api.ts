@@ -376,6 +376,7 @@ export async function createUser(userData: {
   last_name: string
   email: string
   phone: string[]
+  locale?: string
   address?: string
   is_b2b?: boolean
   ico?: string
@@ -393,6 +394,7 @@ export async function createUser(userData: {
 
     const supabase = createClient()
     const billingAddress = userData.address || buildBillingAddress(userData)
+    const userLocale = userData.locale && ["uk", "en", "cs"].includes(userData.locale) ? userData.locale : "uk"
 
     // Check if user already exists
     const { data: existingUser } = await supabase
@@ -483,6 +485,7 @@ export async function createUser(userData: {
         role_id: roleId || null,
         first_name: userData.first_name,
         last_name: userData.last_name,
+        locale: userLocale,
         password_hash: passwordHash,
         email_verified: true,
         is_b2b: userData.is_b2b || false,

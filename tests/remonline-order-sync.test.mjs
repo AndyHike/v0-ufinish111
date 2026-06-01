@@ -85,13 +85,25 @@ test("order webhook handler records ignored order events without fetching RemOnl
   assert.doesNotMatch(handler, /getOrderById|getOrderItems/)
 })
 
-test("order webhooks do not require a users.locale database column", async () => {
+test("order webhooks use persisted user locale after the locale column migration", async () => {
+  const sql = await read("../scripts/add-users-locale-column.sql")
   const handler = await read("../app/api/webhooks/remonline/handlers/order-handler.ts")
   const orderService = await read("../app/api/webhooks/remonline/services/order-service.ts")
+  const authApi = await read("../app/actions/auth-api.ts")
+  const registerClient = await read("../app/[locale]/auth/register/register-client.tsx")
+  const registerRoute = await read("../app/api/auth/register/route.ts")
 
-  assert.doesNotMatch(handler, /\.select\(["']locale["']\)/)
-  assert.doesNotMatch(orderService, /\.select\(["']id,\s*locale["']\)/)
+  assert.match(sql, /ADD COLUMN IF NOT EXISTS locale TEXT/)
+  assert.match(sql, /CHECK \(locale IN \('uk', 'en', 'cs'\)\)/)
+  assert.match(handler, /\.select\(["']locale["']\)/)
+  assert.match(orderService, /\.select\(["']id,\s*locale["']\)/)
   assert.match(orderService, /userLocale = "uk"/)
+  assert.match(authApi, /locale\?: string/)
+  assert.match(authApi, /const userLocale = userData\.locale && \["uk", "en", "cs"\]\.includes\(userData\.locale\) \? userData\.locale : "uk"/)
+  assert.match(authApi, /locale:\s*userLocale/)
+  assert.match(registerClient, /locale:\s*locale/)
+  assert.match(registerRoute, /const userLocale = \["uk", "en", "cs"\]\.includes\(locale\) \? locale : "uk"/)
+  assert.match(registerRoute, /locale:\s*userLocale/)
 })
 
 test("manual order sync is admin-only and is the only order path that fetches full RemOnline data", async () => {
