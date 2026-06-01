@@ -1,5 +1,7 @@
 import { getStatusByRemOnlineId } from "@/lib/order-status-utils"
 
+type JsonRecord = Record<string, any>
+
 export class RemonlineWebhookOrderError extends Error {
   constructor(
     message: string,
@@ -8,6 +10,80 @@ export class RemonlineWebhookOrderError extends Error {
     super(message)
     this.name = "RemonlineWebhookOrderError"
   }
+}
+
+const ORDER_AMOUNT_KEYS = [
+  "total_amount",
+  "totalAmount",
+  "amount_total",
+  "amountTotal",
+  "total_price",
+  "totalPrice",
+  "order_total",
+  "orderTotal",
+  "total",
+  "sum",
+  "amount",
+  "price",
+  "value",
+]
+
+function isRecord(value: unknown): value is JsonRecord {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value)
+}
+
+function toNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value
+  if (typeof value !== "string" || !value.trim()) return null
+
+  const normalized = value.trim().replace(/\s+/g, "").replace(",", ".")
+  if (!/^-?\d+(\.\d+)?$/.test(normalized)) return null
+
+  const parsed = Number(normalized)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
+function getRecordAtPath(input: JsonRecord, path: string[]): JsonRecord | null {
+  let current: unknown = input
+
+  for (const key of path) {
+    if (!isRecord(current)) return null
+    current = current[key]
+  }
+
+  return isRecord(current) ? current : null
+}
+
+function extractAmountFromRecord(record: JsonRecord | null): number | null {
+  if (!record) return null
+
+  for (const key of ORDER_AMOUNT_KEYS) {
+    const amount = toNumber(record[key])
+    if (amount !== null) return amount
+  }
+
+  return null
+}
+
+function extractOrderAmountFromWebhookPayload(webhookData: JsonRecord): number | null {
+  const directNewValue = toNumber(webhookData?.metadata?.new)
+  if (directNewValue !== null) return directNewValue
+
+  const candidatePaths = [
+    ["metadata", "new"],
+    ["metadata", "order"],
+    ["metadata"],
+    ["order"],
+    ["data"],
+    [],
+  ]
+
+  for (const path of candidatePaths) {
+    const amount = extractAmountFromRecord(getRecordAtPath(webhookData, path))
+    if (amount !== null) return amount
+  }
+
+  return null
 }
 
 export class OrderService {
@@ -318,6 +394,7 @@ export class OrderService {
     const statusId = statusIdRaw === undefined || statusIdRaw === null ? null : Number(statusIdRaw)
     const hasStatusId = statusId !== null && Number.isFinite(statusId)
     const statusInfo = hasStatusId ? await getStatusByRemOnlineId(statusId, userLocale, true) : null
+    const payloadAmount = extractOrderAmountFromWebhookPayload(webhookData)
     const now = new Date().toISOString()
 
     const deviceBrand = asset.brand ?? existingOrder?.device_brand ?? null
@@ -334,7 +411,7 @@ export class OrderService {
       device_name: deviceName || "Unknown",
       device_brand: deviceBrand,
       device_model: deviceModel,
-      total_amount: existingOrder?.total_amount ?? 0,
+      total_amount: payloadAmount ?? existingOrder?.total_amount ?? 0,
       overall_status: hasStatusId ? String(statusId) : existingOrder?.overall_status || "unknown",
       overall_status_name: statusInfo?.name || existingOrder?.overall_status_name || "Unknown",
       overall_status_color: statusInfo?.color || existingOrder?.overall_status_color || "#6b7280",
@@ -370,6 +447,43 @@ export class OrderService {
     }
 
     return newOrder
+  }
+
+  async updateOrderAmountFromWebhookPayload(webhookData: any) {
+    const remonlineOrderId = Number(webhookData?.context?.object_id ?? webhookData?.metadata?.order?.id)
+
+    if (!Number.isInteger(remonlineOrderId) || remonlineOrderId <= 0) {
+      throw new RemonlineWebhookOrderError("RemOnline order id is missing", 400)
+    }
+
+    const amount = extractOrderAmountFromWebhookPayload(webhookData)
+
+    if (amount === null) {
+      throw new RemonlineWebhookOrderError("Order amount is missing", 400)
+    }
+
+    const { data: updatedOrder, error: updateError } = await this.supabase
+      .from("user_repair_orders")
+      .update({
+        total_amount: amount,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("remonline_order_id", remonlineOrderId)
+      .select("id, remonline_order_id, document_id, total_amount")
+      .maybeSingle()
+
+    if (updateError) {
+      throw new RemonlineWebhookOrderError(
+        `Failed to update order ${remonlineOrderId} amount: ${updateError.message}`,
+        500,
+      )
+    }
+
+    if (!updatedOrder) {
+      throw new RemonlineWebhookOrderError(`Order ${remonlineOrderId} not found`, 404)
+    }
+
+    return updatedOrder
   }
 
   async upsertOrderFromRemonlineApi(

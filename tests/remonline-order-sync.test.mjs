@@ -85,6 +85,26 @@ test("order webhook handler records ignored order events without fetching RemOnl
   assert.doesNotMatch(handler, /getOrderById|getOrderItems/)
 })
 
+test("order amount changed webhook updates the local total without fetching RemOnline", async () => {
+  const handler = await read("../app/api/webhooks/remonline/handlers/order-handler.ts")
+  const orderService = await read("../app/api/webhooks/remonline/services/order-service.ts")
+
+  assert.match(handler, /case\s+["']Order\.Amount\.Changed["']:/)
+  assert.match(handler, /handleOrderAmountChanged\(webhookData\)/)
+  assert.match(handler, /updateOrderAmountFromWebhookPayload\(webhookData\)/)
+  assert.match(handler, /Failed to update order amount from webhook payload/)
+  assertDoesNotImportRemonlineApi(handler)
+
+  assert.match(orderService, /async updateOrderAmountFromWebhookPayload\(webhookData: any\)/)
+  assert.match(orderService, /extractOrderAmountFromWebhookPayload\(webhookData\)/)
+  assert.match(orderService, /Order amount is missing/)
+  assert.match(orderService, /total_amount:\s*amount/)
+  assert.match(orderService, /\.eq\(["']remonline_order_id["'], remonlineOrderId\)/)
+  assert.match(orderService, /\.select\(["']id,\s*remonline_order_id,\s*document_id,\s*total_amount["']\)/)
+  assert.match(orderService, /Order \$\{remonlineOrderId\} not found/)
+  assertDoesNotImportRemonlineApi(orderService)
+})
+
 test("order webhooks use persisted user locale after the locale column migration", async () => {
   const sql = await read("../scripts/add-users-locale-column.sql")
   const handler = await read("../app/api/webhooks/remonline/handlers/order-handler.ts")

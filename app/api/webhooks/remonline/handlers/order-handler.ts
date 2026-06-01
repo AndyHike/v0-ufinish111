@@ -43,6 +43,8 @@ export async function handleOrderEvents(webhookData: any) {
         return await handleOrderDeleted(webhookData)
       case "Order.Status.Changed":
         return await handleOrderStatusChanged(webhookData)
+      case "Order.Amount.Changed":
+        return await handleOrderAmountChanged(webhookData)
       default:
         console.log(`⚠️ Unhandled order event: ${eventType}`)
         return NextResponse.json({ success: true, message: "Order event received but no action taken" })
@@ -101,6 +103,18 @@ async function handleOrderDeleted(webhookData: any) {
   } catch (error) {
     console.error("💥 Error in handleOrderDeleted:", error)
     return await orderWebhookErrorResponse(error, "Failed to delete order", webhookData)
+  }
+}
+
+async function handleOrderAmountChanged(webhookData: any) {
+  try {
+    const supabase = createClient()
+    const orderService = new OrderService(supabase)
+    const order = await orderService.updateOrderAmountFromWebhookPayload(webhookData)
+
+    return NextResponse.json({ success: true, message: "Order amount updated from webhook payload", order })
+  } catch (error) {
+    return await orderWebhookErrorResponse(error, "Failed to update order amount from webhook payload", webhookData)
   }
 }
 
