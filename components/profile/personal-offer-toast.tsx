@@ -21,24 +21,18 @@ export function PersonalOfferToast({
     if (!offer) return
 
     const storageKey = `personal-offer-toast:${offer.id}`
-    if (window.localStorage.getItem(storageKey)) return
+    if (window.sessionStorage.getItem(storageKey)) return
 
-    const dismissOfferToast = () => {
-      window.localStorage.setItem(storageKey, "dismissed")
-    }
+    window.sessionStorage.setItem(storageKey, "shown")
 
     toast({
       title: t("offerToastTitle"),
       description: `${offer.title} - ${offer.discountValueLabel}`,
       duration: 7000,
-      onOpenChange: (open) => {
-        if (!open) dismissOfferToast()
-      },
       action: (
         <ToastAction
           altText={t("offerToastAction")}
           onClick={() => {
-            dismissOfferToast()
             router.push(`/${locale}/profile`)
           }}
         >

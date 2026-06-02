@@ -241,7 +241,8 @@ test("personal profile offers power profile cards and homepage toast", async () 
   assert.match(profileContent, /<PersonalOffers offers=\{personalOffers\}/)
   assert.match(offersComponent, /specialOffersTitle/)
   assert.match(offersComponent, /offerUsesLeft/)
-  assert.match(toastComponent, /localStorage/)
+  assert.match(toastComponent, /sessionStorage/)
+  assert.doesNotMatch(toastComponent, /localStorage/)
   assert.match(toastComponent, /personal-offer-toast/)
   assert.match(toastComponent, /offerToastAction/)
   assert.match(homePage, /getSession/)
@@ -260,6 +261,15 @@ test("toast callers and renderer share one toast store", async () => {
   assert.doesNotMatch(hookToast, /let memoryState/)
   assert.match(toaster, /@\/hooks\/use-toast/)
   assert.match(offerToast, /@\/components\/ui\/use-toast/)
+})
+
+test("personal offer toast is shown once per browser session", async () => {
+  const offerToast = await read("../components/profile/personal-offer-toast.tsx")
+
+  assert.match(offerToast, /window\.sessionStorage/)
+  assert.match(offerToast, /setItem\(storageKey,\s*["']shown["']\)/)
+  assert.doesNotMatch(offerToast, /window\.localStorage/)
+  assert.doesNotMatch(offerToast, /onOpenChange/)
 })
 
 test("automatic discount pricing excludes code-only discounts while keeping personal discounts eligible", async () => {
