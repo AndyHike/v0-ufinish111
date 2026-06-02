@@ -149,7 +149,10 @@ function ServicePageClientContent({ serviceData, locale }: Props) {
         return
       }
 
-      const cachedDiscount = discountCache.get(currentServiceData.sourceModel.id, [currentServiceData.id])
+      let cachedDiscount = null
+      if (!hasSession) {
+        cachedDiscount = discountCache.get(currentServiceData.sourceModel.id, [currentServiceData.id])
+      }
       if (cachedDiscount) {
         const liveDiscount = cachedDiscount[currentServiceData.id]
         if (liveDiscount) {
@@ -178,7 +181,9 @@ function ServicePageClientContent({ serviceData, locale }: Props) {
 
         if (!isMounted) return
 
-        discountCache.set(currentServiceData.sourceModel.id, [currentServiceData.id], liveDiscounts)
+        if (!hasSession) {
+          discountCache.set(currentServiceData.sourceModel.id, [currentServiceData.id], liveDiscounts)
+        }
 
         const liveDiscount = liveDiscounts[currentServiceData.id]
         if (liveDiscount) {

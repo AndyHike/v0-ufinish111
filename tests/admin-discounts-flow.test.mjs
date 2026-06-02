@@ -107,3 +107,46 @@ test("discount form uses searchable personal user picker", async () => {
   assert.match(form, /filteredUsers/)
   assert.doesNotMatch(form, /<Select value=\{formData\.userId\}/)
 })
+
+test("legacy non-localized discounts page does not render the stale mock list", async () => {
+  const page = await read("../app/admin/discounts/page.tsx")
+
+  assert.match(page, /redirect\(`\/\$\{DEFAULT_LOCALE\}\/admin\/discounts`\)/)
+  assert.doesNotMatch(page, /DiscountsList/)
+  assert.doesNotMatch(page, /\/admin\/discounts\/new/)
+})
+
+test("admin sidebar keeps admin links inside the current locale", async () => {
+  const sidebar = await read("../components/admin/admin-sidebar.tsx")
+
+  assert.match(sidebar, /localeMatch/)
+  assert.match(sidebar, /localizedHref/)
+  assert.match(sidebar, /href=\{localizedHref\}/)
+})
+
+test("authenticated discount requests bypass client cache so personal discounts can apply", async () => {
+  const files = [
+    "../app/[locale]/models/[slug]/model-page-client.tsx",
+    "../app/[locale]/services/[slug]/service-page-client.tsx",
+    "../app/[locale]/book/standalone-booking-client.tsx",
+    "../app/[locale]/book/confirm/booking-confirm-client.tsx",
+  ]
+
+  for (const file of files) {
+    const source = await read(file)
+    assert.match(source, /hasSession/)
+    assert.match(source, /if \(!hasSession\)[\s\S]*discountCache\.get/)
+    assert.match(source, /if \(!hasSession\)[\s\S]*discountCache\.set/)
+  }
+})
+
+test("booking discount requests use services.id rather than model_services.id", async () => {
+  const standalone = await read("../app/[locale]/book/standalone-booking-client.tsx")
+  const confirm = await read("../app/[locale]/book/confirm/booking-confirm-client.tsx")
+
+  assert.match(standalone, /service_id\?: string/)
+  assert.match(standalone, /serviceId: s\.service_id \|\| s\.id/)
+  assert.match(standalone, /const discountServiceId = service\.service_id \|\| service\.id/)
+  assert.match(confirm, /service_id: foundService\.service_id/)
+  assert.match(confirm, /const discountServiceId = fetchedService\.service_id \|\| fetchedService\.id/)
+})

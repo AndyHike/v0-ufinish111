@@ -99,7 +99,10 @@ export default function ModelPageClient({ modelData, locale }: Props) {
       }
 
       const serviceIds = discountRequests.map((r) => r.serviceId)
-      const cachedDiscounts = discountCache.get(modelData.id, serviceIds)
+      let cachedDiscounts = null
+      if (!hasSession) {
+        cachedDiscounts = discountCache.get(modelData.id, serviceIds)
+      }
 
       if (cachedDiscounts) {
         // Use cached data instantly, no loading state
@@ -137,8 +140,9 @@ export default function ModelPageClient({ modelData, locale }: Props) {
 
         if (!isMounted) return
 
-        // Cache the result for subsequent rapid navigaion
-        discountCache.set(modelData.id, serviceIds, liveDiscounts)
+        if (!hasSession) {
+          discountCache.set(modelData.id, serviceIds, liveDiscounts)
+        }
 
         // Merge live discount values back into our localized state
         setCurrentModelData((prevData) => {

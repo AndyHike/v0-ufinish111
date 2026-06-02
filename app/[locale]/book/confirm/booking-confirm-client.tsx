@@ -19,6 +19,8 @@ export default function BookingConfirmClient({ locale }: { locale: string }) {
     const [brand, setBrand] = useState<{ name: string; slug: string } | null>(null)
     const [model, setModel] = useState<{ name: string; slug: string; id: string } | null>(null)
     const [service, setService] = useState<{
+        id: string
+        service_id?: string
         name: string
         slug: string
         price: number | null
@@ -26,6 +28,8 @@ export default function BookingConfirmClient({ locale }: { locale: string }) {
         duration_hours?: number
         warranty_period?: string
     } | null>(null)
+    const hasSession =
+        typeof document !== "undefined" && (document.cookie.includes("sb-") || document.cookie.includes("session"))
 
     useEffect(() => {
         const serviceSlug = searchParams.get("service_slug")
@@ -84,6 +88,7 @@ export default function BookingConfirmClient({ locale }: { locale: string }) {
 
                 const fetchedService = {
                     id: foundService.id,
+                    service_id: foundService.service_id,
                     slug: foundService.services?.slug || "",
                     name: foundService.services?.name || foundService.name || "Unknown Service",
                     price: foundService.price,
@@ -94,19 +99,25 @@ export default function BookingConfirmClient({ locale }: { locale: string }) {
 
                 // Apply discount check right here so BookingConfirmation receives the final price
                 if (fetchedService.price !== null) {
+                    const discountServiceId = fetchedService.service_id || fetchedService.id
                     const discountRequests = [{
-                        serviceId: fetchedService.id,
+                        serviceId: discountServiceId,
                         modelId: fetchedModel.id,
                         originalPrice: fetchedService.price
                     }]
 
-                    let liveDiscounts = discountCache.get(fetchedModel.id, [fetchedService.id])
+                    let liveDiscounts = null
+                    if (!hasSession) {
+                        liveDiscounts = discountCache.get(fetchedModel.id, [discountServiceId])
+                    }
                     if (!liveDiscounts) {
                         liveDiscounts = await getDiscountsBatch(discountRequests)
-                        discountCache.set(fetchedModel.id, [fetchedService.id], liveDiscounts)
+                        if (!hasSession) {
+                            discountCache.set(fetchedModel.id, [discountServiceId], liveDiscounts)
+                        }
                     }
 
-                    const discount = liveDiscounts[fetchedService.id]
+                    const discount = liveDiscounts[discountServiceId]
                     if (discount && discount.discountedPrice !== null) {
                         fetchedService.price = discount.discountedPrice // Overwrite the final price the booking uses
                     }

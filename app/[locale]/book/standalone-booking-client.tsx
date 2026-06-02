@@ -34,6 +34,7 @@ interface Model {
 
 interface Service {
   id: string
+  service_id?: string
   name: string
   slug: string
   price: number | null
@@ -81,6 +82,8 @@ export default function StandaloneBookingClient({ locale }: StandaloneBookingCli
   const [selectedSeries, setSelectedSeries] = useState<Series | null>(null)
   const [selectedModel, setSelectedModel] = useState<Model | null>(null)
   const [selectedService, setSelectedService] = useState<Service | null>(null)
+  const hasSession =
+    typeof document !== "undefined" && (document.cookie.includes("sb-") || document.cookie.includes("session"))
 
   // Функція для оновлення URL
   const updateUrl = (params: Record<string, string | null>) => {
@@ -228,7 +231,7 @@ export default function StandaloneBookingClient({ locale }: StandaloneBookingCli
           const discountRequests = transformedServices
             .filter((s: Service) => s.price !== null)
             .map((s: Service) => ({
-              serviceId: s.id,
+              serviceId: s.service_id || s.id,
               modelId: model.id,
               originalPrice: s.price!,
             }))
@@ -236,15 +239,21 @@ export default function StandaloneBookingClient({ locale }: StandaloneBookingCli
           if (discountRequests.length > 0) {
             try {
               const serviceIds = discountRequests.map((r: any) => r.serviceId)
-              let liveDiscounts = discountCache.get(model.id, serviceIds)
+              let liveDiscounts = null
+              if (!hasSession) {
+                liveDiscounts = discountCache.get(model.id, serviceIds)
+              }
 
               if (!liveDiscounts) {
                 liveDiscounts = await getDiscountsBatch(discountRequests)
-                discountCache.set(model.id, serviceIds, liveDiscounts)
+                if (!hasSession) {
+                  discountCache.set(model.id, serviceIds, liveDiscounts)
+                }
               }
 
               transformedServices.forEach((service: Service) => {
-                const discount = liveDiscounts![service.id]
+                const discountServiceId = service.service_id || service.id
+                const discount = liveDiscounts![discountServiceId]
                 if (discount && discount.discountedPrice) {
                   service.original_price = service.price
                   service.price = discount.discountedPrice
@@ -305,6 +314,7 @@ export default function StandaloneBookingClient({ locale }: StandaloneBookingCli
 
                   const service: Service = {
                     id: foundService.id,
+                    service_id: foundService.service_id,
                     slug: foundService.services?.slug || '',
                     name: foundService.services?.name || foundService.name || 'Unknown Service',
                     price: foundService.price,
@@ -316,18 +326,24 @@ export default function StandaloneBookingClient({ locale }: StandaloneBookingCli
                   // Завантажуємо знижку для поточної послуги
                   if (service.price !== null) {
                     try {
+                      const discountServiceId = service.service_id || service.id
                       const discountRequests = [{
-                        serviceId: service.id,
+                        serviceId: discountServiceId,
                         modelId: model.id,
                         originalPrice: service.price
                       }]
-                      let liveDiscounts = discountCache.get(model.id, [service.id])
+                      let liveDiscounts = null
+                      if (!hasSession) {
+                        liveDiscounts = discountCache.get(model.id, [discountServiceId])
+                      }
                       if (!liveDiscounts) {
                         liveDiscounts = await getDiscountsBatch(discountRequests)
-                        discountCache.set(model.id, [service.id], liveDiscounts)
+                        if (!hasSession) {
+                          discountCache.set(model.id, [discountServiceId], liveDiscounts)
+                        }
                       }
 
-                      const discount = liveDiscounts[service.id]
+                      const discount = liveDiscounts[discountServiceId]
                       if (discount && discount.discountedPrice) {
                         service.original_price = service.price
                         service.price = discount.discountedPrice
