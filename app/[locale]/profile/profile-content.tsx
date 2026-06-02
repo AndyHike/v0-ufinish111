@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { UserProfile } from "@/components/profile/user-profile"
 import { UserOrders } from "@/components/profile/user-orders"
+import { UserInvoices } from "@/components/profile/user-invoices"
 import { UserDiscounts } from "@/components/profile/user-discounts"
 
 export default function ProfileContent({
@@ -26,9 +27,10 @@ export default function ProfileContent({
 
       <Tabs defaultValue="profile" className="space-y-4">
         <div className="w-full overflow-x-auto pb-2 -mb-2 scrollbar-none">
-          <TabsList className="w-full inline-flex sm:grid sm:grid-cols-3 min-w-[max-content] sm:min-w-0 h-auto p-1">
+          <TabsList className="w-full inline-flex sm:grid sm:grid-cols-4 min-w-[max-content] sm:min-w-0 h-auto p-1">
             <TabsTrigger value="profile" className="px-4 py-2">{t("profile")}</TabsTrigger>
             <TabsTrigger value="orders" className="px-4 py-2">{t("repairHistory.title")}</TabsTrigger>
+            <TabsTrigger value="invoices" className="px-4 py-2">{t("invoices")}</TabsTrigger>
             <TabsTrigger value="discounts" className="px-4 py-2">{t("myDiscounts")}</TabsTrigger>
           </TabsList>
         </div>
@@ -37,6 +39,9 @@ export default function ProfileContent({
         </TabsContent>
         <TabsContent value="orders" className="space-y-4">
           <UserOrders />
+        </TabsContent>
+        <TabsContent value="invoices" className="space-y-4">
+          <UserInvoices />
         </TabsContent>
         <TabsContent value="discounts" className="space-y-4">
           <UserDiscounts discounts={discounts} />
