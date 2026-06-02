@@ -85,14 +85,15 @@ test("order webhook handler records ignored order events without fetching RemOnl
   assert.doesNotMatch(handler, /getOrderById|getOrderItems/)
 })
 
-test("order amount changed webhook updates the local total without fetching RemOnline", async () => {
+test("order amount changed webhook refreshes full order details and items", async () => {
   const handler = await read("../app/api/webhooks/remonline/handlers/order-handler.ts")
   const orderService = await read("../app/api/webhooks/remonline/services/order-service.ts")
 
   assert.match(handler, /case\s+["']Order\.Amount\.Changed["']:/)
   assert.match(handler, /handleOrderAmountChanged\(webhookData\)/)
-  assert.match(handler, /updateOrderAmountFromWebhookPayload\(webhookData\)/)
-  assert.match(handler, /Failed to update order amount from webhook payload/)
+  assert.match(handler, /syncOrderFromRemonline\(orderId\)/)
+  assert.match(handler, /Order amount changed; order synced from RemOnline/)
+  assert.match(handler, /Failed to sync order amount change from RemOnline/)
   assertDoesNotImportRemonlineApi(handler)
 
   assert.match(orderService, /async updateOrderAmountFromWebhookPayload\(webhookData: any\)/)
@@ -126,12 +127,13 @@ test("order webhooks use persisted user locale after the locale column migration
   assert.match(registerRoute, /locale:\s*userLocale/)
 })
 
-test("manual order sync is admin-only and is the only order path that fetches full RemOnline data", async () => {
+test("manual order sync and amount recovery refresh full RemOnline order data", async () => {
   const syncService = await read("../lib/services/remonline-order-sync.ts")
   const adminRoute = await read("../app/api/admin/remonline/orders/[id]/sync/route.ts")
   const apiClient = await read("../lib/api/remonline.ts")
   const orderService = await read("../app/api/webhooks/remonline/services/order-service.ts")
   const userOrdersRoute = await read("../app/api/user/repair-orders/route.ts")
+  const handler = await read("../app/api/webhooks/remonline/handlers/order-handler.ts")
 
   assert.match(syncService, /remonline\.getOrderById\(remonlineOrderId\)/)
   assert.match(syncService, /remonline\.getOrderItems\(remonlineOrderId\)/)
@@ -148,9 +150,32 @@ test("manual order sync is admin-only and is the only order path that fetches fu
   assert.match(orderService, /async upsertOrderFromRemonlineApi/)
   assert.match(orderService, /\.from\(["']user_repair_order_services["']\)\.delete\(\)\.eq\(["']order_id["'], orderDbId\)/)
   assert.match(orderService, /storeOrderServices\(orderDbId, remonlineOrderId, orderItems\)/)
+  assert.match(handler, /import \{ syncOrderFromRemonline \} from ["']@\/lib\/services\/remonline-order-sync["']/)
+  assert.match(handler, /syncOrderFromRemonline\(orderId\)/)
 
   assertDoesNotImportRemonlineApi(userOrdersRoute)
   assert.doesNotMatch(userOrdersRoute, /getOrderById|getOrderItems|fetch\(/)
+})
+
+test("order status webhooks use the order payload to discover and sync linked invoices", async () => {
+  const handler = await read("../app/api/webhooks/remonline/handlers/order-handler.ts")
+  const invoiceSync = await read("../lib/services/remonline-invoice-sync.ts")
+
+  assert.match(handler, /import \{ syncInvoicesForRemonlineOrder \} from ["']@\/lib\/services\/remonline-invoice-sync["']/)
+  assert.match(handler, /syncInvoicesForRemonlineOrder\(orderId\)/)
+  assert.match(handler, /invoiceSync/)
+  assert.match(handler, /Failed to sync linked invoices for status change/)
+  assertDoesNotImportRemonlineApi(handler)
+
+  assert.match(invoiceSync, /export function extractInvoiceIdsFromOrderPayload/)
+  assert.match(invoiceSync, /export async function syncInvoicesForRemonlineOrder/)
+  assert.match(invoiceSync, /remonline\.getOrderById\(remonlineOrderId\)/)
+  assert.match(invoiceSync, /extractInvoiceIdsFromOrderPayload\(order\)/)
+  assert.match(invoiceSync, /remonline\.getInvoiceById\(invoiceId\)/)
+  assert.match(invoiceSync, /metadata:\s*\{\s*order:\s*\{\s*id:\s*remonlineOrderId\s*\}/)
+  assert.match(invoiceSync, /fallbackUserId:\s*localOrder\?\.user_id/)
+  assert.match(invoiceSync, /const nestedIsContainer = isRecord\(nestedValue\) \|\| Array\.isArray\(nestedValue\)/)
+  assert.doesNotMatch(invoiceSync, /currentIsInvoice \|\| keyIsInvoice/)
 })
 
 test("admin order sync issue APIs are admin-only", async () => {

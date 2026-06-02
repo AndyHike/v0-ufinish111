@@ -3,6 +3,27 @@ import { createClient } from "@/lib/supabase"
 import { getSession } from "@/lib/auth/session"
 import { getStatusByRemOnlineId } from "@/lib/order-status-utils"
 
+function toAmount(value: unknown): number {
+  const amount = Number(value)
+  return Number.isFinite(amount) ? amount : 0
+}
+
+function mapLinkedInvoice(invoice: any) {
+  return {
+    id: invoice.id,
+    remonlineInvoiceId: invoice.remonline_invoice_id,
+    number: invoice.invoice_number,
+    statusName: invoice.status_name,
+    statusGroup: invoice.status_group,
+    issueDate: invoice.issue_date,
+    dueDate: invoice.due_date,
+    totalAmount: toAmount(invoice.total_amount),
+    paidAmount: toAmount(invoice.paid_amount),
+    balanceAmount: toAmount(invoice.balance_amount),
+    updatedAt: invoice.updated_at,
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     console.log("🔍 Fetching user repair orders...")
@@ -56,32 +77,104 @@ export async function GET(request: NextRequest) {
 
     console.log(`📦 Found ${orders?.length || 0} orders`)
 
-    // Fetch services for each order and get proper status translations
-    const ordersWithServices = await Promise.all(
-      (orders || []).map(async (order) => {
-        const { data: services, error: servicesError } = await supabase
-          .from("user_repair_order_services")
+    const orderIds = (orders || []).map((order) => order.id)
+    const servicesByOrderId = new Map<string, any[]>()
+    const invoicesByOrderId = new Map<string, any[]>()
+
+    if (orderIds.length > 0) {
+      const { data: services, error: servicesError } = await supabase
+        .from("user_repair_order_services")
+        .select(
+          `
+          id,
+          order_id,
+          remonline_service_id,
+          service_name,
+          price,
+          warranty_period,
+          warranty_units,
+          created_at,
+          updated_at
+        `,
+        )
+        .in("order_id", orderIds)
+        .order("created_at", { ascending: true })
+
+      if (servicesError) {
+        console.error("❌ Error fetching order services:", servicesError)
+        return NextResponse.json({ success: false, error: "Failed to fetch order services" }, { status: 500 })
+      }
+
+      for (const service of services || []) {
+        const group = servicesByOrderId.get(service.order_id) || []
+        group.push(service)
+        servicesByOrderId.set(service.order_id, group)
+      }
+
+      const { data: invoiceOrderLinks, error: invoiceOrderLinksError } = await supabase
+        .from("user_invoice_orders")
+        .select("order_id, invoice_id")
+        .eq("user_id", userId)
+        .in("order_id", orderIds)
+
+      if (invoiceOrderLinksError) {
+        console.error("❌ Error fetching linked invoices for orders:", invoiceOrderLinksError)
+        return NextResponse.json({ success: false, error: "Failed to fetch linked invoices" }, { status: 500 })
+      }
+
+      const invoiceIds = Array.from(
+        new Set((invoiceOrderLinks || []).map((link) => link.invoice_id).filter(Boolean)),
+      )
+      const invoicesById = new Map<string, any>()
+
+      if (invoiceIds.length > 0) {
+        const { data: invoices, error: invoicesError } = await supabase
+          .from("user_invoices")
           .select(
             `
             id,
-            remonline_service_id,
-            service_name,
-            price,
-            warranty_period,
-            warranty_units,
-            created_at,
+            remonline_invoice_id,
+            invoice_number,
+            status_name,
+            status_group,
+            issue_date,
+            due_date,
+            total_amount,
+            paid_amount,
+            balance_amount,
             updated_at
           `,
           )
-          .eq("order_id", order.id)
-          .order("created_at", { ascending: true })
+          .eq("user_id", userId)
+          .eq("is_deleted", false)
+          .in("id", invoiceIds)
 
-        if (servicesError) {
-          console.error(`❌ Error fetching services for order ${order.id}:`, servicesError)
+        if (invoicesError) {
+          console.error("❌ Error fetching order invoices:", invoicesError)
+          return NextResponse.json({ success: false, error: "Failed to fetch invoices" }, { status: 500 })
         }
 
+        for (const invoice of invoices || []) {
+          invoicesById.set(invoice.id, invoice)
+        }
+      }
+
+      for (const link of invoiceOrderLinks || []) {
+        const invoice = invoicesById.get(link.invoice_id)
+        if (!invoice || !link.order_id) continue
+
+        const group = invoicesByOrderId.get(link.order_id) || []
+        group.push(mapLinkedInvoice(invoice))
+        invoicesByOrderId.set(link.order_id, group)
+      }
+    }
+
+    // Add services, invoices, and localized status labels.
+    const ordersWithServices = await Promise.all(
+      (orders || []).map(async (order) => {
         // Get status information with current locale
         const statusInfo = await getStatusByRemOnlineId(Number.parseInt(order.overall_status), locale, true)
+        const services = servicesByOrderId.get(order.id) || []
 
         return {
           id: order.id,
@@ -95,13 +188,14 @@ export async function GET(request: NextRequest) {
           overallStatus: order.overall_status || "unknown",
           overallStatusName: statusInfo.name,
           overallStatusColor: statusInfo.color,
-          services: (services || []).map((service) => ({
+          services: services.map((service) => ({
             id: service.id,
             name: service.service_name || "unknown_service",
-            price: Number(service.price) || 0,
+            price: toAmount(service.price),
             warrantyPeriod: service.warranty_period,
             warrantyUnits: service.warranty_units,
           })),
+          invoices: invoicesByOrderId.get(order.id) || [],
         }
       }),
     )

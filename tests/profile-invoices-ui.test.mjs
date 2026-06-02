@@ -66,3 +66,55 @@ test("invoice profile UI has translations for all supported locales", async () =
     assert.equal(typeof invoices.hideDetails, "string")
   }
 })
+
+test("user repair orders endpoint returns locally linked invoices without RO App calls", async () => {
+  const route = await read("../app/api/user/repair-orders/route.ts")
+
+  assert.match(route, /\.from\(["']user_repair_orders["']\)/)
+  assert.match(route, /\.from\(["']user_repair_order_services["']\)/)
+  assert.match(route, /\.from\(["']user_invoice_orders["']\)/)
+  assert.match(route, /\.from\(["']user_invoices["']\)/)
+  assert.match(route, /invoicesByOrderId/)
+  assert.match(route, /invoices:\s*invoicesByOrderId\.get\(order\.id\) \|\| \[\]/)
+  assert.doesNotMatch(route, /getInvoiceById|getOrderById|getOrderItems/)
+})
+
+test("user orders component is compact, mobile-first, and renders linked invoices", async () => {
+  const component = await read("../components/profile/user-orders.tsx")
+
+  assert.match(component, /interface OrderInvoice/)
+  assert.match(component, /invoices: OrderInvoice\[\]/)
+  assert.match(component, /LinkedOrderInvoices/)
+  assert.match(component, /invoiceCount/)
+  assert.match(component, /rounded-lg border bg-background/)
+  assert.match(component, /sm:grid-cols-\[minmax\(0,1fr\)_auto\]/)
+})
+
+test("order profile UI has complete translations for all supported locales", async () => {
+  for (const locale of ["uk", "cs", "en"]) {
+    const messages = JSON.parse(await read(`../messages/${locale}.json`))
+    const orders = messages.orders
+
+    for (const key of [
+      "loading",
+      "fetchError",
+      "errorTitle",
+      "tryAgain",
+      "filterByStatus",
+      "dateNotSpecified",
+      "noWarranty",
+      "notSpecified",
+      "unknownDevice",
+      "unknownService",
+      "price",
+      "invoiceCount",
+      "linkedInvoices",
+      "noLinkedInvoices",
+      "paid",
+      "balance",
+      "updated",
+    ]) {
+      assert.equal(typeof orders?.[key], "string", `${locale}.orders.${key} is missing`)
+    }
+  }
+})

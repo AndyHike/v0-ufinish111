@@ -179,12 +179,23 @@ test("invoice service synchronizes linked orders from webhook and manual payload
   assertDoesNotImportRemonlineApi(service)
 })
 
-test("manual invoice sync is the only invoice path that calls RO App API", async () => {
+test("invoice service can use an order owner fallback when invoice has no owner fields", async () => {
+  const service = await read("../app/api/webhooks/remonline/services/invoice-service.ts")
+
+  assert.match(service, /fallbackUserId\?: string \| null/)
+  assert.match(service, /const resolvedUserId = await this\.findUserId\(ownerId\)/)
+  assert.match(service, /const userId = resolvedUserId \?\? options\.fallbackUserId \?\? null/)
+  assert.match(service, /syncInvoiceOrderLinks\(data\.id, row\.remonline_invoice_id, linkState, input, data\.user_id \?\? row\.user_id\)/)
+})
+
+test("manual and order-driven invoice sync are the only invoice paths that call RO App API", async () => {
   const syncService = await read("../lib/services/remonline-invoice-sync.ts")
   const adminRoute = await read("../app/api/admin/remonline/invoices/[id]/sync/route.ts")
   const apiClient = await read("../lib/api/remonline.ts")
 
   assert.match(syncService, /remonline\.getInvoiceById\(remonlineInvoiceId\)/)
+  assert.match(syncService, /remonline\.getInvoiceById\(invoiceId\)/)
+  assert.match(syncService, /syncInvoicesForRemonlineOrder/)
   assert.match(syncService, /new InvoiceService\(supabase\)/)
   assert.match(syncService, /source:\s*["']manual["']/)
   assert.match(adminRoute, /getSession/)

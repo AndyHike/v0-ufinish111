@@ -2,6 +2,7 @@ type InvoiceSyncSource = "webhook" | "manual"
 
 type InvoicePayloadOptions = {
   source?: InvoiceSyncSource
+  fallbackUserId?: string | null
 }
 
 type JsonRecord = Record<string, any>
@@ -352,7 +353,8 @@ export class InvoiceService {
     const source = options.source ?? "webhook"
     const invoice = extractInvoicePayload(input)
     const ownerId = extractClientId(invoice) ?? extractPayerId(invoice)
-    const userId = await this.findUserId(ownerId)
+    const resolvedUserId = await this.findUserId(ownerId)
+    const userId = resolvedUserId ?? options.fallbackUserId ?? null
     const normalized = normalizeInvoicePayload(input, userId, source)
     const existing = await this.findExistingInvoice(normalized.remonline_invoice_id)
     const preserveIfExisting = existing && !hasInvoiceNumber(input) ? ["invoice_number"] : []
