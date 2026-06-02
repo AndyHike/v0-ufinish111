@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { getActiveDiscounts, createDiscount } from "@/lib/discounts/queries"
+import { getAllDiscounts, createDiscount } from "@/lib/discounts/queries"
 import { getSession } from "@/lib/auth/session"
 
 export const dynamic = "force-dynamic"
@@ -11,7 +11,7 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const discounts = await getActiveDiscounts()
+    const discounts = await getAllDiscounts()
     return NextResponse.json(discounts)
   } catch (error) {
     console.error("Error fetching discounts:", error)

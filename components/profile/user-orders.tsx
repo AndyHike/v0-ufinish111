@@ -8,7 +8,6 @@ import {
   ChevronUp,
   FileText,
   Package,
-  ReceiptText,
   RefreshCw,
   Search,
   Shield,
@@ -34,20 +33,6 @@ interface Service {
   warrantyUnits: string | null
 }
 
-interface OrderInvoice {
-  id: string
-  remonlineInvoiceId: number
-  number: string
-  statusName: string | null
-  statusGroup: string | null
-  issueDate: string | null
-  dueDate: string | null
-  totalAmount: number
-  paidAmount: number
-  balanceAmount: number
-  updatedAt: string | null
-}
-
 interface Order {
   id: string
   documentId: string
@@ -57,7 +42,6 @@ interface Order {
   deviceBrand?: string
   deviceModel?: string
   services: Service[]
-  invoices: OrderInvoice[]
   totalAmount: number
   overallStatus: string
   overallStatusName: string
@@ -76,12 +60,6 @@ function formatDate(value: string | null | undefined, locale: string) {
   }).format(date)
 }
 
-function isInvoicePaid(invoice: OrderInvoice) {
-  if (invoice.balanceAmount <= 0 && invoice.totalAmount > 0) return true
-  const status = `${invoice.statusName || ""} ${invoice.statusGroup || ""}`.toLowerCase()
-  return /paid|paid_off|closed|оплач|uhrazen|zaplacen/.test(status)
-}
-
 function OrderStatusBadge({ color, name }: { color: string; name: string }) {
   const hasHex = color?.startsWith("#")
   const hasTailwind = color?.includes("bg-") && color?.includes("text-")
@@ -97,71 +75,6 @@ function OrderStatusBadge({ color, name }: { color: string; name: string }) {
     >
       {name}
     </Badge>
-  )
-}
-
-function LinkedOrderInvoices({ invoices, locale }: { invoices: OrderInvoice[]; locale: string }) {
-  const t = useTranslations("orders")
-
-  if (invoices.length === 0) {
-    return (
-      <div className="rounded-lg border border-dashed bg-background px-3 py-3 text-sm text-muted-foreground">
-        {t("noLinkedInvoices")}
-      </div>
-    )
-  }
-
-  return (
-    <div className="space-y-2">
-      <div className="flex items-center gap-2 text-xs font-semibold uppercase text-muted-foreground">
-        <ReceiptText className="h-3.5 w-3.5" />
-        {t("linkedInvoices", { count: invoices.length })}
-      </div>
-      <div className="space-y-2">
-        {invoices.map((invoice) => {
-          const paid = isInvoicePaid(invoice)
-
-          return (
-            <div key={invoice.id} className="rounded-lg border bg-background px-3 py-3">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="flex min-w-0 items-center gap-2 font-medium">
-                    <FileText className="h-4 w-4 shrink-0 text-primary" />
-                    <span className="truncate">#{invoice.number}</span>
-                  </div>
-                  <div className="mt-1 text-xs text-muted-foreground">
-                    {formatDate(invoice.issueDate, locale) || t("dateNotSpecified")}
-                  </div>
-                </div>
-                <Badge
-                  variant="outline"
-                  className={cn(
-                    "shrink-0 rounded-md px-2 py-0.5 text-[11px] font-medium",
-                    paid
-                      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                      : "border-amber-200 bg-amber-50 text-amber-700",
-                  )}
-                >
-                  {invoice.statusName || (paid ? t("paid") : t("balance"))}
-                </Badge>
-              </div>
-              <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
-                <div className="rounded-md bg-muted/40 px-2.5 py-2">
-                  <div className="text-[11px] uppercase text-muted-foreground">{t("totalAmount")}</div>
-                  <div className="mt-1 truncate font-semibold">{formatCurrency(invoice.totalAmount)}</div>
-                </div>
-                <div className="rounded-md bg-muted/40 px-2.5 py-2">
-                  <div className="text-[11px] uppercase text-muted-foreground">{t("balance")}</div>
-                  <div className="mt-1 truncate font-semibold text-amber-700">
-                    {formatCurrency(invoice.balanceAmount)}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )
-        })}
-      </div>
-    </div>
   )
 }
 
@@ -249,8 +162,7 @@ export function UserOrders() {
         order.documentId.toLowerCase().includes(search) ||
         order.deviceName.toLowerCase().includes(search) ||
         order.deviceSerialNumber.toLowerCase().includes(search) ||
-        order.services.some((service) => service.name.toLowerCase().includes(search)) ||
-        order.invoices.some((invoice) => invoice.number.toLowerCase().includes(search))
+        order.services.some((service) => service.name.toLowerCase().includes(search))
 
       const matchesStatus = statusFilter === "all" || order.overallStatus === statusFilter
       return matchesSearch && matchesStatus
@@ -410,7 +322,6 @@ export function UserOrders() {
 
                       <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                         <span>{t("services", { count: order.services.length })}: {order.services.length}</span>
-                        <span>{t("invoiceCount", { count: order.invoices.length })}</span>
                       </div>
                     </div>
 
@@ -432,19 +343,16 @@ export function UserOrders() {
 
                 {expanded && (
                   <div className="border-t bg-muted/10 p-4 sm:p-5">
-                    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(240px,320px)]">
+                    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(220px,300px)]">
                       <OrderServices services={order.services} />
-                      <div className="space-y-3">
-                        <div className="rounded-lg border bg-background px-3 py-3 text-sm">
-                          <div className="flex items-center gap-2 text-xs font-semibold uppercase text-muted-foreground">
-                            <Package className="h-3.5 w-3.5" />
-                            {t("serialNumber")}
-                          </div>
-                          <div className="mt-2 break-words font-mono text-sm">
-                            {getText(order.deviceSerialNumber)}
-                          </div>
+                      <div className="rounded-lg border bg-background px-3 py-3 text-sm">
+                        <div className="flex items-center gap-2 text-xs font-semibold uppercase text-muted-foreground">
+                          <Package className="h-3.5 w-3.5" />
+                          {t("serialNumber")}
                         </div>
-                        <LinkedOrderInvoices invoices={order.invoices} locale={locale} />
+                        <div className="mt-2 break-words font-mono text-sm">
+                          {getText(order.deviceSerialNumber)}
+                        </div>
                       </div>
                     </div>
                   </div>

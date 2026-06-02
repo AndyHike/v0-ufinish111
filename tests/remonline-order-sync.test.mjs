@@ -157,25 +157,16 @@ test("manual order sync and amount recovery refresh full RemOnline order data", 
   assert.doesNotMatch(userOrdersRoute, /getOrderById|getOrderItems|fetch\(/)
 })
 
-test("order status webhooks use the order payload to discover and sync linked invoices", async () => {
+test("order status webhooks update status without triggering invoice sync", async () => {
   const handler = await read("../app/api/webhooks/remonline/handlers/order-handler.ts")
-  const invoiceSync = await read("../lib/services/remonline-invoice-sync.ts")
 
-  assert.match(handler, /import \{ syncInvoicesForRemonlineOrder \} from ["']@\/lib\/services\/remonline-invoice-sync["']/)
-  assert.match(handler, /syncInvoicesForRemonlineOrder\(orderId\)/)
-  assert.match(handler, /invoiceSync/)
-  assert.match(handler, /Failed to sync linked invoices for status change/)
+  assert.match(handler, /case\s+["']Order\.Status\.Changed["']:/)
+  assert.match(handler, /handleOrderStatusChanged\(webhookData\)/)
+  assert.match(handler, /updateOrderStatus\(orderId,\s*newStatusId,\s*userLocale\)/)
+  assert.doesNotMatch(handler, /syncInvoicesForRemonlineOrder/)
+  assert.doesNotMatch(handler, /invoiceSync/)
+  assert.doesNotMatch(handler, /Failed to sync linked invoices for status change/)
   assertDoesNotImportRemonlineApi(handler)
-
-  assert.match(invoiceSync, /export function extractInvoiceIdsFromOrderPayload/)
-  assert.match(invoiceSync, /export async function syncInvoicesForRemonlineOrder/)
-  assert.match(invoiceSync, /remonline\.getOrderById\(remonlineOrderId\)/)
-  assert.match(invoiceSync, /extractInvoiceIdsFromOrderPayload\(order\)/)
-  assert.match(invoiceSync, /remonline\.getInvoiceById\(invoiceId\)/)
-  assert.match(invoiceSync, /metadata:\s*\{\s*order:\s*\{\s*id:\s*remonlineOrderId\s*\}/)
-  assert.match(invoiceSync, /fallbackUserId:\s*localOrder\?\.user_id/)
-  assert.match(invoiceSync, /const nestedIsContainer = isRecord\(nestedValue\) \|\| Array\.isArray\(nestedValue\)/)
-  assert.doesNotMatch(invoiceSync, /currentIsInvoice \|\| keyIsInvoice/)
 })
 
 test("admin order sync issue APIs are admin-only", async () => {

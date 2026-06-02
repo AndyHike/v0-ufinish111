@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
-import { syncInvoicesForRemonlineOrder } from "@/lib/services/remonline-invoice-sync"
 import { syncOrderFromRemonline } from "@/lib/services/remonline-order-sync"
 import { recordOrderSyncIssue } from "@/lib/services/remonline-order-sync-issues"
 import { OrderService, RemonlineWebhookOrderError } from "../services/order-service"
@@ -232,21 +231,6 @@ async function handleOrderStatusChanged(webhookData: any) {
     const orderService = new OrderService(supabase)
     const result = await orderService.updateOrderStatus(orderId, newStatusId, userLocale)
 
-    const invoiceSync = await syncInvoicesForRemonlineOrder(orderId)
-
-    if (!invoiceSync.success) {
-      console.warn(`⚠️ Failed to sync linked invoices for status change: ${invoiceSync.message}`)
-      try {
-        await recordOrderSyncIssue({
-          payload: webhookData,
-          reason: "Failed to sync linked invoices for status change",
-          details: invoiceSync.message,
-        })
-      } catch (issueError) {
-        console.error("Failed to record linked invoice sync issue:", issueError)
-      }
-    }
-
     console.log(`✅ Order ${orderId} status updated from ${oldStatusId} to ${newStatusId}`)
     console.log(`✅ Update result:`, result)
 
@@ -257,7 +241,6 @@ async function handleOrderStatusChanged(webhookData: any) {
       oldStatus: oldStatusId,
       newStatus: newStatusId,
       result: result,
-      invoiceSync,
     })
   } catch (error) {
     console.error("💥💥💥 Error in handleOrderStatusChanged:", error)

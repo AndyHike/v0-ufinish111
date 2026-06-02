@@ -1,4 +1,4 @@
-import { readFile, stat } from "node:fs/promises"
+import { readFile } from "node:fs/promises"
 import assert from "node:assert/strict"
 import test from "node:test"
 
@@ -6,91 +6,47 @@ async function read(path) {
   return readFile(new URL(path, import.meta.url), "utf8")
 }
 
-async function pathExists(path) {
-  try {
-    await stat(new URL(path, import.meta.url))
-    return true
-  } catch (error) {
-    if (error?.code === "ENOENT") return false
-    throw error
-  }
-}
-
-test("profile exposes a dedicated invoices tab", async () => {
+test("profile hides the invoices tab while invoice work stays in development", async () => {
   const content = await read("../app/[locale]/profile/profile-content.tsx")
 
-  assert.match(content, /UserInvoices/)
-  assert.match(content, /TabsTrigger value=["']invoices["']/)
-  assert.match(content, /TabsContent value=["']invoices["']/)
-  assert.match(content, /<UserInvoices \/>/)
-  assert.match(content, /sm:grid-cols-4/)
+  assert.doesNotMatch(content, /UserInvoices/)
+  assert.doesNotMatch(content, /TabsTrigger value=["']invoices["']/)
+  assert.doesNotMatch(content, /TabsContent value=["']invoices["']/)
+  assert.doesNotMatch(content, /<UserInvoices \/>/)
+  assert.match(content, /sm:grid-cols-3/)
 })
 
-test("user invoices component is mobile-first and reads the local invoice API", async () => {
-  const componentPath = "../components/profile/user-invoices.tsx"
-  assert.equal(await pathExists(componentPath), true)
-
-  const component = await read(componentPath)
-
-  assert.match(component, /useTranslations\(["']invoices["']\)/)
-  assert.match(component, /fetch\(["']\/api\/user\/invoices["']\)/)
-  assert.match(component, /interface Invoice/)
-  assert.match(component, /interface InvoiceOrder/)
-  assert.match(component, /expandedInvoices/)
-  assert.match(component, /InvoiceStatusBadge/)
-  assert.match(component, /InvoiceAmountSummary/)
-  assert.match(component, /LinkedRepairOrders/)
-  assert.match(component, /noInvoices/)
-  assert.match(component, /loading/)
-  assert.match(component, /tryAgain/)
-  assert.match(component, /sm:/)
-  assert.doesNotMatch(component, /h-screen/)
-  assert.doesNotMatch(component, /overflow-hidden[^"\n]*fixed/)
-})
-
-test("invoice profile UI has translations for all supported locales", async () => {
-  for (const locale of ["uk", "cs", "en"]) {
-    const messages = JSON.parse(await read(`../messages/${locale}.json`))
-    const invoices = messages.invoices
-
-    assert.ok(invoices, `${locale} invoices namespace is missing`)
-    assert.equal(typeof invoices.title, "string")
-    assert.equal(typeof invoices.description, "string")
-    assert.equal(typeof invoices.noInvoices, "string")
-    assert.equal(typeof invoices.noInvoicesDescription, "string")
-    assert.equal(typeof invoices.linkedOrders, "string")
-    assert.equal(typeof invoices.total, "string")
-    assert.equal(typeof invoices.paid, "string")
-    assert.equal(typeof invoices.balance, "string")
-    assert.equal(typeof invoices.viewDetails, "string")
-    assert.equal(typeof invoices.hideDetails, "string")
-  }
-})
-
-test("user repair orders endpoint returns locally linked invoices without RO App calls", async () => {
+test("user repair orders endpoint returns repair orders and services without invoice joins", async () => {
   const route = await read("../app/api/user/repair-orders/route.ts")
 
   assert.match(route, /\.from\(["']user_repair_orders["']\)/)
   assert.match(route, /\.from\(["']user_repair_order_services["']\)/)
-  assert.match(route, /\.from\(["']user_invoice_orders["']\)/)
-  assert.match(route, /\.from\(["']user_invoices["']\)/)
-  assert.match(route, /invoicesByOrderId/)
-  assert.match(route, /invoices:\s*invoicesByOrderId\.get\(order\.id\) \|\| \[\]/)
+  assert.doesNotMatch(route, /\.from\(["']user_invoice_orders["']\)/)
+  assert.doesNotMatch(route, /\.from\(["']user_invoices["']\)/)
+  assert.doesNotMatch(route, /mapLinkedInvoice/)
+  assert.doesNotMatch(route, /invoicesByOrderId/)
+  assert.doesNotMatch(route, /invoices:\s*/)
   assert.doesNotMatch(route, /getInvoiceById|getOrderById|getOrderItems/)
 })
 
-test("user orders component is compact, mobile-first, and renders linked invoices", async () => {
+test("user orders component is compact, mobile-first, and renders repair details without invoices", async () => {
   const component = await read("../components/profile/user-orders.tsx")
 
-  assert.match(component, /interface OrderInvoice/)
-  assert.match(component, /invoices: OrderInvoice\[\]/)
-  assert.match(component, /LinkedOrderInvoices/)
-  assert.match(component, /invoiceCount/)
+  assert.doesNotMatch(component, /interface OrderInvoice/)
+  assert.doesNotMatch(component, /invoices: OrderInvoice\[\]/)
+  assert.doesNotMatch(component, /LinkedOrderInvoices/)
+  assert.doesNotMatch(component, /invoiceCount/)
+  assert.doesNotMatch(component, /linkedInvoices/)
+  assert.doesNotMatch(component, /noLinkedInvoices/)
+  assert.doesNotMatch(component, /ReceiptText/)
+  assert.doesNotMatch(component, /order\.invoices/)
   assert.match(component, /rounded-lg border bg-background/)
   assert.match(component, /sm:grid-cols-\[minmax\(0,1fr\)_auto\]/)
+  assert.match(component, /OrderServices/)
+  assert.match(component, /deviceSerialNumber/)
 })
 
-test("order profile UI has complete translations for all supported locales", async () => {
+test("repair order profile UI has complete translations for all supported locales", async () => {
   for (const locale of ["uk", "cs", "en"]) {
     const messages = JSON.parse(await read(`../messages/${locale}.json`))
     const orders = messages.orders
@@ -106,13 +62,14 @@ test("order profile UI has complete translations for all supported locales", asy
       "notSpecified",
       "unknownDevice",
       "unknownService",
+      "services",
+      "warranty",
       "price",
-      "invoiceCount",
-      "linkedInvoices",
-      "noLinkedInvoices",
-      "paid",
-      "balance",
-      "updated",
+      "totalAmount",
+      "searchPlaceholder",
+      "allStatuses",
+      "totalOrders",
+      "serialNumber",
     ]) {
       assert.equal(typeof orders?.[key], "string", `${locale}.orders.${key} is missing`)
     }

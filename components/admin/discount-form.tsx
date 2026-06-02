@@ -36,6 +36,15 @@ type Service = {
   slug: string
 }
 
+type AdminUser = {
+  id: string
+  email: string
+  full_name?: string | null
+  first_name?: string | null
+  last_name?: string | null
+  company_name?: string | null
+}
+
 interface DiscountFormProps {
   initialData?: any
   onSubmit: (data: any) => Promise<void>
@@ -60,18 +69,20 @@ export function DiscountForm({ initialData, onSubmit, onCancel, submitting }: Di
     expiresAt: initialData?.expiresAt ? new Date(initialData.expiresAt).toISOString().split("T")[0] : "",
     maxUses: initialData?.maxUses || "",
     maxUsesPerUser: initialData?.maxUsesPerUser || "",
-    userId: initialData?.userId || "",
+    userId: initialData?.userId || "global",
   })
 
   const [brands, setBrands] = useState<Brand[]>([])
   const [series, setSeries] = useState<Series[]>([])
   const [models, setModels] = useState<Model[]>([])
   const [services, setServices] = useState<Service[]>([])
+  const [users, setUsers] = useState<AdminUser[]>([])
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     fetchBrands()
     fetchServices()
+    fetchUsers()
   }, [])
 
   useEffect(() => {
@@ -139,6 +150,16 @@ export function DiscountForm({ initialData, onSubmit, onCancel, submitting }: Di
     }
   }
 
+  async function fetchUsers() {
+    try {
+      const response = await fetch("/api/admin/users?limit=100")
+      const data = await response.json()
+      setUsers(data.users || [])
+    } catch (error) {
+      console.error("Error fetching users:", error)
+    }
+  }
+
   function handleScopeTypeChange(value: DiscountScopeType) {
     setFormData({
       ...formData,
@@ -166,17 +187,43 @@ export function DiscountForm({ initialData, onSubmit, onCancel, submitting }: Di
       return
     }
 
+    if (formData.scopeType === "brand" && !formData.brandId) {
+      alert("Будь ласка, оберіть бренд")
+      return
+    }
+
+    if (formData.scopeType === "series" && !formData.seriesId) {
+      alert("Будь ласка, оберіть серію")
+      return
+    }
+
+    if (formData.scopeType === "model" && !formData.modelId) {
+      alert("Будь ласка, оберіть модель")
+      return
+    }
+
+    const discountValue = Number.parseFloat(formData.discountValue as string)
+    if (!Number.isFinite(discountValue) || discountValue <= 0) {
+      alert("Будь ласка, вкажіть коректний розмір знижки")
+      return
+    }
+
+    if (formData.discountType === "percentage" && discountValue > 100) {
+      alert("Відсоткова знижка не може бути більшою за 100%")
+      return
+    }
+
     setLoading(true)
 
     try {
       await onSubmit({
         ...formData,
-        discountValue: Number.parseFloat(formData.discountValue as string),
+        discountValue,
         maxUses: formData.maxUses ? Number.parseInt(formData.maxUses as string) : null,
         maxUsesPerUser: formData.maxUsesPerUser ? Number.parseInt(formData.maxUsesPerUser as string) : null,
         startsAt: formData.startsAt || null,
         expiresAt: formData.expiresAt || null,
-        userId: formData.userId || null,
+        userId: formData.userId === "global" ? null : formData.userId,
       })
     } finally {
       setLoading(false)
@@ -333,10 +380,9 @@ export function DiscountForm({ initialData, onSubmit, onCancel, submitting }: Di
               onValueChange={(value) => setFormData({ ...formData, seriesId: value, modelId: "" })}
             >
               <SelectTrigger id="seriesId">
-                <SelectValue placeholder="Оберіть серію (опційно)" />
+                <SelectValue placeholder={formData.scopeType === "series" ? "Оберіть серію" : "Оберіть серію (опційно)"} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all_series">Всі серії</SelectItem>
                 {series.map((s) => (
                   <SelectItem key={s.id} value={s.id}>
                     {s.name}
@@ -410,16 +456,30 @@ export function DiscountForm({ initialData, onSubmit, onCancel, submitting }: Di
         </div>
 
         <div className="col-span-2">
-          <Label htmlFor="userId">ID Користувача (Персональна знижка)</Label>
-          <Input
-            id="userId"
-            type="text"
-            value={formData.userId}
-            onChange={(e) => setFormData({ ...formData, userId: e.target.value.trim() })}
-            placeholder="Введіть UUID користувача (опційно)"
-          />
+          <Label htmlFor="userId">Тип знижки</Label>
+          <Select value={formData.userId} onValueChange={(value) => setFormData({ ...formData, userId: value })}>
+            <SelectTrigger id="userId">
+              <SelectValue placeholder="Оберіть тип знижки" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="global">Глобальна для всіх користувачів</SelectItem>
+              {users.map((user) => {
+                const userName =
+                  user.full_name ||
+                  [user.first_name, user.last_name].filter(Boolean).join(" ") ||
+                  user.company_name ||
+                  user.email
+
+                return (
+                  <SelectItem key={user.id} value={user.id}>
+                    {userName} - {user.email}
+                  </SelectItem>
+                )
+              })}
+            </SelectContent>
+          </Select>
           <p className="text-xs text-muted-foreground mt-1">
-            Якщо вказано ID, знижка працюватиме ТІЛЬКИ для цього користувача. Залиште порожнім для глобальної знижки.
+            Для персональної знижки оберіть конкретного користувача. Глобальна знижка працює для всіх.
           </p>
         </div>
       </div>

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
+import { getSession } from "@/lib/auth/session"
 import { logActivity } from "@/lib/admin/activity-logger"
 import { syncUserToRemonline } from "@/lib/services/remonline-sync"
 
@@ -23,6 +24,11 @@ function buildBillingAddress({
 
 export async function GET(request: Request) {
   try {
+    const session = await getSession()
+    if (!session || session.user.role !== "admin") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
     const { searchParams } = new URL(request.url)
     const query = searchParams.get("query") || ""
     const role = searchParams.get("role") || undefined
@@ -135,6 +141,11 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const session = await getSession()
+    if (!session || session.user.role !== "admin") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
     const body = await request.json()
     const {
       email,
