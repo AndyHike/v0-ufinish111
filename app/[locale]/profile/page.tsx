@@ -4,6 +4,7 @@ import { getLocale, getTranslations } from "next-intl/server"
 import { getSession } from "@/lib/auth/session"
 import { createClient } from "@/lib/supabase"
 import { syncUserProfile } from "@/lib/user/profile-sync"
+import { getPersonalProfileOffers } from "@/lib/discounts/profile-offers"
 import ProfileContent from "./profile-content"
 
 export const metadata: Metadata = {
@@ -78,6 +79,14 @@ export default async function ProfilePage() {
     .single()
 
   const t = await getTranslations("Profile")
+  const personalOffers = await getPersonalProfileOffers({
+    userId: session.user.id,
+    locale,
+    limit: 3,
+  }).catch((error) => {
+    console.error("Error loading personal profile offers:", error)
+    return []
+  })
 
   if (userRole?.role_id) {
     const { data: roleData } = await supabase
@@ -103,5 +112,5 @@ export default async function ProfilePage() {
     }
   }
 
-  return <ProfileContent userData={userData} locale={locale} discounts={userDiscounts} />
+  return <ProfileContent userData={userData} locale={locale} discounts={userDiscounts} personalOffers={personalOffers} />
 }

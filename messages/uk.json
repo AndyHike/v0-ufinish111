@@ -1077,7 +1077,15 @@
     "copy": "Скопіювати",
     "editingNotAvailable": "Редагування профілю наразі недоступне. Будь ласка, зверніться до нашої підтримки, якщо вам потрібно змінити дані.",
     "roleLevel": "Рівень: {level}",
-    "roleDiscountDescription": "Додаткова знижка для вашої ролі"
+    "roleDiscountDescription": "Додаткова знижка для вашої ролі",
+    "specialOffersTitle": "Спеціально для вас",
+    "specialOffersDescription": "Активні персональні пропозиції для вашого акаунта",
+    "offerExpiresOn": "Діє до {date}",
+    "offerUsesLeft": "Залишилось використань: {count}",
+    "useOffer": "Скористатися",
+    "viewServices": "Переглянути послуги",
+    "offerToastTitle": "У вас є персональна пропозиція",
+    "offerToastAction": "Переглянути"
   },
   "Navigation": {
     "home": "Головна",

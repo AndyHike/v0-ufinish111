@@ -5,9 +5,12 @@ import { HeroSection } from "@/components/hero-section"
 import { ContactSection } from "@/components/contact-section"
 import { BrandsSection } from "@/components/brands-section"
 import { GoogleReviewsCarousel } from "@/components/google-reviews-carousel"
+import { PersonalOfferToast } from "@/components/profile/personal-offer-toast"
 import { isB2BHost } from "@/lib/b2b-routing"
+import { getSession } from "@/lib/auth/session"
 import { getBrands } from "@/lib/data/brands"
 import { getGoogleReviews } from "@/lib/data/google-reviews"
+import { getPersonalProfileOffers, type PersonalProfileOffer } from "@/lib/discounts/profile-offers"
 import { Suspense } from "react"
 import { toOGLocale } from "@/lib/og-locale"
 import { b2bSiteUrl, siteUrl } from "@/lib/site-config"
@@ -195,9 +198,13 @@ export default async function HomePage({
 
   const brandsPromise = getBrands()
   const googleReviewsPromise = getGoogleReviews()
+  const personalOfferPromise = getHomepagePersonalOffer(locale)
 
   return (
     <>
+      <Suspense fallback={null}>
+        <PersonalOfferToastAsync locale={locale} promise={personalOfferPromise} />
+      </Suspense>
       <HeroSection />
       <Suspense fallback={null}>
         <GoogleReviewsAsync promise={googleReviewsPromise} />
@@ -210,6 +217,36 @@ export default async function HomePage({
       </Suspense>
     </>
   )
+}
+
+async function getHomepagePersonalOffer(locale: string): Promise<PersonalProfileOffer | null> {
+  try {
+    const session = await getSession()
+    if (!session?.user?.id) return null
+
+    const offers = await getPersonalProfileOffers({
+      userId: session.user.id,
+      locale,
+      limit: 1,
+    })
+
+    return offers[0] || null
+  } catch (error) {
+    console.error("Homepage personal offer error:", error)
+    return null
+  }
+}
+
+async function PersonalOfferToastAsync({
+  locale,
+  promise,
+}: {
+  locale: string
+  promise: Promise<PersonalProfileOffer | null>
+}) {
+  const offer = await promise
+  if (!offer) return null
+  return <PersonalOfferToast offer={offer} locale={locale} />
 }
 
 async function BrandsSectionAsync({ promise }: { promise: Promise<any> }) {

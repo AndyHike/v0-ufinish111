@@ -13,6 +13,15 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
     const { id } = await params
     const body = await request.json()
+
+    if (body.showAsOffer && !body.userId) {
+      return NextResponse.json({ error: "Profile offers require a selected user" }, { status: 400 })
+    }
+
+    if (body.showAsOffer && body.requiresCode) {
+      return NextResponse.json({ error: "Profile offers cannot require a discount code" }, { status: 400 })
+    }
+
     const discount = await updateDiscount(id, body)
 
     return NextResponse.json(discount)

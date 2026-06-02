@@ -12,7 +12,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Check, ChevronsUpDown, Search } from "lucide-react"
+import { Check, ChevronsUpDown, Search, Sparkles } from "lucide-react"
 import type { DiscountScopeType, DiscountType } from "@/lib/discounts/types"
 import { cn } from "@/lib/utils"
 
@@ -76,6 +76,10 @@ export function DiscountForm({ initialData, onSubmit, onCancel, submitting }: Di
     maxUsesPerUser: initialData?.maxUsesPerUser || "",
     userId: initialData?.userId || "global",
     requiresCode: initialData?.requiresCode ?? false,
+    showAsOffer: initialData?.showAsOffer ?? false,
+    offerTitle: initialData?.offerTitle || "",
+    offerDescription: initialData?.offerDescription || "",
+    offerPriority: initialData?.offerPriority || "",
   })
 
   const [brands, setBrands] = useState<Brand[]>([])
@@ -215,6 +219,7 @@ export function DiscountForm({ initialData, onSubmit, onCancel, submitting }: Di
   }
 
   const selectedUser = users.find((user) => user.id === formData.userId)
+  const isPersonalDiscount = formData.userId !== "global"
   const selectedUserLabel = selectedUser
     ? `${getUserDisplayName(selectedUser)} - ${selectedUser.email}`
     : formData.userId === "global"
@@ -224,6 +229,19 @@ export function DiscountForm({ initialData, onSubmit, onCancel, submitting }: Di
   const filteredUsers = normalizedUserSearchQuery
     ? users.filter((user) => getUserSearchText(user).includes(normalizedUserSearchQuery))
     : users
+
+  function setSelectedUserId(userId: string) {
+    setFormData((prev) => ({
+      ...prev,
+      userId,
+      showAsOffer: userId === "global" ? false : prev.showAsOffer,
+      offerTitle: userId === "global" ? "" : prev.offerTitle,
+      offerDescription: userId === "global" ? "" : prev.offerDescription,
+      offerPriority: userId === "global" ? "" : prev.offerPriority,
+    }))
+    setUserSearchQuery("")
+    setUserPickerOpen(false)
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -271,6 +289,13 @@ export function DiscountForm({ initialData, onSubmit, onCancel, submitting }: Di
         expiresAt: formData.expiresAt || null,
         userId: formData.userId === "global" ? null : formData.userId,
         requiresCode: formData.requiresCode,
+        showAsOffer: isPersonalDiscount ? formData.showAsOffer : false,
+        offerTitle: isPersonalDiscount && formData.showAsOffer ? formData.offerTitle : null,
+        offerDescription: isPersonalDiscount && formData.showAsOffer ? formData.offerDescription : null,
+        offerPriority:
+          isPersonalDiscount && formData.showAsOffer && formData.offerPriority
+            ? Number.parseInt(formData.offerPriority as string, 10)
+            : 0,
       })
     } finally {
       setLoading(false)
@@ -332,6 +357,7 @@ export function DiscountForm({ initialData, onSubmit, onCancel, submitting }: Di
             <Switch
               id="requiresCode"
               checked={formData.requiresCode}
+              disabled={Boolean(formData.showAsOffer)}
               onCheckedChange={(checked) => setFormData({ ...formData, requiresCode: checked })}
             />
           </div>
@@ -549,9 +575,7 @@ export function DiscountForm({ initialData, onSubmit, onCancel, submitting }: Di
                     <CommandItem
                       value="global"
                       onSelect={() => {
-                        setFormData({ ...formData, userId: "global" })
-                        setUserSearchQuery("")
-                        setUserPickerOpen(false)
+                        setSelectedUserId("global")
                       }}
                     >
                       <Check
@@ -564,9 +588,7 @@ export function DiscountForm({ initialData, onSubmit, onCancel, submitting }: Di
                         key={user.id}
                         value={getUserSearchText(user)}
                         onSelect={() => {
-                          setFormData({ ...formData, userId: user.id })
-                          setUserSearchQuery("")
-                          setUserPickerOpen(false)
+                          setSelectedUserId(user.id)
                         }}
                       >
                         <Check
@@ -589,6 +611,73 @@ export function DiscountForm({ initialData, onSubmit, onCancel, submitting }: Di
           <p className="text-xs text-muted-foreground mt-1">
             Для персональної знижки оберіть конкретного користувача. Глобальна знижка працює для всіх.
           </p>
+        </div>
+
+        <div className={`col-span-2 rounded-lg border p-4 ${isPersonalDiscount ? "bg-emerald-50/60" : "bg-muted/20"}`}>
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
+                <Sparkles className="h-4 w-4" />
+              </div>
+              <div>
+                <Label htmlFor="showAsOffer" className="text-base font-semibold">
+                  Показувати як персональну пропозицію
+                </Label>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Пропозиція з'явиться на головній вкладці профілю і може показатися як коротке сповіщення на головній сторінці.
+                </p>
+                {!isPersonalDiscount && (
+                  <p className="mt-2 text-xs font-medium text-amber-700">
+                    Спочатку оберіть конкретного користувача. Глобальні знижки не показуються як персональні пропозиції.
+                  </p>
+                )}
+              </div>
+            </div>
+            <Switch
+              id="showAsOffer"
+              checked={Boolean(formData.showAsOffer)}
+              disabled={!isPersonalDiscount}
+              onCheckedChange={(checked) =>
+                setFormData({ ...formData, showAsOffer: checked, requiresCode: checked ? false : formData.requiresCode })
+              }
+            />
+          </div>
+
+          {isPersonalDiscount && formData.showAsOffer && (
+            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                <Label htmlFor="offerTitle">Назва пропозиції</Label>
+                <Input
+                  id="offerTitle"
+                  value={formData.offerTitle}
+                  onChange={(e) => setFormData({ ...formData, offerTitle: e.target.value })}
+                  placeholder="Для вас спеціальна пропозиція"
+                />
+              </div>
+
+              <div className="sm:col-span-2">
+                <Label htmlFor="offerDescription">Короткий опис</Label>
+                <Textarea
+                  id="offerDescription"
+                  value={formData.offerDescription}
+                  onChange={(e) => setFormData({ ...formData, offerDescription: e.target.value })}
+                  placeholder="Наприклад: знижка на заміну батареї до кінця місяця"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="offerPriority">Пріоритет</Label>
+                <Input
+                  id="offerPriority"
+                  type="number"
+                  min="0"
+                  value={formData.offerPriority}
+                  onChange={(e) => setFormData({ ...formData, offerPriority: e.target.value })}
+                  placeholder="0"
+                />
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

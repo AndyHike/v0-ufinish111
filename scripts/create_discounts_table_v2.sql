@@ -32,6 +32,10 @@ CREATE TABLE IF NOT EXISTS discounts (
   -- Status and validity
   is_active BOOLEAN DEFAULT true,
   requires_code BOOLEAN NOT NULL DEFAULT false,
+  show_as_offer BOOLEAN NOT NULL DEFAULT false,
+  offer_title TEXT,
+  offer_description TEXT,
+  offer_priority INTEGER NOT NULL DEFAULT 0,
   starts_at TIMESTAMP WITH TIME ZONE,
   expires_at TIMESTAMP WITH TIME ZONE,
   
@@ -78,6 +82,7 @@ CREATE INDEX IF NOT EXISTS idx_discounts_brand ON discounts(brand_id) WHERE bran
 CREATE INDEX IF NOT EXISTS idx_discounts_series ON discounts(series_id) WHERE series_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_discounts_model ON discounts(model_id) WHERE model_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_discounts_user_id ON discounts(user_id) WHERE user_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_discounts_profile_offers ON discounts(user_id, show_as_offer, is_active, offer_priority DESC, expires_at) WHERE user_id IS NOT NULL AND show_as_offer = true;
 CREATE INDEX IF NOT EXISTS idx_discount_usages_user ON discount_usages(user_id);
 CREATE INDEX IF NOT EXISTS idx_discount_usages_discount ON discount_usages(discount_id);
 
@@ -104,3 +109,7 @@ COMMENT ON COLUMN discounts.scope_type IS 'Scope: brand (all models of brand), s
 COMMENT ON COLUMN discounts.discount_type IS 'Type: percentage (e.g., 15%) or fixed (e.g., 500 CZK)';
 COMMENT ON COLUMN discounts.discount_value IS 'Discount amount - either percentage (1-100) or fixed amount';
 COMMENT ON COLUMN discounts.requires_code IS 'When true, the discount only applies when its code is entered during booking';
+COMMENT ON COLUMN discounts.show_as_offer IS 'When true, a personal discount can be highlighted as a profile offer';
+COMMENT ON COLUMN discounts.offer_title IS 'Optional display title for a personal profile offer';
+COMMENT ON COLUMN discounts.offer_description IS 'Optional display description for a personal profile offer';
+COMMENT ON COLUMN discounts.offer_priority IS 'Higher priority offers are shown first in profile and homepage toast';

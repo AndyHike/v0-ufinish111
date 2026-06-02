@@ -11,6 +11,7 @@ The profile should feel useful immediately: if a user has an active offer, they 
 - Add offer presentation fields to personal discounts.
 - Let admins mark a personal discount as a profile offer.
 - Show active marked offers on the main profile tab.
+- Show one subtle homepage toast for logged-in users when they have an active marked offer.
 - Keep general and role discounts in the current discount flow.
 - Keep the existing "My discounts" tab as the full list.
 
@@ -19,6 +20,7 @@ The profile should feel useful immediately: if a user has an active offer, they 
 - Do not create a separate `special_offers` system.
 - Do not show general or role discounts as profile offers.
 - Do not add popups, global banners, or notification mechanics in this step.
+- Do not show the homepage toast to guests or for general/role discounts.
 - Do not change the best-price discount calculation rule.
 
 ## Data Model
@@ -70,6 +72,12 @@ The block should:
 
 If there are no personal offers, the block is not shown. The current discounts tab remains available for the user's full discount list.
 
+## Homepage Toast
+
+On the main non-B2B homepage, logged-in users with at least one eligible personal offer see a small dismissible toast after hydration. It uses the top eligible offer and should be shown at most once per offer per browser storage window. Closing the toast stores a `localStorage` key so the same offer does not keep reappearing.
+
+The toast should include the offer title, discount value or short description, and a direct action to view the offer in the profile. It must not block the page, cover primary navigation, or appear for guests.
+
 ## Booking Behavior
 
 Booking continues to use the current discount preview and best-final-price logic.
@@ -85,12 +93,14 @@ Using an offer records normal discount usage. There is no separate offer usage c
 3. Server maps discount rows into profile offer view models.
 4. Profile content receives both existing discount list data and the highlighted offer list.
 5. The main profile tab renders the offer block only when the list is non-empty.
+6. The homepage queries the same eligible offer source and passes only the top offer into a tiny client toast component.
 
 ## Error Handling
 
 - If offer query fails, do not block the profile page. Log the issue server-side and render the profile without offers.
 - If target service/model data is missing, show the offer without a specific target link and use a safe fallback action.
 - If a discount expires or usage is exhausted between profile view and booking, booking validation rejects it using the existing unavailable-discount flow.
+- If the homepage offer query fails, render the homepage normally without the toast.
 
 ## Translations
 
@@ -102,6 +112,8 @@ Add profile translation keys for Ukrainian, Czech, and English:
 - `offerUsesLeft`
 - `useOffer`
 - `viewServices`
+- `offerToastTitle`
+- `offerToastAction`
 
 Admin labels can be added in the existing admin translation/location pattern if that section already uses shared text. If the admin discount form is still mostly hard-coded Ukrainian, keep labels consistent with the current form and avoid a partial translation rewrite.
 
@@ -113,6 +125,7 @@ Add focused tests for:
 - General and role discounts are not rendered as profile offers.
 - Offer cards render title, value, expiration, and remaining uses.
 - The profile page still renders when the offer query returns an error.
+- The homepage wires the personal offer toast only through the same eligible offer source.
 - Booking still records usage through the existing discount usage path.
 
 Run:

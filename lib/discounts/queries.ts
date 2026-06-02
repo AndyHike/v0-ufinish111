@@ -22,6 +22,10 @@ function mapDiscountRow(row: any): Discount {
     maxUsesPerUser: row.max_uses_per_user,
     userId: row.user_id,
     requiresCode: row.requires_code,
+    showAsOffer: row.show_as_offer,
+    offerTitle: row.offer_title,
+    offerDescription: row.offer_description,
+    offerPriority: row.offer_priority,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
@@ -161,6 +165,10 @@ export async function createDiscount(
       max_uses_per_user: discount.maxUsesPerUser || null,
       user_id: discount.userId || null,
       requires_code: discount.requiresCode || false,
+      show_as_offer: Boolean(discount.userId && discount.showAsOffer),
+      offer_title: discount.userId && discount.showAsOffer ? discount.offerTitle || null : null,
+      offer_description: discount.userId && discount.showAsOffer ? discount.offerDescription || null : null,
+      offer_priority: discount.userId && discount.showAsOffer ? discount.offerPriority || 0 : 0,
     })
     .select()
     .single()
@@ -197,6 +205,10 @@ export async function updateDiscount(id: string, updates: Partial<Discount>): Pr
   if (updates.maxUsesPerUser !== undefined) updateData.max_uses_per_user = updates.maxUsesPerUser || null
   if (updates.userId !== undefined) updateData.user_id = updates.userId || null
   if (updates.requiresCode !== undefined) updateData.requires_code = updates.requiresCode
+  if (updates.showAsOffer !== undefined) updateData.show_as_offer = updates.userId === null ? false : updates.showAsOffer
+  if (updates.offerTitle !== undefined) updateData.offer_title = updates.offerTitle || null
+  if (updates.offerDescription !== undefined) updateData.offer_description = updates.offerDescription || null
+  if (updates.offerPriority !== undefined) updateData.offer_priority = updates.offerPriority || 0
 
   const { data, error } = await supabase.from("discounts").update(updateData).eq("id", id).select().single()
 

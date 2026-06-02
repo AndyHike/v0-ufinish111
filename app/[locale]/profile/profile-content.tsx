@@ -5,15 +5,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { UserProfile } from "@/components/profile/user-profile"
 import { UserOrders } from "@/components/profile/user-orders"
 import { UserDiscounts } from "@/components/profile/user-discounts"
+import { PersonalOffers } from "@/components/profile/personal-offers"
+import type { PersonalProfileOffer } from "@/lib/discounts/profile-offers"
 
 export default function ProfileContent({
   userData,
   locale,
-  discounts = []
+  discounts = [],
+  personalOffers = [],
 }: {
   userData: any;
   locale: string;
   discounts?: any[]
+  personalOffers?: PersonalProfileOffer[]
 }) {
   const t = useTranslations("Profile")
 
@@ -34,6 +38,7 @@ export default function ProfileContent({
         </div>
         <TabsContent value="profile" className="space-y-4">
           <UserProfile user={userData} locale={locale} />
+          <PersonalOffers offers={personalOffers} locale={locale} />
         </TabsContent>
         <TabsContent value="orders" className="space-y-4">
           <UserOrders />

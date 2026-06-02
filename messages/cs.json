@@ -750,7 +750,15 @@
     "accountId": "ID Účtu",
     "copy": "Kopírovat",
     "roleLevel": "Úroveň: {level}",
-    "roleDiscountDescription": "Dodatečná sleva pro vaši roli"
+    "roleDiscountDescription": "Dodatečná sleva pro vaši roli",
+    "specialOffersTitle": "Speciálně pro vás",
+    "specialOffersDescription": "Aktivní osobní nabídky pro váš účet",
+    "offerExpiresOn": "Platí do {date}",
+    "offerUsesLeft": "Zbývá použití: {count}",
+    "useOffer": "Využít nabídku",
+    "viewServices": "Zobrazit služby",
+    "offerToastTitle": "Máte osobní nabídku",
+    "offerToastAction": "Zobrazit"
   },
   "Terms": {
     "title": "Obchodní podmínky",

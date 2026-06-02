@@ -47,6 +47,10 @@ test("discount updates persist every editable field from the form", async () => 
     ["maxUsesPerUser", "max_uses_per_user"],
     ["userId", "user_id"],
     ["requiresCode", "requires_code"],
+    ["showAsOffer", "show_as_offer"],
+    ["offerTitle", "offer_title"],
+    ["offerDescription", "offer_description"],
+    ["offerPriority", "offer_priority"],
   ]) {
     assert.match(updateFunction, new RegExp(`updates\\.${field} !== undefined[\\s\\S]*updateData\\.${column}`))
   }
@@ -186,6 +190,65 @@ test("discount schema and admin flow support code-only discounts", async () => {
   assert.match(createV2, /requires_code BOOLEAN NOT NULL DEFAULT false/)
 })
 
+test("discount schema and admin flow support personal profile offers", async () => {
+  const types = await read("../lib/discounts/types.ts")
+  const queries = await read("../lib/discounts/queries.ts")
+  const form = await read("../components/admin/discount-form.tsx")
+  const route = await read("../app/api/admin/discounts/route.ts")
+  const addOfferMigration = await read("../scripts/add_personal_offer_fields_to_discounts.sql")
+  const createV2 = await read("../scripts/create_discounts_table_v2.sql")
+
+  assert.match(types, /showAsOffer\??:\s*boolean/)
+  assert.match(types, /offerTitle\??:\s*string/)
+  assert.match(types, /offerDescription\??:\s*string/)
+  assert.match(types, /offerPriority\??:\s*number/)
+  assert.match(queries, /showAsOffer:\s*row\.show_as_offer/)
+  assert.match(queries, /offerTitle:\s*row\.offer_title/)
+  assert.match(queries, /show_as_offer:/)
+  assert.match(queries, /discount\.showAsOffer/)
+  assert.match(queries, /updateData\.show_as_offer/)
+  assert.match(queries, /updates\.showAsOffer/)
+  assert.match(route, /const showAsOffer = Boolean\(body\.showAsOffer\)/)
+  assert.match(route, /showAsOffer,/)
+  assert.match(route, /Profile offers require a selected user/)
+  assert.match(form, /showAsOffer:\s*initialData\?\.showAsOffer/)
+  assert.match(form, /id=["']showAsOffer["']/)
+  assert.match(form, /offerTitle/)
+  assert.match(form, /formData\.userId !== ["']global["']/)
+  assert.match(addOfferMigration, /ADD COLUMN IF NOT EXISTS show_as_offer BOOLEAN NOT NULL DEFAULT false/)
+  assert.match(addOfferMigration, /ADD COLUMN IF NOT EXISTS offer_title TEXT/)
+  assert.match(addOfferMigration, /idx_discounts_profile_offers/)
+  assert.match(createV2, /show_as_offer BOOLEAN NOT NULL DEFAULT false/)
+  assert.match(createV2, /offer_priority INTEGER NOT NULL DEFAULT 0/)
+})
+
+test("personal profile offers power profile cards and homepage toast", async () => {
+  const helper = await read("../lib/discounts/profile-offers.ts")
+  const profilePage = await read("../app/[locale]/profile/page.tsx")
+  const profileContent = await read("../app/[locale]/profile/profile-content.tsx")
+  const offersComponent = await read("../components/profile/personal-offers.tsx")
+  const toastComponent = await read("../components/profile/personal-offer-toast.tsx")
+  const homePage = await read("../app/[locale]/page.tsx")
+
+  assert.match(helper, /export async function getPersonalProfileOffers/)
+  assert.match(helper, /\.eq\(["']show_as_offer["'],\s*true\)/)
+  assert.match(helper, /\.eq\(["']user_id["'],\s*userId\)/)
+  assert.match(helper, /getRemainingUses/)
+  assert.match(helper, /offer_priority/)
+  assert.match(profilePage, /getPersonalProfileOffers/)
+  assert.match(profilePage, /personalOffers/)
+  assert.match(profileContent, /personalOffers/)
+  assert.match(profileContent, /<PersonalOffers offers=\{personalOffers\}/)
+  assert.match(offersComponent, /specialOffersTitle/)
+  assert.match(offersComponent, /offerUsesLeft/)
+  assert.match(toastComponent, /localStorage/)
+  assert.match(toastComponent, /personal-offer-toast/)
+  assert.match(toastComponent, /offerToastAction/)
+  assert.match(homePage, /getSession/)
+  assert.match(homePage, /getPersonalProfileOffers/)
+  assert.match(homePage, /<PersonalOfferToast/)
+})
+
 test("automatic discount pricing excludes code-only discounts while keeping personal discounts eligible", async () => {
   const pricing = await read("../lib/discounts/get-applicable-discounts.ts")
 
@@ -301,5 +364,20 @@ test("booking discount signup nudge has translations in all locales", async () =
     assert.match(messages, /"discountCodeErrorNotApplicable"/)
     assert.match(messages, /"discountCodeGoToService"/)
     assert.match(messages, /"discountCodeGoToModel"/)
+  }
+})
+
+test("personal profile offers have translations in all locales", async () => {
+  for (const locale of ["uk", "en", "cs"]) {
+    const messages = await read(`../messages/${locale}.json`)
+
+    assert.match(messages, /"specialOffersTitle"/)
+    assert.match(messages, /"specialOffersDescription"/)
+    assert.match(messages, /"offerExpiresOn"/)
+    assert.match(messages, /"offerUsesLeft"/)
+    assert.match(messages, /"useOffer"/)
+    assert.match(messages, /"viewServices"/)
+    assert.match(messages, /"offerToastTitle"/)
+    assert.match(messages, /"offerToastAction"/)
   }
 })

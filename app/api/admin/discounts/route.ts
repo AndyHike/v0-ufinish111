@@ -23,6 +23,10 @@ type NormalizedDiscountPayload = {
   maxUsesPerUser: number | null
   userId: string | null
   requiresCode: boolean
+  showAsOffer: boolean
+  offerTitle: string | null
+  offerDescription: string | null
+  offerPriority: number
 }
 
 type DiscountPayloadValidation =
@@ -39,6 +43,14 @@ function nullablePositiveInteger(value: unknown): number | null {
 
   const parsed = Number.parseInt(String(value), 10)
   if (!Number.isFinite(parsed) || parsed <= 0) return null
+  return parsed
+}
+
+function nonNegativeInteger(value: unknown): number {
+  if (value === null || value === undefined || value === "") return 0
+
+  const parsed = Number.parseInt(String(value), 10)
+  if (!Number.isFinite(parsed) || parsed < 0) return 0
   return parsed
 }
 
@@ -111,10 +123,16 @@ function normalizeDiscountPayload(body: any): DiscountPayloadValidation {
   const brandId = nullableTrimmedString(body.brandId)
   const seriesId = nullableTrimmedString(body.seriesId)
   const modelId = nullableTrimmedString(body.modelId)
+  const userId = body.userId === "global" ? null : nullableTrimmedString(body.userId)
+  const showAsOffer = Boolean(body.showAsOffer)
 
   if (scopeType === "brand" && !brandId) return { ok: false, error: "Brand is required for brand discounts" }
   if (scopeType === "series" && !seriesId) return { ok: false, error: "Series is required for series discounts" }
   if (scopeType === "model" && !modelId) return { ok: false, error: "Model is required for model discounts" }
+  if (showAsOffer && !userId) return { ok: false, error: "Profile offers require a selected user" }
+  if (showAsOffer && Boolean(body.requiresCode)) {
+    return { ok: false, error: "Profile offers cannot require a discount code" }
+  }
 
   return {
     ok: true,
@@ -134,8 +152,12 @@ function normalizeDiscountPayload(body: any): DiscountPayloadValidation {
       expiresAt: normalizeDate(body.expiresAt),
       maxUses: nullablePositiveInteger(body.maxUses),
       maxUsesPerUser: nullablePositiveInteger(body.maxUsesPerUser),
-      userId: body.userId === "global" ? null : nullableTrimmedString(body.userId),
+      userId,
       requiresCode: Boolean(body.requiresCode),
+      showAsOffer,
+      offerTitle: nullableTrimmedString(body.offerTitle),
+      offerDescription: nullableTrimmedString(body.offerDescription),
+      offerPriority: nonNegativeInteger(body.offerPriority),
     },
   }
 }
@@ -188,6 +210,10 @@ export async function POST(request: Request) {
       maxUsesPerUser: payload.maxUsesPerUser ?? undefined,
       userId: payload.userId ?? undefined,
       requiresCode: payload.requiresCode,
+      showAsOffer: payload.showAsOffer,
+      offerTitle: payload.offerTitle ?? undefined,
+      offerDescription: payload.offerDescription ?? undefined,
+      offerPriority: payload.offerPriority,
     })
 
     return NextResponse.json(discount)

@@ -827,7 +827,15 @@
     "copy": "Copy",
     "editingNotAvailable": "Profile editing is currently unavailable. Please contact our support if you need to change your data.",
     "roleLevel": "Level: {level}",
-    "roleDiscountDescription": "Additional discount for your role"
+    "roleDiscountDescription": "Additional discount for your role",
+    "specialOffersTitle": "Specially for you",
+    "specialOffersDescription": "Active personal offers for your account",
+    "offerExpiresOn": "Valid until {date}",
+    "offerUsesLeft": "Uses left: {count}",
+    "useOffer": "Use offer",
+    "viewServices": "View services",
+    "offerToastTitle": "You have a personal offer",
+    "offerToastAction": "View"
   },
   "B2B": {
     "home": {
