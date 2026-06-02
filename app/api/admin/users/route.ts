@@ -22,6 +22,14 @@ function buildBillingAddress({
   return [billing_street, cityLine, billing_country || "CZ"].filter(Boolean).join(", ")
 }
 
+function isUuid(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
+}
+
+function sanitizePostgrestSearch(value: string) {
+  return value.replace(/[%,()]/g, " ").trim()
+}
+
 export async function GET(request: Request) {
   try {
     const session = await getSession()
@@ -30,7 +38,7 @@ export async function GET(request: Request) {
     }
 
     const { searchParams } = new URL(request.url)
-    const query = searchParams.get("query") || ""
+    const query = searchParams.get("query")?.trim() || ""
     const role = searchParams.get("role") || undefined
     const status = searchParams.get("status") || undefined
     const page = Number.parseInt(searchParams.get("page") || "1")
@@ -69,9 +77,26 @@ export async function GET(request: Request) {
 
     // Apply search filter if query is provided
     if (query) {
-      supabaseQuery = supabaseQuery.or(
-        `email.ilike.%${query}%,first_name.ilike.%${query}%,last_name.ilike.%${query}%,company_name.ilike.%${query}%,ico.ilike.%${query}%`,
-      )
+      const safeQuery = sanitizePostgrestSearch(query)
+      const phoneProfiles = await supabase.from("profiles").select("id").ilike("phone", `%${query}%`).limit(50)
+      const profileUserIds = (phoneProfiles.data || []).map((profile) => profile.id).filter(Boolean)
+      const filters = [
+        `email.ilike.%${safeQuery}%`,
+        `first_name.ilike.%${safeQuery}%`,
+        `last_name.ilike.%${safeQuery}%`,
+        `company_name.ilike.%${safeQuery}%`,
+        `ico.ilike.%${safeQuery}%`,
+      ]
+
+      if (isUuid(query)) {
+        filters.push(`id.eq.${query}`)
+      }
+
+      for (const userId of profileUserIds) {
+        filters.push(`id.eq.${userId}`)
+      }
+
+      supabaseQuery = supabaseQuery.or(filters.join(","))
     }
 
     // Apply role filter if provided

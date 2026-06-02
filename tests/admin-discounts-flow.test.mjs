@@ -57,7 +57,7 @@ test("discount form supports global or personal discounts and validates scoped s
   assert.match(form, /type AdminUser/)
   assert.match(form, /fetchUsers/)
   assert.match(form, /\/api\/admin\/users\?/)
-  assert.match(form, /SelectItem value=["']global["']/)
+  assert.match(form, /CommandItem[\s\S]*value=["']global["']/)
   assert.match(form, /formData\.userId === ["']global["'] \? null : formData\.userId/)
   assert.match(form, /scopeType === ["']brand["'][\s\S]*!formData\.brandId/)
   assert.match(form, /scopeType === ["']series["'][\s\S]*!formData\.seriesId/)
@@ -71,4 +71,39 @@ test("admin users API used by personal discounts is admin-only", async () => {
   assert.match(usersRoute, /getSession/)
   assert.match(usersRoute, /session\.user\.role !== ["']admin["']/)
   assert.match(usersRoute, /Unauthorized/)
+  assert.match(usersRoute, /phoneProfiles/)
+  assert.match(usersRoute, /profiles"\)\.select\("id"\)\.ilike\("phone"/)
+  assert.match(usersRoute, /id\.eq/)
+})
+
+test("admin discounts API validates create payload before inserting", async () => {
+  const route = await read("../app/api/admin/discounts/route.ts")
+
+  assert.match(route, /function normalizeDiscountPayload/)
+  assert.match(route, /String\(body\.code \?\? ""\)\.trim\(\)\.toUpperCase\(\)/)
+  assert.match(route, /serviceIds\.length === 0/)
+  assert.match(route, /return NextResponse\.json\(\{ error: validation\.error \}, \{ status: 400 \}\)/)
+  assert.match(route, /isDuplicateDiscountCodeError/)
+  assert.match(route, /status: isDuplicateDiscountCodeError\(details\) \? 409 : 500/)
+  assert.doesNotMatch(route, /body\.code\.toUpperCase\(\)/)
+})
+
+test("admin discounts page shows API error details from failed creates", async () => {
+  const page = await read("../app/[locale]/admin/discounts/page.tsx")
+
+  assert.match(page, /const errorPayload = await response\.json\(\)\.catch/)
+  assert.match(page, /errorPayload\?\.details \|\| errorPayload\?\.error \|\|/)
+  assert.match(page, /setCreateError\(message\)/)
+})
+
+test("discount form uses searchable personal user picker", async () => {
+  const form = await read("../components/admin/discount-form.tsx")
+
+  assert.match(form, /CommandInput/)
+  assert.match(form, /PopoverTrigger/)
+  assert.match(form, /function getUserSearchText/)
+  assert.match(form, /user\.phone/)
+  assert.match(form, /user\.id/)
+  assert.match(form, /filteredUsers/)
+  assert.doesNotMatch(form, /<Select value=\{formData\.userId\}/)
 })

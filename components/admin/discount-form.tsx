@@ -7,10 +7,14 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Check, ChevronsUpDown, Search } from "lucide-react"
 import type { DiscountScopeType, DiscountType } from "@/lib/discounts/types"
+import { cn } from "@/lib/utils"
 
 type Brand = {
   id: string
@@ -43,6 +47,7 @@ type AdminUser = {
   first_name?: string | null
   last_name?: string | null
   company_name?: string | null
+  phone?: string | null
 }
 
 interface DiscountFormProps {
@@ -77,13 +82,22 @@ export function DiscountForm({ initialData, onSubmit, onCancel, submitting }: Di
   const [models, setModels] = useState<Model[]>([])
   const [services, setServices] = useState<Service[]>([])
   const [users, setUsers] = useState<AdminUser[]>([])
+  const [userPickerOpen, setUserPickerOpen] = useState(false)
+  const [userSearchQuery, setUserSearchQuery] = useState("")
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     fetchBrands()
     fetchServices()
-    fetchUsers()
   }, [])
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      fetchUsers(userSearchQuery)
+    }, 250)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [userSearchQuery])
 
   useEffect(() => {
     if (formData.brandId) {
@@ -150,9 +164,12 @@ export function DiscountForm({ initialData, onSubmit, onCancel, submitting }: Di
     }
   }
 
-  async function fetchUsers() {
+  async function fetchUsers(query = "") {
     try {
-      const response = await fetch("/api/admin/users?limit=100")
+      const params = new URLSearchParams({ limit: "20" })
+      if (query.trim()) params.set("query", query.trim())
+
+      const response = await fetch(`/api/admin/users?${params.toString()}`)
       const data = await response.json()
       setUsers(data.users || [])
     } catch (error) {
@@ -178,6 +195,34 @@ export function DiscountForm({ initialData, onSubmit, onCancel, submitting }: Di
         : [...prev.serviceIds, serviceId],
     }))
   }
+
+  function getUserDisplayName(user: AdminUser) {
+    return (
+      user.full_name ||
+      [user.first_name, user.last_name].filter(Boolean).join(" ") ||
+      user.company_name ||
+      user.email ||
+      user.id
+    )
+  }
+
+  function getUserSearchText(user: AdminUser) {
+    return [user.id, user.email, user.phone, user.full_name, user.first_name, user.last_name, user.company_name]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase()
+  }
+
+  const selectedUser = users.find((user) => user.id === formData.userId)
+  const selectedUserLabel = selectedUser
+    ? `${getUserDisplayName(selectedUser)} - ${selectedUser.email}`
+    : formData.userId === "global"
+      ? "Глобальна для всіх користувачів"
+      : `Персональна: ${formData.userId}`
+  const normalizedUserSearchQuery = userSearchQuery.trim().toLowerCase()
+  const filteredUsers = normalizedUserSearchQuery
+    ? users.filter((user) => getUserSearchText(user).includes(normalizedUserSearchQuery))
+    : users
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -457,27 +502,72 @@ export function DiscountForm({ initialData, onSubmit, onCancel, submitting }: Di
 
         <div className="col-span-2">
           <Label htmlFor="userId">Тип знижки</Label>
-          <Select value={formData.userId} onValueChange={(value) => setFormData({ ...formData, userId: value })}>
-            <SelectTrigger id="userId">
-              <SelectValue placeholder="Оберіть тип знижки" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="global">Глобальна для всіх користувачів</SelectItem>
-              {users.map((user) => {
-                const userName =
-                  user.full_name ||
-                  [user.first_name, user.last_name].filter(Boolean).join(" ") ||
-                  user.company_name ||
-                  user.email
-
-                return (
-                  <SelectItem key={user.id} value={user.id}>
-                    {userName} - {user.email}
-                  </SelectItem>
-                )
-              })}
-            </SelectContent>
-          </Select>
+          <Popover open={userPickerOpen} onOpenChange={setUserPickerOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                id="userId"
+                type="button"
+                variant="outline"
+                role="combobox"
+                aria-expanded={userPickerOpen}
+                className="h-auto min-h-10 w-full justify-between gap-2 px-3 text-left font-normal"
+              >
+                <span className="min-w-0 truncate">
+                  {selectedUserLabel}
+                </span>
+                <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+              <Command shouldFilter={false}>
+                <CommandInput
+                  icon={Search}
+                  value={userSearchQuery}
+                  onValueChange={setUserSearchQuery}
+                  placeholder="Пошук за телефоном, email, ім'ям або ID"
+                />
+                <CommandList>
+                  <CommandGroup>
+                    <CommandItem
+                      value="global"
+                      onSelect={() => {
+                        setFormData({ ...formData, userId: "global" })
+                        setUserSearchQuery("")
+                        setUserPickerOpen(false)
+                      }}
+                    >
+                      <Check
+                        className={cn("mr-2 h-4 w-4", formData.userId === "global" ? "opacity-100" : "opacity-0")}
+                      />
+                      <span>Глобальна для всіх користувачів</span>
+                    </CommandItem>
+                    {filteredUsers.map((user) => (
+                      <CommandItem
+                        key={user.id}
+                        value={getUserSearchText(user)}
+                        onSelect={() => {
+                          setFormData({ ...formData, userId: user.id })
+                          setUserSearchQuery("")
+                          setUserPickerOpen(false)
+                        }}
+                      >
+                        <Check
+                          className={cn("mr-2 h-4 w-4", formData.userId === user.id ? "opacity-100" : "opacity-0")}
+                        />
+                        <div className="min-w-0">
+                          <div className="truncate text-sm font-medium">{getUserDisplayName(user)}</div>
+                          <div className="truncate text-xs text-muted-foreground">
+                            {[user.email, user.phone, user.id].filter(Boolean).join(" | ")}
+                          </div>
+                        </div>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                  <CommandEmpty>Користувача не знайдено</CommandEmpty>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
           <p className="text-xs text-muted-foreground mt-1">
             Для персональної знижки оберіть конкретного користувача. Глобальна знижка працює для всіх.
           </p>

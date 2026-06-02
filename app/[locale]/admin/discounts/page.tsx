@@ -31,6 +31,7 @@ export default function DiscountsPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [currentDiscount, setCurrentDiscount] = useState<Discount | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [createError, setCreateError] = useState<string | null>(null)
 
   useEffect(() => {
     fetchDiscounts()
@@ -57,6 +58,7 @@ export default function DiscountsPage() {
 
   async function handleAddDiscount(data: any) {
     setSubmitting(true)
+    setCreateError(null)
     try {
       const response = await fetch("/api/admin/discounts", {
         method: "POST",
@@ -64,7 +66,11 @@ export default function DiscountsPage() {
         body: JSON.stringify(data),
       })
 
-      if (!response.ok) throw new Error("Failed to create discount")
+      if (!response.ok) {
+        const errorPayload = await response.json().catch(() => null)
+        const message = errorPayload?.details || errorPayload?.error || "Failed to create discount"
+        throw new Error(message)
+      }
 
       await fetchDiscounts()
       setIsAddDialogOpen(false)
@@ -74,9 +80,11 @@ export default function DiscountsPage() {
       })
     } catch (error) {
       console.error("Error creating discount:", error)
+      const message = error instanceof Error ? error.message : "Не вдалося створити знижку"
+      setCreateError(message)
       toast({
         title: "Помилка",
-        description: "Не вдалося створити знижку",
+        description: message,
         variant: "destructive",
       })
     } finally {
@@ -185,7 +193,12 @@ export default function DiscountsPage() {
           <h1 className="text-3xl font-bold tracking-tight">Знижки</h1>
           <p className="text-muted-foreground">Керування знижками на послуги</p>
         </div>
-        <Button onClick={() => setIsAddDialogOpen(true)}>
+        <Button
+          onClick={() => {
+            setCreateError(null)
+            setIsAddDialogOpen(true)
+          }}
+        >
           <Plus className="mr-2 h-4 w-4" />
           Додати знижку
         </Button>
@@ -304,12 +317,23 @@ export default function DiscountsPage() {
         </Table>
       </div>
 
-      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+      <Dialog
+        open={isAddDialogOpen}
+        onOpenChange={(open) => {
+          setIsAddDialogOpen(open)
+          if (!open) setCreateError(null)
+        }}
+      >
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Додати нову знижку</DialogTitle>
             <DialogDescription>Створіть нову знижку для послуг або пристроїв</DialogDescription>
           </DialogHeader>
+          {createError && (
+            <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {createError}
+            </div>
+          )}
           <DiscountForm
             onSubmit={handleAddDiscount}
             onCancel={() => setIsAddDialogOpen(false)}
