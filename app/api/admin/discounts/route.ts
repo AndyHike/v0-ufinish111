@@ -22,6 +22,7 @@ type NormalizedDiscountPayload = {
   maxUses: number | null
   maxUsesPerUser: number | null
   userId: string | null
+  requiresCode: boolean
 }
 
 type DiscountPayloadValidation =
@@ -134,6 +135,7 @@ function normalizeDiscountPayload(body: any): DiscountPayloadValidation {
       maxUses: nullablePositiveInteger(body.maxUses),
       maxUsesPerUser: nullablePositiveInteger(body.maxUsesPerUser),
       userId: body.userId === "global" ? null : nullableTrimmedString(body.userId),
+      requiresCode: Boolean(body.requiresCode),
     },
   }
 }
@@ -185,6 +187,7 @@ export async function POST(request: Request) {
       maxUses: payload.maxUses ?? undefined,
       maxUsesPerUser: payload.maxUsesPerUser ?? undefined,
       userId: payload.userId ?? undefined,
+      requiresCode: payload.requiresCode,
     })
 
     return NextResponse.json(discount)

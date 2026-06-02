@@ -46,6 +46,7 @@ test("discount updates persist every editable field from the form", async () => 
     ["maxUses", "max_uses"],
     ["maxUsesPerUser", "max_uses_per_user"],
     ["userId", "user_id"],
+    ["requiresCode", "requires_code"],
   ]) {
     assert.match(updateFunction, new RegExp(`updates\\.${field} !== undefined[\\s\\S]*updateData\\.${column}`))
   }
@@ -144,7 +145,6 @@ test("authenticated discount requests bypass client cache so personal discounts 
     "../app/[locale]/models/[slug]/model-page-client.tsx",
     "../app/[locale]/services/[slug]/service-page-client.tsx",
     "../app/[locale]/book/standalone-booking-client.tsx",
-    "../app/[locale]/book/confirm/booking-confirm-client.tsx",
   ]
 
   for (const file of files) {
@@ -163,5 +163,74 @@ test("booking discount requests use services.id rather than model_services.id", 
   assert.match(standalone, /serviceId: s\.service_id \|\| s\.id/)
   assert.match(standalone, /const discountServiceId = service\.service_id \|\| service\.id/)
   assert.match(confirm, /service_id: foundService\.service_id/)
-  assert.match(confirm, /const discountServiceId = fetchedService\.service_id \|\| fetchedService\.id/)
+  assert.match(confirm, /serviceId: foundService\.service_id \|\| foundService\.id/)
+})
+
+test("discount schema and admin flow support code-only discounts", async () => {
+  const types = await read("../lib/discounts/types.ts")
+  const queries = await read("../lib/discounts/queries.ts")
+  const form = await read("../components/admin/discount-form.tsx")
+  const route = await read("../app/api/admin/discounts/route.ts")
+  const addCodeOnlyMigration = await read("../scripts/add_requires_code_to_discounts.sql")
+  const createV2 = await read("../scripts/create_discounts_table_v2.sql")
+
+  assert.match(types, /requiresCode\??:\s*boolean/)
+  assert.match(queries, /requiresCode:\s*row\.requires_code/)
+  assert.match(queries, /requires_code:\s*discount\.requiresCode/)
+  assert.match(queries, /updateData\.requires_code\s*=\s*updates\.requiresCode/)
+  assert.match(form, /requiresCode:\s*initialData\?\.requiresCode/)
+  assert.match(form, /id=["']requiresCode["']/)
+  assert.match(form, /requiresCode:\s*formData\.requiresCode/)
+  assert.match(route, /requiresCode:\s*Boolean\(body\.requiresCode\)/)
+  assert.match(addCodeOnlyMigration, /ADD COLUMN IF NOT EXISTS requires_code BOOLEAN NOT NULL DEFAULT false/)
+  assert.match(createV2, /requires_code BOOLEAN NOT NULL DEFAULT false/)
+})
+
+test("automatic discount pricing excludes code-only discounts while keeping personal discounts eligible", async () => {
+  const pricing = await read("../lib/discounts/get-applicable-discounts.ts")
+
+  assert.match(pricing, /requires_code/)
+  assert.match(pricing, /if \(discount\.requires_code\) \{/)
+  assert.match(pricing, /candidatePrice < bestServiceDiscountedPrice/)
+  assert.match(pricing, /discount\.user_id && discount\.user_id !== userId/)
+})
+
+test("booking discount resolver calculates best final price and records discount usage", async () => {
+  const resolver = await read("../lib/discounts/booking-discounts.ts")
+
+  assert.match(resolver, /export async function resolveBookingDiscount/)
+  assert.match(resolver, /export async function recordDiscountUsage/)
+  assert.match(resolver, /type:\s*["']none["']/)
+  assert.match(resolver, /type:\s*["']personal["']/)
+  assert.match(resolver, /type:\s*["']code["']/)
+  assert.match(resolver, /bestCandidate/)
+  assert.match(resolver, /discount_usages/)
+  assert.match(resolver, /current_uses/)
+  assert.match(resolver, /max_uses_per_user/)
+})
+
+test("booking API validates discounts server-side instead of trusting client price", async () => {
+  const route = await read("../app/api/book-service/route.ts")
+
+  assert.match(route, /resolveBookingDiscount/)
+  assert.match(route, /recordDiscountUsage/)
+  assert.match(route, /serviceId,\s*modelId,\s*originalPrice,\s*discountChoice/)
+  assert.match(route, /pricing\.formattedFinalPrice/)
+  assert.doesNotMatch(route, /priceInfo = price \?/)
+})
+
+test("booking confirmation exposes optional discount choice and sends it to booking API", async () => {
+  const component = await read("../app/[locale]/book/booking-confirmation.tsx")
+  const confirm = await read("../app/[locale]/book/confirm/booking-confirm-client.tsx")
+
+  assert.match(component, /getBookingDiscountPreview/)
+  assert.match(component, /discountChoice/)
+  assert.match(component, /discountCode/)
+  assert.match(component, /type:\s*["']none["']/)
+  assert.match(component, /type:\s*["']personal["']/)
+  assert.match(component, /type:\s*["']code["']/)
+  assert.match(component, /serviceId:\s*localizedService\?\.serviceId/)
+  assert.match(component, /originalPrice:\s*localizedService\?\.originalPrice/)
+  assert.match(confirm, /originalPrice:\s*foundService\.price/)
+  assert.doesNotMatch(confirm, /fetchedService\.price = discount\.discountedPrice/)
 })

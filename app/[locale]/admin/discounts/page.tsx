@@ -255,15 +255,22 @@ export default function DiscountsPage() {
                   <TableCell>{getDiscountLabel(discount)}</TableCell>
                   <TableCell>{getScopeLabel(discount)}</TableCell>
                   <TableCell>
-                    {discount.userId ? (
-                      <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">
-                        Персональна
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-xs bg-gray-50 text-gray-700">
-                        Глобальна
-                      </Badge>
-                    )}
+                    <div className="flex flex-wrap gap-1">
+                      {discount.userId ? (
+                        <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">
+                          Персональна
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-xs bg-gray-50 text-gray-700">
+                          Глобальна
+                        </Badge>
+                      )}
+                      {discount.requiresCode && (
+                        <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200">
+                          За кодом
+                        </Badge>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <Badge variant={discount.isActive ? "default" : "secondary"}>

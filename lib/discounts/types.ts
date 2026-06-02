@@ -20,6 +20,7 @@ export interface Discount {
   currentUses: number
   maxUsesPerUser?: number
   userId?: string
+  requiresCode?: boolean
   createdAt: Date
   updatedAt: Date
 }

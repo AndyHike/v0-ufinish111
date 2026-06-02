@@ -1,68 +1,99 @@
 import { createClient } from "@/utils/supabase/client"
-import type { Discount, DiscountCalculation } from "./types"
+import type { Discount } from "./types"
 import { calculateDiscount, isDiscountActive } from "./utils"
 
-/**
- * Отримує всі застосовні знижки для послуги на певній моделі
- */
-export async function getApplicableDiscounts(serviceId: string, modelId: string, userId?: string): Promise<any> {
+type ModelContext = {
+  id: string
+  brand_id: string | null
+  series_id: string | null
+  name?: string | null
+}
+
+function normalizeServiceIds(serviceIds: unknown): string[] {
+  if (Array.isArray(serviceIds)) return serviceIds.map(String)
+  if (typeof serviceIds === "string") return serviceIds.replace(/[{}]/g, "").split(",").filter(Boolean)
+  return []
+}
+
+function mapDiscountRow(row: any): Discount {
+  return {
+    id: row.id,
+    name: row.name,
+    code: row.code,
+    description: row.description,
+    discountType: row.discount_type,
+    discountValue: Number(row.discount_value),
+    serviceIds: normalizeServiceIds(row.service_ids),
+    scopeType: row.scope_type,
+    brandId: row.brand_id,
+    seriesId: row.series_id,
+    modelId: row.model_id,
+    isActive: row.is_active,
+    startsAt: row.starts_at,
+    expiresAt: row.expires_at,
+    maxUses: row.max_uses,
+    currentUses: row.current_uses || 0,
+    maxUsesPerUser: row.max_uses_per_user,
+    userId: row.user_id,
+    requiresCode: row.requires_code,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
+}
+
+function discountMatchesContext(discount: any, model: ModelContext, serviceId: string, userId?: string) {
+  if (!isDiscountActive(discount)) {
+    return false
+  }
+
+  if (discount.requires_code) {
+    return false
+  }
+
+  if (discount.user_id && discount.user_id !== userId) {
+    return false
+  }
+
+  const serviceIds = normalizeServiceIds(discount.service_ids)
+  if (serviceIds.length === 0 || !serviceIds.includes(serviceId)) {
+    return false
+  }
+
+  if (discount.scope_type === "all_models") return true
+  if (discount.scope_type === "brand" && discount.brand_id === model.brand_id) return true
+  if (discount.scope_type === "series" && discount.series_id === model.series_id) return true
+  if (discount.scope_type === "model" && discount.model_id === model.id) return true
+
+  return false
+}
+
+async function getApplicableDiscountRows(serviceId: string, modelId: string, userId?: string): Promise<any[]> {
   const supabase = createClient()
 
-  const { data: model } = await supabase
-    .from("models")
-    .select("id, brand_id, series_id, name")
-    .eq("id", modelId)
-    .single()
+  const { data: model } = await supabase.from("models").select("id, brand_id, series_id, name").eq("id", modelId).single()
 
   if (!model) {
-    return null
+    return []
   }
 
   const { data: discounts, error } = await supabase.from("discounts").select("*").eq("is_active", true)
 
   if (error || !discounts || discounts.length === 0) {
-    return null
+    return []
   }
 
-  const applicableDiscounts = discounts.filter((discount) => {
-    const isActive = isDiscountActive(discount as any)
-    if (!isActive) {
-      return false
-    }
-
-    // Checking personal discount restriction
-    if (discount.user_id && discount.user_id !== userId) {
-      return false
-    }
-
-    let serviceIds: string[] = []
-    if (Array.isArray(discount.service_ids)) {
-      serviceIds = discount.service_ids
-    } else if (typeof discount.service_ids === "string") {
-      serviceIds = discount.service_ids.replace(/[{}]/g, "").split(",")
-    }
-
-    if (serviceIds.length === 0 || !serviceIds.includes(serviceId)) {
-      return false
-    }
-
-    if (discount.scope_type === "all_models") return true
-    if (discount.scope_type === "brand" && discount.brand_id === model.brand_id) return true
-    if (discount.scope_type === "series" && discount.series_id === model.series_id) return true
-    if (discount.scope_type === "model" && discount.model_id === modelId) return true
-
-    return false
-  })
-
-  if (applicableDiscounts.length === 0) return null
-
-  return applicableDiscounts[0] as any
+  return discounts.filter((discount) => discountMatchesContext(discount, model, serviceId, userId))
 }
 
 /**
- * Розраховує ціну зі знижкою для послуги
- * Враховує як знижку сервісу, так і знижку ролі користувача (застосовується більша)
+ * Returns the first active, non-code-only discount for legacy callers.
+ * Price-facing code should use getPriceWithDiscount, which selects the best final price.
  */
+export async function getApplicableDiscounts(serviceId: string, modelId: string, userId?: string): Promise<any> {
+  const applicableDiscounts = await getApplicableDiscountRows(serviceId, modelId, userId)
+  return applicableDiscounts[0] || null
+}
+
 export async function getPriceWithDiscount(
   serviceId: string,
   modelId: string,
@@ -77,16 +108,27 @@ export async function getPriceWithDiscount(
   discountSource?: "service" | "role"
 }> {
   const supabase = createClient()
-  const discount = await getApplicableDiscounts(serviceId, modelId, userId)
+  const applicableDiscounts = await getApplicableDiscountRows(serviceId, modelId, userId)
 
-  // Get role-based discount if userId is provided
+  let bestServiceDiscount: Discount | null = null
+  let bestServiceDiscountedPrice = originalPrice
+  let bestServiceDiscountPercentage = 0
+
+  for (const discountRow of applicableDiscounts) {
+    const candidate = mapDiscountRow(discountRow)
+    const calculation = calculateDiscount(originalPrice, candidate)
+    const candidatePrice = calculation.roundedFinalPrice
+
+    if (candidatePrice < bestServiceDiscountedPrice) {
+      bestServiceDiscount = candidate
+      bestServiceDiscountedPrice = candidatePrice
+      bestServiceDiscountPercentage = calculation.actualDiscountPercentage
+    }
+  }
+
   let roleDiscountPercentage = 0
   if (userId) {
-    const { data: userData } = await supabase
-      .from("users")
-      .select("role_id")
-      .eq("id", userId)
-      .single()
+    const { data: userData } = await supabase.from("users").select("role_id").eq("id", userId).single()
 
     if (userData?.role_id) {
       const { data: roleData } = await supabase
@@ -101,43 +143,7 @@ export async function getPriceWithDiscount(
     }
   }
 
-  // Calculate service-level discount
-  let serviceDiscountPercentage = 0
-  let serviceDiscountedPrice = originalPrice
-  let discountForCalc: Discount | null = null
-
-  if (discount) {
-    discountForCalc = {
-      id: discount.id,
-      name: discount.name,
-      code: discount.code,
-      description: discount.description,
-      discountType: discount.discount_type,
-      discountValue: discount.discount_value,
-      serviceIds: discount.service_ids,
-      scopeType: discount.scope_type,
-      brandId: discount.brand_id,
-      seriesId: discount.series_id,
-      modelId: discount.model_id,
-      isActive: discount.is_active,
-      startsAt: discount.starts_at,
-      expiresAt: discount.expires_at,
-      maxUses: discount.max_uses,
-      currentUses: discount.current_uses,
-      maxUsesPerUser: discount.max_uses_per_user,
-      createdAt: discount.created_at,
-      updatedAt: discount.updated_at,
-    }
-
-    const calculation = calculateDiscount(originalPrice, discountForCalc)
-    serviceDiscountPercentage = calculation.actualDiscountPercentage
-    serviceDiscountedPrice = calculation.roundedFinalPrice
-  }
-
-  // Apply the better discount (higher percentage = better for customer)
-  if (roleDiscountPercentage > 0 && roleDiscountPercentage > serviceDiscountPercentage) {
-    // We create a mock Discount object so `ServicePriceDisplay` and `calculateDiscount`
-    // can process the role discount identically to a service discount (including badges and proper ...90 Kč rounding)
+  if (roleDiscountPercentage > 0) {
     const roleDiscountObj: Discount = {
       id: "role-based",
       name: "Спеціальна знижка",
@@ -150,7 +156,8 @@ export async function getPriceWithDiscount(
       brandId: null,
       seriesId: null,
       modelId: null,
-      userId: userId,
+      userId,
+      requiresCode: false,
       isActive: true,
       maxUses: null,
       currentUses: 0,
@@ -161,29 +168,29 @@ export async function getPriceWithDiscount(
 
     const roleCalculation = calculateDiscount(originalPrice, roleDiscountObj)
 
-    return {
-      originalPrice,
-      discountedPrice: roleCalculation.roundedFinalPrice,
-      hasDiscount: true,
-      actualDiscountPercentage: roleCalculation.actualDiscountPercentage,
-      discount: roleDiscountObj,
-      discountSource: "role",
+    if (roleCalculation.roundedFinalPrice < bestServiceDiscountedPrice) {
+      return {
+        originalPrice,
+        discountedPrice: roleCalculation.roundedFinalPrice,
+        hasDiscount: true,
+        actualDiscountPercentage: roleCalculation.actualDiscountPercentage,
+        discount: roleDiscountObj,
+        discountSource: "role",
+      }
     }
   }
 
-  if (discountForCalc) {
-    // Service discount is better (or equal)
+  if (bestServiceDiscount) {
     return {
       originalPrice,
-      discountedPrice: serviceDiscountedPrice,
+      discountedPrice: bestServiceDiscountedPrice,
       hasDiscount: true,
-      discount: discountForCalc,
-      actualDiscountPercentage: serviceDiscountPercentage,
+      discount: bestServiceDiscount,
+      actualDiscountPercentage: bestServiceDiscountPercentage,
       discountSource: "service",
     }
   }
 
-  // No discounts at all
   return {
     originalPrice,
     discountedPrice: originalPrice,

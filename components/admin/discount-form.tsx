@@ -75,6 +75,7 @@ export function DiscountForm({ initialData, onSubmit, onCancel, submitting }: Di
     maxUses: initialData?.maxUses || "",
     maxUsesPerUser: initialData?.maxUsesPerUser || "",
     userId: initialData?.userId || "global",
+    requiresCode: initialData?.requiresCode ?? false,
   })
 
   const [brands, setBrands] = useState<Brand[]>([])
@@ -269,6 +270,7 @@ export function DiscountForm({ initialData, onSubmit, onCancel, submitting }: Di
         startsAt: formData.startsAt || null,
         expiresAt: formData.expiresAt || null,
         userId: formData.userId === "global" ? null : formData.userId,
+        requiresCode: formData.requiresCode,
       })
     } finally {
       setLoading(false)
@@ -317,6 +319,22 @@ export function DiscountForm({ initialData, onSubmit, onCancel, submitting }: Di
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             placeholder="Опис знижки..."
           />
+        </div>
+
+        <div className="col-span-2 rounded-md border border-dashed border-gray-300 p-3">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <Label htmlFor="requiresCode">Тільки за кодом</Label>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Не показувати автоматично. Клієнт зможе застосувати цю знижку тільки після введення коду при бронюванні.
+              </p>
+            </div>
+            <Switch
+              id="requiresCode"
+              checked={formData.requiresCode}
+              onCheckedChange={(checked) => setFormData({ ...formData, requiresCode: checked })}
+            />
+          </div>
         </div>
 
         <div className="col-span-2 border rounded-lg p-4 bg-blue-50">

@@ -5,18 +5,24 @@ import Link from "next/link"
 import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { ArrowLeft, Loader2, Calendar, Clock, X, Clock3, Shield } from "lucide-react"
+import { ArrowLeft, Loader2, Calendar, Clock, X, Clock3, Shield, BadgePercent, Ticket } from "lucide-react"
 import { formatCurrency } from "@/lib/format-currency"
 import BookingSuccess from "./booking-success"
+import { getBookingDiscountPreview } from "@/app/actions/booking-discounts"
+import type { BookingDiscountChoice, BookingDiscountSummary } from "@/lib/discounts/booking-discounts"
 
 interface BookingConfirmationProps {
   locale: string
   brand?: { name: string; slug: string }
   model?: { name: string; slug: string; id?: string }
   service?: {
+    id?: string
+    service_id?: string
+    serviceId?: string
     name: string
     slug: string
     price: number | null
+    originalPrice?: number | null
     warranty_months?: number
     duration_hours?: number
     warranty_period?: string
@@ -57,6 +63,11 @@ export default function BookingConfirmation({
   const [selectedTime, setSelectedTime] = useState<string>("")
   const [localizedService, setLocalizedService] = useState(service)
   const [bookingSuccess, setBookingSuccess] = useState(false)
+  const [discountChoice, setDiscountChoice] = useState<BookingDiscountChoice>({ type: "none" })
+  const [discountCode, setDiscountCode] = useState("")
+  const [discountPreview, setDiscountPreview] = useState<BookingDiscountSummary | null>(null)
+  const [discountLoading, setDiscountLoading] = useState(false)
+  const [autoSelectedPersonalDiscount, setAutoSelectedPersonalDiscount] = useState(false)
 
   // Fetch user data to auto-fill form for logged-in users
   useEffect(() => {
@@ -118,6 +129,66 @@ export default function BookingConfirmation({
     }
   }, [locale, service?.slug, model?.id, service])
 
+  useEffect(() => {
+    const serviceId = localizedService?.serviceId || localizedService?.service_id || localizedService?.id
+    const modelId = model?.id
+    const originalPrice = localizedService?.originalPrice ?? localizedService?.price
+
+    if (!serviceId || !modelId || !originalPrice) {
+      setDiscountPreview(null)
+      return
+    }
+
+    let cancelled = false
+
+    const fetchDiscountPreview = async () => {
+      setDiscountLoading(true)
+      try {
+        const preview = await getBookingDiscountPreview({
+          serviceId,
+          modelId,
+          originalPrice,
+          discountChoice,
+        })
+
+        if (cancelled) return
+
+        setDiscountPreview(preview)
+
+        const bestPersonalDiscount = preview.personalDiscounts[0]
+        if (
+          !autoSelectedPersonalDiscount &&
+          discountChoice.type === "none" &&
+          bestPersonalDiscount &&
+          bestPersonalDiscount.discountedPrice < preview.basePrice
+        ) {
+          setAutoSelectedPersonalDiscount(true)
+          setDiscountChoice({ type: "personal", discountId: bestPersonalDiscount.id })
+        }
+      } catch (error) {
+        console.error("Error fetching booking discount preview:", error)
+        if (!cancelled) setDiscountPreview(null)
+      } finally {
+        if (!cancelled) setDiscountLoading(false)
+      }
+    }
+
+    fetchDiscountPreview()
+
+    return () => {
+      cancelled = true
+    }
+  }, [
+    localizedService?.id,
+    localizedService?.serviceId,
+    localizedService?.service_id,
+    localizedService?.originalPrice,
+    localizedService?.price,
+    model?.id,
+    discountChoice,
+    autoSelectedPersonalDiscount,
+  ])
+
   // Guard clause for missing data
   if (!brand || !model || !service) {
     return (
@@ -168,6 +239,21 @@ export default function BookingConfirmation({
     }))
   }
 
+  const handleUseBaseDiscount = () => {
+    setAutoSelectedPersonalDiscount(true)
+    setDiscountChoice({ type: "none" })
+  }
+
+  const handleUsePersonalDiscount = (discountId: string) => {
+    setAutoSelectedPersonalDiscount(true)
+    setDiscountChoice({ type: "personal", discountId })
+  }
+
+  const handleApplyDiscountCode = () => {
+    setAutoSelectedPersonalDiscount(true)
+    setDiscountChoice({ type: "code", code: discountCode.trim() })
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -194,7 +280,11 @@ export default function BookingConfirmation({
           service: localizedService?.name,
           brand: brand.name,
           model: model.name,
-          price: localizedService?.price ? formatCurrency(localizedService.price) : null,
+          serviceId: localizedService?.serviceId || localizedService?.service_id || localizedService?.id,
+          modelId: model.id,
+          originalPrice: localizedService?.originalPrice ?? localizedService?.price,
+          discountChoice,
+          price: discountPreview?.formattedFinalPrice || (localizedService?.price ? formatCurrency(localizedService.price) : null),
           locale,
         }),
       })
@@ -229,6 +319,11 @@ export default function BookingConfirmation({
   // Format warranty text
   const warrantyText = localizedService?.warranty_months ? `${localizedService.warranty_months} ${t("months")}` : localizedService?.warranty_period || ""
   const durationText = localizedService?.duration_hours ? `${localizedService.duration_hours}h` : ""
+  const originalServicePrice = localizedService?.originalPrice ?? localizedService?.price ?? null
+  const finalServicePrice = discountPreview?.finalPrice ?? localizedService?.price ?? null
+  const hasBookingDiscount =
+    originalServicePrice !== null && finalServicePrice !== null && finalServicePrice < originalServicePrice
+  const selectedPersonalDiscountId = discountChoice.type === "personal" ? discountChoice.discountId : null
 
   return (
     <div className="min-h-screen bg-gray-50 py-6 sm:py-12 px-4">
@@ -259,9 +354,18 @@ export default function BookingConfirmation({
             {/* Price, Duration, Warranty */}
             <div className="flex flex-wrap justify-center items-center gap-4 pt-3 border-t border-gray-200">
               <div className="text-center">
-                <p className="text-2xl sm:text-3xl font-bold text-gray-900">
-                  {localizedService?.price ? formatCurrency(localizedService.price) : "—"}
-                </p>
+                {hasBookingDiscount && originalServicePrice !== null ? (
+                  <div className="space-y-1">
+                    <p className="text-sm text-gray-500 line-through">{formatCurrency(originalServicePrice)}</p>
+                    <p className="text-2xl sm:text-3xl font-bold text-gray-900">
+                      {finalServicePrice !== null ? formatCurrency(finalServicePrice) : "—"}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-2xl sm:text-3xl font-bold text-gray-900">
+                    {finalServicePrice !== null ? formatCurrency(finalServicePrice) : "—"}
+                  </p>
+                )}
               </div>
 
               {durationText && (
@@ -280,6 +384,103 @@ export default function BookingConfirmation({
             </div>
           </div>
         </div>
+
+        {originalServicePrice !== null && (localizedService?.serviceId || localizedService?.service_id || localizedService?.id) && (
+          <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-5 mb-6 sm:mb-8">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <h3 className="flex items-center gap-2 text-base font-semibold text-gray-900">
+                <BadgePercent className="h-5 w-5" />
+                {t("discountTitle") || "Discount"}
+              </h3>
+              {discountLoading && <Loader2 className="h-4 w-4 animate-spin text-gray-500" />}
+            </div>
+
+            <div className="space-y-3">
+              <button
+                type="button"
+                onClick={handleUseBaseDiscount}
+                className={`w-full rounded-md border px-3 py-3 text-left transition-colors ${
+                  discountChoice.type === "none"
+                    ? "border-gray-900 bg-gray-50"
+                    : "border-gray-200 bg-white hover:border-gray-300"
+                }`}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{t("noOptionalDiscount") || "No optional discount"}</p>
+                    <p className="text-xs text-gray-500">
+                      {discountPreview?.baseDiscount
+                        ? `${t("baseDiscount") || "Base discount"}: ${discountPreview.baseDiscount.name}`
+                        : t("baseDiscount") || "Base price"}
+                    </p>
+                  </div>
+                  <span className="text-sm font-semibold text-gray-900">
+                    {formatCurrency(discountPreview?.basePrice ?? originalServicePrice)}
+                  </span>
+                </div>
+              </button>
+
+              {discountPreview?.personalDiscounts.map((discount) => (
+                <button
+                  key={discount.id}
+                  type="button"
+                  onClick={() => handleUsePersonalDiscount(discount.id)}
+                  className={`w-full rounded-md border px-3 py-3 text-left transition-colors ${
+                    selectedPersonalDiscountId === discount.id
+                      ? "border-gray-900 bg-gray-50"
+                      : "border-gray-200 bg-white hover:border-gray-300"
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">{discount.name}</p>
+                      <p className="text-xs text-gray-500">
+                        {discount.remainingUses === null
+                          ? t("unlimitedUses") || "Unlimited uses"
+                          : `${t("usesLeft") || "Uses left"}: ${discount.remainingUses}`}
+                      </p>
+                    </div>
+                    <span className="text-sm font-semibold text-gray-900">{formatCurrency(discount.discountedPrice)}</span>
+                  </div>
+                </button>
+              ))}
+
+              <div className="rounded-md border border-gray-200 p-3">
+                <label className="mb-2 flex items-center gap-2 text-sm font-medium text-gray-900" htmlFor="discountCode">
+                  <Ticket className="h-4 w-4" />
+                  {t("discountCode") || "Discount code"}
+                </label>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <Input
+                    id="discountCode"
+                    value={discountCode}
+                    onChange={(event) => setDiscountCode(event.target.value.toUpperCase())}
+                    placeholder="BATTERY20"
+                    disabled={submitting}
+                    className="flex-1"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleApplyDiscountCode}
+                    disabled={submitting || !discountCode.trim()}
+                    className="sm:w-auto"
+                  >
+                    {t("applyCode") || "Apply"}
+                  </Button>
+                </div>
+                {discountChoice.type === "code" && discountPreview?.codeDiscount && (
+                  <p className="mt-2 text-xs font-medium text-emerald-700">
+                    {t("codeApplied") || "Code applied"}: {discountPreview.codeDiscount.name}
+                  </p>
+                )}
+                {discountChoice.type === "code" && discountPreview?.selectionError && (
+                  <p className="mt-2 text-xs font-medium text-red-600">{discountPreview.selectionError}</p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-6">

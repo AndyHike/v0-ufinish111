@@ -21,6 +21,7 @@ function mapDiscountRow(row: any): Discount {
     currentUses: row.current_uses,
     maxUsesPerUser: row.max_uses_per_user,
     userId: row.user_id,
+    requiresCode: row.requires_code,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
@@ -159,6 +160,7 @@ export async function createDiscount(
       max_uses: discount.maxUses || null,
       max_uses_per_user: discount.maxUsesPerUser || null,
       user_id: discount.userId || null,
+      requires_code: discount.requiresCode || false,
     })
     .select()
     .single()
@@ -194,6 +196,7 @@ export async function updateDiscount(id: string, updates: Partial<Discount>): Pr
   if (updates.maxUses !== undefined) updateData.max_uses = updates.maxUses || null
   if (updates.maxUsesPerUser !== undefined) updateData.max_uses_per_user = updates.maxUsesPerUser || null
   if (updates.userId !== undefined) updateData.user_id = updates.userId || null
+  if (updates.requiresCode !== undefined) updateData.requires_code = updates.requiresCode
 
   const { data, error } = await supabase.from("discounts").update(updateData).eq("id", id).select().single()
 

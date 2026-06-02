@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS discounts (
   
   -- Status and validity
   is_active BOOLEAN DEFAULT true,
+  requires_code BOOLEAN NOT NULL DEFAULT false,
   starts_at TIMESTAMP WITH TIME ZONE,
   expires_at TIMESTAMP WITH TIME ZONE,
   
@@ -61,6 +62,7 @@ CREATE TABLE IF NOT EXISTS discount_usages (
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_discounts_code ON discounts(code);
 CREATE INDEX IF NOT EXISTS idx_discounts_active ON discounts(is_active) WHERE is_active = true;
+CREATE INDEX IF NOT EXISTS idx_discounts_requires_code ON discounts(requires_code);
 CREATE INDEX IF NOT EXISTS idx_discounts_expires ON discounts(expires_at) WHERE expires_at IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_discounts_service ON discounts(service_id) WHERE service_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_discounts_brand ON discounts(brand_id) WHERE brand_id IS NOT NULL;

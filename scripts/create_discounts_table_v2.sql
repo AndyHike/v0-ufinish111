@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS discounts (
   
   -- Status and validity
   is_active BOOLEAN DEFAULT true,
+  requires_code BOOLEAN NOT NULL DEFAULT false,
   starts_at TIMESTAMP WITH TIME ZONE,
   expires_at TIMESTAMP WITH TIME ZONE,
   
@@ -70,6 +71,7 @@ CREATE TABLE IF NOT EXISTS discount_usages (
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_discounts_code ON discounts(code);
 CREATE INDEX IF NOT EXISTS idx_discounts_active ON discounts(is_active) WHERE is_active = true;
+CREATE INDEX IF NOT EXISTS idx_discounts_requires_code ON discounts(requires_code);
 CREATE INDEX IF NOT EXISTS idx_discounts_expires ON discounts(expires_at) WHERE expires_at IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_discounts_service_ids ON discounts USING GIN(service_ids);
 CREATE INDEX IF NOT EXISTS idx_discounts_brand ON discounts(brand_id) WHERE brand_id IS NOT NULL;
@@ -101,3 +103,4 @@ COMMENT ON COLUMN discounts.service_ids IS 'Array of service IDs this discount a
 COMMENT ON COLUMN discounts.scope_type IS 'Scope: brand (all models of brand), series (all models in series), model (specific model), all_models';
 COMMENT ON COLUMN discounts.discount_type IS 'Type: percentage (e.g., 15%) or fixed (e.g., 500 CZK)';
 COMMENT ON COLUMN discounts.discount_value IS 'Discount amount - either percentage (1-100) or fixed amount';
+COMMENT ON COLUMN discounts.requires_code IS 'When true, the discount only applies when its code is entered during booking';

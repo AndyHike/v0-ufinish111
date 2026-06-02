@@ -1,11 +1,46 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { sendNewContactMessageNotification, sendEmail } from "@/lib/email/send-email"
 import { sendTelegramNotification } from "@/lib/telegram/send-telegram"
+import { getSession } from "@/lib/auth/session"
+import {
+  type BookingDiscountChoice,
+  recordDiscountUsage,
+  resolveBookingDiscount,
+} from "@/lib/discounts/booking-discounts"
+
+function normalizeDiscountChoice(value: any): BookingDiscountChoice {
+  if (value?.type === "personal" && typeof value.discountId === "string") {
+    return { type: "personal", discountId: value.discountId }
+  }
+
+  if (value?.type === "code" && typeof value.code === "string") {
+    return { type: "code", code: value.code }
+  }
+
+  return { type: "none" }
+}
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { firstName, lastName, phone, email, date, time, comment, service, brand, model, price, locale } = body
+    const {
+      firstName,
+      lastName,
+      phone,
+      email,
+      date,
+      time,
+      comment,
+      service,
+      brand,
+      model,
+      price,
+      locale,
+      serviceId,
+      modelId,
+      originalPrice,
+      discountChoice,
+    } = body
 
     // Валідація обов'язкових полів
     if (!firstName || !lastName || !phone || !email || !date || !time) {
@@ -13,6 +48,32 @@ export async function POST(request: NextRequest) {
     }
 
     const fullName = `${firstName} ${lastName}`
+    const session = await getSession()
+    const numericOriginalPrice = Number(originalPrice)
+    const canResolveDiscount =
+      Boolean(serviceId) && Boolean(modelId) && Number.isFinite(numericOriginalPrice) && numericOriginalPrice > 0
+    const pricing = canResolveDiscount
+      ? await resolveBookingDiscount({
+          serviceId,
+          modelId,
+          originalPrice: numericOriginalPrice,
+          userId: session?.user?.id,
+          discountChoice: normalizeDiscountChoice(discountChoice),
+        })
+      : null
+
+    if (pricing?.selectionError && discountChoice?.type !== "none") {
+      return NextResponse.json({ error: pricing.selectionError }, { status: 400 })
+    }
+
+    if (pricing?.usageDiscountId) {
+      await recordDiscountUsage({
+        discountId: pricing.usageDiscountId,
+        userId: session?.user?.id,
+        originalPrice: pricing.originalPrice,
+        finalPrice: pricing.finalPrice,
+      })
+    }
 
     // Форматуємо дату для відображення
     const formattedDate = new Date(date).toLocaleDateString(locale, {
@@ -24,12 +85,17 @@ export async function POST(request: NextRequest) {
 
     // Формуємо повідомлення для адміна
     const serviceInfo = service ? `${service}${brand && model ? ` (${brand} ${model})` : ""}` : "Не вказано"
-    const priceInfo = price ? ` - ${price}` : ""
+    const resolvedDisplayPrice = pricing ? pricing.formattedFinalPrice : null
+    const displayPrice = resolvedDisplayPrice || price || null
+    const priceInfo = displayPrice ? ` - ${displayPrice}` : ""
+    const discountInfo = pricing?.appliedDiscount
+      ? `\nЗнижка: ${pricing.appliedDiscount.name} (${pricing.appliedDiscount.code})`
+      : ""
 
     const adminMessage = `
 НОВЕ БРОНЮВАННЯ ПОСЛУГИ
 
-Послуга: ${serviceInfo}${priceInfo}
+Послуга: ${serviceInfo}${priceInfo}${discountInfo}
 Дата: ${formattedDate}
 Час: ${time}
 
@@ -65,7 +131,7 @@ ${comment ? `Додаткова інформація:\n${comment}` : ""}
         time,
         phone,
         comment,
-        price: price || "Ціна за запитом",
+        price: displayPrice || "Ціна за запитом",
       },
       locale,
     )
@@ -83,6 +149,7 @@ ${comment ? `Додаткова інформація:\n${comment}` : ""}
       `📅 <b>Нове бронювання послуги</b>`,
       ``,
       `<b>Послуга:</b> ${serviceInfo}${priceInfo}`,
+      pricing?.appliedDiscount ? `<b>Знижка:</b> ${pricing.appliedDiscount.name} (${pricing.appliedDiscount.code})` : null,
       `<b>Дата:</b> ${formattedDate}`,
       `<b>Час:</b> ${time}`,
       ``,

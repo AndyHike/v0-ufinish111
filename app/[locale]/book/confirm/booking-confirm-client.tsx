@@ -5,8 +5,6 @@ import { useSearchParams, useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { Loader2 } from "lucide-react"
 import BookingConfirmation from "../booking-confirmation"
-import { getDiscountsBatch } from "@/app/actions/discounts-api"
-import { discountCache } from "@/lib/discounts/client-cache"
 
 export default function BookingConfirmClient({ locale }: { locale: string }) {
     const searchParams = useSearchParams()
@@ -21,6 +19,8 @@ export default function BookingConfirmClient({ locale }: { locale: string }) {
     const [service, setService] = useState<{
         id: string
         service_id?: string
+        serviceId?: string
+        originalPrice?: number | null
         name: string
         slug: string
         price: number | null
@@ -28,8 +28,6 @@ export default function BookingConfirmClient({ locale }: { locale: string }) {
         duration_hours?: number
         warranty_period?: string
     } | null>(null)
-    const hasSession =
-        typeof document !== "undefined" && (document.cookie.includes("sb-") || document.cookie.includes("session"))
 
     useEffect(() => {
         const serviceSlug = searchParams.get("service_slug")
@@ -89,38 +87,14 @@ export default function BookingConfirmClient({ locale }: { locale: string }) {
                 const fetchedService = {
                     id: foundService.id,
                     service_id: foundService.service_id,
+                    serviceId: foundService.service_id || foundService.id,
+                    originalPrice: foundService.price,
                     slug: foundService.services?.slug || "",
                     name: foundService.services?.name || foundService.name || "Unknown Service",
                     price: foundService.price,
                     warranty_months: urlWarrantyMonths ? parseInt(urlWarrantyMonths) : foundService.warranty_months,
                     duration_hours: urlDurationHours ? parseInt(urlDurationHours) : foundService.duration_hours,
                     warranty_period: foundService.warranty_period,
-                }
-
-                // Apply discount check right here so BookingConfirmation receives the final price
-                if (fetchedService.price !== null) {
-                    const discountServiceId = fetchedService.service_id || fetchedService.id
-                    const discountRequests = [{
-                        serviceId: discountServiceId,
-                        modelId: fetchedModel.id,
-                        originalPrice: fetchedService.price
-                    }]
-
-                    let liveDiscounts = null
-                    if (!hasSession) {
-                        liveDiscounts = discountCache.get(fetchedModel.id, [discountServiceId])
-                    }
-                    if (!liveDiscounts) {
-                        liveDiscounts = await getDiscountsBatch(discountRequests)
-                        if (!hasSession) {
-                            discountCache.set(fetchedModel.id, [discountServiceId], liveDiscounts)
-                        }
-                    }
-
-                    const discount = liveDiscounts[discountServiceId]
-                    if (discount && discount.discountedPrice !== null) {
-                        fetchedService.price = discount.discountedPrice // Overwrite the final price the booking uses
-                    }
                 }
 
                 setService(fetchedService)
