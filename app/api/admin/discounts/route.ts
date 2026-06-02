@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { getAllDiscounts, createDiscount } from "@/lib/discounts/queries"
 import { getSession } from "@/lib/auth/session"
+import { createClient } from "@/lib/supabase"
 
 export const dynamic = "force-dynamic"
 
@@ -51,6 +52,24 @@ function normalizeDate(value: unknown): string | null {
 
 function isDuplicateDiscountCodeError(details: string) {
   return details.includes("discounts_code_key") || details.toLowerCase().includes("duplicate key")
+}
+
+async function validatePersonalDiscountUser(userId: string | null): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (!userId) return { ok: true }
+
+  const supabase = createClient()
+  const { data, error } = await supabase.from("users").select("id").eq("id", userId).maybeSingle()
+
+  if (error) {
+    console.error("Error validating personal discount user:", error)
+    return { ok: false, error: "Failed to validate selected user" }
+  }
+
+  if (!data) {
+    return { ok: false, error: "Selected user does not exist" }
+  }
+
+  return { ok: true }
 }
 
 function normalizeDiscountPayload(body: any): DiscountPayloadValidation {
@@ -149,6 +168,12 @@ export async function POST(request: Request) {
     }
 
     const payload = validation.data
+    const userValidation = await validatePersonalDiscountUser(payload.userId)
+
+    if (!userValidation.ok) {
+      return NextResponse.json({ error: userValidation.error }, { status: 400 })
+    }
+
     const discount = await createDiscount({
       ...payload,
       description: payload.description ?? undefined,

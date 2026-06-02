@@ -38,6 +38,7 @@ CREATE TABLE IF NOT EXISTS discounts (
   max_uses INTEGER,
   current_uses INTEGER DEFAULT 0,
   max_uses_per_user INTEGER,
+  user_id UUID REFERENCES public.users(id) ON DELETE SET NULL,
   
   -- Timestamps
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -74,6 +75,7 @@ CREATE INDEX IF NOT EXISTS idx_discounts_service_ids ON discounts USING GIN(serv
 CREATE INDEX IF NOT EXISTS idx_discounts_brand ON discounts(brand_id) WHERE brand_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_discounts_series ON discounts(series_id) WHERE series_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_discounts_model ON discounts(model_id) WHERE model_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_discounts_user_id ON discounts(user_id) WHERE user_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_discount_usages_user ON discount_usages(user_id);
 CREATE INDEX IF NOT EXISTS idx_discount_usages_discount ON discount_usages(discount_id);
 

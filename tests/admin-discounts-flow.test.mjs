@@ -80,12 +80,27 @@ test("admin discounts API validates create payload before inserting", async () =
   const route = await read("../app/api/admin/discounts/route.ts")
 
   assert.match(route, /function normalizeDiscountPayload/)
+  assert.match(route, /async function validatePersonalDiscountUser/)
+  assert.match(route, /\.from\(["']users["']\)\.select\(["']id["']\)/)
   assert.match(route, /String\(body\.code \?\? ""\)\.trim\(\)\.toUpperCase\(\)/)
   assert.match(route, /serviceIds\.length === 0/)
   assert.match(route, /return NextResponse\.json\(\{ error: validation\.error \}, \{ status: 400 \}\)/)
+  assert.match(route, /return NextResponse\.json\(\{ error: userValidation\.error \}, \{ status: 400 \}\)/)
   assert.match(route, /isDuplicateDiscountCodeError/)
   assert.match(route, /status: isDuplicateDiscountCodeError\(details\) \? 409 : 500/)
   assert.doesNotMatch(route, /body\.code\.toUpperCase\(\)/)
+})
+
+test("discount personal user foreign key targets public users, not auth users", async () => {
+  const addUserMigration = await read("../scripts/add_user_id_to_discounts.sql")
+  const repairMigration = await read("../scripts/fix_discounts_user_id_fk.sql")
+  const createV2 = await read("../scripts/create_discounts_table_v2.sql")
+
+  assert.match(addUserMigration, /REFERENCES public\.users\(id\) ON DELETE SET NULL/)
+  assert.doesNotMatch(addUserMigration, /REFERENCES auth\.users/)
+  assert.match(repairMigration, /DROP CONSTRAINT IF EXISTS discounts_user_id_fkey/)
+  assert.match(repairMigration, /FOREIGN KEY \(user_id\) REFERENCES public\.users\(id\) ON DELETE SET NULL/)
+  assert.match(createV2, /user_id UUID REFERENCES public\.users\(id\) ON DELETE SET NULL/)
 })
 
 test("admin discounts page shows API error details from failed creates", async () => {
