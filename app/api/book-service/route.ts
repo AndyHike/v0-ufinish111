@@ -57,6 +57,7 @@ export async function POST(request: NextRequest) {
           serviceId,
           modelId,
           originalPrice: numericOriginalPrice,
+          locale,
           userId: session?.user?.id,
           discountChoice: normalizeDiscountChoice(discountChoice),
         })

@@ -10,6 +10,32 @@ export type BookingDiscountChoice =
 
 export type BookingDiscountSource = "automatic" | "personal" | "code" | "role"
 
+export type BookingDiscountSelectionErrorCode =
+  | "model_not_found"
+  | "personal_discount_unavailable"
+  | "discount_code_empty"
+  | "discount_code_not_found"
+  | "discount_code_not_applicable"
+  | "discount_code_wrong_account"
+  | "discount_code_limit_reached"
+
+export type BookingDiscountTarget = {
+  id: string
+  slug: string | null
+  name: string | null
+}
+
+export type BookingDiscountErrorContext = {
+  code: string
+  discountName: string | null
+  scopeType: Discount["scopeType"]
+  appliesToCurrentModel: boolean
+  services: BookingDiscountTarget[]
+  brand: BookingDiscountTarget | null
+  series: BookingDiscountTarget | null
+  model: BookingDiscountTarget | null
+}
+
 export type BookingDiscountView = {
   id: string
   name: string
@@ -34,12 +60,16 @@ export type BookingDiscountSummary = {
   codeDiscount: BookingDiscountView | null
   usageDiscountId: string | null
   selectionError: string | null
+  selectionErrorCode: BookingDiscountSelectionErrorCode | null
+  selectionErrorContext: BookingDiscountErrorContext | null
 }
 
 type ModelContext = {
   id: string
   brand_id: string | null
   series_id: string | null
+  slug?: string | null
+  name?: string | null
 }
 
 type DiscountCandidate = {
@@ -86,6 +116,33 @@ function getDiscountServiceIds(discount: Pick<DiscountRow, "service_ids" | "serv
   return Array.from(new Set(serviceIds))
 }
 
+function pickLocalizedName(translations: unknown, locale?: string) {
+  const rows = Array.isArray(translations) ? translations : []
+  const localized = rows.find((row: any) => row?.locale === locale && row?.name)
+  const fallback = rows.find((row: any) => row?.name)
+  return localized?.name || fallback?.name || null
+}
+
+function toTarget(row: any, locale?: string): BookingDiscountTarget | null {
+  if (!row?.id) return null
+
+  return {
+    id: String(row.id),
+    slug: row.slug || null,
+    name: row.name || pickLocalizedName(row.services_translations, locale) || row.slug || null,
+  }
+}
+
+function discountMatchesModelScope(discount: DiscountRow, model: ModelContext) {
+  if (discount.scope_type === "service") return true
+  if (discount.scope_type === "all_services") return true
+  if (discount.scope_type === "all_models") return true
+  if (discount.scope_type === "brand") return Boolean(discount.brand_id && discount.brand_id === model.brand_id)
+  if (discount.scope_type === "series") return Boolean(discount.series_id && discount.series_id === model.series_id)
+  if (discount.scope_type === "model") return Boolean(discount.model_id && discount.model_id === model.id)
+  return false
+}
+
 function mapDiscountRow(row: DiscountRow): Discount {
   return {
     id: row.id,
@@ -118,14 +175,7 @@ function discountMatchesScope(discount: DiscountRow, model: ModelContext, servic
     return false
   }
 
-  if (discount.scope_type === "service") return serviceIds.includes(serviceId)
-  if (discount.scope_type === "all_services") return true
-  if (discount.scope_type === "all_models") return true
-  if (discount.scope_type === "brand" && discount.brand_id === model.brand_id) return true
-  if (discount.scope_type === "series" && discount.series_id === model.series_id) return true
-  if (discount.scope_type === "model" && discount.model_id === model.id) return true
-
-  return false
+  return discountMatchesModelScope(discount, model)
 }
 
 async function getUserUsageCount(discountId: string, userId?: string) {
@@ -252,53 +302,138 @@ async function getRoleCandidate(serviceId: string, originalPrice: number, userId
   }
 }
 
+async function buildDiscountErrorContext(
+  discount: DiscountRow,
+  model: ModelContext,
+  locale?: string,
+): Promise<BookingDiscountErrorContext> {
+  const supabase = createClient()
+  const serviceIds = getDiscountServiceIds(discount)
+
+  const servicesPromise = serviceIds.length
+    ? supabase.from("services").select("id, slug, services_translations(name, locale)").in("id", serviceIds)
+    : Promise.resolve({ data: [] as any[] })
+  const brandPromise = discount.brand_id
+    ? supabase.from("brands").select("id, name, slug").eq("id", discount.brand_id).maybeSingle()
+    : Promise.resolve({ data: null as any })
+  const seriesPromise = discount.series_id
+    ? supabase.from("series").select("id, name, slug").eq("id", discount.series_id).maybeSingle()
+    : Promise.resolve({ data: null as any })
+  const modelPromise = discount.model_id
+    ? supabase.from("models").select("id, name, slug").eq("id", discount.model_id).maybeSingle()
+    : Promise.resolve({ data: null as any })
+
+  const [servicesResult, brandResult, seriesResult, modelResult] = await Promise.all([
+    servicesPromise,
+    brandPromise,
+    seriesPromise,
+    modelPromise,
+  ])
+
+  return {
+    code: discount.code,
+    discountName: discount.name || null,
+    scopeType: discount.scope_type,
+    appliesToCurrentModel: discountMatchesModelScope(discount, model),
+    services: ((servicesResult.data || []) as any[]).map((service) => toTarget(service, locale)).filter(Boolean) as BookingDiscountTarget[],
+    brand: toTarget(brandResult.data, locale),
+    series: toTarget(seriesResult.data, locale),
+    model: toTarget(modelResult.data, locale),
+  }
+}
+
 async function getDiscountData(serviceId: string, modelId: string) {
   const supabase = createClient()
-  const { data: model } = await supabase.from("models").select("id, brand_id, series_id").eq("id", modelId).maybeSingle()
+  const { data: model } = await supabase.from("models").select("id, brand_id, series_id, slug, name").eq("id", modelId).maybeSingle()
 
   if (!model) {
-    return { model: null, discounts: [] as DiscountRow[] }
+    return { model: null, discounts: [] as DiscountRow[], allDiscounts: [] as DiscountRow[] }
   }
 
   const { data: discounts, error } = await supabase.from("discounts").select("*").eq("is_active", true)
 
   if (error) {
     console.error("Error fetching booking discounts:", error)
-    return { model, discounts: [] as DiscountRow[] }
+    return { model, discounts: [] as DiscountRow[], allDiscounts: [] as DiscountRow[] }
   }
+
+  const allDiscounts = (discounts || []) as DiscountRow[]
 
   return {
     model,
-    discounts: (discounts || []).filter((discount) => discountMatchesScope(discount as DiscountRow, model, serviceId)) as DiscountRow[],
+    discounts: allDiscounts.filter((discount) => discountMatchesScope(discount, model, serviceId)),
+    allDiscounts,
   }
 }
 
 async function getCodeCandidate(
   discounts: DiscountRow[],
+  allDiscounts: DiscountRow[],
   code: string,
   originalPrice: number,
+  model: ModelContext,
   userId?: string,
-): Promise<{ candidate: DiscountCandidate | null; error: string | null }> {
+  locale?: string,
+): Promise<{
+  candidate: DiscountCandidate | null
+  error: string | null
+  errorCode: BookingDiscountSelectionErrorCode | null
+  errorContext: BookingDiscountErrorContext | null
+}> {
   const normalizedCode = code.trim().toUpperCase()
   if (!normalizedCode) {
-    return { candidate: null, error: "Discount code is empty" }
+    return { candidate: null, error: "Discount code is empty", errorCode: "discount_code_empty", errorContext: null }
   }
 
   const discount = discounts.find((item) => item.code?.toUpperCase() === normalizedCode)
   if (!discount) {
-    return { candidate: null, error: "Discount code is not valid for this service" }
+    const knownDiscount = allDiscounts.find((item) => item.code?.toUpperCase() === normalizedCode)
+    if (!knownDiscount) {
+      return {
+        candidate: null,
+        error: "Discount code was not found",
+        errorCode: "discount_code_not_found",
+        errorContext: null,
+      }
+    }
+
+    if (knownDiscount.user_id && knownDiscount.user_id !== userId) {
+      return {
+        candidate: null,
+        error: "Discount code is not available for this account",
+        errorCode: "discount_code_wrong_account",
+        errorContext: null,
+      }
+    }
+
+    return {
+      candidate: null,
+      error: "Discount code is not valid for this service",
+      errorCode: "discount_code_not_applicable",
+      errorContext: await buildDiscountErrorContext(knownDiscount, model, locale),
+    }
   }
 
   if (discount.user_id && discount.user_id !== userId) {
-    return { candidate: null, error: "Discount code is not available for this account" }
+    return {
+      candidate: null,
+      error: "Discount code is not available for this account",
+      errorCode: "discount_code_wrong_account",
+      errorContext: null,
+    }
   }
 
   const candidate = await buildCandidate(discount, "code", originalPrice, userId)
   if (!candidate) {
-    return { candidate: null, error: "Discount code usage limit has been reached" }
+    return {
+      candidate: null,
+      error: "Discount code usage limit has been reached",
+      errorCode: "discount_code_limit_reached",
+      errorContext: null,
+    }
   }
 
-  return { candidate, error: null }
+  return { candidate, error: null, errorCode: null, errorContext: null }
 }
 
 export async function resolveBookingDiscount(params: {
@@ -306,10 +441,11 @@ export async function resolveBookingDiscount(params: {
   modelId: string
   originalPrice: number
   userId?: string
+  locale?: string
   discountChoice?: BookingDiscountChoice
 }): Promise<BookingDiscountSummary> {
-  const { serviceId, modelId, originalPrice, userId, discountChoice = { type: "none" } } = params
-  const { model, discounts } = await getDiscountData(serviceId, modelId)
+  const { serviceId, modelId, originalPrice, userId, locale, discountChoice = { type: "none" } } = params
+  const { model, discounts, allDiscounts } = await getDiscountData(serviceId, modelId)
 
   if (!model || !Number.isFinite(originalPrice) || originalPrice <= 0) {
     return {
@@ -324,6 +460,8 @@ export async function resolveBookingDiscount(params: {
       codeDiscount: null,
       usageDiscountId: null,
       selectionError: model ? null : "Model was not found",
+      selectionErrorCode: model ? null : "model_not_found",
+      selectionErrorContext: null,
     }
   }
 
@@ -350,18 +488,23 @@ export async function resolveBookingDiscount(params: {
   let selectedOptionalCandidate: DiscountCandidate | null = null
   let codeDiscount: BookingDiscountView | null = null
   let selectionError: string | null = null
+  let selectionErrorCode: BookingDiscountSelectionErrorCode | null = null
+  let selectionErrorContext: BookingDiscountErrorContext | null = null
 
   if (discountChoice.type === "personal") {
     selectedOptionalCandidate = personalDiscounts.find((candidate) => candidate.discount.id === discountChoice.discountId) || null
     if (!selectedOptionalCandidate) {
       selectionError = "Personal discount is no longer available"
+      selectionErrorCode = "personal_discount_unavailable"
     }
   }
 
   if (discountChoice.type === "code") {
-    const codeResult = await getCodeCandidate(discounts, discountChoice.code, originalPrice, userId)
+    const codeResult = await getCodeCandidate(discounts, allDiscounts, discountChoice.code, originalPrice, model, userId, locale)
     selectedOptionalCandidate = codeResult.candidate
     selectionError = codeResult.error
+    selectionErrorCode = codeResult.errorCode
+    selectionErrorContext = codeResult.errorContext
     codeDiscount = codeResult.candidate ? toView(codeResult.candidate) : null
   }
 
@@ -383,6 +526,8 @@ export async function resolveBookingDiscount(params: {
     codeDiscount,
     usageDiscountId,
     selectionError,
+    selectionErrorCode,
+    selectionErrorContext,
   }
 }
 

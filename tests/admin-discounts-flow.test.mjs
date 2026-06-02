@@ -247,6 +247,36 @@ test("booking confirmation exposes optional discount choice and sends it to book
   assert.doesNotMatch(confirm, /fetchedService\.price = discount\.discountedPrice/)
 })
 
+test("booking confirmation preloads user and initial discount state before rendering the form", async () => {
+  const action = await read("../app/actions/booking-discounts.ts")
+  const component = await read("../app/[locale]/book/booking-confirmation.tsx")
+  const confirm = await read("../app/[locale]/book/confirm/booking-confirm-client.tsx")
+
+  assert.match(action, /export async function getInitialBookingDiscountState/)
+  assert.match(confirm, /getInitialBookingDiscountState/)
+  assert.match(confirm, /initialDiscountState/)
+  assert.match(confirm, /initialCurrentUserStatus/)
+  assert.match(confirm, /initialUser/)
+  assert.match(component, /initialDiscountPreview/)
+  assert.match(component, /initialDiscountChoice/)
+  assert.match(component, /hasSkippedInitialDiscountFetch/)
+})
+
+test("booking discount code errors are localized and include actionable targets", async () => {
+  const resolver = await read("../lib/discounts/booking-discounts.ts")
+  const component = await read("../app/[locale]/book/booking-confirmation.tsx")
+
+  assert.match(resolver, /selectionErrorCode/)
+  assert.match(resolver, /selectionErrorContext/)
+  assert.match(resolver, /buildDiscountErrorContext/)
+  assert.match(resolver, /discount_code_not_applicable/)
+  assert.match(resolver, /discount_code_wrong_account/)
+  assert.match(component, /getDiscountCodeErrorMessage/)
+  assert.match(component, /getDiscountCodeErrorAction/)
+  assert.match(component, /discountCodeErrorNotApplicable/)
+  assert.match(component, /discountCodeGoToService/)
+})
+
 test("booking confirmation nudges guests without optional discounts to register", async () => {
   const component = await read("../app/[locale]/book/booking-confirmation.tsx")
 
@@ -268,5 +298,8 @@ test("booking discount signup nudge has translations in all locales", async () =
     assert.match(messages, /"discountSignupPrompt"/)
     assert.match(messages, /"discountSignupDescription"/)
     assert.match(messages, /"discountSignupButton"/)
+    assert.match(messages, /"discountCodeErrorNotApplicable"/)
+    assert.match(messages, /"discountCodeGoToService"/)
+    assert.match(messages, /"discountCodeGoToModel"/)
   }
 })

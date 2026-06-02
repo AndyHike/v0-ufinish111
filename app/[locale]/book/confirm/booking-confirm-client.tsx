@@ -4,7 +4,38 @@ import { useState, useEffect } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { Loader2 } from "lucide-react"
-import BookingConfirmation from "../booking-confirmation"
+import { getInitialBookingDiscountState } from "@/app/actions/booking-discounts"
+import BookingConfirmation, { type CurrentUserStatus } from "../booking-confirmation"
+import type { BookingDiscountChoice, BookingDiscountSummary } from "@/lib/discounts/booking-discounts"
+
+type CurrentUser = {
+    first_name?: string | null
+    last_name?: string | null
+    name?: string | null
+    email?: string | null
+    phone?: string | null
+}
+
+type InitialDiscountState = {
+    discountChoice: BookingDiscountChoice
+    preview: BookingDiscountSummary
+    autoSelectedPersonalDiscount: boolean
+}
+
+async function fetchInitialCurrentUser(): Promise<{ user: CurrentUser | null; status: CurrentUserStatus }> {
+    try {
+        const response = await fetch("/api/user/current", { cache: "no-store" })
+        if (!response.ok) return { user: null, status: "unknown" }
+
+        const data = await response.json()
+        return data?.user
+            ? { user: data.user, status: "registered" }
+            : { user: null, status: "guest" }
+    } catch (error) {
+        console.error("Error preloading current user:", error)
+        return { user: null, status: "unknown" }
+    }
+}
 
 export default function BookingConfirmClient({ locale }: { locale: string }) {
     const searchParams = useSearchParams()
@@ -16,6 +47,9 @@ export default function BookingConfirmClient({ locale }: { locale: string }) {
 
     const [brand, setBrand] = useState<{ name: string; slug: string } | null>(null)
     const [model, setModel] = useState<{ name: string; slug: string; id: string } | null>(null)
+    const [initialUser, setInitialUser] = useState<CurrentUser | null>(null)
+    const [initialCurrentUserStatus, setInitialCurrentUserStatus] = useState<CurrentUserStatus>("loading")
+    const [initialDiscountState, setInitialDiscountState] = useState<InitialDiscountState | null>(null)
     const [service, setService] = useState<{
         id: string
         service_id?: string
@@ -41,6 +75,7 @@ export default function BookingConfirmClient({ locale }: { locale: string }) {
 
         const fetchDetails = async () => {
             try {
+                const currentUserPromise = fetchInitialCurrentUser()
                 const modelResponse = await fetch(`/api/admin/models?slug=${modelSlugParam}`)
                 if (!modelResponse.ok) throw new Error("Could not fetch model")
 
@@ -97,6 +132,26 @@ export default function BookingConfirmClient({ locale }: { locale: string }) {
                     warranty_period: foundService.warranty_period,
                 }
 
+                const initialDiscountStatePromise =
+                    fetchedService.serviceId && typeof fetchedService.originalPrice === "number" && fetchedService.originalPrice > 0
+                        ? getInitialBookingDiscountState({
+                            serviceId: fetchedService.serviceId,
+                            modelId: fetchedModel.id,
+                            originalPrice: fetchedService.originalPrice,
+                            locale,
+                        }).catch((error) => {
+                            console.error("Error preloading booking discount state:", error)
+                            return null
+                        })
+                        : Promise.resolve(null)
+                const [initialCurrentUser, discountState] = await Promise.all([
+                    currentUserPromise,
+                    initialDiscountStatePromise,
+                ])
+
+                setInitialUser(initialCurrentUser.user)
+                setInitialCurrentUserStatus(initialCurrentUser.status)
+                setInitialDiscountState(discountState)
                 setService(fetchedService)
             } catch (err) {
                 console.error("Error fetching confirmation details:", err)
@@ -138,6 +193,11 @@ export default function BookingConfirmClient({ locale }: { locale: string }) {
             brand={brand}
             model={model}
             service={service}
+            initialUser={initialUser}
+            initialCurrentUserStatus={initialCurrentUserStatus}
+            initialDiscountChoice={initialDiscountState?.discountChoice}
+            initialDiscountPreview={initialDiscountState?.preview}
+            initialAutoSelectedPersonalDiscount={initialDiscountState?.autoSelectedPersonalDiscount}
         />
     )
 }

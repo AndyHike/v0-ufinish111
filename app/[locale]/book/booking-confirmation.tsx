@@ -5,11 +5,15 @@ import Link from "next/link"
 import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { ArrowLeft, Loader2, Calendar, Clock, X, Clock3, Shield, BadgePercent, Ticket, HelpCircle } from "lucide-react"
+import { ArrowLeft, ArrowRight, Loader2, Calendar, Clock, X, Clock3, Shield, BadgePercent, Ticket, HelpCircle } from "lucide-react"
 import { formatCurrency } from "@/lib/format-currency"
 import BookingSuccess from "./booking-success"
 import { getBookingDiscountPreview } from "@/app/actions/booking-discounts"
-import type { BookingDiscountChoice, BookingDiscountSummary } from "@/lib/discounts/booking-discounts"
+import type {
+  BookingDiscountChoice,
+  BookingDiscountErrorContext,
+  BookingDiscountSummary,
+} from "@/lib/discounts/booking-discounts"
 
 interface BookingConfirmationProps {
   locale: string
@@ -27,11 +31,24 @@ interface BookingConfirmationProps {
     duration_hours?: number
     warranty_period?: string
   }
+  initialUser?: BookingCurrentUser | null
+  initialCurrentUserStatus?: CurrentUserStatus
+  initialDiscountChoice?: BookingDiscountChoice
+  initialDiscountPreview?: BookingDiscountSummary | null
+  initialAutoSelectedPersonalDiscount?: boolean
 }
 
 interface TimeSlot {
   hour: number
   available: boolean
+}
+
+type BookingCurrentUser = {
+  first_name?: string | null
+  last_name?: string | null
+  name?: string | null
+  email?: string | null
+  phone?: string | null
 }
 
 const phoneCountryCode: { [key: string]: string } = {
@@ -40,40 +57,67 @@ const phoneCountryCode: { [key: string]: string } = {
   cs: "+420",
 }
 
-type CurrentUserStatus = "loading" | "guest" | "registered" | "unknown"
+export type CurrentUserStatus = "loading" | "guest" | "registered" | "unknown"
+
+function getInitialFormData(user?: BookingCurrentUser | null) {
+  return {
+    firstName: user?.first_name || (user?.name ? user.name.split(" ")[0] : ""),
+    lastName: user?.last_name || (user?.name ? user.name.split(" ").slice(1).join(" ") : ""),
+    email: user?.email || "",
+    phone: user?.phone || "",
+    comment: "",
+  }
+}
+
+function mergeUserFormData(
+  previous: ReturnType<typeof getInitialFormData>,
+  user: BookingCurrentUser,
+): ReturnType<typeof getInitialFormData> {
+  return {
+    ...previous,
+    firstName: user.first_name || (user.name ? user.name.split(" ")[0] : previous.firstName),
+    lastName: user.last_name || (user.name ? user.name.split(" ").slice(1).join(" ") : previous.lastName),
+    email: user.email || previous.email,
+    phone: user.phone || previous.phone,
+  }
+}
 
 export default function BookingConfirmation({
   locale,
   brand,
   model,
   service,
+  initialUser,
+  initialCurrentUserStatus = "loading",
+  initialDiscountChoice,
+  initialDiscountPreview,
+  initialAutoSelectedPersonalDiscount = false,
 }: BookingConfirmationProps) {
   const t = useTranslations("StandaloneBooking")
   const [submitting, setSubmitting] = useState(false)
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [showTimePicker, setShowTimePicker] = useState(false)
 
-  const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-    comment: "",
-  })
+  const [formData, setFormData] = useState(() => getInitialFormData(initialUser))
 
   const [selectedDate, setSelectedDate] = useState<string>("")
   const [selectedTime, setSelectedTime] = useState<string>("")
   const [localizedService, setLocalizedService] = useState(service)
   const [bookingSuccess, setBookingSuccess] = useState(false)
-  const [discountChoice, setDiscountChoice] = useState<BookingDiscountChoice>({ type: "none" })
+  const [discountChoice, setDiscountChoice] = useState<BookingDiscountChoice>(initialDiscountChoice || { type: "none" })
   const [discountCode, setDiscountCode] = useState("")
-  const [discountPreview, setDiscountPreview] = useState<BookingDiscountSummary | null>(null)
+  const [discountPreview, setDiscountPreview] = useState<BookingDiscountSummary | null>(initialDiscountPreview || null)
   const [discountLoading, setDiscountLoading] = useState(false)
-  const [autoSelectedPersonalDiscount, setAutoSelectedPersonalDiscount] = useState(false)
-  const [currentUserStatus, setCurrentUserStatus] = useState<CurrentUserStatus>("loading")
+  const [autoSelectedPersonalDiscount, setAutoSelectedPersonalDiscount] = useState(initialAutoSelectedPersonalDiscount)
+  const [currentUserStatus, setCurrentUserStatus] = useState<CurrentUserStatus>(initialCurrentUserStatus)
+  const [hasSkippedInitialDiscountFetch, setHasSkippedInitialDiscountFetch] = useState(Boolean(initialDiscountPreview))
 
   // Fetch user data to auto-fill form for logged-in users
   useEffect(() => {
+    if (initialCurrentUserStatus !== "loading") {
+      return
+    }
+
     const fetchUser = async () => {
       try {
         const res = await fetch("/api/user/current", { cache: "no-store" })
@@ -81,13 +125,7 @@ export default function BookingConfirmation({
           const data = await res.json()
           if (data?.user) {
             setCurrentUserStatus("registered")
-            setFormData(prev => ({
-              ...prev,
-              firstName: data.user.first_name || (data.user.name ? data.user.name.split(" ")[0] : prev.firstName),
-              lastName: data.user.last_name || (data.user.name ? data.user.name.split(" ").slice(1).join(" ") : prev.lastName),
-              email: data.user.email || prev.email,
-              phone: data.user.phone || prev.phone,
-            }))
+            setFormData((prev) => mergeUserFormData(prev, data.user))
           } else {
             setCurrentUserStatus("guest")
           }
@@ -100,7 +138,7 @@ export default function BookingConfirmation({
       }
     }
     fetchUser()
-  }, [])
+  }, [initialCurrentUserStatus])
 
   // Re-fetch service data when locale changes to get proper translations
   useEffect(() => {
@@ -148,6 +186,11 @@ export default function BookingConfirmation({
       return
     }
 
+    if (hasSkippedInitialDiscountFetch) {
+      setHasSkippedInitialDiscountFetch(false)
+      return
+    }
+
     let cancelled = false
 
     const fetchDiscountPreview = async () => {
@@ -157,6 +200,7 @@ export default function BookingConfirmation({
           serviceId,
           modelId,
           originalPrice,
+          locale,
           discountChoice,
         })
 
@@ -196,6 +240,8 @@ export default function BookingConfirmation({
     model?.id,
     discountChoice,
     autoSelectedPersonalDiscount,
+    hasSkippedInitialDiscountFetch,
+    locale,
   ])
 
   // Guard clause for missing data
@@ -261,6 +307,73 @@ export default function BookingConfirmation({
   const handleApplyDiscountCode = () => {
     setAutoSelectedPersonalDiscount(true)
     setDiscountChoice({ type: "code", code: discountCode.trim() })
+  }
+
+  const getDiscountCodeErrorMessage = () => {
+    switch (discountPreview?.selectionErrorCode) {
+      case "discount_code_empty":
+        return t("discountCodeErrorEmpty") || "Enter a discount code."
+      case "discount_code_not_found":
+        return t("discountCodeErrorNotFound") || "This discount code was not found."
+      case "discount_code_not_applicable":
+        return t("discountCodeErrorNotApplicable") || "This discount code does not apply to the selected service."
+      case "discount_code_wrong_account":
+        return t("discountCodeErrorWrongAccount") || "This discount code is not available for this account."
+      case "discount_code_limit_reached":
+        return t("discountCodeErrorLimitReached") || "This discount code usage limit has been reached."
+      case "personal_discount_unavailable":
+        return t("personalDiscountUnavailable") || "Personal discount is no longer available."
+      default:
+        return discountPreview?.selectionError || null
+    }
+  }
+
+  const getDiscountErrorTargetLabel = (context?: BookingDiscountErrorContext | null) => {
+    if (!context) return null
+
+    const serviceNames = context.services
+      .map((serviceTarget) => serviceTarget.name || serviceTarget.slug)
+      .filter(Boolean)
+      .join(", ")
+    const scopeName = context.model?.name || context.series?.name || context.brand?.name
+
+    return [serviceNames, scopeName].filter(Boolean).join(" - ") || context.discountName
+  }
+
+  const getDiscountCodeErrorAction = () => {
+    const context = discountPreview?.selectionErrorContext
+    if (!context) return null
+
+    const firstService = context.services.find((serviceTarget) => serviceTarget.slug)
+    if (firstService?.slug && context.model?.slug) {
+      return {
+        href: `/${locale}/services/${firstService.slug}/${context.model.slug}`,
+        label: t("discountCodeGoToServiceForModel") || "Go to eligible service",
+      }
+    }
+
+    if (firstService?.slug && context.appliesToCurrentModel && model.slug) {
+      return {
+        href: `/${locale}/services/${firstService.slug}/${model.slug}`,
+        label: t("discountCodeGoToService") || "Go to eligible service",
+      }
+    }
+
+    if (context.model?.slug) {
+      return {
+        href: `/${locale}/models/${context.model.slug}`,
+        label: t("discountCodeGoToModel") || "Go to eligible model",
+      }
+    }
+
+    if (firstService?.slug) {
+      return {
+        href: `/${locale}/services/${firstService.slug}`,
+        label: t("discountCodeGoToService") || "Go to eligible service",
+      }
+    }
+
+    return null
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -334,6 +447,9 @@ export default function BookingConfirmation({
     originalServicePrice !== null && finalServicePrice !== null && finalServicePrice < originalServicePrice
   const selectedPersonalDiscountId = discountChoice.type === "personal" ? discountChoice.discountId : null
   const shouldShowDiscountSignupNudge = currentUserStatus === "guest"
+  const discountCodeErrorMessage = getDiscountCodeErrorMessage()
+  const discountCodeErrorTarget = getDiscountErrorTargetLabel(discountPreview?.selectionErrorContext)
+  const discountCodeErrorAction = getDiscountCodeErrorAction()
 
   return (
     <div className="min-h-screen bg-gray-50 py-6 sm:py-12 px-4">
@@ -507,7 +623,24 @@ export default function BookingConfirmation({
                   </p>
                 )}
                 {discountChoice.type === "code" && discountPreview?.selectionError && (
-                  <p className="mt-2 text-xs font-medium text-red-600">{discountPreview.selectionError}</p>
+                  <div className="mt-3 rounded-md border border-red-200 bg-red-50 p-3">
+                    {discountCodeErrorMessage && (
+                      <p className="text-sm font-medium text-red-700">{discountCodeErrorMessage}</p>
+                    )}
+                    {discountCodeErrorTarget && (
+                      <p className="mt-1 text-xs leading-5 text-red-700/80">
+                        {t("discountCodeAppliesTo", { target: discountCodeErrorTarget }) || `Applies to: ${discountCodeErrorTarget}`}
+                      </p>
+                    )}
+                    {discountCodeErrorAction && (
+                      <Button asChild size="sm" variant="outline" className="mt-3 h-8 border-red-200 bg-white text-red-700 hover:bg-red-100">
+                        <Link href={discountCodeErrorAction.href}>
+                          {discountCodeErrorAction.label}
+                          <ArrowRight className="ml-2 h-3.5 w-3.5" />
+                        </Link>
+                      </Button>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
