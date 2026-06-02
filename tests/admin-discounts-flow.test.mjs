@@ -249,6 +249,19 @@ test("personal profile offers power profile cards and homepage toast", async () 
   assert.match(homePage, /<PersonalOfferToast/)
 })
 
+test("toast callers and renderer share one toast store", async () => {
+  const hookToast = await read("../hooks/use-toast.ts")
+  const uiToast = await read("../components/ui/use-toast.ts")
+  const toaster = await read("../components/ui/toaster.tsx")
+  const offerToast = await read("../components/profile/personal-offer-toast.tsx")
+
+  assert.match(uiToast, /let memoryState/)
+  assert.match(hookToast, /export \{ useToast, toast \} from ["']@\/components\/ui\/use-toast["']/)
+  assert.doesNotMatch(hookToast, /let memoryState/)
+  assert.match(toaster, /@\/hooks\/use-toast/)
+  assert.match(offerToast, /@\/components\/ui\/use-toast/)
+})
+
 test("automatic discount pricing excludes code-only discounts while keeping personal discounts eligible", async () => {
   const pricing = await read("../lib/discounts/get-applicable-discounts.ts")
 
