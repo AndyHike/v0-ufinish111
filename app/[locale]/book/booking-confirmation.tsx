@@ -5,7 +5,7 @@ import Link from "next/link"
 import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { ArrowLeft, Loader2, Calendar, Clock, X, Clock3, Shield, BadgePercent, Ticket } from "lucide-react"
+import { ArrowLeft, Loader2, Calendar, Clock, X, Clock3, Shield, BadgePercent, Ticket, HelpCircle } from "lucide-react"
 import { formatCurrency } from "@/lib/format-currency"
 import BookingSuccess from "./booking-success"
 import { getBookingDiscountPreview } from "@/app/actions/booking-discounts"
@@ -68,6 +68,7 @@ export default function BookingConfirmation({
   const [discountPreview, setDiscountPreview] = useState<BookingDiscountSummary | null>(null)
   const [discountLoading, setDiscountLoading] = useState(false)
   const [autoSelectedPersonalDiscount, setAutoSelectedPersonalDiscount] = useState(false)
+  const [isRegisteredUser, setIsRegisteredUser] = useState(false)
 
   // Fetch user data to auto-fill form for logged-in users
   useEffect(() => {
@@ -77,6 +78,7 @@ export default function BookingConfirmation({
         if (res.ok) {
           const data = await res.json()
           if (data?.user) {
+            setIsRegisteredUser(true)
             setFormData(prev => ({
               ...prev,
               firstName: data.user.first_name || (data.user.name ? data.user.name.split(" ")[0] : prev.firstName),
@@ -84,6 +86,8 @@ export default function BookingConfirmation({
               email: data.user.email || prev.email,
               phone: data.user.phone || prev.phone,
             }))
+          } else {
+            setIsRegisteredUser(false)
           }
         }
       } catch (err) {
@@ -324,6 +328,8 @@ export default function BookingConfirmation({
   const hasBookingDiscount =
     originalServicePrice !== null && finalServicePrice !== null && finalServicePrice < originalServicePrice
   const selectedPersonalDiscountId = discountChoice.type === "personal" ? discountChoice.discountId : null
+  const shouldShowDiscountSignupNudge =
+    !isRegisteredUser || !discountPreview || discountPreview.personalDiscounts.length === 0
 
   return (
     <div className="min-h-screen bg-gray-50 py-6 sm:py-12 px-4">
@@ -444,6 +450,32 @@ export default function BookingConfirmation({
                   </div>
                 </button>
               ))}
+
+              {shouldShowDiscountSignupNudge && (
+                <details className="group rounded-md border border-dashed border-gray-300 bg-gray-50/70 p-3">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-left">
+                    <span className="flex items-center gap-2 text-sm font-medium text-gray-900">
+                      <HelpCircle className="h-4 w-4 text-gray-500" />
+                      {t("discountSignupPrompt") || "Want to get a discount?"}
+                    </span>
+                    <span className="text-lg leading-none text-gray-400 group-open:hidden">+</span>
+                    <span className="hidden text-lg leading-none text-gray-400 group-open:inline">−</span>
+                  </summary>
+
+                  <div className="mt-3 space-y-3 border-t border-gray-200 pt-3">
+                    <p className="text-sm leading-6 text-gray-600">
+                      {isRegisteredUser
+                        ? t("discountSignupRegisteredDescription") || "Personal offers will appear here when they are available for your account."
+                        : t("discountSignupDescription") || "Create an account to receive personal discounts and special offers."}
+                    </p>
+                    {!isRegisteredUser && (
+                      <Button asChild size="sm" className="w-full sm:w-auto">
+                        <Link href={`/${locale}/auth/register`}>{t("discountSignupButton") || "Create account"}</Link>
+                      </Button>
+                    )}
+                  </div>
+                </details>
+              )}
 
               <div className="rounded-md border border-gray-200 p-3">
                 <label className="mb-2 flex items-center gap-2 text-sm font-medium text-gray-900" htmlFor="discountCode">

@@ -234,3 +234,26 @@ test("booking confirmation exposes optional discount choice and sends it to book
   assert.match(confirm, /originalPrice:\s*foundService\.price/)
   assert.doesNotMatch(confirm, /fetchedService\.price = discount\.discountedPrice/)
 })
+
+test("booking confirmation nudges guests without optional discounts to register", async () => {
+  const component = await read("../app/[locale]/book/booking-confirmation.tsx")
+
+  assert.match(component, /<details/)
+  assert.match(component, /<summary/)
+  assert.match(component, /discountSignupPrompt/)
+  assert.match(component, /discountSignupDescription/)
+  assert.match(component, /discountSignupButton/)
+  assert.match(component, /href=\{`\/\$\{locale\}\/auth\/register`\}/)
+  assert.match(component, /!isRegisteredUser \|\| !discountPreview/)
+  assert.match(component, /discountPreview\.personalDiscounts\.length === 0/)
+})
+
+test("booking discount signup nudge has translations in all locales", async () => {
+  for (const locale of ["uk", "en", "cs"]) {
+    const messages = await read(`../messages/${locale}.json`)
+
+    assert.match(messages, /"discountSignupPrompt"/)
+    assert.match(messages, /"discountSignupDescription"/)
+    assert.match(messages, /"discountSignupButton"/)
+  }
+})
