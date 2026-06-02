@@ -56,7 +56,8 @@ type DiscountRow = {
   description?: string | null
   discount_type: "percentage" | "fixed"
   discount_value: number | string
-  service_ids: string[] | string | null
+  service_ids?: string[] | string | null
+  service_id?: string | null
   scope_type: Discount["scopeType"]
   brand_id?: string | null
   series_id?: string | null
@@ -79,6 +80,12 @@ function normalizeServiceIds(serviceIds: unknown): string[] {
   return []
 }
 
+function getDiscountServiceIds(discount: Pick<DiscountRow, "service_ids" | "service_id">): string[] {
+  const serviceIds = normalizeServiceIds(discount.service_ids)
+  if (discount.service_id) serviceIds.push(String(discount.service_id))
+  return Array.from(new Set(serviceIds))
+}
+
 function mapDiscountRow(row: DiscountRow): Discount {
   return {
     id: row.id,
@@ -87,7 +94,7 @@ function mapDiscountRow(row: DiscountRow): Discount {
     description: row.description || undefined,
     discountType: row.discount_type,
     discountValue: Number(row.discount_value),
-    serviceIds: normalizeServiceIds(row.service_ids),
+    serviceIds: getDiscountServiceIds(row),
     scopeType: row.scope_type,
     brandId: row.brand_id || undefined,
     seriesId: row.series_id || undefined,
@@ -106,11 +113,13 @@ function mapDiscountRow(row: DiscountRow): Discount {
 }
 
 function discountMatchesScope(discount: DiscountRow, model: ModelContext, serviceId: string) {
-  const serviceIds = normalizeServiceIds(discount.service_ids)
-  if (serviceIds.length === 0 || !serviceIds.includes(serviceId)) {
+  const serviceIds = getDiscountServiceIds(discount)
+  if (serviceIds.length > 0 && !serviceIds.includes(serviceId)) {
     return false
   }
 
+  if (discount.scope_type === "service") return serviceIds.includes(serviceId)
+  if (discount.scope_type === "all_services") return true
   if (discount.scope_type === "all_models") return true
   if (discount.scope_type === "brand" && discount.brand_id === model.brand_id) return true
   if (discount.scope_type === "series" && discount.series_id === model.series_id) return true

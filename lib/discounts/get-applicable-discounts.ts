@@ -9,13 +9,31 @@ type ModelContext = {
   name?: string | null
 }
 
+type DiscountRow = {
+  service_ids?: unknown
+  service_id?: string | null
+  scope_type: Discount["scopeType"]
+  brand_id?: string | null
+  series_id?: string | null
+  model_id?: string | null
+  requires_code?: boolean | null
+  user_id?: string | null
+  [key: string]: any
+}
+
 function normalizeServiceIds(serviceIds: unknown): string[] {
   if (Array.isArray(serviceIds)) return serviceIds.map(String)
   if (typeof serviceIds === "string") return serviceIds.replace(/[{}]/g, "").split(",").filter(Boolean)
   return []
 }
 
-function mapDiscountRow(row: any): Discount {
+function getDiscountServiceIds(discount: Pick<DiscountRow, "service_ids" | "service_id">): string[] {
+  const serviceIds = normalizeServiceIds(discount.service_ids)
+  if (discount.service_id) serviceIds.push(String(discount.service_id))
+  return Array.from(new Set(serviceIds))
+}
+
+function mapDiscountRow(row: DiscountRow): Discount {
   return {
     id: row.id,
     name: row.name,
@@ -23,25 +41,25 @@ function mapDiscountRow(row: any): Discount {
     description: row.description,
     discountType: row.discount_type,
     discountValue: Number(row.discount_value),
-    serviceIds: normalizeServiceIds(row.service_ids),
+    serviceIds: getDiscountServiceIds(row),
     scopeType: row.scope_type,
-    brandId: row.brand_id,
-    seriesId: row.series_id,
-    modelId: row.model_id,
+    brandId: row.brand_id || undefined,
+    seriesId: row.series_id || undefined,
+    modelId: row.model_id || undefined,
     isActive: row.is_active,
     startsAt: row.starts_at,
     expiresAt: row.expires_at,
     maxUses: row.max_uses,
     currentUses: row.current_uses || 0,
     maxUsesPerUser: row.max_uses_per_user,
-    userId: row.user_id,
-    requiresCode: row.requires_code,
+    userId: row.user_id || undefined,
+    requiresCode: Boolean(row.requires_code),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
 }
 
-function discountMatchesContext(discount: any, model: ModelContext, serviceId: string, userId?: string) {
+function discountMatchesContext(discount: DiscountRow, model: ModelContext, serviceId: string, userId?: string) {
   if (!isDiscountActive(discount)) {
     return false
   }
@@ -54,11 +72,13 @@ function discountMatchesContext(discount: any, model: ModelContext, serviceId: s
     return false
   }
 
-  const serviceIds = normalizeServiceIds(discount.service_ids)
-  if (serviceIds.length === 0 || !serviceIds.includes(serviceId)) {
+  const serviceIds = getDiscountServiceIds(discount)
+  if (serviceIds.length > 0 && !serviceIds.includes(serviceId)) {
     return false
   }
 
+  if (discount.scope_type === "service") return serviceIds.includes(serviceId)
+  if (discount.scope_type === "all_services") return true
   if (discount.scope_type === "all_models") return true
   if (discount.scope_type === "brand" && discount.brand_id === model.brand_id) return true
   if (discount.scope_type === "series" && discount.series_id === model.series_id) return true

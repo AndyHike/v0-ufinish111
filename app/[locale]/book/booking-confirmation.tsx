@@ -40,6 +40,8 @@ const phoneCountryCode: { [key: string]: string } = {
   cs: "+420",
 }
 
+type CurrentUserStatus = "loading" | "guest" | "registered" | "unknown"
+
 export default function BookingConfirmation({
   locale,
   brand,
@@ -68,7 +70,7 @@ export default function BookingConfirmation({
   const [discountPreview, setDiscountPreview] = useState<BookingDiscountSummary | null>(null)
   const [discountLoading, setDiscountLoading] = useState(false)
   const [autoSelectedPersonalDiscount, setAutoSelectedPersonalDiscount] = useState(false)
-  const [isRegisteredUser, setIsRegisteredUser] = useState(false)
+  const [currentUserStatus, setCurrentUserStatus] = useState<CurrentUserStatus>("loading")
 
   // Fetch user data to auto-fill form for logged-in users
   useEffect(() => {
@@ -78,7 +80,7 @@ export default function BookingConfirmation({
         if (res.ok) {
           const data = await res.json()
           if (data?.user) {
-            setIsRegisteredUser(true)
+            setCurrentUserStatus("registered")
             setFormData(prev => ({
               ...prev,
               firstName: data.user.first_name || (data.user.name ? data.user.name.split(" ")[0] : prev.firstName),
@@ -87,11 +89,14 @@ export default function BookingConfirmation({
               phone: data.user.phone || prev.phone,
             }))
           } else {
-            setIsRegisteredUser(false)
+            setCurrentUserStatus("guest")
           }
+        } else {
+          setCurrentUserStatus("unknown")
         }
       } catch (err) {
         console.error("Error fetching user for auto-fill:", err)
+        setCurrentUserStatus("unknown")
       }
     }
     fetchUser()
@@ -328,8 +333,7 @@ export default function BookingConfirmation({
   const hasBookingDiscount =
     originalServicePrice !== null && finalServicePrice !== null && finalServicePrice < originalServicePrice
   const selectedPersonalDiscountId = discountChoice.type === "personal" ? discountChoice.discountId : null
-  const shouldShowDiscountSignupNudge =
-    !isRegisteredUser || !discountPreview || discountPreview.personalDiscounts.length === 0
+  const shouldShowDiscountSignupNudge = currentUserStatus === "guest"
 
   return (
     <div className="min-h-screen bg-gray-50 py-6 sm:py-12 px-4">
@@ -464,15 +468,11 @@ export default function BookingConfirmation({
 
                   <div className="mt-3 space-y-3 border-t border-gray-200 pt-3">
                     <p className="text-sm leading-6 text-gray-600">
-                      {isRegisteredUser
-                        ? t("discountSignupRegisteredDescription") || "Personal offers will appear here when they are available for your account."
-                        : t("discountSignupDescription") || "Create an account to receive personal discounts and special offers."}
+                      {t("discountSignupDescription") || "Create an account to receive personal discounts and special offers."}
                     </p>
-                    {!isRegisteredUser && (
-                      <Button asChild size="sm" className="w-full sm:w-auto">
-                        <Link href={`/${locale}/auth/register`}>{t("discountSignupButton") || "Create account"}</Link>
-                      </Button>
-                    )}
+                    <Button asChild size="sm" className="w-full sm:w-auto">
+                      <Link href={`/${locale}/auth/register`}>{t("discountSignupButton") || "Create account"}</Link>
+                    </Button>
                   </div>
                 </details>
               )}

@@ -209,6 +209,18 @@ test("booking discount resolver calculates best final price and records discount
   assert.match(resolver, /max_uses_per_user/)
 })
 
+test("booking discount matching keeps legacy service-scoped discounts eligible", async () => {
+  const resolver = await read("../lib/discounts/booking-discounts.ts")
+  const pricing = await read("../lib/discounts/get-applicable-discounts.ts")
+
+  for (const source of [resolver, pricing]) {
+    assert.match(source, /service_id\?:\s*string \| null/)
+    assert.match(source, /scope_type === ["']service["']/)
+    assert.match(source, /scope_type === ["']all_services["']/)
+    assert.match(source, /serviceIds\.length > 0[\s\S]*!serviceIds\.includes\(serviceId\)/)
+  }
+})
+
 test("booking API validates discounts server-side instead of trusting client price", async () => {
   const route = await read("../app/api/book-service/route.ts")
 
@@ -244,8 +256,9 @@ test("booking confirmation nudges guests without optional discounts to register"
   assert.match(component, /discountSignupDescription/)
   assert.match(component, /discountSignupButton/)
   assert.match(component, /href=\{`\/\$\{locale\}\/auth\/register`\}/)
-  assert.match(component, /!isRegisteredUser \|\| !discountPreview/)
-  assert.match(component, /discountPreview\.personalDiscounts\.length === 0/)
+  assert.match(component, /currentUserStatus === ["']guest["']/)
+  assert.doesNotMatch(component, /!isRegisteredUser \|\| !discountPreview/)
+  assert.doesNotMatch(component, /discountPreview\.personalDiscounts\.length === 0/)
 })
 
 test("booking discount signup nudge has translations in all locales", async () => {
