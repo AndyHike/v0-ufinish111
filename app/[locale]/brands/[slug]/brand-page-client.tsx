@@ -40,6 +40,7 @@ export default function BrandPageClient({ initialData, locale, slug }: Props) {
   }
 
   const { brand, modelsWithoutSeries } = brandData
+  const repairTitle = t("repairBrandTitle", { brand: brand.name })
 
   const hasModelsWithoutSeries = modelsWithoutSeries && modelsWithoutSeries.length > 0
 
@@ -51,7 +52,7 @@ export default function BrandPageClient({ initialData, locale, slug }: Props) {
           <Breadcrumb
             items={[
               { label: t("allBrands") || "Всі бренди", href: `/${locale}/brands` },
-              { label: brand.name, href: `/${locale}/brands/${brand.slug}` }
+              { label: brand.name, href: `/${locale}/brands/${String(brand.slug || slug).toLowerCase()}` }
             ]}
           />
         </div>
@@ -70,7 +71,7 @@ export default function BrandPageClient({ initialData, locale, slug }: Props) {
           </div>
           <div>
             <h1 className="text-center text-3xl font-bold tracking-tight md:text-left md:text-4xl">
-              {brand.name}
+              {repairTitle}
             </h1>
             <p className="mt-3 max-w-[900px] text-center text-muted-foreground md:text-left">
               {t("brandPageDescription", { brand: brand.name })}

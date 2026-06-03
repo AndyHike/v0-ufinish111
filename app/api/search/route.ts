@@ -48,12 +48,13 @@ export async function GET(request: NextRequest) {
         console.error("❌ Brands search error:", brandsError)
       } else if (brands) {
         brands.forEach((brand) => {
+          const canonicalSlug = String(brand.slug || brand.id).toLowerCase()
           results.push({
             id: brand.id,
             type: "brand",
             name: brand.name,
-            slug: brand.slug,
-            url: `/${locale}/brands/${brand.slug}`,
+            slug: canonicalSlug,
+            url: `/${locale}/brands/${canonicalSlug}`,
             breadcrumb: null,
           })
         })

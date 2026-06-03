@@ -3,7 +3,7 @@ import { mainSiteUrl } from "@/lib/site-config"
 import { createServerClient } from "@/utils/supabase/server"
 
 const locales = ["uk", "cs", "en"] as const
-const defaultLocale = "uk"
+const defaultLocale = "cs"
 
 export async function getMainSitemapEntries(): Promise<SitemapEntry[]> {
   const baseUrl = mainSiteUrl
@@ -41,7 +41,10 @@ export async function getMainSitemapEntries(): Promise<SitemapEntry[]> {
     if (!brandsError && brands) {
       brands.forEach((brand) => {
         if (brand.slug) {
-          addMultilingualEntries(`/brands/${brand.slug}`, brand.updated_at ? new Date(brand.updated_at) : new Date())
+          addMultilingualEntries(
+            `/brands/${brand.slug.toLowerCase()}`,
+            brand.updated_at ? new Date(brand.updated_at) : new Date(),
+          )
         }
       })
     } else if (brandsError) {

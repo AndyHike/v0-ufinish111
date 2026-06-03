@@ -49,6 +49,7 @@ test("resolved empty Google reviews do not keep showing a loading message", asyn
   const source = await readFile(new URL("../components/google-reviews-carousel.tsx", import.meta.url), "utf8")
 
   assert.doesNotMatch(source, /t\("loading"\)/)
+  assert.doesNotMatch(source, /AggregateRating/)
 })
 
 test("OAuth helper prints Business Profile env names and discovers accounts and locations", async () => {
@@ -61,4 +62,15 @@ test("OAuth helper prints Business Profile env names and discovers accounts and 
   assert.match(source, /GOOGLE_BUSINESS_PROFILE_LOCATION_ID/)
   assert.match(source, /mybusinessaccountmanagement\.googleapis\.com\/v1\/accounts/)
   assert.match(source, /mybusinessbusinessinformation\.googleapis\.com\/v1\/\$\{account\.name\}\/locations/)
+})
+
+test("Docker runtime passes Google Business Profile review environment variables", async () => {
+  const source = await readFile(new URL("../docker-compose.yml", import.meta.url), "utf8")
+
+  assert.match(source, /GOOGLE_BUSINESS_PROFILE_CLIENT_ID/)
+  assert.match(source, /GOOGLE_BUSINESS_PROFILE_CLIENT_SECRET/)
+  assert.match(source, /GOOGLE_BUSINESS_PROFILE_REFRESH_TOKEN/)
+  assert.match(source, /GOOGLE_BUSINESS_PROFILE_ACCOUNT_ID/)
+  assert.match(source, /GOOGLE_BUSINESS_PROFILE_LOCATION_ID/)
+  assert.match(source, /GOOGLE_BUSINESS_PROFILE_LOCATION_NAME/)
 })

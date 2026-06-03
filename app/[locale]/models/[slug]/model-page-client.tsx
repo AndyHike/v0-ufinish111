@@ -12,6 +12,7 @@ import { PartTypeBadges } from "@/components/part-type-badges"
 import { Breadcrumb } from "@/components/breadcrumb"
 import { getDiscountsBatch } from "@/app/actions/discounts-api"
 import { discountCache } from "@/lib/discounts/client-cache"
+import { formatBrandModelName } from "@/lib/seo/page-utils"
 
 export interface ModelData {
   id: string
@@ -255,6 +256,9 @@ export default function ModelPageClient({ modelData, locale }: Props) {
     return t("fromHours", { hours })
   }
 
+  const fullModelName = formatBrandModelName(currentModelData.brands?.name, currentModelData.name)
+  const repairTitle = t("repairTitle", { model: fullModelName })
+
   const handleServiceClick = (service: any) => {
     if (process.env.NODE_ENV === "development") {
       console.log("🔗 Navigating to service:", service.name)
@@ -269,7 +273,9 @@ export default function ModelPageClient({ modelData, locale }: Props) {
           <Breadcrumb
             items={[
               { label: brandsT("allBrands") || "Всі бренди", href: `/${locale}/brands` },
-              ...(currentModelData.brands ? [{ label: currentModelData.brands.name, href: `/${locale}/brands/${currentModelData.brands.slug}` }] : []),
+              ...(currentModelData.brands
+                ? [{ label: currentModelData.brands.name, href: `/${locale}/brands/${String(currentModelData.brands.slug).toLowerCase()}` }]
+                : []),
               ...(currentModelData.series ? [{ label: currentModelData.series.name, href: `/${locale}/series/${currentModelData.series.slug}` }] : []),
               { label: currentModelData.name, href: `/${locale}/models/${currentModelData.slug}` },
             ]}
@@ -302,7 +308,7 @@ export default function ModelPageClient({ modelData, locale }: Props) {
                 )}
                 <span className="text-gray-600 font-medium">{currentModelData.brands?.name}</span>
               </div>
-              <h1 className="text-2xl font-bold text-gray-900 mb-1">{currentModelData.name}</h1>
+              <h1 className="text-2xl font-bold text-gray-900 mb-1">{repairTitle}</h1>
               <p className="text-gray-600">{t("professionalRepair")}</p>
             </div>
           </div>

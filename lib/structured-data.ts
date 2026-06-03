@@ -1,3 +1,77 @@
+import { mainSiteUrl } from "@/lib/site-config"
+
+const priorityPages = {
+  cs: {
+    name: "Důležité stránky DeviceHelp",
+    pages: [
+      { name: "Oprava Samsung", path: "/brands/samsung" },
+      { name: "Oprava Apple", path: "/brands/apple" },
+      { name: "Oprava Xiaomi", path: "/brands/xiaomi" },
+      { name: "Kontakt", path: "/contact" },
+    ],
+  },
+  en: {
+    name: "Important DeviceHelp pages",
+    pages: [
+      { name: "Samsung repair", path: "/brands/samsung" },
+      { name: "Apple repair", path: "/brands/apple" },
+      { name: "Xiaomi repair", path: "/brands/xiaomi" },
+      { name: "Contact", path: "/contact" },
+    ],
+  },
+  uk: {
+    name: "Важливі сторінки DeviceHelp",
+    pages: [
+      { name: "Ремонт Samsung", path: "/brands/samsung" },
+      { name: "Ремонт Apple", path: "/brands/apple" },
+      { name: "Ремонт Xiaomi", path: "/brands/xiaomi" },
+      { name: "Контакти", path: "/contact" },
+    ],
+  },
+}
+
+export function generateWebsiteSchema(locale: string) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "@id": `${mainSiteUrl}/#website`,
+    url: mainSiteUrl,
+    name: "DeviceHelp",
+    alternateName: ["Device Help", "DeviceHelp.cz"],
+    inLanguage: locale,
+  }
+}
+
+export function generatePriorityNavigationSchema(locale: string) {
+  const data = priorityPages[locale as keyof typeof priorityPages] || priorityPages.cs
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "@id": `${mainSiteUrl}/${locale}#priority-navigation`,
+    name: data.name,
+    itemListElement: data.pages.map((page, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: page.name,
+      url: `${mainSiteUrl}/${locale}${page.path}`,
+    })),
+  }
+}
+
+export function generateBreadcrumbListSchema(items: Array<{ name: string; url: string }>) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: items.map((item, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: item.name,
+      item: item.url,
+    })),
+  }
+}
+
 export function generateLocalBusinessSchema(locale: string) {
   const businessData = {
     cs: {
@@ -19,8 +93,10 @@ export function generateLocalBusinessSchema(locale: string) {
   return {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
-    "@id": "https://devicehelp.cz/#business",
-    url: "https://devicehelp.cz",
+    "@id": `${mainSiteUrl}/#business`,
+    url: mainSiteUrl,
+    logo: `${mainSiteUrl}/icon-light-32x32.png`,
+    image: `${mainSiteUrl}/tech-fix-storefront.png`,
     name: data.name,
     description: data.description,
     address: {
@@ -38,6 +114,7 @@ export function generateLocalBusinessSchema(locale: string) {
     },
     telephone: "+420775848259",
     email: "info@devicehelp.cz",
+    hasMap: "https://maps.app.goo.gl/Uw4EPBKqk6RauBRz7",
     areaServed: [
       {
         "@type": "City",

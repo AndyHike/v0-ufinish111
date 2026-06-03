@@ -207,36 +207,6 @@ export function GoogleReviewsCarousel({ data }: GoogleReviewsCarouselProps) {
           </a>
         </div>
       </div>
-
-      {/* Schema.org markup for aggregate rating */}
-      {hasReviews && (
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "AggregateRating",
-              itemReviewed: {
-                "@type": "LocalBusiness",
-                name: "DeviceHelp",
-                url: "https://devicehelp.cz",
-                address: {
-                  "@type": "PostalAddress",
-                  streetAddress: "Bělohorská 209/133",
-                  addressLocality: "Praha 6-Břevnov",
-                  addressRegion: "Praha",
-                  postalCode: "169 00",
-                  addressCountry: "CZ",
-                },
-              },
-              ratingValue: data.rating.toFixed(1),
-              reviewCount: data.totalReviews,
-              bestRating: "5",
-              worstRating: "1",
-            }),
-          }}
-        />
-      )}
     </section>
   )
 }

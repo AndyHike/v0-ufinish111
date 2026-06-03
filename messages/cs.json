@@ -48,7 +48,12 @@
     "terms": "Obchodní podmínky",
     "privacy": "Ochrana osobních údajů",
     "tagline": "Profesionální opravy mobilních telefonů",
-    "company": "Společnost"
+    "company": "Společnost",
+    "brands": "Značky",
+    "popularBrands": "Oblíbené značky",
+    "appleRepair": "Oprava Apple",
+    "samsungRepair": "Oprava Samsung",
+    "xiaomiRepair": "Oprava Xiaomi"
   },
   "UserNav": {
     "adminPanel": "Adminstrátorský panel",
@@ -307,6 +312,7 @@
     "viewAllModels": "Zobrazit všechny modely",
     "allBrandsDescription": "Kompletní seznam všech značek mobilních telefonů, které opravujeme",
     "allBrandsButton": "Zobrazit všechny značky",
+    "repairBrandTitle": "Oprava {brand} Praha 6",
     "brandPageDescription": "Prozkoumejte všechny dostupné modely telefonů {brand}, které opravujeme.",
     "availableModels": "Dostupné modely",
     "noModelsAvailable": "Zatím nejsou k dispozici žádné modely pro {brand}.",
@@ -338,6 +344,7 @@
     "hour": "hodina",
     "warranty": "Záruka",
     "professionalRepair": "Profesionální oprava telefonů",
+    "repairTitle": "Oprava {model}",
     "warrantyMonths": "{count} měsíců",
     "warrantyDays": "{count} dní",
     "contactForWarranty": "kontaktujte pro záruku",

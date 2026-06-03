@@ -48,7 +48,12 @@
     "terms": "Terms and Conditions",
     "privacy": "Privacy Policy",
     "tagline": "Professional mobile device repair with quality guarantee",
-    "company": "Company"
+    "company": "Company",
+    "brands": "Brands",
+    "popularBrands": "Popular brands",
+    "appleRepair": "Apple repair",
+    "samsungRepair": "Samsung repair",
+    "xiaomiRepair": "Xiaomi repair"
   },
   "UserNav": {
     "adminPanel": "Admin Panel",
@@ -261,6 +266,7 @@
     "allBrandsButton": "View All Brands",
     "productLines": "Product Lines",
     "viewAllModels": "View All Models",
+    "repairBrandTitle": "{brand} repair in Prague 6",
     "brandPageDescription": "Browse all available phone models for {brand} that we repair.",
     "availableModels": "Available Models",
     "noModelsAvailable": "No models available for {brand} yet.",
@@ -300,6 +306,7 @@
     "hour": "hour",
     "warranty": "Warranty",
     "professionalRepair": "Professional phone repair",
+    "repairTitle": "{model} repair",
     "warrantyMonths": "{count} months",
     "warrantyDays": "{count} days",
     "contactForWarranty": "contact for warranty",

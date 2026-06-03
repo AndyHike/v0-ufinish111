@@ -129,7 +129,7 @@ export function BrandsSectionModern() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: index * 0.05 }}
               >
-                <Link href={`/${locale}/brands/${brand.slug || brand.id}`}>
+                <Link href={`/${locale}/brands/${String(brand.slug || brand.id).toLowerCase()}`}>
                   <Card className="p-6 flex flex-col items-center justify-center h-[120px] transition-all hover:shadow-md hover:scale-105">
                     {brand.logo_url ? (
                       <img

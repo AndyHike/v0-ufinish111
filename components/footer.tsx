@@ -27,10 +27,16 @@ export function Footer() {
     }
   }
 
+  const popularBrandLinks = [
+    { label: t("appleRepair"), href: `/${locale}/brands/apple` },
+    { label: t("samsungRepair"), href: `/${locale}/brands/samsung` },
+    { label: t("xiaomiRepair"), href: `/${locale}/brands/xiaomi` },
+  ]
+
   return (
     <footer className="bg-gray-50 border-t border-gray-200 mt-12">
       <div className="container px-4 md:px-6 py-16 md:py-20">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-12">
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               {settings.siteLogo && (
@@ -51,6 +57,11 @@ export function Footer() {
           <div>
             <h3 className="font-medium mb-3">{t("company")}</h3>
             <ul className="space-y-2">
+              <li>
+                <Link href={`/${locale}/brands`} className="text-sm text-gray-500 hover:text-gray-900">
+                  {t("brands")}
+                </Link>
+              </li>
               <li>
                 <Link href={`/${locale}/articles`} className="text-sm text-gray-500 hover:text-gray-900">
                   {t("articles")}
@@ -79,6 +90,23 @@ export function Footer() {
                   <Settings className="h-3 w-3" />
                   {t("cookieSettings")}
                 </button>
+              </li>
+            </ul>
+          </div>
+          <div>
+            <h3 className="font-medium mb-3">{t("popularBrands")}</h3>
+            <ul className="space-y-2">
+              {popularBrandLinks.map((item) => (
+                <li key={item.href}>
+                  <Link href={item.href} className="text-sm text-gray-500 hover:text-gray-900">
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
+              <li>
+                <Link href={`/${locale}/contact`} className="text-sm text-gray-500 hover:text-gray-900">
+                  {t("contact")}
+                </Link>
               </li>
             </ul>
           </div>

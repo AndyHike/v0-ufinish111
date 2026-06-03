@@ -28,19 +28,11 @@ export function HeroSection() {
               sizes="(max-width: 768px) 100vw, 450px"
               quality={85}
             />
-            {/* Mobile Gradient Overlay & Title (Hidden on Desktop) */}
-            <div className="md:hidden absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-6 flex items-end">
-              <h1 className="hero-title text-2xl font-bold tracking-tight !text-white !drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
-                {t("title")}
-              </h1>
-            </div>
           </div>
 
           {/* Content Container */}
           <div className="flex flex-col text-center md:text-left justify-center md:space-y-4">
-
-            {/* Desktop Title (Hidden on Mobile) */}
-            <div className="hidden md:block space-y-2">
+            <div className="space-y-2">
               <h1 className="hero-title text-3xl font-semibold tracking-tight sm:text-4xl md:text-5xl">{t("title")}</h1>
             </div>
 

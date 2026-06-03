@@ -7,6 +7,8 @@ import { getPriceWithDiscount } from "@/lib/discounts/get-applicable-discounts"
 import { RelatedArticlesList } from "@/components/articles/related-articles-list"
 import { toOGLocale } from "@/lib/og-locale"
 import { siteUrl } from "@/lib/site-config"
+import { formatBrandModelName } from "@/lib/seo/page-utils"
+import { generateBreadcrumbListSchema } from "@/lib/structured-data"
 import { PrevNextNav } from "@/components/prev-next-nav"
 
 // ISR Configuration
@@ -140,7 +142,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     // Model-specific metadata
     const brandName = modelData.brands?.name || ""
     const modelName = modelData.name || ""
-    const fullModelName = brandName && modelName ? `${brandName} ${modelName}` : modelName
+    const fullModelName = formatBrandModelName(brandName, modelName)
 
     metadata = {
       cs: {
@@ -485,21 +487,24 @@ export default async function ServicePageWithModel({ params }: Props) {
     }
 
 
+    const fullModelName = formatBrandModelName(sourceModel?.brands?.name, sourceModel?.name)
     const pageDescription = locale === "cs"
-      ? `Profesionální ${translation.name.toLowerCase()} ${sourceModel?.brands?.name || ""} ${sourceModel?.name || ""} v Praze 6. Záruka 6 m��síců.`
+      ? `Profesionální ${translation.name.toLowerCase()} ${fullModelName} v Praze 6. Záruka 6 měsíců.`
       : locale === "uk"
-        ? `Професійний ${translation.name.toLowerCase()} ${sourceModel?.brands?.name || ""} ${sourceModel?.name || ""} в Празі 6. Гарантія 6 місяців.`
-        : `Professional ${translation.name.toLowerCase()} ${sourceModel?.brands?.name || ""} ${sourceModel?.name || ""} in Prague 6. 6-month warranty.`
+        ? `Професійний ${translation.name.toLowerCase()} ${fullModelName} в Празі 6. Гарантія 6 місяців.`
+        : `Professional ${translation.name.toLowerCase()} ${fullModelName} in Prague 6. 6-month warranty.`
 
     const structuredData = sourceModel
       ? {
         "@context": "https://schema.org",
         "@type": "Service",
-        name: `${translation.name} ${sourceModel.brands?.name || ""} ${sourceModel.name || ""}`,
+        "@id": `${siteUrl}/${locale}/services/${slug}/${modelSlug}#service`,
+        name: `${translation.name} ${fullModelName}`,
         description: pageDescription,
+        url: `${siteUrl}/${locale}/services/${slug}/${modelSlug}`,
         provider: {
           "@type": "LocalBusiness",
-          "@id": "https://devicehelp.cz/#business",
+          "@id": `${siteUrl}/#business`,
           name: "DeviceHelp",
           address: {
             "@type": "PostalAddress",
@@ -513,15 +518,28 @@ export default async function ServicePageWithModel({ params }: Props) {
         },
         areaServed: ["Praha 6", "Břevnov", "Dejvice", "Vokovice"],
         warranty: "6 months",
+        ...(modelServicePrice
+          ? {
+              offers: {
+                "@type": "Offer",
+                price: Number(modelServicePrice),
+                priceCurrency: "CZK",
+                url: `${siteUrl}/${locale}/services/${slug}/${modelSlug}`,
+                availability: "https://schema.org/InStock",
+              },
+            }
+          : {}),
       }
       : {
         "@context": "https://schema.org",
         "@type": "Service",
+        "@id": `${siteUrl}/${locale}/services/${slug}/${modelSlug}#service`,
         name: translation.name,
         description: pageDescription,
+        url: `${siteUrl}/${locale}/services/${slug}/${modelSlug}`,
         provider: {
           "@type": "LocalBusiness",
-          "@id": "https://devicehelp.cz/#business",
+          "@id": `${siteUrl}/#business`,
           name: "DeviceHelp",
           address: {
             "@type": "PostalAddress",
@@ -560,11 +578,29 @@ export default async function ServicePageWithModel({ params }: Props) {
       ? sortedServices[servicePageIndex + 1]
       : null
 
+    const breadcrumbItems = [
+      { name: "DeviceHelp", url: `${siteUrl}/${locale}` },
+      { name: "Brands", url: `${siteUrl}/${locale}/brands` },
+      ...(sourceModel?.brands?.slug
+        ? [{ name: sourceModel.brands.name, url: `${siteUrl}/${locale}/brands/${String(sourceModel.brands.slug).toLowerCase()}` }]
+        : []),
+      ...(sourceModel?.series?.slug
+        ? [{ name: sourceModel.series.name, url: `${siteUrl}/${locale}/series/${sourceModel.series.slug}` }]
+        : []),
+      ...(sourceModel?.slug ? [{ name: fullModelName, url: `${siteUrl}/${locale}/models/${sourceModel.slug}` }] : []),
+      { name: translation.name, url: `${siteUrl}/${locale}/services/${slug}/${modelSlug}` },
+    ]
+    const breadcrumbSchema = generateBreadcrumbListSchema(breadcrumbItems)
+
     return (
       <>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
         />
         <ServicePageClient serviceData={serviceData} locale={locale} />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

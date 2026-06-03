@@ -6,6 +6,8 @@ import ModelPageClient, { ModelData } from "./model-page-client"
 import { getPriceWithDiscount } from "@/lib/discounts/get-applicable-discounts"
 import { toOGLocale } from "@/lib/og-locale"
 import { siteUrl } from "@/lib/site-config"
+import { formatBrandModelName } from "@/lib/seo/page-utils"
+import { generateBreadcrumbListSchema } from "@/lib/structured-data"
 import { PrevNextNav } from "@/components/prev-next-nav"
 import { RelatedArticlesList } from "@/components/articles/related-articles-list"
 
@@ -76,23 +78,24 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const brandObj = Array.isArray(model.brands) ? model.brands[0] : model.brands
   const brandName = brandObj?.name || "Device"
   const modelName = model.name
+  const fullModelName = formatBrandModelName(brandName, modelName)
 
   // Language-specific optimized metadata
   const metadata = {
     cs: {
-      title: `Oprava ${brandName} ${modelName} Praha 6 | DeviceHelp`,
-      description: `Profesionální oprava ${brandName} ${modelName} v Praze 6 na Břevnově. Výměna displeje, baterie, kamery. Záruka 6 měsíců, oprava 2-3 hodiny. Bělohorská 209/133. ☎ +420 775 848 259`,
-      keywords: `oprava ${brandName} ${modelName} Praha 6, servis ${brandName} Břevnov, výměna displeje ${modelName}, oprava telefonu Bělohorská, servis mobilu Praha6`,
+      title: `Oprava ${fullModelName} Praha 6 | DeviceHelp`,
+      description: `Profesionální oprava ${fullModelName} v Praze 6 na Břevnově. Výměna displeje, baterie, kamery. Záruka 6 měsíců, oprava 2-3 hodiny. Bělohorská 209/133. ☎ +420 775 848 259`,
+      keywords: `oprava ${fullModelName} Praha 6, servis ${brandName} Břevnov, výměna displeje ${modelName}, oprava telefonu Bělohorská, servis mobilu Praha6`,
     },
     en: {
-      title: `${brandName} ${modelName} Repair Prague 6 | DeviceHelp`,
-      description: `Professional ${brandName} ${modelName} repair in Prague 6 Břevnov. Screen replacement, battery, camera repair. 6 month warranty, 2-3 hours service. Bělohorská 209/133. ☎ +420 775 848 259`,
-      keywords: `${brandName} ${modelName} repair Prague 6, mobile service Břevnov, screen replacement ${modelName}, phone repair Bělohorská`,
+      title: `${fullModelName} Repair Prague 6 | DeviceHelp`,
+      description: `Professional ${fullModelName} repair in Prague 6 Břevnov. Screen replacement, battery, camera repair. 6 month warranty, 2-3 hours service. Bělohorská 209/133. ☎ +420 775 848 259`,
+      keywords: `${fullModelName} repair Prague 6, mobile service Břevnov, screen replacement ${modelName}, phone repair Bělohorská`,
     },
     uk: {
-      title: `Ремонт ${brandName} ${modelName} | Прага 6 | Гарантія 6 місяців`,
-      description: `Професійний ремонт ${brandName} ${modelName} в Празі 6 Бржевнов. Заміна екрану, батареї, камери. Гарантія 6 місяців, ремонт 2-3 години. Bělohorská 209/133. ☎ +420 775 848 259`,
-      keywords: `ремонт ${brandName} ${modelName} Прага 6, сервіс мобільних Бржевнов, заміна екрану ${modelName}, ремонт телефону Белогорська`,
+      title: `Ремонт ${fullModelName} | Прага 6 | Гарантія 6 місяців`,
+      description: `Професійний ремонт ${fullModelName} в Празі 6 Бржевнов. Заміна екрану, батареї, камери. Гарантія 6 місяців, ремонт 2-3 години. Bělohorská 209/133. ☎ +420 775 848 259`,
+      keywords: `ремонт ${fullModelName} Прага 6, сервіс мобільних Бржевнов, заміна екрану ${modelName}, ремонт телефону Белогорська`,
     },
   }
 
@@ -167,6 +170,7 @@ export default async function ModelPage({ params }: Props) {
     const brandObj = Array.isArray(model.brands) ? model.brands[0] : model.brands
     const brandName = brandObj?.name || "Device"
     const modelName = model.name
+    const fullModelName = formatBrandModelName(brandName, modelName)
 
     console.log(`[MODEL PAGE] Found model: ${model.id} - ${model.name}`)
 
@@ -295,27 +299,18 @@ export default async function ModelPage({ params }: Props) {
 
     const structuredData = {
       "@context": "https://schema.org",
-      "@type": ["Service", "LocalBusiness"],
-      "@id": "https://devicehelp.cz/#business",
-      name: `${brandName} ${modelName} Repair`,
-      url: "https://devicehelp.cz",
+      "@type": "Service",
+      "@id": `${siteUrl}/${locale}/models/${slug}#service`,
+      name: `${fullModelName} Repair`,
+      url: `${siteUrl}/${locale}/models/${slug}`,
       description: locale === "cs"
-        ? `Profesionální oprava ${brandName} ${modelName} v Praze 6. Výměna displeje, baterie, kamery. Záruka 6 měsíců.`
+        ? `Profesionální oprava ${fullModelName} v Praze 6. Výměna displeje, baterie, kamery. Záruka 6 měsíců.`
         : locale === "uk"
-          ? `Професійний ремонт ${brandName} ${modelName} в Празі 6. Заміна екрану, батареї, камери. Гарантія 6 місяців.`
-          : `Professional ${brandName} ${modelName} repair in Prague 6. Screen replacement, battery, camera repair. 6 month warranty.`,
-      address: {
-        "@type": "PostalAddress",
-        streetAddress: "Bělohorská 209/133",
-        addressLocality: "Praha 6-Břevnov",
-        addressRegion: "Praha",
-        postalCode: "169 00",
-        addressCountry: "CZ",
-      },
-      telephone: "+420775848259",
+          ? `Професійний ремонт ${fullModelName} в Празі 6. Заміна екрану, батареї, камери. Гарантія 6 місяців.`
+          : `Professional ${fullModelName} repair in Prague 6. Screen replacement, battery, camera repair. 6 month warranty.`,
       provider: {
         "@type": "LocalBusiness",
-        "@id": "https://devicehelp.cz/#business",
+        "@id": `${siteUrl}/#business`,
         name: "DeviceHelp",
         address: {
           "@type": "PostalAddress",
@@ -336,10 +331,18 @@ export default async function ModelPage({ params }: Props) {
       areaServed: "Praha 6",
       offers: {
         "@type": "Offer",
-        warranty: "6 months",
         priceCurrency: "CZK",
       },
     }
+
+    const breadcrumbItems = [
+      { name: "DeviceHelp", url: `${siteUrl}/${locale}` },
+      { name: "Brands", url: `${siteUrl}/${locale}/brands` },
+      ...(brandObj?.slug ? [{ name: brandName, url: `${siteUrl}/${locale}/brands/${String(brandObj.slug).toLowerCase()}` }] : []),
+      ...(seriesObj?.slug ? [{ name: seriesObj.name, url: `${siteUrl}/${locale}/series/${seriesObj.slug}` }] : []),
+      { name: fullModelName, url: `${siteUrl}/${locale}/models/${slug}` },
+    ]
+    const breadcrumbSchema = generateBreadcrumbListSchema(breadcrumbItems)
 
     // Fetch prev/next models in the same brand for navigation
     const { data: siblingModels } = brandObj?.id
@@ -361,6 +364,10 @@ export default async function ModelPage({ params }: Props) {
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
         />
         <ModelPageClient modelData={modelData} locale={locale} />
         <div className="container mx-auto px-4 py-8">

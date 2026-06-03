@@ -14,6 +14,7 @@ import { getPersonalProfileOffers, type PersonalProfileOffer } from "@/lib/disco
 import { Suspense } from "react"
 import { toOGLocale } from "@/lib/og-locale"
 import { b2bSiteUrl, siteUrl } from "@/lib/site-config"
+import { generatePriorityNavigationSchema, generateWebsiteSchema } from "@/lib/structured-data"
 import type { GoogleReviewsData } from "@/lib/data/google-reviews"
 
 export const dynamic = "force-dynamic"
@@ -199,9 +200,21 @@ export default async function HomePage({
   const brandsPromise = getBrands()
   const googleReviewsPromise = getGoogleReviews()
   const personalOfferPromise = getHomepagePersonalOffer(locale)
+  const websiteSchema = generateWebsiteSchema(locale)
+  const priorityNavigationSchema = generatePriorityNavigationSchema(locale)
 
   return (
     <>
+      <script
+        id="website-schema"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
+      />
+      <script
+        id="priority-navigation-schema"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(priorityNavigationSchema) }}
+      />
       <Suspense fallback={null}>
         <PersonalOfferToastAsync locale={locale} promise={personalOfferPromise} />
       </Suspense>

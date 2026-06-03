@@ -39,7 +39,7 @@ export function BrandsSection({ data: brands }: BrandsSectionProps) {
                 >
                   {brands.map((brand) => (
                     <div key={brand.id} className="flex-none w-[140px]">
-                      <Link href={`/${locale}/brands/${brand.slug || brand.id}`}>
+                      <Link href={`/${locale}/brands/${String(brand.slug || brand.id).toLowerCase()}`}>
                         <Card className="border-none shadow-sm hover:shadow-md transition-shadow duration-300 h-28">
                           <CardContent className="p-3 flex flex-col items-center justify-center h-full">
                             {brand.logo_url ? (
@@ -73,7 +73,7 @@ export function BrandsSection({ data: brands }: BrandsSectionProps) {
               >
                 {brands.map((brand) => (
                   <div key={brand.id} className="flex-none w-[200px]">
-                    <Link href={`/${locale}/brands/${brand.slug || brand.id}`}>
+                    <Link href={`/${locale}/brands/${String(brand.slug || brand.id).toLowerCase()}`}>
                       <Card className="border-none shadow-sm hover:shadow-md transition-shadow duration-300 h-32">
                         <CardContent className="p-6 flex flex-col items-center justify-center h-full">
                           {brand.logo_url ? (

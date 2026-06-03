@@ -5,12 +5,22 @@ The homepage reviews block reads Google reviews through the Google Business Prof
 ## Required Google setup
 
 1. Use the Google Cloud project that has access to the DeviceHelp Google Business Profile.
-2. Enable these APIs:
+2. Make sure the project is approved for Google Business Profile API access. Without approval, the Google My Business API may not appear in Google Cloud.
+3. Google's current basic setup says to enable the eight Business Profile APIs:
    - Google My Business API
    - My Business Account Management API
+   - My Business Lodging API
+   - My Business Place Actions API
+   - My Business Notifications API
+   - My Business Verifications API
    - My Business Business Information API
-3. Create an OAuth Client ID with application type `Web application`.
-4. Add this authorized redirect URI:
+   - My Business Q&A API
+4. This app directly uses:
+   - Google My Business API for `/v4/accounts/{accountId}/locations/{locationId}/reviews`
+   - My Business Account Management API to discover accounts in the OAuth helper
+   - My Business Business Information API to discover locations in the OAuth helper
+5. Create an OAuth Client ID with application type `Web application`.
+6. Add this authorized redirect URI:
 
 ```text
 http://127.0.0.1:8787/oauth2callback
@@ -53,4 +63,18 @@ Alternatively, instead of account/location IDs, set:
 GOOGLE_BUSINESS_PROFILE_LOCATION_NAME=accounts/{accountId}/locations/{locationId}
 ```
 
-After this is deployed and verified, `GOOGLE_PLACES_API_KEY` and `GOOGLE_PLACES_ID` are no longer needed for reviews.
+Optional debugging:
+
+```text
+DEBUG_GOOGLE_REVIEWS=true
+```
+
+After this is deployed and verified, `GOOGLE_PLACES_API_KEY` and `GOOGLE_PLACES_ID` are no longer needed for reviews. The current homepage reviews code does not read the Places API variables.
+
+If the app is deployed with `docker-compose.yml`, keep the `GOOGLE_BUSINESS_PROFILE_*` variables listed in the `nextjs.environment` block so they are available at runtime inside the container.
+
+## Search result stars
+
+Do not add `AggregateRating` structured data for DeviceHelp's own Google reviews expecting organic Google Search stars. Google treats reviews controlled by the reviewed local business itself as self-serving; pages using `LocalBusiness` or `Organization` structured data for their own reviews are ineligible for the star review feature.
+
+The correct goal for Google-visible stars is to strengthen the Google Business Profile itself so ratings show in Google Maps, the local pack, and the business knowledge panel. Keep the on-site reviews widget for trust and conversion, but don't rely on it to force organic star snippets.

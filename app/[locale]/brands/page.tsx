@@ -105,7 +105,7 @@ export default async function BrandsPage({ params }: Props) {
             {brands.map((brand) => (
               <Link
                 key={brand.id}
-                href={`/${locale}/brands/${brand.slug || brand.id}`}
+                href={`/${locale}/brands/${String(brand.slug || brand.id).toLowerCase()}`}
                 className="group flex w-full max-w-[180px] flex-col items-center rounded-2xl bg-white p-6 shadow-sm border border-gray-100 transition-all hover:-translate-y-1 hover:shadow-lg hover:border-primary/20"
               >
                 <div className="mb-5 flex h-24 w-24 items-center justify-center rounded-xl bg-slate-50 p-3 sm:h-28 sm:w-28 group-hover:bg-primary/5 transition-colors">

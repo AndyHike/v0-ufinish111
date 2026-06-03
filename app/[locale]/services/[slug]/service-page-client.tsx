@@ -16,6 +16,7 @@ import { ContactCTABanner } from "@/components/contact-cta-banner"
 import { PartTypeBadges } from "@/components/part-type-badges"
 import { getDiscountsBatch } from "@/app/actions/discounts-api"
 import { discountCache } from "@/lib/discounts/client-cache"
+import { formatBrandModelName, stripBrandFromModelName } from "@/lib/seo/page-utils"
 
 interface ServiceData {
   id: string
@@ -214,6 +215,11 @@ function ServicePageClientContent({ serviceData, locale }: Props) {
 
   const whatIncludedList = translation.what_included?.split("\n").filter((item) => item.trim()) || []
   const benefitsList = translation.benefits?.split("\n").filter((item) => item.trim()) || []
+  const brandName = sourceModel?.brands?.name || ""
+  const rawModelName = sourceModel?.name || modelParam || ""
+  const modelNameWithoutBrand = sourceModel ? stripBrandFromModelName(brandName, sourceModel.name) : rawModelName
+  const fullModelName = sourceModel ? formatBrandModelName(brandName, sourceModel.name) : rawModelName
+  const pageTitle = fullModelName ? `${translation.name} ${fullModelName}` : translation.name
 
   useEffect(() => {
     setMounted(true)
@@ -236,10 +242,10 @@ function ServicePageClientContent({ serviceData, locale }: Props) {
               : (minPrice + maxPrice) / 2
             : null
 
-      const brandName = sourceModel?.brands?.name || "Unknown"
-      const modelName = sourceModel?.name || modelParam || "Unknown"
+      const eventBrandName = sourceModel?.brands?.name || "Unknown"
+      const eventModelName = sourceModel ? fullModelName : (modelParam || "Unknown")
       const serviceName = translation.name
-      const contentName = `${serviceName} - ${brandName} ${modelName}`
+      const contentName = `${serviceName} - ${eventModelName}`
 
       window.fbq("track", "ViewContent", {
         content_type: "product",
@@ -253,8 +259,8 @@ function ServicePageClientContent({ serviceData, locale }: Props) {
       if (process.env.NODE_ENV === "development") {
         console.log("📊 Service ViewContent:", {
           service: serviceName,
-          brand: brandName,
-          model: modelName,
+          brand: eventBrandName,
+          model: eventModelName,
           price: actualPrice || 0,
         })
       }
@@ -303,9 +309,9 @@ function ServicePageClientContent({ serviceData, locale }: Props) {
             : (minPrice + maxPrice) / 2
           : null
 
-    const brandName = sourceModel?.brands?.name || "Unknown"
-    const modelName = sourceModel?.name || modelParam || "Unknown"
-    const contentName = `${translation.name} - ${brandName} ${modelName}`
+    const eventBrandName = sourceModel?.brands?.name || "Unknown"
+    const eventModelName = sourceModel ? fullModelName : (modelParam || "Unknown")
+    const contentName = `${translation.name} - ${eventModelName}`
 
     window.fbq("track", "InitiateCheckout", {
       content_type: "product",
@@ -319,8 +325,8 @@ function ServicePageClientContent({ serviceData, locale }: Props) {
     if (process.env.NODE_ENV === "development") {
       console.log("📊 InitiateCheckout:", {
         service: translation.name,
-        brand: brandName,
-        model: modelName,
+        brand: eventBrandName,
+        model: eventModelName,
         price: actualPrice || 0,
       })
     }
@@ -346,7 +352,7 @@ function ServicePageClientContent({ serviceData, locale }: Props) {
     durationFormatted: getFormattedDurationForPlaceholder(serviceData.duration_hours),
     duration: getFormattedDurationForPlaceholder(serviceData.duration_hours),
     durationHours: serviceData.duration_hours || undefined,
-    fullModel: sourceModel ? `${sourceModel.brands?.name || ""} ${sourceModel.name}`.trim() : modelParam || "",
+    fullModel: fullModelName,
     productType: sourceModel?.type || "",
   }
 
@@ -391,9 +397,11 @@ function ServicePageClientContent({ serviceData, locale }: Props) {
           <Breadcrumb
             items={[
               { label: brandsT("allBrands") || "Всі бренди", href: `/${locale}/brands` },
-              ...(sourceModel?.brands ? [{ label: sourceModel.brands.name, href: `/${locale}/brands/${sourceModel.brands.slug}` }] : []),
+              ...(sourceModel?.brands
+                ? [{ label: sourceModel.brands.name, href: `/${locale}/brands/${String(sourceModel.brands.slug).toLowerCase()}` }]
+                : []),
               ...(sourceModel?.series ? [{ label: sourceModel.series.name, href: `/${locale}/series/${sourceModel.series.slug}` }] : []),
-              ...(sourceModel ? [{ label: sourceModel.name, href: `/${locale}/models/${sourceModel.slug}` }] : []),
+              ...(sourceModel ? [{ label: fullModelName, href: `/${locale}/models/${sourceModel.slug}` }] : []),
               { label: translation.name, href: `#` },
             ]}
           />
@@ -437,7 +445,7 @@ function ServicePageClientContent({ serviceData, locale }: Props) {
           {/* Права колонка - основна інформація (3 колонки з 5) */}
           <div className="lg:col-span-3 space-y-4">
             <div>
-              <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">{translation.name}</h1>
+              <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">{pageTitle}</h1>
               <p className="text-gray-600 leading-relaxed">
                 {translation.detailed_description || translation.description}
               </p>
@@ -484,7 +492,7 @@ function ServicePageClientContent({ serviceData, locale }: Props) {
               {(sourceModel || modelParam) && (
                 <p className="text-gray-600 text-sm">
                   {sourceModel
-                    ? t("forModel", { brand: sourceModel.brands?.name || "", model: sourceModel.name })
+                    ? t("forModel", { brand: brandName, model: modelNameWithoutBrand || sourceModel.name })
                     : t("forSpecificModel")}
                 </p>
               )}

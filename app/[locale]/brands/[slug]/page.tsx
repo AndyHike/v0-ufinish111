@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import { getTranslations } from "next-intl/server"
 import Link from "next/link"
-import { notFound } from "next/navigation"
+import { notFound, permanentRedirect } from "next/navigation"
 // import { createServerClient } removed
 import { createClient } from "@/utils/supabase/client"
 import { ChevronRight, Smartphone, ArrowLeft } from "lucide-react"
@@ -10,6 +10,7 @@ import { Breadcrumb } from "@/components/breadcrumb"
 import BrandPageClient from "./brand-page-client"
 import { toOGLocale } from "@/lib/og-locale"
 import { siteUrl } from "@/lib/site-config"
+import { generateBreadcrumbListSchema } from "@/lib/structured-data"
 import { PrevNextNav } from "@/components/prev-next-nav"
 import { BrandSeoSections } from "@/components/brand-seo-sections"
 import { ContactCTABanner } from "@/components/contact-cta-banner"
@@ -46,7 +47,7 @@ export async function generateStaticParams() {
         .flatMap((brand) =>
           locales.map((locale) => ({
             locale,
-            slug: brand.slug,
+            slug: brand.slug.toLowerCase(),
           }))
         ) || []
     )
@@ -62,7 +63,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const supabase = createClient()
 
   // First try to find by slug
-  let { data: brand } = await supabase.from("brands").select("*").eq("slug", slug).single()
+  let { data: brand } = await supabase.from("brands").select("*").ilike("slug", slug).single()
 
   // If not found by slug, try to find by ID
   if (!brand) {
@@ -78,6 +79,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   const brandName = brand.name
+  const canonicalSlug = String(brand.slug || slug).toLowerCase()
 
   const metadata = {
     cs: {
@@ -108,15 +110,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description: currentMetadata.description,
       type: "website",
       locale: toOGLocale(locale),
-      url: `${siteUrl}/${locale}/brands/${slug}`,
+      url: `${siteUrl}/${locale}/brands/${canonicalSlug}`,
     },
     alternates: {
-      canonical: `${siteUrl}/${locale}/brands/${slug}`,
+      canonical: `${siteUrl}/${locale}/brands/${canonicalSlug}`,
       languages: {
-        cs: `${siteUrl}/cs/brands/${slug}`,
-        en: `${siteUrl}/en/brands/${slug}`,
-        uk: `${siteUrl}/uk/brands/${slug}`,
-        "x-default": `${siteUrl}/cs/brands/${slug}`,
+        cs: `${siteUrl}/cs/brands/${canonicalSlug}`,
+        en: `${siteUrl}/en/brands/${canonicalSlug}`,
+        uk: `${siteUrl}/uk/brands/${canonicalSlug}`,
+        "x-default": `${siteUrl}/cs/brands/${canonicalSlug}`,
       },
     },
     twitter: {
@@ -140,7 +142,7 @@ export default async function BrandPage({ params }: Props) {
   let { data: brand, error: brandError } = await supabase
     .from("brands")
     .select("*, series(id, name, slug, position)")
-    .eq("slug", slug)
+    .ilike("slug", slug)
     .single()
 
   // Якщо не знайдено за слагом, спробуємо знайти за ID
@@ -157,6 +159,11 @@ export default async function BrandPage({ params }: Props) {
 
   if (brandError || !brand) {
     notFound()
+  }
+
+  const canonicalSlug = String(brand.slug || slug).toLowerCase()
+  if (slug !== canonicalSlug) {
+    permanentRedirect(`/${locale}/brands/${canonicalSlug}`)
   }
 
   // Сортуємо серії на стороні сервера
@@ -190,7 +197,7 @@ export default async function BrandPage({ params }: Props) {
     .select("name, slug")
     .order("position", { ascending: true })
 
-  const brandIndex = allBrands?.findIndex((b) => b.slug === slug) ?? -1
+  const brandIndex = allBrands?.findIndex((b) => String(b.slug || "").toLowerCase() === canonicalSlug) ?? -1
   const prevBrand = brandIndex > 0 ? allBrands![brandIndex - 1] : null
   const nextBrand = allBrands && brandIndex >= 0 && brandIndex < allBrands.length - 1 ? allBrands[brandIndex + 1] : null
 
@@ -212,8 +219,18 @@ export default async function BrandPage({ params }: Props) {
     }
   })
 
+  const breadcrumbSchema = generateBreadcrumbListSchema([
+    { name: "DeviceHelp", url: `${siteUrl}/${locale}` },
+    { name: t("allBrands") || "Brands", url: `${siteUrl}/${locale}/brands` },
+    { name: brand.name, url: `${siteUrl}/${locale}/brands/${canonicalSlug}` },
+  ])
+
   return (
     <div className="flex flex-col min-h-screen">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
       <div className="order-1">
         <BrandPageClient initialData={initialData} locale={locale} slug={slug} />
       </div>
@@ -228,8 +245,8 @@ export default async function BrandPage({ params }: Props) {
         </div>
         <div className="mt-8">
           <PrevNextNav
-            prev={prevBrand ? { name: prevBrand.name, href: `/${locale}/brands/${prevBrand.slug}` } : null}
-            next={nextBrand ? { name: nextBrand.name, href: `/${locale}/brands/${nextBrand.slug}` } : null}
+            prev={prevBrand ? { name: prevBrand.name, href: `/${locale}/brands/${String(prevBrand.slug).toLowerCase()}` } : null}
+            next={nextBrand ? { name: nextBrand.name, href: `/${locale}/brands/${String(nextBrand.slug).toLowerCase()}` } : null}
             label="Navigate brands"
           />
         </div>

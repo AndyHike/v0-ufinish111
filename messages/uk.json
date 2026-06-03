@@ -52,7 +52,12 @@
     "repairServices": "Послуги ремонту",
     "deviceModels": "Моделі пристроїв",
     "pricing": "Ціни",
-    "company": "Компанія"
+    "company": "Компанія",
+    "brands": "Бренди",
+    "popularBrands": "Популярні бренди",
+    "appleRepair": "Ремонт Apple",
+    "samsungRepair": "Ремонт Samsung",
+    "xiaomiRepair": "Ремонт Xiaomi"
   },
   "UserNav": {
     "adminPanel": "Панель адміністратора",
@@ -331,6 +336,7 @@
     "productLines": "Лінійки продуктів",
     "otherModels": "Інші моделі",
     "viewAllModels": "Переглянути всі моделі",
+    "repairBrandTitle": "Ремонт {brand} Прага 6",
     "modelsWithoutSeries": "Моделі без серії",
     "professionalRepair": "Професійний ремонт",
     "serviceSelectionPrompt": "Оберіть модель вашого пристрою нижче, щоб дізнатися точну вартість та час виконання робіт. Ми використовуємо тільки перевірені запчастини та надаємо гарантію на всі послуги.",
@@ -359,6 +365,7 @@
     "hour": "година",
     "warranty": "Гарантія",
     "professionalRepair": "Професійний ремонт телефонів",
+    "repairTitle": "Ремонт {model}",
     "warrantyMonths": "{count} місяців",
     "warrantyDays": "{count} днів",
     "contactForWarranty": "уточнюйте гарантію",

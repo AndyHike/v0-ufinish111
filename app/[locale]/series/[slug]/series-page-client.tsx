@@ -52,7 +52,10 @@ export default function SeriesPageClient({ initialData, locale, slug }: Props) {
           <Breadcrumb
             items={[
               { label: brandsT("allBrands") || "Всі бренди", href: `/${locale}/brands` },
-              { label: series.brands?.name || "Brand", href: `/${locale}/brands/${series.brands?.slug || series.brand_id}` },
+              {
+                label: series.brands?.name || "Brand",
+                href: `/${locale}/brands/${String(series.brands?.slug || series.brand_id).toLowerCase()}`,
+              },
               { label: series.name, href: `/${locale}/series/${series.slug}` },
             ]}
           />
