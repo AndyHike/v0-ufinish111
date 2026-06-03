@@ -1,4 +1,4 @@
-import { getB2BRedirectTarget } from "@/lib/b2b-routing"
+import { getB2BRedirectTarget, getB2BRewritePath } from "@/lib/b2b-routing"
 import { siteUrl } from "@/lib/site-config"
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
@@ -43,6 +43,8 @@ export async function middleware(request: NextRequest) {
   // Skip middleware for static files, API routes, webhooks, images, and special files
   if (
     pathname.startsWith("/_next") ||
+    pathname === "/b2b" ||
+    pathname.startsWith("/b2b/") ||
     pathname.startsWith("/api/") ||
     pathname.includes("/webhooks/") ||
     pathname === "/robots.txt" ||
@@ -62,6 +64,17 @@ export async function middleware(request: NextRequest) {
 
   if (b2bRedirectTarget) {
     return NextResponse.redirect(b2bRedirectTarget, { status: 308 })
+  }
+
+  const b2bRewritePath = getB2BRewritePath(hostname, pathname)
+
+  if (b2bRewritePath) {
+    const rewriteUrl = request.nextUrl.clone()
+    rewriteUrl.pathname = b2bRewritePath
+    if (rewriteUrl.hostname === "localhost" || rewriteUrl.hostname === "127.0.0.1") {
+      rewriteUrl.protocol = "http:"
+    }
+    return NextResponse.rewrite(rewriteUrl)
   }
 
   // Handle 301 redirects for old URL formats with query parameters.

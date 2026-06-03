@@ -1,28 +1,30 @@
 import type { Metadata } from "next"
-import { headers } from "next/headers"
-import { B2BHomePage } from "@/components/b2b/b2b-home-page"
-import { HeroSection } from "@/components/hero-section"
-import { ContactSection } from "@/components/contact-section"
+import { Suspense } from "react"
+
 import { BrandsSection } from "@/components/brands-section"
 import { GoogleReviewsCarousel } from "@/components/google-reviews-carousel"
-import { PersonalOfferToast } from "@/components/profile/personal-offer-toast"
-import { isB2BHost } from "@/lib/b2b-routing"
-import { getSession } from "@/lib/auth/session"
+import { HeroSection } from "@/components/hero-section"
+import { LazyContactSection } from "@/components/lazy-contact-section"
+import { PersonalOfferToastLoader } from "@/components/profile/personal-offer-toast-loader"
 import { getBrands } from "@/lib/data/brands"
 import { getGoogleReviews } from "@/lib/data/google-reviews"
-import { getPersonalProfileOffers, type PersonalProfileOffer } from "@/lib/discounts/profile-offers"
-import { Suspense } from "react"
-import { toOGLocale } from "@/lib/og-locale"
-import { b2bSiteUrl, siteUrl } from "@/lib/site-config"
-import { generatePriorityNavigationSchema, generateWebsiteSchema } from "@/lib/structured-data"
 import type { GoogleReviewsData } from "@/lib/data/google-reviews"
-
-export const dynamic = "force-dynamic"
+import { toOGLocale } from "@/lib/og-locale"
+import { siteUrl } from "@/lib/site-config"
+import { generatePriorityNavigationSchema, generateWebsiteSchema } from "@/lib/structured-data"
 
 const EMPTY_GOOGLE_REVIEWS: GoogleReviewsData = {
   reviews: [],
   rating: 0,
   totalReviews: 0,
+}
+
+const SUPPORTED_LOCALE_PARAMS = [{ locale: "cs" }, { locale: "uk" }, { locale: "en" }]
+
+export const revalidate = 3600
+
+export function generateStaticParams() {
+  return SUPPORTED_LOCALE_PARAMS
 }
 
 export async function generateMetadata({
@@ -31,60 +33,6 @@ export async function generateMetadata({
   params: Promise<{ locale: string }>
 }): Promise<Metadata> {
   const { locale } = await params
-  const requestHeaders = await headers()
-  const host = requestHeaders.get("host") || ""
-
-  if (isB2BHost(host)) {
-    const b2bSeoData = {
-      cs: {
-        title: "B2B servis mobilních telefonů pro firmy | DeviceHelp",
-        description:
-          "Opravy firemních mobilních telefonů pro firmy, OSVČ a organizace v Praze. Registrace firemního účtu, záruka a jasná komunikace.",
-      },
-      uk: {
-        title: "Ремонт мобільних телефонів для компаній | DeviceHelp",
-        description:
-          "Ремонт службових мобільних телефонів для компаній, підприємців та організацій у Празі. Реєстрація акаунта для компанії, гарантія та зрозуміла комунікація.",
-      },
-      en: {
-        title: "Mobile Phone Repair for Companies | DeviceHelp",
-        description:
-          "Company mobile phone repairs for businesses, entrepreneurs, and organizations in Prague. Business account registration, warranty, and clear communication.",
-      },
-    }
-
-    const currentSeo = b2bSeoData[locale as keyof typeof b2bSeoData] || b2bSeoData.cs
-    const canonicalUrl = `${b2bSiteUrl}/${locale}`
-
-    return {
-      title: currentSeo.title,
-      description: currentSeo.description,
-      metadataBase: new URL(b2bSiteUrl),
-      alternates: {
-        canonical: canonicalUrl,
-        languages: {
-          cs: `${b2bSiteUrl}/cs`,
-          uk: `${b2bSiteUrl}/uk`,
-          en: `${b2bSiteUrl}/en`,
-          "x-default": `${b2bSiteUrl}/cs`,
-        },
-      },
-      openGraph: {
-        title: currentSeo.title,
-        description: currentSeo.description,
-        url: canonicalUrl,
-        siteName: "DeviceHelp",
-        locale: toOGLocale(locale),
-        type: "website",
-      },
-      twitter: {
-        card: "summary_large_image",
-        title: currentSeo.title,
-        description: currentSeo.description,
-      },
-    }
-  }
-
   const baseUrl = siteUrl
   const canonicalUrl = `${baseUrl}/${locale}`
 
@@ -134,72 +82,14 @@ export async function generateMetadata({
   }
 }
 
-function BrandsSectionSkeleton() {
-  return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="h-8 bg-gray-200 rounded w-48 mx-auto mb-8 animate-pulse"></div>
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-        {Array.from({ length: 12 }).map((_, i) => (
-          <div key={i} className="h-20 bg-gray-200 rounded animate-pulse"></div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-function ContactSectionSkeleton() {
-  return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="h-8 bg-gray-200 rounded w-48 mx-auto mb-8 animate-pulse"></div>
-      <div className="max-w-md mx-auto space-y-4">
-        <div className="h-10 bg-gray-200 rounded animate-pulse"></div>
-        <div className="h-10 bg-gray-200 rounded animate-pulse"></div>
-        <div className="h-24 bg-gray-200 rounded animate-pulse"></div>
-        <div className="h-10 bg-gray-200 rounded animate-pulse"></div>
-      </div>
-    </div>
-  )
-}
-
-function GoogleReviewsSkeleton() {
-  return (
-    <section className="py-12 bg-white border-b">
-      <div className="container px-4 mx-auto">
-        <div className="text-center mb-12">
-          <div className="h-8 bg-gray-200 rounded w-48 mx-auto mb-4 animate-pulse"></div>
-          <div className="flex gap-1 justify-center mb-4">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="w-4 h-4 bg-gray-200 rounded animate-pulse"></div>
-            ))}
-          </div>
-          <div className="h-6 bg-gray-200 rounded w-40 mx-auto animate-pulse"></div>
-        </div>
-        <div className="hidden md:grid grid-cols-3 gap-6">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-64 bg-gray-200 rounded animate-pulse"></div>
-          ))}
-        </div>
-      </div>
-    </section>
-  )
-}
-
 export default async function HomePage({
   params,
 }: {
   params: Promise<{ locale: string }>
 }) {
   const { locale } = await params
-  const requestHeaders = await headers()
-  const host = requestHeaders.get("host") || ""
-
-  if (isB2BHost(host)) {
-    return <B2BHomePage locale={locale} />
-  }
-
   const brandsPromise = getBrands()
   const googleReviewsPromise = getGoogleReviews()
-  const personalOfferPromise = getHomepagePersonalOffer(locale)
   const websiteSchema = generateWebsiteSchema(locale)
   const priorityNavigationSchema = generatePriorityNavigationSchema(locale)
 
@@ -215,9 +105,7 @@ export default async function HomePage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(priorityNavigationSchema) }}
       />
-      <Suspense fallback={null}>
-        <PersonalOfferToastAsync locale={locale} promise={personalOfferPromise} />
-      </Suspense>
+      <PersonalOfferToastLoader locale={locale} />
       <HeroSection />
       <Suspense fallback={null}>
         <GoogleReviewsAsync promise={googleReviewsPromise} />
@@ -226,40 +114,10 @@ export default async function HomePage({
         <BrandsSectionAsync promise={brandsPromise} />
       </Suspense>
       <Suspense fallback={null}>
-        <ContactSection />
+        <LazyContactSection />
       </Suspense>
     </>
   )
-}
-
-async function getHomepagePersonalOffer(locale: string): Promise<PersonalProfileOffer | null> {
-  try {
-    const session = await getSession()
-    if (!session?.user?.id) return null
-
-    const offers = await getPersonalProfileOffers({
-      userId: session.user.id,
-      locale,
-      limit: 1,
-    })
-
-    return offers[0] || null
-  } catch (error) {
-    console.error("Homepage personal offer error:", error)
-    return null
-  }
-}
-
-async function PersonalOfferToastAsync({
-  locale,
-  promise,
-}: {
-  locale: string
-  promise: Promise<PersonalProfileOffer | null>
-}) {
-  const offer = await promise
-  if (!offer) return null
-  return <PersonalOfferToast offer={offer} locale={locale} />
 }
 
 async function BrandsSectionAsync({ promise }: { promise: Promise<any> }) {

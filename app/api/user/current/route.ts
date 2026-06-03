@@ -4,6 +4,10 @@ import { getCurrentUser } from "@/lib/auth/session"
 export const dynamic = "force-dynamic"
 export const revalidate = 0
 
+const USER_RESPONSE_HEADERS = {
+  "Cache-Control": "private, no-cache, max-age=0, must-revalidate",
+}
+
 export async function GET() {
   try {
     const user = await getCurrentUser()
@@ -15,11 +19,7 @@ export async function GET() {
         { user: null },
         {
           status: 200,
-          headers: {
-            "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
-            Pragma: "no-cache",
-            Expires: "0",
-          },
+          headers: USER_RESPONSE_HEADERS,
         },
       )
     }
@@ -28,11 +28,7 @@ export async function GET() {
       { user },
       {
         status: 200,
-        headers: {
-          "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
-          Pragma: "no-cache",
-          Expires: "0",
-        },
+        headers: USER_RESPONSE_HEADERS,
       },
     )
   } catch (error) {

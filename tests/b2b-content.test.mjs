@@ -48,14 +48,14 @@ async function pathExists(path) {
 }
 
 test("B2B FAQ route is host-gated and canonicalized to the B2B subdomain", async () => {
-  assert.equal(await pathExists("../app/[locale]/faq/page.tsx"), true)
+  assert.equal(await pathExists("../app/b2b/[locale]/faq/page.tsx"), true)
 
-  const source = await readFile(new URL("../app/[locale]/faq/page.tsx", import.meta.url), "utf8")
+  const source = await readFile(new URL("../app/b2b/[locale]/faq/page.tsx", import.meta.url), "utf8")
 
-  assert.match(source, /isB2BHost/)
-  assert.match(source, /notFound\(\)/)
   assert.match(source, /b2bSiteUrl/)
   assert.match(source, /B2BFAQPage/)
+  assert.doesNotMatch(source, /headers\(\)/)
+  assert.doesNotMatch(source, /isB2BHost/)
 })
 
 test("B2B FAQ component links registration to the main-domain business account flow", async () => {
@@ -68,9 +68,22 @@ test("B2B FAQ component links registration to the main-domain business account f
 })
 
 test("B2B layout does not render the main-site promotional banner", async () => {
-  const source = await readFile(new URL("../app/[locale]/layout.tsx", import.meta.url), "utf8")
+  const source = await readFile(new URL("../app/b2b/[locale]/layout.tsx", import.meta.url), "utf8")
 
-  assert.match(source, /!\s*isB2B\s*&&\s*\(\s*<Suspense[\s\S]*?<PromotionalBanner/)
+  assert.match(source, /variant="b2b"/)
+  assert.doesNotMatch(source, /PromotionalBanner/)
+  assert.doesNotMatch(source, /headers\(\)/)
+})
+
+test("main public layout and homepage no longer branch on host headers", async () => {
+  const layoutSource = await readFile(new URL("../app/[locale]/layout.tsx", import.meta.url), "utf8")
+  const homeSource = await readFile(new URL("../app/[locale]/page.tsx", import.meta.url), "utf8")
+
+  assert.doesNotMatch(layoutSource, /headers\(\)/)
+  assert.doesNotMatch(layoutSource, /isB2BHost/)
+  assert.doesNotMatch(homeSource, /headers\(\)/)
+  assert.doesNotMatch(homeSource, /isB2BHost/)
+  assert.doesNotMatch(homeSource, /B2BHomePage/)
 })
 
 test("B2B FAQ messages exist for every supported locale", async () => {
@@ -162,13 +175,26 @@ test("desktop B2B navigation exposes redesigned href order", async () => {
 test("B2B header preserves the host-derived variant during hydration", async () => {
   const headerSource = await readFile(new URL("../components/header.tsx", import.meta.url), "utf8")
 
-  assert.match(headerSource, /isB2BHost/)
-  assert.match(headerSource, /window\.location\.host/)
-  assert.match(headerSource, /useState\(false\)/)
-  assert.match(headerSource, /setHostDerivedVariant\(isB2BHost\(window\.location\.host\)\)/)
-  assert.match(headerSource, /const isB2BVariant =/)
+  assert.match(headerSource, /const isB2BVariant = variant === "b2b"/)
   assert.match(headerSource, /variant=\{isB2BVariant \? "b2b" : "default"\}/)
-  assert.doesNotMatch(headerSource, /const isB2BVariant = variant === "b2b" \|\| \(typeof window/)
+  assert.doesNotMatch(headerSource, /isB2BHost/)
+  assert.doesNotMatch(headerSource, /window\.location\.host/)
+  assert.doesNotMatch(headerSource, /hostDerivedVariant/)
+})
+
+test("B2B navigation keeps public locale paths after the internal rewrite", async () => {
+  const shellSource = await readFile(new URL("../components/site-locale-layout.tsx", import.meta.url), "utf8")
+  const headerSource = await readFile(new URL("../components/header.tsx", import.meta.url), "utf8")
+  const mobileSource = await readFile(new URL("../components/mobile-nav.tsx", import.meta.url), "utf8")
+
+  assert.match(shellSource, /localeOverride=\{locale\}/)
+  assert.match(headerSource, /localeOverride\?: string/)
+  assert.match(headerSource, /startsWith\("\/b2b\/"\)/)
+  assert.match(headerSource, /pathname\.replace\(/)
+  assert.match(headerSource, /localeOverride=\{locale\}/)
+  assert.match(mobileSource, /localeOverride\?: string/)
+  assert.match(mobileSource, /startsWith\("\/b2b\/"\)/)
+  assert.match(mobileSource, /pathname\.replace\(/)
 })
 
 test("B2B header uses one account CTA instead of a duplicated register button", async () => {

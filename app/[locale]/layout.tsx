@@ -1,39 +1,10 @@
-// Force rebuild - removed AnalyticsTracker
 import type React from "react"
 import type { Metadata } from "next"
-import { headers } from "next/headers"
-import Script from "next/script"
-import { NextIntlClientProvider } from "next-intl"
-import { notFound } from "next/navigation"
-import { Inter } from "next/font/google"
-import { Header } from "@/components/header"
-import { Footer } from "@/components/footer"
-import { getMessages } from "@/lib/get-messages"
-import { CookieConsentProvider } from "@/contexts/cookie-consent-context"
-import { CookieBanner } from "@/components/cookie-banner"
-import { PromotionalBanner } from "@/components/promotional-banner"
-import { AnalyticsProvider } from "@/components/analytics/analytics-provider"
-import { Suspense } from "react"
-import { SessionProvider } from "@/components/providers/session-provider"
-import { ThemeProvider } from "@/components/theme-provider"
-import { GlobalDataProvider } from "@/providers/global-data-provider"
-import { Toaster } from "@/components/ui/toaster"
-import { DynamicFavicon } from "@/components/dynamic-favicon"
+
+import { SiteLocaleLayout } from "@/components/site-locale-layout"
 import { toOGLocale } from "@/lib/og-locale"
-import { mainSiteUrl, siteUrl } from "@/lib/site-config"
-import { isB2BHost } from "@/lib/b2b-routing"
+import { siteUrl } from "@/lib/site-config"
 import "@/app/globals.css"
-
-const inter = Inter({
-  subsets: ["latin", "latin-ext", "cyrillic"],
-  display: "swap",
-  preload: true,
-  variable: "--font-inter",
-  adjustFontFallback: true,
-  fallback: ["system-ui", "arial"],
-})
-
-export const dynamic = "force-dynamic"
 
 export async function generateMetadata({
   params,
@@ -54,7 +25,7 @@ export async function generateMetadata({
       description: "Fast and quality mobile phone repair in Prague. Warranty on all repairs.",
     },
     uk: {
-      title: "DeviceHelp - DeviceHelp - Profesійnský ремонт мобільних телефонів у Празі",
+      title: "DeviceHelp - Професійний ремонт мобільних телефонів у Празі",
       description: "Швидкий та якісний ремонт мобільних телефонів у Празі. Гарантія на всі ремонти.",
     },
   }
@@ -117,157 +88,10 @@ export default async function LocaleLayout({
   params: Promise<{ locale: string }>
 }) {
   const { locale } = await params
-  const requestHeaders = await headers()
-  const host = requestHeaders.get("host") || ""
-  const isB2B = isB2BHost(host)
-  const messages = await getMessages(locale).catch((error) => {
-    console.error(`Failed to load messages for locale ${locale}:`, error)
-    return null
-  })
-
-  if (!messages) {
-    notFound()
-  }
 
   return (
-    <html lang={locale} className={inter.variable} suppressHydrationWarning>
-      <head>
-        {/* Google Consent Mode v2 - beforeInteractive strategy для ранньої ініціалізації */}
-        <Script
-          id="google-consent-mode"
-          strategy="beforeInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){dataLayer.push(arguments);}
-              
-              // ЗАВЖДИ 'denied' для всіх полів - коректне встановлення за замовчуванням
-              gtag('consent', 'default', {
-                'ad_storage': 'denied',
-                'ad_user_data': 'denied',
-                'ad_personalization': 'denied',
-                'analytics_storage': 'denied',
-                'wait_for_update': 500
-              });
-              gtag('set', {'url_passthrough': true});
-            `,
-          }}
-        />
-
-        {/* Google Tag Manager - afterInteractive strategy */}
-        <Script
-          id="google-tag-manager"
-          strategy="afterInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-})(window,document,'script','dataLayer','GTM-P8H3C553');`,
-          }}
-        />
-
-        {!isB2B && (
-          <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "LocalBusiness",
-              "@id": `${mainSiteUrl}/#business`,
-              url: mainSiteUrl,
-              name: "DeviceHelp",
-              description: locale === "cs"
-                ? "Profesionální oprava mobilních telefonů v Praze 6 Břevnov. iPhone, Samsung, Xiaomi. Garancia 6 měsíců."
-                : locale === "en"
-                  ? "Professional mobile phone repair in Prague 6 Břevnov. iPhone, Samsung, Xiaomi. 6-month warranty."
-                  : "Професійний ремонт мобільних телефонів в Празі 6 Бржевнов. iPhone, Samsung, Xiaomi. Гарантія 6 місяців.",
-              address: {
-                "@type": "PostalAddress",
-                streetAddress: "Bělohorská 209/133",
-                addressLocality: "Praha 6-Břevnov",
-                addressRegion: "Praha",
-                postalCode: "169 00",
-                addressCountry: "CZ",
-              },
-              geo: {
-                "@type": "GeoCoordinates",
-                latitude: "50.0982",
-                longitude: "14.3917",
-              },
-              telephone: "+420775848259",
-              email: "info@devicehelp.cz",
-              areaServed: ["Praha 6", "Břevnov", "Dejvice", "Vokovice"],
-              priceRange: "1500-5000 CZK",
-              paymentAccepted: ["Cash", "Credit Card"],
-              currenciesAccepted: "CZK",
-              openingHoursSpecification: [
-                {
-                  "@type": "OpeningHoursSpecification",
-                  dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
-                  opens: "09:00",
-                  closes: "19:00",
-                },
-              ],
-            }),
-          }}
-          />
-        )}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link rel="preconnect" href="https://xnwoqomipsesacphoczp.supabase.co" />
-        <link rel="dns-prefetch" href="https://devicehelp.cz" />
-        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-        <meta name="seznam-wmt" content="5VWPSjprwBjXXCI2HRoOVfvKcmdPB1Om" />
-        <style
-          dangerouslySetInnerHTML={{
-            __html: `
-            *{box-sizing:border-box}
-            body{font-family:var(--font-inter),system-ui,sans-serif;margin:0;padding:0;-webkit-font-smoothing:antialiased;text-rendering:optimizeSpeed;line-height:1.5}
-            .hero-section{background:#fff;padding:1.5rem 0;min-height:350px;contain:layout style paint}
-            .hero-title{font-size:1.75rem;font-weight:600;line-height:1.2;margin-bottom:0.75rem}
-            .hero-subtitle{color:#6b7280;font-size:1rem;margin-bottom:1.5rem;line-height:1.5;font-weight:400}
-            .hero-image{width:100%;height:250px;object-fit:cover;border-radius:0.75rem;transform:translateZ(0);content-visibility:auto}
-            .container{max-width:1200px;margin:0 auto;padding:0 1rem}
-            .btn-primary{background:#2563eb;color:#fff;padding:0.75rem 1.5rem;border-radius:0.5rem;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;border:none;cursor:pointer;transition:background-color 0.15s ease}
-            .btn-primary:hover{background:#1d4ed8}
-            @media(min-width:768px){.hero-section{padding:4rem 0}.hero-title{font-size:2.5rem}.hero-image{height:300px}}
-            @media(min-width:1024px){.hero-title{font-size:3rem}.hero-image{height:350px}}
-          `,
-          }}
-        />
-      </head>
-      <body className={inter.className}>
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
-          <NextIntlClientProvider locale={locale} messages={messages}>
-            <SessionProvider>
-              <CookieConsentProvider>
-                <GlobalDataProvider>
-                  <DynamicFavicon />
-                  <div className="flex min-h-screen flex-col">
-                    {!isB2B && (
-                      <Suspense fallback={null}>
-                        <PromotionalBanner locale={locale} />
-                      </Suspense>
-                    )}
-                    {/* Header is a client component and will hydrate quickly, 
-                        so we remove the Suspense fallback to avoid showing skeleton 
-                        on every navigation */}
-                    <Header variant={isB2B ? "b2b" : "default"} mainDomainBaseUrl={mainSiteUrl} />
-                    <main className="flex-1">{children}</main>
-                    <Footer />
-                    <CookieBanner />
-                    <Suspense fallback={null}>
-                      <AnalyticsProvider />
-                    </Suspense>
-                  </div>
-                  <Toaster />
-                </GlobalDataProvider>
-              </CookieConsentProvider>
-            </SessionProvider>
-          </NextIntlClientProvider>
-        </ThemeProvider>
-      </body>
-    </html>
+    <SiteLocaleLayout locale={locale} variant="default">
+      {children}
+    </SiteLocaleLayout>
   )
 }

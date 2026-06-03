@@ -1,4 +1,4 @@
-import { createClient } from "@/utils/supabase/server"
+import { createClient } from "@supabase/supabase-js"
 import { cache } from "react"
 import { revalidateTag } from "next/cache"
 
@@ -27,6 +27,14 @@ function hasSupabaseConfig() {
   return Boolean(url && key && !url.includes("placeholder.supabase.co") && key !== "placeholder-key")
 }
 
+function createPublicSupabaseClient() {
+  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL || "", process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "", {
+    auth: {
+      persistSession: false,
+    },
+  })
+}
+
 export const getBrands = cache(async (): Promise<Brand[]> => {
   try {
     console.log("[v0] getBrands() called - checking cache...")
@@ -34,7 +42,7 @@ export const getBrands = cache(async (): Promise<Brand[]> => {
       return []
     }
 
-    const supabase = await createClient()
+    const supabase = createPublicSupabaseClient()
 
     const { data, error } = await supabase
       .from("brands")

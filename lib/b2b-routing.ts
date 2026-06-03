@@ -83,3 +83,19 @@ export function getB2BRedirectTarget({
 
   return target
 }
+
+export function getB2BRewritePath(host: string, pathname: string): string | null {
+  if (!isB2BHost(host)) {
+    return null
+  }
+
+  const normalizedPath = stripTrailingSlash(pathname)
+  const locale = getPathLocale(normalizedPath)
+
+  if (!locale || !isAllowedB2BPath(normalizedPath)) {
+    return null
+  }
+
+  const suffix = normalizedPath.replace(`/${locale}`, "") || ""
+  return `/b2b/${locale}${suffix}`
+}

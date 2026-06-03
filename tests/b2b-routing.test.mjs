@@ -15,6 +15,7 @@ const { outputText } = ts.transpileModule(source, {
 const {
   DEFAULT_LOCALE,
   getB2BRedirectTarget,
+  getB2BRewritePath,
   getDefaultLocalizedB2BPath,
   isAllowedB2BPath,
   isB2BHost,
@@ -66,13 +67,17 @@ test("keeps unlocalized B2B FAQ on the B2B host for locale normalization", () =>
 test("checks B2B redirect before old service URL normalization", () => {
   const staticSkipIndex = middlewareSource.indexOf("Skip middleware for static files")
   const b2bRedirectIndex = middlewareSource.indexOf("const b2bRedirectTarget")
+  const b2bRewriteIndex = middlewareSource.indexOf("const b2bRewritePath")
   const servicesMatchIndex = middlewareSource.indexOf("const servicesMatch")
 
   assert.notEqual(staticSkipIndex, -1)
   assert.notEqual(b2bRedirectIndex, -1)
+  assert.notEqual(b2bRewriteIndex, -1)
   assert.notEqual(servicesMatchIndex, -1)
   assert.ok(staticSkipIndex < b2bRedirectIndex)
-  assert.ok(b2bRedirectIndex < servicesMatchIndex)
+  assert.ok(b2bRedirectIndex < b2bRewriteIndex)
+  assert.ok(b2bRewriteIndex < servicesMatchIndex)
+  assert.match(middlewareSource, /NextResponse\.rewrite/)
 })
 
 test("builds default localized B2B path", () => {
@@ -133,4 +138,17 @@ test("does not redirect allowed B2B paths or main-domain paths", () => {
     }),
     null,
   )
+})
+
+test("rewrites localized B2B microsite paths to internal app/b2b routes", () => {
+  assert.equal(getB2BRewritePath("b2b.devicehelp.cz", "/cs"), "/b2b/cs")
+  assert.equal(getB2BRewritePath("b2b.devicehelp.cz", "/uk/faq"), "/b2b/uk/faq")
+  assert.equal(getB2BRewritePath("b2b.localhost:3000", "/en"), "/b2b/en")
+})
+
+test("does not rewrite main-domain, unlocalized, or disallowed B2B paths", () => {
+  assert.equal(getB2BRewritePath("devicehelp.cz", "/cs"), null)
+  assert.equal(getB2BRewritePath("b2b.devicehelp.cz", "/"), null)
+  assert.equal(getB2BRewritePath("b2b.devicehelp.cz", "/faq"), null)
+  assert.equal(getB2BRewritePath("b2b.devicehelp.cz", "/cs/brands/apple"), null)
 })

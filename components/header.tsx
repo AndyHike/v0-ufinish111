@@ -29,7 +29,6 @@ import { LanguageSwitcher } from "@/components/language-switcher"
 import { UserNav } from "@/components/user-nav"
 import { MobileNav } from "@/components/mobile-nav"
 import { useSiteSettings } from "@/hooks/use-site-settings"
-import { isB2BHost } from "@/lib/b2b-routing"
 import { mainSiteUrl } from "@/lib/site-config"
 
 interface SearchResult {
@@ -44,23 +43,24 @@ interface SearchResult {
 interface HeaderProps {
   variant?: "default" | "b2b"
   mainDomainBaseUrl?: string
+  localeOverride?: string
 }
 
-export function Header({ variant = "default", mainDomainBaseUrl = mainSiteUrl }: HeaderProps) {
+export function Header({ variant = "default", mainDomainBaseUrl = mainSiteUrl, localeOverride }: HeaderProps) {
   const t = useTranslations("Header")
   const pathname = usePathname()
   const params = useParams()
   const router = useRouter()
 
   // Extract locale from pathname instead of relying on params which can be unreliable
-  const locale = pathname.split("/")[1] || "cs"
+  const locale = localeOverride || pathname.split("/")[1] || "cs"
 
   const [user, setUser] = useState<any>(null)
   const [userLoaded, setUserLoaded] = useState(false)
 
   useEffect(() => {
     fetch("/api/user/current", {
-      cache: "no-store",
+      cache: "no-cache",
     })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
@@ -82,7 +82,12 @@ export function Header({ variant = "default", mainDomainBaseUrl = mainSiteUrl }:
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
   const { settings } = useSiteSettings()
-  const [hostDerivedVariant, setHostDerivedVariant] = useState(false)
+  const mainDomain = mainDomainBaseUrl.replace(/\/$/, "")
+  const isB2BVariant = variant === "b2b"
+  const visiblePathname =
+    isB2BVariant && pathname.startsWith("/b2b/")
+      ? pathname.replace(/^\/b2b/, "") || `/${locale}`
+      : pathname
 
   const defaultNavigation = [
     { name: t("home"), href: `/${locale}`, icon: <Home className="h-5 w-5" /> },
@@ -91,12 +96,6 @@ export function Header({ variant = "default", mainDomainBaseUrl = mainSiteUrl }:
     { name: t("contact"), href: `/${locale}/contact`, icon: <MessageSquare className="h-5 w-5" /> },
   ]
 
-  const mainDomain = mainDomainBaseUrl.replace(/\/$/, "")
-  useEffect(() => {
-    setHostDerivedVariant(isB2BHost(window.location.host))
-  }, [])
-
-  const isB2BVariant = variant === "b2b" || hostDerivedVariant
   const b2bNavigation = [
     { name: t("b2bHome"), href: `/${locale}`, icon: <Building2 className="h-5 w-5" /> },
     { name: t("b2bBenefits"), href: `/${locale}#benefits`, icon: <Wrench className="h-5 w-5" /> },
@@ -118,9 +117,9 @@ export function Header({ variant = "default", mainDomainBaseUrl = mainSiteUrl }:
   // Helper function to check if a path is active
   const isActive = (path: string) => {
     if (path === `/${locale}`) {
-      return pathname === "/" || pathname === `/${locale}`
+      return visiblePathname === "/" || visiblePathname === `/${locale}`
     }
-    return pathname.startsWith(path)
+    return visiblePathname.startsWith(path)
   }
 
   const trackSearchEvent = (query: string, resultsCount: number) => {
@@ -511,7 +510,11 @@ export function Header({ variant = "default", mainDomainBaseUrl = mainSiteUrl }:
         </div>
       </header>
 
-      <MobileNav variant={isB2BVariant ? "b2b" : "default"} mainDomainBaseUrl={mainDomainBaseUrl} />
+      <MobileNav
+        variant={isB2BVariant ? "b2b" : "default"}
+        mainDomainBaseUrl={mainDomainBaseUrl}
+        localeOverride={locale}
+      />
     </>
   )
 }

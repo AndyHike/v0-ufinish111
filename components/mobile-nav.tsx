@@ -6,21 +6,26 @@ import { Home, Smartphone, MessageSquare, Wrench } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { cn } from "@/lib/utils"
 import { mainSiteUrl } from "@/lib/site-config"
-import { motion } from "framer-motion"
 import { useEffect, useState } from "react"
 
 interface MobileNavProps {
   variant?: "default" | "b2b"
   mainDomainBaseUrl?: string
+  localeOverride?: string
 }
 
-export function MobileNav({ variant = "default", mainDomainBaseUrl = mainSiteUrl }: MobileNavProps) {
+export function MobileNav({ variant = "default", mainDomainBaseUrl = mainSiteUrl, localeOverride }: MobileNavProps) {
   const pathname = usePathname()
   const t = useTranslations()
   const [isVisible, setIsVisible] = useState(true)
 
   // Extract locale from pathname
-  const locale = pathname.split("/")[1] || "cs"
+  const locale = localeOverride || pathname.split("/")[1] || "cs"
+  const isB2BVariant = variant === "b2b"
+  const visiblePathname =
+    isB2BVariant && pathname.startsWith("/b2b/")
+      ? pathname.replace(/^\/b2b/, "") || `/${locale}`
+      : pathname
 
   useEffect(() => {
     let lastScrollY = 0
@@ -45,9 +50,9 @@ export function MobileNav({ variant = "default", mainDomainBaseUrl = mainSiteUrl
   const isActive = (path: string) => {
     const fullPath = `/${locale}${path}`
     if (path === "/") {
-      return pathname === `/${locale}` || pathname === `/${locale}/`
+      return visiblePathname === `/${locale}` || visiblePathname === `/${locale}/`
     }
-    return pathname === fullPath || pathname?.startsWith(fullPath + "/")
+    return visiblePathname === fullPath || visiblePathname?.startsWith(fullPath + "/")
   }
 
   const mainDomain = mainDomainBaseUrl.replace(/\/$/, "")
@@ -97,13 +102,14 @@ export function MobileNav({ variant = "default", mainDomainBaseUrl = mainSiteUrl
     },
   ]
 
-  const navigation = variant === "b2b" ? b2bNavigation : defaultNavigation
+  const navigation = isB2BVariant ? b2bNavigation : defaultNavigation
 
   return (
-    <motion.div
-      className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t py-2 px-4 shadow-lg"
-      animate={{ translateY: isVisible ? 0 : 100 }}
-      transition={{ duration: 0.3 }}
+    <div
+      className={cn(
+        "md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t py-2 px-4 shadow-lg transition-transform duration-300 ease-out",
+        isVisible ? "translate-y-0" : "translate-y-full",
+      )}
     >
       <div className="flex items-center">
         {navigation.map((item) => {
@@ -127,18 +133,15 @@ export function MobileNav({ variant = "default", mainDomainBaseUrl = mainSiteUrl
               </div>
               <span className="text-xs text-center w-full truncate">{item.name}</span>
               {active && (
-                <motion.span
+                <span
                   className="absolute -bottom-2 left-1/2 w-1 h-1 bg-primary rounded-full"
-                  initial={{ opacity: 0, scale: 0 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  style={{ translateX: "-50%" }}
-                  transition={{ duration: 0.3 }}
+                  style={{ transform: "translateX(-50%)" }}
                 />
               )}
             </Link>
           )
         })}
       </div>
-    </motion.div>
+    </div>
   )
 }
