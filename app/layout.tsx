@@ -1,10 +1,12 @@
 import type React from "react"
 import type { Metadata } from "next"
+import { siteIconMetadata } from "@/lib/site-assets"
 
 // Metadata for root is minimal - actual metadata is set per-locale in [locale]/layout.tsx
 export const metadata: Metadata = {
   generator: 'v0.app',
   metadataBase: new URL('https://devicehelp.cz'),
+  icons: siteIconMetadata,
 }
 
 // Цей Layout є лише обгорткою-пустушкою, щоб задовольнити Next.js.

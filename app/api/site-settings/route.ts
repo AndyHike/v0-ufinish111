@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
+import { normalizeSiteAssetPath, siteFaviconPath, siteLogoPath } from "@/lib/site-assets"
 
 // ISR cache - 1 hour for site settings
 export const revalidate = 3600
 
 const DEFAULT_SITE_SETTINGS = {
   defaultLanguage: "uk",
-  siteLogo: "/placeholder-logo.png",
-  siteFavicon: "/favicon.ico",
+  siteLogo: siteLogoPath,
+  siteFavicon: siteFaviconPath,
 }
 
 function hasSupabaseConfig() {
@@ -46,8 +47,8 @@ export async function GET() {
 
     return NextResponse.json({
       defaultLanguage: settingsObj.default_language || "uk",
-      siteLogo: settingsObj.site_logo || "/placeholder-logo.png",
-      siteFavicon: settingsObj.site_favicon || "/favicon.ico",
+      siteLogo: normalizeSiteAssetPath(settingsObj.site_logo, siteLogoPath),
+      siteFavicon: normalizeSiteAssetPath(settingsObj.site_favicon, siteFaviconPath),
     })
   } catch (error) {
     console.warn("Error in site settings API:", error)

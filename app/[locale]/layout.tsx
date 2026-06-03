@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 
 import { SiteLocaleLayout } from "@/components/site-locale-layout"
 import { toOGLocale } from "@/lib/og-locale"
+import { siteIconMetadata } from "@/lib/site-assets"
 import { siteUrl } from "@/lib/site-config"
 import "@/app/globals.css"
 
@@ -49,34 +50,7 @@ export async function generateMetadata({
       title: currentSeo.title,
       description: currentSeo.description,
     },
-    icons: {
-      icon: [
-        {
-          url: "https://xnwoqomipsesacphoczp.supabase.co/storage/v1/object/public/site-assets/favicon/1750418444610-hgnxmfio3rv.PNG",
-          type: "image/png",
-          sizes: "32x32",
-        },
-        {
-          url: "https://xnwoqomipsesacphoczp.supabase.co/storage/v1/object/public/site-assets/favicon/1750418444610-hgnxmfio3rv.PNG",
-          type: "image/png",
-          sizes: "16x16",
-        },
-        {
-          url: "https://xnwoqomipsesacphoczp.supabase.co/storage/v1/object/public/site-assets/favicon/1750418444610-hgnxmfio3rv.PNG",
-          type: "image/png",
-          sizes: "192x192",
-        },
-      ],
-      apple: [
-        {
-          url: "https://xnwoqomipsesacphoczp.supabase.co/storage/v1/object/public/site-assets/favicon/1750418444610-hgnxmfio3rv.PNG",
-          type: "image/png",
-          sizes: "180x180",
-        },
-      ],
-      shortcut:
-        "https://xnwoqomipsesacphoczp.supabase.co/storage/v1/object/public/site-assets/favicon/1750418444610-hgnxmfio3rv.PNG",
-    },
+    icons: siteIconMetadata,
   }
 }
 

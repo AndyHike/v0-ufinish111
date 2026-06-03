@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { siteFaviconPath, siteLogoPath } from "@/lib/site-assets"
 
 interface SiteSettings {
   defaultLanguage: string
@@ -10,8 +11,8 @@ interface SiteSettings {
 
 const DEFAULT_SETTINGS: SiteSettings = {
   defaultLanguage: "uk",
-  siteLogo: "/placeholder-logo.webp", // Use optimized WebP default
-  siteFavicon: "/favicon.ico",
+  siteLogo: siteLogoPath,
+  siteFavicon: siteFaviconPath,
 }
 
 export function useSiteSettings() {

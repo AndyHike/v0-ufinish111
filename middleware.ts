@@ -163,21 +163,6 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  const savedLocale = request.cookies.get("NEXT_LOCALE")?.value
-
-  // Only build response if we need to set cookies
-  if (savedLocale !== locale && supportedLocales.includes(locale)) {
-    const response = NextResponse.next()
-    response.cookies.set("NEXT_LOCALE", locale, {
-      path: "/",
-      maxAge: 31536000,
-      sameSite: "strict",
-      secure: process.env.NODE_ENV === "production",
-      httpOnly: false,
-    })
-    return response
-  }
-
   // Auth checks for protected routes
   if (pathname.includes("/profile") || pathname.includes("/admin")) {
     const sessionId = request.cookies.get("session_id")?.value

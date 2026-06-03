@@ -1,6 +1,7 @@
 "use client"
 
 import { useSiteSettings } from "@/hooks/use-site-settings"
+import { siteLogoPath } from "@/lib/site-assets"
 
 import Image from "next/image"
 
@@ -12,8 +13,7 @@ interface SiteLogoProps {
 export function SiteLogo({ className = "", size = "md" }: SiteLogoProps) {
   const { settings } = useSiteSettings()
 
-  // Always prefer WebP placeholder
-  const logoSrc = settings.siteLogo || "/placeholder-logo.webp"
+  const logoSrc = settings.siteLogo || siteLogoPath
 
   const sizeClasses = getSizeClasses(size)
 
@@ -28,8 +28,8 @@ export function SiteLogo({ className = "", size = "md" }: SiteLogoProps) {
         className="object-contain"
         onError={(e) => {
           const target = e.target as HTMLImageElement
-          if (!target.src.includes("/placeholder-logo.webp")) {
-            target.src = "/placeholder-logo.webp"
+          if (!target.src.includes(siteLogoPath)) {
+            target.src = siteLogoPath
           } else {
             target.style.display = "none"
           }

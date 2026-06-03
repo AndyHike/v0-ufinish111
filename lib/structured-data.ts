@@ -1,3 +1,4 @@
+import { siteLogoPath } from "@/lib/site-assets"
 import { mainSiteUrl } from "@/lib/site-config"
 
 const priorityPages = {
@@ -95,7 +96,7 @@ export function generateLocalBusinessSchema(locale: string) {
     "@type": "LocalBusiness",
     "@id": `${mainSiteUrl}/#business`,
     url: mainSiteUrl,
-    logo: `${mainSiteUrl}/icon-light-32x32.png`,
+    logo: `${mainSiteUrl}${siteLogoPath}`,
     image: `${mainSiteUrl}/tech-fix-storefront.png`,
     name: data.name,
     description: data.description,
