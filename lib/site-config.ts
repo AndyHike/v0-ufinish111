@@ -14,3 +14,6 @@ export const mainSiteUrl = siteUrl
 
 export const b2bSiteUrl =
   process.env.NEXT_PUBLIC_B2B_SITE_URL?.replace(/\/$/, "") ?? "https://b2b.devicehelp.cz"
+
+export const shopSiteUrl =
+  process.env.NEXT_PUBLIC_SHOP_SITE_URL?.replace(/\/$/, "") ?? "https://shop.devicehelp.cz"
