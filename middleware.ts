@@ -1,4 +1,5 @@
 import { getB2BRedirectTarget, getB2BRewritePath } from "@/lib/b2b-routing"
+import { getShopRedirectTarget, getShopRewritePath, isShopHost } from "@/lib/shop-routing"
 import { siteUrl } from "@/lib/site-config"
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
@@ -40,12 +41,14 @@ export async function middleware(request: NextRequest) {
     )
   }
 
-  // Skip middleware for static files, API routes, webhooks, images, and special files
+  // Skip middleware for static files, internal routes, non-shop API routes, webhooks, images, and special files
   if (
     pathname.startsWith("/_next") ||
     pathname === "/b2b" ||
     pathname.startsWith("/b2b/") ||
-    pathname.startsWith("/api/") ||
+    pathname === "/shop" ||
+    pathname.startsWith("/shop/") ||
+    ((pathname === "/api" || pathname.startsWith("/api/")) && !isShopHost(hostname)) ||
     pathname.includes("/webhooks/") ||
     pathname === "/robots.txt" ||
     pathname === "/sitemap.xml" ||
@@ -71,6 +74,28 @@ export async function middleware(request: NextRequest) {
   if (b2bRewritePath) {
     const rewriteUrl = request.nextUrl.clone()
     rewriteUrl.pathname = b2bRewritePath
+    if (rewriteUrl.hostname === "localhost" || rewriteUrl.hostname === "127.0.0.1") {
+      rewriteUrl.protocol = "http:"
+    }
+    return NextResponse.rewrite(rewriteUrl)
+  }
+
+  const shopRedirectTarget = getShopRedirectTarget({
+    host: hostname,
+    pathname,
+    search: request.nextUrl.search,
+    mainBaseUrl: siteUrl,
+  })
+
+  if (shopRedirectTarget) {
+    return NextResponse.redirect(shopRedirectTarget, { status: 308 })
+  }
+
+  const shopRewritePath = getShopRewritePath(hostname, pathname)
+
+  if (shopRewritePath) {
+    const rewriteUrl = request.nextUrl.clone()
+    rewriteUrl.pathname = shopRewritePath
     if (rewriteUrl.hostname === "localhost" || rewriteUrl.hostname === "127.0.0.1") {
       rewriteUrl.protocol = "http:"
     }
@@ -189,6 +214,6 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     // Match all paths including root
-    "/((?!api|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|llms.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff|woff2|ttf|eot)).*)",
+    "/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|llms.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff|woff2|ttf|eot)).*)",
   ],
 }

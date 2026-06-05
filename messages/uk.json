@@ -1413,5 +1413,30 @@
         }
       ]
     }
+  },
+  "Shop": {
+    "header": {
+      "protection": "Захист",
+      "charging": "Заряджання",
+      "parts": "Запчастини",
+      "phones": "Телефони",
+      "search": "Пошук",
+      "cart": "Кошик"
+    },
+    "footer": {
+      "tagline": "Преміальні аксесуари, запчастини та майбутні телефони від DeviceHelp.",
+      "shopping": "Покупки",
+      "support": "Підтримка",
+      "devicehelp": "DeviceHelp",
+      "protection": "Захист телефону",
+      "charging": "Заряджання",
+      "parts": "Запчастини",
+      "terms": "Умови користування",
+      "privacy": "Політика конфіденційності",
+      "contact": "Контакти",
+      "repairSite": "Сервіс телефонів",
+      "b2b": "Сервіс для компаній",
+      "cookieSettings": "Налаштування cookies"
+    }
   }
 }

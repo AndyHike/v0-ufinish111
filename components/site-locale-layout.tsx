@@ -11,6 +11,9 @@ import { Footer } from "@/components/footer"
 import { Header } from "@/components/header"
 import { PromotionalBanner } from "@/components/promotional-banner"
 import { SessionProvider } from "@/components/providers/session-provider"
+import { ShopCartProvider } from "@/components/shop/shop-cart-provider"
+import { ShopFooter } from "@/components/shop/shop-footer"
+import { ShopHeader } from "@/components/shop/shop-header"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
 import { CookieConsentProvider } from "@/contexts/cookie-consent-context"
@@ -19,7 +22,7 @@ import { getMessages } from "@/lib/get-messages"
 import { mainSiteUrl } from "@/lib/site-config"
 import { GlobalDataProvider } from "@/providers/global-data-provider"
 
-export type SiteLayoutVariant = "default" | "b2b"
+export type SiteLayoutVariant = "default" | "b2b" | "shop"
 
 const inter = Inter({
   subsets: ["latin", "latin-ext", "cyrillic"],
@@ -134,9 +137,19 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
                         <PromotionalBanner locale={locale} />
                       </Suspense>
                     )}
-                    <Header variant={variant} mainDomainBaseUrl={mainSiteUrl} localeOverride={locale} />
-                    <main className="flex-1">{children}</main>
-                    <Footer />
+                    {variant === "shop" ? (
+                      <ShopCartProvider>
+                        <ShopHeader locale={locale} />
+                        <main className="flex-1">{children}</main>
+                        <ShopFooter locale={locale} />
+                      </ShopCartProvider>
+                    ) : (
+                      <>
+                        <Header variant={variant} mainDomainBaseUrl={mainSiteUrl} localeOverride={locale} />
+                        <main className="flex-1">{children}</main>
+                        <Footer />
+                      </>
+                    )}
                     <CookieBanner />
                   </div>
                   <Toaster />

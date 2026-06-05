@@ -1,0 +1,568 @@
+import type {
+  ShopCategory,
+  ShopItem,
+  ShopLocale,
+  ShopLocalizedText,
+  ShopSeo,
+  ShopStructuredDataFacts,
+  ShopVariant,
+} from "./types"
+import { shopSiteUrl } from "../site-config"
+
+export const SHOP_LOCALES: ShopLocale[] = ["cs", "uk", "en"]
+
+const DEFAULT_PRODUCT_IMAGE = "/tech-fix-storefront.png"
+
+export function localized(cs: string, uk: string, en: string): ShopLocalizedText {
+  return { cs, uk, en }
+}
+
+function buildShopUrl(locale: ShopLocale, path: string): string {
+  return `${shopSiteUrl}/${locale}${path}`
+}
+
+function localizedSeoText(base: {
+  title: ShopLocalizedText
+  description: ShopLocalizedText
+  image?: string | null
+  facts: ShopStructuredDataFacts
+  path: string
+}): ShopSeo["locales"] {
+  return SHOP_LOCALES.reduce<ShopSeo["locales"]>((locales, locale) => {
+    const canonicalUrl = buildShopUrl(locale, base.path)
+    const name = base.title[locale] ?? base.title.cs ?? base.title.en ?? ""
+    const description = base.description[locale] ?? base.description.cs ?? base.description.en ?? ""
+
+    locales[locale] = {
+      metaTitle: name,
+      metaDescription: description,
+      ogTitle: name,
+      ogDescription: description,
+      ogImage: base.image ?? null,
+      canonicalUrl,
+      robots: "index,follow",
+      indexable: true,
+      structuredDataFacts: {
+        ...base.facts,
+        canonicalUrl,
+        name,
+        description,
+        image: base.image ?? base.facts.image,
+      },
+      structuredData: {},
+      warnings: [],
+    }
+
+    return locales
+  }, {})
+}
+
+function seo({
+  profile,
+  schemaType,
+  path,
+  title,
+  description,
+  image,
+  facts,
+}: {
+  profile: ShopSeo["profile"]
+  schemaType: ShopSeo["schemaType"]
+  path: string
+  title: ShopLocalizedText
+  description: ShopLocalizedText
+  image?: string | null
+  facts: ShopStructuredDataFacts
+}): ShopSeo {
+  const canonicalUrl = buildShopUrl("cs", path)
+
+  return {
+    profile,
+    schemaType,
+    indexable: true,
+    robots: "index,follow",
+    canonicalPathHint: `/cs${path}`,
+    canonicalUrl,
+    locales: localizedSeoText({ title, description, image, facts, path }),
+  }
+}
+
+function categorySeo(slug: string, title: ShopLocalizedText, description: ShopLocalizedText, image: string | null): ShopSeo {
+  return seo({
+    profile: "CATEGORY_LISTING",
+    schemaType: "CollectionPage",
+    path: `/category/${slug}`,
+    title,
+    description,
+    image,
+    facts: {
+      kind: "category",
+      schemaType: "CollectionPage",
+      canonicalUrl: buildShopUrl("cs", `/category/${slug}`),
+      name: title.cs ?? slug,
+      description: description.cs,
+      image: image ?? undefined,
+    },
+  })
+}
+
+export const mockShopCategories: ShopCategory[] = [
+  {
+    id: "cat-protection",
+    parentId: null,
+    slug: "protection",
+    title: localized("Ochrana telefonu", "Захист телефону", "Phone protection"),
+    description: localized(
+      "Ochranna skla, pouzdra a doplnky vybrane servisem.",
+      "Захисне скло, чохли та аксесуари, підібрані сервісом.",
+      "Protective glass, cases, and accessories selected by the service team.",
+    ),
+    imageUrl: "/focused-phone-fix.png",
+    position: 1,
+    isActive: true,
+    seo: categorySeo(
+      "protection",
+      localized("Ochrana telefonu | DeviceHelp Shop", "Захист телефону | DeviceHelp Shop", "Phone protection | DeviceHelp Shop"),
+      localized(
+        "Ochranna skla, pouzdra a ochrana displeje pro telefony.",
+        "Захисне скло, чохли та захист дисплея для телефонів.",
+        "Protective glass, cases, and display protection for phones.",
+      ),
+      "/focused-phone-fix.png",
+    ),
+  },
+  {
+    id: "cat-charging",
+    parentId: null,
+    slug: "charging",
+    title: localized("Nabijeni", "Заряджання", "Charging"),
+    description: localized(
+      "Nabijecky, kabely a adaptery pro kazdodenni pouziti.",
+      "Зарядні пристрої, кабелі та адаптери для щоденного використання.",
+      "Chargers, cables, and adapters for everyday use.",
+    ),
+    imageUrl: "/tech-fix-storefront.png",
+    position: 2,
+    isActive: true,
+    seo: categorySeo(
+      "charging",
+      localized("Nabijeni | DeviceHelp Shop", "Заряджання | DeviceHelp Shop", "Charging | DeviceHelp Shop"),
+      localized(
+        "Kabely, nabijecky a adaptery pro mobilni telefony.",
+        "Кабелі, зарядні пристрої та адаптери для мобільних телефонів.",
+        "Cables, chargers, and adapters for mobile phones.",
+      ),
+      "/tech-fix-storefront.png",
+    ),
+  },
+  {
+    id: "cat-parts",
+    parentId: null,
+    slug: "parts",
+    title: localized("Nahradni dily", "Запчастини", "Replacement parts"),
+    description: localized(
+      "Dily pro servis telefonu s jasnou kompatibilitou.",
+      "Деталі для ремонту телефонів з чіткою сумісністю.",
+      "Phone repair parts with clear compatibility.",
+    ),
+    imageUrl: "/about-us-pic.jpg",
+    position: 3,
+    isActive: true,
+    seo: categorySeo(
+      "parts",
+      localized("Nahradni dily | DeviceHelp Shop", "Запчастини | DeviceHelp Shop", "Replacement parts | DeviceHelp Shop"),
+      localized(
+        "Nahradni dily vybrane servisnim tymem DeviceHelp.",
+        "Запчастини, підібрані сервісною командою DeviceHelp.",
+        "Replacement parts selected by the DeviceHelp service team.",
+      ),
+      "/about-us-pic.jpg",
+    ),
+  },
+  {
+    id: "cat-phones",
+    parentId: null,
+    slug: "phones",
+    title: localized("Telefony", "Телефони", "Phones"),
+    description: localized(
+      "Pripravovana nabidka overenych telefonu.",
+      "Майбутня пропозиція перевірених телефонів.",
+      "Upcoming offer of verified phones.",
+    ),
+    imageUrl: "/tech-fix-storefront.png",
+    position: 4,
+    isActive: true,
+    seo: categorySeo(
+      "phones",
+      localized("Telefony | DeviceHelp Shop", "Телефони | DeviceHelp Shop", "Phones | DeviceHelp Shop"),
+      localized(
+        "Telefony pripravovane pro prodej v DeviceHelp Shop.",
+        "Телефони, які готуємо до продажу в DeviceHelp Shop.",
+        "Phones being prepared for sale in the DeviceHelp Shop.",
+      ),
+      "/tech-fix-storefront.png",
+    ),
+  },
+]
+
+const categoryBySlug = new Map(mockShopCategories.map((category) => [category.slug, category]))
+
+function requireCategory(slug: string): ShopCategory {
+  const category = categoryBySlug.get(slug)
+  if (!category) {
+    throw new Error(`Missing mock shop category: ${slug}`)
+  }
+
+  return category
+}
+
+function modelOption(optionSlug: string, optionTitle: ShopLocalizedText) {
+  return {
+    attributeSlug: "model",
+    attributeTitle: localized("Model", "Модель", "Model"),
+    optionSlug,
+    optionTitle,
+  }
+}
+
+function singleVariant({
+  id,
+  itemId,
+  title,
+  slugOverride,
+  price,
+  salePrice = null,
+  sku,
+  stock,
+  gtin,
+  mpn,
+  optionSlug,
+  image = DEFAULT_PRODUCT_IMAGE,
+}: {
+  id: string
+  itemId: string
+  title: ShopLocalizedText
+  slugOverride: string | null
+  price: number
+  salePrice?: number | null
+  sku: string
+  stock: number | null
+  gtin?: string
+  mpn: string
+  optionSlug: string
+  image?: string
+}): ShopVariant {
+  return {
+    id,
+    itemId,
+    title,
+    slugOverride,
+    price,
+    salePrice,
+    sku,
+    barcode: `INTERNAL-${sku}`,
+    gtin,
+    mpn,
+    isDefault: true,
+    trackInventory: true,
+    selectedOptions: [modelOption(optionSlug, title)],
+    images: [image],
+    availability: { availableStock: stock },
+  }
+}
+
+function productSeo({
+  slug,
+  title,
+  description,
+  image,
+  brand,
+  defaultVariant,
+  schemaType = "Product",
+  variants,
+}: {
+  slug: string
+  title: ShopLocalizedText
+  description: ShopLocalizedText
+  image: string
+  brand: string
+  defaultVariant: ShopVariant
+  schemaType?: "Product" | "ProductGroup"
+  variants?: ShopVariant[]
+}): ShopSeo {
+  const path = `/product/${slug}`
+  const canonicalUrl = buildShopUrl("cs", path)
+
+  return seo({
+    profile: "PRODUCT_DETAIL",
+    schemaType,
+    path,
+    title,
+    description,
+    image,
+    facts: {
+      kind: "product",
+      schemaType,
+      canonicalUrl,
+      name: title.cs ?? slug,
+      description: description.cs,
+      image,
+      brand,
+      condition: "new",
+      price: defaultVariant.price,
+      salePrice: defaultVariant.salePrice,
+      currency: "CZK",
+      sku: defaultVariant.sku,
+      barcode: defaultVariant.barcode,
+      gtin: defaultVariant.gtin,
+      mpn: defaultVariant.mpn,
+      availability: defaultVariant.availability.availableStock === 0 ? "out_of_stock" : "in_stock",
+      variants: variants?.map((variant) => ({
+        id: variant.id,
+        slug: variant.slugOverride ?? slug,
+        title: variant.title.cs ?? slug,
+        canonicalUrl: buildShopUrl("cs", `/product/${slug}${variant.slugOverride ? `/${variant.slugOverride}` : ""}`),
+        price: variant.price,
+        salePrice: variant.salePrice,
+        currency: "CZK",
+        sku: variant.sku,
+        barcode: variant.barcode,
+        gtin: variant.gtin,
+        mpn: variant.mpn,
+        availability: variant.availability.availableStock === 0 ? "out_of_stock" : "in_stock",
+      })),
+    },
+  })
+}
+
+const protectiveGlassVariants: ShopVariant[] = [
+  {
+    ...singleVariant({
+      id: "variant-glass-default",
+      itemId: "item-protective-glass",
+      title: localized("iPhone 13", "iPhone 13", "iPhone 13"),
+      slugOverride: "protective-glass-iphone-13",
+      price: 249,
+      sku: "GLASS-IP13",
+      stock: 7,
+      gtin: "00012345678905",
+      mpn: "GLASS-IP13",
+      optionSlug: "iphone-13",
+      image: "/focused-phone-fix.png",
+    }),
+    isDefault: true,
+  },
+  {
+    ...singleVariant({
+      id: "variant-glass-iphone-11",
+      itemId: "item-protective-glass",
+      title: localized("iPhone 11", "iPhone 11", "iPhone 11"),
+      slugOverride: "protective-glass-iphone-11",
+      price: 229,
+      salePrice: 199,
+      sku: "GLASS-IP11",
+      stock: 3,
+      gtin: "00012345678912",
+      mpn: "GLASS-IP11",
+      optionSlug: "iphone-11",
+      image: "/focused-phone-fix.png",
+    }),
+    isDefault: false,
+  },
+  {
+    ...singleVariant({
+      id: "variant-glass-iphone-12",
+      itemId: "item-protective-glass",
+      title: localized("iPhone 12", "iPhone 12", "iPhone 12"),
+      slugOverride: "protective-glass-iphone-12",
+      price: 239,
+      sku: "GLASS-IP12",
+      stock: 0,
+      gtin: "00012345678950",
+      mpn: "GLASS-IP12",
+      optionSlug: "iphone-12",
+      image: "/focused-phone-fix.png",
+    }),
+    isDefault: false,
+  },
+]
+
+const usbCableVariant = singleVariant({
+  id: "variant-usb-c-cable-default",
+  itemId: "item-usb-c-cable",
+  title: localized("USB-C 1 m", "USB-C 1 м", "USB-C 1 m"),
+  slugOverride: null,
+  price: 299,
+  sku: "CABLE-USBC-1M",
+  stock: 12,
+  gtin: "00012345678929",
+  mpn: "CABLE-USBC-1M",
+  optionSlug: "usb-c-1m",
+  image: "/tech-fix-storefront.png",
+})
+
+const magsafeVariant = singleVariant({
+  id: "variant-magsafe-charger-default",
+  itemId: "item-magsafe-charger",
+  title: localized("MagSafe kompatibilni", "MagSafe сумісний", "MagSafe compatible"),
+  slugOverride: null,
+  price: 890,
+  salePrice: 790,
+  sku: "CHARGER-MAGSAFE",
+  stock: 5,
+  gtin: "00012345678936",
+  mpn: "CHARGER-MAGSAFE",
+  optionSlug: "magsafe-compatible",
+  image: "/tech-fix-storefront.png",
+})
+
+const batteryVariant = singleVariant({
+  id: "variant-iphone-battery-13",
+  itemId: "item-iphone-battery",
+  title: localized("iPhone 13", "iPhone 13", "iPhone 13"),
+  slugOverride: "iphone-battery-13",
+  price: 1190,
+  sku: "BATTERY-IP13",
+  stock: 2,
+  gtin: "00012345678943",
+  mpn: "BATTERY-IP13",
+  optionSlug: "iphone-13",
+  image: "/about-us-pic.jpg",
+})
+
+export const mockShopItems: ShopItem[] = [
+  {
+    id: "item-protective-glass",
+    slug: "protective-glass",
+    title: localized("Premiove ochranne sklo", "Преміальне захисне скло", "Premium protective glass"),
+    description: localized(
+      "Tenké ochranné sklo s přesným výřezem a servisním doporučením.",
+      "Тонке захисне скло з точною посадкою та рекомендацією сервісу.",
+      "Thin protective glass with precise fit and service-team approval.",
+    ),
+    content: localized(
+      "Vhodne pro zakazniky, kteri chteji cistou instalaci a jistotu kompatibility.",
+      "Підійде клієнтам, яким потрібна чиста установка та впевненість у сумісності.",
+      "Built for customers who want clean installation and confident compatibility.",
+    ),
+    images: ["/focused-phone-fix.png"],
+    brand: "DeviceHelp",
+    condition: "new",
+    categories: [requireCategory("protection")],
+    variants: protectiveGlassVariants,
+    linkedItems: [{ type: "accessory", targetSlug: "usb-c-cable" }],
+    seo: productSeo({
+      slug: "protective-glass",
+      title: localized("Premiove ochranne sklo | DeviceHelp Shop", "Преміальне захисне скло | DeviceHelp Shop", "Premium protective glass | DeviceHelp Shop"),
+      description: localized(
+        "Premiove ochranne sklo pro iPhone s dostupnosti podle modelu.",
+        "Преміальне захисне скло для iPhone з наявністю за моделлю.",
+        "Premium iPhone protective glass with model-based availability.",
+      ),
+      image: "/focused-phone-fix.png",
+      brand: "DeviceHelp",
+      defaultVariant: protectiveGlassVariants[0],
+      schemaType: "ProductGroup",
+      variants: protectiveGlassVariants,
+    }),
+  },
+  {
+    id: "item-usb-c-cable",
+    slug: "usb-c-cable",
+    title: localized("Odolny USB-C kabel", "Міцний USB-C кабель", "Durable USB-C cable"),
+    description: localized(
+      "Kazdodenni kabel pro nabijeni telefonu a prislusenstvi.",
+      "Щоденний кабель для заряджання телефону та аксесуарів.",
+      "Everyday cable for charging phones and accessories.",
+    ),
+    content: localized(
+      "Pevny kabel s dobrym pomerem ceny a vydrze pro servisni i domaci pouziti.",
+      "Міцний кабель з хорошим балансом ціни та витривалості для сервісу й дому.",
+      "A sturdy cable with a practical balance of price and durability.",
+    ),
+    images: ["/tech-fix-storefront.png"],
+    brand: "DeviceHelp",
+    condition: "new",
+    categories: [requireCategory("charging")],
+    variants: [usbCableVariant],
+    linkedItems: [{ type: "related", targetSlug: "magsafe-charger" }],
+    seo: productSeo({
+      slug: "usb-c-cable",
+      title: localized("Odolny USB-C kabel | DeviceHelp Shop", "Міцний USB-C кабель | DeviceHelp Shop", "Durable USB-C cable | DeviceHelp Shop"),
+      description: localized(
+        "USB-C kabel pro rychle a spolehlive nabijeni.",
+        "USB-C кабель для швидкого та надійного заряджання.",
+        "USB-C cable for fast and reliable charging.",
+      ),
+      image: "/tech-fix-storefront.png",
+      brand: "DeviceHelp",
+      defaultVariant: usbCableVariant,
+    }),
+  },
+  {
+    id: "item-magsafe-charger",
+    slug: "magsafe-charger",
+    title: localized("MagSafe kompatibilni nabijecka", "MagSafe сумісна зарядка", "MagSafe compatible charger"),
+    description: localized(
+      "Bezdratove nabijeni pro iPhone s cistym pracovnim stolem.",
+      "Бездротове заряджання для iPhone та охайного робочого місця.",
+      "Wireless charging for iPhone and a cleaner desk setup.",
+    ),
+    content: localized(
+      "Dobra volba pro zakazniky, kteri chteji pohodlne nabijeni bez zbytecnych kabelu.",
+      "Хороший вибір для клієнтів, які хочуть зручне заряджання без зайвих кабелів.",
+      "A good fit for customers who want convenient charging without extra cable clutter.",
+    ),
+    images: ["/tech-fix-storefront.png"],
+    brand: "DeviceHelp",
+    condition: "new",
+    categories: [requireCategory("charging")],
+    variants: [magsafeVariant],
+    linkedItems: [{ type: "cross_sell", targetSlug: "usb-c-cable" }],
+    seo: productSeo({
+      slug: "magsafe-charger",
+      title: localized("MagSafe kompatibilni nabijecka | DeviceHelp Shop", "MagSafe сумісна зарядка | DeviceHelp Shop", "MagSafe compatible charger | DeviceHelp Shop"),
+      description: localized(
+        "MagSafe kompatibilni nabijecka se skladovou dostupnosti.",
+        "MagSafe сумісна зарядка зі складською наявністю.",
+        "MagSafe compatible charger with stock availability.",
+      ),
+      image: "/tech-fix-storefront.png",
+      brand: "DeviceHelp",
+      defaultVariant: magsafeVariant,
+    }),
+  },
+  {
+    id: "item-iphone-battery",
+    slug: "iphone-battery",
+    title: localized("Baterie pro iPhone", "Батарея для iPhone", "iPhone battery"),
+    description: localized(
+      "Nahradni baterie pro servisni opravy vybranych modelu.",
+      "Запасна батарея для сервісного ремонту вибраних моделей.",
+      "Replacement battery for repair work on selected models.",
+    ),
+    content: localized(
+      "Produkt je pripraveny pro zakazniky, kteri chteji dil spolu se servisnim doporucenim.",
+      "Товар підготовлений для клієнтів, які хочуть деталь разом із сервісною рекомендацією.",
+      "Prepared for customers who want a part backed by service-team guidance.",
+    ),
+    images: ["/about-us-pic.jpg"],
+    brand: "DeviceHelp",
+    condition: "new",
+    categories: [requireCategory("parts")],
+    variants: [batteryVariant],
+    linkedItems: [{ type: "upsell", targetSlug: "protective-glass" }],
+    seo: productSeo({
+      slug: "iphone-battery",
+      title: localized("Baterie pro iPhone | DeviceHelp Shop", "Батарея для iPhone | DeviceHelp Shop", "iPhone battery | DeviceHelp Shop"),
+      description: localized(
+        "Nahradni baterie pro iPhone s jasnou dostupnosti.",
+        "Запасна батарея для iPhone з чіткою наявністю.",
+        "Replacement iPhone battery with clear availability.",
+      ),
+      image: "/about-us-pic.jpg",
+      brand: "DeviceHelp",
+      defaultVariant: batteryVariant,
+    }),
+  },
+]
