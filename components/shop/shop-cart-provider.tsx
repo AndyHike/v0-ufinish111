@@ -3,20 +3,14 @@
 import type React from "react"
 import { createContext, useContext, useMemo, useReducer } from "react"
 
-import type { ShopCurrency } from "@/lib/shop/types"
-
-export interface ShopCartLine {
-  variantId: string
-  itemId: string
-  quantity: number
-  titleSnapshot: string
-  priceSnapshot: number
-  currency: ShopCurrency
-}
-
-interface ShopCartState {
-  lines: ShopCartLine[]
-}
+import {
+  addCartLine,
+  getCartLineCount,
+  removeCartLine,
+  setCartLineQuantity,
+  type ShopCart,
+  type ShopCartLine,
+} from "@/lib/shop/cart"
 
 type ShopCartAction =
   | { type: "add"; line: ShopCartLine; maxQuantity: number }
@@ -24,51 +18,20 @@ type ShopCartAction =
   | { type: "setQuantity"; variantId: string; quantity: number; maxQuantity: number }
   | { type: "clear" }
 
-function clampQuantity(quantity: number, maxQuantity: number): number {
-  if (maxQuantity <= 0) {
-    return 0
-  }
-
-  return Math.max(1, Math.min(quantity, maxQuantity))
-}
-
-export function shopCartReducer(state: ShopCartState, action: ShopCartAction): ShopCartState {
+export function shopCartReducer(state: ShopCart, action: ShopCartAction): ShopCart {
   if (action.type === "clear") {
     return { lines: [] }
   }
 
   if (action.type === "remove") {
-    return { lines: state.lines.filter((line) => line.variantId !== action.variantId) }
+    return removeCartLine(state, action.variantId)
   }
 
   if (action.type === "setQuantity") {
-    const quantity = clampQuantity(action.quantity, action.maxQuantity)
-    if (quantity === 0) {
-      return { lines: state.lines.filter((line) => line.variantId !== action.variantId) }
-    }
-
-    return {
-      lines: state.lines.map((line) => (line.variantId === action.variantId ? { ...line, quantity } : line)),
-    }
+    return setCartLineQuantity(state, action.variantId, action.quantity, action.maxQuantity)
   }
 
-  const quantity = clampQuantity(action.line.quantity, action.maxQuantity)
-  if (quantity === 0) {
-    return state
-  }
-
-  const existing = state.lines.find((line) => line.variantId === action.line.variantId)
-  if (!existing) {
-    return { lines: [{ ...action.line, quantity }] }
-  }
-
-  return {
-    lines: state.lines.map((line) =>
-      line.variantId === action.line.variantId
-        ? { ...line, quantity: clampQuantity(line.quantity + action.line.quantity, action.maxQuantity) }
-        : line,
-    ),
-  }
+  return addCartLine(state, action.line, action.maxQuantity)
 }
 
 const ShopCartContext = createContext<{
@@ -82,7 +45,7 @@ const ShopCartContext = createContext<{
 
 export function ShopCartProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(shopCartReducer, { lines: [] })
-  const count = state.lines.reduce((sum, line) => sum + line.quantity, 0)
+  const count = getCartLineCount(state)
 
   const value = useMemo(
     () => ({
