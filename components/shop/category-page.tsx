@@ -4,6 +4,7 @@ import { ProductCard } from "@/components/shop/product-card"
 import { StructuredData } from "@/components/shop/structured-data"
 import { buildBreadcrumbJsonLd, buildCollectionPageJsonLd } from "@/lib/shop/seo"
 import { getLocalizedText } from "@/lib/shop/catalog"
+import { shopSiteUrl } from "@/lib/site-config"
 import type { ShopCategory, ShopLocale, ShopProductCardView } from "@/lib/shop/types"
 
 const CATEGORY_COPY = {
@@ -45,7 +46,7 @@ export function CategoryPage({
   const canonicalUrl = category.seo.locales[locale]?.canonicalUrl ?? category.seo.canonicalUrl
   const collectionJsonLd = buildCollectionPageJsonLd({ name: title, description, url: canonicalUrl })
   const breadcrumbJsonLd = buildBreadcrumbJsonLd(locale, [
-    { name: copy.shop, url: `https://shop.devicehelp.cz/${locale}` },
+    { name: copy.shop, url: `${shopSiteUrl}/${locale}` },
     { name: title, url: canonicalUrl },
   ])
 

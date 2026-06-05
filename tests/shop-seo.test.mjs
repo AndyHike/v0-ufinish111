@@ -19,6 +19,8 @@ async function importCompiledShopModules() {
     "lib/shop/mock-data.ts",
     "lib/shop/catalog.ts",
     "lib/shop/seo.ts",
+    "lib/seo/sitemap-xml.ts",
+    "lib/seo/shop-sitemap.ts",
   ]
 
   try {
@@ -41,6 +43,7 @@ async function importCompiledShopModules() {
     return {
       catalog: require(join(tempRoot, "lib/shop/catalog.js")),
       seo: require(join(tempRoot, "lib/shop/seo.js")),
+      shopSitemap: require(join(tempRoot, "lib/seo/shop-sitemap.js")),
     }
   } finally {
     setTimeout(() => {
@@ -49,7 +52,7 @@ async function importCompiledShopModules() {
   }
 }
 
-const { catalog, seo } = await importCompiledShopModules()
+const { catalog, seo, shopSitemap } = await importCompiledShopModules()
 
 test("builds metadata from localized SEO with canonical and alternates", () => {
   const product = catalog.getMockShopProduct("cs", "protective-glass")
@@ -101,4 +104,34 @@ test("builds sitemap records from indexable SEO records", () => {
   assert.equal(records[0].url, "https://shop.devicehelp.cz/cs/category/protection")
   assert.equal(records[1].alternates.uk, "https://shop.devicehelp.cz/uk/product/protective-glass")
   assert.equal(records[1].changeFrequency, "weekly")
+})
+
+test("shop SEO mock data is based on configurable shopSiteUrl", async () => {
+  const source = await readFile(new URL("../lib/shop/mock-data.ts", import.meta.url), "utf8")
+
+  assert.match(source, /shopSiteUrl/)
+  assert.doesNotMatch(source, /const SHOP_BASE_URL = "https:\/\/shop\.devicehelp\.cz"/)
+})
+
+test("robots and sitemap route handlers branch for shop hosts", async () => {
+  const robotsSource = await readFile(new URL("../app/robots.txt/route.ts", import.meta.url), "utf8")
+  const sitemapSource = await readFile(new URL("../app/sitemap.xml/route.ts", import.meta.url), "utf8")
+
+  assert.match(robotsSource, /isShopHost/)
+  assert.match(robotsSource, /shopSiteUrl/)
+  assert.match(sitemapSource, /isShopHost/)
+  assert.match(sitemapSource, /getShopSitemapEntries/)
+})
+
+test("shop sitemap exposes only shop catalog URLs", () => {
+  const records = shopSitemap.getShopSitemapEntries()
+  const urls = records.map((record) => record.url)
+
+  assert.ok(urls.includes("https://shop.devicehelp.cz/cs"))
+  assert.ok(urls.includes("https://shop.devicehelp.cz/cs/category/protection"))
+  assert.ok(urls.includes("https://shop.devicehelp.cz/cs/product/protective-glass"))
+  assert.equal(urls.some((url) => url.includes("/services/")), false)
+  assert.equal(urls.some((url) => url.includes("/brands/")), false)
+  assert.equal(urls.some((url) => url.includes("/cart")), false)
+  assert.equal(urls.some((url) => url.includes("/checkout")), false)
 })

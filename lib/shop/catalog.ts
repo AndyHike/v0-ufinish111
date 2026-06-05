@@ -63,14 +63,24 @@ export function getAvailabilityLabel(variant: ShopVariant, locale: ShopLocale): 
 }
 
 export function selectProductVariant(item: ShopItem, variantSlug?: string): ShopVariant {
-  const variantBySlug = variantSlug ? item.variants.find((variant) => variant.slugOverride === variantSlug) : null
-  const selectedVariant = variantBySlug ?? item.variants.find((variant) => variant.isDefault) ?? item.variants[0]
+  const selectedVariant =
+    (variantSlug ? item.variants.find((variant) => variant.slugOverride === variantSlug) : null) ??
+    item.variants.find((variant) => variant.isDefault) ??
+    item.variants[0]
 
   if (!selectedVariant) {
     throw new Error(`Shop item ${item.slug} has no variants`)
   }
 
   return selectedVariant
+}
+
+export function selectProductVariantByRoute(item: ShopItem, variantSlug?: string): ShopVariant | null {
+  if (variantSlug) {
+    return item.variants.find((variant) => variant.slugOverride === variantSlug) ?? null
+  }
+
+  return selectProductVariant(item)
 }
 
 export function toProductCard(item: ShopItem, locale: ShopLocale): ShopProductCardView {
@@ -141,7 +151,11 @@ export function getMockShopProduct(
     return null
   }
 
-  const selectedVariant = selectProductVariant(item, variantSlug)
+  const selectedVariant = selectProductVariantByRoute(item, variantSlug)
+  if (!selectedVariant) {
+    return null
+  }
+
   const relatedItems = item.linkedItems
     .map((link) => mockShopItems.find((product) => product.slug === link.targetSlug))
     .filter((product): product is ShopItem => Boolean(product))

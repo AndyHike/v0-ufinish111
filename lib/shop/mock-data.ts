@@ -7,10 +7,10 @@ import type {
   ShopStructuredDataFacts,
   ShopVariant,
 } from "./types"
+import { shopSiteUrl } from "../site-config"
 
 export const SHOP_LOCALES: ShopLocale[] = ["cs", "uk", "en"]
 
-const SHOP_BASE_URL = "https://shop.devicehelp.cz"
 const DEFAULT_PRODUCT_IMAGE = "/tech-fix-storefront.png"
 
 export function localized(cs: string, uk: string, en: string): ShopLocalizedText {
@@ -18,7 +18,7 @@ export function localized(cs: string, uk: string, en: string): ShopLocalizedText
 }
 
 function buildShopUrl(locale: ShopLocale, path: string): string {
-  return `${SHOP_BASE_URL}/${locale}${path}`
+  return `${shopSiteUrl}/${locale}${path}`
 }
 
 function localizedSeoText(base: {

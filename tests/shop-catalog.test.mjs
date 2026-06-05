@@ -12,7 +12,7 @@ const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 
 async function importCompiledShopModule(entryFile) {
   const tempRoot = await mkdtemp(join(tmpdir(), "devicehelp-shop-catalog-"))
-  const files = ["lib/shop/types.ts", "lib/shop/mock-data.ts", "lib/shop/catalog.ts"]
+  const files = ["lib/site-config.ts", "lib/shop/types.ts", "lib/shop/mock-data.ts", "lib/shop/catalog.ts"]
 
   try {
     for (const file of files) {
@@ -72,6 +72,12 @@ test("selects variant by slug override", () => {
 
   assert.equal(product?.selectedVariant.slugOverride, "protective-glass-iphone-11")
   assert.equal(product?.selectedVariant.salePrice, 199)
+})
+
+test("returns null for invalid variant slug overrides", () => {
+  const product = catalog.getMockShopProduct("cs", "protective-glass", "not-a-real-variant")
+
+  assert.equal(product, null)
 })
 
 test("keeps planned default variant ids and stock counts", () => {
