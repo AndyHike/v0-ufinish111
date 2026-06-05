@@ -1084,5 +1084,30 @@
         }
       ]
     }
+  },
+  "Shop": {
+    "header": {
+      "protection": "Ochrana",
+      "charging": "Nabijeni",
+      "parts": "Dily",
+      "phones": "Telefony",
+      "search": "Hledat",
+      "cart": "Kosik"
+    },
+    "footer": {
+      "tagline": "Premiove prislusenstvi, dily a budouci telefony od DeviceHelp.",
+      "shopping": "Nakupovani",
+      "support": "Podpora",
+      "devicehelp": "DeviceHelp",
+      "protection": "Ochrana telefonu",
+      "charging": "Nabijeni",
+      "parts": "Nahradni dily",
+      "terms": "Obchodni podminky",
+      "privacy": "Ochrana osobnich udaju",
+      "contact": "Kontakt",
+      "repairSite": "Servis telefonu",
+      "b2b": "Firemni servis",
+      "cookieSettings": "Nastaveni cookies"
+    }
   }
 }

@@ -965,5 +965,30 @@
         }
       ]
     }
+  },
+  "Shop": {
+    "header": {
+      "protection": "Protection",
+      "charging": "Charging",
+      "parts": "Parts",
+      "phones": "Phones",
+      "search": "Search",
+      "cart": "Cart"
+    },
+    "footer": {
+      "tagline": "Premium accessories, parts, and future phones from DeviceHelp.",
+      "shopping": "Shopping",
+      "support": "Support",
+      "devicehelp": "DeviceHelp",
+      "protection": "Phone protection",
+      "charging": "Charging",
+      "parts": "Replacement parts",
+      "terms": "Terms",
+      "privacy": "Privacy",
+      "contact": "Contact",
+      "repairSite": "Phone repair site",
+      "b2b": "Company service",
+      "cookieSettings": "Cookie settings"
+    }
   }
 }
