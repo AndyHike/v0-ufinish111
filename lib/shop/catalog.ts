@@ -82,7 +82,7 @@ export function toProductCard(item: ShopItem, locale: ShopLocale): ShopProductCa
     slug: item.slug,
     variantSlug: variant.slugOverride,
     title: getLocalizedText(item.title, locale),
-    image: variant.images[0] ?? item.images[0] ?? "/placeholder.jpg",
+    image: variant.images[0] ?? item.images[0] ?? "/tech-fix-storefront.png",
     price: variant.price,
     salePrice: variant.salePrice,
     currency: "CZK",

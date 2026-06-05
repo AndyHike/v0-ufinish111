@@ -43,12 +43,16 @@ export function ShopHeader({ locale }: { locale: string }) {
           <LanguageSwitcher />
           <Link
             href={`/${locale}/cart`}
+            data-testid="shop-cart-link"
             className="relative inline-flex h-9 w-9 items-center justify-center rounded-md border border-gray-200 text-gray-800 transition-colors hover:bg-gray-50"
             aria-label={t("cart")}
           >
             <ShoppingBag className="h-4 w-4" />
             {count > 0 ? (
-              <span className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-xs font-semibold text-primary-foreground">
+              <span
+                data-testid="shop-cart-count"
+                className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-xs font-semibold text-primary-foreground"
+              >
                 {count}
               </span>
             ) : null}

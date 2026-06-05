@@ -189,7 +189,7 @@ export const mockShopCategories: ShopCategory[] = [
       "Майбутня пропозиція перевірених телефонів.",
       "Upcoming offer of verified phones.",
     ),
-    imageUrl: "/placeholder.jpg",
+    imageUrl: "/tech-fix-storefront.png",
     position: 4,
     isActive: true,
     seo: categorySeo(
@@ -200,7 +200,7 @@ export const mockShopCategories: ShopCategory[] = [
         "Телефони, які готуємо до продажу в DeviceHelp Shop.",
         "Phones being prepared for sale in the DeviceHelp Shop.",
       ),
-      "/placeholder.jpg",
+      "/tech-fix-storefront.png",
     ),
   },
 ]

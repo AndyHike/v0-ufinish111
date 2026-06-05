@@ -1,7 +1,7 @@
 import Image from "next/image"
 
 export function ProductGallery({ images, title }: { images: string[]; title: string }) {
-  const displayImages = images.length > 0 ? images : ["/placeholder.jpg"]
+  const displayImages = images.length > 0 ? images : ["/tech-fix-storefront.png"]
 
   return (
     <div className="grid gap-3">

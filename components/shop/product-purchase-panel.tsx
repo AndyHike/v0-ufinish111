@@ -87,6 +87,7 @@ export function ProductPurchasePanel({
               <button
                 key={entry.id}
                 type="button"
+                data-testid={`shop-variant-${entry.id}`}
                 onClick={() => {
                   setVariantId(entry.id)
                   setQuantity(1)
@@ -112,6 +113,7 @@ export function ProductPurchasePanel({
         </label>
         <input
           id="shop-product-quantity"
+          data-testid="shop-product-quantity"
           type="number"
           min={1}
           max={Math.max(1, maxQuantity)}
@@ -123,6 +125,7 @@ export function ProductPurchasePanel({
       </div>
 
       <Button
+        data-testid="shop-add-to-cart"
         className="mt-6 w-full"
         size="lg"
         disabled={!canBuy}
