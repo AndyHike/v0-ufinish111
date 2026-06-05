@@ -369,6 +369,22 @@ const protectiveGlassVariants: ShopVariant[] = [
     }),
     isDefault: false,
   },
+  {
+    ...singleVariant({
+      id: "variant-glass-iphone-12",
+      itemId: "item-protective-glass",
+      title: localized("iPhone 12", "iPhone 12", "iPhone 12"),
+      slugOverride: "protective-glass-iphone-12",
+      price: 239,
+      sku: "GLASS-IP12",
+      stock: 0,
+      gtin: "00012345678950",
+      mpn: "GLASS-IP12",
+      optionSlug: "iphone-12",
+      image: "/focused-phone-fix.png",
+    }),
+    isDefault: false,
+  },
 ]
 
 const usbCableVariant = singleVariant({

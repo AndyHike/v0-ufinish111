@@ -97,6 +97,13 @@ test("limits quantity by tracked stock", () => {
   assert.equal(catalog.getMaxPurchasableQuantity({ trackInventory: false, availability: { availableStock: null } }), 99)
 })
 
+test("marks out-of-stock variants as not purchasable", () => {
+  const product = catalog.getMockShopProduct("cs", "protective-glass", "protective-glass-iphone-12")
+
+  assert.equal(catalog.getMaxPurchasableQuantity(product.selectedVariant), 0)
+  assert.equal(catalog.isVariantPurchasable(product.selectedVariant), false)
+})
+
 test("formats CZK prices", () => {
   assert.match(catalog.formatShopPrice(249, "cs"), /^249\s*Kč$/u)
 })
