@@ -70,7 +70,6 @@ export default async function ShopCategoryRoute({
       category={data.category}
       children={data.children}
       ancestors={data.ancestors}
-      categoryTree={data.categoryTree}
       priceBounds={data.priceBounds}
       activeFilters={data.activeFilters}
       products={data.products}

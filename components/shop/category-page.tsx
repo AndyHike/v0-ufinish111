@@ -9,7 +9,6 @@ import type {
   ShopCategory,
   ShopCategoryFilters,
   ShopCategoryPriceBounds,
-  ShopCategoryTreeNode,
   ShopLocale,
   ShopProductCardView,
 } from "@/lib/shop/types"
@@ -17,7 +16,6 @@ import type {
 const CATEGORY_COPY = {
   cs: {
     shop: "Shop",
-    catalog: "Catalog",
     filters: "Filtry",
     filtersText: "Atributove filtry prijdou z katalogoveho API; zaklad ceny a razeni uz drzi URL.",
     empty: "V teto kategorii zatim nejsou produkty.",
@@ -37,7 +35,6 @@ const CATEGORY_COPY = {
   },
   uk: {
     shop: "Shop",
-    catalog: "Каталог",
     filters: "Фільтри",
     filtersText: "Атрибутні фільтри прийдуть з catalog API; базова ціна й сортування вже тримають URL.",
     empty: "У цій категорії поки немає товарів.",
@@ -57,7 +54,6 @@ const CATEGORY_COPY = {
   },
   en: {
     shop: "Shop",
-    catalog: "Catalog",
     filters: "Filters",
     filtersText: "Attribute filters will come from the catalog API; price and sort already live in the URL.",
     empty: "There are no products in this category yet.",
@@ -81,53 +77,11 @@ function categoryHref(locale: ShopLocale, category: ShopCategory) {
   return `/${locale}/category/${category.slug}`
 }
 
-function CategoryTree({
-  locale,
-  nodes,
-  activeSlug,
-  depth = 0,
-}: {
-  locale: ShopLocale
-  nodes: ShopCategoryTreeNode[]
-  activeSlug: string
-  depth?: number
-}) {
-  return (
-    <ul className={depth === 0 ? "space-y-1" : "mt-1 space-y-1 border-l border-gray-200 pl-3"}>
-      {nodes.map((node) => {
-        const isActive = node.category.slug === activeSlug
-
-        return (
-          <li key={node.category.id}>
-            <Link
-              href={categoryHref(locale, node.category)}
-              className={`flex items-center justify-between rounded-md px-3 py-2 text-sm transition ${
-                isActive ? "bg-gray-950 font-semibold text-white" : "text-gray-700 hover:bg-gray-100 hover:text-gray-950"
-              }`}
-            >
-              <span className="min-w-0 truncate">{getLocalizedText(node.category.title, locale)}</span>
-              {node.children.length > 0 ? (
-                <span className={isActive ? "ml-2 text-xs text-gray-300" : "ml-2 text-xs text-gray-400"}>
-                  {node.children.length}
-                </span>
-              ) : null}
-            </Link>
-            {node.children.length > 0 ? (
-              <CategoryTree locale={locale} nodes={node.children} activeSlug={activeSlug} depth={depth + 1} />
-            ) : null}
-          </li>
-        )
-      })}
-    </ul>
-  )
-}
-
 export function CategoryPage({
   locale,
   category,
   children: childCategories,
   ancestors,
-  categoryTree,
   priceBounds,
   activeFilters,
   products,
@@ -136,7 +90,6 @@ export function CategoryPage({
   category: ShopCategory
   children: ShopCategory[]
   ancestors: ShopCategory[]
-  categoryTree: ShopCategoryTreeNode[]
   priceBounds: ShopCategoryPriceBounds
   activeFilters: ShopCategoryFilters
   products: ShopProductCardView[]
@@ -182,13 +135,6 @@ export function CategoryPage({
 
         <div className="mt-8 grid gap-8 lg:grid-cols-[280px_minmax(0,1fr)]">
           <aside className="space-y-5 lg:sticky lg:top-24 lg:h-fit">
-            <section className="rounded-lg border border-gray-200 p-4">
-              <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-gray-500">{copy.catalog}</h2>
-              <div className="mt-4">
-                <CategoryTree locale={locale} nodes={categoryTree} activeSlug={category.slug} />
-              </div>
-            </section>
-
             <form method="get" className="rounded-lg border border-gray-200 p-4">
               <div className="flex items-center justify-between gap-3">
                 <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-gray-500">{copy.filters}</h2>

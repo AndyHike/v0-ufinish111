@@ -70,7 +70,6 @@ export default async function ShopHomeRoute({ params }: { params: Promise<{ loca
       heroTitle={data.hero.title}
       heroDescription={data.hero.description}
       heroImage={data.hero.image}
-      categories={data.categories}
       categoryTree={data.categoryTree}
       featuredProducts={data.featuredProducts}
     />
