@@ -3,13 +3,7 @@
 import { Search } from "lucide-react"
 import { useMemo, useState } from "react"
 
-import {
-  formatShopPrice,
-  getAvailabilityLabel,
-  getLocalizedText,
-  getMaxPurchasableQuantity,
-  getVariantSelectorMode,
-} from "@/lib/shop/catalog"
+import { getLocalizedText, getMaxPurchasableQuantity, getVariantSelectorMode } from "@/lib/shop/catalog"
 import type { ShopLocale, ShopVariant } from "@/lib/shop/types"
 
 const SELECTOR_COPY = {
@@ -49,7 +43,10 @@ export function ProductVariantSelector({
 }) {
   const copy = SELECTOR_COPY[locale]
   const [query, setQuery] = useState("")
-  const mode = getVariantSelectorMode({ variantCount: variants.length })
+  // Search box appears only when there are many variants; the chip list itself is
+  // always compact (wraps + scrolls within a capped height) so a large variant
+  // count never inflates the column.
+  const showSearch = getVariantSelectorMode({ variantCount: variants.length }) === "search"
   const normalizedQuery = query.trim().toLowerCase()
   const visibleVariants = useMemo(
     () =>
@@ -59,15 +56,10 @@ export function ProductVariantSelector({
     [locale, normalizedQuery, variants],
   )
 
-  const listClassName =
-    mode === "search"
-      ? "mt-3 max-h-72 overflow-y-auto rounded-md border border-gray-200"
-      : "mt-3 grid gap-2 sm:grid-cols-2"
-
   return (
     <div>
-      {mode === "search" ? (
-        <label className="relative block">
+      {showSearch ? (
+        <label className="relative mb-3 block">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           <input
             type="search"
@@ -79,12 +71,14 @@ export function ProductVariantSelector({
         </label>
       ) : null}
 
-      <div className={listClassName}>
+      {/* Compact wrapping pills. Title-only keeps each chip on one line; the
+          selected variant's price/availability is shown in the purchase panel.
+          Capped height with internal scroll bounds the column. */}
+      <div className="flex max-h-[168px] flex-wrap gap-2 overflow-y-auto pr-0.5">
         {visibleVariants.map((variant) => {
           const entryMaxQuantity = getMaxPurchasableQuantity(variant)
           const isSelected = variant.id === selectedVariantId
-          const displayPrice = variant.salePrice ?? variant.price
-          const availability = entryMaxQuantity > 0 ? getAvailabilityLabel(variant, locale) : copy.outOfStock
+          const isOutOfStock = entryMaxQuantity <= 0
 
           return (
             <button
@@ -92,25 +86,17 @@ export function ProductVariantSelector({
               type="button"
               data-testid={`shop-variant-${variant.id}`}
               onClick={() => onSelectVariant(variant.id)}
-              className={`w-full border px-3 py-2 text-left text-sm transition-colors ${
-                mode === "search" ? "border-x-0 border-t-0 last:border-b-0" : "rounded-md"
-              } ${
+              disabled={isOutOfStock}
+              title={isOutOfStock ? copy.outOfStock : undefined}
+              className={`rounded-md border px-3 py-1.5 text-sm font-medium transition-colors ${
                 isSelected
                   ? "border-gray-950 bg-gray-950 text-white"
-                  : "border-gray-200 bg-white hover:bg-gray-50"
+                  : isOutOfStock
+                    ? "cursor-not-allowed border-gray-200 text-gray-300 line-through"
+                    : "border-gray-300 bg-white text-gray-700 hover:border-gray-400 hover:bg-gray-50"
               }`}
             >
-              <span className="flex items-center justify-between gap-3">
-                <span className="min-w-0">
-                  <span className="block break-words font-medium">{getLocalizedText(variant.title, locale)}</span>
-                  <span className={isSelected ? "mt-1 block text-xs text-gray-200" : "mt-1 block text-xs text-gray-500"}>
-                    {availability}
-                  </span>
-                </span>
-                <span className={isSelected ? "shrink-0 text-xs font-semibold text-white" : "shrink-0 text-xs font-semibold text-gray-700"}>
-                  {formatShopPrice(displayPrice, locale)}
-                </span>
-              </span>
+              {getLocalizedText(variant.title, locale)}
             </button>
           )
         })}

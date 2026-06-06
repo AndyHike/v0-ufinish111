@@ -349,7 +349,7 @@ export function CategoryPage({
             </div>
 
             {products.length > 0 ? (
-              <div className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+              <div className="mt-6 grid grid-cols-2 gap-4 sm:gap-5 xl:grid-cols-3">
                 {products.map((product) => (
                   <ProductCard key={product.itemId} locale={locale} product={product} />
                 ))}

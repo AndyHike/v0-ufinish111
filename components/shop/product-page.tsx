@@ -79,25 +79,11 @@ export function ProductPage({
           ) : null}
         </nav>
 
-        <div className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,440px)_minmax(0,1fr)]">
+        <div className="mt-8 grid items-start gap-10 lg:grid-cols-[minmax(0,440px)_minmax(0,1fr)]">
           <div className="min-w-0">
             <ProductGallery images={selectedVariant.images.length ? selectedVariant.images : item.images} title={title} />
-            <div className="mt-4 flex flex-wrap gap-2">
-              <a
-                href="#shop-description"
-                className="inline-flex items-center rounded-full border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:border-gray-400 hover:bg-gray-50"
-              >
-                {copy.details}
-              </a>
-              <a
-                href="#shop-specifications"
-                className="inline-flex items-center rounded-full border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:border-gray-400 hover:bg-gray-50"
-              >
-                {copy.specifications}
-              </a>
-            </div>
           </div>
-          <div className="min-w-0">
+          <div className="flex min-w-0 flex-col">
             <h1 className="max-w-full break-words text-2xl font-semibold leading-tight tracking-tight sm:text-3xl md:text-4xl">{title}</h1>
             <p className="mt-4 text-sm leading-7 text-gray-600">{getLocalizedText(item.description, locale)}</p>
             <div className="mt-8">
@@ -110,7 +96,25 @@ export function ProductPage({
           </div>
         </div>
 
-        <section id="shop-description" className="mt-12 scroll-mt-24 border-t border-gray-200 pt-10">
+        {/* Quick-jump nav bar: tabs sit centered between a top and bottom rule. */}
+        <nav className="mt-10 border-y border-gray-200">
+          <div className="flex justify-center gap-6 py-3">
+            <a
+              href="#shop-description"
+              className="px-2 py-1 text-sm font-medium text-gray-700 underline-offset-8 transition hover:text-gray-950 hover:underline"
+            >
+              {copy.details}
+            </a>
+            <a
+              href="#shop-specifications"
+              className="px-2 py-1 text-sm font-medium text-gray-700 underline-offset-8 transition hover:text-gray-950 hover:underline"
+            >
+              {copy.specifications}
+            </a>
+          </div>
+        </nav>
+
+        <section id="shop-description" className="mt-10 scroll-mt-24">
           <h2 className="text-xl font-semibold">{copy.details}</h2>
           <p className="mt-4 max-w-3xl text-sm leading-7 text-gray-600">{getLocalizedText(item.content, locale)}</p>
         </section>
@@ -132,7 +136,7 @@ export function ProductPage({
         {relatedItems.length > 0 ? (
           <section className="mt-12">
             <h2 className="text-xl font-semibold">{copy.related}</h2>
-            <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="mt-6 grid grid-cols-2 gap-4 sm:gap-5 lg:grid-cols-4">
               {relatedItems.map((product) => (
                 <ProductCard key={product.itemId} locale={locale} product={product} />
               ))}
