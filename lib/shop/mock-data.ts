@@ -624,19 +624,23 @@ const modelTestProtectiveGlassVariants: ShopVariant[] = modelTestGlassModels.map
   isDefault: index === 0,
 }))
 
-const usbCableVariant = singleVariant({
-  id: "variant-usb-c-cable-default",
-  itemId: "item-usb-c-cable",
-  title: localized("USB-C 1 m", "USB-C 1 м", "USB-C 1 m"),
-  slugOverride: null,
-  price: 299,
-  sku: "CABLE-USBC-1M",
-  stock: 12,
-  gtin: "00012345678929",
-  mpn: "CABLE-USBC-1M",
-  optionSlug: "usb-c-1m",
-  image: "/tech-fix-storefront.png",
-})
+const usbCableVariant: ShopVariant = {
+  ...singleVariant({
+    id: "variant-usb-c-cable-default",
+    itemId: "item-usb-c-cable",
+    title: localized("USB-C 1 m", "USB-C 1 м", "USB-C 1 m"),
+    slugOverride: null,
+    price: 299,
+    sku: "CABLE-USBC-1M",
+    stock: 12,
+    gtin: "00012345678929",
+    mpn: "CABLE-USBC-1M",
+    optionSlug: "usb-c-1m",
+    image: "/tech-fix-storefront.png",
+  }),
+  // Demo: multiple photos so the gallery/card multi-image UI is exercised.
+  images: ["/tech-fix-storefront.png", "/focused-phone-fix.png", "/about-us-pic.jpg"],
+}
 
 const magsafeVariant = singleVariant({
   id: "variant-magsafe-charger-default",
@@ -653,19 +657,23 @@ const magsafeVariant = singleVariant({
   image: "/tech-fix-storefront.png",
 })
 
-const batteryVariant = singleVariant({
-  id: "variant-iphone-battery-13",
-  itemId: "item-iphone-battery",
-  title: localized("iPhone 13", "iPhone 13", "iPhone 13"),
-  slugOverride: "iphone-battery-13",
-  price: 1190,
-  sku: "BATTERY-IP13",
-  stock: 2,
-  gtin: "00012345678943",
-  mpn: "BATTERY-IP13",
-  optionSlug: "iphone-13",
-  image: "/about-us-pic.jpg",
-})
+const batteryVariant: ShopVariant = {
+  ...singleVariant({
+    id: "variant-iphone-battery-13",
+    itemId: "item-iphone-battery",
+    title: localized("iPhone 13", "iPhone 13", "iPhone 13"),
+    slugOverride: "iphone-battery-13",
+    price: 1190,
+    sku: "BATTERY-IP13",
+    stock: 2,
+    gtin: "00012345678943",
+    mpn: "BATTERY-IP13",
+    optionSlug: "iphone-13",
+    image: "/about-us-pic.jpg",
+  }),
+  // Demo: multiple photos for the gallery/card multi-image UI.
+  images: ["/about-us-pic.jpg", "/tech-fix-storefront.png"],
+}
 
 export const mockShopItems: ShopItem[] = [
   {

@@ -58,6 +58,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
+  // Shop subdomain API routes (e.g. /api/shop/search) are served directly at
+  // their real path — no locale redirect/rewrite — so the storefront can call
+  // them same-origin.
+  if (isShopHost(hostname) && (pathname === "/api" || pathname.startsWith("/api/"))) {
+    return NextResponse.next()
+  }
+
   const b2bRedirectTarget = getB2BRedirectTarget({
     host: hostname,
     pathname,

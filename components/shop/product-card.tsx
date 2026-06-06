@@ -55,8 +55,33 @@ export function ProductCard({
             alt={product.title}
             fill
             sizes={compact ? "(max-width: 768px) 50vw, 280px" : "(max-width: 768px) 50vw, 320px"}
-            className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+            className={`object-cover transition-transform duration-300 group-hover:scale-[1.03] ${
+              product.images.length > 1 ? "group-hover:opacity-0" : ""
+            }`}
           />
+          {/* Second photo previewed on hover (desktop) when the product has more
+              than one image. */}
+          {product.images.length > 1 ? (
+            <Image
+              src={product.images[1]}
+              alt={product.title}
+              fill
+              sizes={compact ? "(max-width: 768px) 50vw, 280px" : "(max-width: 768px) 50vw, 320px"}
+              className="object-cover opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+            />
+          ) : null}
+          {/* Multi-photo indicator dots. */}
+          {product.images.length > 1 ? (
+            <span className="absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 gap-1">
+              {product.images.slice(0, 5).map((src, index) => (
+                <span
+                  key={src}
+                  className={`h-1.5 w-1.5 rounded-full ${index === 0 ? "bg-gray-900" : "bg-gray-900/30"}`}
+                  aria-hidden
+                />
+              ))}
+            </span>
+          ) : null}
           {product.discountPercent ? (
             <span className="absolute left-2 top-2 rounded-md bg-gray-950 px-2 py-1 text-xs font-semibold text-white">
               -{product.discountPercent}%

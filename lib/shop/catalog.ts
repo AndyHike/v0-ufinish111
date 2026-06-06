@@ -180,7 +180,7 @@ export function buildShopFilterFacets(items: ShopItem[], locale: ShopLocale): Sh
     .filter((attribute) => attribute.options.length > 0)
 }
 
-function itemMatchesAttributes(item: ShopItem, attributes: Record<string, string[]>): boolean {
+export function itemMatchesAttributes(item: ShopItem, attributes: Record<string, string[]>): boolean {
   for (const [attributeSlug, selectedOptionSlugs] of Object.entries(attributes)) {
     if (selectedOptionSlugs.length === 0) {
       continue
@@ -437,13 +437,19 @@ export function toProductCard(item: ShopItem, locale: ShopLocale): ShopProductCa
       ? Math.round(((compareAtPrice - displayPrice) / compareAtPrice) * 100)
       : null
 
+  // Gallery images for the card: selected variant first, then the item-level
+  // images, deduped. Lets the card preview a second photo on hover.
+  const cardImages = Array.from(new Set([...variant.images, ...item.images])).filter(Boolean)
+  const images = cardImages.length > 0 ? cardImages : ["/tech-fix-storefront.png"]
+
   return {
     itemId: item.id,
     variantId: variant.id,
     slug: item.slug,
     variantSlug: variant.slugOverride,
     title: getLocalizedText(item.title, locale),
-    image: variant.images[0] ?? item.images[0] ?? "/tech-fix-storefront.png",
+    image: images[0],
+    images,
     price: variant.price,
     salePrice: variant.salePrice,
     displayPrice,

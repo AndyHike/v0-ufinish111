@@ -1,15 +1,15 @@
 "use client"
 
 import Link from "next/link"
-import { Search, ShoppingBag } from "lucide-react"
+import { ShoppingBag } from "lucide-react"
 import { useTranslations } from "next-intl"
 
 import { LanguageSwitcher } from "@/components/language-switcher"
 import { ShopCartDrawer } from "@/components/shop/shop-cart-drawer"
 import { ShopCatalogDrawer } from "@/components/shop/shop-catalog-drawer"
+import { ShopSearch } from "@/components/shop/shop-search"
 import { SiteLogo } from "@/components/site-logo"
 import { useShopCart } from "@/components/shop/shop-cart-provider"
-import { Button } from "@/components/ui/button"
 import type { ShopCategoryTreeNode, ShopLocale } from "@/lib/shop/types"
 
 export function ShopHeader({
@@ -49,10 +49,7 @@ export function ShopHeader({
           </nav>
 
           <div className="flex shrink-0 items-center gap-1 sm:gap-2">
-            <Button variant="ghost" size="sm" className="hidden gap-2 text-gray-700 md:inline-flex">
-              <Search className="h-4 w-4" />
-              {t("search")}
-            </Button>
+            <ShopSearch locale={locale} />
             <LanguageSwitcher className="h-9 w-9 shrink-0" />
             <button
               type="button"

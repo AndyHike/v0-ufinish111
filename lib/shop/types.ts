@@ -131,6 +131,8 @@ export interface ShopProductCardView {
   variantSlug: string | null
   title: string
   image: string
+  /** All gallery images (main first), deduped. Cards use these for hover/preview. */
+  images: string[]
   price: number
   salePrice: number | null
   /** Prominent price shown on the card: lowest in-stock variant price. */

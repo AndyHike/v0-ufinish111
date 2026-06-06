@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 
 import { ShopHomePage } from "@/components/shop/shop-home-page"
-import { getMockShopHomeData } from "@/lib/shop/catalog"
+import { getShopHomeData } from "@/lib/shop/data"
 import { shopSiteUrl } from "@/lib/site-config"
 import type { ShopLocale } from "@/lib/shop/types"
 
@@ -62,7 +62,7 @@ export async function generateMetadata({
 
 export default async function ShopHomeRoute({ params }: { params: Promise<{ locale: ShopLocale }> }) {
   const { locale } = await params
-  const data = getMockShopHomeData(locale)
+  const data = await getShopHomeData(locale)
 
   return (
     <ShopHomePage

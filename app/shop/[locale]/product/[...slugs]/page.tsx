@@ -2,8 +2,8 @@ import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 
 import { ProductPage } from "@/components/shop/product-page"
-import { getLocalizedText, getMockShopProduct } from "@/lib/shop/catalog"
-import { mockShopItems, SHOP_LOCALES } from "@/lib/shop/mock-data"
+import { getLocalizedText } from "@/lib/shop/catalog"
+import { getShopProductData, getShopProductSlugParams } from "@/lib/shop/data"
 import { buildShopMetadata } from "@/lib/shop/seo"
 import type { ShopLocale } from "@/lib/shop/types"
 
@@ -17,15 +17,8 @@ function parseSlugs(slugs: string[]) {
   }
 }
 
-export function generateStaticParams() {
-  return SHOP_LOCALES.flatMap((locale) =>
-    mockShopItems.flatMap((item) => [
-      { locale, slugs: [item.slug] },
-      ...item.variants
-        .filter((variant) => Boolean(variant.slugOverride))
-        .map((variant) => ({ locale, slugs: [item.slug, variant.slugOverride as string] })),
-    ]),
-  )
+export async function generateStaticParams() {
+  return getShopProductSlugParams()
 }
 
 export async function generateMetadata({
@@ -40,7 +33,7 @@ export async function generateMetadata({
     return {}
   }
 
-  const data = getMockShopProduct(locale, itemSlug, variantSlug)
+  const data = await getShopProductData(locale, itemSlug, variantSlug)
 
   if (!data) {
     return {}
@@ -66,7 +59,7 @@ export default async function ShopProductRoute({
     notFound()
   }
 
-  const data = getMockShopProduct(locale, itemSlug, variantSlug)
+  const data = await getShopProductData(locale, itemSlug, variantSlug)
 
   if (!data) {
     notFound()

@@ -2,22 +2,15 @@ import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 
 import { CategoryPage } from "@/components/shop/category-page"
-import { getLocalizedText, getMockShopCategory, normalizeShopCategoryFilters } from "@/lib/shop/catalog"
-import { mockShopCategories, SHOP_LOCALES } from "@/lib/shop/mock-data"
+import { getLocalizedText, normalizeShopCategoryFilters } from "@/lib/shop/catalog"
+import { getShopCategoryData, getShopCategorySlugParams } from "@/lib/shop/data"
 import { buildShopMetadata } from "@/lib/shop/seo"
 import type { ShopLocale } from "@/lib/shop/types"
 
 export const revalidate = 3600
 
-export function generateStaticParams() {
-  return SHOP_LOCALES.flatMap((locale) =>
-    mockShopCategories
-      .filter((category) => category.isActive)
-      .map((category) => ({
-        locale,
-        slug: category.slug,
-      })),
-  )
+export async function generateStaticParams() {
+  return getShopCategorySlugParams()
 }
 
 export async function generateMetadata({
@@ -26,7 +19,7 @@ export async function generateMetadata({
   params: Promise<{ locale: ShopLocale; slug: string }>
 }): Promise<Metadata> {
   const { locale, slug } = await params
-  const data = getMockShopCategory(locale, slug)
+  const data = await getShopCategoryData(locale, slug)
 
   if (!data) {
     return {}
@@ -73,7 +66,7 @@ export default async function ShopCategoryRoute({
     maxPrice: firstSearchParam(query.maxPrice),
     attributes,
   })
-  const data = getMockShopCategory(locale, slug, filters)
+  const data = await getShopCategoryData(locale, slug, filters)
 
   if (!data) {
     notFound()
