@@ -387,6 +387,51 @@ const protectiveGlassVariants: ShopVariant[] = [
   },
 ]
 
+const modelTestGlassModels = [
+  { slug: "iphone-15-pro-max", title: "iPhone 15 Pro Max", price: 349, salePrice: 299, stock: 8 },
+  { slug: "iphone-15-pro", title: "iPhone 15 Pro", price: 329, salePrice: null, stock: 6 },
+  { slug: "iphone-15", title: "iPhone 15", price: 299, salePrice: null, stock: 11 },
+  { slug: "iphone-14-pro-max", title: "iPhone 14 Pro Max", price: 329, salePrice: 289, stock: 3 },
+  { slug: "iphone-14-pro", title: "iPhone 14 Pro", price: 319, salePrice: null, stock: 4 },
+  { slug: "iphone-14", title: "iPhone 14", price: 289, salePrice: null, stock: 0 },
+  { slug: "iphone-13-pro-max", title: "iPhone 13 Pro Max", price: 299, salePrice: 259, stock: 7 },
+  { slug: "iphone-13-pro", title: "iPhone 13 Pro", price: 289, salePrice: null, stock: 5 },
+  { slug: "iphone-13", title: "iPhone 13", price: 249, salePrice: null, stock: 12 },
+  { slug: "iphone-12-pro-max", title: "iPhone 12 Pro Max", price: 279, salePrice: null, stock: 2 },
+  { slug: "iphone-12-pro", title: "iPhone 12 Pro", price: 269, salePrice: 229, stock: 0 },
+  { slug: "iphone-12", title: "iPhone 12", price: 239, salePrice: null, stock: 9 },
+  { slug: "iphone-11-pro-max", title: "iPhone 11 Pro Max", price: 249, salePrice: null, stock: 1 },
+  { slug: "iphone-11-pro", title: "iPhone 11 Pro", price: 239, salePrice: null, stock: 4 },
+  { slug: "iphone-11", title: "iPhone 11", price: 229, salePrice: 199, stock: 6 },
+  { slug: "samsung-s24-ultra", title: "Samsung Galaxy S24 Ultra", price: 369, salePrice: 329, stock: 5 },
+  { slug: "samsung-s24-plus", title: "Samsung Galaxy S24+", price: 349, salePrice: null, stock: 3 },
+  { slug: "samsung-s24", title: "Samsung Galaxy S24", price: 329, salePrice: null, stock: 7 },
+  { slug: "samsung-s23-ultra", title: "Samsung Galaxy S23 Ultra", price: 349, salePrice: null, stock: 0 },
+  { slug: "samsung-s23", title: "Samsung Galaxy S23", price: 299, salePrice: 269, stock: 10 },
+  { slug: "samsung-a55", title: "Samsung Galaxy A55", price: 249, salePrice: null, stock: 8 },
+  { slug: "samsung-a54", title: "Samsung Galaxy A54", price: 239, salePrice: null, stock: 4 },
+  { slug: "samsung-a35", title: "Samsung Galaxy A35", price: 229, salePrice: 199, stock: 0 },
+  { slug: "samsung-a34", title: "Samsung Galaxy A34", price: 219, salePrice: null, stock: 6 },
+] as const
+
+const modelTestProtectiveGlassVariants: ShopVariant[] = modelTestGlassModels.map((model, index) => ({
+  ...singleVariant({
+    id: `variant-model-test-glass-${model.slug}`,
+    itemId: "item-model-test-protective-glass",
+    title: localized(model.title, model.title, model.title),
+    slugOverride: `model-test-glass-${model.slug}`,
+    price: model.price,
+    salePrice: model.salePrice,
+    sku: `TEST-GLASS-${model.slug.toUpperCase().replace(/-/g, "-")}`,
+    stock: model.stock,
+    gtin: `00012345679${String(index).padStart(3, "0")}`,
+    mpn: `TEST-GLASS-${model.slug.toUpperCase().replace(/-/g, "-")}`,
+    optionSlug: model.slug,
+    image: "/focused-phone-fix.png",
+  }),
+  isDefault: index === 0,
+}))
+
 const usbCableVariant = singleVariant({
   id: "variant-usb-c-cable-default",
   itemId: "item-usb-c-cable",
@@ -464,6 +509,45 @@ export const mockShopItems: ShopItem[] = [
       defaultVariant: protectiveGlassVariants[0],
       schemaType: "ProductGroup",
       variants: protectiveGlassVariants,
+    }),
+  },
+  {
+    id: "item-model-test-protective-glass",
+    slug: "model-test-protective-glass",
+    title: localized("Testovaci sklo pro mnoho modelu", "Тестове скло для багатьох моделей", "Test glass for many models"),
+    description: localized(
+      "Mock produkt pro kontrolu vyberu variant u velkeho poctu modelu.",
+      "Mock-товар для перевірки вибору варіантів при великій кількості моделей.",
+      "Mock product for checking variant selection across many phone models.",
+    ),
+    content: localized(
+      "Tento produkt slouzi jen pro UX kontrolu selectoru variant. V realnem katalogu ho nahradi data z API.",
+      "Цей товар потрібен тільки для UX-перевірки selector-а варіантів. У реальному каталозі його замінять дані з API.",
+      "This product exists only for UX validation of the variant selector. Real API data will replace it later.",
+    ),
+    images: ["/focused-phone-fix.png"],
+    brand: "DeviceHelp",
+    condition: "new",
+    categories: [requireCategory("protection")],
+    variants: modelTestProtectiveGlassVariants,
+    linkedItems: [{ type: "accessory", targetSlug: "usb-c-cable" }],
+    seo: productSeo({
+      slug: "model-test-protective-glass",
+      title: localized(
+        "Testovaci sklo pro mnoho modelu | DeviceHelp Shop",
+        "Тестове скло для багатьох моделей | DeviceHelp Shop",
+        "Test glass for many models | DeviceHelp Shop",
+      ),
+      description: localized(
+        "Mock produkt s 24 variantami pro kontrolu UX vyberu modelu.",
+        "Mock-товар із 24 варіантами для перевірки UX вибору моделі.",
+        "Mock product with 24 variants for checking model selection UX.",
+      ),
+      image: "/focused-phone-fix.png",
+      brand: "DeviceHelp",
+      defaultVariant: modelTestProtectiveGlassVariants[0],
+      schemaType: "ProductGroup",
+      variants: modelTestProtectiveGlassVariants,
     }),
   },
   {

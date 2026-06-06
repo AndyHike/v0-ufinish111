@@ -4,7 +4,7 @@ import { ProductCard } from "@/components/shop/product-card"
 import { ProductGallery } from "@/components/shop/product-gallery"
 import { ProductPurchasePanel } from "@/components/shop/product-purchase-panel"
 import { StructuredData } from "@/components/shop/structured-data"
-import { getAvailabilityLabel, getLocalizedText, getProductSpecificationRows } from "@/lib/shop/catalog"
+import { getLocalizedText, getProductSpecificationRows } from "@/lib/shop/catalog"
 import { buildBreadcrumbJsonLd, buildProductJsonLd } from "@/lib/shop/seo"
 import { shopSiteUrl } from "@/lib/site-config"
 import type { ShopItem, ShopLocale, ShopProductCardView, ShopVariant } from "@/lib/shop/types"
@@ -14,39 +14,18 @@ const PRODUCT_COPY = {
     shop: "Shop",
     details: "Popis produktu",
     specifications: "Charakteristiky",
-    compatibility: "Kompatibilita a varianty",
-    delivery: "Doprava a zaruka",
-    deliveryItems: [
-      ["Pripraveno na Packeta", "Checkout bude pocitat s vydejnimi misty a dorucenim po CR."],
-      ["Overeno servisem", "Produkty vybirame podle realne kompatibility a servisnich zkusenosti."],
-      ["Jasna dostupnost", "Sklad a prodej se budou ridit variantou, ne jen obecnym produktem."],
-    ],
     related: "Souvisejici produkty",
   },
   uk: {
     shop: "Shop",
     details: "Опис товару",
     specifications: "Характеристики",
-    compatibility: "Сумісність і варіанти",
-    delivery: "Доставка і гарантія",
-    deliveryItems: [
-      ["Готово до Packeta", "Checkout буде враховувати точки видачі та доставку."],
-      ["Перевірено сервісом", "Товари підбираються за реальною сумісністю й досвідом ремонту."],
-      ["Чітка наявність", "Склад і продаж привʼязані до варіанту, а не лише до загального товару."],
-    ],
     related: "Повʼязані товари",
   },
   en: {
     shop: "Shop",
     details: "Product description",
     specifications: "Specifications",
-    compatibility: "Compatibility and variants",
-    delivery: "Delivery and warranty",
-    deliveryItems: [
-      ["Packeta ready", "Checkout will support pickup points and delivery flows."],
-      ["Service checked", "Products are selected around real compatibility and repair experience."],
-      ["Clear availability", "Stock and sales stay tied to exact variants, not only the parent product."],
-    ],
     related: "Related products",
   },
 } as const
@@ -133,32 +112,6 @@ export function ProductPage({
                 </div>
               ))}
             </dl>
-          </div>
-        </section>
-
-        <section className="mt-12 grid gap-8 border-t border-gray-200 pt-10 lg:grid-cols-[minmax(0,0.95fr)_minmax(320px,0.72fr)]">
-          <div>
-            <h2 className="text-xl font-semibold">{copy.compatibility}</h2>
-            <div className="mt-4 grid gap-2 sm:grid-cols-2">
-              {item.variants.map((variant) => (
-                <div key={variant.id} className="rounded-lg border border-gray-200 p-3">
-                  <p className="text-sm font-semibold text-gray-950">{getLocalizedText(variant.title, locale)}</p>
-                  <p className="mt-1 text-xs text-gray-500">{getAvailabilityLabel(variant, locale)}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <h2 className="text-xl font-semibold">{copy.delivery}</h2>
-            <div className="mt-4 grid gap-3">
-              {copy.deliveryItems.map(([label, text]) => (
-                <div key={label} className="rounded-lg border border-gray-200 p-4">
-                  <h3 className="text-sm font-semibold text-gray-950">{label}</h3>
-                  <p className="mt-2 text-sm leading-6 text-gray-600">{text}</p>
-                </div>
-              ))}
-            </div>
           </div>
         </section>
 

@@ -23,11 +23,11 @@ test("shop home uses promo banners and avoids vertically stretched hero image fr
   assert.doesNotMatch(source, /min-h-\[320px\]/)
 })
 
-test("product page renders description, specifications, compatibility, and delivery sections", async () => {
+test("product page keeps description and specifications without temporary compatibility or delivery sections", async () => {
   const source = await readSource("../components/shop/product-page.tsx")
 
   assert.match(source, /getProductSpecificationRows/)
   assert.match(source, /specifications/)
-  assert.match(source, /compatibility/)
-  assert.match(source, /delivery/)
+  assert.doesNotMatch(source, /compatibility/)
+  assert.doesNotMatch(source, /delivery/)
 })

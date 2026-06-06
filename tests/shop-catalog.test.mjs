@@ -49,7 +49,7 @@ test("returns shop homepage data for Czech", () => {
   assert.equal(home.hero.locale, "cs")
   assert.deepEqual(
     home.featuredProducts.map((product) => product.slug),
-    ["protective-glass", "usb-c-cable", "magsafe-charger", "iphone-battery"],
+    ["protective-glass", "model-test-protective-glass", "usb-c-cable", "magsafe-charger", "iphone-battery"],
   )
 })
 
@@ -135,4 +135,15 @@ test("uses searchable variant selector mode only for larger variant sets", () =>
   assert.equal(catalog.getVariantSelectorMode({ variantCount: 6 }), "chips")
   assert.equal(catalog.getVariantSelectorMode({ variantCount: 7 }), "search")
   assert.equal(catalog.getVariantSelectorMode({ variantCount: 20 }), "search")
+})
+
+test("exposes a large mock variant product for selector QA", () => {
+  const product = catalog.getMockShopProduct("cs", "model-test-protective-glass")
+
+  assert.equal(product?.item.slug, "model-test-protective-glass")
+  assert.equal(product.item.variants.length, 24)
+  assert.equal(catalog.getVariantSelectorMode({ variantCount: product.item.variants.length }), "search")
+  assert.equal(product.selectedVariant.isDefault, true)
+  assert.ok(product.item.variants.some((variant) => variant.availability.availableStock === 0))
+  assert.ok(product.item.variants.some((variant) => variant.salePrice !== null))
 })
