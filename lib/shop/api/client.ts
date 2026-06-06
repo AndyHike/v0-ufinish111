@@ -1,6 +1,6 @@
 import "server-only"
 
-import { isShopApiEnabled, shopAdminApiUrl, shopAdminDomain, shopAdminMasterKey } from "./config"
+import { isShopApiEnabled, shopAdminApiKey, shopAdminApiUrl, shopAdminDomain, usesPublicApiKeyHeader } from "./config"
 
 export class ShopApiError extends Error {
   constructor(
@@ -30,8 +30,12 @@ export async function shopApiFetch<T>(path: string, options: ShopApiFetchOptions
     throw new ShopApiError("Shop admin API is not configured", 500, "NOT_CONFIGURED")
   }
 
+  const usePublicKeyHeader = usesPublicApiKeyHeader()
+
   const url = new URL(`${shopAdminApiUrl}/api/public/v1/${path.replace(/^\//, "")}`)
-  if (shopAdminDomain) {
+  // Secret/public keys are store-scoped and don't need `domain`; the master-key
+  // server-to-server mode does.
+  if (shopAdminDomain && !usePublicKeyHeader) {
     url.searchParams.set("domain", shopAdminDomain)
   }
   for (const [key, value] of Object.entries(options.searchParams ?? {})) {
@@ -40,9 +44,13 @@ export async function shopApiFetch<T>(path: string, options: ShopApiFetchOptions
     }
   }
 
+  const authHeader: Record<string, string> = usePublicKeyHeader
+    ? { "x-public-api-key": shopAdminApiKey }
+    : { Authorization: `Bearer ${shopAdminApiKey}` }
+
   const response = await fetch(url, {
     headers: {
-      Authorization: `Bearer ${shopAdminMasterKey}`,
+      ...authHeader,
       Accept: "application/json",
     },
     next: { revalidate: options.revalidate ?? 3600 },

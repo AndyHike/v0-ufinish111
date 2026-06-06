@@ -39,6 +39,14 @@ function isNotFound(error: unknown): boolean {
   return error instanceof ShopApiError && error.status === 404
 }
 
+// A misconfigured or unreachable admin API must never crash the build/render.
+// We log loudly and fall back to mock data so deploys succeed and the site stays
+// up; fix the env (STORE_NOT_FOUND usually means a wrong SHOP_ADMIN_DOMAIN/key).
+function logApiFailure(scope: string, error: unknown): void {
+  const detail = error instanceof ShopApiError ? `${error.status} ${error.code ?? ""} ${error.message}` : String(error)
+  console.error(`[shop] API request failed (${scope}); falling back to mock data: ${detail.trim()}`)
+}
+
 async function fetchAllApiCategories(): Promise<ApiCategory[]> {
   return shopApiFetch<ApiCategory[]>("categories", { searchParams: { include: "seo" } })
 }
@@ -50,21 +58,26 @@ export async function getShopHomeData(locale: ShopLocale): Promise<ShopHomeData>
     return getMockShopHomeData(locale)
   }
 
-  const [apiCategories, apiItems] = await Promise.all([
-    fetchAllApiCategories(),
-    shopApiFetch<ApiItem[]>("items", {
-      searchParams: { include: "variants,availability", limit: HOME_ITEMS_LIMIT },
-    }),
-  ])
+  try {
+    const [apiCategories, apiItems] = await Promise.all([
+      fetchAllApiCategories(),
+      shopApiFetch<ApiItem[]>("items", {
+        searchParams: { include: "variants,availability", limit: HOME_ITEMS_LIMIT },
+      }),
+    ])
 
-  const categories = apiCategories.map(mapApiCategory)
-  const items = apiItems.map(mapApiItem)
+    const categories = apiCategories.map(mapApiCategory)
+    const items = apiItems.map(mapApiItem)
 
-  return {
-    hero: getMockShopHomeData(locale).hero,
-    categories: getRootShopCategories(categories),
-    categoryTree: buildShopCategoryTree(categories),
-    featuredProducts: items.map((item) => toProductCard(item, locale)),
+    return {
+      hero: getMockShopHomeData(locale).hero,
+      categories: getRootShopCategories(categories),
+      categoryTree: buildShopCategoryTree(categories),
+      featuredProducts: items.map((item) => toProductCard(item, locale)),
+    }
+  } catch (error) {
+    logApiFailure("home", error)
+    return getMockShopHomeData(locale)
   }
 }
 
@@ -81,41 +94,46 @@ export async function getShopCategoryData(
 
   const activeFilters = normalizeShopCategoryFilters(filterInput)
 
-  let apiCategory: ApiCategory
   try {
-    apiCategory = await shopApiFetch<ApiCategory>(`categories/${slug}`)
-  } catch (error) {
-    if (isNotFound(error)) {
-      return null
+    let apiCategory: ApiCategory
+    try {
+      apiCategory = await shopApiFetch<ApiCategory>(`categories/${slug}`)
+    } catch (error) {
+      if (isNotFound(error)) {
+        return null
+      }
+      throw error
     }
-    throw error
-  }
 
-  const [allApiCategories, apiItems] = await Promise.all([
-    fetchAllApiCategories(),
-    shopApiFetch<ApiItem[]>("items", {
-      searchParams: { categorySlug: slug, include: "variants,availability,categories", limit: CATEGORY_ITEMS_LIMIT },
-    }),
-  ])
+    const [allApiCategories, apiItems] = await Promise.all([
+      fetchAllApiCategories(),
+      shopApiFetch<ApiItem[]>("items", {
+        searchParams: { categorySlug: slug, include: "variants,availability,categories", limit: CATEGORY_ITEMS_LIMIT },
+      }),
+    ])
 
-  const category = mapApiCategory(apiCategory)
-  const allCategories = allApiCategories.map(mapApiCategory)
-  const items = apiItems.map(mapApiItem)
+    const category = mapApiCategory(apiCategory)
+    const allCategories = allApiCategories.map(mapApiCategory)
+    const items = apiItems.map(mapApiItem)
 
-  const unfilteredProducts = items.map((item) => toProductCard(item, locale))
-  const attributeFiltered = items
-    .filter((item) => itemMatchesAttributes(item, activeFilters.attributes))
-    .map((item) => toProductCard(item, locale))
+    const unfilteredProducts = items.map((item) => toProductCard(item, locale))
+    const attributeFiltered = items
+      .filter((item) => itemMatchesAttributes(item, activeFilters.attributes))
+      .map((item) => toProductCard(item, locale))
 
-  return {
-    category,
-    children: getShopCategoryChildren(category.id, allCategories),
-    ancestors: getShopCategoryAncestors(category, allCategories),
-    categoryTree: buildShopCategoryTree(allCategories),
-    priceBounds: getShopCategoryPriceBounds(unfilteredProducts),
-    filterAttributes: buildShopFilterFacets(items, locale),
-    activeFilters,
-    products: applyShopCategoryFilters(attributeFiltered, activeFilters),
+    return {
+      category,
+      children: getShopCategoryChildren(category.id, allCategories),
+      ancestors: getShopCategoryAncestors(category, allCategories),
+      categoryTree: buildShopCategoryTree(allCategories),
+      priceBounds: getShopCategoryPriceBounds(unfilteredProducts),
+      filterAttributes: buildShopFilterFacets(items, locale),
+      activeFilters,
+      products: applyShopCategoryFilters(attributeFiltered, activeFilters),
+    }
+  } catch (error) {
+    logApiFailure(`category:${slug}`, error)
+    return getMockShopCategory(locale, slug, filterInput)
   }
 }
 
@@ -130,41 +148,46 @@ export async function getShopProductData(
     return getMockShopProduct(locale, itemSlug, variantSlug)
   }
 
-  let apiItem: ApiItem
   try {
-    apiItem = await shopApiFetch<ApiItem>(`items/${itemSlug}`, {
-      searchParams: { include: "categories,variants,availability" },
-    })
-  } catch (error) {
-    if (isNotFound(error)) {
+    let apiItem: ApiItem
+    try {
+      apiItem = await shopApiFetch<ApiItem>(`items/${itemSlug}`, {
+        searchParams: { include: "categories,variants,availability" },
+      })
+    } catch (error) {
+      if (isNotFound(error)) {
+        return null
+      }
+      throw error
+    }
+
+    const item = mapApiItem(apiItem)
+    const selectedVariant = selectProductVariantByRoute(item, variantSlug)
+    if (!selectedVariant) {
       return null
     }
-    throw error
+
+    // Resolve linked items into cards (best-effort; ignore individual failures).
+    const relatedItems = (
+      await Promise.all(
+        item.linkedItems.map(async (link) => {
+          try {
+            const target = await shopApiFetch<ApiItem>(`items/${link.targetSlug}`, {
+              searchParams: { include: "variants,availability" },
+            })
+            return toProductCard(mapApiItem(target), locale)
+          } catch {
+            return null
+          }
+        }),
+      )
+    ).filter((card): card is ShopProductCardView => card !== null)
+
+    return { item, selectedVariant, relatedItems }
+  } catch (error) {
+    logApiFailure(`product:${itemSlug}`, error)
+    return getMockShopProduct(locale, itemSlug, variantSlug)
   }
-
-  const item = mapApiItem(apiItem)
-  const selectedVariant = selectProductVariantByRoute(item, variantSlug)
-  if (!selectedVariant) {
-    return null
-  }
-
-  // Resolve linked items into cards (best-effort; ignore individual failures).
-  const relatedItems = (
-    await Promise.all(
-      item.linkedItems.map(async (link) => {
-        try {
-          const target = await shopApiFetch<ApiItem>(`items/${link.targetSlug}`, {
-            searchParams: { include: "variants,availability" },
-          })
-          return toProductCard(mapApiItem(target), locale)
-        } catch {
-          return null
-        }
-      }),
-    )
-  ).filter((card): card is ShopProductCardView => card !== null)
-
-  return { item, selectedVariant, relatedItems }
 }
 
 // ---- Search ----------------------------------------------------------------
@@ -179,7 +202,7 @@ export async function searchShopProducts(
     return []
   }
 
-  if (!isShopApiEnabled()) {
+  const mockSearch = () => {
     const lower = normalized.toLowerCase()
     return mockShopItems
       .filter((item: ShopItem) => getLocalizedText(item.title, locale).toLowerCase().includes(lower))
@@ -187,12 +210,20 @@ export async function searchShopProducts(
       .map((item) => toProductCard(item, locale))
   }
 
-  const apiItems = await shopApiFetch<ApiItem[]>("items", {
-    searchParams: { search: normalized, include: "variants,availability", limit },
-    revalidate: 0,
-  })
+  if (!isShopApiEnabled()) {
+    return mockSearch()
+  }
 
-  return apiItems.map(mapApiItem).map((item) => toProductCard(item, locale))
+  try {
+    const apiItems = await shopApiFetch<ApiItem[]>("items", {
+      searchParams: { search: normalized, include: "variants,availability", limit },
+      revalidate: 0,
+    })
+    return apiItems.map(mapApiItem).map((item) => toProductCard(item, locale))
+  } catch (error) {
+    logApiFailure("search", error)
+    return mockSearch()
+  }
 }
 
 // ---- Static params (build-time slug enumeration) ---------------------------

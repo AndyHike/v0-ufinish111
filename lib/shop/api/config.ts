@@ -1,21 +1,33 @@
 import "server-only"
 
 /**
- * Server-to-server admin API configuration (README "Server-to-server" mode).
+ * Admin Public API configuration. Two auth styles are supported automatically
+ * based on the key prefix:
+ *   - Secret/Public key (`sk_...` / `pk_...`)  -> header `x-public-api-key`
+ *   - System master key (anything else)        -> header `Authorization: Bearer`
  *
- * Put these in `.env.local` (never commit real values):
- *   SHOP_ADMIN_API_URL=https://admin.example.com
- *   SHOP_ADMIN_MASTER_KEY=sk_or_system_master_key
- *   SHOP_ADMIN_DOMAIN=shop.devicehelp.cz
+ * Put these in `.env` (never commit real values):
+ *   SHOP_ADMIN_API_URL=https://adminpanel.mobil-brevnov.cz
+ *   SHOP_ADMIN_API_KEY=sk_v1_...            # secret key (server-only) or system master key
+ *   SHOP_ADMIN_DOMAIN=mobil-brevnov.cz      # optional; only needed for master-key mode
  *
- * The master key is read only on the server and is never exposed to the
- * browser. When the URL or key is missing, the shop transparently falls back
- * to mock data so local design work keeps running.
+ * The key is read only on the server and never exposed to the browser. When the
+ * URL or key is missing, the shop transparently falls back to mock data so local
+ * design work keeps running. `SHOP_ADMIN_MASTER_KEY` is still accepted as an
+ * alias for backwards compatibility.
  */
 export const shopAdminApiUrl = process.env.SHOP_ADMIN_API_URL?.replace(/\/$/, "") ?? ""
-export const shopAdminMasterKey = process.env.SHOP_ADMIN_MASTER_KEY ?? ""
+export const shopAdminApiKey = process.env.SHOP_ADMIN_API_KEY ?? process.env.SHOP_ADMIN_MASTER_KEY ?? ""
 export const shopAdminDomain = process.env.SHOP_ADMIN_DOMAIN ?? ""
 
+/** Secret/public keys authenticate via `x-public-api-key`; master keys via Bearer. */
+export function usesPublicApiKeyHeader(): boolean {
+  return shopAdminApiKey.startsWith("sk_") || shopAdminApiKey.startsWith("pk_")
+}
+
+/** Set SHOP_FORCE_MOCK=1 to keep using mock data even when API env is present. */
+const shopForceMock = process.env.SHOP_FORCE_MOCK === "1" || process.env.SHOP_FORCE_MOCK === "true"
+
 export function isShopApiEnabled(): boolean {
-  return shopAdminApiUrl.length > 0 && shopAdminMasterKey.length > 0
+  return !shopForceMock && shopAdminApiUrl.length > 0 && shopAdminApiKey.length > 0
 }
