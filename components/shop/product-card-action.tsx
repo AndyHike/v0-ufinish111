@@ -69,6 +69,7 @@ export function ProductCardAction({
             quantity: 1,
             titleSnapshot: product.title,
             priceSnapshot: product.displayPrice,
+            imageSnapshot: product.image,
             currency: product.currency,
           },
           maxQuantity,

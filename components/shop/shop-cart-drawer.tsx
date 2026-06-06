@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import Link from "next/link"
 import { X } from "lucide-react"
 
@@ -89,17 +90,26 @@ export function ShopCartDrawer({ locale }: { locale: ShopLocale }) {
           ) : (
             <div className="space-y-3">
               {lines.map((line) => (
-                <div key={line.variantId} className="rounded-lg border border-gray-200 p-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-semibold leading-5 text-gray-950">{line.titleSnapshot}</p>
+                <div key={line.variantId} className="flex gap-3 rounded-lg border border-gray-200 p-3">
+                  <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md bg-gray-100">
+                    <Image
+                      src={line.imageSnapshot ?? "/tech-fix-storefront.png"}
+                      alt={line.titleSnapshot}
+                      fill
+                      sizes="64px"
+                      className="object-cover"
+                    />
+                  </div>
+                  <div className="flex min-w-0 flex-1 items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="line-clamp-2 text-sm font-semibold leading-5 text-gray-950">{line.titleSnapshot}</p>
                       <p className="mt-1 text-xs text-gray-500">
                         {line.quantity} x {formatShopPrice(line.priceSnapshot, locale)}
                       </p>
                     </div>
                     <button
                       type="button"
-                      className="text-xs font-semibold text-gray-500 hover:text-gray-950"
+                      className="shrink-0 text-xs font-semibold text-gray-500 hover:text-gray-950"
                       onClick={() => removeLine(line.variantId)}
                     >
                       {copy.remove}

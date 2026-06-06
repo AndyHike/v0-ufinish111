@@ -1,5 +1,6 @@
 "use client"
 
+import type React from "react"
 import { useCallback, useEffect, useRef, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
@@ -45,6 +46,27 @@ export function ShopHeroCarousel({
   const next = useCallback(() => goTo(index + 1), [goTo, index])
   const previous = useCallback(() => goTo(index - 1), [goTo, index])
 
+  // Touch swipe support for mobile.
+  const touchStartX = useRef<number | null>(null)
+  const onTouchStart = (event: React.TouchEvent) => {
+    touchStartX.current = event.touches[0]?.clientX ?? null
+  }
+  const onTouchEnd = (event: React.TouchEvent) => {
+    const start = touchStartX.current
+    touchStartX.current = null
+    if (start === null) {
+      return
+    }
+    const deltaX = (event.changedTouches[0]?.clientX ?? start) - start
+    if (Math.abs(deltaX) > 40) {
+      if (deltaX < 0) {
+        next()
+      } else {
+        previous()
+      }
+    }
+  }
+
   // Respect users who prefer reduced motion: do not autoplay for them.
   const prefersReducedMotion = useRef(false)
   useEffect(() => {
@@ -80,6 +102,8 @@ export function ShopHeroCarousel({
       onMouseLeave={() => setIsPaused(false)}
       onFocusCapture={() => setIsPaused(true)}
       onBlurCapture={() => setIsPaused(false)}
+      onTouchStart={onTouchStart}
+      onTouchEnd={onTouchEnd}
     >
       {slides.map((slide, slideIndex) => {
         const isActive = slideIndex === index
@@ -105,7 +129,7 @@ export function ShopHeroCarousel({
             />
             <div className="absolute inset-0 bg-gradient-to-r from-gray-950/85 via-gray-950/45 to-gray-950/10" />
 
-            <div className="relative flex h-full min-h-[320px] flex-col justify-end p-6 md:min-h-[440px] md:p-9">
+            <div className="relative flex h-full min-h-[320px] flex-col justify-end p-6 pb-16 md:min-h-[440px] md:p-9 md:pb-12">
               <p className="text-xs font-medium uppercase tracking-[0.22em] text-white/70">{eyebrow}</p>
               <h2 className="mt-3 max-w-md text-2xl font-semibold leading-tight tracking-tight text-white md:text-4xl">
                 {slide.title}

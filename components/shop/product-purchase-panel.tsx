@@ -123,6 +123,7 @@ export function ProductPurchasePanel({
               quantity,
               titleSnapshot: `${getLocalizedText(item.title, locale)} - ${getLocalizedText(variant.title, locale)}`,
               priceSnapshot: displayPrice,
+              imageSnapshot: variant.images[0],
               currency: "CZK",
             },
             maxQuantity,

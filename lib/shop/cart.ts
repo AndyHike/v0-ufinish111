@@ -6,6 +6,7 @@ export interface ShopCartLine {
   quantity: number
   titleSnapshot: string
   priceSnapshot: number
+  imageSnapshot?: string
   currency: ShopCurrency
 }
 
@@ -19,12 +20,14 @@ export function createCartLine({
   title,
   price,
   quantity,
+  image,
 }: {
   itemId: string
   variantId: string
   title: string
   price: number
   quantity: number
+  image?: string
 }): ShopCartLine {
   return {
     itemId,
@@ -32,6 +35,7 @@ export function createCartLine({
     quantity: Math.max(1, quantity),
     titleSnapshot: title,
     priceSnapshot: price,
+    imageSnapshot: image,
     currency: "CZK",
   }
 }

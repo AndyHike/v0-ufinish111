@@ -80,20 +80,21 @@ export function ShopHomePage({
   }))
 
   return (
-    <div className="w-full max-w-full overflow-x-hidden bg-white text-gray-950">
+    <div className="w-full max-w-full overflow-x-clip bg-white text-gray-950">
       {/* Visually-hidden H1/description keep a single descriptive heading for
           SEO/a11y; the visible hierarchy is carried by the carousel and headings. */}
       <h1 className="sr-only">{heroTitle}</h1>
       <p className="sr-only">{heroDescription}</p>
 
-      <div className="lg:flex lg:items-start">
+      <div className="lg:grid lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start">
         {/* Permanent category tree on desktop; on mobile the catalog lives in the
-            header drawer, so the sidebar is hidden below lg. */}
+            header drawer, so the sidebar is hidden below lg. Sticky lives on this
+            grid item (grid avoids the flex sticky-offset quirk). */}
         <ShopCategorySidebar
           locale={locale}
           nodes={categoryTree}
           title={copy.catalog}
-          className="hidden lg:sticky lg:top-20 lg:z-30 lg:block lg:min-h-[calc(100vh-5rem)] lg:w-[280px] lg:shrink-0 lg:border-r lg:border-gray-100"
+          className="hidden lg:sticky lg:top-16 lg:z-30 lg:block lg:self-start lg:min-h-[calc(100vh-4rem)] lg:border-r lg:border-gray-100"
         />
 
         <main className="min-w-0 flex-1">

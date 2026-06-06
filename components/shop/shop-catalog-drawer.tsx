@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { createPortal } from "react-dom"
 import Image from "next/image"
 import Link from "next/link"
 import { ChevronDown, LayoutGrid, Menu, Package, X } from "lucide-react"
@@ -89,8 +90,23 @@ export function ShopCatalogDrawer({
   triggerClassName?: string
 }) {
   const [open, setOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const copy = DRAWER_COPY[locale]
   const close = () => setOpen(false)
+
+  useEffect(() => setMounted(true), [])
+
+  // Lock background scroll while the drawer is open.
+  useEffect(() => {
+    if (!open) {
+      return
+    }
+    const previous = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    return () => {
+      document.body.style.overflow = previous
+    }
+  }, [open])
 
   return (
     <>
@@ -114,40 +130,48 @@ export function ShopCatalogDrawer({
         </button>
       )}
 
-      <div className={`fixed inset-0 z-50 ${open ? "" : "pointer-events-none"}`} aria-hidden={!open}>
-        <button
-          type="button"
-          tabIndex={open ? 0 : -1}
-          aria-label={copy.close}
-          onClick={close}
-          className={`absolute inset-0 bg-gray-950/40 transition-opacity ${open ? "opacity-100" : "opacity-0"}`}
-        />
-        <aside
-          className={`absolute inset-y-0 left-0 flex w-[88%] max-w-sm flex-col bg-white shadow-2xl transition-transform duration-200 ${
-            open ? "translate-x-0" : "-translate-x-full"
-          }`}
-          role="dialog"
-          aria-modal="true"
-          aria-label={copy.title}
-        >
-          <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
-            <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-gray-500">{copy.title}</h2>
-            <button
-              type="button"
-              onClick={close}
-              aria-label={copy.close}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-md text-gray-500 transition hover:bg-gray-100 hover:text-gray-900"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-          <nav className="flex-1 space-y-0.5 overflow-y-auto p-2">
-            {nodes.map((node) => (
-              <DrawerNode key={node.category.id} locale={locale} node={node} depth={0} onNavigate={close} />
-            ))}
-          </nav>
-        </aside>
-      </div>
+      {/* Rendered in a portal on document.body so the fixed overlay escapes the
+          header's containing block (the header uses backdrop-blur, which would
+          otherwise scope `position: fixed` to the header box). */}
+      {mounted
+        ? createPortal(
+            <div className={`fixed inset-0 z-[60] ${open ? "" : "pointer-events-none"}`} aria-hidden={!open}>
+              <button
+                type="button"
+                tabIndex={open ? 0 : -1}
+                aria-label={copy.close}
+                onClick={close}
+                className={`absolute inset-0 bg-gray-950/40 transition-opacity ${open ? "opacity-100" : "opacity-0"}`}
+              />
+              <aside
+                className={`absolute inset-y-0 left-0 flex w-[88%] max-w-sm flex-col bg-white shadow-2xl transition-transform duration-200 ${
+                  open ? "translate-x-0" : "-translate-x-full"
+                }`}
+                role="dialog"
+                aria-modal="true"
+                aria-label={copy.title}
+              >
+                <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+                  <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-gray-500">{copy.title}</h2>
+                  <button
+                    type="button"
+                    onClick={close}
+                    aria-label={copy.close}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-md text-gray-500 transition hover:bg-gray-100 hover:text-gray-900"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <nav className="flex-1 space-y-0.5 overflow-y-auto p-2">
+                  {nodes.map((node) => (
+                    <DrawerNode key={node.category.id} locale={locale} node={node} depth={0} onNavigate={close} />
+                  ))}
+                </nav>
+              </aside>
+            </div>,
+            document.body,
+          )
+        : null}
     </>
   )
 }

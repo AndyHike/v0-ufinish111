@@ -47,9 +47,9 @@ export function ProductCard({
   const tone = availabilityTone(product)
 
   return (
-    <article className="group flex h-full flex-col overflow-hidden rounded-lg border border-gray-200 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+    <article className="group flex h-full flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
       <Link href={product.href} className="flex min-w-0 flex-1 flex-col">
-        <div className="relative aspect-square overflow-hidden rounded-md bg-gray-100">
+        <div className="relative aspect-square w-full overflow-hidden bg-gray-100">
           <Image
             src={product.image}
             alt={product.title}
@@ -69,7 +69,7 @@ export function ProductCard({
           ) : null}
         </div>
 
-        <div className={compact ? "mt-3" : "mt-4"}>
+        <div className="flex flex-1 flex-col px-3 pt-3">
           <h3 className="line-clamp-2 text-sm font-semibold leading-5 text-gray-950">{product.title}</h3>
 
           <div className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-1">
@@ -89,7 +89,7 @@ export function ProductCard({
         </div>
       </Link>
 
-      <div className="mt-3">
+      <div className="px-3 pb-3 pt-3">
         <ProductCardAction product={product} locale={locale} />
       </div>
     </article>

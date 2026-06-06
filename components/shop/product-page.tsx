@@ -79,10 +79,26 @@ export function ProductPage({
           ) : null}
         </nav>
 
-        <div className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,1fr)_420px]">
-          <ProductGallery images={selectedVariant.images.length ? selectedVariant.images : item.images} title={title} />
+        <div className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,440px)_minmax(0,1fr)]">
           <div className="min-w-0">
-            <h1 className="max-w-full break-words text-2xl font-semibold leading-tight tracking-tight sm:text-3xl md:text-5xl">{title}</h1>
+            <ProductGallery images={selectedVariant.images.length ? selectedVariant.images : item.images} title={title} />
+            <div className="mt-4 flex flex-wrap gap-2">
+              <a
+                href="#shop-description"
+                className="inline-flex items-center rounded-full border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:border-gray-400 hover:bg-gray-50"
+              >
+                {copy.details}
+              </a>
+              <a
+                href="#shop-specifications"
+                className="inline-flex items-center rounded-full border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:border-gray-400 hover:bg-gray-50"
+              >
+                {copy.specifications}
+              </a>
+            </div>
+          </div>
+          <div className="min-w-0">
+            <h1 className="max-w-full break-words text-2xl font-semibold leading-tight tracking-tight sm:text-3xl md:text-4xl">{title}</h1>
             <p className="mt-4 text-sm leading-7 text-gray-600">{getLocalizedText(item.description, locale)}</p>
             <div className="mt-8">
               <ProductPurchasePanel
@@ -94,25 +110,23 @@ export function ProductPage({
           </div>
         </div>
 
-        <section className="mt-12 grid gap-8 border-t border-gray-200 pt-10 lg:grid-cols-[minmax(0,0.95fr)_minmax(320px,0.72fr)]">
-          <div>
-            <h2 className="text-xl font-semibold">{copy.details}</h2>
-            <p className="mt-4 max-w-3xl text-sm leading-7 text-gray-600">{getLocalizedText(item.content, locale)}</p>
-          </div>
+        <section id="shop-description" className="mt-12 scroll-mt-24 border-t border-gray-200 pt-10">
+          <h2 className="text-xl font-semibold">{copy.details}</h2>
+          <p className="mt-4 max-w-3xl text-sm leading-7 text-gray-600">{getLocalizedText(item.content, locale)}</p>
+        </section>
 
-          <div>
-            <h2 className="text-xl font-semibold">{copy.specifications}</h2>
-            <dl className="mt-4 overflow-hidden rounded-lg border border-gray-200">
-              {specifications.map((row) => (
-                <div key={row.label} className="grid border-b border-gray-200 last:border-b-0 sm:grid-cols-[0.48fr_1fr]">
-                  <dt className="bg-gray-50 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                    {row.label}
-                  </dt>
-                  <dd className="break-words px-3 py-2 text-sm text-gray-900">{row.value}</dd>
-                </div>
-              ))}
-            </dl>
-          </div>
+        <section id="shop-specifications" className="mt-10 scroll-mt-24">
+          <h2 className="text-xl font-semibold">{copy.specifications}</h2>
+          <dl className="mt-4 max-w-3xl overflow-hidden rounded-lg border border-gray-200">
+            {specifications.map((row) => (
+              <div key={row.label} className="grid border-b border-gray-200 last:border-b-0 sm:grid-cols-[0.4fr_1fr]">
+                <dt className="bg-gray-50 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  {row.label}
+                </dt>
+                <dd className="break-words px-3 py-2 text-sm text-gray-900">{row.value}</dd>
+              </div>
+            ))}
+          </dl>
         </section>
 
         {relatedItems.length > 0 ? (
