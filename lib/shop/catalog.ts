@@ -4,6 +4,7 @@ import type {
   ShopCategoryFilters,
   ShopCategorySortMode,
   ShopCategoryTreeNode,
+  ShopFilterAttribute,
   ShopHomeData,
   ShopItem,
   ShopLocale,
@@ -71,6 +72,7 @@ export type ShopCategoryFilterInput = {
   sort?: ShopCategorySortMode | string | null
   minPrice?: number | string | null
   maxPrice?: number | string | null
+  attributes?: Record<string, Array<string | null | undefined>> | null
 }
 
 const SHOP_CATEGORY_SORT_MODES: ShopCategorySortMode[] = ["recommended", "price-asc", "price-desc"]
@@ -107,7 +109,95 @@ export function normalizeShopCategoryFilters(input: ShopCategoryFilterInput = {}
     ;[minPrice, maxPrice] = [maxPrice, minPrice]
   }
 
-  return { sort, minPrice, maxPrice }
+  const attributes: Record<string, string[]> = {}
+  for (const [attributeSlug, values] of Object.entries(input.attributes ?? {})) {
+    const cleaned = Array.from(
+      new Set((values ?? []).map((value) => (value ?? "").trim()).filter((value) => value.length > 0)),
+    )
+    if (cleaned.length > 0) {
+      attributes[attributeSlug] = cleaned
+    }
+  }
+
+  return { sort, minPrice, maxPrice, attributes }
+}
+
+// Aggregates variant options across items into API-shaped filter facets
+// (matches GET /api/public/v1/filters). Counts how many products carry each option.
+export function buildShopFilterFacets(items: ShopItem[], locale: ShopLocale): ShopFilterAttribute[] {
+  const byAttribute = new Map<string, { name: string; options: Map<string, { value: string; count: number }> }>()
+
+  for (const item of items) {
+    const itemOptions = new Map<string, Set<string>>()
+    const attributeNames = new Map<string, string>()
+    const optionValues = new Map<string, string>()
+
+    for (const variant of item.variants) {
+      for (const option of variant.selectedOptions) {
+        if (!itemOptions.has(option.attributeSlug)) {
+          itemOptions.set(option.attributeSlug, new Set())
+        }
+        itemOptions.get(option.attributeSlug)?.add(option.optionSlug)
+        attributeNames.set(option.attributeSlug, getLocalizedText(option.attributeTitle, locale))
+        optionValues.set(`${option.attributeSlug}:${option.optionSlug}`, getLocalizedText(option.optionTitle, locale))
+      }
+    }
+
+    for (const [attributeSlug, optionSlugs] of itemOptions) {
+      const attribute = byAttribute.get(attributeSlug) ?? {
+        name: attributeNames.get(attributeSlug) ?? attributeSlug,
+        options: new Map(),
+      }
+
+      for (const optionSlug of optionSlugs) {
+        const option = attribute.options.get(optionSlug) ?? {
+          value: optionValues.get(`${attributeSlug}:${optionSlug}`) ?? optionSlug,
+          count: 0,
+        }
+        option.count += 1
+        attribute.options.set(optionSlug, option)
+      }
+
+      byAttribute.set(attributeSlug, attribute)
+    }
+  }
+
+  return Array.from(byAttribute.entries())
+    .map(([attributeSlug, attribute]) => ({
+      id: attributeSlug,
+      slug: attributeSlug,
+      name: attribute.name,
+      type: "SELECT" as const,
+      options: Array.from(attribute.options.entries())
+        .map(([optionSlug, option]) => ({
+          id: optionSlug,
+          slug: optionSlug,
+          value: option.value,
+          count: option.count,
+        }))
+        .sort((a, b) => a.value.localeCompare(b.value)),
+    }))
+    .filter((attribute) => attribute.options.length > 0)
+}
+
+function itemMatchesAttributes(item: ShopItem, attributes: Record<string, string[]>): boolean {
+  for (const [attributeSlug, selectedOptionSlugs] of Object.entries(attributes)) {
+    if (selectedOptionSlugs.length === 0) {
+      continue
+    }
+
+    const matches = item.variants.some((variant) =>
+      variant.selectedOptions.some(
+        (option) => option.attributeSlug === attributeSlug && selectedOptionSlugs.includes(option.optionSlug),
+      ),
+    )
+
+    if (!matches) {
+      return false
+    }
+  }
+
+  return true
 }
 
 export function getShopProductDisplayPrice(product: Pick<ShopProductCardView, "price" | "salePrice">): number {
@@ -331,6 +421,21 @@ export function selectProductVariantByRoute(item: ShopItem, variantSlug?: string
 
 export function toProductCard(item: ShopItem, locale: ShopLocale): ShopProductCardView {
   const variant = selectProductVariant(item)
+  const hasOptions = item.variants.length > 1
+
+  // Prefer the cheapest in-stock variant for the "from" price so the card never
+  // advertises a price the customer cannot actually buy.
+  const purchasableVariants = item.variants.filter(isVariantPurchasable)
+  const pricePool = purchasableVariants.length > 0 ? purchasableVariants : item.variants
+  const displayPrice = Math.min(...pricePool.map((candidate) => candidate.salePrice ?? candidate.price))
+
+  // A discount badge only makes sense for a single price point; "from X"
+  // products span several prices and get no struck-through compare-at.
+  const compareAtPrice = !hasOptions && variant.salePrice !== null ? variant.price : null
+  const discountPercent =
+    compareAtPrice !== null && compareAtPrice > 0
+      ? Math.round(((compareAtPrice - displayPrice) / compareAtPrice) * 100)
+      : null
 
   return {
     itemId: item.id,
@@ -341,6 +446,10 @@ export function toProductCard(item: ShopItem, locale: ShopLocale): ShopProductCa
     image: variant.images[0] ?? item.images[0] ?? "/tech-fix-storefront.png",
     price: variant.price,
     salePrice: variant.salePrice,
+    displayPrice,
+    priceFrom: hasOptions,
+    compareAtPrice,
+    discountPercent: discountPercent && discountPercent > 0 ? discountPercent : null,
     currency: "CZK",
     href: `/${locale}/product/${item.slug}`,
     availabilityLabel: getAvailabilityLabel(variant, locale),
@@ -387,10 +496,17 @@ export function getMockShopCategory(
 
   const activeFilters = normalizeShopCategoryFilters(filtersInput)
   const categoryIds = new Set([category.id, ...getShopCategoryDescendantIds(category.id)])
-  const unfilteredProducts = mockShopItems
-    .filter((item) => item.categories.some((itemCategory) => categoryIds.has(itemCategory.id)))
+  const matchingItems = mockShopItems.filter((item) =>
+    item.categories.some((itemCategory) => categoryIds.has(itemCategory.id)),
+  )
+  // Facets and price bounds describe the whole category, independent of the
+  // current selection, so the panel options stay stable while filtering.
+  const filterAttributes = buildShopFilterFacets(matchingItems, locale)
+  const unfilteredProducts = matchingItems.map((item) => toProductCard(item, locale))
+  const attributeFilteredProducts = matchingItems
+    .filter((item) => itemMatchesAttributes(item, activeFilters.attributes))
     .map((item) => toProductCard(item, locale))
-  const products = applyShopCategoryFilters(unfilteredProducts, activeFilters)
+  const products = applyShopCategoryFilters(attributeFilteredProducts, activeFilters)
 
   return {
     category,
@@ -398,6 +514,7 @@ export function getMockShopCategory(
     ancestors: getShopCategoryAncestors(category),
     categoryTree: buildShopCategoryTree(),
     priceBounds: getShopCategoryPriceBounds(unfilteredProducts),
+    filterAttributes,
     activeFilters,
     products,
   }

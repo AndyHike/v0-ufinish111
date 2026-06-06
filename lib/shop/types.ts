@@ -133,6 +133,14 @@ export interface ShopProductCardView {
   image: string
   price: number
   salePrice: number | null
+  /** Prominent price shown on the card: lowest in-stock variant price. */
+  displayPrice: number
+  /** True when the item has multiple variants, so the price reads "from X". */
+  priceFrom: boolean
+  /** Original price to strike through (single-variant sale only); null otherwise. */
+  compareAtPrice: number | null
+  /** Rounded discount percentage for a single-variant sale; null otherwise. */
+  discountPercent: number | null
   currency: ShopCurrency
   href: string
   availabilityLabel: string
@@ -147,10 +155,28 @@ export interface ShopCategoryTreeNode {
 
 export type ShopCategorySortMode = "recommended" | "price-asc" | "price-desc"
 
+// Attribute filter facet, shaped to match GET /api/public/v1/filters response.
+export interface ShopFilterOption {
+  id: string
+  slug: string
+  value: string
+  count: number
+}
+
+export interface ShopFilterAttribute {
+  id: string
+  slug: string
+  name: string
+  type: "SELECT"
+  options: ShopFilterOption[]
+}
+
 export interface ShopCategoryFilters {
   sort: ShopCategorySortMode
   minPrice: number | null
   maxPrice: number | null
+  // attributeSlug -> selected option slugs
+  attributes: Record<string, string[]>
 }
 
 export interface ShopCategoryPriceBounds {
@@ -176,6 +202,7 @@ export interface ShopCategoryData {
   ancestors: ShopCategory[]
   categoryTree: ShopCategoryTreeNode[]
   priceBounds: ShopCategoryPriceBounds
+  filterAttributes: ShopFilterAttribute[]
   activeFilters: ShopCategoryFilters
   products: ShopProductCardView[]
 }

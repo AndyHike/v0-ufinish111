@@ -14,6 +14,7 @@ import { SessionProvider } from "@/components/providers/session-provider"
 import { ShopCartProvider } from "@/components/shop/shop-cart-provider"
 import { ShopFooter } from "@/components/shop/shop-footer"
 import { ShopHeader } from "@/components/shop/shop-header"
+import { buildShopCategoryTree } from "@/lib/shop/catalog"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
 import { CookieConsentProvider } from "@/contexts/cookie-consent-context"
@@ -140,7 +141,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
                     )}
                     {variant === "shop" ? (
                       <ShopCartProvider>
-                        <ShopHeader locale={locale as ShopLocale} />
+                        <ShopHeader locale={locale as ShopLocale} categoryTree={buildShopCategoryTree()} />
                         <main className="flex-1">{children}</main>
                         <ShopFooter locale={locale as ShopLocale} />
                       </ShopCartProvider>

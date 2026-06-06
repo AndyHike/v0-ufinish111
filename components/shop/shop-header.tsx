@@ -6,12 +6,19 @@ import { useTranslations } from "next-intl"
 
 import { LanguageSwitcher } from "@/components/language-switcher"
 import { ShopCartDrawer } from "@/components/shop/shop-cart-drawer"
+import { ShopCatalogDrawer } from "@/components/shop/shop-catalog-drawer"
 import { SiteLogo } from "@/components/site-logo"
 import { useShopCart } from "@/components/shop/shop-cart-provider"
 import { Button } from "@/components/ui/button"
-import type { ShopLocale } from "@/lib/shop/types"
+import type { ShopCategoryTreeNode, ShopLocale } from "@/lib/shop/types"
 
-export function ShopHeader({ locale }: { locale: ShopLocale }) {
+export function ShopHeader({
+  locale,
+  categoryTree = [],
+}: {
+  locale: ShopLocale
+  categoryTree?: ShopCategoryTreeNode[]
+}) {
   const t = useTranslations("Shop.header")
   const { count, openCart } = useShopCart()
   const navItems = [
@@ -25,10 +32,13 @@ export function ShopHeader({ locale }: { locale: ShopLocale }) {
     <>
       <header className="sticky top-0 z-40 w-full overflow-x-hidden border-b border-gray-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
         <div className="container flex h-16 min-w-0 items-center justify-between gap-2 px-4 md:gap-4 md:px-6">
-          <Link href={`/${locale}`} className="flex min-w-0 max-w-[52vw] items-center gap-2 sm:max-w-none sm:gap-3">
-            <SiteLogo size="md" />
-            <span className="min-w-0 truncate text-sm font-semibold tracking-tight text-gray-950">DeviceHelp Shop</span>
-          </Link>
+          <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+            <ShopCatalogDrawer locale={locale} nodes={categoryTree} variant="icon" triggerClassName="lg:hidden" />
+            <Link href={`/${locale}`} className="flex min-w-0 max-w-[44vw] items-center gap-2 sm:max-w-none sm:gap-3">
+              <SiteLogo size="md" />
+              <span className="min-w-0 truncate text-sm font-semibold tracking-tight text-gray-950">DeviceHelp Shop</span>
+            </Link>
+          </div>
 
           <nav className="hidden items-center gap-5 text-sm font-medium text-gray-700 lg:flex">
             {navItems.map((item) => (
@@ -63,14 +73,6 @@ export function ShopHeader({ locale }: { locale: ShopLocale }) {
             </button>
           </div>
         </div>
-
-        <nav className="container flex max-w-full gap-2 overflow-x-auto border-t border-gray-100 px-4 py-2 text-sm font-medium text-gray-700 lg:hidden">
-          {navItems.map((item) => (
-            <Link key={item.href} href={item.href} className="whitespace-nowrap rounded-full bg-gray-100 px-3 py-1.5">
-              {item.label}
-            </Link>
-          ))}
-        </nav>
       </header>
       <ShopCartDrawer locale={locale} />
     </>

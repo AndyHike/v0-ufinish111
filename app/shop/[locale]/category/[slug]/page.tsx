@@ -53,10 +53,25 @@ export default async function ShopCategoryRoute({
 }) {
   const { locale, slug } = await params
   const query = (await searchParams) ?? {}
+
+  // Attribute facets arrive as repeatable `attr_<attributeSlug>` query params.
+  const attributes: Record<string, string[]> = {}
+  for (const [key, value] of Object.entries(query)) {
+    if (!key.startsWith("attr_")) {
+      continue
+    }
+    const attributeSlug = key.slice("attr_".length)
+    const values = (Array.isArray(value) ? value : value ? [value] : []).filter(Boolean) as string[]
+    if (attributeSlug && values.length > 0) {
+      attributes[attributeSlug] = values
+    }
+  }
+
   const filters = normalizeShopCategoryFilters({
     sort: firstSearchParam(query.sort),
     minPrice: firstSearchParam(query.minPrice),
     maxPrice: firstSearchParam(query.maxPrice),
+    attributes,
   })
   const data = getMockShopCategory(locale, slug, filters)
 
@@ -71,6 +86,7 @@ export default async function ShopCategoryRoute({
       children={data.children}
       ancestors={data.ancestors}
       priceBounds={data.priceBounds}
+      filterAttributes={data.filterAttributes}
       activeFilters={data.activeFilters}
       products={data.products}
     />
