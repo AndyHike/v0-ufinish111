@@ -1,9 +1,9 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { CreditCard, MapPin, ShieldCheck } from "lucide-react"
+import { CreditCard, MapPin, ShieldCheck, Wallet } from "lucide-react"
 
 import { useShopCart } from "@/components/shop/shop-cart-provider"
 import { Button } from "@/components/ui/button"
@@ -17,7 +17,8 @@ const CHECKOUT_COPY = {
     emptyText: "Pridejte produkty, abyste mohli dokoncit objednavku.",
     backToShop: "Zpet do obchodu",
     contact: "Kontaktni udaje",
-    name: "Jmeno a prijmeni",
+    firstName: "Jmeno",
+    lastName: "Prijmeni",
     email: "E-mail",
     phone: "Telefon",
     contactHint: "Vyplnte alespon e-mail nebo telefon.",
@@ -27,6 +28,11 @@ const CHECKOUT_COPY = {
     changePoint: "Zmenit misto",
     pointNotChosen: "Vydejni misto zatim nevybrano.",
     payment: "Platba",
+    paymentMethodHint: "Vyberte zpusob platby.",
+    payCard: "Platebni karta",
+    payGooglePay: "Google Pay",
+    payApplePay: "Apple Pay",
+    walletHint: "Platebni tlacitko se zobrazi po nacteni Stripe.",
     cardOnline: "Platebni karta online (Stripe)",
     cardHint: "Platba probehne bezpecne primo na teto strance.",
     summary: "Souhrn objednavky",
@@ -45,7 +51,8 @@ const CHECKOUT_COPY = {
     emptyText: "Додайте товари, щоб оформити замовлення.",
     backToShop: "Повернутися до магазину",
     contact: "Контактні дані",
-    name: "Ім'я та прізвище",
+    firstName: "Ім'я",
+    lastName: "Прізвище",
     email: "E-mail",
     phone: "Телефон",
     contactHint: "Вкажіть хоча б e-mail або телефон.",
@@ -55,6 +62,11 @@ const CHECKOUT_COPY = {
     changePoint: "Змінити пункт",
     pointNotChosen: "Пункт видачі ще не вибрано.",
     payment: "Оплата",
+    paymentMethodHint: "Оберіть спосіб оплати.",
+    payCard: "Картка",
+    payGooglePay: "Google Pay",
+    payApplePay: "Apple Pay",
+    walletHint: "Кнопка оплати зʼявиться після завантаження Stripe.",
     cardOnline: "Картка онлайн (Stripe)",
     cardHint: "Оплата відбувається безпечно прямо на цій сторінці.",
     summary: "Підсумок замовлення",
@@ -73,7 +85,8 @@ const CHECKOUT_COPY = {
     emptyText: "Add products to place an order.",
     backToShop: "Back to shop",
     contact: "Contact details",
-    name: "Full name",
+    firstName: "First name",
+    lastName: "Last name",
     email: "Email",
     phone: "Phone",
     contactHint: "Provide at least an email or a phone.",
@@ -83,6 +96,11 @@ const CHECKOUT_COPY = {
     changePoint: "Change point",
     pointNotChosen: "No pickup point selected yet.",
     payment: "Payment",
+    paymentMethodHint: "Choose a payment method.",
+    payCard: "Card",
+    payGooglePay: "Google Pay",
+    payApplePay: "Apple Pay",
+    walletHint: "The wallet button appears once Stripe loads.",
     cardOnline: "Card online (Stripe)",
     cardHint: "Payment happens securely right on this page.",
     summary: "Order summary",
@@ -102,19 +120,30 @@ interface PacketaPoint {
   city?: string
 }
 
+type PaymentMethod = "card" | "google_pay" | "apple_pay"
+
 export function ShopCheckoutPage({ locale }: { locale: ShopLocale }) {
   const copy = CHECKOUT_COPY[locale]
   const { lines } = useShopCart()
   const subtotal = lines.reduce((sum, line) => sum + line.priceSnapshot * line.quantity, 0)
 
-  const [name, setName] = useState("")
+  const [firstName, setFirstName] = useState("")
+  const [lastName, setLastName] = useState("")
   const [email, setEmail] = useState("")
   const [phone, setPhone] = useState("")
   const [point, setPoint] = useState<PacketaPoint | null>(null)
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("card")
   const [submitted, setSubmitted] = useState(false)
 
   const hasContact = email.trim().length > 0 || phone.trim().length > 0
-  const canSubmit = name.trim().length > 0 && hasContact && point !== null && lines.length > 0
+  const hasName = firstName.trim().length > 0 && lastName.trim().length > 0
+  const canSubmit = hasName && hasContact && point !== null && lines.length > 0
+
+  const paymentMethods: { id: PaymentMethod; label: string }[] = [
+    { id: "card", label: copy.payCard },
+    { id: "google_pay", label: copy.payGooglePay },
+    { id: "apple_pay", label: copy.payApplePay },
+  ]
 
   // INTEGRATION POINT: replace with the real Packeta widget. Load
   // https://widget.packeta.com/v6/www/js/library.js and call
@@ -125,8 +154,11 @@ export function ShopCheckoutPage({ locale }: { locale: ShopLocale }) {
   }
 
   // INTEGRATION POINT: on submit, POST /api/public/v1/orders to create a
-  // RESERVED order, then mount the Stripe Payment Element with the returned
-  // PaymentIntent clientSecret and confirm the order after payment succeeds.
+  // RESERVED order with customer { firstName, lastName, email, phone } and the
+  // chosen delivery point, then mount the Stripe Payment Element with the
+  // returned PaymentIntent clientSecret and confirm the order after payment.
+  // The `paymentMethod` selected here maps to Stripe's wallet/card flow; with
+  // the Payment Element, Stripe also auto-renders eligible wallets itself.
   const placeOrder = () => {
     if (!canSubmit) {
       return
@@ -155,15 +187,28 @@ export function ShopCheckoutPage({ locale }: { locale: ShopLocale }) {
 
       <div className="mt-8 grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
         <div className="space-y-6">
-          {/* Contact */}
+          {/* Contact — autoComplete tokens let the browser / Google offer to
+              autofill saved name, email and phone. */}
           <section className="rounded-xl border border-gray-200 p-5">
             <h2 className="text-base font-semibold">{copy.contact}</h2>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <label className="sm:col-span-2">
-                <span className="text-sm font-medium text-gray-700">{copy.name}</span>
+            <form className="mt-4 grid gap-4 sm:grid-cols-2" onSubmit={(event) => event.preventDefault()}>
+              <label>
+                <span className="text-sm font-medium text-gray-700">{copy.firstName}</span>
                 <input
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
+                  name="given-name"
+                  autoComplete="given-name"
+                  value={firstName}
+                  onChange={(event) => setFirstName(event.target.value)}
+                  className="mt-1.5 w-full rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-gray-950"
+                />
+              </label>
+              <label>
+                <span className="text-sm font-medium text-gray-700">{copy.lastName}</span>
+                <input
+                  name="family-name"
+                  autoComplete="family-name"
+                  value={lastName}
+                  onChange={(event) => setLastName(event.target.value)}
                   className="mt-1.5 w-full rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-gray-950"
                 />
               </label>
@@ -171,6 +216,8 @@ export function ShopCheckoutPage({ locale }: { locale: ShopLocale }) {
                 <span className="text-sm font-medium text-gray-700">{copy.email}</span>
                 <input
                   type="email"
+                  name="email"
+                  autoComplete="email"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                   className="mt-1.5 w-full rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-gray-950"
@@ -180,12 +227,14 @@ export function ShopCheckoutPage({ locale }: { locale: ShopLocale }) {
                 <span className="text-sm font-medium text-gray-700">{copy.phone}</span>
                 <input
                   type="tel"
+                  name="tel"
+                  autoComplete="tel"
                   value={phone}
                   onChange={(event) => setPhone(event.target.value)}
                   className="mt-1.5 w-full rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-gray-950"
                 />
               </label>
-            </div>
+            </form>
             <p className="mt-2 text-xs text-gray-500">{copy.contactHint}</p>
           </section>
 
@@ -217,18 +266,49 @@ export function ShopCheckoutPage({ locale }: { locale: ShopLocale }) {
           {/* Payment */}
           <section className="rounded-xl border border-gray-200 p-5">
             <h2 className="text-base font-semibold">{copy.payment}</h2>
-            <div className="mt-4 rounded-lg border border-gray-950 p-4">
-              <div className="flex items-center gap-3">
-                <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-gray-100 text-gray-900">
-                  <CreditCard className="h-4 w-4" />
-                </span>
-                <div>
-                  <p className="text-sm font-semibold text-gray-950">{copy.cardOnline}</p>
-                  <p className="mt-0.5 text-xs text-gray-500">{copy.cardHint}</p>
-                </div>
-              </div>
-              {/* INTEGRATION POINT: Stripe Payment Element mounts here. */}
-              <div className="mt-4 flex min-h-[96px] items-center justify-center rounded-md border border-dashed border-gray-300 bg-gray-50 px-4 text-center text-xs text-gray-500">
+            <p className="mt-1 text-xs text-gray-500">{copy.paymentMethodHint}</p>
+
+            {/* Method choice. With the Stripe Payment Element, Stripe also
+                auto-renders eligible wallets (Apple Pay / Google Pay) on
+                supported devices; this selector mirrors that choice in the UI. */}
+            <div className="mt-4 grid gap-2 sm:grid-cols-3" role="radiogroup" aria-label={copy.payment}>
+              {paymentMethods.map((method) => {
+                const isActive = paymentMethod === method.id
+                return (
+                  <button
+                    key={method.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={isActive}
+                    onClick={() => setPaymentMethod(method.id)}
+                    className={`flex items-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition ${
+                      isActive
+                        ? "border-gray-950 bg-gray-50 text-gray-950"
+                        : "border-gray-300 text-gray-700 hover:border-gray-400"
+                    }`}
+                  >
+                    {method.id === "card" ? (
+                      <CreditCard className="h-4 w-4 shrink-0" />
+                    ) : (
+                      <Wallet className="h-4 w-4 shrink-0" />
+                    )}
+                    <span className="truncate">{method.label}</span>
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* INTEGRATION POINT: Stripe Payment Element / Express Checkout mounts
+                here. For "card" → Payment Element; for wallets → the wallet
+                button rendered by Stripe once the PaymentIntent clientSecret is
+                available. */}
+            <div className="mt-4 rounded-lg border border-gray-200 p-4">
+              {paymentMethod === "card" ? (
+                <p className="text-xs text-gray-500">{copy.cardHint}</p>
+              ) : (
+                <p className="text-xs text-gray-500">{copy.walletHint}</p>
+              )}
+              <div className="mt-3 flex min-h-[96px] items-center justify-center rounded-md border border-dashed border-gray-300 bg-gray-50 px-4 text-center text-xs text-gray-500">
                 {copy.integrationNote}
               </div>
             </div>
