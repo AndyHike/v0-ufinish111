@@ -1,6 +1,9 @@
 import { mockShopCategories, mockShopItems } from "./mock-data"
 import type {
   ShopCategoryData,
+  ShopCategoryFilters,
+  ShopCategorySortMode,
+  ShopCategoryTreeNode,
   ShopHomeData,
   ShopItem,
   ShopLocale,
@@ -63,6 +66,153 @@ export type ShopSpecificationRow = {
 }
 
 export type ShopVariantSelectorMode = "chips" | "search"
+
+export type ShopCategoryFilterInput = {
+  sort?: ShopCategorySortMode | string | null
+  minPrice?: number | string | null
+  maxPrice?: number | string | null
+}
+
+const SHOP_CATEGORY_SORT_MODES: ShopCategorySortMode[] = ["recommended", "price-asc", "price-desc"]
+
+function sortCategoriesByPosition(a: { position: number; title?: ShopLocalizedText }, b: { position: number; title?: ShopLocalizedText }) {
+  if (a.position !== b.position) {
+    return a.position - b.position
+  }
+
+  return (a.title?.cs ?? "").localeCompare(b.title?.cs ?? "")
+}
+
+function parseFilterPrice(value: number | string | null | undefined): number | null {
+  if (value === null || value === undefined || value === "") {
+    return null
+  }
+
+  const parsed = typeof value === "number" ? value : Number(value)
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return null
+  }
+
+  return Math.round(parsed)
+}
+
+export function normalizeShopCategoryFilters(input: ShopCategoryFilterInput = {}): ShopCategoryFilters {
+  const sort = SHOP_CATEGORY_SORT_MODES.includes(input.sort as ShopCategorySortMode)
+    ? (input.sort as ShopCategorySortMode)
+    : "recommended"
+  let minPrice = parseFilterPrice(input.minPrice)
+  let maxPrice = parseFilterPrice(input.maxPrice)
+
+  if (minPrice !== null && maxPrice !== null && minPrice > maxPrice) {
+    ;[minPrice, maxPrice] = [maxPrice, minPrice]
+  }
+
+  return { sort, minPrice, maxPrice }
+}
+
+export function getShopProductDisplayPrice(product: Pick<ShopProductCardView, "price" | "salePrice">): number {
+  return product.salePrice ?? product.price
+}
+
+export function getRootShopCategories(categories = mockShopCategories) {
+  return categories
+    .filter((category) => category.isActive && category.parentId === null)
+    .sort(sortCategoriesByPosition)
+}
+
+export function getShopCategoryChildren(parentId: string, categories = mockShopCategories) {
+  return categories
+    .filter((category) => category.isActive && category.parentId === parentId)
+    .sort(sortCategoriesByPosition)
+}
+
+export function buildShopCategoryTree(categories = mockShopCategories): ShopCategoryTreeNode[] {
+  const activeCategories = categories.filter((category) => category.isActive).sort(sortCategoriesByPosition)
+  const childrenByParentId = new Map<string | null, typeof activeCategories>()
+
+  for (const category of activeCategories) {
+    const siblings = childrenByParentId.get(category.parentId) ?? []
+    siblings.push(category)
+    childrenByParentId.set(category.parentId, siblings)
+  }
+
+  const buildNode = (category: (typeof activeCategories)[number]): ShopCategoryTreeNode => ({
+    category,
+    children: (childrenByParentId.get(category.id) ?? []).map(buildNode),
+  })
+
+  return (childrenByParentId.get(null) ?? []).map(buildNode)
+}
+
+export function getShopCategoryAncestors(category: { parentId: string | null }, categories = mockShopCategories) {
+  const categoriesById = new Map(categories.filter((item) => item.isActive).map((item) => [item.id, item]))
+  const ancestors: NonNullable<ReturnType<typeof categoriesById.get>>[] = []
+  const visited = new Set<string>()
+  let parentId = category.parentId
+
+  while (parentId) {
+    if (visited.has(parentId)) {
+      break
+    }
+
+    visited.add(parentId)
+    const parent = categoriesById.get(parentId)
+    if (!parent) {
+      break
+    }
+
+    ancestors.unshift(parent)
+    parentId = parent.parentId
+  }
+
+  return ancestors
+}
+
+export function getShopCategoryDescendantIds(categoryId: string, categories = mockShopCategories): string[] {
+  const children = getShopCategoryChildren(categoryId, categories)
+
+  return children.flatMap((child) => [child.id, ...getShopCategoryDescendantIds(child.id, categories)])
+}
+
+export function getShopCategoryPriceBounds(products: ShopProductCardView[]) {
+  if (products.length === 0) {
+    return { min: null, max: null }
+  }
+
+  const prices = products.map(getShopProductDisplayPrice)
+
+  return {
+    min: Math.min(...prices),
+    max: Math.max(...prices),
+  }
+}
+
+export function applyShopCategoryFilters(products: ShopProductCardView[], input: ShopCategoryFilterInput = {}) {
+  const filters = normalizeShopCategoryFilters(input)
+  const filtered = products.filter((product) => {
+    const price = getShopProductDisplayPrice(product)
+
+    if (filters.minPrice !== null && price < filters.minPrice) {
+      return false
+    }
+
+    if (filters.maxPrice !== null && price > filters.maxPrice) {
+      return false
+    }
+
+    return true
+  })
+
+  if (filters.sort === "price-asc") {
+    return filtered.sort((a, b) => getShopProductDisplayPrice(a) - getShopProductDisplayPrice(b))
+  }
+
+  if (filters.sort === "price-desc") {
+    return filtered.sort((a, b) => getShopProductDisplayPrice(b) - getShopProductDisplayPrice(a))
+  }
+
+  return filtered
+}
 
 export function getLocalizedText(value: ShopLocalizedText, locale: ShopLocale): string {
   return value[locale] ?? value.cs ?? value.en ?? ""
@@ -200,6 +350,8 @@ export function toProductCard(item: ShopItem, locale: ShopLocale): ShopProductCa
 }
 
 export function getMockShopHomeData(locale: ShopLocale): ShopHomeData {
+  const categoryTree = buildShopCategoryTree()
+
   return {
     hero: {
       locale,
@@ -217,24 +369,38 @@ export function getMockShopHomeData(locale: ShopLocale): ShopHomeData {
             : "Curated products from the DeviceHelp service team.",
       image: "/tech-fix-storefront.png",
     },
-    categories: mockShopCategories
-      .filter((category) => category.isActive)
-      .sort((a, b) => a.position - b.position),
+    categories: getRootShopCategories(),
+    categoryTree,
     featuredProducts: mockShopItems.map((item) => toProductCard(item, locale)),
   }
 }
 
-export function getMockShopCategory(locale: ShopLocale, slug: string): ShopCategoryData | null {
+export function getMockShopCategory(
+  locale: ShopLocale,
+  slug: string,
+  filtersInput: ShopCategoryFilterInput = {},
+): ShopCategoryData | null {
   const category = mockShopCategories.find((item) => item.slug === slug && item.isActive)
   if (!category) {
     return null
   }
 
-  const products = mockShopItems
-    .filter((item) => item.categories.some((itemCategory) => itemCategory.slug === slug))
+  const activeFilters = normalizeShopCategoryFilters(filtersInput)
+  const categoryIds = new Set([category.id, ...getShopCategoryDescendantIds(category.id)])
+  const unfilteredProducts = mockShopItems
+    .filter((item) => item.categories.some((itemCategory) => categoryIds.has(itemCategory.id)))
     .map((item) => toProductCard(item, locale))
+  const products = applyShopCategoryFilters(unfilteredProducts, activeFilters)
 
-  return { category, products }
+  return {
+    category,
+    children: getShopCategoryChildren(category.id),
+    ancestors: getShopCategoryAncestors(category),
+    categoryTree: buildShopCategoryTree(),
+    priceBounds: getShopCategoryPriceBounds(unfilteredProducts),
+    activeFilters,
+    products,
+  }
 }
 
 export function getMockShopProduct(

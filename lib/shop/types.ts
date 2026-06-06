@@ -140,6 +140,24 @@ export interface ShopProductCardView {
   isPurchasable: boolean
 }
 
+export interface ShopCategoryTreeNode {
+  category: ShopCategory
+  children: ShopCategoryTreeNode[]
+}
+
+export type ShopCategorySortMode = "recommended" | "price-asc" | "price-desc"
+
+export interface ShopCategoryFilters {
+  sort: ShopCategorySortMode
+  minPrice: number | null
+  maxPrice: number | null
+}
+
+export interface ShopCategoryPriceBounds {
+  min: number | null
+  max: number | null
+}
+
 export interface ShopHomeData {
   hero: {
     locale: ShopLocale
@@ -148,11 +166,17 @@ export interface ShopHomeData {
     image: string
   }
   categories: ShopCategory[]
+  categoryTree: ShopCategoryTreeNode[]
   featuredProducts: ShopProductCardView[]
 }
 
 export interface ShopCategoryData {
   category: ShopCategory
+  children: ShopCategory[]
+  ancestors: ShopCategory[]
+  categoryTree: ShopCategoryTreeNode[]
+  priceBounds: ShopCategoryPriceBounds
+  activeFilters: ShopCategoryFilters
   products: ShopProductCardView[]
 }
 

@@ -61,6 +61,47 @@ test("finds category by slug and returns normalized products", () => {
   assert.equal(category.products[0].href, "/cs/product/protective-glass")
 })
 
+test("builds an active nested category tree for catalog navigation", () => {
+  const tree = catalog.buildShopCategoryTree()
+  const protection = tree.find((node) => node.category.slug === "protection")
+  const glass = protection?.children.find((node) => node.category.slug === "display-protection")
+
+  assert.ok(protection)
+  assert.ok(protection.children.length >= 2)
+  assert.ok(glass)
+  assert.ok(glass.children.some((node) => node.category.slug === "iphone-protection"))
+  assert.ok(tree.every((node) => node.category.parentId === null))
+})
+
+test("category pages include descendants and child category metadata", () => {
+  const category = catalog.getMockShopCategory("cs", "protection")
+
+  assert.ok(category)
+  assert.ok(category.children.some((child) => child.slug === "display-protection"))
+  assert.ok(category.categoryTree.some((node) => node.category.slug === "protection"))
+  assert.ok(category.products.some((product) => product.slug === "model-test-protective-glass"))
+  assert.equal(category.priceBounds.min, 249)
+  assert.equal(category.priceBounds.max, 299)
+})
+
+test("sorts category products by effective price", () => {
+  const category = catalog.getMockShopCategory("cs", "protection", { sort: "price-desc" })
+  const prices = category.products.map((product) => product.salePrice ?? product.price)
+
+  assert.deepEqual(prices, [...prices].sort((a, b) => b - a))
+  assert.equal(category.activeFilters.sort, "price-desc")
+})
+
+test("filters category products by price range", () => {
+  const category = catalog.getMockShopCategory("cs", "protection", { minPrice: 280, maxPrice: 310 })
+  const prices = category.products.map((product) => product.salePrice ?? product.price)
+
+  assert.ok(category.products.length > 0)
+  assert.ok(prices.every((price) => price >= 280 && price <= 310))
+  assert.equal(category.activeFilters.minPrice, 280)
+  assert.equal(category.activeFilters.maxPrice, 310)
+})
+
 test("selects default variant when no variant slug is supplied", () => {
   const product = catalog.getMockShopProduct("cs", "protective-glass")
 

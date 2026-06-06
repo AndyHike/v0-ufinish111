@@ -5,7 +5,7 @@ import { ArrowRight, BadgePercent, PackageSearch, ShieldCheck, Sparkles, Smartph
 import { ProductCard } from "@/components/shop/product-card"
 import { Button } from "@/components/ui/button"
 import { getLocalizedText } from "@/lib/shop/catalog"
-import type { ShopCategory, ShopLocale, ShopProductCardView } from "@/lib/shop/types"
+import type { ShopCategory, ShopCategoryTreeNode, ShopLocale, ShopProductCardView } from "@/lib/shop/types"
 
 const SHOP_HOME_COPY = {
   cs: {
@@ -13,6 +13,7 @@ const SHOP_HOME_COPY = {
     description: "Vybrane prislusenstvi, dily a budouci telefony od servisniho tymu DeviceHelp.",
     browse: "Prohlizet produkty",
     parts: "Nahradni dily",
+    catalog: "Catalog",
     allCategories: "Vsechny kategorie",
     categoriesTitle: "Kategorie obchodu",
     categoriesText: "Zacnete ochranou, nabijenim, nahradnimi dily nebo telefony.",
@@ -33,6 +34,7 @@ const SHOP_HOME_COPY = {
     description: "Підібрані аксесуари, запчастини та майбутні телефони від сервісної команди DeviceHelp.",
     browse: "Переглянути товари",
     parts: "Запчастини",
+    catalog: "Каталог",
     allCategories: "Усі категорії",
     categoriesTitle: "Категорії магазину",
     categoriesText: "Почніть із захисту, заряджання, запчастин або телефонів.",
@@ -53,6 +55,7 @@ const SHOP_HOME_COPY = {
     description: "Selected accessories, parts, and future phone offers from the DeviceHelp service team.",
     browse: "Browse products",
     parts: "Repair parts",
+    catalog: "Catalog",
     allCategories: "All categories",
     categoriesTitle: "Shop categories",
     categoriesText: "Start with protection, charging, parts, or phones.",
@@ -73,12 +76,44 @@ const SHOP_HOME_COPY = {
 const benefitIcons = [ShieldCheck, Truck, Sparkles]
 const promoIcons = [Sparkles, BadgePercent, PackageSearch]
 
+function CategoryTreeList({
+  locale,
+  nodes,
+  depth = 0,
+}: {
+  locale: ShopLocale
+  nodes: ShopCategoryTreeNode[]
+  depth?: number
+}) {
+  return (
+    <ul className={depth === 0 ? "space-y-1" : "mt-2 space-y-1 border-l border-gray-200 pl-3"}>
+      {nodes.map((node) => (
+        <li key={node.category.id}>
+          <Link
+            href={`/${locale}/category/${node.category.slug}`}
+            className={`flex items-center justify-between rounded-md px-3 py-2 text-sm transition hover:bg-gray-100 ${
+              depth === 0 ? "font-semibold text-gray-950" : "font-medium text-gray-600"
+            }`}
+          >
+            <span className="min-w-0 truncate">{getLocalizedText(node.category.title, locale)}</span>
+            {node.children.length > 0 ? <span className="ml-2 text-xs text-gray-400">{node.children.length}</span> : null}
+          </Link>
+          {node.children.length > 0 && depth < 1 ? (
+            <CategoryTreeList locale={locale} nodes={node.children.slice(0, 4)} depth={depth + 1} />
+          ) : null}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
 export function ShopHomePage({
   locale,
   heroTitle,
   heroDescription,
   heroImage,
   categories,
+  categoryTree,
   featuredProducts,
 }: {
   locale: ShopLocale
@@ -86,6 +121,7 @@ export function ShopHomePage({
   heroDescription: string
   heroImage: string
   categories: ShopCategory[]
+  categoryTree: ShopCategoryTreeNode[]
   featuredProducts: ShopProductCardView[]
 }) {
   const copy = SHOP_HOME_COPY[locale]
@@ -93,69 +129,79 @@ export function ShopHomePage({
   return (
     <div className="w-full max-w-full overflow-x-hidden bg-white text-gray-950">
       <section className="border-b border-gray-100">
-        <div className="container grid min-w-0 gap-8 px-4 py-8 md:px-6 lg:grid-cols-[0.88fr_1.12fr] lg:items-center lg:py-12">
-          <div className="w-full min-w-0 max-w-full">
-            <p className="text-sm font-medium uppercase tracking-[0.18em] text-gray-500">{copy.eyebrow}</p>
-            <h1 className="mt-4 max-w-full break-words text-[1.75rem] font-semibold leading-tight tracking-tight text-gray-950 sm:max-w-3xl sm:text-4xl md:text-5xl">
-              {heroTitle}
-            </h1>
-            <p className="mt-5 max-w-full break-words text-base leading-7 text-gray-600 sm:max-w-xl">{heroDescription || copy.description}</p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Button asChild size="lg">
-                <Link href={`/${locale}/category/protection`}>
-                  {copy.browse}
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </Button>
-              <Button asChild variant="outline" size="lg">
-                <Link href={`/${locale}/category/parts`}>{copy.parts}</Link>
-              </Button>
+        <div className="container grid min-w-0 gap-6 px-4 py-8 md:px-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start lg:py-10">
+          <aside className="order-2 rounded-lg border border-gray-200 bg-white p-4 shadow-sm lg:order-1">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-gray-500">{copy.catalog}</h2>
+              <Smartphone className="h-4 w-4 text-gray-400" />
             </div>
-          </div>
+            <CategoryTreeList locale={locale} nodes={categoryTree} />
+          </aside>
 
-          <div className="grid min-w-0 gap-4 sm:grid-cols-2">
-            {copy.promoBanners.map(([title, text, action], index) => {
-              const Icon = promoIcons[index]
-              const isPrimary = index === 0
+          <div className="order-1 grid min-w-0 gap-8 lg:order-2 lg:grid-cols-[0.86fr_1.14fr] lg:items-center">
+            <div className="w-full min-w-0 max-w-full">
+              <p className="text-sm font-medium uppercase tracking-[0.18em] text-gray-500">{copy.eyebrow}</p>
+              <h1 className="mt-4 max-w-full break-words text-[1.75rem] font-semibold leading-tight tracking-tight text-gray-950 sm:max-w-3xl sm:text-4xl md:text-5xl">
+                {heroTitle}
+              </h1>
+              <p className="mt-5 max-w-full break-words text-base leading-7 text-gray-600 sm:max-w-xl">{heroDescription || copy.description}</p>
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <Button asChild size="lg">
+                  <Link href={`/${locale}/category/protection`}>
+                    {copy.browse}
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </Button>
+                <Button asChild variant="outline" size="lg">
+                  <Link href={`/${locale}/category/parts`}>{copy.parts}</Link>
+                </Button>
+              </div>
+            </div>
 
-              return (
-                <Link
-                  key={title}
-                  href={`/${locale}/category/${index === 2 ? "parts" : "protection"}`}
-                  className={`group rounded-lg border p-5 transition hover:-translate-y-0.5 hover:shadow-md ${
-                    isPrimary
-                      ? "border-gray-950 bg-gray-950 text-white sm:col-span-2"
-                      : "border-gray-200 bg-white text-gray-950"
-                  }`}
-                >
-                  <div className={isPrimary ? "grid min-w-0 gap-5 sm:grid-cols-[minmax(0,1fr)_220px] sm:items-center" : ""}>
-                    <div className="min-w-0">
-                      <Icon className={isPrimary ? "h-5 w-5 text-white" : "h-5 w-5 text-gray-900"} />
-                      <h2 className="mt-4 break-words text-xl font-semibold tracking-tight">{title}</h2>
-                      <p className={isPrimary ? "mt-2 text-sm leading-6 text-gray-200" : "mt-2 text-sm leading-6 text-gray-600"}>
-                        {text}
-                      </p>
-                      <span className={isPrimary ? "mt-5 inline-flex text-sm font-semibold text-white" : "mt-5 inline-flex text-sm font-semibold text-gray-950"}>
-                        {action}
-                        <ArrowRight className="ml-2 h-4 w-4 transition group-hover:translate-x-0.5" />
-                      </span>
-                    </div>
-                    {isPrimary ? (
-                      <div className="relative mt-5 aspect-[16/9] overflow-hidden rounded-md bg-white/10 sm:mt-0">
-                        <Image
-                          src={heroImage}
-                          alt={heroTitle}
-                          fill
-                          priority
-                          sizes="(max-width: 1024px) 100vw, 220px"
-                          className="object-cover"
-                        />
+            <div className="grid min-w-0 gap-4 sm:grid-cols-2">
+              {copy.promoBanners.map(([title, text, action], index) => {
+                const Icon = promoIcons[index]
+                const isPrimary = index === 0
+
+                return (
+                  <Link
+                    key={title}
+                    href={`/${locale}/category/${index === 2 ? "parts" : "protection"}`}
+                    className={`group rounded-lg border p-5 transition hover:-translate-y-0.5 hover:shadow-md ${
+                      isPrimary
+                        ? "border-gray-950 bg-gray-950 text-white sm:col-span-2"
+                        : "border-gray-200 bg-white text-gray-950"
+                    }`}
+                  >
+                    <div className={isPrimary ? "grid min-w-0 gap-5 sm:grid-cols-[minmax(0,1fr)_220px] sm:items-center" : ""}>
+                      <div className="min-w-0">
+                        <Icon className={isPrimary ? "h-5 w-5 text-white" : "h-5 w-5 text-gray-900"} />
+                        <h2 className="mt-4 break-words text-xl font-semibold tracking-tight">{title}</h2>
+                        <p className={isPrimary ? "mt-2 text-sm leading-6 text-gray-200" : "mt-2 text-sm leading-6 text-gray-600"}>
+                          {text}
+                        </p>
+                        <span className={isPrimary ? "mt-5 inline-flex text-sm font-semibold text-white" : "mt-5 inline-flex text-sm font-semibold text-gray-950"}>
+                          {action}
+                          <ArrowRight className="ml-2 h-4 w-4 transition group-hover:translate-x-0.5" />
+                        </span>
                       </div>
-                    ) : null}
-                  </div>
-                </Link>
-              )
-            })}
+                      {isPrimary ? (
+                        <div className="relative mt-5 aspect-[16/9] overflow-hidden rounded-md bg-white/10 sm:mt-0">
+                          <Image
+                            src={heroImage}
+                            alt={heroTitle}
+                            fill
+                            priority
+                            sizes="(max-width: 1024px) 100vw, 220px"
+                            className="object-cover"
+                          />
+                        </div>
+                      ) : null}
+                    </div>
+                  </Link>
+                )
+              })}
+            </div>
           </div>
         </div>
       </section>
