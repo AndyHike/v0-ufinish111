@@ -16,6 +16,54 @@ const LOCALE_TO_NUMBER_FORMAT: Record<ShopLocale, string> = {
   en: "en-US",
 }
 
+const LARGE_VARIANT_THRESHOLD = 6
+
+const SPECIFICATION_COPY = {
+  cs: {
+    brand: "Znacka",
+    category: "Kategorie",
+    condition: "Stav",
+    sku: "SKU",
+    mpn: "MPN",
+    gtin: "GTIN",
+    availability: "Dostupnost",
+    new: "Novy",
+    used: "Pouzity",
+    refurbished: "Repasovany",
+  },
+  uk: {
+    brand: "Бренд",
+    category: "Категорія",
+    condition: "Стан",
+    sku: "SKU",
+    mpn: "MPN",
+    gtin: "GTIN",
+    availability: "Наявність",
+    new: "Новий",
+    used: "Вживаний",
+    refurbished: "Відновлений",
+  },
+  en: {
+    brand: "Brand",
+    category: "Category",
+    condition: "Condition",
+    sku: "SKU",
+    mpn: "MPN",
+    gtin: "GTIN",
+    availability: "Availability",
+    new: "New",
+    used: "Used",
+    refurbished: "Refurbished",
+  },
+} as const
+
+export type ShopSpecificationRow = {
+  label: string
+  value: string
+}
+
+export type ShopVariantSelectorMode = "chips" | "search"
+
 export function getLocalizedText(value: ShopLocalizedText, locale: ShopLocale): string {
   return value[locale] ?? value.cs ?? value.en ?? ""
 }
@@ -60,6 +108,54 @@ export function getAvailabilityLabel(variant: ShopVariant, locale: ShopLocale): 
   }
 
   return `${variant.availability.availableStock} in stock`
+}
+
+export function getVariantSelectorMode({ variantCount }: { variantCount: number }): ShopVariantSelectorMode {
+  return variantCount > LARGE_VARIANT_THRESHOLD ? "search" : "chips"
+}
+
+export function getProductSpecificationRows(
+  item: ShopItem,
+  selectedVariant: ShopVariant,
+  locale: ShopLocale,
+): ShopSpecificationRow[] {
+  const copy = SPECIFICATION_COPY[locale]
+  const rows: ShopSpecificationRow[] = []
+
+  if (item.brand) {
+    rows.push({ label: copy.brand, value: item.brand })
+  }
+
+  for (const option of selectedVariant.selectedOptions) {
+    const label = getLocalizedText(option.attributeTitle, locale)
+    const value = getLocalizedText(option.optionTitle, locale)
+    if (label && value) {
+      rows.push({ label, value })
+    }
+  }
+
+  const category = item.categories[0]
+  if (category) {
+    rows.push({ label: copy.category, value: getLocalizedText(category.title, locale) })
+  }
+
+  if (item.condition) {
+    rows.push({ label: copy.condition, value: copy[item.condition] })
+  }
+
+  rows.push({ label: copy.sku, value: selectedVariant.sku })
+
+  if (selectedVariant.mpn) {
+    rows.push({ label: copy.mpn, value: selectedVariant.mpn })
+  }
+
+  if (selectedVariant.gtin) {
+    rows.push({ label: copy.gtin, value: selectedVariant.gtin })
+  }
+
+  rows.push({ label: copy.availability, value: getAvailabilityLabel(selectedVariant, locale) })
+
+  return rows
 }
 
 export function selectProductVariant(item: ShopItem, variantSlug?: string): ShopVariant {

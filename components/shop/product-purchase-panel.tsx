@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react"
 
+import { ProductVariantSelector } from "@/components/shop/product-variant-selector"
 import { useShopCart } from "@/components/shop/shop-cart-provider"
 import { Button } from "@/components/ui/button"
 import {
@@ -57,7 +58,7 @@ export function ProductPurchasePanel({
   const [variantId, setVariantId] = useState(selectedVariant.id)
   const [quantity, setQuantity] = useState(1)
   const [addedVariantId, setAddedVariantId] = useState<string | null>(null)
-  const { addLine } = useShopCart()
+  const { addLine, openCart } = useShopCart()
   const variant = useMemo(
     () => item.variants.find((entry) => entry.id === variantId) ?? selectedVariant,
     [item.variants, selectedVariant, variantId],
@@ -78,32 +79,17 @@ export function ProductPurchasePanel({
 
       <div className="mt-6">
         <label className="text-sm font-semibold">{copy.variant}</label>
-        <div className="mt-3 grid gap-2">
-          {item.variants.map((entry) => {
-            const entryMaxQuantity = getMaxPurchasableQuantity(entry)
-            const isSelected = entry.id === variant.id
-
-            return (
-              <button
-                key={entry.id}
-                type="button"
-                data-testid={`shop-variant-${entry.id}`}
-                onClick={() => {
-                  setVariantId(entry.id)
-                  setQuantity(1)
-                  setAddedVariantId(null)
-                }}
-                className={`rounded-md border px-3 py-2 text-left text-sm transition-colors ${
-                  isSelected ? "border-gray-950 bg-gray-950 text-white" : "border-gray-200 bg-white hover:bg-gray-50"
-                }`}
-              >
-                <span className="font-medium">{getLocalizedText(entry.title, locale)}</span>
-                <span className={isSelected ? "ml-2 text-xs text-gray-200" : "ml-2 text-xs text-gray-500"}>
-                  {entryMaxQuantity > 0 ? formatShopPrice(entry.salePrice ?? entry.price, locale) : copy.outOfStock}
-                </span>
-              </button>
-            )
-          })}
+        <div className="mt-3">
+          <ProductVariantSelector
+            locale={locale}
+            variants={item.variants}
+            selectedVariantId={variant.id}
+            onSelectVariant={(nextVariantId) => {
+              setVariantId(nextVariantId)
+              setQuantity(1)
+              setAddedVariantId(null)
+            }}
+          />
         </div>
       </div>
 
@@ -142,6 +128,7 @@ export function ProductPurchasePanel({
             maxQuantity,
           )
           setAddedVariantId(variant.id)
+          openCart()
         }}
       >
         {canBuy ? (addedVariantId === variant.id ? copy.added : copy.add) : copy.outOfStock}

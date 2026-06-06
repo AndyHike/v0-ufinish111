@@ -20,6 +20,7 @@ import { CookieConsentProvider } from "@/contexts/cookie-consent-context"
 import { generateLocalBusinessSchema } from "@/lib/structured-data"
 import { getMessages } from "@/lib/get-messages"
 import { mainSiteUrl } from "@/lib/site-config"
+import type { ShopLocale } from "@/lib/shop/types"
 import { GlobalDataProvider } from "@/providers/global-data-provider"
 
 export type SiteLayoutVariant = "default" | "b2b" | "shop"
@@ -139,9 +140,9 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
                     )}
                     {variant === "shop" ? (
                       <ShopCartProvider>
-                        <ShopHeader locale={locale} />
+                        <ShopHeader locale={locale as ShopLocale} />
                         <main className="flex-1">{children}</main>
-                        <ShopFooter locale={locale} />
+                        <ShopFooter locale={locale as ShopLocale} />
                       </ShopCartProvider>
                     ) : (
                       <>

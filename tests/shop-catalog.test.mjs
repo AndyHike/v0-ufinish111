@@ -117,3 +117,22 @@ test("formats CZK prices", () => {
 test("returns localized fallback text", () => {
   assert.equal(catalog.getLocalizedText({ en: "Fallback title" }, "uk"), "Fallback title")
 })
+
+test("builds product specification rows from variant facts and attributes", () => {
+  const product = catalog.getMockShopProduct("cs", "protective-glass", "protective-glass-iphone-11")
+  const rows = catalog.getProductSpecificationRows(product.item, product.selectedVariant, "cs")
+  const valuesByLabel = new Map(rows.map((row) => [row.label, row.value]))
+
+  assert.equal(valuesByLabel.get("Znacka"), "DeviceHelp")
+  assert.equal(valuesByLabel.get("Model"), "iPhone 11")
+  assert.equal(valuesByLabel.get("SKU"), "GLASS-IP11")
+  assert.equal(valuesByLabel.get("MPN"), "GLASS-IP11")
+  assert.equal(valuesByLabel.get("Dostupnost"), "Skladem 3 ks")
+})
+
+test("uses searchable variant selector mode only for larger variant sets", () => {
+  assert.equal(catalog.getVariantSelectorMode({ variantCount: 1 }), "chips")
+  assert.equal(catalog.getVariantSelectorMode({ variantCount: 6 }), "chips")
+  assert.equal(catalog.getVariantSelectorMode({ variantCount: 7 }), "search")
+  assert.equal(catalog.getVariantSelectorMode({ variantCount: 20 }), "search")
+})
