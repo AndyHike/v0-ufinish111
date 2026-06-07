@@ -8,6 +8,7 @@
 - [Internal API Docs](../../INTERNAL_API_DOCS.md) - server-to-server доступ через `SYSTEM_MASTER_KEY` і `domain`.
 - [Theme Contract](./theme-contract.md) - як створювати теми так, щоб адмінка могла ними керувати.
 - [Frontend Integration Guide](../../FRONTEND_INTEGRATION_GUIDE.md) - rendering pipeline для appearance/layout/preview.
+- [Frontend Revalidation](./revalidation.md) - on-demand вебхук `admin → storefront` для скидання кешу (ISR/`revalidateTag`), типи змін, теги, per-store шлях і секрет.
 
 ## Integration Modes
 

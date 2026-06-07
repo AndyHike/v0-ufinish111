@@ -18,6 +18,8 @@ type ShopApiFetchOptions = {
   searchParams?: Record<string, string | number | undefined | null>
   /** ISR revalidation window in seconds. Defaults to 1 hour. */
   revalidate?: number
+  /** Next.js cache tags for on-demand (webhook) revalidation. */
+  tags?: string[]
 }
 
 /**
@@ -53,7 +55,7 @@ export async function shopApiFetch<T>(path: string, options: ShopApiFetchOptions
       ...authHeader,
       Accept: "application/json",
     },
-    next: { revalidate: options.revalidate ?? 3600 },
+    next: { revalidate: options.revalidate ?? 3600, tags: options.tags },
   })
 
   let payload: unknown = null

@@ -1,6 +1,6 @@
 # Public API Documentation
 
-Цей документ описує зовнішні (публічні) API ендпоінти, доступні для інтеграції з вашим магазином. Ви можете використовувати або **Публічний ключ** (для браузерних запитів), або **Секретний ключ** (для серверних запитів).
+Цей документ описує зовнішні (публічні) API ендпоінти, доступні для інтеграції з вашим магазином, способи авторизації (**Public Key**, **Secret Key**, **Master Key + domain**), кеш-теги для on-demand ревалідації, SEO, замовлення та форми.
 
 > [!TIP]
 > Якщо ви підключаєте новий зовнішній сайт і хочете побачити повну картину інтеграції, почніть з [External Frontend Integration](docs/external-frontends/README.md). Цей файл залишається детальним reference для Public API.
@@ -9,32 +9,77 @@
 
 ## Авторизація 🔐
 
-Для доступу до API необхідно передати заголовок `x-public-api-key` при кожному запиті.
+Public API підтримує **три способи авторизації**. Кожен запит має використати рівно один із них; усі вони визначають, до якого магазину належить запит, і всі поважають site availability / billing (можуть повернути `403`). Ключі й секрети беруться з розділу **Developers** в адмінці.
 
-**Заголовок (Header):**
+| Спосіб | Заголовок | Як визначається магазин | Origin-перевірка | Де використовувати |
+| :--- | :--- | :--- | :--- | :--- |
+| **Public Key** | `x-public-api-key: pk_v1_...` | за самим ключем | **Так** (Allowed Origins) | браузер (клієнтський JS) |
+| **Secret Key** | `x-public-api-key: sk_v1_...` | за самим ключем | Ні | сервер (server-to-server) |
+| **Master Key + domain** | `Authorization: Bearer <SYSTEM_MASTER_KEY>` | за доменом (див. нижче) | Ні | SSR/SSG будь-якого магазину |
+
+Деталі реалізації — [`src/lib/get-public-store.ts`](src/lib/get-public-store.ts).
+
+### 1. Public Key (`pk_v1_...`)
+
+Для запитів напряму з браузера клієнтського сайту.
+
 ```http
-x-public-api-key: <Ваш_API_Key>
+GET /api/public/v1/items
+x-public-api-key: pk_v1_...
+Origin: https://yourdomain.com
 ```
 
-### Вибір ключа (Public vs Secret)
+- Магазин визначається за ключем; передавати `domain` не потрібно.
+- Запит дозволено **лише** з доменів зі списку **Allowed Origins** (Developers), плюс власний домен магазину за замовчуванням.
+- Якщо `Origin` не збігається з дозволеним — `401` з `CORS Error...`.
 
-| Тип ключа | Префікс | Призначення | Безпека |
-| :--- | :--- | :--- | :--- |
-| **Public Key** | `pk_live_...` | Для використання на фронтенді (JS в браузері). | Вимагає налаштування **Allowed Origins**. |
-| **Secret Key** | `sk_live_...` | Для використання на бекенді (Server-to-Server). | Має server-side доступ до public data, **не можна** розголошувати. |
+### 2. Secret Key (`sk_v1_...`)
+
+Для серверних запитів вашого backend-у до конкретного магазину.
+
+```http
+GET /api/public/v1/items
+x-public-api-key: sk_v1_...
+```
+
+- Магазин визначається за ключем; origin не перевіряється.
+- **Ніколи** не передавайте `sk_` у браузер — він дає server-side доступ до публічних даних магазину.
+
+### 3. Master Key + domain (server-to-server, multi-tenant)
+
+Системний ключ `SYSTEM_MASTER_KEY` дає доступ до публічних даних **будь-якого** магазину без знання його індивідуальних ключів. Магазин визначається доменом. Це рекомендований режим для зовнішніх SSR/SSG шаблонів.
+
+```http
+GET /api/public/v1/items?domain=example.com
+Authorization: Bearer <SYSTEM_MASTER_KEY>
+```
+
+Домен резолвиться з першого знайденого джерела (у такому порядку):
+
+1. query `?domain=example.com`
+2. header `x-store-domain: example.com`
+3. header `Origin`
+4. header `Referer`
+
+- `SYSTEM_MASTER_KEY` має бути однаковим у env адмінки і env вашого frontend-сервера; **ніколи** не передається в браузер і не зберігається в БД.
+- Якщо Bearer переданий, але домен не знайдено — `404` (`STORE_NOT_FOUND`); якщо ключ невірний — `401`.
 
 > [!WARNING]
-> Ніколи не використовуйте **Secret Key** у клієнтському коді (браузері), оскільки він буде видимим для всіх користувачів. Для сайту використовуйте лише **Public Key**.
+> Public Key (`pk_`) — єдиний, що можна використовувати в браузері. `sk_` і `SYSTEM_MASTER_KEY` — тільки серверні.
 
 ### Дозволені домени (Allowed Origins)
 
-При використанні **Public Key**, запит буде дозволено лише з тих доменів, які ви вказали в полі **"Allowed Origins"** на Дашборді.
-- Формат: `https://yourdomain.com, http://localhost:3000`
-- Якщо список порожній, запити з публічним ключем будуть заблоковані.
-- Секретний ключ (`sk_`) ігнорує origin-обмеження, але не обходить site availability або billing-блокування.
+При використанні **Public Key** запит дозволено лише з доменів, указаних у полі **Allowed Origins** (Developers).
+- Формат: `https://yourdomain.com, http://localhost:3000` (з протоколом, через кому).
+- Якщо список порожній, дозволено лише власний домен магазину.
+- `sk_` і Bearer master key ігнорують origin-обмеження, але **не** обходять site availability/billing-блокування.
+
+### Як отримати `storeId`
+
+Усі відповіді містять `storeId` (або `data.storeId`). Він знадобиться для побудови cache-тегів (див. нижче). Окремо запитувати його не треба — беріть із будь-якої успішної відповіді.
 
 > [!IMPORTANT]
-> Рекомендується використовувати версіюзовані кінцеві точки (наприклад, `/api/public/v1/...`). Старі адреси без префіса `v1` продовжують працювати як аліаси для поточної версії.
+> Використовуйте версіоновані ендпоінти (`/api/public/v1/...`). Старі адреси без `v1` працюють як аліаси для поточної версії з тим самим контрактом.
 
 ---
 
@@ -87,6 +132,69 @@ Billing-блокування має пріоритет над ручним ре�
 `message` може бути `null`; у такому випадку frontend повинен показати власний дефолтний текст для `code`. `until` може бути `null`; у такому випадку стан діє без визначеної дати завершення.
 
 Frontend не повинен трактувати `403` як `404`: сайт існує, але зараз не має публічного доступу.
+
+---
+
+## Кеш-теги та on-demand ревалідація 🏷️
+
+Адмінка може **активно повідомляти** ваш сторфронт про зміну контенту через вихідний вебхук, щоб ви скинули кеш точково, а не за TTL. Повний опис механізму (контракт вебхука, налаштування шляху/секрету per-store) — [Frontend Revalidation](docs/external-frontends/revalidation.md). Тут — як підготувати ваші читання Public API, щоб ревалідація працювала.
+
+**Ідея:** позначайте кожен fetch до Public API **cache-тегами**; коли в адмінці змінюється відповідний контент, вебхук надсилає ті самі теги, і ваш `/api/revalidate` викликає `revalidateTag()` для них.
+
+Усі теги мають префікс `site:{storeId}:...`, де `storeId` берете з будь-якої відповіді API. Формати тегів і повний мапінг `changeType → теги` — у [revalidation.md, §4](docs/external-frontends/revalidation.md#4-типи-змін-і-теги-що-скидаються).
+
+### Які теги вішати на який endpoint
+
+| Endpoint (читання) | Рекомендовані cache-теги | Скидається при зміні |
+| :--- | :--- | :--- |
+| `GET /settings` | `site:{id}:settings`, `site:{id}:appearance` | налаштування, вигляд |
+| `GET /api/v1/internal/appearance` | `site:{id}:appearance` | вигляд |
+| `GET /categories` (список) | `site:{id}:view:home` | категорії (create/update/delete) |
+| `GET /categories/[slug]` | `site:{id}:collection:{slug}`, `site:{id}:view:{slug}` | ця категорія |
+| `GET /items` (головна/усі) | `site:{id}:view:home` | будь-який товар/категорія |
+| `GET /items?categorySlug={key}` | `site:{id}:collection:{key}`, `site:{id}:view:list:{key}` | товари/категорія цієї колекції |
+| `GET /items/[slug]` (деталь) | `site:{id}:item:{collectionKey}:{slug}`, `site:{id}:view:detail:{collectionKey}:{slug}` | цей товар, його фото/посилання/варіанти |
+| `GET /items?include=availability` | `site:{id}:availability` | склад/залишки (inventory) |
+| `GET /filters?categorySlug=...` | `site:{id}:filters` | атрибути/фільтри |
+| медіа-ресурси | `site:{id}:media` (+ `site:{id}:media:{mediaId}`) | медіа |
+
+> [!NOTE]
+> `collectionKey` для товару — це slug його основної категорії (та сама, що в `categorySlug`). На сторінці деталі товару беріть `collectionKey` з `categories[].slug` (через `include=categories`).
+
+### Приклад (Next.js App Router сторфронт)
+
+```ts
+// читання каталогу з тегами
+const res = await fetch(
+  `${ADMIN_API_BASE_URL}/api/public/v1/items?domain=${domain}&categorySlug=${key}&include=availability`,
+  {
+    headers: { Authorization: `Bearer ${process.env.SYSTEM_MASTER_KEY}` },
+    next: { tags: [
+      `site:${storeId}:collection:${key}`,
+      `site:${storeId}:view:list:${key}`,
+      `site:${storeId}:availability`,
+    ] },
+  },
+);
+```
+
+```ts
+// ваш endpoint, який приймає вебхук ревалідації від адмінки
+// app/api/revalidate/route.ts
+import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
+
+export async function POST(request: Request) {
+  const body = await request.json().catch(() => null);
+  if (!body?.token || body.token !== process.env.REVALIDATE_SECRET) {
+    return NextResponse.json({ ok: false }, { status: 401 });
+  }
+  for (const tag of body.tags ?? []) revalidateTag(tag);
+  return NextResponse.json({ ok: true });
+}
+```
+
+`REVALIDATE_SECRET` на сторфронті має дорівнювати per-store секрету ревалідації магазину (Developers → Frontend Revalidation), або `SYSTEM_MASTER_KEY`, якщо окремий секрет не заданий.
 
 ---
 
@@ -354,7 +462,7 @@ type PublicIntegrationsResponse = {
         enabled: boolean;
         widgetApiKey: string | null;
         countries: string[];
-        services: Array<"PICKUP_POINT" | "ZBOX" | "CARRIER_PUDO" | "ADDRESS_DELIVERY">;
+        services: Array<"PICKUP_POINT" | "ZBOX" | "CARRIER_PUDO" | "HOME_DELIVERY">;
         defaultWeightKg: number | null;
       };
     };

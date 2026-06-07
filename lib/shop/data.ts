@@ -1,8 +1,16 @@
 import "server-only"
 
-import { isShopApiEnabled } from "./api/config"
+import { isShopApiEnabled, shopAdminStoreId } from "./api/config"
 import { ShopApiError, shopApiFetch } from "./api/client"
 import { type ApiCategory, type ApiItem, mapApiCategory, mapApiItem } from "./api/mappers"
+import {
+  availabilityTag,
+  collectionTag,
+  filtersTag,
+  listViewTag,
+  viewHomeTag,
+  viewTag,
+} from "./api/tags"
 import {
   applyShopCategoryFilters,
   buildShopCategoryTree,
@@ -39,6 +47,15 @@ function isNotFound(error: unknown): boolean {
   return error instanceof ShopApiError && error.status === 404
 }
 
+// Cache tags are only useful when we know the storeId (to match the admin
+// webhook's `site:{storeId}:...` tags). Without it, reads stay untagged and we
+// rely on time-based ISR + path-based revalidation.
+const storeId = shopAdminStoreId
+
+function tagsFor(build: (id: string) => string[]): string[] | undefined {
+  return storeId ? build(storeId) : undefined
+}
+
 // A misconfigured or unreachable admin API must never crash the build/render.
 // We log loudly and fall back to mock data so deploys succeed and the site stays
 // up; fix the env (STORE_NOT_FOUND usually means a wrong SHOP_ADMIN_DOMAIN/key).
@@ -48,7 +65,12 @@ function logApiFailure(scope: string, error: unknown): void {
 }
 
 async function fetchAllApiCategories(): Promise<ApiCategory[]> {
-  return shopApiFetch<ApiCategory[]>("categories", { searchParams: { include: "seo" } })
+  // The categories list feeds the home/sidebar tree; it changes on any
+  // category mutation, which the admin maps to `view:home`.
+  return shopApiFetch<ApiCategory[]>("categories", {
+    searchParams: { include: "seo" },
+    tags: tagsFor((id) => [viewHomeTag(id)]),
+  })
 }
 
 // ---- Home ------------------------------------------------------------------
@@ -63,6 +85,7 @@ export async function getShopHomeData(locale: ShopLocale): Promise<ShopHomeData>
       fetchAllApiCategories(),
       shopApiFetch<ApiItem[]>("items", {
         searchParams: { include: "variants,availability", limit: HOME_ITEMS_LIMIT },
+        tags: tagsFor((id) => [viewHomeTag(id), availabilityTag(id)]),
       }),
     ])
 
@@ -97,7 +120,9 @@ export async function getShopCategoryData(
   try {
     let apiCategory: ApiCategory
     try {
-      apiCategory = await shopApiFetch<ApiCategory>(`categories/${slug}`)
+      apiCategory = await shopApiFetch<ApiCategory>(`categories/${slug}`, {
+        tags: tagsFor((id) => [collectionTag(id, slug), viewTag(id, slug)]),
+      })
     } catch (error) {
       if (isNotFound(error)) {
         return null
@@ -109,6 +134,9 @@ export async function getShopCategoryData(
       fetchAllApiCategories(),
       shopApiFetch<ApiItem[]>("items", {
         searchParams: { categorySlug: slug, include: "variants,availability,categories", limit: CATEGORY_ITEMS_LIMIT },
+        // collection/list tags for this category, plus availability (stock) and
+        // filters (facets derive from attributes).
+        tags: tagsFor((id) => [collectionTag(id, slug), listViewTag(id, slug), availabilityTag(id), filtersTag(id)]),
       }),
     ])
 
@@ -151,8 +179,11 @@ export async function getShopProductData(
   try {
     let apiItem: ApiItem
     try {
+      // The item's collectionKey (primary category slug) isn't known before the
+      // fetch, so we use view:home (always sent on item.* changes) + availability.
       apiItem = await shopApiFetch<ApiItem>(`items/${itemSlug}`, {
         searchParams: { include: "categories,variants,availability" },
+        tags: tagsFor((id) => [viewHomeTag(id), availabilityTag(id)]),
       })
     } catch (error) {
       if (isNotFound(error)) {
@@ -174,6 +205,7 @@ export async function getShopProductData(
           try {
             const target = await shopApiFetch<ApiItem>(`items/${link.targetSlug}`, {
               searchParams: { include: "variants,availability" },
+              tags: tagsFor((id) => [viewHomeTag(id), availabilityTag(id)]),
             })
             return toProductCard(mapApiItem(target), locale)
           } catch {
@@ -257,7 +289,10 @@ export async function getShopProductSlugParams(): Promise<{ locale: ShopLocale; 
   }
 
   try {
-    const apiItems = await shopApiFetch<ApiItem[]>("items", { searchParams: { include: "variants", limit: 1000 } })
+    const apiItems = await shopApiFetch<ApiItem[]>("items", {
+      searchParams: { include: "variants", limit: 1000 },
+      tags: tagsFor((id) => [viewHomeTag(id)]),
+    })
     const items = apiItems.map(mapApiItem)
     return SHOP_LOCALES.flatMap((locale) =>
       items.flatMap((item) => [

@@ -294,3 +294,27 @@ Validation errors для `/messages` мають structured `400` формат:
 ```
 
 Це забезпечує повну автономність фронтенд-шаблонів. Ці public endpoints у master-key режимі також повертають той самий `403` availability contract, якщо сайт зараз призупинений або тимчасово вимкнений.
+
+---
+
+## 7. On-Demand Revalidation (admin → storefront)
+
+Окрім читання даних, адмінка може **активно повідомляти** сторфронт про зміну контенту, щоб той скинув кеш. Це вихідний вебхук у зворотному напрямку (`admin → storefront`):
+
+```http
+POST https://example.com/api/revalidate
+Content-Type: application/json
+```
+
+```json
+{
+  "token": "<frontendRevalidateSecret магазину або SYSTEM_MASTER_KEY>",
+  "domain": "example.com",
+  "event": { "siteId": "store_123", "changeType": "item.updated", "collection": "smartphones", "itemSlug": "iphone-11" },
+  "tags": ["site:store_123:collection:smartphones", "site:store_123:view:home"]
+}
+```
+
+Авторизація — той самий принцип, що й Master Key, але з **per-store override**: якщо для магазину згенеровано `frontendRevalidateSecret` (у Developers), `token` дорівнює саме йому, інакше — глобальному `SYSTEM_MASTER_KEY`. Шлях також налаштовується per-store (`frontendRevalidatePath`), з fallback на `FRONTEND_REVALIDATE_PATH` → `/api/revalidate`.
+
+Сторфронт повинен звірити `token`, пройтись по `tags` і викликати `revalidateTag()`. Повний контракт, перелік типів змін, формат тегів і приклад endpoint — [Frontend Revalidation](docs/external-frontends/revalidation.md).
