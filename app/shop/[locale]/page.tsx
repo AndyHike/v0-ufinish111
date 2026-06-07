@@ -5,8 +5,6 @@ import { getShopHomeData } from "@/lib/shop/data"
 import { shopSiteUrl } from "@/lib/site-config"
 import type { ShopLocale } from "@/lib/shop/types"
 
-const SUPPORTED_LOCALE_PARAMS = [{ locale: "cs" }, { locale: "uk" }, { locale: "en" }]
-
 const HOME_METADATA = {
   cs: {
     title: "DeviceHelp Shop | Prislusenstvi a dily pro telefony",
@@ -22,10 +20,12 @@ const HOME_METADATA = {
   },
 } as const
 
+// Statically generated with real API data, then kept fresh by ISR + the admin
+// revalidation webhook (/api/shop/revalidate). No mock is ever rendered.
 export const revalidate = 3600
 
 export function generateStaticParams() {
-  return SUPPORTED_LOCALE_PARAMS
+  return [{ locale: "cs" }, { locale: "uk" }, { locale: "en" }]
 }
 
 export async function generateMetadata({

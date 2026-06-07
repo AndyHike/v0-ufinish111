@@ -9,16 +9,16 @@ import type { ShopLocale } from "@/lib/shop/types"
 
 export const revalidate = 3600
 
+export async function generateStaticParams() {
+  return getShopProductSlugParams()
+}
+
 function parseSlugs(slugs: string[]) {
   return {
     itemSlug: slugs[0],
     variantSlug: slugs[1],
     isValid: slugs.length >= 1 && slugs.length <= 2,
   }
-}
-
-export async function generateStaticParams() {
-  return getShopProductSlugParams()
 }
 
 export async function generateMetadata({
