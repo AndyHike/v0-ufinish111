@@ -89,7 +89,7 @@ export function ProductPage({
             <div className="mt-8">
               <ProductPurchasePanel
                 locale={locale}
-                item={{ id: item.id, title: item.title, variants: item.variants }}
+                item={{ id: item.id, title: item.title, variants: item.variants, categories: item.categories }}
                 selectedVariant={selectedVariant}
               />
             </div>
