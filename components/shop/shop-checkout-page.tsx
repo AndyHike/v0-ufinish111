@@ -1,9 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
+import { createPortal } from "react-dom"
 import Image from "next/image"
 import Link from "next/link"
-import { CreditCard, MapPin, ShieldCheck, Wallet } from "lucide-react"
+import { CreditCard, Loader2, MapPin, ShieldCheck, Wallet } from "lucide-react"
 
 import { useShopCart } from "@/components/shop/shop-cart-provider"
 import { Button } from "@/components/ui/button"
@@ -11,6 +12,9 @@ import { formatShopPrice } from "@/lib/shop/catalog"
 import type { ShopLocale, ShopPacketaConfig } from "@/lib/shop/types"
 
 const PACKETA_LIBRARY_URL = "https://widget.packeta.com/v6/www/js/library.js"
+// Safety net: if the widget library never loads/initialises, stop blocking the
+// UI and surface an error rather than spinning forever.
+const PACKETA_LOAD_TIMEOUT_MS = 20000
 
 // Minimal shape of the point object returned by the Packeta widget callback.
 interface PacketaWidgetPoint {
@@ -89,6 +93,8 @@ const CHECKOUT_COPY = {
     pointNotChosen: "Vydejni misto zatim nevybrano.",
     packetaDisabled: "Doprava Packeta je momentalne nedostupna.",
     packetaError: "Widget se nepodarilo otevrit. Zkuste to znovu.",
+    packetaLoading: "Nacitam vydejni mista Packeta…",
+    cancel: "Zrusit",
     payment: "Platba",
     paymentMethodHint: "Vyberte zpusob platby.",
     payCard: "Platebni karta",
@@ -125,6 +131,8 @@ const CHECKOUT_COPY = {
     pointNotChosen: "Пункт видачі ще не вибрано.",
     packetaDisabled: "Доставка Packeta зараз недоступна.",
     packetaError: "Не вдалося відкрити віджет. Спробуйте ще раз.",
+    packetaLoading: "Завантажуємо пункти видачі Packeta…",
+    cancel: "Скасувати",
     payment: "Оплата",
     paymentMethodHint: "Оберіть спосіб оплати.",
     payCard: "Картка",
@@ -161,6 +169,8 @@ const CHECKOUT_COPY = {
     pointNotChosen: "No pickup point selected yet.",
     packetaDisabled: "Packeta delivery is currently unavailable.",
     packetaError: "Could not open the widget. Please try again.",
+    packetaLoading: "Loading Packeta pickup points…",
+    cancel: "Cancel",
     payment: "Payment",
     paymentMethodHint: "Choose a payment method.",
     payCard: "Card",
@@ -202,7 +212,22 @@ export function ShopCheckoutPage({ locale, packeta }: { locale: ShopLocale; pack
   const [point, setPoint] = useState<PacketaPoint | null>(null)
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("card")
   const [packetaError, setPacketaError] = useState(false)
+  const [packetaLoading, setPacketaLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+
+  // Guards the async widget load: cancelRef short-circuits a resolved load that
+  // the user (or the timeout) already abandoned; timeoutRef enforces a hard cap.
+  const cancelRef = useRef(false)
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => {
+    setMounted(true)
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+      }
+    }
+  }, [])
 
   const hasContact = email.trim().length > 0 || phone.trim().length > 0
   const hasName = firstName.trim().length > 0 && lastName.trim().length > 0
@@ -214,16 +239,44 @@ export function ShopCheckoutPage({ locale, packeta }: { locale: ShopLocale; pack
     { id: "apple_pay", label: copy.payApplePay },
   ]
 
+  const stopPacketaLoading = () => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+      timeoutRef.current = null
+    }
+    setPacketaLoading(false)
+  }
+
+  // Lets the user abort a slow/stuck load: ignore the pending promise and
+  // unblock the UI without surfacing an error (cancellation is intentional).
+  const cancelPacketa = () => {
+    cancelRef.current = true
+    stopPacketaLoading()
+  }
+
   // Opens the real Packeta pickup-point widget using the widgetApiKey from
   // GET /api/public/v1/integrations and stores the chosen point for the order.
+  // While the library downloads we block the UI with a loader + cancel button;
+  // a hard timeout guarantees we never spin forever.
   const openPacketaWidget = async () => {
     if (!packeta.enabled || !packeta.widgetApiKey) {
       setPacketaError(true)
       return
     }
     setPacketaError(false)
+    cancelRef.current = false
+    setPacketaLoading(true)
+    timeoutRef.current = setTimeout(() => {
+      cancelRef.current = true
+      setPacketaError(true)
+      stopPacketaLoading()
+    }, PACKETA_LOAD_TIMEOUT_MS)
+
     try {
       const widget = await loadPacketaWidget()
+      if (cancelRef.current) {
+        return
+      }
       widget.pick(
         packeta.widgetApiKey,
         (selected) => {
@@ -239,8 +292,13 @@ export function ShopCheckoutPage({ locale, packeta }: { locale: ShopLocale; pack
         },
         { country: (packeta.countries[0] ?? "cz").toLowerCase(), language: locale },
       )
+      // The Packeta widget now renders its own overlay, so release our loader.
+      stopPacketaLoading()
     } catch {
-      setPacketaError(true)
+      if (!cancelRef.current) {
+        setPacketaError(true)
+      }
+      stopPacketaLoading()
     }
   }
 
@@ -271,8 +329,34 @@ export function ShopCheckoutPage({ locale, packeta }: { locale: ShopLocale; pack
     )
   }
 
+  const packetaOverlay =
+    mounted && packetaLoading
+      ? createPortal(
+          <div
+            className="fixed inset-0 z-[120] flex items-center justify-center bg-gray-950/40 px-4 backdrop-blur-sm"
+            role="alertdialog"
+            aria-busy="true"
+            aria-label={copy.packetaLoading}
+          >
+            <div className="w-full max-w-xs rounded-xl bg-white p-6 text-center shadow-xl">
+              <Loader2 className="mx-auto h-7 w-7 animate-spin text-gray-900" />
+              <p className="mt-4 text-sm font-medium text-gray-900">{copy.packetaLoading}</p>
+              <button
+                type="button"
+                onClick={cancelPacketa}
+                className="mt-5 inline-flex items-center justify-center rounded-md border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+              >
+                {copy.cancel}
+              </button>
+            </div>
+          </div>,
+          document.body,
+        )
+      : null
+
   return (
     <div className="container px-4 py-10 md:px-6">
+      {packetaOverlay}
       <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{copy.title}</h1>
 
       <div className="mt-8 grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
@@ -344,9 +428,10 @@ export function ShopCheckoutPage({ locale, packeta }: { locale: ShopLocale; pack
                   <button
                     type="button"
                     onClick={openPacketaWidget}
-                    disabled={!packeta.enabled}
-                    className="mt-3 inline-flex items-center rounded-md border border-gray-300 px-3 py-1.5 text-sm font-semibold text-gray-900 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+                    disabled={!packeta.enabled || packetaLoading}
+                    className="mt-3 inline-flex items-center gap-2 rounded-md border border-gray-300 px-3 py-1.5 text-sm font-semibold text-gray-900 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
                   >
+                    {packetaLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                     {point ? copy.changePoint : copy.choosePoint}
                   </button>
                   {!packeta.enabled ? <p className="mt-2 text-xs text-amber-700">{copy.packetaDisabled}</p> : null}
