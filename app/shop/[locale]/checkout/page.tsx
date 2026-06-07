@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 
 import { ShopCheckoutPage } from "@/components/shop/shop-checkout-page"
+import { getShopIntegrations } from "@/lib/shop/data"
 import type { ShopLocale } from "@/lib/shop/types"
 
 export const metadata: Metadata = {
@@ -8,8 +9,11 @@ export const metadata: Metadata = {
   robots: "noindex,follow",
 }
 
+export const dynamic = "force-dynamic"
+
 export default async function ShopCheckoutRoute({ params }: { params: Promise<{ locale: ShopLocale }> }) {
   const { locale } = await params
+  const { packeta } = await getShopIntegrations()
 
-  return <ShopCheckoutPage locale={locale} />
+  return <ShopCheckoutPage locale={locale} packeta={packeta} />
 }

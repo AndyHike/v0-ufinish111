@@ -8,7 +8,67 @@ import { CreditCard, MapPin, ShieldCheck, Wallet } from "lucide-react"
 import { useShopCart } from "@/components/shop/shop-cart-provider"
 import { Button } from "@/components/ui/button"
 import { formatShopPrice } from "@/lib/shop/catalog"
-import type { ShopLocale } from "@/lib/shop/types"
+import type { ShopLocale, ShopPacketaConfig } from "@/lib/shop/types"
+
+const PACKETA_LIBRARY_URL = "https://widget.packeta.com/v6/www/js/library.js"
+
+// Minimal shape of the point object returned by the Packeta widget callback.
+interface PacketaWidgetPoint {
+  id?: string | number
+  name?: string
+  place?: string
+  city?: string
+  street?: string
+  country?: string
+}
+
+interface PacketaWidgetApi {
+  pick: (
+    apiKey: string,
+    callback: (point: PacketaWidgetPoint | null) => void,
+    options?: Record<string, unknown>,
+  ) => void
+}
+
+declare global {
+  interface Window {
+    Packeta?: { Widget?: PacketaWidgetApi }
+  }
+}
+
+// Loads the Packeta widget library once and resolves its Widget API.
+function loadPacketaWidget(): Promise<PacketaWidgetApi> {
+  return new Promise((resolve, reject) => {
+    if (typeof window === "undefined") {
+      reject(new Error("Packeta widget is only available in the browser"))
+      return
+    }
+    if (window.Packeta?.Widget) {
+      resolve(window.Packeta.Widget)
+      return
+    }
+    const existing = document.getElementById("packeta-widget-lib") as HTMLScriptElement | null
+    const onReady = () => {
+      if (window.Packeta?.Widget) {
+        resolve(window.Packeta.Widget)
+      } else {
+        reject(new Error("Packeta widget failed to initialise"))
+      }
+    }
+    if (existing) {
+      existing.addEventListener("load", onReady, { once: true })
+      existing.addEventListener("error", () => reject(new Error("Packeta widget failed to load")), { once: true })
+      return
+    }
+    const script = document.createElement("script")
+    script.id = "packeta-widget-lib"
+    script.src = PACKETA_LIBRARY_URL
+    script.async = true
+    script.addEventListener("load", onReady, { once: true })
+    script.addEventListener("error", () => reject(new Error("Packeta widget failed to load")), { once: true })
+    document.body.appendChild(script)
+  })
+}
 
 const CHECKOUT_COPY = {
   cs: {
@@ -27,6 +87,8 @@ const CHECKOUT_COPY = {
     choosePoint: "Vybrat vydejni misto",
     changePoint: "Zmenit misto",
     pointNotChosen: "Vydejni misto zatim nevybrano.",
+    packetaDisabled: "Doprava Packeta je momentalne nedostupna.",
+    packetaError: "Widget se nepodarilo otevrit. Zkuste to znovu.",
     payment: "Platba",
     paymentMethodHint: "Vyberte zpusob platby.",
     payCard: "Platebni karta",
@@ -61,6 +123,8 @@ const CHECKOUT_COPY = {
     choosePoint: "Вибрати пункт видачі",
     changePoint: "Змінити пункт",
     pointNotChosen: "Пункт видачі ще не вибрано.",
+    packetaDisabled: "Доставка Packeta зараз недоступна.",
+    packetaError: "Не вдалося відкрити віджет. Спробуйте ще раз.",
     payment: "Оплата",
     paymentMethodHint: "Оберіть спосіб оплати.",
     payCard: "Картка",
@@ -95,6 +159,8 @@ const CHECKOUT_COPY = {
     choosePoint: "Choose pickup point",
     changePoint: "Change point",
     pointNotChosen: "No pickup point selected yet.",
+    packetaDisabled: "Packeta delivery is currently unavailable.",
+    packetaError: "Could not open the widget. Please try again.",
     payment: "Payment",
     paymentMethodHint: "Choose a payment method.",
     payCard: "Card",
@@ -116,13 +182,15 @@ const CHECKOUT_COPY = {
 } as const
 
 interface PacketaPoint {
+  id: string | null
   name: string
   city?: string
+  country?: string
 }
 
 type PaymentMethod = "card" | "google_pay" | "apple_pay"
 
-export function ShopCheckoutPage({ locale }: { locale: ShopLocale }) {
+export function ShopCheckoutPage({ locale, packeta }: { locale: ShopLocale; packeta: ShopPacketaConfig }) {
   const copy = CHECKOUT_COPY[locale]
   const { lines } = useShopCart()
   const subtotal = lines.reduce((sum, line) => sum + line.priceSnapshot * line.quantity, 0)
@@ -133,6 +201,7 @@ export function ShopCheckoutPage({ locale }: { locale: ShopLocale }) {
   const [phone, setPhone] = useState("")
   const [point, setPoint] = useState<PacketaPoint | null>(null)
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("card")
+  const [packetaError, setPacketaError] = useState(false)
   const [submitted, setSubmitted] = useState(false)
 
   const hasContact = email.trim().length > 0 || phone.trim().length > 0
@@ -145,20 +214,41 @@ export function ShopCheckoutPage({ locale }: { locale: ShopLocale }) {
     { id: "apple_pay", label: copy.payApplePay },
   ]
 
-  // INTEGRATION POINT: replace with the real Packeta widget. Load
-  // https://widget.packeta.com/v6/www/js/library.js and call
-  // Packeta.Widget.pick(widgetApiKey, (selected) => setPoint(...)) using the
-  // widgetApiKey from GET /api/public/v1/integrations.
-  const openPacketaWidget = () => {
-    setPoint({ name: "Praha 4, Nusle", city: "Praha" })
+  // Opens the real Packeta pickup-point widget using the widgetApiKey from
+  // GET /api/public/v1/integrations and stores the chosen point for the order.
+  const openPacketaWidget = async () => {
+    if (!packeta.enabled || !packeta.widgetApiKey) {
+      setPacketaError(true)
+      return
+    }
+    setPacketaError(false)
+    try {
+      const widget = await loadPacketaWidget()
+      widget.pick(
+        packeta.widgetApiKey,
+        (selected) => {
+          if (!selected) {
+            return
+          }
+          setPoint({
+            id: selected.id != null ? String(selected.id) : null,
+            name: selected.name ?? selected.place ?? "",
+            city: selected.city,
+            country: selected.country,
+          })
+        },
+        { country: (packeta.countries[0] ?? "cz").toLowerCase(), language: locale },
+      )
+    } catch {
+      setPacketaError(true)
+    }
   }
 
   // INTEGRATION POINT: on submit, POST /api/public/v1/orders to create a
-  // RESERVED order with customer { firstName, lastName, email, phone } and the
-  // chosen delivery point, then mount the Stripe Payment Element with the
-  // returned PaymentIntent clientSecret and confirm the order after payment.
-  // The `paymentMethod` selected here maps to Stripe's wallet/card flow; with
-  // the Payment Element, Stripe also auto-renders eligible wallets itself.
+  // RESERVED order with customer { firstName, lastName, email, phone } and
+  // delivery { provider:"PACKETA", service:"PICKUP_POINT", addressId: point.id,
+  // point: { name: point.name, city: point.city, country: point.country } },
+  // then handle payment (Stripe is built in the admin/backend) and confirm.
   const placeOrder = () => {
     if (!canSubmit) {
       return
@@ -254,10 +344,13 @@ export function ShopCheckoutPage({ locale }: { locale: ShopLocale }) {
                   <button
                     type="button"
                     onClick={openPacketaWidget}
-                    className="mt-3 inline-flex items-center rounded-md border border-gray-300 px-3 py-1.5 text-sm font-semibold text-gray-900 transition hover:bg-white"
+                    disabled={!packeta.enabled}
+                    className="mt-3 inline-flex items-center rounded-md border border-gray-300 px-3 py-1.5 text-sm font-semibold text-gray-900 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {point ? copy.changePoint : copy.choosePoint}
                   </button>
+                  {!packeta.enabled ? <p className="mt-2 text-xs text-amber-700">{copy.packetaDisabled}</p> : null}
+                  {packetaError ? <p className="mt-2 text-xs text-red-600">{copy.packetaError}</p> : null}
                 </div>
               </div>
             </div>

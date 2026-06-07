@@ -39,6 +39,17 @@ const nextConfig = {
         hostname: '**.supabase.co',
         port: '',
       },
+      // Cloudflare R2 public bucket used by the shop admin for product/category images
+      {
+        protocol: 'https',
+        hostname: '**.r2.dev',
+        port: '',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.r2.cloudflarestorage.com',
+        port: '',
+      },
     ],
   },
 

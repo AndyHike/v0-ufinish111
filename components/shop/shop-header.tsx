@@ -21,12 +21,6 @@ export function ShopHeader({
 }) {
   const t = useTranslations("Shop.header")
   const { count, openCart } = useShopCart()
-  const navItems = [
-    { label: t("protection"), href: `/${locale}/category/protection` },
-    { label: t("charging"), href: `/${locale}/category/charging` },
-    { label: t("parts"), href: `/${locale}/category/parts` },
-    { label: t("phones"), href: `/${locale}/category/phones` },
-  ]
 
   return (
     <>
@@ -40,15 +34,7 @@ export function ShopHeader({
             </Link>
           </div>
 
-          <nav className="hidden items-center gap-5 text-sm font-medium text-gray-700 lg:flex">
-            {navItems.map((item) => (
-              <Link key={item.href} href={item.href} className="transition-colors hover:text-gray-950">
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-
-          <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+          <div className="flex flex-1 items-center justify-end gap-1 sm:gap-2">
             <ShopSearch locale={locale} />
             <LanguageSwitcher className="h-9 w-9 shrink-0" />
             <button

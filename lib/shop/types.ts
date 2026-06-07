@@ -214,3 +214,15 @@ export interface ShopProductData {
   selectedVariant: ShopVariant
   relatedItems: ShopProductCardView[]
 }
+
+export interface ShopPacketaConfig {
+  enabled: boolean
+  widgetApiKey: string | null
+  countries: string[]
+  services: string[]
+  defaultWeightKg: number | null
+}
+
+export interface ShopIntegrations {
+  packeta: ShopPacketaConfig
+}

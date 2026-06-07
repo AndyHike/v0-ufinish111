@@ -3,7 +3,7 @@ import "server-only"
 import { isShopApiEnabled, shopAdminStoreId } from "./api/config"
 import { ShopApiError, shopApiFetch } from "./api/client"
 import { type ApiCategory, type ApiItem, mapApiCategory, mapApiItem } from "./api/mappers"
-import { availabilityTag, collectionTag, filtersTag, listViewTag, viewHomeTag, viewTag } from "./api/tags"
+import { availabilityTag, collectionTag, filtersTag, listViewTag, siteTag, viewHomeTag, viewTag } from "./api/tags"
 import {
   applyShopCategoryFilters,
   buildShopCategoryTree,
@@ -18,7 +18,24 @@ import {
   selectProductVariantByRoute,
   toProductCard,
 } from "./catalog"
-import type { ShopCategoryData, ShopHomeData, ShopLocale, ShopProductCardView, ShopProductData } from "./types"
+import type {
+  ShopCategoryData,
+  ShopCategoryTreeNode,
+  ShopHomeData,
+  ShopIntegrations,
+  ShopLocale,
+  ShopPacketaConfig,
+  ShopProductCardView,
+  ShopProductData,
+} from "./types"
+
+const DISABLED_PACKETA: ShopPacketaConfig = {
+  enabled: false,
+  widgetApiKey: null,
+  countries: [],
+  services: [],
+  defaultWeightKg: null,
+}
 
 const HOME_ITEMS_LIMIT = 12
 const CATEGORY_ITEMS_LIMIT = 100
@@ -71,6 +88,49 @@ async function fetchAllApiCategories(): Promise<ApiCategory[]> {
     searchParams: { include: "seo" },
     tags: tagsFor((id) => [viewHomeTag(id)]),
   })
+}
+
+// ---- Category tree (header / sidebar) --------------------------------------
+
+export async function getShopCategoryTree(): Promise<ShopCategoryTreeNode[]> {
+  if (!isShopApiEnabled()) {
+    return []
+  }
+  try {
+    const categories = (await fetchAllApiCategories()).map(mapApiCategory)
+    return buildShopCategoryTree(categories)
+  } catch (error) {
+    console.error(`[shop] category tree request failed: ${String(error)}`)
+    return []
+  }
+}
+
+// ---- Integrations (Packeta) ------------------------------------------------
+
+export async function getShopIntegrations(): Promise<ShopIntegrations> {
+  if (!isShopApiEnabled()) {
+    return { packeta: DISABLED_PACKETA }
+  }
+  try {
+    const data = await shopApiFetch<{ delivery?: { packeta?: Partial<ShopPacketaConfig> } }>("integrations", {
+      tags: tagsFor((id) => [siteTag(id)]),
+    })
+    const packeta = data.delivery?.packeta
+    return {
+      packeta: packeta
+        ? {
+            enabled: Boolean(packeta.enabled),
+            widgetApiKey: packeta.widgetApiKey ?? null,
+            countries: packeta.countries ?? [],
+            services: packeta.services ?? [],
+            defaultWeightKg: packeta.defaultWeightKg ?? null,
+          }
+        : DISABLED_PACKETA,
+    }
+  } catch (error) {
+    console.error(`[shop] integrations request failed: ${String(error)}`)
+    return { packeta: DISABLED_PACKETA }
+  }
 }
 
 // ---- Home ------------------------------------------------------------------

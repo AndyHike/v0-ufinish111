@@ -12,8 +12,9 @@ import {
   type ShopCartLine,
 } from "@/lib/shop/cart"
 
-// Bump the version suffix if the persisted cart shape changes.
-const CART_STORAGE_KEY = "devicehelp.shop.cart.v1"
+// Bump the version suffix if the persisted cart shape changes (also drops stale
+// carts that referenced removed mock products).
+const CART_STORAGE_KEY = "devicehelp.shop.cart.v2"
 
 type ShopCartAction =
   | { type: "add"; line: ShopCartLine; maxQuantity: number }
