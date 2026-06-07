@@ -2,8 +2,13 @@ import "server-only"
 
 import { shopSiteUrl } from "../../site-config"
 import type {
+  ShopAttributeValueType,
   ShopCategory,
+  ShopFilterAttribute,
+  ShopFilterOption,
   ShopItem,
+  ShopItemAttribute,
+  ShopItemAttributeValue,
   ShopLocale,
   ShopLocalizedText,
   ShopSeo,
@@ -23,10 +28,52 @@ interface ApiImage {
 }
 
 interface ApiSelectedOption {
+  attributeKeyId?: string
   attributeSlug?: string
   attributeTitle?: ShopLocalizedText
   optionSlug?: string
   optionTitle?: ShopLocalizedText
+}
+
+interface ApiItemAttributeOption {
+  optionId?: string
+  optionSlug?: string
+  optionTitle?: ShopLocalizedText
+}
+
+interface ApiItemAttribute {
+  attributeKeyId?: string
+  attributeSlug?: string
+  attributeTitle?: ShopLocalizedText
+  options?: ApiItemAttributeOption[]
+}
+
+interface ApiItemAttributeValue {
+  attributeKeyId?: string
+  attributeSlug?: string
+  attributeTitle?: ShopLocalizedText
+  type?: string
+  valueText?: string | null
+  valueNumber?: number | null
+  valueBool?: boolean | null
+}
+
+interface ApiFilterOption {
+  id?: string
+  slug?: string
+  optionSlug?: string
+  value?: string
+  count?: number
+}
+
+export interface ApiFilterAttribute {
+  id?: string
+  attributeKeyId?: string
+  slug?: string
+  name?: string
+  type?: string
+  isVariantDefining?: boolean
+  options?: ApiFilterOption[]
 }
 
 interface ApiVariant {
@@ -76,6 +123,9 @@ export interface ApiItem {
   images?: ApiImage[]
   brand?: string
   condition?: string
+  attributes?: ApiItemAttribute[]
+  attributeValues?: ApiItemAttributeValue[]
+  specs?: Record<string, unknown> | null
   categories?: ApiCategoryContext[]
   variants?: ApiVariant[]
   linkedItems?: ApiLinkedItem[]
@@ -210,6 +260,101 @@ function mapApiSeo(
   }
 }
 
+// ---- Attribute mappers -----------------------------------------------------
+
+function mapItemAttributes(attributes: ApiItemAttribute[] | undefined): ShopItemAttribute[] {
+  return (attributes ?? [])
+    .filter((attribute) => attribute.attributeKeyId && attribute.attributeSlug)
+    .map((attribute) => ({
+      attributeKeyId: attribute.attributeKeyId as string,
+      attributeSlug: attribute.attributeSlug as string,
+      attributeTitle: toLocalized(attribute.attributeTitle),
+      options: (attribute.options ?? [])
+        .filter((option) => option.optionId && option.optionSlug)
+        .map((option) => ({
+          optionId: option.optionId as string,
+          optionSlug: option.optionSlug as string,
+          optionTitle: toLocalized(option.optionTitle),
+        })),
+    }))
+}
+
+function mapAttributeValueType(type: string | undefined): ShopAttributeValueType | null {
+  return type === "TEXT" || type === "NUMBER" || type === "BOOLEAN" ? type : null
+}
+
+function mapItemAttributeValues(values: ApiItemAttributeValue[] | undefined): ShopItemAttributeValue[] {
+  const mapped: ShopItemAttributeValue[] = []
+  for (const value of values ?? []) {
+    const type = mapAttributeValueType(value.type)
+    if (!type || !value.attributeKeyId || !value.attributeSlug) {
+      continue
+    }
+    mapped.push({
+      attributeKeyId: value.attributeKeyId,
+      attributeSlug: value.attributeSlug,
+      attributeTitle: toLocalized(value.attributeTitle),
+      type,
+      valueText: value.valueText ?? null,
+      valueNumber: typeof value.valueNumber === "number" ? value.valueNumber : null,
+      valueBool: typeof value.valueBool === "boolean" ? value.valueBool : null,
+    })
+  }
+  return mapped
+}
+
+/** Coerce the free-form `specs` object to a flat string→string map for display. */
+function mapSpecs(specs: Record<string, unknown> | null | undefined): Record<string, string> {
+  if (!specs || typeof specs !== "object") {
+    return {}
+  }
+  const out: Record<string, string> = {}
+  for (const [key, value] of Object.entries(specs)) {
+    if (value === null || value === undefined) {
+      continue
+    }
+    out[key] = typeof value === "string" ? value : String(value)
+  }
+  return out
+}
+
+/** Map a single `/api/public/v1/filters` facet. The endpoint already localizes `name`/`value`. */
+export function mapApiFilterAttribute(api: ApiFilterAttribute): ShopFilterAttribute | null {
+  const attributeKeyId = api.attributeKeyId ?? api.id
+  const slug = api.slug
+  if (!attributeKeyId || !slug) {
+    return null
+  }
+
+  const type: ShopFilterAttribute["type"] =
+    api.type === "TEXT" || api.type === "NUMBER" || api.type === "BOOLEAN" ? api.type : "SELECT"
+
+  const options: ShopFilterOption[] = (api.options ?? [])
+    .map((option) => {
+      const optionSlug = option.optionSlug ?? option.slug
+      if (!option.id || !optionSlug) {
+        return null
+      }
+      return {
+        id: option.id,
+        slug: optionSlug,
+        value: option.value ?? optionSlug,
+        count: typeof option.count === "number" ? option.count : 0,
+      }
+    })
+    .filter((option): option is ShopFilterOption => option !== null)
+
+  return {
+    id: attributeKeyId,
+    attributeKeyId,
+    slug,
+    name: api.name ?? slug,
+    type,
+    isVariantDefining: Boolean(api.isVariantDefining),
+    options,
+  }
+}
+
 // ---- Entity mappers --------------------------------------------------------
 
 function localizedName(value: ShopLocalizedText | null | undefined, fallback: string): string {
@@ -247,6 +392,7 @@ export function mapApiVariant(api: ApiVariant, itemId: string): ShopVariant {
   const selectedOptions: ShopVariantOption[] = (api.selectedOptions ?? [])
     .filter((option) => option.attributeSlug && option.optionSlug)
     .map((option) => ({
+      attributeKeyId: option.attributeKeyId,
       attributeSlug: option.attributeSlug as string,
       attributeTitle: toLocalized(option.attributeTitle),
       optionSlug: option.optionSlug as string,
@@ -286,6 +432,9 @@ export function mapApiItem(api: ApiItem): ShopItem {
     images: mapImages(api.images),
     brand: api.brand,
     condition: mapCondition(api.condition),
+    attributes: mapItemAttributes(api.attributes),
+    attributeValues: mapItemAttributeValues(api.attributeValues),
+    specs: mapSpecs(api.specs),
     categories: (api.categories ?? []).map(mapApiCategoryContext),
     variants,
     linkedItems: (api.linkedItems ?? [])

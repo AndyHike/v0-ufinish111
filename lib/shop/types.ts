@@ -80,10 +80,43 @@ export interface ShopCategory {
 }
 
 export interface ShopVariantOption {
+  /** Stable attribute key id from the API; absent on older payloads. */
+  attributeKeyId?: string
   attributeSlug: string
   attributeTitle: ShopLocalizedText
   optionSlug: string
   optionTitle: ShopLocalizedText
+}
+
+export type ShopAttributeValueType = "TEXT" | "NUMBER" | "BOOLEAN"
+
+/** A single option of a structured SELECT attribute on an item. */
+export interface ShopItemAttributeOption {
+  optionId: string
+  optionSlug: string
+  optionTitle: ShopLocalizedText
+}
+
+/**
+ * Structured, dictionary-backed SELECT attribute on an item (e.g. Color → Gray).
+ * Grouped by attribute; filterable via `/items?attr=`.
+ */
+export interface ShopItemAttribute {
+  attributeKeyId: string
+  attributeSlug: string
+  attributeTitle: ShopLocalizedText
+  options: ShopItemAttributeOption[]
+}
+
+/** Typed scalar attribute value (TEXT / NUMBER / BOOLEAN); filterable via `?num=`/`?bool=`. */
+export interface ShopItemAttributeValue {
+  attributeKeyId: string
+  attributeSlug: string
+  attributeTitle: ShopLocalizedText
+  type: ShopAttributeValueType
+  valueText: string | null
+  valueNumber: number | null
+  valueBool: boolean | null
 }
 
 export interface ShopVariant {
@@ -115,6 +148,12 @@ export interface ShopItem {
   images: string[]
   brand?: string
   condition?: "new" | "used" | "refurbished"
+  /** Structured, filterable SELECT attributes (grouped). Source of the filter UI together with `/filters`. */
+  attributes: ShopItemAttribute[]
+  /** Typed scalar attribute values (TEXT / NUMBER / BOOLEAN). */
+  attributeValues: ShopItemAttributeValue[]
+  /** Free-form, display-only specs ("key" → "value"); never filtered. */
+  specs: Record<string, string>
   categories: ShopCategory[]
   variants: ShopVariant[]
   linkedItems: Array<{
@@ -159,17 +198,24 @@ export type ShopCategorySortMode = "recommended" | "price-asc" | "price-desc"
 
 // Attribute filter facet, shaped to match GET /api/public/v1/filters response.
 export interface ShopFilterOption {
+  /** optionId (`copt_...`) — passed to `/items?attr=` for server-side filtering. */
   id: string
+  /** optionSlug — used in URLs / checkbox values. */
   slug: string
   value: string
   count: number
 }
 
 export interface ShopFilterAttribute {
+  /** Stable attribute key id (= attributeKeyId); passed to `/items?attr=`. */
   id: string
+  attributeKeyId: string
+  /** Human attribute code (e.g. `color`); used in URLs (`attr_<slug>`). */
   slug: string
   name: string
-  type: "SELECT"
+  type: "SELECT" | "TEXT" | "NUMBER" | "BOOLEAN"
+  /** True when the attribute defines variants (size/color) rather than a plain spec. */
+  isVariantDefining: boolean
   options: ShopFilterOption[]
 }
 

@@ -76,7 +76,10 @@ Authorization: Bearer <SYSTEM_MASTER_KEY>
 
 ### Як отримати `storeId`
 
-Усі відповіді містять `storeId` (або `data.storeId`). Він знадобиться для побудови cache-тегів (див. нижче). Окремо запитувати його не треба — беріть із будь-якої успішної відповіді.
+`storeId` потрібен для побудови cache-тегів (`site:{storeId}:...`, див. нижче). Отримати його можна двома шляхами:
+
+- **В адмінці:** Developers → картка **API Keys** → поле **Store ID** (з кнопкою копіювання).
+- **З API:** будь-яка успішна відповідь містить `storeId` (або `data.storeId`) — окремо запитувати не треба.
 
 > [!IMPORTANT]
 > Використовуйте версіоновані ендпоінти (`/api/public/v1/...`). Старі адреси без `v1` працюють як аліаси для поточної версії з тим самим контрактом.
@@ -593,8 +596,16 @@ Public API ніколи не повертає Packeta `apiPassword`. Він ви
 - `limit` (number) - Кількість товарів на сторінку (за замовчуванням: `20`).
 - `include` (string) - Додаткові вкладені дані. Підтримуються `categories`, `variants`, `availability`, `seo`; можна передавати через кому: `include=categories,variants,availability,seo`.
 
+**Фільтрація за атрибутами (фасети):** ідентифікатори беруться з ендпоінта `/filters` (див. розділ 4). Параметри можна повторювати.
+- `attr=<attributeKeyId>:<optionId>,<optionId>` — фільтр за SELECT-опціями. Усередині одного `attr` опції об'єднуються по **АБО**; різні `attr` — по **І**. Працює як для атрибутів товару, так і для варіантних (size/color).
+- `num=<attributeKeyId>:<min>-<max>` — числовий діапазон (будь-яка межа необов'язкова, напр. `num=ckey_w:10-` або `num=ckey_w:-50`).
+- `bool=<attributeKeyId>:true|false` — булевий атрибут.
+
 **Приклад запиту:**
 `GET /api/public/items?categorySlug=laptops&search=macbook&minPrice=1000&page=1&limit=10`
+
+**Приклад з фасетами** (колір червоний АБО синій, І пам'ять 16 ГБ, І вага 1–2 кг):
+`GET /api/public/v1/items?categorySlug=laptops&attr=ckey_color:copt_red,copt_blue&attr=ckey_ram:copt_16gb&num=ckey_weight:1-2`
 
 **Локалізовані поля**
 
@@ -626,7 +637,28 @@ type PublicLocalizedText = Partial<Record<"uk" | "en" | "cs", string>>;
       "description": { "uk": "Опис...", "en": "Desc..." },
       "content": null,
       "price": "1500.00",
-      "attributes": { "color": "Space Gray", "ram": "16GB" },
+      "specs": { "warranty": "24 months" },
+      "attributes": [
+        {
+          "attributeKeyId": "ckey_color",
+          "attributeSlug": "color",
+          "attributeTitle": { "uk": "Колір" },
+          "options": [
+            { "optionId": "copt_gray", "optionSlug": "space-gray", "optionTitle": { "uk": "Сірий космос" } }
+          ]
+        }
+      ],
+      "attributeValues": [
+        {
+          "attributeKeyId": "ckey_ram",
+          "attributeSlug": "ram",
+          "attributeTitle": { "uk": "Оперативна пам'ять" },
+          "type": "NUMBER",
+          "valueText": null,
+          "valueNumber": 16,
+          "valueBool": null
+        }
+      ],
       "position": 0,
       "isActive": true,
       "images": [
@@ -667,6 +699,17 @@ type PublicLocalizedText = Partial<Record<"uk" | "en" | "cs", string>>;
   }
 }
 ```
+
+**Модель атрибутів товару (3 поля):**
+
+| Поле | Тип | Призначення | Фільтрується? |
+| :--- | :--- | :--- | :--- |
+| `attributes` | масив | Структуровані SELECT-значення, прив'язані до словника (напр. Колір → Сірий). Згруповані за атрибутом; підтримують кілька опцій. | ✅ через `/items?attr=...` |
+| `attributeValues` | масив | Типізовані скалярні значення (`TEXT` / `NUMBER` / `BOOLEAN`). | ✅ через `/items?num=...` / `?bool=...` |
+| `specs` | об'єкт | Вільні нефільтровані характеристики «ключ → значення» лише для відображення на картці товару. | ❌ ніколи |
+
+> [!NOTE]
+> Це заміна попереднього вільного об'єкта `attributes`. Тепер `attributes` — це **масив структурованих фільтрованих значень**, а вільний текст переїхав у `specs`. Для побудови дерева фільтрів категорії використовуйте ендпоінт `/filters` (розділ 4), а не ці поля товару.
 
 > [!NOTE]
 > Без `include=categories` items endpoints не повертають category tree context.
@@ -711,7 +754,28 @@ type PublicLocalizedText = Partial<Record<"uk" | "en" | "cs", string>>;
     "description": { "uk": "Опис...", "en": "Desc..." },
     "content": null,
     "price": "1500.00",
-    "attributes": { "color": "Space Gray", "ram": "16GB" },
+    "specs": { "warranty": "24 months" },
+    "attributes": [
+      {
+        "attributeKeyId": "ckey_color",
+        "attributeSlug": "color",
+        "attributeTitle": { "uk": "Колір" },
+        "options": [
+          { "optionId": "copt_gray", "optionSlug": "space-gray", "optionTitle": { "uk": "Сірий космос" } }
+        ]
+      }
+    ],
+    "attributeValues": [
+      {
+        "attributeKeyId": "ckey_ram",
+        "attributeSlug": "ram",
+        "attributeTitle": { "uk": "Оперативна пам'ять" },
+        "type": "NUMBER",
+        "valueText": null,
+        "valueNumber": 16,
+        "valueBool": null
+      }
+    ],
     "images": [],
     "linkedItems": [],
     "seo": {
@@ -817,6 +881,7 @@ GET /api/public/v1/items/protective-glass?include=categories,variants,availabili
         "trackInventory": true,
         "selectedOptions": [
           {
+            "attributeKeyId": "ckey_model",
             "attributeSlug": "model",
             "attributeTitle": { "uk": "Модель" },
             "optionId": "store_model_iphone-11",
@@ -1006,13 +1071,19 @@ Common errors:
 { "success": false, "error": "Invalid order token." }
 ```
 
-## 4. Отримати фільтри (Атрибути) для категорії ⚙️
-Повертає всі доступні атрибути (опції фільтрації) для конкретної категорії. Зручно для побудови UI фільтрів на вітрині (напр. чекбокси "Колір", "Розмір").
+## 4. Отримати фільтри (фасети) для категорії ⚙️
+Повертає **дерево фасетних фільтрів** для конкретної категорії — кожен атрибут, призначений цій категорії (або будь-якому предку по дереву) і позначений як фільтрований, разом із опціями, що **реально присутні** в активних товарах цієї категорії, та кількістю товарів (`count`) для кожної опції. Зручно для побудови UI фільтрів на вітрині (напр. чекбокси "Колір (12)", "Розмір (4)").
+
+> [!IMPORTANT]
+> **Зміни архітектури (важливо для міграції):**
+> - **Глобальних атрибутів більше немає.** Видимість фільтра визначається **лише** прив'язкою атрибута до категорії + успадкуванням по дереву (категорія → батьки). Атрибут, не прив'язаний до жодної категорії гілки, не з'явиться у фільтрах.
+> - **Фасети:** повертаються **тільки опції з `count > 0`** (присутні в активних товарах категорії). Порожні опції приховані. SELECT-атрибут без жодної присутньої опції повністю випадає з відповіді.
+> - Кожен атрибут тепер має стабільний `attributeKeyId` (= `id`). Саме його треба передавати у `/items` для фільтрації (див. нижче).
 
 **URL**: `GET /api/public/v1/filters` (або застарілий `/api/public/filters`)
 
 **Параметри запиту (Query Parameters):**
-- `categorySlug` (string) - **Обов'язково**. Slug категорії, для якої треба отримати фільтри.
+- `categorySlug` (string) - **Обов'язково**. Slug категорії, для якої треба отримати фільтри (приймається також `category`).
 - `locale` (string) - Необов'язково. Мова для перекладу назв атрибутів і опцій (за замовчуванням: `uk`).
 
 **Приклад запиту:**
@@ -1024,25 +1095,43 @@ Common errors:
   "success": true,
   "data": [
     {
-      "id": "ram_size",
+      "id": "ckey_ram_123",
+      "attributeKeyId": "ckey_ram_123",
+      "slug": "ram_size",
       "name": "Об'єм оперативної пам'яті",
       "type": "SELECT",
+      "isVariantDefining": false,
       "options": [
         {
-          "id": "cuid...",
+          "id": "copt_8gb",
           "slug": "8gb",
-          "value": "8 ГБ"
+          "optionSlug": "8gb",
+          "value": "8 ГБ",
+          "count": 5
         },
         {
-          "id": "cuid...",
+          "id": "copt_16gb",
           "slug": "16gb",
-          "value": "16 ГБ"
+          "optionSlug": "16gb",
+          "value": "16 ГБ",
+          "count": 12
         }
       ]
     }
   ]
 }
 ```
+
+**Поля атрибута:**
+| Поле | Опис |
+| :--- | :--- |
+| `id` / `attributeKeyId` | Стабільний ідентифікатор атрибута. Передавайте його у `/items?attr=<attributeKeyId>:<optionId>` для фільтрації. |
+| `slug` | Людський код атрибута (напр. `color`). |
+| `name` | Локалізована назва атрибута. |
+| `type` | `SELECT` \| `TEXT` \| `NUMBER` \| `BOOLEAN`. |
+| `isVariantDefining` | `true`, якщо атрибут задає варіанти товару (напр. розмір/колір), а не просто характеристику. |
+| `options[].id` | `optionId` — передається у `/items` для фільтрації за цією опцією. |
+| `options[].count` | Кількість активних товарів категорії, що мають цю опцію. |
 
 ---
 

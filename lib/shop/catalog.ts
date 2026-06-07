@@ -34,6 +34,8 @@ const SPECIFICATION_COPY = {
     new: "Novy",
     used: "Pouzity",
     refurbished: "Repasovany",
+    yes: "Ano",
+    no: "Ne",
   },
   uk: {
     brand: "Бренд",
@@ -46,6 +48,8 @@ const SPECIFICATION_COPY = {
     new: "Новий",
     used: "Вживаний",
     refurbished: "Відновлений",
+    yes: "Так",
+    no: "Ні",
   },
   en: {
     brand: "Brand",
@@ -58,6 +62,8 @@ const SPECIFICATION_COPY = {
     new: "New",
     used: "Used",
     refurbished: "Refurbished",
+    yes: "Yes",
+    no: "No",
   },
 } as const
 
@@ -122,36 +128,76 @@ export function normalizeShopCategoryFilters(input: ShopCategoryFilterInput = {}
   return { sort, minPrice, maxPrice, attributes }
 }
 
-// Aggregates variant options across items into API-shaped filter facets
-// (matches GET /api/public/v1/filters). Counts how many products carry each option.
+// Returns the set of option slugs an item carries per attribute slug, drawn
+// from BOTH structured item-level SELECT attributes and variant-defining
+// options (size/color). Used for client-side faceting and filtering so that
+// product-level attributes — not just variant options — narrow results.
+function collectItemAttributeOptions(
+  item: ShopItem,
+): Map<string, { attributeKeyId?: string; isVariantDefining: boolean; title: ShopLocalizedText; options: Map<string, ShopLocalizedText> }> {
+  const byAttribute = new Map<
+    string,
+    { attributeKeyId?: string; isVariantDefining: boolean; title: ShopLocalizedText; options: Map<string, ShopLocalizedText> }
+  >()
+
+  const ensure = (slug: string, attributeKeyId: string | undefined, title: ShopLocalizedText, isVariantDefining: boolean) => {
+    const existing = byAttribute.get(slug)
+    if (existing) {
+      existing.isVariantDefining ||= isVariantDefining
+      existing.attributeKeyId ??= attributeKeyId
+      return existing
+    }
+    const created = { attributeKeyId, isVariantDefining, title, options: new Map<string, ShopLocalizedText>() }
+    byAttribute.set(slug, created)
+    return created
+  }
+
+  for (const attribute of item.attributes) {
+    const entry = ensure(attribute.attributeSlug, attribute.attributeKeyId, attribute.attributeTitle, false)
+    for (const option of attribute.options) {
+      entry.options.set(option.optionSlug, option.optionTitle)
+    }
+  }
+
+  for (const variant of item.variants) {
+    for (const option of variant.selectedOptions) {
+      const entry = ensure(option.attributeSlug, option.attributeKeyId, option.attributeTitle, true)
+      entry.options.set(option.optionSlug, option.optionTitle)
+    }
+  }
+
+  return byAttribute
+}
+
+// Aggregates item attributes + variant options across items into API-shaped
+// filter facets (matches GET /api/public/v1/filters). Counts how many products
+// carry each option. Used for the mock catalog and as a fallback when the live
+// `/filters` endpoint is unavailable.
 export function buildShopFilterFacets(items: ShopItem[], locale: ShopLocale): ShopFilterAttribute[] {
-  const byAttribute = new Map<string, { name: string; options: Map<string, { value: string; count: number }> }>()
+  const byAttribute = new Map<
+    string,
+    {
+      attributeKeyId?: string
+      isVariantDefining: boolean
+      name: string
+      options: Map<string, { value: string; count: number }>
+    }
+  >()
 
   for (const item of items) {
-    const itemOptions = new Map<string, Set<string>>()
-    const attributeNames = new Map<string, string>()
-    const optionValues = new Map<string, string>()
-
-    for (const variant of item.variants) {
-      for (const option of variant.selectedOptions) {
-        if (!itemOptions.has(option.attributeSlug)) {
-          itemOptions.set(option.attributeSlug, new Set())
-        }
-        itemOptions.get(option.attributeSlug)?.add(option.optionSlug)
-        attributeNames.set(option.attributeSlug, getLocalizedText(option.attributeTitle, locale))
-        optionValues.set(`${option.attributeSlug}:${option.optionSlug}`, getLocalizedText(option.optionTitle, locale))
-      }
-    }
-
-    for (const [attributeSlug, optionSlugs] of itemOptions) {
+    for (const [attributeSlug, source] of collectItemAttributeOptions(item)) {
       const attribute = byAttribute.get(attributeSlug) ?? {
-        name: attributeNames.get(attributeSlug) ?? attributeSlug,
+        attributeKeyId: source.attributeKeyId,
+        isVariantDefining: source.isVariantDefining,
+        name: getLocalizedText(source.title, locale) || attributeSlug,
         options: new Map(),
       }
+      attribute.isVariantDefining ||= source.isVariantDefining
+      attribute.attributeKeyId ??= source.attributeKeyId
 
-      for (const optionSlug of optionSlugs) {
+      for (const [optionSlug, optionTitle] of source.options) {
         const option = attribute.options.get(optionSlug) ?? {
-          value: optionValues.get(`${attributeSlug}:${optionSlug}`) ?? optionSlug,
+          value: getLocalizedText(optionTitle, locale) || optionSlug,
           count: 0,
         }
         option.count += 1
@@ -164,10 +210,12 @@ export function buildShopFilterFacets(items: ShopItem[], locale: ShopLocale): Sh
 
   return Array.from(byAttribute.entries())
     .map(([attributeSlug, attribute]) => ({
-      id: attributeSlug,
+      id: attribute.attributeKeyId ?? attributeSlug,
+      attributeKeyId: attribute.attributeKeyId ?? attributeSlug,
       slug: attributeSlug,
       name: attribute.name,
       type: "SELECT" as const,
+      isVariantDefining: attribute.isVariantDefining,
       options: Array.from(attribute.options.entries())
         .map(([optionSlug, option]) => ({
           id: optionSlug,
@@ -181,16 +229,16 @@ export function buildShopFilterFacets(items: ShopItem[], locale: ShopLocale): Sh
 }
 
 export function itemMatchesAttributes(item: ShopItem, attributes: Record<string, string[]>): boolean {
+  const itemOptions = collectItemAttributeOptions(item)
+
   for (const [attributeSlug, selectedOptionSlugs] of Object.entries(attributes)) {
     if (selectedOptionSlugs.length === 0) {
       continue
     }
 
-    const matches = item.variants.some((variant) =>
-      variant.selectedOptions.some(
-        (option) => option.attributeSlug === attributeSlug && selectedOptionSlugs.includes(option.optionSlug),
-      ),
-    )
+    const available = itemOptions.get(attributeSlug)?.options
+    // OR within an attribute: the item matches if it carries any selected option.
+    const matches = available ? selectedOptionSlugs.some((optionSlug) => available.has(optionSlug)) : false
 
     if (!matches) {
       return false
@@ -369,6 +417,45 @@ export function getProductSpecificationRows(
   for (const option of selectedVariant.selectedOptions) {
     const label = getLocalizedText(option.attributeTitle, locale)
     const value = getLocalizedText(option.optionTitle, locale)
+    if (label && value) {
+      rows.push({ label, value })
+    }
+  }
+
+  // Product-level structured SELECT attributes (joined when multiple options).
+  for (const attribute of item.attributes) {
+    const label = getLocalizedText(attribute.attributeTitle, locale)
+    const value = attribute.options
+      .map((option) => getLocalizedText(option.optionTitle, locale))
+      .filter(Boolean)
+      .join(", ")
+    if (label && value) {
+      rows.push({ label, value })
+    }
+  }
+
+  // Typed scalar attribute values (TEXT / NUMBER / BOOLEAN).
+  for (const attributeValue of item.attributeValues) {
+    const label = getLocalizedText(attributeValue.attributeTitle, locale)
+    const value =
+      attributeValue.type === "BOOLEAN"
+        ? attributeValue.valueBool === null
+          ? ""
+          : attributeValue.valueBool
+            ? copy.yes
+            : copy.no
+        : attributeValue.type === "NUMBER"
+          ? attributeValue.valueNumber === null
+            ? ""
+            : String(attributeValue.valueNumber)
+          : (attributeValue.valueText ?? "")
+    if (label && value) {
+      rows.push({ label, value })
+    }
+  }
+
+  // Free-form display-only specs.
+  for (const [label, value] of Object.entries(item.specs)) {
     if (label && value) {
       rows.push({ label, value })
     }

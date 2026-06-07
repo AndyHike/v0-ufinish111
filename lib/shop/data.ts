@@ -2,7 +2,14 @@ import "server-only"
 
 import { isShopApiEnabled, shopAdminStoreId } from "./api/config"
 import { ShopApiError, shopApiFetch } from "./api/client"
-import { type ApiCategory, type ApiItem, mapApiCategory, mapApiItem } from "./api/mappers"
+import {
+  type ApiCategory,
+  type ApiFilterAttribute,
+  type ApiItem,
+  mapApiCategory,
+  mapApiFilterAttribute,
+  mapApiItem,
+} from "./api/mappers"
 import { availabilityTag, collectionTag, filtersTag, listViewTag, siteTag, viewHomeTag, viewTag } from "./api/tags"
 import {
   applyShopCategoryFilters,
@@ -21,6 +28,7 @@ import {
 import type {
   ShopCategoryData,
   ShopCategoryTreeNode,
+  ShopFilterAttribute,
   ShopHomeData,
   ShopIntegrations,
   ShopLocale,
@@ -88,6 +96,26 @@ async function fetchAllApiCategories(): Promise<ApiCategory[]> {
     searchParams: { include: "seo" },
     tags: tagsFor((id) => [viewHomeTag(id)]),
   })
+}
+
+// Facet tree for a category from the live `/filters` endpoint (authoritative:
+// honours admin attribute→category assignment, hides empty options, returns
+// counts). Resilient: a failure yields [] so the caller can fall back to
+// client-side aggregation rather than failing the whole page.
+async function fetchCategoryFilters(slug: string, locale: ShopLocale): Promise<ShopFilterAttribute[]> {
+  try {
+    const apiFilters = await shopApiFetch<ApiFilterAttribute[]>("filters", {
+      searchParams: { categorySlug: slug, locale },
+      tags: tagsFor((id) => [filtersTag(id)]),
+    })
+    return apiFilters
+      .map(mapApiFilterAttribute)
+      .filter((attribute): attribute is ShopFilterAttribute => attribute !== null)
+      .filter((attribute) => attribute.options.length > 0)
+  } catch (error) {
+    console.error(`[shop] filters request failed for ${slug}; falling back to client facets: ${String(error)}`)
+    return []
+  }
 }
 
 // ---- Category tree (header / sidebar) --------------------------------------
@@ -193,6 +221,9 @@ export async function getShopCategoryData(
     throw error
   }
 
+  // Facets come from the live `/filters` endpoint (full category, authoritative
+  // counts); kicked off in parallel with the catalog reads.
+  const filtersPromise = fetchCategoryFilters(slug, locale)
   const [allApiCategories, apiItems] = await Promise.all([
     fetchAllApiCategories(),
     shopApiFetch<ApiItem[]>("items", {
@@ -210,13 +241,18 @@ export async function getShopCategoryData(
     .filter((item) => itemMatchesAttributes(item, activeFilters.attributes))
     .map((item) => toProductCard(item, locale))
 
+  // Prefer live facets; fall back to client-side aggregation if `/filters` is
+  // unavailable or empty so the panel still renders.
+  const liveFacets = await filtersPromise
+  const filterAttributes = liveFacets.length > 0 ? liveFacets : buildShopFilterFacets(items, locale)
+
   return {
     category,
     children: getShopCategoryChildren(category.id, allCategories),
     ancestors: getShopCategoryAncestors(category, allCategories),
     categoryTree: buildShopCategoryTree(allCategories),
     priceBounds: getShopCategoryPriceBounds(unfilteredProducts),
-    filterAttributes: buildShopFilterFacets(items, locale),
+    filterAttributes,
     activeFilters,
     products: applyShopCategoryFilters(attributeFiltered, activeFilters),
   }
