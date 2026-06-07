@@ -7,28 +7,50 @@ import { StructuredData } from "@/components/shop/structured-data"
 import { getLocalizedText, getProductSpecificationRows } from "@/lib/shop/catalog"
 import { buildBreadcrumbJsonLd, buildProductJsonLd } from "@/lib/shop/seo"
 import { shopSiteUrl } from "@/lib/site-config"
-import type { ShopItem, ShopLocale, ShopProductCardView, ShopVariant } from "@/lib/shop/types"
+import type { ShopItem, ShopLocale, ShopRelatedProduct, ShopVariant } from "@/lib/shop/types"
 
 const PRODUCT_COPY = {
   cs: {
     shop: "Shop",
     details: "Popis produktu",
     specifications: "Charakteristiky",
-    related: "Souvisejici produkty",
   },
   uk: {
     shop: "Shop",
     details: "Опис товару",
     specifications: "Характеристики",
-    related: "Повʼязані товари",
   },
   en: {
     shop: "Shop",
     details: "Product description",
     specifications: "Specifications",
-    related: "Related products",
   },
 } as const
+
+// Headings per relationship type so linked products read as purposeful blocks
+// ("frequently bought together" / accessories / …) rather than one generic list.
+const RELATED_COPY = {
+  cs: {
+    cross_sell: "Casto kupuji spolu",
+    accessory: "Prislusenstvi",
+    upsell: "Mohlo by se vam libit",
+    related: "Souvisejici produkty",
+  },
+  uk: {
+    cross_sell: "Часто купують разом",
+    accessory: "Аксесуари",
+    upsell: "Вам може сподобатись",
+    related: "Рекомендовані товари",
+  },
+  en: {
+    cross_sell: "Frequently bought together",
+    accessory: "Accessories",
+    upsell: "You might also like",
+    related: "Recommended products",
+  },
+} as const
+
+const RELATED_ORDER = ["cross_sell", "accessory", "upsell", "related"] as const
 
 export function ProductPage({
   locale,
@@ -39,9 +61,15 @@ export function ProductPage({
   locale: ShopLocale
   item: ShopItem
   selectedVariant: ShopVariant
-  relatedItems: ShopProductCardView[]
+  relatedItems: ShopRelatedProduct[]
 }) {
   const copy = PRODUCT_COPY[locale]
+  const relatedCopy = RELATED_COPY[locale]
+  const relatedGroups = RELATED_ORDER.map((type) => ({
+    type,
+    title: relatedCopy[type],
+    items: relatedItems.filter((entry) => entry.linkType === type).map((entry) => entry.product),
+  })).filter((group) => group.items.length > 0)
   const title = getLocalizedText(item.title, locale)
   const category = item.categories[0]
   const specifications = getProductSpecificationRows(item, selectedVariant, locale)
@@ -83,16 +111,18 @@ export function ProductPage({
           <div className="min-w-0">
             <ProductGallery images={selectedVariant.images.length ? selectedVariant.images : item.images} title={title} />
           </div>
-          <div className="flex min-w-0 flex-col">
-            <h1 className="max-w-full break-words text-2xl font-semibold leading-tight tracking-tight sm:text-3xl md:text-4xl">{title}</h1>
-            <p className="mt-4 text-sm leading-7 text-gray-600">{getLocalizedText(item.description, locale)}</p>
-            <div className="mt-8">
-              <ProductPurchasePanel
-                locale={locale}
-                item={{ id: item.id, title: item.title, variants: item.variants, categories: item.categories }}
-                selectedVariant={selectedVariant}
-              />
-            </div>
+          <div className="min-w-0">
+            <ProductPurchasePanel
+              locale={locale}
+              item={{
+                id: item.id,
+                title: item.title,
+                description: item.description,
+                variants: item.variants,
+                categories: item.categories,
+              }}
+              selectedVariant={selectedVariant}
+            />
           </div>
         </div>
 
@@ -133,16 +163,16 @@ export function ProductPage({
           </dl>
         </section>
 
-        {relatedItems.length > 0 ? (
-          <section className="mt-12">
-            <h2 className="text-xl font-semibold">{copy.related}</h2>
+        {relatedGroups.map((group) => (
+          <section key={group.type} className="mt-12">
+            <h2 className="text-xl font-semibold">{group.title}</h2>
             <div className="mt-6 grid grid-cols-2 gap-4 sm:gap-5 lg:grid-cols-4">
-              {relatedItems.map((product) => (
+              {group.items.map((product) => (
                 <ProductCard key={product.itemId} locale={locale} product={product} />
               ))}
             </div>
           </section>
-        ) : null}
+        ))}
       </div>
     </div>
   )

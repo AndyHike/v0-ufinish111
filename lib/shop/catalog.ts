@@ -629,9 +629,11 @@ export function getMockShopProduct(
   }
 
   const relatedItems = item.linkedItems
-    .map((link) => mockShopItems.find((product) => product.slug === link.targetSlug))
-    .filter((product): product is ShopItem => Boolean(product))
-    .map((product) => toProductCard(product, locale))
+    .map((link) => {
+      const target = mockShopItems.find((product) => product.slug === link.targetSlug)
+      return target ? { linkType: link.type, product: toProductCard(target, locale) } : null
+    })
+    .filter((entry): entry is ShopProductData["relatedItems"][number] => entry !== null)
 
   return { item, selectedVariant, relatedItems }
 }

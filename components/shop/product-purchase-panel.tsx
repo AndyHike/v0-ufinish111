@@ -102,7 +102,7 @@ export function ProductPurchasePanel({
   selectedVariant,
 }: {
   locale: ShopLocale
-  item: Pick<ShopItem, "id" | "title" | "variants" | "categories">
+  item: Pick<ShopItem, "id" | "title" | "description" | "variants" | "categories">
   selectedVariant: ShopVariant
 }) {
   const copy = PURCHASE_COPY[locale]
@@ -126,6 +126,8 @@ export function ProductPurchasePanel({
   const selectedVariantTitle = getLocalizedText(variant.title, locale)
   const category = item.categories[0]
   const categoryTitle = category ? getLocalizedText(category.title, locale) : ""
+  const productTitle = getLocalizedText(item.title, locale)
+  const productDescription = getLocalizedText(item.description, locale)
 
   const addToCart = () => {
     addLine(
@@ -145,8 +147,12 @@ export function ProductPurchasePanel({
 
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+      <h1 className="text-2xl font-semibold leading-tight tracking-tight text-gray-950 sm:text-3xl">
+        {productTitle}
+      </h1>
+
       {variant.sku || categoryTitle ? (
-        <p className="text-xs text-gray-500">
+        <p className="mt-2 text-xs text-gray-500">
           {variant.sku ? (
             <>
               {copy.sku}: <span className="font-medium text-gray-700">{variant.sku}</span>
@@ -157,7 +163,11 @@ export function ProductPurchasePanel({
         </p>
       ) : null}
 
-      <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+      {productDescription ? (
+        <p className="mt-3 text-sm leading-6 text-gray-600">{productDescription}</p>
+      ) : null}
+
+      <div className="mt-5 flex flex-wrap items-baseline gap-x-3 gap-y-1 border-t border-gray-100 pt-5">
         <span className="text-3xl font-bold tracking-tight text-gray-950">
           {formatShopPrice(displayPrice, locale)}
         </span>

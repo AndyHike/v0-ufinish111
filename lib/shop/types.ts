@@ -255,10 +255,16 @@ export interface ShopCategoryData {
   products: ShopProductCardView[]
 }
 
+/** A linked product card together with the relationship that produced it. */
+export interface ShopRelatedProduct {
+  linkType: ShopItem["linkedItems"][number]["type"]
+  product: ShopProductCardView
+}
+
 export interface ShopProductData {
   item: ShopItem
   selectedVariant: ShopVariant
-  relatedItems: ShopProductCardView[]
+  relatedItems: ShopRelatedProduct[]
 }
 
 export interface ShopPacketaConfig {

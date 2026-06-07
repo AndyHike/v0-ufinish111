@@ -35,6 +35,7 @@ import type {
   ShopPacketaConfig,
   ShopProductCardView,
   ShopProductData,
+  ShopRelatedProduct,
 } from "./types"
 
 const DISABLED_PACKETA: ShopPacketaConfig = {
@@ -291,6 +292,8 @@ export async function getShopProductData(
   }
 
   // Resolve linked items into cards (best-effort; ignore individual failures).
+  // Each card keeps its link type so the product page can group cross-sell /
+  // accessory / upsell / related into labelled sections.
   const relatedItems = (
     await Promise.all(
       item.linkedItems.map(async (link) => {
@@ -299,13 +302,13 @@ export async function getShopProductData(
             searchParams: { include: "variants,availability" },
             tags: tagsFor((id) => [viewHomeTag(id), availabilityTag(id)]),
           })
-          return toProductCard(mapApiItem(target), locale)
+          return { linkType: link.type, product: toProductCard(mapApiItem(target), locale) }
         } catch {
           return null
         }
       }),
     )
-  ).filter((card): card is ShopProductCardView => card !== null)
+  ).filter((entry): entry is ShopRelatedProduct => entry !== null)
 
   return { item, selectedVariant, relatedItems }
 }
