@@ -231,6 +231,16 @@ export function buildShopFilterFacets(items: ShopItem[], locale: ShopLocale): Sh
 export function itemMatchesAttributes(item: ShopItem, attributes: Record<string, string[]>): boolean {
   const itemOptions = collectItemAttributeOptions(item)
 
+  // BOOLEAN facets aren't part of SELECT options: a checked toggle submits the
+  // value "true" (or "false") under the same `attr_<slug>` key, matched here
+  // against the item's typed boolean attribute value.
+  const booleanValues = new Map<string, boolean>()
+  for (const attributeValue of item.attributeValues) {
+    if (attributeValue.type === "BOOLEAN" && attributeValue.valueBool !== null) {
+      booleanValues.set(attributeValue.attributeSlug, attributeValue.valueBool)
+    }
+  }
+
   for (const [attributeSlug, selectedOptionSlugs] of Object.entries(attributes)) {
     if (selectedOptionSlugs.length === 0) {
       continue
@@ -238,9 +248,16 @@ export function itemMatchesAttributes(item: ShopItem, attributes: Record<string,
 
     const available = itemOptions.get(attributeSlug)?.options
     // OR within an attribute: the item matches if it carries any selected option.
-    const matches = available ? selectedOptionSlugs.some((optionSlug) => available.has(optionSlug)) : false
+    const selectMatch = available ? selectedOptionSlugs.some((optionSlug) => available.has(optionSlug)) : false
 
-    if (!matches) {
+    const booleanValue = booleanValues.get(attributeSlug)
+    const booleanMatch =
+      booleanValue !== undefined &&
+      selectedOptionSlugs.some(
+        (value) => (value === "true" && booleanValue) || (value === "false" && !booleanValue),
+      )
+
+    if (!selectMatch && !booleanMatch) {
       return false
     }
   }

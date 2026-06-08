@@ -110,6 +110,25 @@ function FilterAttributeGroup({
   showMoreLabel: string
   showLessLabel: string
 }) {
+  // BOOLEAN facets carry no options — render a single on/off toggle that submits
+  // `attr_<slug>=true` (parsed and matched like any other attribute value).
+  if (attribute.type === "BOOLEAN") {
+    return (
+      <fieldset className="border-t border-gray-100 pt-4">
+        <label className="flex cursor-pointer items-center gap-2.5 rounded-md px-1.5 py-1 text-sm transition hover:bg-gray-50">
+          <input
+            type="checkbox"
+            name={`attr_${attribute.slug}`}
+            value="true"
+            defaultChecked={selected.includes("true")}
+            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+          />
+          <span className="font-medium text-gray-900">{attribute.name}</span>
+        </label>
+      </fieldset>
+    )
+  }
+
   const visibleOptions = attribute.options.slice(0, VISIBLE_OPTIONS)
   const hiddenOptions = attribute.options.slice(VISIBLE_OPTIONS)
   const toggleId = `filter-more-${attribute.slug}`

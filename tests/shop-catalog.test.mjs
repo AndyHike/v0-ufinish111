@@ -277,3 +277,24 @@ test("selectProductVariantByRoute matches a slug-less variant by its option slug
   assert.equal(catalog.selectProductVariantByRoute(item, "iphone-11").id, "v11")
   assert.equal(catalog.selectProductVariantByRoute(item, "not-a-model"), null)
 })
+
+test("itemMatchesAttributes matches BOOLEAN facets via attr_<slug>=true", () => {
+  // A BOOLEAN facet has no SELECT options; the toggle submits "true" under the
+  // same `attr_<slug>` key and is matched against the item's typed bool value.
+  const make = (valueBool) => ({
+    attributes: [],
+    variants: [],
+    attributeValues: [{ attributeSlug: "for-moms", type: "BOOLEAN", valueText: null, valueNumber: null, valueBool }],
+  })
+
+  assert.equal(catalog.itemMatchesAttributes(make(true), { "for-moms": ["true"] }), true)
+  assert.equal(catalog.itemMatchesAttributes(make(false), { "for-moms": ["true"] }), false)
+  assert.equal(catalog.itemMatchesAttributes(make(false), { "for-moms": ["false"] }), true)
+  // No filter selected → everything matches regardless of the bool value.
+  assert.equal(catalog.itemMatchesAttributes(make(false), {}), true)
+  // Item missing the boolean attribute entirely → doesn't match a "true" filter.
+  assert.equal(
+    catalog.itemMatchesAttributes({ attributes: [], variants: [], attributeValues: [] }, { "for-moms": ["true"] }),
+    false,
+  )
+})
