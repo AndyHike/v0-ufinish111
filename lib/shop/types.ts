@@ -265,6 +265,12 @@ export interface ShopProductData {
   item: ShopItem
   selectedVariant: ShopVariant
   relatedItems: ShopRelatedProduct[]
+  /**
+   * The page represents one specific variant (opened via a variant slug or the
+   * API's `selectedVariantId`): render it as a standalone product — combined
+   * title, variant picker hidden.
+   */
+  isVariantView: boolean
 }
 
 export interface ShopPacketaConfig {

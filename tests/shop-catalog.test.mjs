@@ -239,3 +239,41 @@ test("getVariantProductTitle joins item and variant, avoiding duplication", () =
     "Ochranne sklo",
   )
 })
+
+test("getVariantRouteSlug prefers slugOverride, falls back to option slugs", () => {
+  assert.equal(
+    catalog.getVariantRouteSlug({ slugOverride: "glass-ip11", selectedOptions: [{ optionSlug: "iphone-11" }] }),
+    "glass-ip11",
+  )
+  assert.equal(
+    catalog.getVariantRouteSlug({ slugOverride: null, selectedOptions: [{ optionSlug: "iphone-11" }] }),
+    "iphone-11",
+  )
+  assert.equal(
+    catalog.getVariantRouteSlug({ slugOverride: null, selectedOptions: [{ optionSlug: "black" }, { optionSlug: "128gb" }] }),
+    "black-128gb",
+  )
+  assert.equal(catalog.getVariantRouteSlug({ slugOverride: null, selectedOptions: [] }), null)
+})
+
+test("getMockShopProduct flags a variant-slug open as a variant view", () => {
+  const itemView = catalog.getMockShopProduct("cs", "protective-glass")
+  assert.equal(itemView.isVariantView, false)
+
+  const variantView = catalog.getMockShopProduct("cs", "protective-glass", "protective-glass-iphone-11")
+  assert.equal(variantView.isVariantView, true)
+})
+
+test("selectProductVariantByRoute matches a slug-less variant by its option slug", () => {
+  // A category-bound variant with no slugOverride is still addressable via its
+  // option slug, so its card opens the variant page (not the base product).
+  const item = {
+    variants: [
+      { id: "v11", slugOverride: null, isDefault: true, selectedOptions: [{ optionSlug: "iphone-11" }] },
+      { id: "v12", slugOverride: null, isDefault: false, selectedOptions: [{ optionSlug: "iphone-12" }] },
+    ],
+  }
+  assert.equal(catalog.selectProductVariantByRoute(item, "iphone-12").id, "v12")
+  assert.equal(catalog.selectProductVariantByRoute(item, "iphone-11").id, "v11")
+  assert.equal(catalog.selectProductVariantByRoute(item, "not-a-model"), null)
+})

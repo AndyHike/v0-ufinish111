@@ -498,9 +498,29 @@ export function selectProductVariant(item: ShopItem, variantSlug?: string): Shop
   return selectedVariant
 }
 
+/**
+ * The slug that deep-links to a single variant's "variant product" page.
+ * Prefers the explicit `slugOverride`; falls back to the joined option slugs
+ * (e.g. `iphone-11`) so a category-bound variant is still addressable even when
+ * the admin didn't set a dedicated variant slug. Returns null if neither exists.
+ */
+export function getVariantRouteSlug(
+  variant: Pick<ShopVariant, "slugOverride" | "selectedOptions">,
+): string | null {
+  if (variant.slugOverride) {
+    return variant.slugOverride
+  }
+  const optionSlugs = variant.selectedOptions.map((option) => option.optionSlug).filter(Boolean)
+  return optionSlugs.length > 0 ? optionSlugs.join("-") : null
+}
+
 export function selectProductVariantByRoute(item: ShopItem, variantSlug?: string): ShopVariant | null {
   if (variantSlug) {
-    return item.variants.find((variant) => variant.slugOverride === variantSlug) ?? null
+    return (
+      item.variants.find((variant) => variant.slugOverride === variantSlug) ??
+      item.variants.find((variant) => getVariantRouteSlug(variant) === variantSlug) ??
+      null
+    )
   }
 
   return selectProductVariant(item)
@@ -573,9 +593,10 @@ export function toProductCard(
 
   // A forced-variant card shows the variant's own title and deep-links to its
   // variant detail page so the customer lands on exactly this model.
+  const variantRouteSlug = forcedVariant ? getVariantRouteSlug(forcedVariant) : null
   const href =
-    forcedVariant && forcedVariant.slugOverride
-      ? `/${locale}/product/${item.slug}/${forcedVariant.slugOverride}`
+    forcedVariant && variantRouteSlug
+      ? `/${locale}/product/${item.slug}/${variantRouteSlug}`
       : `/${locale}/product/${item.slug}`
 
   return {
@@ -684,7 +705,7 @@ export function getMockShopProduct(
     })
     .filter((entry): entry is ShopProductData["relatedItems"][number] => entry !== null)
 
-  return { item, selectedVariant, relatedItems }
+  return { item, selectedVariant, relatedItems, isVariantView: Boolean(variantSlug) }
 }
 
 export function getAllMockShopProducts(locale: ShopLocale): ShopProductCardView[] {

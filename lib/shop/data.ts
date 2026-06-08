@@ -22,6 +22,7 @@ import {
   itemMatchesAttributes,
   normalizeShopCategoryFilters,
   type ShopCategoryFilterInput,
+  selectProductVariant,
   selectProductVariantByRoute,
   toProductCard,
 } from "./catalog"
@@ -36,6 +37,7 @@ import type {
   ShopProductCardView,
   ShopProductData,
   ShopRelatedProduct,
+  ShopVariant,
 } from "./types"
 
 const DISABLED_PACKETA: ShopPacketaConfig = {
@@ -295,9 +297,26 @@ export async function getShopProductData(
   }
 
   const item = mapApiItem(apiItem)
-  const selectedVariant = selectProductVariantByRoute(item, variantSlug)
-  if (!selectedVariant) {
-    return null
+
+  // Decide which variant the page represents and whether it is a standalone
+  // "variant product" view:
+  //  - explicit /product/{item}/{variantSlug}  → match by slug/option slug
+  //  - canonical /product/{variantSlug} resolved server-side → selectedVariantId
+  //  - otherwise the default variant, full item view (picker shown)
+  let selectedVariant: ShopVariant | null
+  let isVariantView: boolean
+  if (variantSlug) {
+    selectedVariant = selectProductVariantByRoute(item, variantSlug)
+    if (!selectedVariant) {
+      return null
+    }
+    isVariantView = true
+  } else {
+    const apiSelected = apiItem.selectedVariantId
+      ? item.variants.find((variant) => variant.id === apiItem.selectedVariantId) ?? null
+      : null
+    selectedVariant = apiSelected ?? selectProductVariant(item)
+    isVariantView = apiSelected !== null
   }
 
   // Resolve linked items into cards (best-effort; ignore individual failures).
@@ -319,7 +338,7 @@ export async function getShopProductData(
     )
   ).filter((entry): entry is ShopRelatedProduct => entry !== null)
 
-  return { item, selectedVariant, relatedItems }
+  return { item, selectedVariant, relatedItems, isVariantView }
 }
 
 // ---- Search ----------------------------------------------------------------
