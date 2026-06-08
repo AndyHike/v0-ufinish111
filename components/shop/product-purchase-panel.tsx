@@ -12,6 +12,7 @@ import {
   getAvailabilityLabel,
   getLocalizedText,
   getMaxPurchasableQuantity,
+  getVariantProductTitle,
 } from "@/lib/shop/catalog"
 import type { ShopItem, ShopLocale, ShopVariant } from "@/lib/shop/types"
 
@@ -100,10 +101,16 @@ export function ProductPurchasePanel({
   locale,
   item,
   selectedVariant,
+  singleVariantView = false,
 }: {
   locale: ShopLocale
   item: Pick<ShopItem, "id" | "title" | "description" | "variants" | "categories">
   selectedVariant: ShopVariant
+  /**
+   * The page was opened at a specific variant slug, so the variant *is* the
+   * product: show its combined title and hide the variant picker.
+   */
+  singleVariantView?: boolean
 }) {
   const copy = PURCHASE_COPY[locale]
   const router = useRouter()
@@ -122,11 +129,15 @@ export function ProductPurchasePanel({
     variant.salePrice && variant.price > 0
       ? Math.round((1 - variant.salePrice / variant.price) * 100)
       : 0
-  const hasMultipleVariants = item.variants.length > 1
+  const showVariantSelector = item.variants.length > 1 && !singleVariantView
   const selectedVariantTitle = getLocalizedText(variant.title, locale)
   const category = item.categories[0]
   const categoryTitle = category ? getLocalizedText(category.title, locale) : ""
-  const productTitle = getLocalizedText(item.title, locale)
+  // In single-variant view the variant is the product, so the heading carries
+  // both the item and variant title (matching its category card).
+  const productTitle = singleVariantView
+    ? getVariantProductTitle(item, variant, locale)
+    : getLocalizedText(item.title, locale)
   const productDescription = getLocalizedText(item.description, locale)
 
   const addToCart = () => {
@@ -194,7 +205,7 @@ export function ProductPurchasePanel({
         </span>
       </p>
 
-      {hasMultipleVariants ? (
+      {showVariantSelector ? (
         <div className="mt-6">
           <label className="text-sm font-semibold">
             {copy.variant}: <span className="text-gray-950">{selectedVariantTitle}</span>

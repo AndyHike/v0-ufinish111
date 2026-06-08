@@ -57,11 +57,14 @@ export function ProductPage({
   item,
   selectedVariant,
   relatedItems,
+  variantView = false,
 }: {
   locale: ShopLocale
   item: ShopItem
   selectedVariant: ShopVariant
   relatedItems: ShopRelatedProduct[]
+  /** Page opened at a specific variant slug → present that variant as the product. */
+  variantView?: boolean
 }) {
   const copy = PRODUCT_COPY[locale]
   const relatedCopy = RELATED_COPY[locale]
@@ -122,6 +125,7 @@ export function ProductPage({
                 categories: item.categories,
               }}
               selectedVariant={selectedVariant}
+              singleVariantView={variantView}
             />
           </div>
         </div>

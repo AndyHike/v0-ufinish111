@@ -71,6 +71,7 @@ export default async function ShopProductRoute({
       item={data.item}
       selectedVariant={data.selectedVariant}
       relatedItems={data.relatedItems}
+      variantView={Boolean(variantSlug)}
     />
   )
 }

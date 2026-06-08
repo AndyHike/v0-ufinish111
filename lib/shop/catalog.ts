@@ -507,6 +507,30 @@ export function selectProductVariantByRoute(item: ShopItem, variantSlug?: string
 }
 
 /**
+ * Title for a card/page that represents one concrete variant (an
+ * `ItemVariantCategory` card, or the detail page opened at a variant slug).
+ * Joins the item title with the variant title, but avoids duplication when the
+ * variant title already carries the item context (e.g. "Glass for iPhone 11").
+ */
+export function getVariantProductTitle(
+  item: Pick<ShopItem, "title">,
+  variant: Pick<ShopVariant, "title">,
+  locale: ShopLocale,
+): string {
+  const itemTitle = getLocalizedText(item.title, locale).trim()
+  const variantTitle = getLocalizedText(variant.title, locale).trim()
+  if (!variantTitle) return itemTitle
+  if (!itemTitle) return variantTitle
+
+  const it = itemTitle.toLowerCase()
+  const vt = variantTitle.toLowerCase()
+  if (vt.includes(it) || it.includes(vt)) {
+    return variantTitle.length >= itemTitle.length ? variantTitle : itemTitle
+  }
+  return `${itemTitle} ${variantTitle}`
+}
+
+/**
  * Build a catalog card for an item.
  *
  * `forcedVariantId` makes the card represent one concrete variant — used for
@@ -559,7 +583,7 @@ export function toProductCard(
     variantId: variant.id,
     slug: item.slug,
     variantSlug: variant.slugOverride,
-    title: forcedVariant ? getLocalizedText(variant.title, locale) : getLocalizedText(item.title, locale),
+    title: forcedVariant ? getVariantProductTitle(item, variant, locale) : getLocalizedText(item.title, locale),
     image: images[0],
     images,
     price: variant.price,

@@ -203,7 +203,7 @@ test("forced-variant card renders one variant as a standalone single-variant car
   assert.equal(card.displayPrice, saleVariant.salePrice) // 199
   assert.equal(card.compareAtPrice, saleVariant.price) // 229
   assert.equal(card.discountPercent, 13)
-  assert.equal(card.title, "iPhone 11") // variant title, not the item title
+  assert.equal(card.title, "Premiove ochranne sklo iPhone 11") // item + variant title joined
   assert.equal(card.href, "/cs/product/protective-glass/protective-glass-iphone-11")
   assert.equal(card.isPurchasable, true)
 })
@@ -220,4 +220,22 @@ test("forced-variant card reflects the matched variant stock, not the item defau
   const itemCard = catalog.toProductCard(product.item, "cs")
   assert.equal(itemCard.priceFrom, true)
   assert.equal(itemCard.href, "/cs/product/protective-glass")
+})
+
+test("getVariantProductTitle joins item and variant, avoiding duplication", () => {
+  // Bare model variant title → join with the item title.
+  assert.equal(
+    catalog.getVariantProductTitle({ title: { cs: "Ochranne sklo" } }, { title: { cs: "iPhone 11" } }, "cs"),
+    "Ochranne sklo iPhone 11",
+  )
+  // Variant title already carries the item context → don't duplicate it.
+  assert.equal(
+    catalog.getVariantProductTitle({ title: { cs: "Ochranne sklo" } }, { title: { cs: "Ochranne sklo pro iPhone 11" } }, "cs"),
+    "Ochranne sklo pro iPhone 11",
+  )
+  // Missing variant title → fall back to the item title.
+  assert.equal(
+    catalog.getVariantProductTitle({ title: { cs: "Ochranne sklo" } }, { title: { cs: "" } }, "cs"),
+    "Ochranne sklo",
+  )
 })

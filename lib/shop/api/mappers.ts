@@ -111,7 +111,12 @@ export interface ApiCategory extends ApiCategoryContext {
 
 interface ApiLinkedItem {
   type?: string
+  // Tolerate shape vari[ation]: nested `targetItem.slug` (documented), or a
+  // flatter `targetSlug` / `slug`, so a minor backend shape change can't silently
+  // drop related products.
   targetItem?: { slug?: string }
+  targetSlug?: string
+  slug?: string
 }
 
 export interface ApiItem {
@@ -201,6 +206,26 @@ const LINKED_TYPES = new Set<ShopItem["linkedItems"][number]["type"]>([
   "accessory",
   "related",
 ])
+
+/** Normalize a link type defensively (case + dash/space) before matching. */
+function normalizeLinkType(type: string | undefined): ShopItem["linkedItems"][number]["type"] | null {
+  const normalized = type?.trim().toLowerCase().replace(/[\s-]+/g, "_")
+  return normalized && LINKED_TYPES.has(normalized as never)
+    ? (normalized as ShopItem["linkedItems"][number]["type"])
+    : null
+}
+
+function mapLinkedItems(linkedItems: ApiLinkedItem[] | undefined): ShopItem["linkedItems"] {
+  const mapped: ShopItem["linkedItems"] = []
+  for (const link of linkedItems ?? []) {
+    const type = normalizeLinkType(link.type)
+    const targetSlug = link.targetItem?.slug ?? link.targetSlug ?? link.slug
+    if (type && targetSlug) {
+      mapped.push({ type, targetSlug })
+    }
+  }
+  return mapped
+}
 
 // ---- SEO mapper ------------------------------------------------------------
 
@@ -442,12 +467,7 @@ export function mapApiItem(api: ApiItem): ShopItem {
     specs: mapSpecs(api.specs),
     categories: (api.categories ?? []).map(mapApiCategoryContext),
     variants,
-    linkedItems: (api.linkedItems ?? [])
-      .filter((link) => link.type && LINKED_TYPES.has(link.type as never) && link.targetItem?.slug)
-      .map((link) => ({
-        type: link.type as ShopItem["linkedItems"][number]["type"],
-        targetSlug: link.targetItem?.slug as string,
-      })),
+    linkedItems: mapLinkedItems(api.linkedItems),
     seo: mapApiSeo(api.seo, {
       profile: "PRODUCT_DETAIL",
       schemaType: variants.length > 1 ? "ProductGroup" : "Product",
