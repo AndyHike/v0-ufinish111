@@ -397,7 +397,14 @@ export function ShopCheckoutPage({
         setPhase("error")
         return
       }
-      setPayment((await payRes.json()) as ShopOrderPayment)
+      const pay = (await payRes.json()) as ShopOrderPayment
+      // Free order (total 0): settled server-side, no Stripe step — go straight
+      // to verifying the PAID status.
+      if (!pay.clientSecret || !pay.publishableKey) {
+        setPhase("polling")
+        return
+      }
+      setPayment(pay)
     } catch {
       setErrorMessage(copy.orderError)
       setPhase("error")
@@ -629,7 +636,7 @@ export function ShopCheckoutPage({
                 <Loader2 className="h-4 w-4 animate-spin" />
                 {copy.paymentInitializing}
               </div>
-            ) : phase === "paying" && payment ? (
+            ) : phase === "paying" && payment && payment.clientSecret && payment.publishableKey ? (
               <div className="mt-4">
                 <ShopStripePayment
                   clientSecret={payment.clientSecret}

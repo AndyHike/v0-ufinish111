@@ -333,8 +333,11 @@ export interface ShopCreatedOrder {
 }
 
 export interface ShopOrderPayment {
-  clientSecret: string
-  publishableKey: string
+  /** Null for free orders (total 0): settled server-side, no Stripe charge. */
+  clientSecret: string | null
+  publishableKey: string | null
+  /** True when the order total was 0 and was settled without a Stripe payment. */
+  free?: boolean
 }
 
 export type ShopPaymentStatus = "UNPAID" | "PAID" | "REFUNDED" | "PARTIALLY_REFUNDED" | string

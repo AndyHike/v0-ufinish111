@@ -234,8 +234,9 @@ export async function payShopOrder(orderId: string, publicToken: string): Promis
 
 export async function getShopOrderStatus(orderId: string, publicToken: string): Promise<ShopOrderStatus> {
   // The public order token authorizes the read; send it as a header rather than
-  // a query param so it never lands in logs/caches.
-  const order = await shopApiFetch<ApiSerializedOrder>(`orders/${encodeURIComponent(orderId)}`, {
+  // a query param so it never lands in logs/caches. The admin wraps the payload
+  // as `{ order }` (consistent with confirm/cancel).
+  const { order } = await shopApiFetch<{ order: ApiSerializedOrder }>(`orders/${encodeURIComponent(orderId)}`, {
     headers: { "x-order-token": publicToken },
     revalidate: 0,
   })
