@@ -123,6 +123,10 @@ export interface ApiItem {
   id: string
   title?: ShopLocalizedText
   slug: string
+  // Item-level price; for a single-default-variant product the price lives here
+  // and the default variant inherits it (see mapApiVariant).
+  price?: string | number
+  salePrice?: string | number | null
   description?: ShopLocalizedText | null
   content?: ShopLocalizedText | null
   images?: ApiImage[]
@@ -418,7 +422,12 @@ export function mapApiCategoryContext(api: ApiCategoryContext): ShopCategory {
   return mapApiCategory({ ...api, isActive: true })
 }
 
-export function mapApiVariant(api: ApiVariant, itemId: string): ShopVariant {
+export function mapApiVariant(
+  api: ApiVariant,
+  itemId: string,
+  itemPrice?: string | number,
+  itemSalePrice?: string | number | null,
+): ShopVariant {
   const selectedOptions: ShopVariantOption[] = (api.selectedOptions ?? [])
     .filter((option) => option.attributeSlug && option.optionSlug)
     .map((option) => ({
@@ -429,13 +438,29 @@ export function mapApiVariant(api: ApiVariant, itemId: string): ShopVariant {
       optionTitle: toLocalized(option.optionTitle),
     }))
 
+  // Resolve price + salePrice as a PAIR from one source, mirroring the admin's
+  // resolveVariantDisplay. A variant with its own price uses the variant's
+  // price AND salePrice (no item fallback) — otherwise a priced variant would
+  // show the item/default-variant sale. A variant without its own price (the
+  // single-default-variant case, where price lives on the item) inherits the
+  // item's price + salePrice instead of rendering 0.
+  const usesVariantPrice = api.price !== null && api.price !== undefined
+  const price = usesVariantPrice ? toNumber(api.price) : toNumber(itemPrice)
+  const salePrice = usesVariantPrice
+    ? api.salePrice === null || api.salePrice === undefined
+      ? null
+      : toNumber(api.salePrice)
+    : itemSalePrice === null || itemSalePrice === undefined
+      ? null
+      : toNumber(itemSalePrice)
+
   return {
     id: api.id,
     itemId: api.itemId ?? itemId,
     title: toLocalized(api.title),
     slugOverride: api.slugOverride ?? null,
-    price: toNumber(api.price),
-    salePrice: api.salePrice === null || api.salePrice === undefined ? null : toNumber(api.salePrice),
+    price,
+    salePrice,
     sku: api.sku ?? "",
     barcode: api.barcode,
     gtin: api.gtin,
@@ -450,7 +475,9 @@ export function mapApiVariant(api: ApiVariant, itemId: string): ShopVariant {
 
 export function mapApiItem(api: ApiItem): ShopItem {
   const title = toLocalized(api.title)
-  const variants = (api.variants ?? []).map((variant) => mapApiVariant(variant, api.id))
+  const variants = (api.variants ?? []).map((variant) =>
+    mapApiVariant(variant, api.id, api.price, api.salePrice),
+  )
   const buildCanonical = (locale: ShopLocale) => `${shopSiteUrl}/${locale}/product/${api.slug}`
 
   return {

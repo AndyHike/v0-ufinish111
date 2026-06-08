@@ -1,20 +1,8 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useState } from "react"
-import {
-  Elements,
-  ExpressCheckoutElement,
-  PaymentElement,
-  useElements,
-  useStripe,
-} from "@stripe/react-stripe-js"
-import {
-  loadStripe,
-  type Stripe,
-  type StripeElementLocale,
-  type StripeExpressCheckoutElementClickEvent,
-  type StripeExpressCheckoutElementReadyEvent,
-} from "@stripe/stripe-js"
+import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js"
+import { loadStripe, type Stripe, type StripeElementLocale } from "@stripe/stripe-js"
 import { Loader2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -70,7 +58,6 @@ function PaymentInner({
   const elements = useElements()
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [walletReady, setWalletReady] = useState<boolean | null>(null)
 
   // Keep the deferred Elements amount in sync with the cart total without
   // remounting (cart edits / quantity changes before paying).
@@ -129,32 +116,11 @@ function PaymentInner({
     setSubmitting(false)
   }, [stripe, elements, canPay, onValidateFail, prepareClientSecret, onConfirmed, copy.genericError])
 
-  // Gate the wallet button: if the form isn't ready, don't resolve() so the
-  // Apple/Google Pay sheet never opens without a delivery point (#3).
-  const onExpressClick = useCallback(
-    (event: StripeExpressCheckoutElementClickEvent) => {
-      if (!canPay) {
-        onValidateFail()
-        return
-      }
-      event.resolve()
-    },
-    [canPay, onValidateFail],
-  )
-
-  const onExpressReady = useCallback((event: StripeExpressCheckoutElementReadyEvent) => {
-    // Stripe leaves availablePaymentMethods undefined when no wallet is eligible.
-    setWalletReady(Boolean(event.availablePaymentMethods))
-  }, [])
-
   return (
     <div className="space-y-4">
-      {/* Reserve space until onReady reports wallet availability, then collapse
-          if none — avoids a layout jump. */}
-      <div style={{ minHeight: walletReady === null ? 44 : undefined }}>
-        <ExpressCheckoutElement onReady={onExpressReady} onClick={onExpressClick} onConfirm={confirm} />
-      </div>
-      <PaymentElement options={{ layout: "tabs" }} />
+      {/* Accordion: each method (card / Klarna / …) is a collapsed row; clicking
+          one expands its fields. A single "Pay" button confirms the selection. */}
+      <PaymentElement options={{ layout: "accordion" }} />
       {error ? <p className="text-xs text-red-600">{error}</p> : null}
       <Button type="button" className="w-full" size="lg" disabled={!stripe || submitting || !canPay} onClick={confirm}>
         {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}

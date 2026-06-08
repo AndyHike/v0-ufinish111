@@ -447,7 +447,9 @@ Small `structuredDataFacts` example:
         "widgetApiKey": "public-widget-key",
         "countries": ["cz", "sk"],
         "services": ["PICKUP_POINT", "ZBOX"],
-        "defaultWeightKg": 1
+        "defaultWeightKg": 1,
+        "shippingPrice": 79,
+        "freeShippingThreshold": 1000
       }
     },
     "payments": {
@@ -475,6 +477,11 @@ type PublicIntegrationsResponse = {
         countries: string[];
         services: Array<"PICKUP_POINT" | "ZBOX" | "CARRIER_PUDO" | "HOME_DELIVERY">;
         defaultWeightKg: number | null;
+        // Flat delivery price (store currency); null/0 = free. Free at/above
+        // freeShippingThreshold (null = never free). Applied server-side to the
+        // order's shippingAmount + totalAmount on PACKETA orders.
+        shippingPrice: number | null;
+        freeShippingThreshold: number | null;
       };
     };
     payments: {
@@ -1064,6 +1071,7 @@ GET /api/public/v1/items/protective-glass?include=categories,variants,availabili
       "fulfillmentStatus": "RESERVED",
       "currency": "CZK",
       "subtotalAmount": 249,
+      "shippingAmount": 0,
       "totalAmount": 249,
       "reservationExpiresAt": "2026-05-12T12:15:00.000Z",
       "lines": [

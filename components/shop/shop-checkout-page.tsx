@@ -233,8 +233,18 @@ export function ShopCheckoutPage({
   const { lines, clear } = useShopCart()
   const subtotal = lines.reduce((sum, line) => sum + line.priceSnapshot * line.quantity, 0)
   const stripePk = stripe.enabled ? stripe.publishableKey : null
+  // Delivery price from the store's Packeta config (free above the threshold).
+  // The admin recomputes this server-side on the order; we mirror the formula for
+  // display + the Stripe amount so the shown total matches what is charged.
+  const shipping =
+    packeta.shippingPrice == null
+      ? 0
+      : packeta.freeShippingThreshold != null && subtotal >= packeta.freeShippingThreshold
+        ? 0
+        : packeta.shippingPrice
+  const total = subtotal + shipping
   // Stripe charges in the smallest unit; CZK is not zero-decimal, so * 100.
-  const amountMinor = Math.round(subtotal * 100)
+  const amountMinor = Math.round(total * 100)
 
   const [firstName, setFirstName] = useState("")
   const [lastName, setLastName] = useState("")
@@ -308,8 +318,8 @@ export function ShopCheckoutPage({
   const hasContact = email.trim().length > 0 || phone.trim().length > 0
   const hasName = firstName.trim().length > 0 && lastName.trim().length > 0
   const formValid = hasName && hasContact && point !== null && lines.length > 0
-  const canPayWithStripe = formValid && Boolean(stripePk) && subtotal > 0
-  const canPlaceFree = formValid && subtotal === 0
+  const canPayWithStripe = formValid && Boolean(stripePk) && total > 0
+  const canPlaceFree = formValid && total === 0
 
   const stopPacketaLoading = () => {
     if (timeoutRef.current) {
@@ -649,7 +659,7 @@ export function ShopCheckoutPage({
 
             {!stripePk ? (
               <p className="mt-3 text-sm text-amber-700">{copy.paymentUnavailable}</p>
-            ) : subtotal === 0 ? null : (
+            ) : total === 0 ? null : (
               <div className="mt-4">
                 <ShopStripePayment
                   publishableKey={stripePk}
@@ -705,18 +715,20 @@ export function ShopCheckoutPage({
             </div>
             <div className="flex items-center justify-between">
               <span className="text-gray-600">{copy.deliveryFee}</span>
-              <span className="font-medium text-gray-950">{copy.deliveryFree}</span>
+              <span className="font-medium text-gray-950">
+                {shipping > 0 ? formatShopPrice(shipping, locale) : copy.deliveryFree}
+              </span>
             </div>
           </div>
 
           <div className="mt-4 flex items-center justify-between border-t border-gray-200 pt-4">
             <span className="text-sm font-semibold">{copy.total}</span>
-            <span className="text-lg font-semibold text-gray-950">{formatShopPrice(subtotal, locale)}</span>
+            <span className="text-lg font-semibold text-gray-950">{formatShopPrice(total, locale)}</span>
           </div>
 
           {/* Free orders (total 0) have no Stripe step — confirm here. Paid orders
               use the Stripe "Pay" button in the Payment section above. */}
-          {subtotal === 0 ? (
+          {total === 0 ? (
             <Button className="mt-5 w-full" size="lg" disabled={!canPlaceFree} onClick={placeFreeOrder}>
               {copy.placeFreeOrder}
             </Button>

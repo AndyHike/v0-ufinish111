@@ -279,6 +279,10 @@ export interface ShopPacketaConfig {
   countries: string[]
   services: string[]
   defaultWeightKg: number | null
+  /** Flat Packeta delivery price (store currency). null/0 = free. */
+  shippingPrice: number | null
+  /** Subtotal at/above which delivery is free. null = never free. */
+  freeShippingThreshold: number | null
 }
 
 export type ShopStripeConfig = { enabled: false } | { enabled: true; publishableKey: string }

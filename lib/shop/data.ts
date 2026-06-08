@@ -51,6 +51,8 @@ const DISABLED_PACKETA: ShopPacketaConfig = {
   countries: [],
   services: [],
   defaultWeightKg: null,
+  shippingPrice: null,
+  freeShippingThreshold: null,
 }
 
 const DISABLED_STRIPE: ShopStripeConfig = { enabled: false }
@@ -174,6 +176,8 @@ export async function getShopIntegrations(): Promise<ShopIntegrations> {
             countries: packeta.countries ?? [],
             services: packeta.services ?? [],
             defaultWeightKg: packeta.defaultWeightKg ?? null,
+            shippingPrice: packeta.shippingPrice ?? null,
+            freeShippingThreshold: packeta.freeShippingThreshold ?? null,
           }
         : DISABLED_PACKETA,
       // Only treat Stripe as enabled when the admin actually returns a
