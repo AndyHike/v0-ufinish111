@@ -449,10 +449,18 @@ Small `structuredDataFacts` example:
         "services": ["PICKUP_POINT", "ZBOX"],
         "defaultWeightKg": 1
       }
+    },
+    "payments": {
+      "stripe": {
+        "enabled": true,
+        "publishableKey": "pk_live_..."
+      }
     }
   }
 }
 ```
+
+Якщо Stripe-платежі вимкнені або не налаштовані, повертається `{ "enabled": false }` без `publishableKey`.
 
 Response schema:
 
@@ -469,11 +477,16 @@ type PublicIntegrationsResponse = {
         defaultWeightKg: number | null;
       };
     };
+    payments: {
+      stripe:
+        | { enabled: false }
+        | { enabled: true; publishableKey: string };
+    };
   };
 };
 ```
 
-Public API ніколи не повертає Packeta `apiPassword`. Він використовується тільки backend-ом адмінки для створення відправлень, label і status sync.
+Public API ніколи не повертає Stripe `secretKey`/`webhookSecret` чи Packeta `apiPassword` — лише публічний `publishableKey`. Секрети використовуються тільки backend-ом адмінки.
 
 Після вибору точки у Packeta widget frontend передає вибір у `delivery` під час створення order:
 
@@ -877,6 +890,8 @@ GET /api/public/v1/items/protective-glass?include=categories,variants,availabili
         "salePrice": null,
         "sku": "GLASS-IP11",
         "barcode": "8590000000011",
+        "gtin": null,
+        "mpn": null,
         "isDefault": false,
         "trackInventory": true,
         "selectedOptions": [
@@ -906,6 +921,10 @@ GET /api/public/v1/items/protective-glass?include=categories,variants,availabili
 Правила:
 
 - `sku` і `barcode` належать тільки `ItemVariant`, не базовому `Item`.
+- `sku` авто-генерується сервером і **унікальний у межах магазину**: кожен variant (включно з дефолтним) повертає непорожній `sku`, навіть якщо його не задавали в адмінці. Можна покладатися на нього як на стабільний ключ для feed-рядків і POS. *(Legacy-дані, створені до введення авто-генерації, можуть мати `sku: null`, доки товар не пересохранять.)*
+- `slugOverride` авто-генерується для **не-дефолтних** variant-ів (транслітерований, унікальний у межах магазину) і **заморожується** після створення; дефолтний variant має `slugOverride: null` (його публічний URL — це URL батьківського товару). За цим slug-ом працює detail-lookup (§2.3) і variant canonical URL у `structuredDataFacts`.
+- `gtin` і `mpn` — manufacturer-ідентифікатори рівня `ItemVariant` (editable в адмінці), окремі від внутрішнього `barcode`. `barcode` **ніколи** не мапиться в `gtin`; GTIN бери лише з явного `gtin`.
+- `brand`, `condition` (`new` \| `used` \| `refurbished`), `googleProductCategory` — каталожні поля рівня `Item` у самому item-об'єкті (не лише в structured data); живлять merchant feed і JSON-LD.
 - `availability.availableStock` рахується як `InventoryLevel.onHand - InventoryLevel.reserved`.
 - Якщо `trackInventory = false`, `availableStock` буде `null`.
 - Для category pages можна показувати базовий item у загальній категорії і **окрему variant-карту** у категорії моделі через `ItemVariantCategory` — повний контракт listing-у описаний у [§2.4](#24-variant-карти-в-category-listing-itemvariantcategory).
@@ -1137,6 +1156,57 @@ Common errors:
 
 ```json
 { "success": false, "error": "Invalid order token." }
+```
+
+---
+
+### 3.2. Оплатити публічне замовлення через Stripe
+
+Створює (або переюзає) Stripe `PaymentIntent` на акаунті мерчанта й повертає дані для рендеру
+оплати у вітрині. Дані картки йдуть з браузера напряму в Stripe (PCI SAQ A) — бекенд адмінки
+карток не бачить.
+
+```http
+POST /api/public/v1/orders/[id]/pay
+Content-Type: application/json
+x-public-api-key: pk_...
+```
+
+```json
+{
+  "publicToken": "base64url-token"
+}
+```
+
+**Success 201:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "clientSecret": "pi_..._secret_...",
+    "publishableKey": "pk_live_..."
+  }
+}
+```
+
+`publishableKey` — це Stripe-ключ **мерчанта** (не плутати з `pk_...` public API key адмінки).
+Фронт вітрини: `loadStripe(publishableKey)` → `Elements({ clientSecret })` → **Express Checkout
+Element** (Apple/Google Pay) + **Payment Element** (картка/PayPal) → `stripe.confirmPayment(...)`.
+
+Підтвердження замовлення відбувається **асинхронно через Stripe webhook** (`payment_intent.succeeded`):
+бекенд ставить `paymentStatus = "PAID"` і підтверджує order. Фронт опитує
+`GET /api/public/v1/orders/[id]` (через серіалізований order) до `paymentStatus === "PAID"`.
+Серіалізований order містить `paymentExpiresAt` (дедлайн оплати) і `reservationExpiresAt`.
+
+Common errors:
+
+```json
+{ "success": false, "error": "Stripe payments are not enabled for this store." }
+```
+
+```json
+{ "success": false, "error": "This order has already been paid." }
 ```
 
 ## 4. Отримати фільтри (фасети) для категорії ⚙️
