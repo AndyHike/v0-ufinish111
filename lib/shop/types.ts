@@ -340,12 +340,3 @@ export interface ShopOrderPayment {
   free?: boolean
 }
 
-export type ShopPaymentStatus = "UNPAID" | "PAID" | "REFUNDED" | "PARTIALLY_REFUNDED" | string
-
-export interface ShopOrderStatus {
-  paymentStatus: ShopPaymentStatus
-  status: string
-  fulfillmentStatus: string
-  paymentExpiresAt: string | null
-  reservationExpiresAt: string | null
-}

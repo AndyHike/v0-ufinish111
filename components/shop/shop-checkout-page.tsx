@@ -7,31 +7,34 @@ import Link from "next/link"
 import { CheckCircle2, Loader2, MapPin, ShieldCheck } from "lucide-react"
 
 import { useShopCart } from "@/components/shop/shop-cart-provider"
-import { ShopStripePayment } from "@/components/shop/shop-stripe-payment"
+import { ShopStripePayment, getStripe, type PreparedPayment } from "@/components/shop/shop-stripe-payment"
 import { Button } from "@/components/ui/button"
 import { formatShopPrice } from "@/lib/shop/catalog"
-import type {
-  ShopCreatedOrder,
-  ShopLocale,
-  ShopOrderPayment,
-  ShopOrderStatus,
-  ShopPacketaConfig,
-  ShopStripeConfig,
-} from "@/lib/shop/types"
+import type { ShopCreatedOrder, ShopLocale, ShopOrderPayment, ShopPacketaConfig, ShopStripeConfig } from "@/lib/shop/types"
 
 const PACKETA_LIBRARY_URL = "https://widget.packeta.com/v6/www/js/library.js"
 // Safety net: if the widget library never loads/initialises, stop blocking the
 // UI and surface an error rather than spinning forever.
 const PACKETA_LOAD_TIMEOUT_MS = 20000
 
-// Payment confirmation is async (admin Stripe webhook sets paymentStatus=PAID),
-// so after confirming on the client we poll the order until it flips to PAID.
-const POLL_INTERVAL_MS = 2500
-const MAX_POLL_ATTEMPTS = 48 // ~2 minutes
+// In-flight order context, persisted so a Stripe redirect (3DS/PayPal) and page
+// reloads reuse the same idempotencyKey + order instead of creating duplicates.
+const ORDER_STORAGE_KEY = "devicehelp.shop.checkout.order"
 
-// Per-order capability token, stashed so a Stripe redirect (3DS/PayPal) can
-// resume polling after the browser returns to ?order=<id>.
-const orderTokenKey = (orderId: string) => `devicehelp.shop.order.${orderId}`
+interface OrderContext {
+  signature: string
+  idempotencyKey: string
+  orderId: string | null
+  publicToken: string | null
+}
+
+function newIdempotencyKey(): string {
+  try {
+    return crypto.randomUUID()
+  } catch {
+    return `idem_${Date.now()}_${Math.random().toString(36).slice(2)}`
+  }
+}
 
 // Minimal shape of the point object returned by the Packeta widget callback.
 interface PacketaWidgetPoint {
@@ -114,23 +117,20 @@ const CHECKOUT_COPY = {
     cancel: "Zrusit",
     payment: "Platba",
     paymentUnavailable: "Online platba je momentalne nedostupna.",
-    paymentFillForm: "Vyplnte kontakt a vyberte vydejni misto, pak pokracujte k platbe.",
-    paymentInitializing: "Pripravujeme zabezpecenou platbu…",
+    fillFormFirst: "Nejprve vyplnte kontakt a vyberte vydejni misto.",
     payNow: "Zaplatit",
     genericPayError: "Platba se nezdarila. Zkuste jiny zpusob platby.",
     verifying: "Overujeme platbu…",
     paidTitle: "Platba probehla uspesne",
     paidText: "Dekujeme! Objednavka je potvrzena a zbozi je pro vas rezervovano.",
     orderError: "Objednavku se nepodarilo vytvorit. Zkuste to prosim znovu.",
-    payInitError: "Platbu se nepodarilo spustit. Zkuste to prosim znovu.",
-    pollTimeout: "Platba trva dele, nez je obvykle. Jakmile ji potvrdime, dame vam vedet e-mailem.",
-    retry: "Zkusit znovu",
     summary: "Souhrn objednavky",
     subtotal: "Mezisoucet",
     deliveryFee: "Doprava",
     deliveryFree: "Zdarma",
     total: "Celkem",
-    continueToPayment: "Pokracovat k platbe",
+    placeFreeOrder: "Zavazne objednat",
+    retry: "Zkusit znovu",
     secureNote: "Zabezpecena platba. Sklad rezervujeme na dobu platby.",
   },
   uk: {
@@ -155,23 +155,20 @@ const CHECKOUT_COPY = {
     cancel: "Скасувати",
     payment: "Оплата",
     paymentUnavailable: "Онлайн-оплата зараз недоступна.",
-    paymentFillForm: "Заповніть контакти та виберіть пункт видачі, потім перейдіть до оплати.",
-    paymentInitializing: "Готуємо безпечну оплату…",
+    fillFormFirst: "Спершу заповніть контакти та виберіть пункт видачі.",
     payNow: "Сплатити",
     genericPayError: "Оплата не пройшла. Спробуйте інший спосіб оплати.",
     verifying: "Підтверджуємо оплату…",
     paidTitle: "Оплату виконано успішно",
     paidText: "Дякуємо! Замовлення підтверджено, товар зарезервовано для вас.",
     orderError: "Не вдалося створити замовлення. Будь ласка, спробуйте ще раз.",
-    payInitError: "Не вдалося запустити оплату. Будь ласка, спробуйте ще раз.",
-    pollTimeout: "Оплата триває довше, ніж зазвичай. Щойно підтвердимо — повідомимо вам на e-mail.",
-    retry: "Спробувати ще раз",
     summary: "Підсумок замовлення",
     subtotal: "Проміжна сума",
     deliveryFee: "Доставка",
     deliveryFree: "Безкоштовно",
     total: "Разом",
-    continueToPayment: "Перейти до оплати",
+    placeFreeOrder: "Замовити",
+    retry: "Спробувати ще раз",
     secureNote: "Безпечна оплата. Склад резервуємо на час оплати.",
   },
   en: {
@@ -196,23 +193,20 @@ const CHECKOUT_COPY = {
     cancel: "Cancel",
     payment: "Payment",
     paymentUnavailable: "Online payment is currently unavailable.",
-    paymentFillForm: "Fill in your contact and pick a delivery point, then continue to payment.",
-    paymentInitializing: "Preparing secure payment…",
+    fillFormFirst: "First fill in your contact and pick a delivery point.",
     payNow: "Pay now",
     genericPayError: "Payment failed. Please try another payment method.",
     verifying: "Confirming your payment…",
     paidTitle: "Payment successful",
     paidText: "Thank you! Your order is confirmed and your items are reserved.",
     orderError: "We couldn't create your order. Please try again.",
-    payInitError: "We couldn't start the payment. Please try again.",
-    pollTimeout: "Payment is taking longer than usual. We'll email you once it's confirmed.",
-    retry: "Try again",
     summary: "Order summary",
     subtotal: "Subtotal",
     deliveryFee: "Delivery",
     deliveryFree: "Free",
     total: "Total",
-    continueToPayment: "Continue to payment",
+    placeFreeOrder: "Place order",
+    retry: "Try again",
     secureNote: "Secure payment. Stock is reserved during payment.",
   },
 } as const
@@ -224,7 +218,7 @@ interface PacketaPoint {
   country?: string
 }
 
-type CheckoutPhase = "form" | "creating" | "paying" | "polling" | "paid" | "error"
+type CheckoutPhase = "form" | "confirming" | "paid" | "error"
 
 export function ShopCheckoutPage({
   locale,
@@ -238,6 +232,9 @@ export function ShopCheckoutPage({
   const copy = CHECKOUT_COPY[locale]
   const { lines, clear } = useShopCart()
   const subtotal = lines.reduce((sum, line) => sum + line.priceSnapshot * line.quantity, 0)
+  const stripePk = stripe.enabled ? stripe.publishableKey : null
+  // Stripe charges in the smallest unit; CZK is not zero-decimal, so * 100.
+  const amountMinor = Math.round(subtotal * 100)
 
   const [firstName, setFirstName] = useState("")
   const [lastName, setLastName] = useState("")
@@ -247,43 +244,72 @@ export function ShopCheckoutPage({
   const [packetaError, setPacketaError] = useState(false)
   const [packetaLoading, setPacketaLoading] = useState(false)
 
-  // Order/payment state machine.
   const [phase, setPhase] = useState<CheckoutPhase>("form")
-  const [order, setOrder] = useState<{ orderId: string; publicToken: string } | null>(null)
-  const [payment, setPayment] = useState<ShopOrderPayment | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [validateHint, setValidateHint] = useState(false)
 
-  // Guards the async widget load: cancelRef short-circuits a resolved load that
-  // the user (or the timeout) already abandoned; timeoutRef enforces a hard cap.
+  // Persisted order context (idempotency + created order) so retries reuse the
+  // same RESERVED order rather than creating duplicates.
+  const orderRef = useRef<OrderContext>({ signature: "", idempotencyKey: "", orderId: null, publicToken: null })
+
   const cancelRef = useRef(false)
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [mounted, setMounted] = useState(false)
+
   useEffect(() => {
     setMounted(true)
-    // Resume after a Stripe redirect (3DS/PayPal): the return_url carries
-    // ?order=<id>; the per-order token was stashed in sessionStorage.
     try {
-      const orderId = new URLSearchParams(window.location.search).get("order")
-      if (orderId) {
-        const token = window.sessionStorage.getItem(orderTokenKey(orderId))
-        if (token) {
-          setOrder({ orderId, publicToken: token })
-          setPhase("polling")
-        }
+      const raw = window.sessionStorage.getItem(ORDER_STORAGE_KEY)
+      if (raw) {
+        orderRef.current = JSON.parse(raw) as OrderContext
       }
     } catch {
-      // Ignore unavailable storage / URL parsing issues.
+      // ignore corrupt/unavailable storage
     }
+
+    // Resume after a Stripe redirect (3DS/PayPal): the return_url carries
+    // payment_intent_client_secret. Read the real status client-side — no server
+    // polling. Server truth (PAID/confirm) is handled by the admin webhook.
+    try {
+      const piSecret = new URLSearchParams(window.location.search).get("payment_intent_client_secret")
+      if (piSecret && stripePk) {
+        setPhase("confirming")
+        getStripe(stripePk)
+          .then(async (s) => {
+            if (!s) {
+              return
+            }
+            const { paymentIntent } = await s.retrievePaymentIntent(piSecret)
+            if (paymentIntent && (paymentIntent.status === "succeeded" || paymentIntent.status === "processing")) {
+              clear()
+              setPhase("paid")
+            } else {
+              setErrorMessage(copy.genericPayError)
+              setPhase("error")
+            }
+          })
+          .catch(() => {
+            setErrorMessage(copy.genericPayError)
+            setPhase("error")
+          })
+      }
+    } catch {
+      // ignore
+    }
+
     return () => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current)
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const hasContact = email.trim().length > 0 || phone.trim().length > 0
   const hasName = firstName.trim().length > 0 && lastName.trim().length > 0
-  const canSubmit = hasName && hasContact && point !== null && lines.length > 0 && stripe.enabled
+  const formValid = hasName && hasContact && point !== null && lines.length > 0
+  const canPayWithStripe = formValid && Boolean(stripePk) && subtotal > 0
+  const canPlaceFree = formValid && subtotal === 0
 
   const stopPacketaLoading = () => {
     if (timeoutRef.current) {
@@ -293,15 +319,11 @@ export function ShopCheckoutPage({
     setPacketaLoading(false)
   }
 
-  // Lets the user abort a slow/stuck load: ignore the pending promise and
-  // unblock the UI without surfacing an error (cancellation is intentional).
   const cancelPacketa = () => {
     cancelRef.current = true
     stopPacketaLoading()
   }
 
-  // Opens the real Packeta pickup-point widget using the widgetApiKey from
-  // GET /api/public/v1/integrations and stores the chosen point for the order.
   const openPacketaWidget = async () => {
     if (!packeta.enabled || !packeta.widgetApiKey) {
       setPacketaError(true)
@@ -336,7 +358,6 @@ export function ShopCheckoutPage({
         },
         { country: (packeta.countries[0] ?? "cz").toLowerCase(), language: locale },
       )
-      // The Packeta widget now renders its own overlay, so release our loader.
       stopPacketaLoading()
     } catch {
       if (!cancelRef.current) {
@@ -346,19 +367,46 @@ export function ShopCheckoutPage({
     }
   }
 
-  // Creates a RESERVED order, then opens a Stripe PaymentIntent for it. On
-  // success the Stripe Payment / Express Checkout elements render in place.
-  const placeOrder = async () => {
-    if (!canSubmit || point === null) {
-      return
-    }
-    setPhase("creating")
-    setErrorMessage(null)
+  // Signature of the order-defining inputs. When it changes we rotate the
+  // idempotencyKey + drop the cached order, so editing details creates a fresh
+  // order while pure retries reuse the existing one.
+  const currentSignature = useCallback(
+    () =>
+      JSON.stringify({
+        p: point?.id ?? null,
+        n: `${firstName} ${lastName}`.trim(),
+        e: email.trim(),
+        ph: phone.trim(),
+        l: lines.map((line) => [line.variantId, line.quantity]),
+      }),
+    [point, firstName, lastName, email, phone, lines],
+  )
+
+  const persistOrderCtx = () => {
     try {
+      window.sessionStorage.setItem(ORDER_STORAGE_KEY, JSON.stringify(orderRef.current))
+    } catch {
+      // ignore
+    }
+  }
+
+  // Create (or reuse) the RESERVED order, then open/reuse its Stripe PaymentIntent.
+  const createOrderAndPay = useCallback(async (): Promise<ShopOrderPayment> => {
+    if (point === null) {
+      throw new Error("no-point")
+    }
+    const signature = currentSignature()
+    if (orderRef.current.signature !== signature || !orderRef.current.idempotencyKey) {
+      orderRef.current = { signature, idempotencyKey: newIdempotencyKey(), orderId: null, publicToken: null }
+      persistOrderCtx()
+    }
+
+    if (!orderRef.current.orderId || !orderRef.current.publicToken) {
       const createRes = await fetch("/api/shop/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          idempotencyKey: orderRef.current.idempotencyKey,
           customer: {
             name: `${firstName} ${lastName}`.trim(),
             email: email.trim() || undefined,
@@ -379,100 +427,78 @@ export function ShopCheckoutPage({
         throw new Error("order")
       }
       const created = (await createRes.json()) as ShopCreatedOrder
-      try {
-        window.sessionStorage.setItem(orderTokenKey(created.orderId), created.publicToken)
-      } catch {
-        // Non-fatal: redirect-resume just won't work without storage.
-      }
-      setOrder({ orderId: created.orderId, publicToken: created.publicToken })
-      setPhase("paying")
+      orderRef.current.orderId = created.orderId
+      orderRef.current.publicToken = created.publicToken
+      persistOrderCtx()
+    }
 
-      const payRes = await fetch(`/api/shop/orders/${encodeURIComponent(created.orderId)}/pay`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ publicToken: created.publicToken }),
-      })
-      if (!payRes.ok) {
-        setErrorMessage(copy.payInitError)
-        setPhase("error")
-        return
+    const payRes = await fetch(`/api/shop/orders/${encodeURIComponent(orderRef.current.orderId)}/pay`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ publicToken: orderRef.current.publicToken }),
+    })
+    if (!payRes.ok) {
+      throw new Error("pay")
+    }
+    return (await payRes.json()) as ShopOrderPayment
+  }, [point, currentSignature, firstName, lastName, email, phone, lines, locale])
+
+  const buildReturnUrl = useCallback(
+    () => (mounted ? `${window.location.origin}/${locale}/checkout` : ""),
+    [mounted, locale],
+  )
+
+  // Passed to the Stripe component: runs inside confirm() to get the clientSecret.
+  const prepareClientSecret = useCallback(async (): Promise<PreparedPayment | null> => {
+    try {
+      const payment = await createOrderAndPay()
+      if (!payment.clientSecret) {
+        return null
       }
-      const pay = (await payRes.json()) as ShopOrderPayment
-      // Free order (total 0): settled server-side, no Stripe step — go straight
-      // to verifying the PAID status.
-      if (!pay.clientSecret || !pay.publishableKey) {
-        setPhase("polling")
-        return
-      }
-      setPayment(pay)
+      return { clientSecret: payment.clientSecret, returnUrl: buildReturnUrl() }
+    } catch {
+      return null
+    }
+  }, [createOrderAndPay, buildReturnUrl])
+
+  const onConfirmed = useCallback(() => {
+    clear()
+    setPhase("paid")
+  }, [clear])
+
+  const onValidateFail = useCallback(() => setValidateHint(true), [])
+
+  // Free order (total 0): no Stripe charge — create + settle server-side, succeed.
+  const placeFreeOrder = async () => {
+    if (!canPlaceFree) {
+      return
+    }
+    setPhase("confirming")
+    setErrorMessage(null)
+    try {
+      await createOrderAndPay()
+      clear()
+      setPhase("paid")
     } catch {
       setErrorMessage(copy.orderError)
       setPhase("error")
     }
   }
 
-  const onConfirmed = useCallback(() => setPhase("polling"), [])
+  // --- Render -----------------------------------------------------------------
 
-  // Poll the order until the admin's Stripe webhook flips it to PAID.
-  useEffect(() => {
-    if (phase !== "polling" || !order) {
-      return
-    }
-    let cancelled = false
-    let attempts = 0
-    let timer: ReturnType<typeof setTimeout> | null = null
+  if (phase === "confirming") {
+    return (
+      <div className="container px-4 py-10 md:px-6">
+        <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{copy.title}</h1>
+        <div className="mt-8 flex items-center justify-center gap-3 rounded-xl border border-gray-200 px-6 py-12 text-center">
+          <Loader2 className="h-5 w-5 animate-spin text-gray-700" />
+          <p className="text-sm font-medium text-gray-700">{copy.verifying}</p>
+        </div>
+      </div>
+    )
+  }
 
-    const tick = async () => {
-      if (cancelled) {
-        return
-      }
-      attempts += 1
-      try {
-        const res = await fetch(`/api/shop/orders/${encodeURIComponent(order.orderId)}`, {
-          headers: { "x-order-token": order.publicToken },
-          cache: "no-store",
-        })
-        if (res.ok) {
-          const status = (await res.json()) as ShopOrderStatus
-          if (status.paymentStatus === "PAID") {
-            if (!cancelled) {
-              try {
-                window.sessionStorage.removeItem(orderTokenKey(order.orderId))
-              } catch {
-                // ignore
-              }
-              clear()
-              setPhase("paid")
-            }
-            return
-          }
-        }
-      } catch {
-        // Transient error; keep polling until the attempt cap.
-      }
-      if (attempts >= MAX_POLL_ATTEMPTS) {
-        if (!cancelled) {
-          setErrorMessage(copy.pollTimeout)
-          setPhase("error")
-        }
-        return
-      }
-      timer = setTimeout(tick, POLL_INTERVAL_MS)
-    }
-
-    timer = setTimeout(tick, POLL_INTERVAL_MS)
-    return () => {
-      cancelled = true
-      if (timer) {
-        clearTimeout(timer)
-      }
-    }
-  }, [phase, order, clear, copy.pollTimeout])
-
-  const returnUrl =
-    mounted && order ? `${window.location.origin}/${locale}/checkout?order=${encodeURIComponent(order.orderId)}` : ""
-
-  // Payment confirmed — show a success panel (the cart has been cleared).
   if (phase === "paid") {
     return (
       <div className="container px-4 py-10 md:px-6">
@@ -503,8 +529,6 @@ export function ShopCheckoutPage({
       </div>
     )
   }
-
-  const formLocked = phase !== "form"
 
   const packetaOverlay =
     mounted && packetaLoading
@@ -538,8 +562,7 @@ export function ShopCheckoutPage({
 
       <div className="mt-8 grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
         <div className="space-y-6">
-          {/* Contact — autoComplete tokens let the browser / Google offer to
-              autofill saved name, email and phone. */}
+          {/* Contact */}
           <section className="rounded-xl border border-gray-200 p-5">
             <h2 className="text-base font-semibold">{copy.contact}</h2>
             <form className="mt-4 grid gap-4 sm:grid-cols-2" onSubmit={(event) => event.preventDefault()}>
@@ -549,9 +572,8 @@ export function ShopCheckoutPage({
                   name="given-name"
                   autoComplete="given-name"
                   value={firstName}
-                  disabled={formLocked}
                   onChange={(event) => setFirstName(event.target.value)}
-                  className="mt-1.5 w-full rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-gray-950 disabled:bg-gray-50 disabled:text-gray-500"
+                  className="mt-1.5 w-full rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-gray-950"
                 />
               </label>
               <label>
@@ -560,9 +582,8 @@ export function ShopCheckoutPage({
                   name="family-name"
                   autoComplete="family-name"
                   value={lastName}
-                  disabled={formLocked}
                   onChange={(event) => setLastName(event.target.value)}
-                  className="mt-1.5 w-full rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-gray-950 disabled:bg-gray-50 disabled:text-gray-500"
+                  className="mt-1.5 w-full rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-gray-950"
                 />
               </label>
               <label>
@@ -572,9 +593,8 @@ export function ShopCheckoutPage({
                   name="email"
                   autoComplete="email"
                   value={email}
-                  disabled={formLocked}
                   onChange={(event) => setEmail(event.target.value)}
-                  className="mt-1.5 w-full rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-gray-950 disabled:bg-gray-50 disabled:text-gray-500"
+                  className="mt-1.5 w-full rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-gray-950"
                 />
               </label>
               <label>
@@ -584,9 +604,8 @@ export function ShopCheckoutPage({
                   name="tel"
                   autoComplete="tel"
                   value={phone}
-                  disabled={formLocked}
                   onChange={(event) => setPhone(event.target.value)}
-                  className="mt-1.5 w-full rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-gray-950 disabled:bg-gray-50 disabled:text-gray-500"
+                  className="mt-1.5 w-full rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-gray-950"
                 />
               </label>
             </form>
@@ -609,7 +628,7 @@ export function ShopCheckoutPage({
                   <button
                     type="button"
                     onClick={openPacketaWidget}
-                    disabled={!packeta.enabled || packetaLoading || formLocked}
+                    disabled={!packeta.enabled || packetaLoading}
                     className="mt-3 inline-flex items-center gap-2 rounded-md border border-gray-300 px-3 py-1.5 text-sm font-semibold text-gray-900 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {packetaLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
@@ -622,53 +641,33 @@ export function ShopCheckoutPage({
             </div>
           </section>
 
-          {/* Payment — Stripe Elements (Express Checkout + Payment Element) mount
-              here once the order + PaymentIntent exist. */}
+          {/* Payment — Stripe Elements are mounted eagerly (warm-up): card fields
+              and wallets are ready while the user is still filling the form, so
+              there's no loading after they click. */}
           <section className="rounded-xl border border-gray-200 p-5">
             <h2 className="text-base font-semibold">{copy.payment}</h2>
 
-            {!stripe.enabled ? (
+            {!stripePk ? (
               <p className="mt-3 text-sm text-amber-700">{copy.paymentUnavailable}</p>
-            ) : phase === "form" ? (
-              <p className="mt-3 text-sm text-gray-500">{copy.paymentFillForm}</p>
-            ) : phase === "creating" || (phase === "paying" && !payment) ? (
-              <div className="mt-4 flex items-center gap-2 text-sm text-gray-600">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                {copy.paymentInitializing}
-              </div>
-            ) : phase === "paying" && payment && payment.clientSecret && payment.publishableKey ? (
+            ) : subtotal === 0 ? null : (
               <div className="mt-4">
                 <ShopStripePayment
-                  clientSecret={payment.clientSecret}
-                  publishableKey={payment.publishableKey}
+                  publishableKey={stripePk}
+                  amount={amountMinor}
+                  currency="czk"
                   locale={locale}
-                  returnUrl={returnUrl}
+                  canPay={canPayWithStripe}
+                  onValidateFail={onValidateFail}
+                  prepareClientSecret={prepareClientSecret}
                   onConfirmed={onConfirmed}
                   copy={{ payNow: copy.payNow, genericError: copy.genericPayError }}
                 />
+                {validateHint && !formValid ? (
+                  <p className="mt-2 text-xs text-amber-700">{copy.fillFormFirst}</p>
+                ) : null}
+                {phase === "error" ? <p className="mt-2 text-xs text-red-600">{errorMessage ?? copy.genericPayError}</p> : null}
               </div>
-            ) : phase === "polling" ? (
-              <div className="mt-4 flex items-center gap-2 text-sm text-gray-600">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                {copy.verifying}
-              </div>
-            ) : phase === "error" ? (
-              <div className="mt-4 space-y-3">
-                <p className="text-sm text-red-600">{errorMessage ?? copy.genericPayError}</p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setErrorMessage(null)
-                    setOrder(null)
-                    setPayment(null)
-                    setPhase("form")
-                  }}
-                >
-                  {copy.retry}
-                </Button>
-              </div>
-            ) : null}
+            )}
           </section>
         </div>
 
@@ -715,17 +714,11 @@ export function ShopCheckoutPage({
             <span className="text-lg font-semibold text-gray-950">{formatShopPrice(subtotal, locale)}</span>
           </div>
 
-          {/* The primary CTA only creates the order; once payment is initialised
-              the Stripe "Pay" button in the Payment section takes over. */}
-          {phase === "form" || phase === "creating" ? (
-            <Button
-              className="mt-5 w-full"
-              size="lg"
-              disabled={!canSubmit || phase === "creating"}
-              onClick={placeOrder}
-            >
-              {phase === "creating" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              {copy.continueToPayment}
+          {/* Free orders (total 0) have no Stripe step — confirm here. Paid orders
+              use the Stripe "Pay" button in the Payment section above. */}
+          {subtotal === 0 ? (
+            <Button className="mt-5 w-full" size="lg" disabled={!canPlaceFree} onClick={placeFreeOrder}>
+              {copy.placeFreeOrder}
             </Button>
           ) : null}
 

@@ -37,7 +37,6 @@ import type {
   ShopIntegrations,
   ShopLocale,
   ShopOrderPayment,
-  ShopOrderStatus,
   ShopPacketaConfig,
   ShopProductCardView,
   ShopProductData,
@@ -196,7 +195,7 @@ export async function getShopIntegrations(): Promise<ShopIntegrations> {
 // only ever holds the returned orderId + publicToken (a per-order capability
 // token) and the merchant Stripe clientSecret/publishableKey.
 
-// Loose shape of the serialized order returned by POST /orders and GET /orders/[id].
+// Loose shape of the serialized order returned by POST /orders.
 interface ApiSerializedOrder {
   id: string
   orderNumber?: string | null
@@ -232,22 +231,9 @@ export async function payShopOrder(orderId: string, publicToken: string): Promis
   })
 }
 
-export async function getShopOrderStatus(orderId: string, publicToken: string): Promise<ShopOrderStatus> {
-  // The public order token authorizes the read; send it as a header rather than
-  // a query param so it never lands in logs/caches. The admin wraps the payload
-  // as `{ order }` (consistent with confirm/cancel).
-  const { order } = await shopApiFetch<{ order: ApiSerializedOrder }>(`orders/${encodeURIComponent(orderId)}`, {
-    headers: { "x-order-token": publicToken },
-    revalidate: 0,
-  })
-  return {
-    paymentStatus: order.paymentStatus ?? "UNPAID",
-    status: order.status ?? "",
-    fulfillmentStatus: order.fulfillmentStatus ?? "",
-    paymentExpiresAt: order.paymentExpiresAt ?? null,
-    reservationExpiresAt: order.reservationExpiresAt ?? null,
-  }
-}
+// Order status is no longer polled: the buyer's UX comes from Stripe's
+// client-side confirm result, and the order's PAID/confirm transition is owned
+// by the admin Stripe webhook (source of truth). No GET /orders/[id] fetcher.
 
 // ---- Home ------------------------------------------------------------------
 

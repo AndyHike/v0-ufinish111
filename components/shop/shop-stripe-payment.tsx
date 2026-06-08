@@ -1,8 +1,20 @@
 "use client"
 
-import { useCallback, useMemo, useState } from "react"
-import { Elements, ExpressCheckoutElement, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js"
-import { loadStripe, type Stripe, type StripeElementLocale } from "@stripe/stripe-js"
+import { useCallback, useEffect, useMemo, useState } from "react"
+import {
+  Elements,
+  ExpressCheckoutElement,
+  PaymentElement,
+  useElements,
+  useStripe,
+} from "@stripe/react-stripe-js"
+import {
+  loadStripe,
+  type Stripe,
+  type StripeElementLocale,
+  type StripeExpressCheckoutElementClickEvent,
+  type StripeExpressCheckoutElementReadyEvent,
+} from "@stripe/stripe-js"
 import { Loader2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -13,10 +25,16 @@ export interface StripePaymentCopy {
   genericError: string
 }
 
-// loadStripe must be called once per publishable key (it injects a script tag);
-// cache the promise so re-renders/remounts reuse the same Stripe instance.
+export interface PreparedPayment {
+  clientSecret: string
+  returnUrl: string
+}
+
+// loadStripe must run once per publishable key (it injects a script tag); cache
+// the promise so re-renders/remounts reuse the same Stripe instance. Exported so
+// the checkout page can reuse it for retrievePaymentIntent on redirect return.
 const stripePromiseCache = new Map<string, Promise<Stripe | null>>()
-function getStripe(publishableKey: string): Promise<Stripe | null> {
+export function getStripe(publishableKey: string): Promise<Stripe | null> {
   let promise = stripePromiseCache.get(publishableKey)
   if (!promise) {
     promise = loadStripe(publishableKey)
@@ -34,11 +52,17 @@ function toStripeLocale(locale: ShopLocale): StripeElementLocale {
 }
 
 function PaymentInner({
-  returnUrl,
+  amount,
+  canPay,
+  onValidateFail,
+  prepareClientSecret,
   onConfirmed,
   copy,
 }: {
-  returnUrl: string
+  amount: number
+  canPay: boolean
+  onValidateFail: () => void
+  prepareClientSecret: () => Promise<PreparedPayment | null>
   onConfirmed: () => void
   copy: StripePaymentCopy
 }) {
@@ -46,19 +70,49 @@ function PaymentInner({
   const elements = useElements()
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [walletReady, setWalletReady] = useState<boolean | null>(null)
 
-  // Shared confirm path for both the card "Pay" button and the Apple/Google Pay
-  // express button. `redirect: "if_required"` keeps cards (no 3DS) and wallets on
-  // this page; methods that must redirect (3DS / PayPal) go to `return_url`.
+  // Keep the deferred Elements amount in sync with the cart total without
+  // remounting (cart edits / quantity changes before paying).
+  useEffect(() => {
+    if (elements) {
+      elements.update({ amount })
+    }
+  }, [elements, amount])
+
+  // Shared confirm path for the card "Pay" button and the wallet (Apple/Google
+  // Pay) express button. Deferred flow: submit() → create order+PI on the server
+  // → confirmPayment. `redirect: "if_required"` keeps cards (no 3DS) and wallets
+  // on-page; 3DS/PayPal redirect to return_url.
   const confirm = useCallback(async () => {
     if (!stripe || !elements) {
       return
     }
+    if (!canPay) {
+      onValidateFail()
+      return
+    }
     setSubmitting(true)
     setError(null)
+
+    const { error: submitError } = await elements.submit()
+    if (submitError) {
+      setError(submitError.message ?? copy.genericError)
+      setSubmitting(false)
+      return
+    }
+
+    const prepared = await prepareClientSecret()
+    if (!prepared) {
+      setError(copy.genericError)
+      setSubmitting(false)
+      return
+    }
+
     const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
       elements,
-      confirmParams: { return_url: returnUrl },
+      clientSecret: prepared.clientSecret,
+      confirmParams: { return_url: prepared.returnUrl },
       redirect: "if_required",
     })
     if (confirmError) {
@@ -66,22 +120,43 @@ function PaymentInner({
       setSubmitting(false)
       return
     }
-    // No redirect was required: hand off to the parent to verify PAID via polling.
-    // (`processing` covers async methods that settle shortly after.)
+    // No redirect needed — payment authorized. Server truth (PAID/confirm) is
+    // handled by the admin webhook; the client signal is enough for UX.
     if (paymentIntent && (paymentIntent.status === "succeeded" || paymentIntent.status === "processing")) {
       onConfirmed()
       return
     }
     setSubmitting(false)
-  }, [stripe, elements, returnUrl, onConfirmed, copy.genericError])
+  }, [stripe, elements, canPay, onValidateFail, prepareClientSecret, onConfirmed, copy.genericError])
+
+  // Gate the wallet button: if the form isn't ready, don't resolve() so the
+  // Apple/Google Pay sheet never opens without a delivery point (#3).
+  const onExpressClick = useCallback(
+    (event: StripeExpressCheckoutElementClickEvent) => {
+      if (!canPay) {
+        onValidateFail()
+        return
+      }
+      event.resolve()
+    },
+    [canPay, onValidateFail],
+  )
+
+  const onExpressReady = useCallback((event: StripeExpressCheckoutElementReadyEvent) => {
+    // Stripe leaves availablePaymentMethods undefined when no wallet is eligible.
+    setWalletReady(Boolean(event.availablePaymentMethods))
+  }, [])
 
   return (
     <div className="space-y-4">
-      {/* Apple / Google Pay (only renders when an eligible wallet is available). */}
-      <ExpressCheckoutElement onConfirm={confirm} />
+      {/* Reserve space until onReady reports wallet availability, then collapse
+          if none — avoids a layout jump. */}
+      <div style={{ minHeight: walletReady === null ? 44 : undefined }}>
+        <ExpressCheckoutElement onReady={onExpressReady} onClick={onExpressClick} onConfirm={confirm} />
+      </div>
       <PaymentElement options={{ layout: "tabs" }} />
       {error ? <p className="text-xs text-red-600">{error}</p> : null}
-      <Button type="button" className="w-full" size="lg" disabled={!stripe || submitting} onClick={confirm}>
+      <Button type="button" className="w-full" size="lg" disabled={!stripe || submitting || !canPay} onClick={confirm}>
         {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
         {copy.payNow}
       </Button>
@@ -90,17 +165,25 @@ function PaymentInner({
 }
 
 export function ShopStripePayment({
-  clientSecret,
   publishableKey,
+  amount,
+  currency,
   locale,
-  returnUrl,
+  canPay,
+  onValidateFail,
+  prepareClientSecret,
   onConfirmed,
   copy,
 }: {
-  clientSecret: string
   publishableKey: string
+  /** Amount in the smallest currency unit (e.g. CZK haléř = subtotal * 100). */
+  amount: number
+  /** Lowercase ISO currency, e.g. "czk". */
+  currency: string
   locale: ShopLocale
-  returnUrl: string
+  canPay: boolean
+  onValidateFail: () => void
+  prepareClientSecret: () => Promise<PreparedPayment | null>
   onConfirmed: () => void
   copy: StripePaymentCopy
 }) {
@@ -108,9 +191,22 @@ export function ShopStripePayment({
   return (
     <Elements
       stripe={stripePromise}
-      options={{ clientSecret, locale: toStripeLocale(locale), appearance: { theme: "stripe" } }}
+      options={{
+        mode: "payment",
+        amount,
+        currency,
+        locale: toStripeLocale(locale),
+        appearance: { theme: "stripe" },
+      }}
     >
-      <PaymentInner returnUrl={returnUrl} onConfirmed={onConfirmed} copy={copy} />
+      <PaymentInner
+        amount={amount}
+        canPay={canPay}
+        onValidateFail={onValidateFail}
+        prepareClientSecret={prepareClientSecret}
+        onConfirmed={onConfirmed}
+        copy={copy}
+      />
     </Elements>
   )
 }
