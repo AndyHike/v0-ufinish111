@@ -131,6 +131,11 @@ export interface ApiItem {
   linkedItems?: ApiLinkedItem[]
   seo?: ApiSeo
   selectedVariantId?: string | null
+  // Category-listing discriminators (present only on `?categorySlug=` rows; see
+  // PUBLIC_API_DOCS §2.4). `rowType: "variant"` + `matchedVariantId` mean the row
+  // is a standalone `ItemVariantCategory` card built from `variants[matchedVariantId]`.
+  rowType?: "item" | "variant"
+  matchedVariantId?: string | null
 }
 
 interface ApiSeoLocale {

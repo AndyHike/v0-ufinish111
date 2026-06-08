@@ -351,7 +351,9 @@ export function CategoryPage({
             {products.length > 0 ? (
               <div className="mt-6 grid grid-cols-2 gap-4 sm:gap-5 xl:grid-cols-3">
                 {products.map((product) => (
-                  <ProductCard key={product.itemId} locale={locale} product={product} />
+                  // Key by item+variant: one item can yield both an item row and
+                  // standalone variant rows in the same listing (§2.4).
+                  <ProductCard key={`${product.itemId}:${product.variantId}`} locale={locale} product={product} />
                 ))}
               </div>
             ) : (

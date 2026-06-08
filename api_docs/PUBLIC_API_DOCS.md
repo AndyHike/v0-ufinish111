@@ -908,8 +908,76 @@ GET /api/public/v1/items/protective-glass?include=categories,variants,availabili
 - `sku` і `barcode` належать тільки `ItemVariant`, не базовому `Item`.
 - `availability.availableStock` рахується як `InventoryLevel.onHand - InventoryLevel.reserved`.
 - Якщо `trackInventory = false`, `availableStock` буде `null`.
-- Для category pages можна показувати базовий item у загальній категорії і окремий variant у категорії моделі через `ItemVariantCategory`.
+- Для category pages можна показувати базовий item у загальній категорії і **окрему variant-карту** у категорії моделі через `ItemVariantCategory` — повний контракт listing-у описаний у [§2.4](#24-variant-карти-в-category-listing-itemvariantcategory).
 - Item-level stock field більше не є public contract; складська правда тільки в `InventoryLevel` і `StockMovement`.
+
+---
+
+### 2.4. Variant-карти в category listing (`ItemVariantCategory`)
+
+`GET /api/public/v1/items?categorySlug=<slug>` повертає **змішаний список** двох типів рядків:
+
+1. **item-рядок** — звичайний товар, прив'язаний до категорії через `ItemCategory` (як і раніше).
+2. **variant-рядок** — окрема variant-карта для кожного `ItemVariant`, прив'язаного до цієї категорії через `ItemVariantCategory`. Так один конкретний variant (напр. «Захисне скло для iPhone 11») показується як самостійна картка в категорії моделі, з реальною ціною і прямою кнопкою «купити», без пікера моделей.
+
+Один товар може дати **і** item-рядок (у загальній категорії), **і** окремі variant-рядки (у категоріях моделей) — це різні рядки з різними цілями.
+
+**Поля-дискримінатори (тільки у відповіді `?categorySlug=`):**
+
+| Поле | Тип | Значення |
+| :--- | :--- | :--- |
+| `rowType` | `"item" \| "variant"` | Тип рядка. `"variant"` → рядок репрезентує конкретний variant. |
+| `matchedVariantId` | `string \| null` | Для `rowType: "variant"` — `id` variant-а, що зв'язав рядок із категорією. Для `rowType: "item"` — `null`. |
+
+> [!IMPORTANT]
+> `rowType` і `matchedVariantId` присутні на **кожному** рядку category listing незалежно від `include` — їх достатньо, щоб відрізнити variant-рядок від item-рядка. Але **дані** самого variant-а (ціна, `sku`, опції, залишок) лежать у `variants[]`, який повертається лише з `include=variants` (або `include=availability`). Щоб побудувати variant-карту, передавайте `include=variants` і беріть із `variants[]` елемент із `id === matchedVariantId`.
+
+> [!NOTE]
+> Поле `selectedVariantId` (див. §2.3) існує **лише на detail-ендпоінті** (`/items/[slug]`, коли відкрито за variant-slug). У category listing його немає — там роль грає `matchedVariantId`. Не плутайте: `selectedVariantId` = «який variant перед-вибрати в пікері на сторінці товару»; `matchedVariantId` = «цей рядок listing-у і є цим variant-ом».
+
+**Пагінація і `metadata.total`:**
+
+- `metadata.total` рахує **сумарну** кількість змішаних рядків: `(item-рядки) + (variant-рядки)`. Тобто `total` може бути більшим за кількість унікальних товарів категорії.
+- `page` / `limit` нарізають цей віртуальний змішаний список; item-рядки йдуть перед variant-рядками. `totalPages = ceil(total / limit)`.
+
+**Які variant-рядки потрапляють у відповідь:**
+
+- variant `isActive = true` **і** `isPurchasable = true`;
+- його батьківський item `isActive = true`;
+- variant прив'язаний саме до цієї категорії через `ItemVariantCategory`;
+- активні фасетні фільтри (`attr` / `num` / `bool`), `search`, `minPrice` / `maxPrice` застосовуються до **батьківського item-а** variant-а так само, як і до item-рядків.
+
+**Приклад відповіді (`?categorySlug=iphone-11&include=variants,availability`):**
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "item_123",
+      "slug": "protective-glass",
+      "title": { "uk": "Захисне скло" },
+      "rowType": "variant",
+      "matchedVariantId": "variant_iphone_11",
+      "variants": [
+        {
+          "id": "variant_iphone_11",
+          "title": { "uk": "Захисне скло для iPhone 11" },
+          "slugOverride": "protective-glass-iphone-11",
+          "price": "249.00",
+          "sku": "GLASS-IP11",
+          "isDefault": false,
+          "availability": { "availableStock": 8 }
+        }
+      ],
+      "availability": { "availableStock": 8 }
+    }
+  ],
+  "metadata": { "total": 1, "page": 1, "limit": 20, "totalPages": 1 }
+}
+```
+
+Тут `rowType: "variant"` + `matchedVariantId: "variant_iphone_11"` означає: рендери картку з variant-а `variant_iphone_11` (елемент `variants[]` із тим самим `id`) як single-variant товар — реальна ціна, без «від X», quick-buy. Для `rowType: "item"` (де `matchedVariantId: null`) рендери звичайну item-картку.
 
 ---
 

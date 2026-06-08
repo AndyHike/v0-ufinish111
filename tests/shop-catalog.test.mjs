@@ -188,3 +188,36 @@ test("exposes a large mock variant product for selector QA", () => {
   assert.ok(product.item.variants.some((variant) => variant.availability.availableStock === 0))
   assert.ok(product.item.variants.some((variant) => variant.salePrice !== null))
 })
+
+test("forced-variant card renders one variant as a standalone single-variant card", () => {
+  // ItemVariantCategory rows (PUBLIC_API_DOCS §2.4): pass the matched variant id.
+  const product = catalog.getMockShopProduct("cs", "protective-glass")
+  const item = product.item
+  const saleVariant = item.variants.find((variant) => variant.id === "variant-glass-iphone-11")
+  assert.ok(saleVariant && saleVariant.salePrice !== null)
+
+  const card = catalog.toProductCard(item, "cs", saleVariant.id)
+
+  assert.equal(card.variantId, "variant-glass-iphone-11")
+  assert.equal(card.priceFrom, false) // never "from X"
+  assert.equal(card.displayPrice, saleVariant.salePrice) // 199
+  assert.equal(card.compareAtPrice, saleVariant.price) // 229
+  assert.equal(card.discountPercent, 13)
+  assert.equal(card.title, "iPhone 11") // variant title, not the item title
+  assert.equal(card.href, "/cs/product/protective-glass/protective-glass-iphone-11")
+  assert.equal(card.isPurchasable, true)
+})
+
+test("forced-variant card reflects the matched variant stock, not the item default", () => {
+  const product = catalog.getMockShopProduct("cs", "protective-glass")
+  const outOfStock = product.item.variants.find((variant) => variant.id === "variant-glass-iphone-12")
+  assert.ok(outOfStock && outOfStock.availability.availableStock === 0)
+
+  const card = catalog.toProductCard(product.item, "cs", outOfStock.id)
+  assert.equal(card.isPurchasable, false)
+
+  // Default (no forced id) stays the multi-variant "from X" item card.
+  const itemCard = catalog.toProductCard(product.item, "cs")
+  assert.equal(itemCard.priceFrom, true)
+  assert.equal(itemCard.href, "/cs/product/protective-glass")
+})

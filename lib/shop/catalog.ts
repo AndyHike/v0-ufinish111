@@ -506,15 +506,33 @@ export function selectProductVariantByRoute(item: ShopItem, variantSlug?: string
   return selectProductVariant(item)
 }
 
-export function toProductCard(item: ShopItem, locale: ShopLocale): ShopProductCardView {
-  const variant = selectProductVariant(item)
-  const hasOptions = item.variants.length > 1
+/**
+ * Build a catalog card for an item.
+ *
+ * `forcedVariantId` makes the card represent one concrete variant — used for
+ * `ItemVariantCategory` rows in a category listing (PUBLIC_API_DOCS §2.4). Such
+ * a card is always single-variant: the variant's real price (no "from X"), its
+ * own title/image/slug, and a quick-buy button.
+ */
+export function toProductCard(
+  item: ShopItem,
+  locale: ShopLocale,
+  forcedVariantId?: string,
+): ShopProductCardView {
+  const forcedVariant = forcedVariantId
+    ? item.variants.find((candidate) => candidate.id === forcedVariantId) ?? null
+    : null
+  const variant = forcedVariant ?? selectProductVariant(item)
+  const hasOptions = forcedVariant === null && item.variants.length > 1
 
   // Prefer the cheapest in-stock variant for the "from" price so the card never
-  // advertises a price the customer cannot actually buy.
+  // advertises a price the customer cannot actually buy. A forced variant prices
+  // itself, since the card is that one variant.
   const purchasableVariants = item.variants.filter(isVariantPurchasable)
   const pricePool = purchasableVariants.length > 0 ? purchasableVariants : item.variants
-  const displayPrice = Math.min(...pricePool.map((candidate) => candidate.salePrice ?? candidate.price))
+  const displayPrice = forcedVariant
+    ? (forcedVariant.salePrice ?? forcedVariant.price)
+    : Math.min(...pricePool.map((candidate) => candidate.salePrice ?? candidate.price))
 
   // A discount badge only makes sense for a single price point; "from X"
   // products span several prices and get no struck-through compare-at.
@@ -529,12 +547,19 @@ export function toProductCard(item: ShopItem, locale: ShopLocale): ShopProductCa
   const cardImages = Array.from(new Set([...variant.images, ...item.images])).filter(Boolean)
   const images = cardImages.length > 0 ? cardImages : ["/tech-fix-storefront.png"]
 
+  // A forced-variant card shows the variant's own title and deep-links to its
+  // variant detail page so the customer lands on exactly this model.
+  const href =
+    forcedVariant && forcedVariant.slugOverride
+      ? `/${locale}/product/${item.slug}/${forcedVariant.slugOverride}`
+      : `/${locale}/product/${item.slug}`
+
   return {
     itemId: item.id,
     variantId: variant.id,
     slug: item.slug,
     variantSlug: variant.slugOverride,
-    title: getLocalizedText(item.title, locale),
+    title: forcedVariant ? getLocalizedText(variant.title, locale) : getLocalizedText(item.title, locale),
     image: images[0],
     images,
     price: variant.price,
@@ -544,7 +569,7 @@ export function toProductCard(item: ShopItem, locale: ShopLocale): ShopProductCa
     compareAtPrice,
     discountPercent: discountPercent && discountPercent > 0 ? discountPercent : null,
     currency: "CZK",
-    href: `/${locale}/product/${item.slug}`,
+    href,
     availabilityLabel: getAvailabilityLabel(variant, locale),
     availableStock: variant.availability.availableStock,
     isPurchasable: isVariantPurchasable(variant),

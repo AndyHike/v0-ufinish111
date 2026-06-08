@@ -235,17 +235,26 @@ export async function getShopCategoryData(
 
   const category = mapApiCategory(apiCategory)
   const allCategories = allApiCategories.map(mapApiCategory)
-  const items = apiItems.map(mapApiItem)
 
-  const unfilteredProducts = items.map((item) => toProductCard(item, locale))
-  const attributeFiltered = items
-    .filter((item) => itemMatchesAttributes(item, activeFilters.attributes))
-    .map((item) => toProductCard(item, locale))
+  // The listing is a mixed stream (PUBLIC_API_DOCS §2.4): plain item rows plus
+  // standalone `ItemVariantCategory` variant rows. A `rowType: "variant"` row
+  // renders as the single matched variant rather than the item's "from X" card.
+  const rows = apiItems.map((apiItem) => ({
+    item: mapApiItem(apiItem),
+    forcedVariantId: apiItem.rowType === "variant" ? apiItem.matchedVariantId ?? undefined : undefined,
+  }))
+  const toCard = (row: (typeof rows)[number]) => toProductCard(row.item, locale, row.forcedVariantId)
+
+  const unfilteredProducts = rows.map(toCard)
+  const attributeFiltered = rows
+    .filter((row) => itemMatchesAttributes(row.item, activeFilters.attributes))
+    .map(toCard)
 
   // Prefer live facets; fall back to client-side aggregation if `/filters` is
   // unavailable or empty so the panel still renders.
   const liveFacets = await filtersPromise
-  const filterAttributes = liveFacets.length > 0 ? liveFacets : buildShopFilterFacets(items, locale)
+  const filterAttributes =
+    liveFacets.length > 0 ? liveFacets : buildShopFilterFacets(rows.map((row) => row.item), locale)
 
   return {
     category,
