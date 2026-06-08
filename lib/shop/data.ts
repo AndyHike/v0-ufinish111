@@ -29,14 +29,20 @@ import {
 import type {
   ShopCategoryData,
   ShopCategoryTreeNode,
+  ShopCreatedOrder,
+  ShopCreateOrderInput,
+  ShopCurrency,
   ShopFilterAttribute,
   ShopHomeData,
   ShopIntegrations,
   ShopLocale,
+  ShopOrderPayment,
+  ShopOrderStatus,
   ShopPacketaConfig,
   ShopProductCardView,
   ShopProductData,
   ShopRelatedProduct,
+  ShopStripeConfig,
   ShopVariant,
 } from "./types"
 
@@ -47,6 +53,8 @@ const DISABLED_PACKETA: ShopPacketaConfig = {
   services: [],
   defaultWeightKg: null,
 }
+
+const DISABLED_STRIPE: ShopStripeConfig = { enabled: false }
 
 const HOME_ITEMS_LIMIT = 12
 const CATEGORY_ITEMS_LIMIT = 100
@@ -107,14 +115,22 @@ async function fetchAllApiCategories(): Promise<ApiCategory[]> {
 // client-side aggregation rather than failing the whole page.
 async function fetchCategoryFilters(slug: string, locale: ShopLocale): Promise<ShopFilterAttribute[]> {
   try {
+    // Facet options/counts are derived from the attribute values of the active
+    // items in this category, so they change on `item.*` / `collection.*` events
+    // (tags: collection:{slug}, view:list:{slug}) — not only on attribute-definition
+    // edits (`filters.updated` → filtersTag). Tag with all three so an item value
+    // change in the category also revalidates this read, matching the items list.
     const apiFilters = await shopApiFetch<ApiFilterAttribute[]>("filters", {
       searchParams: { categorySlug: slug, locale },
-      tags: tagsFor((id) => [filtersTag(id)]),
+      tags: tagsFor((id) => [filtersTag(id), collectionTag(id, slug), listViewTag(id, slug)]),
     })
     return apiFilters
       .map(mapApiFilterAttribute)
       .filter((attribute): attribute is ShopFilterAttribute => attribute !== null)
-      .filter((attribute) => attribute.options.length > 0)
+      // SELECT facets are useless with no present options, but BOOLEAN facets
+      // legitimately carry no `options` (filtered via `bool=<key>:true|false`,
+      // rendered as a single toggle), so keep them.
+      .filter((attribute) => attribute.type === "BOOLEAN" || attribute.options.length > 0)
   } catch (error) {
     console.error(`[shop] filters request failed for ${slug}; falling back to client facets: ${String(error)}`)
     return []
@@ -136,17 +152,21 @@ export async function getShopCategoryTree(): Promise<ShopCategoryTreeNode[]> {
   }
 }
 
-// ---- Integrations (Packeta) ------------------------------------------------
+// ---- Integrations (Packeta delivery + Stripe payments) ---------------------
 
 export async function getShopIntegrations(): Promise<ShopIntegrations> {
   if (!isShopApiEnabled()) {
-    return { packeta: DISABLED_PACKETA }
+    return { packeta: DISABLED_PACKETA, stripe: DISABLED_STRIPE }
   }
   try {
-    const data = await shopApiFetch<{ delivery?: { packeta?: Partial<ShopPacketaConfig> } }>("integrations", {
+    const data = await shopApiFetch<{
+      delivery?: { packeta?: Partial<ShopPacketaConfig> }
+      payments?: { stripe?: { enabled?: boolean; publishableKey?: string | null } }
+    }>("integrations", {
       tags: tagsFor((id) => [siteTag(id)]),
     })
     const packeta = data.delivery?.packeta
+    const stripe = data.payments?.stripe
     return {
       packeta: packeta
         ? {
@@ -157,10 +177,74 @@ export async function getShopIntegrations(): Promise<ShopIntegrations> {
             defaultWeightKg: packeta.defaultWeightKg ?? null,
           }
         : DISABLED_PACKETA,
+      // Only treat Stripe as enabled when the admin actually returns a
+      // publishable key — the browser needs it to load Stripe.js.
+      stripe:
+        stripe?.enabled && stripe.publishableKey
+          ? { enabled: true, publishableKey: stripe.publishableKey }
+          : DISABLED_STRIPE,
     }
   } catch (error) {
     console.error(`[shop] integrations request failed: ${String(error)}`)
-    return { packeta: DISABLED_PACKETA }
+    return { packeta: DISABLED_PACKETA, stripe: DISABLED_STRIPE }
+  }
+}
+
+// ---- Checkout order flow ---------------------------------------------------
+// These back the same-origin proxy routes under app/api/shop/orders/*. They run
+// the secret/master key server-side so it never reaches the browser; the browser
+// only ever holds the returned orderId + publicToken (a per-order capability
+// token) and the merchant Stripe clientSecret/publishableKey.
+
+// Loose shape of the serialized order returned by POST /orders and GET /orders/[id].
+interface ApiSerializedOrder {
+  id: string
+  orderNumber?: string | null
+  status?: string
+  paymentStatus?: string
+  fulfillmentStatus?: string
+  currency?: string
+  totalAmount?: number
+  reservationExpiresAt?: string | null
+  paymentExpiresAt?: string | null
+}
+
+export async function createShopOrder(input: ShopCreateOrderInput): Promise<ShopCreatedOrder> {
+  const data = await shopApiFetch<{ order: ApiSerializedOrder; publicToken: string }>("orders", {
+    method: "POST",
+    body: input,
+  })
+  const order = data.order
+  return {
+    orderId: order.id,
+    publicToken: data.publicToken,
+    orderNumber: order.orderNumber ?? null,
+    totalAmount: order.totalAmount ?? 0,
+    currency: (order.currency as ShopCurrency) ?? input.currency,
+    reservationExpiresAt: order.reservationExpiresAt ?? null,
+  }
+}
+
+export async function payShopOrder(orderId: string, publicToken: string): Promise<ShopOrderPayment> {
+  return shopApiFetch<ShopOrderPayment>(`orders/${encodeURIComponent(orderId)}/pay`, {
+    method: "POST",
+    body: { publicToken },
+  })
+}
+
+export async function getShopOrderStatus(orderId: string, publicToken: string): Promise<ShopOrderStatus> {
+  // The public order token authorizes the read; send it as a header rather than
+  // a query param so it never lands in logs/caches.
+  const order = await shopApiFetch<ApiSerializedOrder>(`orders/${encodeURIComponent(orderId)}`, {
+    headers: { "x-order-token": publicToken },
+    revalidate: 0,
+  })
+  return {
+    paymentStatus: order.paymentStatus ?? "UNPAID",
+    status: order.status ?? "",
+    fulfillmentStatus: order.fulfillmentStatus ?? "",
+    paymentExpiresAt: order.paymentExpiresAt ?? null,
+    reservationExpiresAt: order.reservationExpiresAt ?? null,
   }
 }
 

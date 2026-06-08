@@ -281,6 +281,68 @@ export interface ShopPacketaConfig {
   defaultWeightKg: number | null
 }
 
+export type ShopStripeConfig = { enabled: false } | { enabled: true; publishableKey: string }
+
 export interface ShopIntegrations {
   packeta: ShopPacketaConfig
+  stripe: ShopStripeConfig
+}
+
+// ---- Checkout order flow (POST /orders → /pay → poll) ----------------------
+
+export interface ShopOrderLineInput {
+  variantId: string
+  quantity: number
+}
+
+export interface ShopOrderCustomerInput {
+  name: string
+  email?: string
+  phone?: string
+}
+
+export interface ShopOrderDeliveryPoint {
+  name: string
+  city?: string
+  country?: string
+}
+
+export interface ShopOrderDeliveryInput {
+  provider: "PACKETA"
+  service: "PICKUP_POINT" | "ZBOX" | "CARRIER_PUDO" | "HOME_DELIVERY"
+  addressId: string | null
+  point: ShopOrderDeliveryPoint
+}
+
+export interface ShopCreateOrderInput {
+  customer: ShopOrderCustomerInput
+  delivery: ShopOrderDeliveryInput
+  lines: ShopOrderLineInput[]
+  currency: ShopCurrency
+  locale: ShopLocale
+  note?: string
+}
+
+export interface ShopCreatedOrder {
+  orderId: string
+  publicToken: string
+  orderNumber: string | null
+  totalAmount: number
+  currency: ShopCurrency
+  reservationExpiresAt: string | null
+}
+
+export interface ShopOrderPayment {
+  clientSecret: string
+  publishableKey: string
+}
+
+export type ShopPaymentStatus = "UNPAID" | "PAID" | "REFUNDED" | "PARTIALLY_REFUNDED" | string
+
+export interface ShopOrderStatus {
+  paymentStatus: ShopPaymentStatus
+  status: string
+  fulfillmentStatus: string
+  paymentExpiresAt: string | null
+  reservationExpiresAt: string | null
 }
