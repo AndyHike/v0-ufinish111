@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic"
 
 export default async function ShopCheckoutRoute({ params }: { params: Promise<{ locale: ShopLocale }> }) {
   const { locale } = await params
-  const { packeta, stripe } = await getShopIntegrations()
+  const { packeta, stripe, comgate } = await getShopIntegrations()
 
-  return <ShopCheckoutPage locale={locale} packeta={packeta} stripe={stripe} />
+  return <ShopCheckoutPage locale={locale} packeta={packeta} stripe={stripe} comgate={comgate} />
 }

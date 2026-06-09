@@ -30,6 +30,7 @@ import {
 import type {
   ShopCategoryData,
   ShopCategoryTreeNode,
+  ShopComgateConfig,
   ShopCreatedOrder,
   ShopCreateOrderInput,
   ShopCurrency,
@@ -60,6 +61,7 @@ const DISABLED_PACKETA: ShopPacketaConfig = {
 }
 
 const DISABLED_STRIPE: ShopStripeConfig = { enabled: false }
+const DISABLED_COMGATE: ShopComgateConfig = { enabled: false }
 
 const HOME_ITEMS_LIMIT = 12
 const CATEGORY_ITEMS_LIMIT = 100
@@ -238,17 +240,21 @@ export async function getShopCategoryTree(): Promise<ShopCategoryTreeNode[]> {
 
 export async function getShopIntegrations(): Promise<ShopIntegrations> {
   if (!isShopApiEnabled()) {
-    return { packeta: DISABLED_PACKETA, stripe: DISABLED_STRIPE }
+    return { packeta: DISABLED_PACKETA, stripe: DISABLED_STRIPE, comgate: DISABLED_COMGATE }
   }
   try {
     const data = await shopApiFetch<{
       delivery?: { packeta?: Partial<ShopPacketaConfig> }
-      payments?: { stripe?: { enabled?: boolean; publishableKey?: string | null } }
+      payments?: {
+        stripe?: { enabled?: boolean; publishableKey?: string | null }
+        comgate?: { enabled?: boolean }
+      }
     }>("integrations", {
       tags: tagsFor((id) => [siteTag(id)]),
     })
     const packeta = data.delivery?.packeta
     const stripe = data.payments?.stripe
+    const comgate = data.payments?.comgate
     return {
       packeta: packeta
         ? {
@@ -267,10 +273,12 @@ export async function getShopIntegrations(): Promise<ShopIntegrations> {
         stripe?.enabled && stripe.publishableKey
           ? { enabled: true, publishableKey: stripe.publishableKey }
           : DISABLED_STRIPE,
+      // Comgate is a redirect flow — enabled flag is all the browser needs.
+      comgate: { enabled: Boolean(comgate?.enabled) },
     }
   } catch (error) {
     console.error(`[shop] integrations request failed: ${String(error)}`)
-    return { packeta: DISABLED_PACKETA, stripe: DISABLED_STRIPE }
+    return { packeta: DISABLED_PACKETA, stripe: DISABLED_STRIPE, comgate: DISABLED_COMGATE }
   }
 }
 
@@ -309,10 +317,16 @@ export async function createShopOrder(input: ShopCreateOrderInput): Promise<Shop
   }
 }
 
-export async function payShopOrder(orderId: string, publicToken: string): Promise<ShopOrderPayment> {
+export async function payShopOrder(
+  orderId: string,
+  publicToken: string,
+  returnContext?: { successUrl?: string; cancelUrl?: string; locale?: string },
+): Promise<ShopOrderPayment> {
+  // returnContext is used by redirect providers (Comgate) for post-payment
+  // success/cancel URLs; Stripe ignores it.
   return shopApiFetch<ShopOrderPayment>(`orders/${encodeURIComponent(orderId)}/pay`, {
     method: "POST",
-    body: { publicToken },
+    body: { publicToken, ...returnContext },
   })
 }
 

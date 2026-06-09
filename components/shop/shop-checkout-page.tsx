@@ -10,7 +10,7 @@ import { useShopCart } from "@/components/shop/shop-cart-provider"
 import { ShopStripePayment, getStripe, type PreparePaymentResult } from "@/components/shop/shop-stripe-payment"
 import { Button } from "@/components/ui/button"
 import { formatShopPrice } from "@/lib/shop/catalog"
-import type { ShopCreatedOrder, ShopLocale, ShopOrderPayment, ShopPacketaConfig, ShopStripeConfig } from "@/lib/shop/types"
+import type { ShopComgateConfig, ShopCreatedOrder, ShopLocale, ShopOrderPayment, ShopPacketaConfig, ShopStripeConfig } from "@/lib/shop/types"
 
 const PACKETA_LIBRARY_URL = "https://widget.packeta.com/v6/www/js/library.js"
 // Safety net: if the widget library never loads/initialises, stop blocking the
@@ -304,15 +304,18 @@ export function ShopCheckoutPage({
   locale,
   packeta,
   stripe,
+  comgate,
 }: {
   locale: ShopLocale
   packeta: ShopPacketaConfig
   stripe: ShopStripeConfig
+  comgate: ShopComgateConfig
 }) {
   const copy = CHECKOUT_COPY[locale]
   const { lines, clear } = useShopCart()
   const subtotal = lines.reduce((sum, line) => sum + line.priceSnapshot * line.quantity, 0)
   const stripePk = stripe.enabled ? stripe.publishableKey : null
+  const comgateEnabled = comgate.enabled
   // Delivery price from the store's Packeta config (free above the threshold).
   // The admin recomputes this server-side on the order; we mirror the formula for
   // display + the Stripe amount so the shown total matches what is charged.
@@ -337,6 +340,7 @@ export function ShopCheckoutPage({
   const [phase, setPhase] = useState<CheckoutPhase>("form")
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [validateHint, setValidateHint] = useState(false)
+  const [comgatePaying, setComgatePaying] = useState(false)
 
   // Persisted order context (idempotency + created order) so retries reuse the
   // same RESERVED order rather than creating duplicates.
@@ -367,6 +371,20 @@ export function ShopCheckoutPage({
       }
     } catch {
       // ignore corrupt/unavailable storage
+    }
+
+    // Comgate redirect return: the success URL (?paid=1) is reached only after a
+    // real successful payment (cancel goes to the plain checkout URL). The admin
+    // confirms PAID independently via the background notification.
+    try {
+      if (new URLSearchParams(window.location.search).get("paid") === "1") {
+        setPaidSummary(summaryOf(orderRef.current))
+        clear()
+        setPhase("paid")
+        return
+      }
+    } catch {
+      // ignore
     }
 
     // Resume after a Stripe redirect (3DS/PayPal): the return_url carries
@@ -451,6 +469,7 @@ export function ShopCheckoutPage({
   const hasName = firstName.trim().length > 0 && lastName.trim().length > 0
   const formValid = hasName && hasContact && point !== null && lines.length > 0
   const canPayWithStripe = formValid && Boolean(stripePk) && total > 0
+  const canPayWithComgate = formValid && comgateEnabled && total > 0
   const canPlaceFree = formValid && total === 0
 
   const stopPacketaLoading = () => {
@@ -599,7 +618,14 @@ export function ShopCheckoutPage({
     const payRes = await fetch(`/api/shop/orders/${encodeURIComponent(orderRef.current.orderId)}/pay`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ publicToken: orderRef.current.publicToken }),
+      // Return URLs are used by redirect providers (Comgate); Stripe ignores them.
+      // Comgate only hits successUrl on an actual successful payment.
+      body: JSON.stringify({
+        publicToken: orderRef.current.publicToken,
+        successUrl: mounted ? `${window.location.origin}/${locale}/checkout?paid=1` : undefined,
+        cancelUrl: mounted ? `${window.location.origin}/${locale}/checkout` : undefined,
+        locale,
+      }),
     })
     if (!payRes.ok) {
       // Read the forwarded { error, code } so the caller can distinguish
@@ -616,7 +642,7 @@ export function ShopCheckoutPage({
       throw classifyPayFailure(code, message)
     }
     return (await payRes.json()) as ShopOrderPayment
-  }, [point, currentSignature, firstName, lastName, email, phone, lines, locale])
+  }, [point, currentSignature, firstName, lastName, email, phone, lines, locale, mounted])
 
   const buildReturnUrl = useCallback(
     () => (mounted ? `${window.location.origin}/${locale}/checkout` : ""),
@@ -629,14 +655,18 @@ export function ShopCheckoutPage({
   const prepareClientSecret = useCallback(async (): Promise<PreparePaymentResult> => {
     try {
       const payment = await createOrderAndPay()
-      // Free order (total 0): the admin settled it without a Stripe charge.
-      if (payment.free) {
+      // Free order (total 0): the admin settled it without a charge.
+      if (payment.provider === "NONE") {
         return { status: "confirmed" }
       }
-      if (!payment.clientSecret) {
-        return { status: "error" }
+      if (payment.provider === "STRIPE") {
+        if (!payment.clientSecret) {
+          return { status: "error" }
+        }
+        return { status: "ready", clientSecret: payment.clientSecret, returnUrl: buildReturnUrl() }
       }
-      return { status: "ready", clientSecret: payment.clientSecret, returnUrl: buildReturnUrl() }
+      // Comgate is a redirect flow handled outside the Stripe Elements path.
+      return { status: "error" }
     } catch (error) {
       if (error instanceof PayError) {
         // Already paid → show success; not payable → start a new order.
@@ -717,6 +747,43 @@ export function ShopCheckoutPage({
       }
       setErrorMessage(copy.orderError)
       setPhase("error")
+    }
+  }
+
+  // Comgate (redirect flow): create/reuse the order, start the payment, then
+  // send the buyer to Comgate's hosted page. They return to ?paid=1 on success.
+  const payWithComgate = async () => {
+    if (!canPayWithComgate) {
+      setValidateHint(true)
+      return
+    }
+    setComgatePaying(true)
+    setErrorMessage(null)
+    try {
+      const payment = await createOrderAndPay()
+      if (payment.provider === "COMGATE") {
+        window.location.assign(payment.redirectUrl)
+        return
+      }
+      if (payment.provider === "NONE") {
+        onConfirmed()
+        return
+      }
+      setErrorMessage(copy.genericPayError)
+      setPhase("error")
+    } catch (error) {
+      if (error instanceof PayError && error.kind === "already_paid") {
+        onConfirmed()
+        return
+      }
+      if (error instanceof PayError && error.kind === "not_payable") {
+        onExpired()
+        return
+      }
+      setErrorMessage(copy.genericPayError)
+      setPhase("error")
+    } finally {
+      setComgatePaying(false)
     }
   }
 
@@ -943,9 +1010,7 @@ export function ShopCheckoutPage({
           <section className="rounded-xl border border-gray-200 p-5">
             <h2 className="text-base font-semibold">{copy.payment}</h2>
 
-            {!stripePk ? (
-              <p className="mt-3 text-sm text-amber-700">{copy.paymentUnavailable}</p>
-            ) : total === 0 ? null : (
+            {total === 0 ? null : stripePk ? (
               <div className="mt-4">
                 <ShopStripePayment
                   publishableKey={stripePk}
@@ -964,6 +1029,24 @@ export function ShopCheckoutPage({
                 ) : null}
                 {phase === "error" ? <p className="mt-2 text-xs text-red-600">{errorMessage ?? copy.genericPayError}</p> : null}
               </div>
+            ) : comgateEnabled ? (
+              <div className="mt-4">
+                <Button
+                  className="w-full"
+                  size="lg"
+                  disabled={!canPayWithComgate || comgatePaying}
+                  onClick={() => void payWithComgate()}
+                >
+                  {comgatePaying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  {copy.payNow}
+                </Button>
+                {validateHint && !formValid ? (
+                  <p className="mt-2 text-xs text-amber-700">{copy.fillFormFirst}</p>
+                ) : null}
+                {phase === "error" ? <p className="mt-2 text-xs text-red-600">{errorMessage ?? copy.genericPayError}</p> : null}
+              </div>
+            ) : (
+              <p className="mt-3 text-sm text-amber-700">{copy.paymentUnavailable}</p>
             )}
           </section>
         </div>

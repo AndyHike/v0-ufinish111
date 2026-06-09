@@ -305,9 +305,14 @@ export interface ShopPacketaConfig {
 
 export type ShopStripeConfig = { enabled: false } | { enabled: true; publishableKey: string }
 
+/** Comgate is a redirect flow — no public key needed in the browser. */
+export type ShopComgateConfig = { enabled: boolean }
+
 export interface ShopIntegrations {
   packeta: ShopPacketaConfig
+  /** One payment provider is active per store (Stripe XOR Comgate). */
   stripe: ShopStripeConfig
+  comgate: ShopComgateConfig
 }
 
 // ---- Checkout order flow (POST /orders → /pay → poll) ----------------------
@@ -354,11 +359,14 @@ export interface ShopCreatedOrder {
   reservationExpiresAt: string | null
 }
 
-export interface ShopOrderPayment {
-  /** Null for free orders (total 0): settled server-side, no Stripe charge. */
-  clientSecret: string | null
-  publishableKey: string | null
-  /** True when the order total was 0 and was settled without a Stripe payment. */
-  free?: boolean
-}
+/**
+ * Provider-discriminated result of POST /pay:
+ *  - STRIPE  → embedded Elements (clientSecret + merchant publishableKey)
+ *  - COMGATE → redirect to the hosted payment page
+ *  - NONE    → free order (total 0), already settled server-side
+ */
+export type ShopOrderPayment =
+  | { provider: "STRIPE"; clientSecret: string | null; publishableKey: string | null }
+  | { provider: "COMGATE"; redirectUrl: string }
+  | { provider: "NONE"; free: true }
 

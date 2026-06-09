@@ -13,9 +13,16 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const { id } = await params
 
   let publicToken: string | undefined
+  let returnContext: { successUrl?: string; cancelUrl?: string; locale?: string } | undefined
   try {
-    const body = (await request.json()) as { publicToken?: string }
+    const body = (await request.json()) as {
+      publicToken?: string
+      successUrl?: string
+      cancelUrl?: string
+      locale?: string
+    }
     publicToken = body.publicToken
+    returnContext = { successUrl: body.successUrl, cancelUrl: body.cancelUrl, locale: body.locale }
   } catch {
     return NextResponse.json({ error: "INVALID_BODY" }, { status: 400 })
   }
@@ -25,7 +32,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   }
 
   try {
-    const payment = await payShopOrder(id, publicToken)
+    const payment = await payShopOrder(id, publicToken, returnContext)
     return NextResponse.json(payment, { status: 201 })
   } catch (error) {
     if (error instanceof ShopApiError) {
