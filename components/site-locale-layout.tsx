@@ -154,7 +154,10 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
                         <Footer />
                       </>
                     )}
-                    <CookieBanner />
+                    {/* Cookie consent is managed only on the main domain; the
+                        shop/b2b subdomains are separate origins and link their
+                        legal/cookie pages back to the main site. */}
+                    {variant === "default" && <CookieBanner />}
                   </div>
                   <Toaster />
                 </GlobalDataProvider>

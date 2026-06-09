@@ -110,20 +110,26 @@ function FilterAttributeGroup({
   showMoreLabel: string
   showLessLabel: string
 }) {
-  // BOOLEAN facets carry no options — render a single on/off toggle that submits
-  // `attr_<slug>=true` (parsed and matched like any other attribute value).
+  // BOOLEAN facets carry no options — render a yes/no switch (visually distinct
+  // from the SELECT checkboxes) that submits `attr_<slug>=true` when on (parsed
+  // and matched like any other attribute value). CSS-only via a peer checkbox so
+  // it works inside the server-rendered filter form (no client JS).
   if (attribute.type === "BOOLEAN") {
     return (
       <fieldset className="border-t border-gray-100 pt-4">
-        <label className="flex cursor-pointer items-center gap-2.5 rounded-md px-1.5 py-1 text-sm transition hover:bg-gray-50">
-          <input
-            type="checkbox"
-            name={`attr_${attribute.slug}`}
-            value="true"
-            defaultChecked={selected.includes("true")}
-            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-          />
+        <label className="flex cursor-pointer items-center justify-between gap-3 rounded-md px-1.5 py-1.5 text-sm transition hover:bg-gray-50">
           <span className="font-medium text-gray-900">{attribute.name}</span>
+          <span className="relative inline-flex shrink-0 items-center">
+            <input
+              type="checkbox"
+              name={`attr_${attribute.slug}`}
+              value="true"
+              defaultChecked={selected.includes("true")}
+              className="peer sr-only"
+            />
+            <span className="block h-6 w-11 rounded-full bg-gray-200 transition-colors peer-checked:bg-primary peer-focus-visible:ring-2 peer-focus-visible:ring-primary/40 peer-focus-visible:ring-offset-2" />
+            <span className="pointer-events-none absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-5" />
+          </span>
         </label>
       </fieldset>
     )

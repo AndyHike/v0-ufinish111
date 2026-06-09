@@ -26,6 +26,31 @@ interface OrderContext {
   idempotencyKey: string
   orderId: string | null
   publicToken: string | null
+  // Captured at create time so the success screen can show the order details —
+  // persisted to sessionStorage so they survive a Stripe redirect (3DS/PayPal).
+  orderNumber: string | null
+  total: number | null
+  currency: string | null
+  email: string | null
+  pointName: string | null
+}
+
+interface PaidSummary {
+  orderNumber: string | null
+  total: number | null
+  currency: string | null
+  email: string | null
+  pointName: string | null
+}
+
+function summaryOf(ctx: OrderContext): PaidSummary {
+  return {
+    orderNumber: ctx.orderNumber,
+    total: ctx.total,
+    currency: ctx.currency,
+    email: ctx.email,
+    pointName: ctx.pointName,
+  }
 }
 
 function newIdempotencyKey(): string {
@@ -123,6 +148,11 @@ const CHECKOUT_COPY = {
     verifying: "Overujeme platbu…",
     paidTitle: "Platba probehla uspesne",
     paidText: "Dekujeme! Objednavka je potvrzena a zbozi je pro vas rezervovano.",
+    orderNumberLabel: "Cislo objednavky",
+    paidTotalLabel: "Zaplaceno",
+    paidPickupLabel: "Vydejni misto",
+    paidContactLabel: "Kontakt",
+    paidKeepNote: "Ulozte si cislo objednavky — budete ho potrebovat pri vyzvednuti.",
     orderError: "Objednavku se nepodarilo vytvorit. Zkuste to prosim znovu.",
     summary: "Souhrn objednavky",
     subtotal: "Mezisoucet",
@@ -161,6 +191,11 @@ const CHECKOUT_COPY = {
     verifying: "Підтверджуємо оплату…",
     paidTitle: "Оплату виконано успішно",
     paidText: "Дякуємо! Замовлення підтверджено, товар зарезервовано для вас.",
+    orderNumberLabel: "Номер замовлення",
+    paidTotalLabel: "Сплачено",
+    paidPickupLabel: "Пункт видачі",
+    paidContactLabel: "Контакт",
+    paidKeepNote: "Збережіть номер замовлення — він знадобиться при отриманні.",
     orderError: "Не вдалося створити замовлення. Будь ласка, спробуйте ще раз.",
     summary: "Підсумок замовлення",
     subtotal: "Проміжна сума",
@@ -199,6 +234,11 @@ const CHECKOUT_COPY = {
     verifying: "Confirming your payment…",
     paidTitle: "Payment successful",
     paidText: "Thank you! Your order is confirmed and your items are reserved.",
+    orderNumberLabel: "Order number",
+    paidTotalLabel: "Paid",
+    paidPickupLabel: "Pickup point",
+    paidContactLabel: "Contact",
+    paidKeepNote: "Save your order number — you'll need it at pickup.",
     orderError: "We couldn't create your order. Please try again.",
     summary: "Order summary",
     subtotal: "Subtotal",
@@ -260,7 +300,18 @@ export function ShopCheckoutPage({
 
   // Persisted order context (idempotency + created order) so retries reuse the
   // same RESERVED order rather than creating duplicates.
-  const orderRef = useRef<OrderContext>({ signature: "", idempotencyKey: "", orderId: null, publicToken: null })
+  const orderRef = useRef<OrderContext>({
+    signature: "",
+    idempotencyKey: "",
+    orderId: null,
+    publicToken: null,
+    orderNumber: null,
+    total: null,
+    currency: null,
+    email: null,
+    pointName: null,
+  })
+  const [paidSummary, setPaidSummary] = useState<PaidSummary | null>(null)
 
   const cancelRef = useRef(false)
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -291,6 +342,7 @@ export function ShopCheckoutPage({
             }
             const { paymentIntent } = await s.retrievePaymentIntent(piSecret)
             if (paymentIntent && (paymentIntent.status === "succeeded" || paymentIntent.status === "processing")) {
+              setPaidSummary(summaryOf(orderRef.current))
               clear()
               setPhase("paid")
             } else {
@@ -407,7 +459,17 @@ export function ShopCheckoutPage({
     }
     const signature = currentSignature()
     if (orderRef.current.signature !== signature || !orderRef.current.idempotencyKey) {
-      orderRef.current = { signature, idempotencyKey: newIdempotencyKey(), orderId: null, publicToken: null }
+      orderRef.current = {
+        signature,
+        idempotencyKey: newIdempotencyKey(),
+        orderId: null,
+        publicToken: null,
+        orderNumber: null,
+        total: null,
+        currency: null,
+        email: null,
+        pointName: null,
+      }
       persistOrderCtx()
     }
 
@@ -439,6 +501,11 @@ export function ShopCheckoutPage({
       const created = (await createRes.json()) as ShopCreatedOrder
       orderRef.current.orderId = created.orderId
       orderRef.current.publicToken = created.publicToken
+      orderRef.current.orderNumber = created.orderNumber
+      orderRef.current.total = created.totalAmount
+      orderRef.current.currency = created.currency
+      orderRef.current.email = email.trim() || null
+      orderRef.current.pointName = point.name || null
       persistOrderCtx()
     }
 
@@ -472,6 +539,7 @@ export function ShopCheckoutPage({
   }, [createOrderAndPay, buildReturnUrl])
 
   const onConfirmed = useCallback(() => {
+    setPaidSummary(summaryOf(orderRef.current))
     clear()
     setPhase("paid")
   }, [clear])
@@ -487,6 +555,7 @@ export function ShopCheckoutPage({
     setErrorMessage(null)
     try {
       await createOrderAndPay()
+      setPaidSummary(summaryOf(orderRef.current))
       clear()
       setPhase("paid")
     } catch {
@@ -513,13 +582,52 @@ export function ShopCheckoutPage({
     return (
       <div className="container px-4 py-10 md:px-6">
         <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{copy.title}</h1>
-        <div className="mt-8 rounded-xl border border-emerald-200 bg-emerald-50/50 px-6 py-12 text-center">
-          <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-600" />
-          <p className="mt-4 text-base font-semibold text-gray-950">{copy.paidTitle}</p>
-          <p className="mt-2 text-sm text-gray-600">{copy.paidText}</p>
-          <Button asChild className="mt-5" variant="outline">
-            <Link href={`/${locale}`}>{copy.backToShop}</Link>
-          </Button>
+        <div className="mx-auto mt-8 max-w-lg rounded-xl border border-emerald-200 bg-emerald-50/50 px-6 py-10">
+          <div className="text-center">
+            <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-600" />
+            <p className="mt-4 text-base font-semibold text-gray-950">{copy.paidTitle}</p>
+            <p className="mt-2 text-sm text-gray-600">{copy.paidText}</p>
+          </div>
+
+          {paidSummary?.orderNumber ? (
+            <div className="mx-auto mt-6 max-w-sm rounded-lg border border-emerald-200 bg-white px-5 py-3 text-center">
+              <p className="text-xs uppercase tracking-wide text-gray-500">{copy.orderNumberLabel}</p>
+              <p className="mt-1 text-xl font-bold tracking-tight text-gray-950">{paidSummary.orderNumber}</p>
+            </div>
+          ) : null}
+
+          {paidSummary ? (
+            <dl className="mx-auto mt-5 max-w-sm space-y-2 text-sm">
+              {paidSummary.total != null ? (
+                <div className="flex items-center justify-between gap-4">
+                  <dt className="text-gray-500">{copy.paidTotalLabel}</dt>
+                  <dd className="font-semibold text-gray-950">{formatShopPrice(paidSummary.total, locale)}</dd>
+                </div>
+              ) : null}
+              {paidSummary.pointName ? (
+                <div className="flex items-center justify-between gap-4">
+                  <dt className="shrink-0 text-gray-500">{copy.paidPickupLabel}</dt>
+                  <dd className="text-right text-gray-800">{paidSummary.pointName}</dd>
+                </div>
+              ) : null}
+              {paidSummary.email ? (
+                <div className="flex items-center justify-between gap-4">
+                  <dt className="shrink-0 text-gray-500">{copy.paidContactLabel}</dt>
+                  <dd className="truncate text-right text-gray-800">{paidSummary.email}</dd>
+                </div>
+              ) : null}
+            </dl>
+          ) : null}
+
+          {paidSummary?.orderNumber ? (
+            <p className="mx-auto mt-5 max-w-sm text-center text-xs text-gray-500">{copy.paidKeepNote}</p>
+          ) : null}
+
+          <div className="mt-6 text-center">
+            <Button asChild variant="outline">
+              <Link href={`/${locale}`}>{copy.backToShop}</Link>
+            </Button>
+          </div>
         </div>
       </div>
     )

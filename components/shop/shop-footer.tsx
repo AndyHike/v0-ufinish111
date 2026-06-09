@@ -4,12 +4,10 @@ import Link from "next/link"
 import { Settings } from "lucide-react"
 import { useTranslations } from "next-intl"
 
-import { useCookieConsentContext } from "@/contexts/cookie-consent-context"
 import { b2bSiteUrl, mainSiteUrl } from "@/lib/site-config"
 
 export function ShopFooter({ locale }: { locale: string }) {
   const t = useTranslations("Shop.footer")
-  const { setShowBanner } = useCookieConsentContext()
 
   return (
     <footer className="mt-16 border-t border-gray-200 bg-gray-50">
@@ -75,14 +73,13 @@ export function ShopFooter({ locale }: { locale: string }) {
               </a>
             </li>
             <li>
-              <button
-                type="button"
-                onClick={() => setShowBanner(true)}
+              <a
+                href={`${mainSiteUrl}/${locale}/privacy`}
                 className="inline-flex items-center gap-1 hover:text-gray-950"
               >
                 <Settings className="h-3 w-3" />
                 {t("cookieSettings")}
-              </button>
+              </a>
             </li>
           </ul>
         </div>
