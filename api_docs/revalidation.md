@@ -84,6 +84,7 @@ Content-Type: application/json
 | `appearance.updated` | `site:{id}:appearance`, `site:{id}:view:home` |
 | `navigation.updated` | `site:{id}:navigation`, `site:{id}:view:home` |
 | `filters.updated` | `site:{id}:filters`, `site:{id}:view:home` |
+| `integrations.updated` | `site:{id}` (конфіг доставки/оплати для checkout) |
 | `inventory.updated` | `site:{id}:availability`, `site:{id}:view:home` |
 | `collection.created` / `updated` / `deleted` / `reordered` | `site:{id}:collection:{key}`, `site:{id}:view:list:{key}`, `site:{id}:view:{key}`, `site:{id}:view:home` |
 | `item.created` / `updated` / `deleted` / `links.updated` / `variants.updated` | теги колекції (як вище) + `site:{id}:item:{key}:{slug}`, `site:{id}:view:detail:{key}:{slug}` (для нового і попереднього slug) + `site:{id}:view:home` |
@@ -124,12 +125,18 @@ Content-Type: application/json
 | Item variants | `src/app/api/item-variants/actions.ts` | `item.variants.updated` |
 | SEO | `src/app/api/seo/actions.ts` | `item.updated` / `collection.updated` |
 | **Attributes / Filters** | `src/app/api/attributes/actions.ts` | `filters.updated` |
+| **Integrations / доставка+оплата** | `src/app/api/integrations/actions.ts` | `integrations.updated` |
 | **Inventory / залишки** | `src/app/api/inventory/actions.ts` | `inventory.updated` |
+| **Онлайн-замовлення (резерв)** | `src/app/api/public/v1/orders/route.ts` | `inventory.updated` |
+| **Stripe webhook (оплата/скасування)** | `src/app/api/public/stripe/webhook/[storeId]/route.ts` | `inventory.updated` |
+| **POS-продаж/повернення** | `src/app/api/pos/actions.ts` | `inventory.updated` |
+| **Payment reconciler (втрачений webhook)** | `src/lib/commerce/payment-reconciler.ts` | `inventory.updated` |
 | Store access / billing sync | `src/lib/store-access-sync.ts` | `site.updated` |
 
 Примітки:
 - **Фільтри** на сторфронті (`GET /api/public/v1/filters`) похідні від атрибутів, тому ревалідацію тригерять саме мутації атрибутів (`filters.updated`).
-- **Inventory** має єдину точку `revalidateInventory(storeId)`, тож усі рухи складу/резервування/інвентаризації одразу шлють `inventory.updated`; публічна доступність живе в `items?include=availability`.
+- **Inventory** має єдину точку `revalidateInventory(storeId)`, тож усі рухи складу/резервування/інвентаризації одразу шлють `inventory.updated`; публічна доступність живе в `items?include=availability`. Окрім адмін-дій, `inventory.updated` шлють також усі канали продажу, що змінюють залишки: онлайн-замовлення (резерв при створенні), Stripe webhook (consume/release), POS-продаж, і reconciler (відновлення після втраченого webhook).
+- **Integrations** (`integrations.updated`) скидає `site:{id}` — рівно той тег, яким сторфронт позначає `GET /api/public/v1/integrations` (ціна доставки Packeta, Stripe publishable key), тож checkout одразу бачить нову конфігурацію.
 - **Глобальний перемикач мов** (`Locale`, лише SUPER_ADMIN) навмисно **не** тригерить зовнішню ревалідацію. Per-store набір мов (`enabledLocales`) покрито через `settings.updated`.
 
 ## 6. Що має реалізувати сторфронт (`/api/revalidate`)
