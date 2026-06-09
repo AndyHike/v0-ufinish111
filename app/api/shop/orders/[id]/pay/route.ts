@@ -29,7 +29,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json(payment, { status: 201 })
   } catch (error) {
     if (error instanceof ShopApiError) {
-      return NextResponse.json({ error: error.message }, { status: error.status >= 400 ? error.status : 502 })
+      // Forward the admin's machine-readable `code` (e.g. ORDER_ALREADY_PAID,
+      // ORDER_NOT_PAYABLE) alongside the human message so the browser can branch
+      // on it instead of surfacing every 4xx as a generic "payment failed".
+      return NextResponse.json(
+        { error: error.message, code: error.code },
+        { status: error.status >= 400 ? error.status : 502 },
+      )
     }
     return NextResponse.json({ error: "PAYMENT_INIT_FAILED" }, { status: 502 })
   }

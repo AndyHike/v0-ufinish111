@@ -7,7 +7,7 @@ import Link from "next/link"
 import { CheckCircle2, Loader2, MapPin, ShieldCheck } from "lucide-react"
 
 import { useShopCart } from "@/components/shop/shop-cart-provider"
-import { ShopStripePayment, getStripe, type PreparedPayment } from "@/components/shop/shop-stripe-payment"
+import { ShopStripePayment, getStripe, type PreparePaymentResult } from "@/components/shop/shop-stripe-payment"
 import { Button } from "@/components/ui/button"
 import { formatShopPrice } from "@/lib/shop/catalog"
 import type { ShopCreatedOrder, ShopLocale, ShopOrderPayment, ShopPacketaConfig, ShopStripeConfig } from "@/lib/shop/types"
@@ -21,11 +21,45 @@ const PACKETA_LOAD_TIMEOUT_MS = 20000
 // reloads reuse the same idempotencyKey + order instead of creating duplicates.
 const ORDER_STORAGE_KEY = "devicehelp.shop.checkout.order"
 
+// The admin gives the order a ~10min payment window (15min stock reservation),
+// after which it cancels both the order and its Stripe PaymentIntent. Once a
+// cached order is older than this its clientSecret is dead, so we drop it and
+// create a fresh order rather than calling /pay on a doomed one.
+const PAYMENT_WINDOW_MS = 10 * 60 * 1000
+
+// Machine-readable /pay failures we branch on (forwarded from the admin via the
+// same-origin proxy). Anything else is treated as a transient/generic error.
+const ERR_ALREADY_PAID = "ORDER_ALREADY_PAID"
+const ERR_NOT_PAYABLE = "ORDER_NOT_PAYABLE"
+
+// A /pay rejection we can classify by the admin's error code (falling back to a
+// substring match on the human message for backends that omit `code`).
+class PayError extends Error {
+  constructor(readonly kind: "already_paid" | "not_payable" | "other") {
+    super(`pay:${kind}`)
+    this.name = "PayError"
+  }
+}
+
+function classifyPayFailure(code: string | undefined, message: string | undefined): PayError {
+  const text = (message ?? "").toLowerCase()
+  if (code === ERR_ALREADY_PAID || text.includes("already been paid")) {
+    return new PayError("already_paid")
+  }
+  if (code === ERR_NOT_PAYABLE || text.includes("not payable") || text.includes("no longer")) {
+    return new PayError("not_payable")
+  }
+  return new PayError("other")
+}
+
 interface OrderContext {
   signature: string
   idempotencyKey: string
   orderId: string | null
   publicToken: string | null
+  // Epoch ms when the order was created — used to detect a stale (likely
+  // expired) cached order so we can rotate to a fresh one before paying.
+  createdAt: number | null
   // Captured at create time so the success screen can show the order details —
   // persisted to sessionStorage so they survive a Stripe redirect (3DS/PayPal).
   orderNumber: string | null
@@ -152,8 +186,10 @@ const CHECKOUT_COPY = {
     paidTotalLabel: "Zaplaceno",
     paidPickupLabel: "Vydejni misto",
     paidContactLabel: "Kontakt",
-    paidKeepNote: "Ulozte si cislo objednavky — budete ho potrebovat pri vyzvednuti.",
     orderError: "Objednavku se nepodarilo vytvorit. Zkuste to prosim znovu.",
+    expiredTitle: "Platnost objednavky vyprsela",
+    expiredText: "Rezervace a casovy limit pro platbu vyprsely. Zalozte prosim novou objednavku — kosik zustava zachovany.",
+    startAgain: "Zalozit novou objednavku",
     summary: "Souhrn objednavky",
     subtotal: "Mezisoucet",
     deliveryFee: "Doprava",
@@ -195,8 +231,10 @@ const CHECKOUT_COPY = {
     paidTotalLabel: "Сплачено",
     paidPickupLabel: "Пункт видачі",
     paidContactLabel: "Контакт",
-    paidKeepNote: "Збережіть номер замовлення — він знадобиться при отриманні.",
     orderError: "Не вдалося створити замовлення. Будь ласка, спробуйте ще раз.",
+    expiredTitle: "Час оплати вийшов",
+    expiredText: "Резерв і вікно оплати цього замовлення завершилися. Будь ласка, оформіть нове замовлення — кошик збережено.",
+    startAgain: "Оформити нове замовлення",
     summary: "Підсумок замовлення",
     subtotal: "Проміжна сума",
     deliveryFee: "Доставка",
@@ -238,8 +276,10 @@ const CHECKOUT_COPY = {
     paidTotalLabel: "Paid",
     paidPickupLabel: "Pickup point",
     paidContactLabel: "Contact",
-    paidKeepNote: "Save your order number — you'll need it at pickup.",
     orderError: "We couldn't create your order. Please try again.",
+    expiredTitle: "Order expired",
+    expiredText: "The reservation and payment window for this order have expired. Please start a new order — your cart is kept.",
+    startAgain: "Start a new order",
     summary: "Order summary",
     subtotal: "Subtotal",
     deliveryFee: "Delivery",
@@ -258,7 +298,7 @@ interface PacketaPoint {
   country?: string
 }
 
-type CheckoutPhase = "form" | "confirming" | "paid" | "error"
+type CheckoutPhase = "form" | "confirming" | "paid" | "error" | "expired"
 
 export function ShopCheckoutPage({
   locale,
@@ -305,6 +345,7 @@ export function ShopCheckoutPage({
     idempotencyKey: "",
     orderId: null,
     publicToken: null,
+    createdAt: null,
     orderNumber: null,
     total: null,
     currency: null,
@@ -345,6 +386,11 @@ export function ShopCheckoutPage({
               setPaidSummary(summaryOf(orderRef.current))
               clear()
               setPhase("paid")
+            } else if (paymentIntent && paymentIntent.status === "canceled") {
+              // The admin cancelled this checkout while we were away — the old
+              // clientSecret is dead. Prompt a new order rather than "failed".
+              resetOrderContext()
+              setPhase("expired")
             } else {
               setErrorMessage(copy.genericPayError)
               setPhase("error")
@@ -365,6 +411,40 @@ export function ShopCheckoutPage({
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Don't leave a hanging payment tab: when the page comes back from the
+  // background after the payment window has lapsed, the cached order's
+  // PaymentIntent is likely already cancelled. Drop it so the next Pay click
+  // requests a fresh order/clientSecret instead of confirming a dead one.
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState !== "visible") {
+        return
+      }
+      const ctx = orderRef.current
+      if (ctx.createdAt != null && Date.now() - ctx.createdAt > PAYMENT_WINDOW_MS) {
+        orderRef.current = {
+          signature: "",
+          idempotencyKey: "",
+          orderId: null,
+          publicToken: null,
+          createdAt: null,
+          orderNumber: null,
+          total: null,
+          currency: null,
+          email: null,
+          pointName: null,
+        }
+        try {
+          window.sessionStorage.setItem(ORDER_STORAGE_KEY, JSON.stringify(orderRef.current))
+        } catch {
+          // ignore
+        }
+      }
+    }
+    document.addEventListener("visibilitychange", onVisible)
+    return () => document.removeEventListener("visibilitychange", onVisible)
   }, [])
 
   const hasContact = email.trim().length > 0 || phone.trim().length > 0
@@ -458,12 +538,18 @@ export function ShopCheckoutPage({
       throw new Error("no-point")
     }
     const signature = currentSignature()
-    if (orderRef.current.signature !== signature || !orderRef.current.idempotencyKey) {
+    // Drop a cached order that is stale (likely past the admin's payment window,
+    // so its PaymentIntent is gone) — start fresh rather than calling /pay on a
+    // doomed order. Editing the form (signature change) also rotates.
+    const isStale =
+      orderRef.current.createdAt != null && Date.now() - orderRef.current.createdAt > PAYMENT_WINDOW_MS
+    if (orderRef.current.signature !== signature || !orderRef.current.idempotencyKey || isStale) {
       orderRef.current = {
         signature,
         idempotencyKey: newIdempotencyKey(),
         orderId: null,
         publicToken: null,
+        createdAt: null,
         orderNumber: null,
         total: null,
         currency: null,
@@ -501,6 +587,7 @@ export function ShopCheckoutPage({
       const created = (await createRes.json()) as ShopCreatedOrder
       orderRef.current.orderId = created.orderId
       orderRef.current.publicToken = created.publicToken
+      orderRef.current.createdAt = Date.now()
       orderRef.current.orderNumber = created.orderNumber
       orderRef.current.total = created.totalAmount
       orderRef.current.currency = created.currency
@@ -515,7 +602,18 @@ export function ShopCheckoutPage({
       body: JSON.stringify({ publicToken: orderRef.current.publicToken }),
     })
     if (!payRes.ok) {
-      throw new Error("pay")
+      // Read the forwarded { error, code } so the caller can distinguish
+      // already-paid / not-payable from a generic failure.
+      let code: string | undefined
+      let message: string | undefined
+      try {
+        const body = (await payRes.json()) as { error?: string; code?: string }
+        code = body.code
+        message = body.error
+      } catch {
+        // non-JSON error body — fall through to generic classification
+      }
+      throw classifyPayFailure(code, message)
     }
     return (await payRes.json()) as ShopOrderPayment
   }, [point, currentSignature, firstName, lastName, email, phone, lines, locale])
@@ -525,24 +623,70 @@ export function ShopCheckoutPage({
     [mounted, locale],
   )
 
-  // Passed to the Stripe component: runs inside confirm() to get the clientSecret.
-  const prepareClientSecret = useCallback(async (): Promise<PreparedPayment | null> => {
+  // Passed to the Stripe component: runs inside confirm() to get a *fresh*
+  // clientSecret. Branches on the /pay outcome so the UI never shows a generic
+  // "payment failed" for an already-paid / no-longer-payable / free order.
+  const prepareClientSecret = useCallback(async (): Promise<PreparePaymentResult> => {
     try {
       const payment = await createOrderAndPay()
-      if (!payment.clientSecret) {
-        return null
+      // Free order (total 0): the admin settled it without a Stripe charge.
+      if (payment.free) {
+        return { status: "confirmed" }
       }
-      return { clientSecret: payment.clientSecret, returnUrl: buildReturnUrl() }
-    } catch {
-      return null
+      if (!payment.clientSecret) {
+        return { status: "error" }
+      }
+      return { status: "ready", clientSecret: payment.clientSecret, returnUrl: buildReturnUrl() }
+    } catch (error) {
+      if (error instanceof PayError) {
+        // Already paid → show success; not payable → start a new order.
+        if (error.kind === "already_paid") {
+          return { status: "confirmed" }
+        }
+        if (error.kind === "not_payable") {
+          return { status: "expired" }
+        }
+      }
+      return { status: "error" }
     }
   }, [createOrderAndPay, buildReturnUrl])
+
+  // Forget the dead order so a "start again" / next pay click builds a fresh one
+  // (new idempotencyKey). The cart is kept — only the order context is dropped.
+  const resetOrderContext = useCallback(() => {
+    orderRef.current = {
+      signature: "",
+      idempotencyKey: "",
+      orderId: null,
+      publicToken: null,
+      createdAt: null,
+      orderNumber: null,
+      total: null,
+      currency: null,
+      email: null,
+      pointName: null,
+    }
+    persistOrderCtx()
+  }, [])
 
   const onConfirmed = useCallback(() => {
     setPaidSummary(summaryOf(orderRef.current))
     clear()
     setPhase("paid")
   }, [clear])
+
+  // Order is no longer payable (cancelled/expired) or its PaymentIntent was
+  // cancelled: drop it and prompt the buyer to start a new order.
+  const onExpired = useCallback(() => {
+    resetOrderContext()
+    setPhase("expired")
+  }, [resetOrderContext])
+
+  const startAgain = useCallback(() => {
+    resetOrderContext()
+    setErrorMessage(null)
+    setPhase("form")
+  }, [resetOrderContext])
 
   const onValidateFail = useCallback(() => setValidateHint(true), [])
 
@@ -558,7 +702,19 @@ export function ShopCheckoutPage({
       setPaidSummary(summaryOf(orderRef.current))
       clear()
       setPhase("paid")
-    } catch {
+    } catch (error) {
+      // An already-settled free order is still a success; a no-longer-payable
+      // one routes to "start a new order" like the Stripe path.
+      if (error instanceof PayError && error.kind === "already_paid") {
+        setPaidSummary(summaryOf(orderRef.current))
+        clear()
+        setPhase("paid")
+        return
+      }
+      if (error instanceof PayError && error.kind === "not_payable") {
+        onExpired()
+        return
+      }
       setErrorMessage(copy.orderError)
       setPhase("error")
     }
@@ -582,48 +738,70 @@ export function ShopCheckoutPage({
     return (
       <div className="container px-4 py-10 md:px-6">
         <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{copy.title}</h1>
-        <div className="mx-auto mt-8 max-w-lg rounded-xl border border-emerald-200 bg-emerald-50/50 px-6 py-10">
-          <div className="text-center">
-            <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-600" />
-            <p className="mt-4 text-base font-semibold text-gray-950">{copy.paidTitle}</p>
-            <p className="mt-2 text-sm text-gray-600">{copy.paidText}</p>
+        <div className="mx-auto mt-8 max-w-lg overflow-hidden rounded-2xl border border-emerald-200 bg-white shadow-sm">
+          {/* Header band — the "paid" confirmation, visually set apart in green. */}
+          <div className="bg-emerald-50/70 px-6 py-8 text-center">
+            <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-emerald-100">
+              <CheckCircle2 className="h-8 w-8 text-emerald-600" />
+            </span>
+            <p className="mt-4 text-lg font-semibold text-gray-950">{copy.paidTitle}</p>
+            <p className="mx-auto mt-2 max-w-sm text-sm text-gray-600">{copy.paidText}</p>
           </div>
 
+          {/* Order number — its own emphasized row. */}
           {paidSummary?.orderNumber ? (
-            <div className="mx-auto mt-6 max-w-sm rounded-lg border border-emerald-200 bg-white px-5 py-3 text-center">
-              <p className="text-xs uppercase tracking-wide text-gray-500">{copy.orderNumberLabel}</p>
-              <p className="mt-1 text-xl font-bold tracking-tight text-gray-950">{paidSummary.orderNumber}</p>
+            <div className="border-t border-emerald-100 px-6 py-5 text-center">
+              <p className="text-xs font-medium uppercase tracking-wide text-gray-500">{copy.orderNumberLabel}</p>
+              <p className="mt-1.5 text-2xl font-bold tracking-tight text-gray-950">{paidSummary.orderNumber}</p>
             </div>
           ) : null}
 
+          {/* Details — each on its own divided row so they don't run together. */}
           {paidSummary ? (
-            <dl className="mx-auto mt-5 max-w-sm space-y-2 text-sm">
+            <dl className="divide-y divide-gray-100 border-t border-gray-100 px-6 text-sm">
               {paidSummary.total != null ? (
-                <div className="flex items-center justify-between gap-4">
+                <div className="flex items-start justify-between gap-6 py-3.5">
                   <dt className="text-gray-500">{copy.paidTotalLabel}</dt>
-                  <dd className="font-semibold text-gray-950">{formatShopPrice(paidSummary.total, locale)}</dd>
+                  <dd className="text-right font-semibold text-gray-950">{formatShopPrice(paidSummary.total, locale)}</dd>
                 </div>
               ) : null}
               {paidSummary.pointName ? (
-                <div className="flex items-center justify-between gap-4">
+                <div className="flex items-start justify-between gap-6 py-3.5">
                   <dt className="shrink-0 text-gray-500">{copy.paidPickupLabel}</dt>
                   <dd className="text-right text-gray-800">{paidSummary.pointName}</dd>
                 </div>
               ) : null}
               {paidSummary.email ? (
-                <div className="flex items-center justify-between gap-4">
+                <div className="flex items-start justify-between gap-6 py-3.5">
                   <dt className="shrink-0 text-gray-500">{copy.paidContactLabel}</dt>
-                  <dd className="truncate text-right text-gray-800">{paidSummary.email}</dd>
+                  <dd className="break-all text-right text-gray-800">{paidSummary.email}</dd>
                 </div>
               ) : null}
             </dl>
           ) : null}
 
-          {paidSummary?.orderNumber ? (
-            <p className="mx-auto mt-5 max-w-sm text-center text-xs text-gray-500">{copy.paidKeepNote}</p>
-          ) : null}
+          {/* Action — separated footer. */}
+          <div className="border-t border-gray-100 px-6 py-5 text-center">
+            <Button asChild variant="outline" className="w-full sm:w-auto">
+              <Link href={`/${locale}`}>{copy.backToShop}</Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
-          <div className="mt-6 text-center">
+  if (phase === "expired") {
+    return (
+      <div className="container px-4 py-10 md:px-6">
+        <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{copy.title}</h1>
+        <div className="mx-auto mt-8 max-w-lg rounded-xl border border-amber-200 bg-amber-50/50 px-6 py-10 text-center">
+          <p className="text-base font-semibold text-gray-950">{copy.expiredTitle}</p>
+          <p className="mt-2 text-sm text-gray-600">{copy.expiredText}</p>
+          <div className="mt-6 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+            {lines.length > 0 ? (
+              <Button onClick={startAgain}>{copy.startAgain}</Button>
+            ) : null}
             <Button asChild variant="outline">
               <Link href={`/${locale}`}>{copy.backToShop}</Link>
             </Button>
@@ -778,6 +956,7 @@ export function ShopCheckoutPage({
                   onValidateFail={onValidateFail}
                   prepareClientSecret={prepareClientSecret}
                   onConfirmed={onConfirmed}
+                  onExpired={onExpired}
                   copy={{ payNow: copy.payNow, genericError: copy.genericPayError }}
                 />
                 {validateHint && !formValid ? (

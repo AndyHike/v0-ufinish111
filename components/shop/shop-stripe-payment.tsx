@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js"
-import { loadStripe, type Stripe, type StripeElementLocale } from "@stripe/stripe-js"
+import { loadStripe, type Stripe, type StripeElementLocale, type StripeError } from "@stripe/stripe-js"
 import { Loader2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -13,9 +13,31 @@ export interface StripePaymentCopy {
   genericError: string
 }
 
-export interface PreparedPayment {
-  clientSecret: string
-  returnUrl: string
+// Result of fetching a fresh PaymentIntent right before confirming. The
+// clientSecret is short-lived: the admin cancels both the order and the Stripe
+// PaymentIntent once the ~10min payment window / 15min reservation lapse, so we
+// always re-request `/pay` at confirm time and branch on the outcome instead of
+// treating every non-"ready" case as a failed charge.
+export type PreparePaymentResult =
+  // PaymentIntent ready to confirm with Stripe.
+  | { status: "ready"; clientSecret: string; returnUrl: string }
+  // Nothing to charge — free order (total 0) or already paid: treat as success.
+  | { status: "confirmed" }
+  // Order is no longer payable (cancelled/completed/expired): start a new order.
+  | { status: "expired" }
+  // Transient/unknown failure: let the user retry (a retry re-runs `/pay`).
+  | { status: "error" }
+
+// A confirm error from a PaymentIntent that the admin already cancelled (expired
+// checkout). Stripe reports this as `payment_intent_unexpected_state`, or the
+// attached intent shows status "canceled". Either way the old clientSecret is
+// dead — start a new order rather than retrying with it.
+function isExpiredIntentError(error: StripeError): boolean {
+  if (error.code === "payment_intent_unexpected_state") {
+    return true
+  }
+  const intent = error.payment_intent
+  return intent != null && intent.status === "canceled"
 }
 
 // loadStripe must run once per publishable key (it injects a script tag); cache
@@ -45,13 +67,15 @@ function PaymentInner({
   onValidateFail,
   prepareClientSecret,
   onConfirmed,
+  onExpired,
   copy,
 }: {
   amount: number
   canPay: boolean
   onValidateFail: () => void
-  prepareClientSecret: () => Promise<PreparedPayment | null>
+  prepareClientSecret: () => Promise<PreparePaymentResult>
   onConfirmed: () => void
+  onExpired: () => void
   copy: StripePaymentCopy
 }) {
   const stripe = useStripe()
@@ -89,8 +113,20 @@ function PaymentInner({
       return
     }
 
+    // Fetch a fresh PaymentIntent immediately before confirming — the
+    // clientSecret is short-lived, so we never reuse a cached/overnight one.
     const prepared = await prepareClientSecret()
-    if (!prepared) {
+    if (prepared.status === "confirmed") {
+      // Free order or already paid: nothing to charge.
+      onConfirmed()
+      return
+    }
+    if (prepared.status === "expired") {
+      // Order no longer payable — don't retry, route to "start a new order".
+      onExpired()
+      return
+    }
+    if (prepared.status === "error") {
       setError(copy.genericError)
       setSubmitting(false)
       return
@@ -103,6 +139,12 @@ function PaymentInner({
       redirect: "if_required",
     })
     if (confirmError) {
+      // Expired checkout (admin already cancelled the intent): start over rather
+      // than showing a generic "payment failed" and retrying the dead secret.
+      if (isExpiredIntentError(confirmError)) {
+        onExpired()
+        return
+      }
       setError(confirmError.message ?? copy.genericError)
       setSubmitting(false)
       return
@@ -114,7 +156,7 @@ function PaymentInner({
       return
     }
     setSubmitting(false)
-  }, [stripe, elements, canPay, onValidateFail, prepareClientSecret, onConfirmed, copy.genericError])
+  }, [stripe, elements, canPay, onValidateFail, prepareClientSecret, onConfirmed, onExpired, copy.genericError])
 
   return (
     <div className="space-y-4">
@@ -139,6 +181,7 @@ export function ShopStripePayment({
   onValidateFail,
   prepareClientSecret,
   onConfirmed,
+  onExpired,
   copy,
 }: {
   publishableKey: string
@@ -149,8 +192,9 @@ export function ShopStripePayment({
   locale: ShopLocale
   canPay: boolean
   onValidateFail: () => void
-  prepareClientSecret: () => Promise<PreparedPayment | null>
+  prepareClientSecret: () => Promise<PreparePaymentResult>
   onConfirmed: () => void
+  onExpired: () => void
   copy: StripePaymentCopy
 }) {
   const stripePromise = useMemo(() => getStripe(publishableKey), [publishableKey])
@@ -171,6 +215,7 @@ export function ShopStripePayment({
         onValidateFail={onValidateFail}
         prepareClientSecret={prepareClientSecret}
         onConfirmed={onConfirmed}
+        onExpired={onExpired}
         copy={copy}
       />
     </Elements>
