@@ -166,8 +166,9 @@ function ExpressCheckoutWallets({
     <div className="space-y-2">
       <ExpressCheckoutElement
         // Force the wallets on whenever the device supports them, instead of
-        // letting Stripe auto-suppress them. Link stays auto.
-        options={{ paymentMethods: { applePay: "always", googlePay: "always", link: "auto" } }}
+        // letting Stripe auto-suppress them. Link is kept out of the top row so
+        // it doesn't duplicate the Link option inside the card accordion.
+        options={{ paymentMethods: { applePay: "always", googlePay: "always", link: "never" } }}
         onReady={(event) => {
           const methods = event.availablePaymentMethods
           onAvailability(Boolean(methods && (methods.applePay || methods.googlePay)))
@@ -256,9 +257,15 @@ function PaymentInner({
 
   return (
     <div className="space-y-4">
-      {/* Accordion: each method (card / Klarna / …) is a collapsed row; clicking
-          one expands its fields. A single "Pay" button confirms the selection. */}
-      <PaymentElement options={{ layout: "accordion" }} />
+      {/* Card (+ any redirect methods) only. Apple/Google Pay are shown as the
+          prominent express buttons above, so hide their duplicate rows here.
+          Collapsed radios keep the card form from being force-expanded. */}
+      <PaymentElement
+        options={{
+          wallets: { applePay: "never", googlePay: "never" },
+          layout: { type: "accordion", defaultCollapsed: true, radios: "always" },
+        }}
+      />
       {error ? <p className="text-xs text-red-600">{error}</p> : null}
       <Button type="button" className="w-full" size="lg" disabled={!stripe || submitting || !canPay} onClick={confirm}>
         {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
