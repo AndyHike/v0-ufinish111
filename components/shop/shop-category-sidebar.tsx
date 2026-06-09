@@ -129,7 +129,7 @@ function RootCategory({
     <li className="group/cat relative">
       {hasChildren ? <input id={toggleId} type="checkbox" className="peer sr-only" /> : null}
 
-      <div className="flex items-center rounded-lg transition hover:bg-gray-100 lg:group-hover/cat:bg-gray-100">
+      <div className="flex items-center rounded-xl border border-gray-100 bg-gray-50/60 shadow-sm transition hover:border-gray-200 hover:bg-white hover:shadow-md lg:group-hover/cat:border-gray-200 lg:group-hover/cat:bg-white lg:group-hover/cat:shadow-md">
         <Link
           href={`/${locale}/category/${node.category.slug}`}
           className="flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5"
@@ -187,7 +187,7 @@ export function ShopCategorySidebar({
     <aside className={`bg-white ${className}`}>
       <div className="px-3 py-4">
         <h2 className="px-3 text-xs font-semibold uppercase tracking-[0.16em] text-gray-400">{title}</h2>
-        <ul className="mt-3 space-y-0.5">
+        <ul className="mt-3 space-y-1.5">
           {nodes.map((node) => (
             <RootCategory key={node.category.id} locale={locale} node={node} />
           ))}

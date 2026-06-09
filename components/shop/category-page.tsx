@@ -1,5 +1,6 @@
 import Image from "next/image"
 import Link from "next/link"
+import { Package } from "lucide-react"
 
 import { ProductCard } from "@/components/shop/product-card"
 import { ShopFilterDrawer } from "@/components/shop/shop-filter-drawer"
@@ -256,21 +257,28 @@ export function CategoryPage({
           <p className="mt-3 max-w-2xl text-sm leading-7 text-gray-600">{description}</p>
 
           {childCategories.length > 0 ? (
-            <div className="mt-5 flex flex-wrap gap-2">
-              {childCategories.map((childCategory) => (
-                <Link
-                  key={childCategory.id}
-                  href={categoryHref(locale, childCategory)}
-                  className="group inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white py-1.5 pl-1.5 pr-4 text-sm font-medium text-gray-700 transition hover:border-gray-300 hover:bg-gray-50"
-                >
-                  {childCategory.imageUrl ? (
-                    <span className="relative h-7 w-7 shrink-0 overflow-hidden rounded-full bg-gray-100">
-                      <Image src={childCategory.imageUrl} alt="" fill sizes="28px" className="object-cover" />
+            <div className="mt-6">
+              <p className="text-sm font-semibold text-gray-900">{copy.subcategories}</p>
+              <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">
+                {childCategories.map((childCategory) => (
+                  <Link
+                    key={childCategory.id}
+                    href={categoryHref(locale, childCategory)}
+                    className="group flex flex-col items-center gap-3 rounded-2xl border border-gray-200 bg-white p-4 text-center shadow-sm transition hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-md"
+                  >
+                    <span className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gray-50 ring-1 ring-gray-100 transition group-hover:ring-gray-200">
+                      {childCategory.imageUrl ? (
+                        <Image src={childCategory.imageUrl} alt="" fill sizes="64px" className="object-cover" />
+                      ) : (
+                        <Package className="h-6 w-6 text-gray-300" />
+                      )}
                     </span>
-                  ) : null}
-                  <span className="truncate">{getLocalizedText(childCategory.title, locale)}</span>
-                </Link>
-              ))}
+                    <span className="line-clamp-2 text-sm font-medium text-gray-800 transition group-hover:text-primary">
+                      {getLocalizedText(childCategory.title, locale)}
+                    </span>
+                  </Link>
+                ))}
+              </div>
             </div>
           ) : null}
         </div>
