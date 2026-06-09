@@ -395,13 +395,22 @@ export function isVariantPurchasable(variant: ShopVariant): boolean {
   return getMaxPurchasableQuantity(variant) > 0
 }
 
+/** Binary "in stock" label, no count — used for multi-variant cards. */
+function getInStockLabel(locale: ShopLocale): string {
+  return locale === "cs" ? "Skladem" : locale === "uk" ? "В наявності" : "In stock"
+}
+
+function getOutOfStockLabel(locale: ShopLocale): string {
+  return locale === "cs" ? "Neni skladem" : locale === "uk" ? "Немає в наявності" : "Out of stock"
+}
+
 export function getAvailabilityLabel(variant: ShopVariant, locale: ShopLocale): string {
   if (!variant.trackInventory || variant.availability.availableStock === null) {
     return locale === "cs" ? "Dostupne" : locale === "uk" ? "Доступно" : "Available"
   }
 
   if (variant.availability.availableStock <= 0) {
-    return locale === "cs" ? "Neni skladem" : locale === "uk" ? "Немає в наявності" : "Out of stock"
+    return getOutOfStockLabel(locale)
   }
 
   if (locale === "cs") {
@@ -616,6 +625,24 @@ export function toProductCard(
       ? `/${locale}/product/${item.slug}/${variantRouteSlug}`
       : `/${locale}/product/${item.slug}`
 
+  // Purchasability of a multi-variant ("from X") card is a property of the
+  // product, not its default variant: it can be bought if ANY variant is in
+  // stock. A forced/single card answers for its own SKU.
+  const cardIsPurchasable = forcedVariant
+    ? isVariantPurchasable(forcedVariant)
+    : purchasableVariants.length > 0
+
+  // Stock display mirrors the price. A single (or forced) variant shows the
+  // precise count for its own SKU. A multi-variant card shows only a boolean
+  // state with no number: a count here would belong to one variant, not the
+  // product, and summing across variants would overstate any single SKU.
+  const availabilityLabel = hasOptions
+    ? cardIsPurchasable
+      ? getInStockLabel(locale)
+      : getOutOfStockLabel(locale)
+    : getAvailabilityLabel(variant, locale)
+  const availableStock = hasOptions ? null : variant.availability.availableStock
+
   return {
     itemId: item.id,
     variantId: variant.id,
@@ -632,9 +659,9 @@ export function toProductCard(
     discountPercent: discountPercent && discountPercent > 0 ? discountPercent : null,
     currency: "CZK",
     href,
-    availabilityLabel: getAvailabilityLabel(variant, locale),
-    availableStock: variant.availability.availableStock,
-    isPurchasable: isVariantPurchasable(variant),
+    availabilityLabel,
+    availableStock,
+    isPurchasable: cardIsPurchasable,
   }
 }
 

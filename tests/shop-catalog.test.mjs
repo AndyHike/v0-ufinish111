@@ -222,6 +222,69 @@ test("forced-variant card reflects the matched variant stock, not the item defau
   assert.equal(itemCard.href, "/cs/product/protective-glass")
 })
 
+test("multi-variant card shows a boolean availability state, not a per-variant count", () => {
+  // protective-glass spans several variants: the card aggregates price ("from X")
+  // so it must NOT advertise the default variant's precise stock — that number
+  // belongs to one SKU, not the product.
+  const product = catalog.getMockShopProduct("cs", "protective-glass")
+  const card = catalog.toProductCard(product.item, "cs")
+
+  assert.equal(card.priceFrom, true)
+  assert.equal(card.availableStock, null)
+  assert.equal(card.availabilityLabel, "Skladem") // boolean state, no "N ks"
+  assert.match(catalog.toProductCard(product.item, "uk").availabilityLabel, /^В наявності$/)
+})
+
+test("multi-variant card is purchasable when ANY variant is in stock, even if the default is sold out", () => {
+  // The default variant is out of stock, but a sibling variant is available, so
+  // the product card must stay purchasable (purchasability is a product property).
+  const item = {
+    id: "item-synthetic",
+    slug: "synthetic",
+    title: { cs: "Synteticky", uk: "Синтетичний", en: "Synthetic" },
+    images: ["/focused-phone-fix.png"],
+    variants: [
+      {
+        id: "variant-default-oos",
+        itemId: "item-synthetic",
+        title: { cs: "A", uk: "A", en: "A" },
+        slugOverride: "a",
+        price: 200,
+        salePrice: null,
+        sku: "SYN-A",
+        isDefault: true,
+        trackInventory: true,
+        selectedOptions: [],
+        images: [],
+        availability: { availableStock: 0 },
+      },
+      {
+        id: "variant-sibling-instock",
+        itemId: "item-synthetic",
+        title: { cs: "B", uk: "B", en: "B" },
+        slugOverride: "b",
+        price: 220,
+        salePrice: null,
+        sku: "SYN-B",
+        isDefault: false,
+        trackInventory: true,
+        selectedOptions: [],
+        images: [],
+        availability: { availableStock: 4 },
+      },
+    ],
+  }
+
+  const card = catalog.toProductCard(item, "cs")
+
+  assert.equal(card.priceFrom, true)
+  assert.equal(card.isPurchasable, true)
+  assert.equal(card.availableStock, null)
+  assert.equal(card.availabilityLabel, "Skladem")
+  // "from X" price prefers the cheapest purchasable variant (the in-stock sibling).
+  assert.equal(card.displayPrice, 220)
+})
+
 test("getVariantProductTitle joins item and variant, avoiding duplication", () => {
   // Bare model variant title → join with the item title.
   assert.equal(

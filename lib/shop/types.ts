@@ -185,6 +185,7 @@ export interface ShopProductCardView {
   currency: ShopCurrency
   href: string
   availabilityLabel: string
+  /** Precise stock for a single/forced-variant card; null for a multi-variant card (boolean state only). */
   availableStock: number | null
   isPurchasable: boolean
 }
