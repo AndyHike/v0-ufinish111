@@ -179,6 +179,7 @@ const CHECKOUT_COPY = {
     fillFormFirst: "Nejprve vyplnte kontakt a vyberte vydejni misto.",
     payNow: "Zaplatit",
     genericPayError: "Platba se nezdarila. Zkuste jiny zpusob platby.",
+    orPayByCard: "nebo zaplatit kartou",
     verifying: "Overujeme platbu…",
     paidTitle: "Platba probehla uspesne",
     paidText: "Dekujeme! Objednavka je potvrzena a zbozi je pro vas rezervovano.",
@@ -224,6 +225,7 @@ const CHECKOUT_COPY = {
     fillFormFirst: "Спершу заповніть контакти та виберіть пункт видачі.",
     payNow: "Сплатити",
     genericPayError: "Оплата не пройшла. Спробуйте інший спосіб оплати.",
+    orPayByCard: "або сплатити карткою",
     verifying: "Підтверджуємо оплату…",
     paidTitle: "Оплату виконано успішно",
     paidText: "Дякуємо! Замовлення підтверджено, товар зарезервовано для вас.",
@@ -269,6 +271,7 @@ const CHECKOUT_COPY = {
     fillFormFirst: "First fill in your contact and pick a delivery point.",
     payNow: "Pay now",
     genericPayError: "Payment failed. Please try another payment method.",
+    orPayByCard: "or pay by card",
     verifying: "Confirming your payment…",
     paidTitle: "Payment successful",
     paidText: "Thank you! Your order is confirmed and your items are reserved.",
@@ -1022,7 +1025,7 @@ export function ShopCheckoutPage({
                   prepareClientSecret={prepareClientSecret}
                   onConfirmed={onConfirmed}
                   onExpired={onExpired}
-                  copy={{ payNow: copy.payNow, genericError: copy.genericPayError }}
+                  copy={{ payNow: copy.payNow, genericError: copy.genericPayError, orPayByCard: copy.orPayByCard }}
                 />
                 {validateHint && !formValid ? (
                   <p className="mt-2 text-xs text-amber-700">{copy.fillFormFirst}</p>
