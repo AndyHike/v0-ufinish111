@@ -61,6 +61,7 @@ export function ShopHomePage({
   heroDescription,
   categoryTree,
   featuredProducts,
+  bannerSlides,
 }: {
   locale: ShopLocale
   heroTitle: string
@@ -68,16 +69,20 @@ export function ShopHomePage({
   heroImage: string
   categoryTree: ShopCategoryTreeNode[]
   featuredProducts: ShopProductCardView[]
+  bannerSlides: ShopHeroSlide[]
 }) {
   const copy = SHOP_HOME_COPY[locale]
 
-  const slides: ShopHeroSlide[] = copy.heroSlides.map(([title, text, action], index) => ({
+  // Static promo copy as a fallback: shown only when the admin has no active
+  // banners (or the API is unavailable) so the hero is never empty.
+  const staticSlides: ShopHeroSlide[] = copy.heroSlides.map(([title, text, action], index) => ({
     title,
     text,
-    action,
-    href: `/${locale}/${HERO_SLIDE_MEDIA[index].href}`,
     image: HERO_SLIDE_MEDIA[index].image,
+    buttons: [{ label: action, href: `/${locale}/${HERO_SLIDE_MEDIA[index].href}`, variant: "primary" }],
   }))
+
+  const slides = bannerSlides.length > 0 ? bannerSlides : staticSlides
 
   return (
     <div className="w-full max-w-full overflow-x-clip bg-white text-gray-950">

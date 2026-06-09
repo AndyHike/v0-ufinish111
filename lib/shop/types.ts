@@ -233,6 +233,21 @@ export interface ShopCategoryPriceBounds {
   max: number | null
 }
 
+export interface ShopHeroButton {
+  label: string
+  href: string
+  /** primary → prominent solid; secondary → bordered/ghost on the dark hero. */
+  variant: "primary" | "secondary"
+}
+
+/** One renderable hero-carousel slide (already localized for the active locale). */
+export interface ShopHeroSlide {
+  title: string
+  text: string
+  image: string
+  buttons: ShopHeroButton[]
+}
+
 export interface ShopHomeData {
   hero: {
     locale: ShopLocale
@@ -243,6 +258,8 @@ export interface ShopHomeData {
   categories: ShopCategory[]
   categoryTree: ShopCategoryTreeNode[]
   featuredProducts: ShopProductCardView[]
+  /** Promo banners from the admin API; empty → page falls back to static copy. */
+  bannerSlides: ShopHeroSlide[]
 }
 
 export interface ShopCategoryData {

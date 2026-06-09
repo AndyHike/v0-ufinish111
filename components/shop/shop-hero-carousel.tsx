@@ -7,14 +7,9 @@ import Link from "next/link"
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import type { ShopHeroSlide } from "@/lib/shop/types"
 
-export interface ShopHeroSlide {
-  title: string
-  text: string
-  action: string
-  href: string
-  image: string
-}
+export type { ShopHeroSlide }
 
 const AUTOPLAY_INTERVAL_MS = 6000
 
@@ -110,7 +105,7 @@ export function ShopHeroCarousel({
 
         return (
           <div
-            key={slide.title}
+            key={slideIndex}
             className={`absolute inset-0 transition-opacity duration-700 ease-out ${
               isActive ? "opacity-100" : "pointer-events-none opacity-0"
             }`}
@@ -131,18 +126,36 @@ export function ShopHeroCarousel({
 
             <div className="relative flex h-full min-h-[320px] flex-col justify-end p-6 pb-16 md:min-h-[440px] md:p-9 md:pb-12">
               <p className="text-xs font-medium uppercase tracking-[0.22em] text-white/70">{eyebrow}</p>
-              <h2 className="mt-3 max-w-md text-2xl font-semibold leading-tight tracking-tight text-white md:text-4xl">
-                {slide.title}
-              </h2>
-              <p className="mt-3 max-w-sm text-sm leading-6 text-white/85 md:text-base">{slide.text}</p>
-              <div className="mt-6">
-                <Button asChild size="lg" variant="secondary">
-                  <Link href={slide.href} tabIndex={isActive ? 0 : -1}>
-                    {slide.action}
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </Button>
-              </div>
+              {slide.title ? (
+                <h2 className="mt-3 max-w-md text-2xl font-semibold leading-tight tracking-tight text-white md:text-4xl">
+                  {slide.title}
+                </h2>
+              ) : null}
+              {slide.text ? (
+                <p className="mt-3 max-w-sm text-sm leading-6 text-white/85 md:text-base">{slide.text}</p>
+              ) : null}
+              {slide.buttons.length > 0 ? (
+                <div className="mt-6 flex flex-wrap gap-3">
+                  {slide.buttons.map((button, buttonIndex) => (
+                    <Button
+                      key={buttonIndex}
+                      asChild
+                      size="lg"
+                      variant={button.variant === "primary" ? "secondary" : "outline"}
+                      className={
+                        button.variant === "secondary"
+                          ? "border-white/40 bg-transparent text-white hover:bg-white/10"
+                          : undefined
+                      }
+                    >
+                      <Link href={button.href} tabIndex={isActive ? 0 : -1}>
+                        {button.label}
+                        {button.variant === "primary" ? <ArrowRight className="h-4 w-4" /> : null}
+                      </Link>
+                    </Button>
+                  ))}
+                </div>
+              ) : null}
             </div>
           </div>
         )
@@ -168,11 +181,11 @@ export function ShopHeroCarousel({
           </button>
 
           <div className="absolute bottom-5 left-6 flex items-center gap-2 md:left-9">
-            {slides.map((slide, slideIndex) => {
+            {slides.map((_slide, slideIndex) => {
               const isActive = slideIndex === index
               return (
                 <button
-                  key={slide.title}
+                  key={slideIndex}
                   type="button"
                   onClick={() => goTo(slideIndex)}
                   aria-label={`Go to slide ${slideIndex + 1}`}

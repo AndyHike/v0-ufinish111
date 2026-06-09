@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { X } from "lucide-react"
@@ -47,6 +48,19 @@ export function ShopCartDrawer({ locale }: { locale: ShopLocale }) {
   const { closeCart, isCartOpen, lines, removeLine } = useShopCart()
   const subtotal = lines.reduce((sum, line) => sum + line.priceSnapshot * line.quantity, 0)
 
+  // Lock background scroll while the drawer is open so a touch scroll inside the
+  // cart doesn't chain to (and move) the page behind it on mobile.
+  useEffect(() => {
+    if (!isCartOpen) {
+      return
+    }
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    return () => {
+      document.body.style.overflow = previousOverflow
+    }
+  }, [isCartOpen])
+
   if (!isCartOpen) {
     return null
   }
@@ -79,7 +93,7 @@ export function ShopCartDrawer({ locale }: { locale: ShopLocale }) {
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-5 py-4">
+        <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-4">
           {lines.length === 0 ? (
             <div className="rounded-lg border border-dashed border-gray-300 px-4 py-8 text-center">
               <p className="text-sm text-gray-600">{copy.empty}</p>

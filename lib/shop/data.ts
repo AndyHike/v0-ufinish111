@@ -19,6 +19,7 @@ import {
   getShopCategoryAncestors,
   getShopCategoryChildren,
   getShopCategoryPriceBounds,
+  getLocalizedText,
   itemMatchesAttributes,
   normalizeShopCategoryFilters,
   type ShopCategoryFilterInput,
@@ -33,9 +34,12 @@ import type {
   ShopCreateOrderInput,
   ShopCurrency,
   ShopFilterAttribute,
+  ShopHeroButton,
+  ShopHeroSlide,
   ShopHomeData,
   ShopIntegrations,
   ShopLocale,
+  ShopLocalizedText,
   ShopOrderPayment,
   ShopPacketaConfig,
   ShopProductCardView,
@@ -101,7 +105,84 @@ const EMPTY_HOME = (locale: ShopLocale): ShopHomeData => ({
   categories: [],
   categoryTree: [],
   featuredProducts: [],
+  bannerSlides: [],
 })
+
+// ---- Promo banners (hero carousel) -----------------------------------------
+// Mirrors GET /api/public/v1/banners (admin "promoBanners", slide-centric v2):
+// a banner is a pure container; each slide carries its own localized
+// title/description and up to 2 buttons.
+
+interface ApiBannerButton {
+  label: ShopLocalizedText | null
+  href: string
+  style: "PRIMARY" | "SECONDARY" | "LINK"
+}
+
+interface ApiBannerSlide {
+  imageUrl: string | null
+  title: ShopLocalizedText | null
+  description: ShopLocalizedText | null
+  buttons: ApiBannerButton[]
+}
+
+interface ApiBanner {
+  id: string
+  type: string
+  isMain: boolean
+  position: number
+  slides: ApiBannerSlide[]
+}
+
+function mapBannerSlide(slide: ApiBannerSlide, locale: ShopLocale): ShopHeroSlide | null {
+  // The hero carousel paints a full-bleed background image, so a slide without
+  // media is not renderable here (the public API already drops media-less
+  // IMAGE/CAROUSEL slides; TEXT-only slides simply don't surface in the hero).
+  if (!slide.imageUrl) {
+    return null
+  }
+
+  const buttons = slide.buttons
+    .map((button): ShopHeroButton | null => {
+      const label = button.label ? getLocalizedText(button.label, locale) : ""
+      if (!label || !button.href) {
+        return null
+      }
+      return { label, href: button.href, variant: button.style === "PRIMARY" ? "primary" : "secondary" }
+    })
+    .filter((button): button is ShopHeroButton => button !== null)
+
+  return {
+    title: slide.title ? getLocalizedText(slide.title, locale) : "",
+    text: slide.description ? getLocalizedText(slide.description, locale) : "",
+    image: slide.imageUrl,
+    buttons,
+  }
+}
+
+// The hero carousel shows a single banner. Prefer the admin-flagged main banner,
+// else the first active one; its slides become the carousel. Empty on any
+// failure so the home page falls back to its static promo copy.
+export async function getShopBanners(locale: ShopLocale): Promise<ShopHeroSlide[]> {
+  if (!isShopApiEnabled()) {
+    return []
+  }
+  try {
+    const data = await shopApiFetch<{ banners: ApiBanner[]; main: ApiBanner | null }>("banners", {
+      tags: tagsFor((id) => [viewHomeTag(id), siteTag(id)]),
+    })
+    const banner = data.main ?? data.banners[0] ?? null
+    if (!banner) {
+      return []
+    }
+    return banner.slides
+      .map((slide) => mapBannerSlide(slide, locale))
+      .filter((slide): slide is ShopHeroSlide => slide !== null)
+  } catch (error) {
+    console.error(`[shop] banners request failed; using static hero copy: ${String(error)}`)
+    return []
+  }
+}
 
 async function fetchAllApiCategories(): Promise<ApiCategory[]> {
   return shopApiFetch<ApiCategory[]>("categories", {
@@ -249,12 +330,14 @@ export async function getShopHomeData(locale: ShopLocale): Promise<ShopHomeData>
   }
 
   try {
-    const [apiCategories, apiItems] = await Promise.all([
+    const [apiCategories, apiItems, bannerSlides] = await Promise.all([
       fetchAllApiCategories(),
       shopApiFetch<ApiItem[]>("items", {
         searchParams: { include: "variants,availability", limit: HOME_ITEMS_LIMIT },
         tags: tagsFor((id) => [viewHomeTag(id), availabilityTag(id)]),
       }),
+      // Resolves to [] on its own failure, so a banner outage never breaks home.
+      getShopBanners(locale),
     ])
 
     const categories = apiCategories.map(mapApiCategory)
@@ -265,6 +348,7 @@ export async function getShopHomeData(locale: ShopLocale): Promise<ShopHomeData>
       categories: getRootShopCategories(categories),
       categoryTree: buildShopCategoryTree(categories),
       featuredProducts: items.map((item) => toProductCard(item, locale)),
+      bannerSlides,
     }
   } catch (error) {
     // Keep the homepage up on a transient API failure: render an empty catalog

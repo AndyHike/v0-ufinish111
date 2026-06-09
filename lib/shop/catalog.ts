@@ -688,6 +688,7 @@ export function getMockShopHomeData(locale: ShopLocale): ShopHomeData {
     categories: getRootShopCategories(),
     categoryTree,
     featuredProducts: mockShopItems.map((item) => toProductCard(item, locale)),
+    bannerSlides: [],
   }
 }
 
