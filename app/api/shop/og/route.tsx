@@ -1,5 +1,6 @@
 import { ImageResponse } from "next/og"
 import type { NextRequest } from "next/server"
+import sharp from "sharp"
 
 // Dynamic 1200×630 Open Graph card for the shop (platforms expect ~1.91:1).
 // Without ?title it renders the brand card (home page); with ?title (+ optional
@@ -77,6 +78,37 @@ async function loadGoogleFont(weight: number, text: string): Promise<ArrayBuffer
   }
 }
 
+// Formats satori can decode by itself; anything else (R2 product photos are
+// usually WebP) must be transcoded or the card renders an empty white box.
+const SATORI_IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/gif", "image/svg+xml"])
+
+// Satori fetches remote images itself, but silently draws nothing on formats
+// it can't decode and has no fetch timeout. Fetch the photo here instead,
+// transcode unsupported formats to PNG, and inline the result as a data URI.
+async function loadProductImage(url: string | null): Promise<string | null> {
+  if (!url) {
+    return null
+  }
+  try {
+    const response = await fetch(url, { signal: AbortSignal.timeout(5000) })
+    if (!response.ok) {
+      return null
+    }
+    const type = response.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase() ?? ""
+    const buffer = Buffer.from(await response.arrayBuffer())
+    if (SATORI_IMAGE_TYPES.has(type)) {
+      return `data:${type};base64,${buffer.toString("base64")}`
+    }
+    const png = await sharp(buffer)
+      .resize(800, 1060, { fit: "inside", withoutEnlargement: true })
+      .png()
+      .toBuffer()
+    return `data:image/png;base64,${png.toString("base64")}`
+  } catch {
+    return null
+  }
+}
+
 function clampTitle(title: string): string {
   return title.length > 90 ? `${title.slice(0, 89).trimEnd()}…` : title
 }
@@ -96,7 +128,9 @@ export async function GET(request: NextRequest) {
           maximumFractionDigits: 0,
         }).format(priceParam)
       : null
-  const image = sanitizeImageUrl(params.get("img"))
+  // Resolved to a data URI (or null on any failure), so the white photo box
+  // only renders when there is an actual image to show inside it.
+  const image = await loadProductImage(sanitizeImageUrl(params.get("img")))
 
   const headline = title ? clampTitle(title) : "DeviceHelp Shop"
   const boldText = `DeviceHelpShop${headline}${price ?? ""}0123456789 `
