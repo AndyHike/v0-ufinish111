@@ -27,6 +27,7 @@ export function ProductGallery({ images, title }: { images: string[]; title: str
           alt={title}
           fill
           priority
+          fetchPriority="high"
           sizes="(max-width: 1024px) 100vw, 460px"
           className="object-cover"
         />

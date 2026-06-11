@@ -40,10 +40,13 @@ export function ProductCard({
   product,
   locale,
   compact = false,
+  imagePriority = false,
 }: {
   product: ShopProductCardView
   locale: ShopLocale
   compact?: boolean
+  /** Eager-load + preload the card image — for above-the-fold cards (LCP). */
+  imagePriority?: boolean
 }) {
   const tone = availabilityTone(product)
 
@@ -55,6 +58,8 @@ export function ProductCard({
             src={product.image}
             alt={product.title}
             fill
+            priority={imagePriority}
+            fetchPriority={imagePriority ? "high" : undefined}
             sizes={compact ? "(max-width: 768px) 50vw, 280px" : "(max-width: 768px) 50vw, 320px"}
             className={`object-cover transition-transform duration-300 group-hover:scale-[1.03] ${
               product.images.length > 1 ? "group-hover:opacity-0" : ""
@@ -104,7 +109,7 @@ export function ProductCard({
             ) : null}
             <span className="text-base font-semibold text-gray-950">{formatShopPrice(product.displayPrice, locale)}</span>
             {product.compareAtPrice ? (
-              <span className="text-sm text-gray-400 line-through">{formatShopPrice(product.compareAtPrice, locale)}</span>
+              <span className="text-sm text-gray-500 line-through">{formatShopPrice(product.compareAtPrice, locale)}</span>
             ) : null}
           </div>
 

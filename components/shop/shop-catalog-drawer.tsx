@@ -6,16 +6,13 @@ import Image from "next/image"
 import Link from "next/link"
 import { ChevronDown, LayoutGrid, Menu, Package, X } from "lucide-react"
 
-import type { ShopCategoryTreeNode, ShopLocale, ShopLocalizedText } from "@/lib/shop/types"
+import { getLocalizedText as getText } from "@/lib/shop/catalog"
+import type { ShopCategoryTreeNode, ShopLocale } from "@/lib/shop/types"
 
 const DRAWER_COPY: Record<ShopLocale, { trigger: string; title: string; close: string }> = {
   cs: { trigger: "Katalog", title: "Katalog", close: "Zavrit" },
   uk: { trigger: "Каталог", title: "Каталог", close: "Закрити" },
   en: { trigger: "Catalog", title: "Catalog", close: "Close" },
-}
-
-function getText(value: ShopLocalizedText, locale: ShopLocale): string {
-  return value[locale] ?? value.cs ?? value.en ?? ""
 }
 
 function DrawerNode({

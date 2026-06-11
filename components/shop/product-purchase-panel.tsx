@@ -186,7 +186,7 @@ export function ProductPurchasePanel({
         </span>
         {variant.salePrice ? (
           <>
-            <span className="text-base text-gray-400 line-through">{formatShopPrice(variant.price, locale)}</span>
+            <span className="text-base text-gray-500 line-through">{formatShopPrice(variant.price, locale)}</span>
             {discountPercent > 0 ? (
               <span className="rounded-md bg-red-50 px-2 py-0.5 text-sm font-semibold text-red-600">
                 −{discountPercent}%
@@ -199,7 +199,7 @@ export function ProductPurchasePanel({
       <p className="mt-3">
         <span
           className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm font-medium ${
-            canBuy ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-500"
+            canBuy ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-600"
           }`}
         >
           <span className={`h-2 w-2 rounded-full ${canBuy ? "bg-green-500" : "bg-gray-400"}`} />

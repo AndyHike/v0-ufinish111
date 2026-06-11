@@ -2,11 +2,8 @@ import Image from "next/image"
 import Link from "next/link"
 import { ChevronDown, ChevronRight, Package } from "lucide-react"
 
-import type { ShopCategoryTreeNode, ShopLocale, ShopLocalizedText } from "@/lib/shop/types"
-
-function getText(value: ShopLocalizedText, locale: ShopLocale): string {
-  return value[locale] ?? value.cs ?? value.en ?? ""
-}
+import { getLocalizedText as getText } from "@/lib/shop/catalog"
+import type { ShopCategoryTreeNode, ShopLocale } from "@/lib/shop/types"
 
 const ALL_LABEL: Record<ShopLocale, string> = {
   cs: "Zobrazit vse",
@@ -127,7 +124,11 @@ function RootCategory({
 
   return (
     <li className="group/cat relative">
-      {hasChildren ? <input id={toggleId} type="checkbox" className="peer sr-only" /> : null}
+      {/* aria-label lives on the input itself: the visual label is icon-only,
+          so label-content naming would leave the checkbox unnamed. */}
+      {hasChildren ? (
+        <input id={toggleId} type="checkbox" className="peer sr-only" aria-label={`Expand ${title}`} />
+      ) : null}
 
       <div className="flex items-center rounded-xl border border-gray-100 bg-gray-50/60 shadow-sm transition hover:border-gray-200 hover:bg-white hover:shadow-md lg:group-hover/cat:border-gray-200 lg:group-hover/cat:bg-white lg:group-hover/cat:shadow-md">
         <Link
@@ -150,7 +151,6 @@ function RootCategory({
           <>
             <label
               htmlFor={toggleId}
-              aria-label={`Expand ${title}`}
               className="mr-1 inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md text-gray-400 transition hover:bg-white hover:text-gray-950 peer-checked:rotate-180 lg:hidden"
             >
               <ChevronDown className="h-4 w-4" />
@@ -186,7 +186,7 @@ export function ShopCategorySidebar({
   return (
     <aside className={`bg-white ${className}`}>
       <div className="px-3 py-4">
-        <h2 className="px-3 text-xs font-semibold uppercase tracking-[0.16em] text-gray-400">{title}</h2>
+        <h2 className="px-3 text-xs font-semibold uppercase tracking-[0.16em] text-gray-500">{title}</h2>
         <ul className="mt-3 space-y-1.5">
           {nodes.map((node) => (
             <RootCategory key={node.category.id} locale={locale} node={node} />

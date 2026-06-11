@@ -155,7 +155,7 @@ function FilterAttributeGroup({
         />
         <span className="truncate text-gray-700">{option.value}</span>
       </span>
-      <span className="shrink-0 text-xs tabular-nums text-gray-400">{option.count}</span>
+      <span className="shrink-0 text-xs tabular-nums text-gray-500">{option.count}</span>
     </label>
   )
 
@@ -239,7 +239,7 @@ export function CategoryPage({
         <nav className="flex flex-wrap items-center gap-2 text-sm text-gray-500">
           {breadcrumbItems.map((item, index) => (
             <span key={item.url} className="inline-flex items-center gap-2">
-              {index > 0 ? <span className="text-gray-300">/</span> : null}
+              {index > 0 ? <span className="text-gray-500">/</span> : null}
               {index === breadcrumbItems.length - 1 ? (
                 <span className="text-gray-700">{item.name}</span>
               ) : (
@@ -315,7 +315,7 @@ export function CategoryPage({
                 <div className="border-t border-gray-100 pt-4">
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-sm font-semibold text-gray-900">{copy.price}</p>
-                    {priceSummary ? <span className="text-xs font-medium text-gray-400">{priceSummary}</span> : null}
+                    {priceSummary ? <span className="text-xs font-medium text-gray-500">{priceSummary}</span> : null}
                   </div>
                   <div className="mt-2 grid grid-cols-2 gap-2">
                     <input
@@ -383,10 +383,16 @@ export function CategoryPage({
 
             {products.length > 0 ? (
               <div className="mt-6 grid grid-cols-2 gap-4 sm:gap-5 xl:grid-cols-3">
-                {products.map((product) => (
+                {products.map((product, index) => (
                   // Key by item+variant: one item can yield both an item row and
                   // standalone variant rows in the same listing (§2.4).
-                  <ProductCard key={`${product.itemId}:${product.variantId}`} locale={locale} product={product} />
+                  // The first grid row is the usual LCP candidate — load it eagerly.
+                  <ProductCard
+                    key={`${product.itemId}:${product.variantId}`}
+                    locale={locale}
+                    product={product}
+                    imagePriority={index < 4}
+                  />
                 ))}
               </div>
             ) : (

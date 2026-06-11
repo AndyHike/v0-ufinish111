@@ -169,7 +169,7 @@ export function ProductPage({
           <dl className="mt-4 max-w-3xl overflow-hidden rounded-lg border border-gray-200">
             {specifications.map((row) => (
               <div key={row.label} className="grid border-b border-gray-200 last:border-b-0 sm:grid-cols-[0.4fr_1fr]">
-                <dt className="bg-gray-50 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                <dt className="bg-gray-50 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gray-600">
                   {row.label}
                 </dt>
                 <dd className="break-words px-3 py-2 text-sm text-gray-900">{row.value}</dd>

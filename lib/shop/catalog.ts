@@ -370,7 +370,14 @@ export function applyShopCategoryFilters(products: ShopProductCardView[], input:
 }
 
 export function getLocalizedText(value: ShopLocalizedText, locale: ShopLocale): string {
-  return value[locale] ?? value.cs ?? value.en ?? ""
+  // The admin often fills only one locale and may leave others as "", which
+  // `??` would happily return — fall back to the first non-empty value.
+  for (const candidate of [value[locale], value.cs, value.en, value.uk]) {
+    if (candidate && candidate.trim()) {
+      return candidate
+    }
+  }
+  return ""
 }
 
 export function formatShopPrice(amount: number, locale: ShopLocale): string {

@@ -159,6 +159,12 @@ test("returns localized fallback text", () => {
   assert.equal(catalog.getLocalizedText({ en: "Fallback title" }, "uk"), "Fallback title")
 })
 
+test("localized text skips empty strings when falling back", () => {
+  // The admin may persist untranslated locales as "" rather than omitting them.
+  assert.equal(catalog.getLocalizedText({ cs: "", uk: "Біле крісло" }, "cs"), "Біле крісло")
+  assert.equal(catalog.getLocalizedText({ cs: "  ", en: "" }, "cs"), "")
+})
+
 test("builds product specification rows from variant facts and attributes", () => {
   const product = catalog.getMockShopProduct("cs", "protective-glass", "protective-glass-iphone-11")
   const rows = catalog.getProductSpecificationRows(product.item, product.selectedVariant, "cs")
