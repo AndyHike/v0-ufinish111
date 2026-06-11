@@ -7,6 +7,37 @@ import { fileURLToPath } from 'node:url';
 const withNextIntl = createNextIntlPlugin();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+// Content-Security-Policy. Rolled out in Report-Only mode first: violations
+// are logged to /api/csp-report (server logs) without blocking anything.
+// After a clean report window, set CSP_ENFORCE=1 (build-time env) to switch
+// the header to enforcing. script-src needs 'unsafe-inline' because the
+// consent-mode + GTM bootstrap scripts in components/site-locale-layout.tsx
+// and Next.js hydration scripts are inline; moving to nonces would require
+// emitting the CSP from middleware instead.
+const cspDirectives = [
+  "default-src 'self'",
+  // 'unsafe-eval' is required by React Fast Refresh in dev only.
+  `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''} https://www.googletagmanager.com https://js.stripe.com https://widget.packeta.com https://pay.google.com`,
+  "style-src 'self' 'unsafe-inline'",
+  // Direct <img> to Supabase Storage (articles, brands); R2 goes through the
+  // same-origin /_next/image proxy; blob:/data: for admin upload previews.
+  "img-src 'self' data: blob: https://*.supabase.co https://www.googletagmanager.com https://*.google-analytics.com https://*.stripe.com https://stats.g.doubleclick.net",
+  "font-src 'self' data:",
+  "connect-src 'self' https://api.stripe.com https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://stats.g.doubleclick.net https://widget.packeta.com",
+  // Google Maps embed (contact page), Stripe Elements/3DS, Google Pay, Packeta picker.
+  "frame-src https://www.google.com https://js.stripe.com https://hooks.stripe.com https://pay.google.com https://widget.packeta.com",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'self'",
+  'report-uri /api/csp-report',
+].join('; ')
+
+const cspHeader = {
+  key: process.env.CSP_ENFORCE === '1' ? 'Content-Security-Policy' : 'Content-Security-Policy-Report-Only',
+  value: cspDirectives,
+}
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Ігноруємо помилки
@@ -100,6 +131,7 @@ const nextConfig = {
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+          cspHeader,
         ],
       },
     ]
