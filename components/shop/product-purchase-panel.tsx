@@ -19,6 +19,7 @@ import type { ShopItem, ShopLocale, ShopVariant } from "@/lib/shop/types"
 const PURCHASE_COPY = {
   cs: {
     sku: "Kod",
+    readMore: "Cely popis",
     variant: "Varianta",
     quantity: "Mnozstvi",
     add: "Pridat do kosiku",
@@ -35,6 +36,7 @@ const PURCHASE_COPY = {
   },
   uk: {
     sku: "Артикул",
+    readMore: "Детальніше про товар",
     variant: "Варіант",
     quantity: "Кількість",
     add: "Додати в кошик",
@@ -51,6 +53,7 @@ const PURCHASE_COPY = {
   },
   en: {
     sku: "SKU",
+    readMore: "Full description",
     variant: "Variant",
     quantity: "Quantity",
     add: "Add to cart",
@@ -176,36 +179,46 @@ export function ProductPurchasePanel({
         </p>
       ) : null}
 
-      {productDescription ? (
-        <p className="mt-3 text-sm leading-6 text-gray-600">{productDescription}</p>
-      ) : null}
-
-      <div className="mt-5 flex flex-wrap items-baseline gap-x-3 gap-y-1 border-t border-gray-100 pt-5">
-        <span className="text-3xl font-bold tracking-tight text-gray-950">
-          {formatShopPrice(displayPrice, locale)}
-        </span>
-        {variant.salePrice ? (
-          <>
-            <span className="text-base text-gray-500 line-through">{formatShopPrice(variant.price, locale)}</span>
-            {discountPercent > 0 ? (
-              <span className="rounded-md bg-red-50 px-2 py-0.5 text-sm font-semibold text-red-600">
-                −{discountPercent}%
-              </span>
-            ) : null}
-          </>
-        ) : null}
+      {/* Price and availability sit right under the title so the buyer's key
+          facts read as one block; the description below is secondary and
+          clamped, otherwise the panel reads like an article on mobile. */}
+      <div className="mt-4 border-y border-gray-100 py-4">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <span className="text-3xl font-bold tracking-tight text-gray-950">
+            {formatShopPrice(displayPrice, locale)}
+          </span>
+          {variant.salePrice ? (
+            <>
+              <span className="text-base text-gray-500 line-through">{formatShopPrice(variant.price, locale)}</span>
+              {discountPercent > 0 ? (
+                <span className="rounded-md bg-red-50 px-2 py-0.5 text-sm font-semibold text-red-600">
+                  −{discountPercent}%
+                </span>
+              ) : null}
+            </>
+          ) : null}
+          <span
+            className={`ml-auto inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm font-medium ${
+              canBuy ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-600"
+            }`}
+          >
+            <span className={`h-2 w-2 rounded-full ${canBuy ? "bg-green-500" : "bg-gray-400"}`} />
+            {getAvailabilityLabel(variant, locale)}
+          </span>
+        </div>
       </div>
 
-      <p className="mt-3">
-        <span
-          className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm font-medium ${
-            canBuy ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-600"
-          }`}
-        >
-          <span className={`h-2 w-2 rounded-full ${canBuy ? "bg-green-500" : "bg-gray-400"}`} />
-          {getAvailabilityLabel(variant, locale)}
-        </span>
-      </p>
+      {productDescription ? (
+        <div className="mt-4">
+          <p className="line-clamp-3 text-sm leading-6 text-gray-500">{productDescription}</p>
+          <a
+            href="#shop-description"
+            className="mt-1.5 inline-flex items-center text-sm font-medium text-blue-600 transition hover:text-blue-700"
+          >
+            {copy.readMore} ↓
+          </a>
+        </div>
+      ) : null}
 
       {showVariantSelector ? (
         <div className="mt-6">
