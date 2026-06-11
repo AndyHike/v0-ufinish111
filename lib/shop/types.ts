@@ -67,6 +67,19 @@ export interface ShopSeo {
   locales: Partial<Record<ShopLocale, ShopSeoLocale>>
 }
 
+/** One row of GET /seo/urls — the admin's indexable-URL feed for sitemap/SSG. */
+export interface ShopSeoUrlRecord {
+  type: "item" | "category" | "variant"
+  id: string
+  itemId?: string
+  variantId?: string
+  slug: string
+  locale: string
+  canonicalUrl: string
+  updatedAt: string | null
+  lastmod: string | null
+}
+
 export interface ShopCategory {
   id: string
   parentId: string | null

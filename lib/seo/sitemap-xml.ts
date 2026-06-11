@@ -16,7 +16,9 @@ function escapeXml(value: string): string {
 export function createSitemapXml(entries: SitemapEntry[]): string {
   const urls = entries
     .map((entry) => {
-      const lastModified = entry.lastModified ?? new Date()
+      // Omit <lastmod> when the real modification date is unknown — a fake
+      // "now" on every request is noise search engines learn to ignore.
+      const lastModified = entry.lastModified ? `<lastmod>${entry.lastModified.toISOString()}</lastmod>` : ""
       const alternates = Object.entries(entry.alternates ?? {})
         .map(
           ([locale, href]) =>
@@ -24,7 +26,7 @@ export function createSitemapXml(entries: SitemapEntry[]): string {
         )
         .join("")
 
-      return `<url><loc>${escapeXml(entry.url)}</loc><lastmod>${lastModified.toISOString()}</lastmod>${alternates}</url>`
+      return `<url><loc>${escapeXml(entry.url)}</loc>${lastModified}${alternates}</url>`
     })
     .join("")
 

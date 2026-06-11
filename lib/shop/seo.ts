@@ -8,13 +8,6 @@ import type { ShopItem, ShopLocale, ShopSeo, ShopSeoLocale, ShopVariant } from "
 
 const SHOP_LOCALES: ShopLocale[] = ["cs", "uk", "en"]
 
-export interface ShopSitemapRecord {
-  url: string
-  alternates: Partial<Record<ShopLocale, string>>
-  changeFrequency: "daily" | "weekly" | "monthly"
-  priority: number
-}
-
 export function getShopSeoLocale(seo: ShopSeo, locale: ShopLocale): ShopSeoLocale | null {
   return seo.locales[locale] ?? seo.locales.cs ?? null
 }
@@ -334,19 +327,4 @@ export function buildBreadcrumbJsonLd(_locale: ShopLocale, items: Array<{ name: 
       item: item.url,
     })),
   }
-}
-
-export function buildShopSitemapRecords(seoRecords: ShopSeo[]): ShopSitemapRecord[] {
-  return seoRecords
-    .filter((seo) => seo.indexable)
-    .map((seo) => {
-      const priority = seo.profile === "SHOP_HOME" ? 1 : seo.profile === "CATEGORY_LISTING" ? 0.8 : 0.7
-
-      return {
-        url: getShopSeoLocale(seo, "cs")?.canonicalUrl ?? seo.canonicalUrl,
-        alternates: buildShopLanguageAlternates(seo),
-        changeFrequency: "weekly",
-        priority,
-      }
-    })
 }

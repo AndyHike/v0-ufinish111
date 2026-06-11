@@ -47,6 +47,7 @@ import type {
   ShopProductCardView,
   ShopProductData,
   ShopRelatedProduct,
+  ShopSeoUrlRecord,
   ShopStripeConfig,
   ShopVariant,
 } from "./types"
@@ -532,6 +533,26 @@ export async function searchShopProducts(
     revalidate: 0,
   })
   return apiItems.map(mapApiItem).map((item) => toProductCard(item, locale))
+}
+
+// ---- SEO URL feed (sitemap.xml) ---------------------------------------------
+
+// The admin's dedicated indexable-URL feed (PUBLIC_API_DOCS "Dedicated SEO
+// endpoints"): per-locale canonical URLs with real lastmod, already filtered to
+// indexable resources. Empty on failure so the sitemap degrades to home pages
+// instead of erroring.
+export async function getShopSeoUrls(): Promise<ShopSeoUrlRecord[]> {
+  if (!isShopApiEnabled()) {
+    return []
+  }
+  try {
+    return await shopApiFetch<ShopSeoUrlRecord[]>("seo/urls", {
+      tags: tagsFor((id) => [siteTag(id), viewHomeTag(id)]),
+    })
+  } catch (error) {
+    console.error(`[shop] seo/urls request failed; sitemap lists home pages only: ${String(error)}`)
+    return []
+  }
 }
 
 // ---- Static params (build-time slug enumeration; ISR) ----------------------

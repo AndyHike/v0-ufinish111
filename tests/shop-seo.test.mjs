@@ -198,17 +198,6 @@ test("builds breadcrumb JSON-LD", () => {
   assert.equal(jsonLd.itemListElement[2].position, 3)
 })
 
-test("builds sitemap records from indexable SEO records", () => {
-  const home = catalog.getMockShopHomeData("cs")
-  const product = catalog.getMockShopProduct("cs", "protective-glass")
-  const records = seo.buildShopSitemapRecords([home.categories[0].seo, product.item.seo])
-
-  assert.equal(records.length, 2)
-  assert.equal(records[0].url, "https://shop.devicehelp.cz/cs/category/protection")
-  assert.equal(records[1].alternates.uk, "https://shop.devicehelp.cz/uk/product/protective-glass")
-  assert.equal(records[1].changeFrequency, "weekly")
-})
-
 test("shop SEO mock data is based on configurable shopSiteUrl", async () => {
   const source = await readFile(new URL("../lib/shop/mock-data.ts", import.meta.url), "utf8")
 
@@ -226,15 +215,109 @@ test("robots and sitemap route handlers branch for shop hosts", async () => {
   assert.match(sitemapSource, /getShopSitemapEntries/)
 })
 
-test("shop sitemap exposes only shop catalog URLs", () => {
-  const records = shopSitemap.getShopSitemapEntries()
-  const urls = records.map((record) => record.url)
+const SEO_URL_FIXTURES = [
+  {
+    type: "category",
+    id: "cat_protection",
+    slug: "protection",
+    locale: "cs",
+    canonicalUrl: "https://shop.devicehelp.cz/cs/category/protection",
+    updatedAt: "2026-05-01T10:00:00.000Z",
+    lastmod: "2026-06-01T10:00:00.000Z",
+  },
+  {
+    type: "category",
+    id: "cat_protection",
+    slug: "protection",
+    locale: "uk",
+    canonicalUrl: "https://shop.devicehelp.cz/uk/category/protection",
+    updatedAt: null,
+    lastmod: "2026-06-01T10:00:00.000Z",
+  },
+  {
+    type: "item",
+    id: "item_glass",
+    slug: "protective-glass",
+    locale: "cs",
+    canonicalUrl: "https://shop.devicehelp.cz/cs/product/protective-glass",
+    updatedAt: "2026-05-20T08:00:00.000Z",
+    lastmod: null,
+  },
+  {
+    type: "item",
+    id: "item_glass",
+    slug: "zakhysne-sklo",
+    locale: "uk",
+    canonicalUrl: "https://shop.devicehelp.cz/uk/product/zakhysne-sklo",
+    updatedAt: "2026-05-20T08:00:00.000Z",
+    lastmod: null,
+  },
+  {
+    type: "variant",
+    id: "var_ip11",
+    itemId: "item_glass",
+    slug: "protective-glass-iphone-11",
+    locale: "cs",
+    canonicalUrl: "https://shop.devicehelp.cz/cs/product/protective-glass/protective-glass-iphone-11",
+    updatedAt: null,
+    lastmod: null,
+  },
+]
+
+test("shop sitemap builds entries from live seo/urls records plus home pages", () => {
+  const entries = shopSitemap.getShopSitemapEntries(SEO_URL_FIXTURES)
+  const urls = entries.map((entry) => entry.url)
 
   assert.ok(urls.includes("https://shop.devicehelp.cz/cs"))
+  assert.ok(urls.includes("https://shop.devicehelp.cz/uk"))
+  assert.ok(urls.includes("https://shop.devicehelp.cz/en"))
   assert.ok(urls.includes("https://shop.devicehelp.cz/cs/category/protection"))
-  assert.ok(urls.includes("https://shop.devicehelp.cz/cs/product/protective-glass"))
+  assert.ok(urls.includes("https://shop.devicehelp.cz/uk/product/zakhysne-sklo"))
+  assert.ok(urls.includes("https://shop.devicehelp.cz/cs/product/protective-glass/protective-glass-iphone-11"))
   assert.equal(urls.some((url) => url.includes("/services/")), false)
-  assert.equal(urls.some((url) => url.includes("/brands/")), false)
   assert.equal(urls.some((url) => url.includes("/cart")), false)
   assert.equal(urls.some((url) => url.includes("/checkout")), false)
+})
+
+test("shop sitemap groups locales into hreflang alternates with x-default", () => {
+  const entries = shopSitemap.getShopSitemapEntries(SEO_URL_FIXTURES)
+
+  const home = entries.find((entry) => entry.url === "https://shop.devicehelp.cz/cs")
+  assert.equal(home.alternates["x-default"], "https://shop.devicehelp.cz/cs")
+  assert.equal(home.alternates.en, "https://shop.devicehelp.cz/en")
+
+  const ukProduct = entries.find((entry) => entry.url === "https://shop.devicehelp.cz/uk/product/zakhysne-sklo")
+  assert.equal(ukProduct.alternates.cs, "https://shop.devicehelp.cz/cs/product/protective-glass")
+  assert.equal(ukProduct.alternates["x-default"], "https://shop.devicehelp.cz/cs/product/protective-glass")
+})
+
+test("shop sitemap uses lastmod, falls back to updatedAt, omits when unknown", () => {
+  const entries = shopSitemap.getShopSitemapEntries(SEO_URL_FIXTURES)
+
+  const category = entries.find((entry) => entry.url === "https://shop.devicehelp.cz/cs/category/protection")
+  assert.equal(category.lastModified.toISOString(), "2026-06-01T10:00:00.000Z")
+
+  const product = entries.find((entry) => entry.url === "https://shop.devicehelp.cz/cs/product/protective-glass")
+  assert.equal(product.lastModified.toISOString(), "2026-05-20T08:00:00.000Z")
+
+  const variant = entries.find((entry) =>
+    entry.url.endsWith("/product/protective-glass/protective-glass-iphone-11"),
+  )
+  assert.equal(variant.lastModified, undefined)
+})
+
+test("shop sitemap degrades to home pages on an empty feed and skips junk records", () => {
+  const entries = shopSitemap.getShopSitemapEntries([])
+  assert.equal(entries.length, 3)
+
+  const junk = shopSitemap.getShopSitemapEntries([
+    { type: "item", id: "x", slug: "x", locale: "de", canonicalUrl: "https://shop.devicehelp.cz/de/product/x", updatedAt: null, lastmod: null },
+    { type: "item", id: "y", slug: "y", locale: "cs", canonicalUrl: "", updatedAt: null, lastmod: null },
+  ])
+  assert.equal(junk.length, 3)
+})
+
+test("sitemap XML omits lastmod when the date is unknown", async () => {
+  const source = await readFile(new URL("../lib/seo/sitemap-xml.ts", import.meta.url), "utf8")
+  assert.doesNotMatch(source, /lastModified \?\? new Date\(\)/)
 })
