@@ -106,19 +106,29 @@ const nextConfig = {
   },
 
   async headers() {
+    // Immutable caching is only safe in production, where /_next/static URLs
+    // are content-hashed. Dev chunk URLs are stable, so a year-long immutable
+    // header makes browsers keep running stale code after every edit.
+    const immutableAssetHeaders =
+      process.env.NODE_ENV === 'production'
+        ? [
+            {
+              source: '/fonts/:path*',
+              headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
+            },
+            {
+              source: '/:path*.(webp|avif|jpg|jpeg|png)',
+              headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
+            },
+            {
+              source: '/_next/static/:path*',
+              headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
+            },
+          ]
+        : []
+
     return [
-      {
-        source: '/fonts/:path*',
-        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
-      },
-      {
-        source: '/:path*.(webp|avif|jpg|jpeg|png)',
-        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
-      },
-      {
-        source: '/_next/static/:path*',
-        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
-      },
+      ...immutableAssetHeaders,
       {
         source: '/:path*',
         headers: [
