@@ -45,12 +45,12 @@ export function isAllowedShopPath(pathname: string): boolean {
     return true
   }
 
+  // Locale-less catalog paths (e.g. /category/skla) count as allowed so the
+  // middleware's locale redirect canonicalizes them on the shop host (301 to
+  // /cs/category/skla) instead of sending them to the main domain, where the
+  // page does not exist. Mirrors isAllowedB2BPath.
   const locale = getShopPathLocale(normalizedPath)
-  if (!locale) {
-    return false
-  }
-
-  const suffix = normalizedPath.replace(`/${locale}`, "") || ""
+  const suffix = locale ? normalizedPath.replace(`/${locale}`, "") || "" : normalizedPath
   return SHOP_ROUTE_PATTERNS.some((pattern) => pattern.test(suffix))
 }
 

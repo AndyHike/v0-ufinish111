@@ -72,8 +72,15 @@ test("allows localized shop catalog paths", () => {
   assert.equal(isAllowedShopPath("/cs/checkout/success"), true)
 })
 
+test("allows locale-less catalog paths so they canonicalize on the shop host", () => {
+  assert.equal(isAllowedShopPath("/category/skla"), true)
+  assert.equal(isAllowedShopPath("/product/protective-glass"), true)
+  assert.equal(isAllowedShopPath("/product/protective-glass/protective-glass-iphone-11"), true)
+  assert.equal(isAllowedShopPath("/cart"), true)
+  assert.equal(isAllowedShopPath("/checkout"), true)
+})
+
 test("rejects non-shop paths on shop host", () => {
-  assert.equal(isAllowedShopPath("/cart"), false)
   assert.equal(isAllowedShopPath("/de"), false)
   assert.equal(isAllowedShopPath("/cs/brands/apple"), false)
   assert.equal(isAllowedShopPath("/cs/services/screen-replacement"), false)
@@ -124,6 +131,22 @@ test("redirects shop-host API paths to the main API path", () => {
   })
 
   assert.equal(target?.toString(), "https://devicehelp.cz/api/search?q=glass")
+})
+
+test("locale-less catalog deep links do not escape to the main domain", () => {
+  // No main-domain redirect → the middleware's unified locale redirect picks
+  // these up and 301s to /<locale><path> on the SAME shop host.
+  for (const pathname of ["/category/skla", "/product/protective-glass", "/cart"]) {
+    assert.equal(
+      getShopRedirectTarget({
+        host: "shop.devicehelp.cz",
+        pathname,
+        search: "",
+        mainBaseUrl: "https://devicehelp.cz",
+      }),
+      null,
+    )
+  }
 })
 
 test("does not redirect allowed shop paths or main-domain paths", () => {
