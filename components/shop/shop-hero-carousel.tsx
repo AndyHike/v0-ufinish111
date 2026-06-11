@@ -119,6 +119,7 @@ export function ShopHeroCarousel({
               alt=""
               fill
               priority={slideIndex === 0}
+              fetchPriority={slideIndex === 0 ? "high" : undefined}
               sizes="(max-width: 1024px) 100vw, 720px"
               className="object-cover"
             />

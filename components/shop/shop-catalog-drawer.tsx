@@ -135,7 +135,9 @@ export function ShopCatalogDrawer({
           otherwise scope `position: fixed` to the header box). */}
       {mounted
         ? createPortal(
-            <div className={`fixed inset-0 z-[60] ${open ? "" : "pointer-events-none"}`} aria-hidden={!open}>
+            // `inert` removes the closed drawer from the tab order and the
+            // accessibility tree; aria-hidden alone leaves links focusable.
+            <div className={`fixed inset-0 z-[60] ${open ? "" : "pointer-events-none"}`} inert={!open}>
               <button
                 type="button"
                 tabIndex={open ? 0 : -1}

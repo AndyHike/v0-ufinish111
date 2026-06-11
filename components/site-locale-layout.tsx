@@ -104,9 +104,10 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
           />
         )}
 
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link rel="preconnect" href="https://xnwoqomipsesacphoczp.supabase.co" />
+        {/* Fonts are self-hosted via next/font, so no Google Fonts preconnect.
+            Supabase serves images only on the main/B2B sites; the shop uses R2
+            through the same-origin /_next/image proxy. */}
+        {variant !== "shop" ? <link rel="preconnect" href="https://xnwoqomipsesacphoczp.supabase.co" /> : null}
         <link rel="dns-prefetch" href="https://devicehelp.cz" />
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <meta name="seznam-wmt" content="5VWPSjprwBjXXCI2HRoOVfvKcmdPB1Om" />

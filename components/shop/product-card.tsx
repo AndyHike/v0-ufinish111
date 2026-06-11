@@ -32,7 +32,8 @@ const TONE_DOT: Record<AvailabilityTone, string> = {
 const TONE_TEXT: Record<AvailabilityTone, string> = {
   in: "text-emerald-700",
   low: "text-amber-700",
-  out: "text-gray-400",
+  // gray-600+ keeps the label at WCAG AA contrast (gray-400 is ~2.8:1).
+  out: "text-gray-600",
 }
 
 export function ProductCard({
