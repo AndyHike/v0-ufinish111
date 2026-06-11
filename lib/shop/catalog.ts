@@ -518,9 +518,17 @@ export function getProductSpecificationRows(
   return rows
 }
 
+/** True when any of the variant's slugs (canonical or per-locale) equals `slug`. */
+function variantHasSlug(variant: Pick<ShopVariant, "slugOverride" | "slugLocalized">, slug: string): boolean {
+  if (variant.slugOverride === slug) {
+    return true
+  }
+  return Object.values(variant.slugLocalized ?? {}).includes(slug)
+}
+
 export function selectProductVariant(item: ShopItem, variantSlug?: string): ShopVariant {
   const selectedVariant =
-    (variantSlug ? item.variants.find((variant) => variant.slugOverride === variantSlug) : null) ??
+    (variantSlug ? item.variants.find((variant) => variantHasSlug(variant, variantSlug)) : null) ??
     item.variants.find((variant) => variant.isDefault) ??
     item.variants[0]
 
@@ -531,15 +539,26 @@ export function selectProductVariant(item: ShopItem, variantSlug?: string): Shop
   return selectedVariant
 }
 
+/** Locale-specific item slug for URLs; the canonical slug carries the store default locale. */
+export function getItemRouteSlug(item: Pick<ShopItem, "slug" | "slugLocalized">, locale: ShopLocale): string {
+  return item.slugLocalized?.[locale]?.trim() || item.slug
+}
+
 /**
  * The slug that deep-links to a single variant's "variant product" page.
- * Prefers the explicit `slugOverride`; falls back to the joined option slugs
- * (e.g. `iphone-11`) so a category-bound variant is still addressable even when
- * the admin didn't set a dedicated variant slug. Returns null if neither exists.
+ * Prefers the per-locale slug from the admin, then the explicit `slugOverride`;
+ * falls back to the joined option slugs (e.g. `iphone-11`) so a category-bound
+ * variant is still addressable even when the admin didn't set a dedicated
+ * variant slug. Returns null if none exists.
  */
 export function getVariantRouteSlug(
-  variant: Pick<ShopVariant, "slugOverride" | "selectedOptions">,
+  variant: Pick<ShopVariant, "slugOverride" | "selectedOptions" | "slugLocalized">,
+  locale?: ShopLocale,
 ): string | null {
+  const localized = locale ? variant.slugLocalized?.[locale]?.trim() : undefined
+  if (localized) {
+    return localized
+  }
   if (variant.slugOverride) {
     return variant.slugOverride
   }
@@ -549,8 +568,10 @@ export function getVariantRouteSlug(
 
 export function selectProductVariantByRoute(item: ShopItem, variantSlug?: string): ShopVariant | null {
   if (variantSlug) {
+    // Any locale's slug resolves (mirrors the admin detail lookup); the
+    // canonical link element points search engines at the locale-correct URL.
     return (
-      item.variants.find((variant) => variant.slugOverride === variantSlug) ??
+      item.variants.find((variant) => variantHasSlug(variant, variantSlug)) ??
       item.variants.find((variant) => getVariantRouteSlug(variant) === variantSlug) ??
       null
     )
@@ -625,12 +646,14 @@ export function toProductCard(
   const images = cardImages.length > 0 ? cardImages : ["/tech-fix-storefront.png"]
 
   // A forced-variant card shows the variant's own title and deep-links to its
-  // variant detail page so the customer lands on exactly this model.
-  const variantRouteSlug = forcedVariant ? getVariantRouteSlug(forcedVariant) : null
+  // variant detail page so the customer lands on exactly this model. Links use
+  // the per-locale slugs; the canonical slug is the default-locale fallback.
+  const itemRouteSlug = getItemRouteSlug(item, locale)
+  const variantRouteSlug = forcedVariant ? getVariantRouteSlug(forcedVariant, locale) : null
   const href =
     forcedVariant && variantRouteSlug
-      ? `/${locale}/product/${item.slug}/${variantRouteSlug}`
-      : `/${locale}/product/${item.slug}`
+      ? `/${locale}/product/${itemRouteSlug}/${variantRouteSlug}`
+      : `/${locale}/product/${itemRouteSlug}`
 
   // Purchasability of a multi-variant ("from X") card is a property of the
   // product, not its default variant: it can be bought if ANY variant is in

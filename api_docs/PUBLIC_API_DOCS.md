@@ -870,7 +870,7 @@ GET /api/public/v1/items?include=variants,availability
 GET /api/public/v1/items/protective-glass?include=categories,variants,availability
 ```
 
-`GET /api/public/v1/items/[slug]` спочатку шукає `Item.slug`, а якщо не знаходить, шукає активний purchasable `ItemVariant.slugOverride`. Коли detail відкрито через variant slug, відповідь містить `selectedVariantId`.
+`GET /api/public/v1/items/[slug]` спочатку шукає `Item.slug` (або будь-який локалізований slug із `Item.slugLocalized`), а якщо не знаходить — активний purchasable `ItemVariant.slugOverride` чи локалізований slug із `ItemVariant.slugLocalized`. Коли detail відкрито через variant slug, відповідь містить `selectedVariantId`.
 
 Приклад фрагмента відповіді:
 
@@ -881,11 +881,13 @@ GET /api/public/v1/items/protective-glass?include=categories,variants,availabili
     "id": "item_123",
     "title": { "uk": "Захисне скло" },
     "slug": "protective-glass",
+    "slugLocalized": { "en": "screen-protector", "cs": "ochranne-sklo" },
     "variants": [
       {
         "id": "variant_iphone_11",
         "title": { "uk": "Захисне скло для iPhone 11" },
         "slugOverride": "protective-glass-iphone-11",
+        "slugLocalized": { "en": "screen-protector-iphone-11" },
         "price": "249.00",
         "salePrice": null,
         "sku": "GLASS-IP11",
@@ -922,7 +924,8 @@ GET /api/public/v1/items/protective-glass?include=categories,variants,availabili
 
 - `sku` і `barcode` належать тільки `ItemVariant`, не базовому `Item`.
 - `sku` авто-генерується сервером і **унікальний у межах магазину**: кожен variant (включно з дефолтним) повертає непорожній `sku`, навіть якщо його не задавали в адмінці. Можна покладатися на нього як на стабільний ключ для feed-рядків і POS. *(Legacy-дані, створені до введення авто-генерації, можуть мати `sku: null`, доки товар не пересохранять.)*
-- `slugOverride` авто-генерується для **не-дефолтних** variant-ів (транслітерований, унікальний у межах магазину) і **заморожується** після створення; дефолтний variant має `slugOverride: null` (його публічний URL — це URL батьківського товару). За цим slug-ом працює detail-lookup (§2.3) і variant canonical URL у `structuredDataFacts`.
+- `slugOverride` авто-генерується для **не-дефолтних** variant-ів за схемою **«назва товару + назва варіанта»** (транслітерований, унікальний у межах магазину) і **заморожується** після створення; дефолтний variant має `slugOverride: null` (його публічний URL — це URL батьківського товару). За цим slug-ом працює detail-lookup (§2.3) і variant canonical URL у `structuredDataFacts`.
+- `slugLocalized` (`Item` і `ItemVariant`) — мапа `locale → slug`, авто-генерована з локалізованої назви (для варіантів — «назва товару + назва варіанта» відповідною мовою). Дефолтна локаль магазину представлена канонічним `slug`/`slugOverride` і в мапу не пишеться. Canonical URL-и, `/seo/urls` та merchant feed підставляють slug відповідної локалі; за відсутності — fallback на канонічний.
 - `gtin` і `mpn` — manufacturer-ідентифікатори рівня `ItemVariant` (editable в адмінці), окремі від внутрішнього `barcode`. `barcode` **ніколи** не мапиться в `gtin`; GTIN бери лише з явного `gtin`.
 - `brand`, `condition` (`new` \| `used` \| `refurbished`), `googleProductCategory` — каталожні поля рівня `Item` у самому item-об'єкті (не лише в structured data); живлять merchant feed і JSON-LD.
 - `availability.availableStock` рахується як `InventoryLevel.onHand - InventoryLevel.reserved`.
@@ -1430,7 +1433,7 @@ x-public-api-key: <Ваш_API_Key>
 ---
 
 ## 6.1. Отримати промобанери 🖼️
-Повертає активні промобанери магазину для головної сторінки: головний банер і другорядні, з мультимовними текстами, слайдами (зображення) і кнопками. Підходить як для шаблонних, так і для кастомних (headless) сторфронтів.
+Повертає активні промобанери магазину для головної сторінки: головний банер і другорядні. Банер — це **контейнер каруселі**; увесь контент (заголовок, опис, кнопки) живе на рівні **слайда**. Підходить як для шаблонних, так і для кастомних (headless) сторфронтів.
 
 **URL**: `GET /api/public/v1/banners`
 
@@ -1439,7 +1442,9 @@ x-public-api-key: <Ваш_API_Key>
 
 **Примітки:**
 - Повертаються лише банери з `isActive = true`, відсортовані за `position`.
-- Локалізовані поля (`title`, `description`, `caption`, `label`) — це об'єкти `{ "uk": ..., "en": ..., "cs": ... }`; клієнт обирає активну локаль (з власним фолбеком). Поля можуть бути `null` або містити не всі мови.
+- **Банер — чистий контейнер:** має лише `id`, `type`, `isMain`, `position`, `slides`. Заголовок/опис/кнопки тепер на слайді, не на банері. (Внутрішній адмін-лейбл `name` у публічне API НЕ віддається.)
+- Кожен **слайд** має власні `title`, `description`, до 2 `buttons`, і `imageUrl`.
+- Локалізовані поля (`title`, `description`, `label`) — це об'єкти `{ "uk": ..., "en": ..., "cs": ... }`; клієнт обирає активну локаль (з власним фолбеком). Поля можуть бути `null` або містити не всі мови.
 - `type`: `IMAGE` | `TEXT` | `CAROUSEL`. Для `TEXT`-банерів слайди без зображення лишаються (текстовий банер); для `IMAGE`/`CAROUSEL` слайди без зображення відфільтровані.
 - `data.main` — зручне посилання на банер із `isMain = true` (або `null`).
 
@@ -1454,28 +1459,27 @@ x-public-api-key: <Ваш_API_Key>
         "type": "CAROUSEL",
         "isMain": true,
         "position": 0,
-        "title": { "uk": "Літній розпродаж", "en": "Summer sale", "cs": "Letní výprodej" },
-        "description": { "uk": "Знижки до -50%", "en": "Up to -50%", "cs": "Až -50 %" },
         "slides": [
           {
             "id": "cuid...",
             "position": 0,
             "imageUrl": "https://cdn.example.com/banner-1.jpg",
-            "caption": { "uk": "Нова колекція", "en": "New collection", "cs": "Nová kolekce" }
-          }
-        ],
-        "buttons": [
-          {
-            "id": "cuid...",
-            "position": 0,
-            "label": { "uk": "Купити", "en": "Shop now", "cs": "Koupit" },
-            "href": "/collections/summer",
-            "style": "PRIMARY"
+            "title": { "uk": "Літній розпродаж", "en": "Summer sale", "cs": "Letní výprodej" },
+            "description": { "uk": "Знижки до -50%", "en": "Up to -50%", "cs": "Až -50 %" },
+            "buttons": [
+              {
+                "id": "cuid...",
+                "position": 0,
+                "label": { "uk": "Купити", "en": "Shop now", "cs": "Koupit" },
+                "href": "/collections/summer",
+                "style": "PRIMARY"
+              }
+            ]
           }
         ]
       }
     ],
-    "main": { "id": "cuid...", "type": "CAROUSEL", "isMain": true, "position": 0, "title": { "uk": "..." }, "slides": [], "buttons": [] }
+    "main": { "id": "cuid...", "type": "CAROUSEL", "isMain": true, "position": 0, "slides": [] }
   }
 }
 ```

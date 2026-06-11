@@ -81,6 +81,7 @@ interface ApiVariant {
   itemId?: string
   title?: ShopLocalizedText
   slugOverride?: string | null
+  slugLocalized?: Record<string, string> | null
   price?: string | number
   salePrice?: string | number | null
   sku?: string
@@ -123,6 +124,7 @@ export interface ApiItem {
   id: string
   title?: ShopLocalizedText
   slug: string
+  slugLocalized?: Record<string, string> | null
   // Item-level price; for a single-default-variant product the price lives here
   // and the default variant inherits it (see mapApiVariant).
   price?: string | number
@@ -183,6 +185,25 @@ function toNumber(value: string | number | null | undefined, fallback = 0): numb
 
 function toLocalized(value: ShopLocalizedText | null | undefined): ShopLocalizedText {
   return value ?? {}
+}
+
+/**
+ * Per-locale slug map ({ locale → slug }). Only known locales with non-empty
+ * slugs survive; the store default locale is absent by contract (it lives in
+ * the canonical slug/slugOverride).
+ */
+function mapSlugLocalized(value: Record<string, string> | null | undefined): ShopLocalizedText | undefined {
+  if (!value || typeof value !== "object") {
+    return undefined
+  }
+  const mapped: ShopLocalizedText = {}
+  for (const locale of SHOP_LOCALES) {
+    const slug = value[locale]
+    if (typeof slug === "string" && slug.trim()) {
+      mapped[locale] = slug.trim()
+    }
+  }
+  return Object.keys(mapped).length > 0 ? mapped : undefined
 }
 
 function mapImages(images: ApiImage[] | undefined): string[] {
@@ -459,6 +480,7 @@ export function mapApiVariant(
     itemId: api.itemId ?? itemId,
     title: toLocalized(api.title),
     slugOverride: api.slugOverride ?? null,
+    slugLocalized: mapSlugLocalized(api.slugLocalized),
     price,
     salePrice,
     sku: api.sku ?? "",
@@ -478,12 +500,17 @@ export function mapApiItem(api: ApiItem): ShopItem {
   const variants = (api.variants ?? []).map((variant) =>
     mapApiVariant(variant, api.id, api.price, api.salePrice),
   )
-  const buildCanonical = (locale: ShopLocale) => `${shopSiteUrl}/${locale}/product/${api.slug}`
+  const slugLocalized = mapSlugLocalized(api.slugLocalized)
+  // Fallback canonical (used only when the admin sends no canonicalUrl) honors
+  // the per-locale slug just like the admin's own canonical builder.
+  const buildCanonical = (locale: ShopLocale) =>
+    `${shopSiteUrl}/${locale}/product/${slugLocalized?.[locale] ?? api.slug}`
 
   return {
     id: api.id,
     title,
     slug: api.slug,
+    slugLocalized,
     description: toLocalized(api.description),
     content: toLocalized(api.content),
     images: mapImages(api.images),

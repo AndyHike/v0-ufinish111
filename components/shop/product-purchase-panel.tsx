@@ -148,7 +148,7 @@ export function ProductPurchasePanel({
         itemId: item.id,
         variantId: variant.id,
         quantity,
-        titleSnapshot: `${getLocalizedText(item.title, locale)} - ${getLocalizedText(variant.title, locale)}`,
+        titleSnapshot: getVariantProductTitle(item, variant, locale),
         priceSnapshot: displayPrice,
         imageSnapshot: variant.images[0],
         currency: "CZK",

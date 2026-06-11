@@ -8,7 +8,7 @@ import { ProductGallery } from "@/components/shop/product-gallery"
 import { ProductPurchasePanel } from "@/components/shop/product-purchase-panel"
 import { StructuredData } from "@/components/shop/structured-data"
 import { getLocalizedText, getProductSpecificationRows } from "@/lib/shop/catalog"
-import { buildBreadcrumbJsonLd, buildProductJsonLd } from "@/lib/shop/seo"
+import { buildBreadcrumbJsonLd, buildProductJsonLd, type ShopOfferShippingInput } from "@/lib/shop/seo"
 import { shopSiteUrl } from "@/lib/site-config"
 import type { ShopItem, ShopLocale, ShopRelatedProduct, ShopVariant } from "@/lib/shop/types"
 
@@ -61,6 +61,7 @@ export function ProductPage({
   selectedVariant,
   relatedItems,
   variantView = false,
+  shipping = null,
 }: {
   locale: ShopLocale
   item: ShopItem
@@ -68,6 +69,8 @@ export function ProductPage({
   relatedItems: ShopRelatedProduct[]
   /** Page opened at a specific variant slug → present that variant as the product. */
   variantView?: boolean
+  /** Flat Packeta price for the JSON-LD shippingDetails; null when unknown. */
+  shipping?: ShopOfferShippingInput | null
 }) {
   const copy = PRODUCT_COPY[locale]
   const relatedCopy = RELATED_COPY[locale]
@@ -86,7 +89,7 @@ export function ProductPage({
   const title = getLocalizedText(item.title, locale)
   const category = item.categories[0]
   const specifications = getProductSpecificationRows(item, variant, locale)
-  const productJsonLd = buildProductJsonLd(item, variant, locale)
+  const productJsonLd = buildProductJsonLd(item, variant, locale, { shipping })
   const breadcrumbItems = [
     { name: copy.shop, url: `${shopSiteUrl}/${locale}` },
     ...(category

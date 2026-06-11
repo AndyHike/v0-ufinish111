@@ -325,6 +325,49 @@ test("getVariantRouteSlug prefers slugOverride, falls back to option slugs", () 
   assert.equal(catalog.getVariantRouteSlug({ slugOverride: null, selectedOptions: [] }), null)
 })
 
+test("getVariantRouteSlug prefers the per-locale slug when a locale is given", () => {
+  const variant = {
+    slugOverride: "glass-ip11",
+    slugLocalized: { uk: "sklo-ip11" },
+    selectedOptions: [{ optionSlug: "iphone-11" }],
+  }
+  assert.equal(catalog.getVariantRouteSlug(variant, "uk"), "sklo-ip11")
+  // No localized slug for the locale → canonical slugOverride.
+  assert.equal(catalog.getVariantRouteSlug(variant, "cs"), "glass-ip11")
+  assert.equal(catalog.getVariantRouteSlug(variant), "glass-ip11")
+})
+
+test("getItemRouteSlug resolves the per-locale slug with canonical fallback", () => {
+  const item = { slug: "protective-glass", slugLocalized: { uk: "zakhysne-sklo" } }
+  assert.equal(catalog.getItemRouteSlug(item, "uk"), "zakhysne-sklo")
+  assert.equal(catalog.getItemRouteSlug(item, "cs"), "protective-glass")
+  assert.equal(catalog.getItemRouteSlug({ slug: "protective-glass" }, "uk"), "protective-glass")
+})
+
+test("product card hrefs use the locale's slugs (item + forced variant)", () => {
+  const { item } = catalog.getMockShopProduct("cs", "protective-glass")
+
+  const ukCard = catalog.toProductCard(item, "uk", "variant-glass-iphone-11")
+  assert.equal(ukCard.href, "/uk/product/zakhysne-sklo/zakhysne-sklo-iphone-11")
+
+  // Default store locale keeps the canonical slugs.
+  const csCard = catalog.toProductCard(item, "cs", "variant-glass-iphone-11")
+  assert.equal(csCard.href, "/cs/product/protective-glass/protective-glass-iphone-11")
+
+  const ukItemCard = catalog.toProductCard(item, "uk")
+  assert.equal(ukItemCard.href, "/uk/product/zakhysne-sklo")
+})
+
+test("selectProductVariantByRoute resolves localized variant slugs", () => {
+  const { item } = catalog.getMockShopProduct("cs", "protective-glass")
+
+  const byLocalized = catalog.selectProductVariantByRoute(item, "zakhysne-sklo-iphone-11")
+  assert.equal(byLocalized?.id, "variant-glass-iphone-11")
+
+  const byCanonical = catalog.selectProductVariantByRoute(item, "protective-glass-iphone-11")
+  assert.equal(byCanonical?.id, "variant-glass-iphone-11")
+})
+
 test("getMockShopProduct flags a variant-slug open as a variant view", () => {
   const itemView = catalog.getMockShopProduct("cs", "protective-glass")
   assert.equal(itemView.isVariantView, false)

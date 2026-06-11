@@ -14,6 +14,7 @@ async function importCompiledShopModules() {
   const tempRoot = await mkdtemp(join(tmpdir(), "devicehelp-shop-seo-"))
   const files = [
     "lib/site-config.ts",
+    "lib/site-assets.ts",
     "lib/og-locale.ts",
     "lib/shop/types.ts",
     "lib/shop/mock-data.ts",
@@ -70,6 +71,41 @@ test("builds metadata from localized SEO with canonical and alternates", () => {
   assert.equal(metadata.openGraph.siteName, "DeviceHelp Shop")
 })
 
+test("metadata points og:image and twitter:image at the dynamic 1200x630 OG card", () => {
+  const product = catalog.getMockShopProduct("cs", "protective-glass")
+  const metadata = seo.buildShopMetadata({
+    locale: "cs",
+    seo: product.item.seo,
+    fallbackTitle: "Fallback",
+    fallbackDescription: "Fallback description",
+  })
+
+  assert.equal(metadata.twitter.card, "summary_large_image")
+  const ogImage = metadata.openGraph.images[0]
+  assert.match(ogImage.url, /\/api\/shop\/og\?/)
+  assert.equal(ogImage.width, 1200)
+  assert.equal(ogImage.height, 630)
+  assert.ok(ogImage.alt)
+  assert.equal(metadata.twitter.images[0], ogImage.url)
+})
+
+test("buildShopOgImageUrl encodes locale, title, price and image", () => {
+  const url = new URL(
+    seo.buildShopOgImageUrl({
+      locale: "uk",
+      title: "Захисне скло",
+      price: 199,
+      image: "https://pub-test.r2.dev/products/glass.png",
+    }),
+  )
+
+  assert.equal(url.pathname, "/api/shop/og")
+  assert.equal(url.searchParams.get("locale"), "uk")
+  assert.equal(url.searchParams.get("title"), "Захисне скло")
+  assert.equal(url.searchParams.get("price"), "199")
+  assert.equal(url.searchParams.get("img"), "https://pub-test.r2.dev/products/glass.png")
+})
+
 test("builds ProductGroup JSON-LD with variants and offers", () => {
   const product = catalog.getMockShopProduct("cs", "protective-glass", "protective-glass-iphone-11")
   const jsonLd = seo.buildProductJsonLd(product.item, product.selectedVariant, "cs")
@@ -80,6 +116,73 @@ test("builds ProductGroup JSON-LD with variants and offers", () => {
   assert.ok(jsonLd.hasVariant.length >= 2)
   assert.equal(jsonLd.hasVariant[1].offers.price, "199")
   assert.equal(jsonLd.hasVariant[1].offers.availability, "https://schema.org/InStock")
+})
+
+test("ProductGroup JSON-LD carries productGroupID, variesBy and return policy", () => {
+  const product = catalog.getMockShopProduct("cs", "protective-glass")
+  const jsonLd = seo.buildProductJsonLd(product.item, product.selectedVariant, "cs")
+
+  assert.equal(jsonLd.productGroupID, product.item.slug)
+  assert.ok(Array.isArray(jsonLd.variesBy))
+  assert.ok(jsonLd.variesBy.length >= 1)
+  assert.equal(jsonLd.offers.hasMerchantReturnPolicy.merchantReturnDays, 14)
+  assert.equal(jsonLd.offers.hasMerchantReturnPolicy.applicableCountry, "CZ")
+  // The group description is duplicated into every variant Product.
+  assert.equal(jsonLd.hasVariant[0].description, jsonLd.description)
+})
+
+test("variant JSON-LD urls use the locale's slugLocalized when present", () => {
+  const product = catalog.getMockShopProduct("uk", "protective-glass")
+  const jsonLd = seo.buildProductJsonLd(product.item, product.selectedVariant, "uk")
+  const iphone11 = jsonLd.hasVariant.find((variant) => variant.sku === "GLASS-IP11")
+
+  assert.ok(iphone11.url.endsWith("/zakhysne-sklo-iphone-11"))
+
+  // Default store locale keeps the canonical slugOverride.
+  const csJsonLd = seo.buildProductJsonLd(product.item, product.selectedVariant, "cs")
+  const csIphone11 = csJsonLd.hasVariant.find((variant) => variant.sku === "GLASS-IP11")
+  assert.ok(csIphone11.url.endsWith("/protective-glass-iphone-11"))
+})
+
+test("variant JSON-LD name has no trailing dash when the variant title is empty", () => {
+  const product = catalog.getMockShopProduct("cs", "protective-glass")
+  const item = {
+    ...product.item,
+    variants: product.item.variants.map((variant, index) =>
+      index === 0 ? { ...variant, title: { cs: "" } } : variant,
+    ),
+  }
+  const jsonLd = seo.buildProductJsonLd(item, item.variants[0], "cs")
+
+  assert.equal(jsonLd.hasVariant[0].name, catalog.getLocalizedText(item.title, "cs"))
+  assert.doesNotMatch(jsonLd.hasVariant[0].name, /\s-\s*$/)
+})
+
+test("offers include shippingDetails when the store delivery price is known", () => {
+  const product = catalog.getMockShopProduct("cs", "protective-glass")
+  const jsonLd = seo.buildProductJsonLd(product.item, product.selectedVariant, "cs", {
+    shipping: { price: 79 },
+  })
+
+  assert.equal(jsonLd.offers.shippingDetails.shippingRate.value, 79)
+  assert.equal(jsonLd.offers.shippingDetails.shippingRate.currency, "CZK")
+  assert.equal(jsonLd.offers.shippingDetails.shippingDestination.addressCountry, "CZ")
+  // Without shipping info the block is omitted rather than guessed.
+  const bare = seo.buildProductJsonLd(product.item, product.selectedVariant, "cs")
+  assert.equal(bare.offers.shippingDetails, undefined)
+})
+
+test("Organization and WebSite JSON-LD are linked via @id", () => {
+  const organization = seo.buildShopOrganizationJsonLd()
+  const website = seo.buildShopWebSiteJsonLd("cs")
+
+  assert.equal(organization["@type"], "Organization")
+  assert.match(organization["@id"], /#organization$/)
+  assert.ok(organization.logo.url)
+  assert.ok(organization.contactPoint.telephone)
+  assert.equal(website["@type"], "WebSite")
+  assert.equal(website.publisher["@id"], organization["@id"])
+  assert.equal(website.name, "DeviceHelp Shop")
 })
 
 test("builds breadcrumb JSON-LD", () => {

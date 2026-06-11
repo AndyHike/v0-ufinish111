@@ -19,6 +19,7 @@ import {
   getShopCategoryAncestors,
   getShopCategoryChildren,
   getShopCategoryPriceBounds,
+  getItemRouteSlug,
   getLocalizedText,
   itemMatchesAttributes,
   normalizeShopCategoryFilters,
@@ -559,13 +560,21 @@ export async function getShopProductSlugParams(): Promise<{ locale: ShopLocale; 
       tags: tagsFor((id) => [viewHomeTag(id)]),
     })
     const items = apiItems.map(mapApiItem)
+    // Pre-render each locale at its own slug (per-locale slugLocalized with the
+    // canonical slug as the default-locale fallback). Variants are included
+    // only when they carry a dedicated slug (slugOverride or localized) — the
+    // option-slug fallback stays on-demand.
     return SHOP_LOCALES.flatMap((locale) =>
-      items.flatMap((item) => [
-        { locale, slugs: [item.slug] },
-        ...item.variants
-          .filter((variant) => Boolean(variant.slugOverride))
-          .map((variant) => ({ locale, slugs: [item.slug, variant.slugOverride as string] })),
-      ]),
+      items.flatMap((item) => {
+        const itemSlug = getItemRouteSlug(item, locale)
+        return [
+          { locale, slugs: [itemSlug] },
+          ...item.variants.flatMap((variant) => {
+            const variantSlug = variant.slugLocalized?.[locale]?.trim() || variant.slugOverride
+            return variantSlug ? [{ locale, slugs: [itemSlug, variantSlug] }] : []
+          }),
+        ]
+      }),
     )
   } catch {
     return []

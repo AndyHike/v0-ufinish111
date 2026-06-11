@@ -124,6 +124,12 @@ export interface ShopVariant {
   itemId: string
   title: ShopLocalizedText
   slugOverride: string | null
+  /**
+   * Per-locale variant slugs from the admin (auto-generated from the localized
+   * "item title + variant name"). The store default locale is represented by
+   * the canonical `slugOverride` and is absent from this map.
+   */
+  slugLocalized?: ShopLocalizedText
   price: number
   salePrice: number | null
   sku: string
@@ -143,6 +149,12 @@ export interface ShopItem {
   id: string
   title: ShopLocalizedText
   slug: string
+  /**
+   * Per-locale item slugs from the admin (auto-generated from the localized
+   * title). The store default locale is represented by the canonical `slug`
+   * and is absent from this map.
+   */
+  slugLocalized?: ShopLocalizedText
   description: ShopLocalizedText
   content: ShopLocalizedText
   images: string[]

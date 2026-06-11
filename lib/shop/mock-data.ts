@@ -561,6 +561,7 @@ const protectiveGlassVariants: ShopVariant[] = [
       // update is visible in local dev.
       image: "/tech-fix-storefront.png",
     }),
+    slugLocalized: { uk: "zakhysne-sklo-iphone-11", en: "screen-protector-iphone-11" },
     isDefault: false,
   },
   {
@@ -681,6 +682,9 @@ export const mockShopItems: ShopItem[] = [
   {
     id: "item-protective-glass",
     slug: "protective-glass",
+    // Per-locale slugs as the admin generates them; the default locale stays
+    // on the canonical `slug` (see PUBLIC_API_DOCS §2.3).
+    slugLocalized: { uk: "zakhysne-sklo", en: "screen-protector" },
     title: localized("Premiove ochranne sklo", "Преміальне захисне скло", "Premium protective glass"),
     description: localized(
       "Tenké ochranné sklo s přesným výřezem a servisním doporučením.",

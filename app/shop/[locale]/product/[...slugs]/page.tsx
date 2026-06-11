@@ -3,7 +3,7 @@ import { notFound } from "next/navigation"
 
 import { ProductPage } from "@/components/shop/product-page"
 import { getLocalizedText } from "@/lib/shop/catalog"
-import { getShopProductData, getShopProductSlugParams } from "@/lib/shop/data"
+import { getShopIntegrations, getShopProductData, getShopProductSlugParams } from "@/lib/shop/data"
 import { buildShopMetadata } from "@/lib/shop/seo"
 import type { ShopLocale } from "@/lib/shop/types"
 
@@ -59,11 +59,17 @@ export default async function ShopProductRoute({
     notFound()
   }
 
-  const data = await getShopProductData(locale, itemSlug, variantSlug)
+  const [data, integrations] = await Promise.all([
+    getShopProductData(locale, itemSlug, variantSlug),
+    getShopIntegrations(),
+  ])
 
   if (!data) {
     notFound()
   }
+
+  // Delivery price feeds the JSON-LD shippingDetails; omitted when Packeta is off.
+  const shipping = integrations.packeta.enabled ? { price: integrations.packeta.shippingPrice } : null
 
   return (
     <ProductPage
@@ -73,6 +79,7 @@ export default async function ShopProductRoute({
       selectedVariant={data.selectedVariant}
       relatedItems={data.relatedItems}
       variantView={data.isVariantView}
+      shipping={shipping}
     />
   )
 }
