@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 
 import { ProductPage } from "@/components/shop/product-page"
-import { getLocalizedText } from "@/lib/shop/catalog"
+import { getLocalizedText, getVariantProductTitle } from "@/lib/shop/catalog"
 import { getShopIntegrations, getShopProductData, getShopProductSlugParams } from "@/lib/shop/data"
 import { buildShopMetadata } from "@/lib/shop/seo"
 import type { ShopLocale } from "@/lib/shop/types"
@@ -39,11 +39,18 @@ export async function generateMetadata({
     return {}
   }
 
+  // Variant URLs are indexable pages of their own: variant-canonical
+  // metadata and a variant-specific title (see buildShopMetadata).
+  const variant = data.isVariantView ? data.selectedVariant : null
+
   return buildShopMetadata({
     locale,
     seo: data.item.seo,
-    fallbackTitle: getLocalizedText(data.item.title, locale),
+    fallbackTitle: variant
+      ? getVariantProductTitle(data.item, variant, locale)
+      : getLocalizedText(data.item.title, locale),
     fallbackDescription: getLocalizedText(data.item.description, locale),
+    variant,
   })
 }
 

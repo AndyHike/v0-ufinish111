@@ -44,6 +44,29 @@ export function buildShopLanguageAlternates(seo: ShopSeo): Partial<Record<ShopLo
 }
 
 /**
+ * Per-locale URLs of a variant page: the locale's item canonical plus the
+ * locale's variant slug. Slug-less variants collapse onto the item URLs.
+ */
+export function buildShopVariantLanguageAlternates(
+  seo: ShopSeo,
+  variant: ShopVariant,
+): Partial<Record<ShopLocale | "x-default", string>> {
+  const alternates: Partial<Record<ShopLocale | "x-default", string>> = {}
+  for (const locale of SHOP_LOCALES) {
+    const itemCanonicalUrl = seo.locales[locale]?.canonicalUrl
+    if (itemCanonicalUrl) {
+      alternates[locale] = buildVariantUrl(itemCanonicalUrl, variant, locale)
+    }
+  }
+
+  if (alternates.cs) {
+    alternates["x-default"] = alternates.cs
+  }
+
+  return alternates
+}
+
+/**
  * URL of the dynamic 1200×630 OG card rendered by app/api/shop/og.
  * Platforms expect ~1.91:1; the admin ogImage is usually a square product
  * photo, so it goes *inside* the card (`img`) instead of being the og:image.
@@ -77,23 +100,42 @@ export function buildShopMetadata({
   seo,
   fallbackTitle,
   fallbackDescription,
+  variant,
 }: {
   locale: ShopLocale
   seo: ShopSeo
   fallbackTitle: string
   fallbackDescription: string
+  /**
+   * Set when the page was opened via a variant slug. Variant pages are
+   * indexable URLs of their own (the seo/urls feed lists them in the
+   * sitemap), so they self-canonicalize instead of pointing at the parent
+   * item; canonical/hreflang/OG then use the variant URLs. Slug-less
+   * variants still collapse onto the item canonical.
+   */
+  variant?: ShopVariant | null
 }): Metadata {
   const localizedSeo = getShopSeoLocale(seo, locale)
-  const canonicalUrl = localizedSeo?.canonicalUrl ?? seo.canonicalUrl
-  const title = localizedSeo?.metaTitle ?? fallbackTitle
+  const itemCanonicalUrl = localizedSeo?.canonicalUrl ?? seo.canonicalUrl
+  const canonicalUrl = variant ? buildVariantUrl(itemCanonicalUrl, variant, locale) : itemCanonicalUrl
+  // The admin meta/og titles are authored for the item page; variant pages
+  // take the variant-specific fallback so indexable variants don't share one
+  // title across the whole group.
+  const title = variant ? fallbackTitle : (localizedSeo?.metaTitle ?? fallbackTitle)
   const description = localizedSeo?.metaDescription ?? fallbackDescription
-  const ogTitle = localizedSeo?.ogTitle ?? title
+  const ogTitle = variant ? title : (localizedSeo?.ogTitle ?? title)
   const facts = localizedSeo?.structuredDataFacts
-  const innerImage = absoluteShopUrl(localizedSeo?.ogImage) ?? absoluteShopUrl(facts?.image)
+  const innerImage =
+    absoluteShopUrl(variant?.images[0]) ?? absoluteShopUrl(localizedSeo?.ogImage) ?? absoluteShopUrl(facts?.image)
+  const ogPrice = variant
+    ? (variant.salePrice ?? variant.price)
+    : facts?.kind === "product"
+      ? (facts.salePrice ?? facts.price ?? null)
+      : null
   const ogImageUrl = buildShopOgImageUrl({
     locale,
     title: ogTitle,
-    price: facts?.kind === "product" ? (facts.salePrice ?? facts.price ?? null) : null,
+    price: ogPrice,
     image: innerImage,
   })
   const ogImages = [{ url: ogImageUrl, width: 1200, height: 630, alt: ogTitle }]
@@ -104,7 +146,7 @@ export function buildShopMetadata({
     metadataBase: new URL(shopSiteUrl),
     alternates: {
       canonical: canonicalUrl,
-      languages: buildShopLanguageAlternates(seo),
+      languages: variant ? buildShopVariantLanguageAlternates(seo, variant) : buildShopLanguageAlternates(seo),
     },
     robots: localizedSeo?.robots ?? seo.robots,
     openGraph: {

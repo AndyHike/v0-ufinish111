@@ -72,6 +72,52 @@ test("builds metadata from localized SEO with canonical and alternates", () => {
   assert.equal(metadata.openGraph.siteName, "DeviceHelp Shop")
 })
 
+test("variant pages self-canonicalize with per-locale variant URLs", () => {
+  const product = catalog.getMockShopProduct("cs", "protective-glass", "protective-glass-iphone-11")
+  assert.equal(product.isVariantView, true)
+
+  const metadata = seo.buildShopMetadata({
+    locale: "cs",
+    seo: product.item.seo,
+    fallbackTitle: catalog.getVariantProductTitle(product.item, product.selectedVariant, "cs"),
+    fallbackDescription: "Fallback description",
+    variant: product.selectedVariant,
+  })
+
+  const variantUrl = "https://shop.devicehelp.cz/cs/product/protective-glass/protective-glass-iphone-11"
+  assert.equal(metadata.alternates.canonical, variantUrl)
+  assert.equal(metadata.openGraph.url, variantUrl)
+  // Localized variant slug joins the locale's item canonical.
+  assert.equal(
+    metadata.alternates.languages.uk,
+    "https://shop.devicehelp.cz/uk/product/protective-glass/zakhysne-sklo-iphone-11",
+  )
+  assert.equal(metadata.alternates.languages["x-default"], variantUrl)
+  // Variant pages do not reuse the item-level metaTitle.
+  assert.match(metadata.title, /iPhone 11/)
+})
+
+test("slug-less variant views collapse onto the item canonical", () => {
+  const product = catalog.getMockShopProduct("cs", "protective-glass")
+  const metadata = seo.buildShopMetadata({
+    locale: "cs",
+    seo: product.item.seo,
+    fallbackTitle: "Fallback",
+    fallbackDescription: "Fallback description",
+    variant: { ...product.selectedVariant, slugOverride: null, slugLocalized: undefined },
+  })
+
+  assert.equal(metadata.alternates.canonical, "https://shop.devicehelp.cz/cs/product/protective-glass")
+  assert.equal(metadata.alternates.languages["x-default"], "https://shop.devicehelp.cz/cs/product/protective-glass")
+})
+
+test("product route passes the selected variant to metadata only for variant views", async () => {
+  const source = await readFile(new URL("../app/shop/[locale]/product/[...slugs]/page.tsx", import.meta.url), "utf8")
+  assert.match(source, /data\.isVariantView \? data\.selectedVariant : null/)
+  assert.match(source, /getVariantProductTitle\(data\.item, variant, locale\)/)
+  assert.match(source, /variant,\s*\}\)/)
+})
+
 test("metadata points og:image and twitter:image at the dynamic 1200x630 OG card", () => {
   const product = catalog.getMockShopProduct("cs", "protective-glass")
   const metadata = seo.buildShopMetadata({
