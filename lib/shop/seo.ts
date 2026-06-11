@@ -24,15 +24,23 @@ export function absoluteShopUrl(value: string | null | undefined): string | unde
   }
 }
 
-export function buildShopLanguageAlternates(seo: ShopSeo): Partial<Record<ShopLocale, string>> {
-  return SHOP_LOCALES.reduce<Partial<Record<ShopLocale, string>>>((alternates, locale) => {
+export function buildShopLanguageAlternates(seo: ShopSeo): Partial<Record<ShopLocale | "x-default", string>> {
+  const alternates = SHOP_LOCALES.reduce<Partial<Record<ShopLocale | "x-default", string>>>((acc, locale) => {
     const canonicalUrl = seo.locales[locale]?.canonicalUrl
     if (canonicalUrl) {
-      alternates[locale] = canonicalUrl
+      acc[locale] = canonicalUrl
     }
 
-    return alternates
+    return acc
   }, {})
+
+  // x-default → Czech: the store's primary market; mirrors the home page and
+  // the sitemap's hreflang blocks.
+  if (alternates.cs) {
+    alternates["x-default"] = alternates.cs
+  }
+
+  return alternates
 }
 
 /**

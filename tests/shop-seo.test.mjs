@@ -67,6 +67,7 @@ test("builds metadata from localized SEO with canonical and alternates", () => {
   assert.equal(metadata.alternates.canonical, "https://shop.devicehelp.cz/cs/product/protective-glass")
   assert.equal(metadata.alternates.languages.cs, "https://shop.devicehelp.cz/cs/product/protective-glass")
   assert.equal(metadata.alternates.languages.uk, "https://shop.devicehelp.cz/uk/product/protective-glass")
+  assert.equal(metadata.alternates.languages["x-default"], "https://shop.devicehelp.cz/cs/product/protective-glass")
   assert.match(metadata.title, /sklo|glass/i)
   assert.equal(metadata.openGraph.siteName, "DeviceHelp Shop")
 })
