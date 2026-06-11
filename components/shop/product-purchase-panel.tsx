@@ -1,7 +1,7 @@
 "use client"
 
 import { Minus, Plus, RotateCcw, ShieldCheck, ShoppingCart, Truck, Zap } from "lucide-react"
-import { useMemo, useState } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 
 import { ProductVariantSelector } from "@/components/shop/product-variant-selector"
@@ -101,11 +101,17 @@ export function ProductPurchasePanel({
   locale,
   item,
   selectedVariant,
+  onSelectVariant,
   singleVariantView = false,
 }: {
   locale: ShopLocale
   item: Pick<ShopItem, "id" | "title" | "description" | "variants" | "categories">
   selectedVariant: ShopVariant
+  /**
+   * Variant selection is owned by the page (gallery and specifications depend
+   * on it too); the panel only reports the user's choice upward.
+   */
+  onSelectVariant: (variantId: string) => void
   /**
    * The page was opened at a specific variant slug, so the variant *is* the
    * product: show its combined title and hide the variant picker.
@@ -114,14 +120,10 @@ export function ProductPurchasePanel({
 }) {
   const copy = PURCHASE_COPY[locale]
   const router = useRouter()
-  const [variantId, setVariantId] = useState(selectedVariant.id)
   const [quantity, setQuantity] = useState(1)
   const [addedVariantId, setAddedVariantId] = useState<string | null>(null)
   const { addLine, openCart } = useShopCart()
-  const variant = useMemo(
-    () => item.variants.find((entry) => entry.id === variantId) ?? selectedVariant,
-    [item.variants, selectedVariant, variantId],
-  )
+  const variant = selectedVariant
   const maxQuantity = getMaxPurchasableQuantity(variant)
   const canBuy = maxQuantity > 0
   const displayPrice = variant.salePrice ?? variant.price
@@ -216,7 +218,7 @@ export function ProductPurchasePanel({
               variants={item.variants}
               selectedVariantId={variant.id}
               onSelectVariant={(nextVariantId) => {
-                setVariantId(nextVariantId)
+                onSelectVariant(nextVariantId)
                 setQuantity(1)
                 setAddedVariantId(null)
               }}

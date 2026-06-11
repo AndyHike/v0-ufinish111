@@ -67,6 +67,7 @@ export default async function ShopProductRoute({
 
   return (
     <ProductPage
+      key={`${data.item.id}:${data.selectedVariant.id}`}
       locale={locale}
       item={data.item}
       selectedVariant={data.selectedVariant}

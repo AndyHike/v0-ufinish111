@@ -557,7 +557,9 @@ const protectiveGlassVariants: ShopVariant[] = [
       gtin: "00012345678912",
       mpn: "GLASS-IP11",
       optionSlug: "iphone-11",
-      image: "/focused-phone-fix.png",
+      // Demo: differs from the default variant so the variant-switch photo
+      // update is visible in local dev.
+      image: "/tech-fix-storefront.png",
     }),
     isDefault: false,
   },

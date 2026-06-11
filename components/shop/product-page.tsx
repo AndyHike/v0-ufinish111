@@ -1,4 +1,7 @@
+"use client"
+
 import Link from "next/link"
+import { useMemo, useState } from "react"
 
 import { ProductCard } from "@/components/shop/product-card"
 import { ProductGallery } from "@/components/shop/product-gallery"
@@ -68,6 +71,13 @@ export function ProductPage({
 }) {
   const copy = PRODUCT_COPY[locale]
   const relatedCopy = RELATED_COPY[locale]
+  // Variant selection lives here (not in the purchase panel) because the
+  // gallery and the specifications table are variant-dependent too.
+  const [variantId, setVariantId] = useState(selectedVariant.id)
+  const variant = useMemo(
+    () => item.variants.find((entry) => entry.id === variantId) ?? selectedVariant,
+    [item.variants, selectedVariant, variantId],
+  )
   const relatedGroups = RELATED_ORDER.map((type) => ({
     type,
     title: relatedCopy[type],
@@ -75,8 +85,8 @@ export function ProductPage({
   })).filter((group) => group.items.length > 0)
   const title = getLocalizedText(item.title, locale)
   const category = item.categories[0]
-  const specifications = getProductSpecificationRows(item, selectedVariant, locale)
-  const productJsonLd = buildProductJsonLd(item, selectedVariant, locale)
+  const specifications = getProductSpecificationRows(item, variant, locale)
+  const productJsonLd = buildProductJsonLd(item, variant, locale)
   const breadcrumbItems = [
     { name: copy.shop, url: `${shopSiteUrl}/${locale}` },
     ...(category
@@ -112,7 +122,7 @@ export function ProductPage({
 
         <div className="mt-8 grid items-start gap-10 lg:grid-cols-[minmax(0,440px)_minmax(0,1fr)]">
           <div className="min-w-0">
-            <ProductGallery images={selectedVariant.images.length ? selectedVariant.images : item.images} title={title} />
+            <ProductGallery images={variant.images.length ? variant.images : item.images} title={title} />
           </div>
           <div className="min-w-0">
             <ProductPurchasePanel
@@ -124,7 +134,8 @@ export function ProductPage({
                 variants: item.variants,
                 categories: item.categories,
               }}
-              selectedVariant={selectedVariant}
+              selectedVariant={variant}
+              onSelectVariant={setVariantId}
               singleVariantView={variantView}
             />
           </div>

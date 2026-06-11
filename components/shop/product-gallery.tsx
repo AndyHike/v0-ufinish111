@@ -4,7 +4,10 @@ import Image from "next/image"
 import { useEffect, useState } from "react"
 
 export function ProductGallery({ images, title }: { images: string[]; title: string }) {
-  const displayImages = images.length > 0 ? images : ["/tech-fix-storefront.png"]
+  // Admin data may repeat the same URL (e.g. duplicated variant uploads);
+  // dedupe so thumbnails stay unique (they are keyed by URL).
+  const uniqueImages = Array.from(new Set(images))
+  const displayImages = uniqueImages.length > 0 ? uniqueImages : ["/tech-fix-storefront.png"]
   const [activeIndex, setActiveIndex] = useState(0)
 
   // Reset to the first image when the image set changes (e.g. variant switch).

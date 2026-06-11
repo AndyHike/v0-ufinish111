@@ -14,17 +14,17 @@ test("shop header opens an in-page cart drawer instead of linking the cart icon 
   assert.doesNotMatch(source, /href=\{`\/\$\{locale\}\/cart`\}/)
 })
 
-test("shop home uses promo banners and avoids vertically stretched hero image frames", async () => {
+test("shop home renders promo banners through the hero carousel with a static fallback", async () => {
   const source = await readSource("../components/shop/shop-home-page.tsx")
   const sidebarSource = await readSource("../components/shop/shop-category-sidebar.tsx")
 
-  assert.match(source, /promoBanners/)
+  assert.match(source, /bannerSlides/)
+  assert.match(source, /ShopHeroCarousel/)
+  assert.match(source, /staticSlides/)
   assert.match(source, /ShopCategorySidebar/)
   assert.match(source, /categoryTree/)
   assert.doesNotMatch(source, /allCategories/)
   assert.doesNotMatch(source, /categoriesText/)
-  assert.match(source, /aspect-\[16\/9\]/)
-  assert.doesNotMatch(source, /min-h-\[320px\]/)
   assert.doesNotMatch(sidebarSource, /"use client"/)
   assert.doesNotMatch(sidebarSource, /useState/)
   assert.match(sidebarSource, /type="checkbox"/)
