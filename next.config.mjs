@@ -58,6 +58,12 @@ const nextConfig = {
   compress: true,
   poweredByHeader: false,
 
+  // Disable streaming metadata for every user agent: canonical/hreflang/meta
+  // tags always render inside <head>. With streaming, HTML-only crawlers
+  // (Screaming Frog, Ahrefs, …) saw them in <body> and ignored them. Cheap
+  // here: catalog pages are ISR-prerendered, which never streams metadata.
+  htmlLimitedBots: /.*/,
+
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',
   },
@@ -84,7 +90,17 @@ const nextConfig = {
       },
       {
         source: '/:path*',
-        headers: [{ key: 'X-DNS-Prefetch-Control', value: 'on' }],
+        headers: [
+          { key: 'X-DNS-Prefetch-Control', value: 'on' },
+          // Security headers (Screaming Frog audit 2026-06-12). Served by the
+          // app so they hold regardless of the proxy in front (the nginx
+          // template's add_header is suppressed in nested locations anyway).
+          // No includeSubDomains on HSTS: only app hosts are known to be HTTPS.
+          { key: 'Strict-Transport-Security', value: 'max-age=63072000' },
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+        ],
       },
     ]
   },
