@@ -447,9 +447,7 @@ Small `structuredDataFacts` example:
         "widgetApiKey": "public-widget-key",
         "countries": ["cz", "sk"],
         "services": ["PICKUP_POINT", "ZBOX"],
-        "defaultWeightKg": 1,
-        "shippingPrice": 79,
-        "freeShippingThreshold": 1000
+        "defaultWeightKg": 1
       }
     },
     "payments": {
@@ -477,11 +475,6 @@ type PublicIntegrationsResponse = {
         countries: string[];
         services: Array<"PICKUP_POINT" | "ZBOX" | "CARRIER_PUDO" | "HOME_DELIVERY">;
         defaultWeightKg: number | null;
-        // Flat delivery price (store currency); null/0 = free. Free at/above
-        // freeShippingThreshold (null = never free). Applied server-side to the
-        // order's shippingAmount + totalAmount on PACKETA orders.
-        shippingPrice: number | null;
-        freeShippingThreshold: number | null;
       };
     };
     payments: {
@@ -1071,7 +1064,6 @@ GET /api/public/v1/items/protective-glass?include=categories,variants,availabili
       "fulfillmentStatus": "RESERVED",
       "currency": "CZK",
       "subtotalAmount": 249,
-      "shippingAmount": 0,
       "totalAmount": 249,
       "reservationExpiresAt": "2026-05-12T12:15:00.000Z",
       "lines": [
@@ -1431,6 +1423,59 @@ x-public-api-key: <Ваш_API_Key>
     "requestType": "appointment_request",
     "status": "NEW",
     "message": "Request successfully received"
+  }
+}
+```
+
+---
+
+## 6.1. Отримати промобанери 🖼️
+Повертає активні промобанери магазину для головної сторінки: головний банер і другорядні, з мультимовними текстами, слайдами (зображення) і кнопками. Підходить як для шаблонних, так і для кастомних (headless) сторфронтів.
+
+**URL**: `GET /api/public/v1/banners`
+
+**Параметри запиту (Query Parameters):**
+*Немає*
+
+**Примітки:**
+- Повертаються лише банери з `isActive = true`, відсортовані за `position`.
+- Локалізовані поля (`title`, `description`, `caption`, `label`) — це об'єкти `{ "uk": ..., "en": ..., "cs": ... }`; клієнт обирає активну локаль (з власним фолбеком). Поля можуть бути `null` або містити не всі мови.
+- `type`: `IMAGE` | `TEXT` | `CAROUSEL`. Для `TEXT`-банерів слайди без зображення лишаються (текстовий банер); для `IMAGE`/`CAROUSEL` слайди без зображення відфільтровані.
+- `data.main` — зручне посилання на банер із `isMain = true` (або `null`).
+
+**Формат відповіді (Success 200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "banners": [
+      {
+        "id": "cuid...",
+        "type": "CAROUSEL",
+        "isMain": true,
+        "position": 0,
+        "title": { "uk": "Літній розпродаж", "en": "Summer sale", "cs": "Letní výprodej" },
+        "description": { "uk": "Знижки до -50%", "en": "Up to -50%", "cs": "Až -50 %" },
+        "slides": [
+          {
+            "id": "cuid...",
+            "position": 0,
+            "imageUrl": "https://cdn.example.com/banner-1.jpg",
+            "caption": { "uk": "Нова колекція", "en": "New collection", "cs": "Nová kolekce" }
+          }
+        ],
+        "buttons": [
+          {
+            "id": "cuid...",
+            "position": 0,
+            "label": { "uk": "Купити", "en": "Shop now", "cs": "Koupit" },
+            "href": "/collections/summer",
+            "style": "PRIMARY"
+          }
+        ]
+      }
+    ],
+    "main": { "id": "cuid...", "type": "CAROUSEL", "isMain": true, "position": 0, "title": { "uk": "..." }, "slides": [], "buttons": [] }
   }
 }
 ```
