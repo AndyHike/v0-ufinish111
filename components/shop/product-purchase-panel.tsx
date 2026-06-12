@@ -208,9 +208,12 @@ export function ProductPurchasePanel({
         </div>
       </div>
 
+      {/* `description` is the short blurb and `content` (rendered at
+          #shop-description) is a separate full text — clamping here would cut
+          words the buyer can't find anywhere else, so show it whole. */}
       {productDescription ? (
         <div className="mt-4">
-          <p className="line-clamp-3 text-sm leading-6 text-gray-500">{productDescription}</p>
+          <p className="text-sm leading-6 text-gray-500">{productDescription}</p>
           <a
             href="#shop-description"
             className="mt-1.5 inline-flex items-center text-sm font-medium text-blue-600 transition hover:text-blue-700"
