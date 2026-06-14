@@ -6,6 +6,7 @@ import { useMemo, useState } from "react"
 import { ProductCard } from "@/components/shop/product-card"
 import { ProductGallery } from "@/components/shop/product-gallery"
 import { ProductPurchasePanel } from "@/components/shop/product-purchase-panel"
+import { ShopMarkdown } from "@/components/shop/shop-markdown"
 import { StructuredData } from "@/components/shop/structured-data"
 import { getLocalizedText, getProductSpecificationRows } from "@/lib/shop/catalog"
 import { buildBreadcrumbJsonLd, buildProductJsonLd, type ShopOfferShippingInput } from "@/lib/shop/seo"
@@ -87,6 +88,7 @@ export function ProductPage({
     items: relatedItems.filter((entry) => entry.linkType === type).map((entry) => entry.product),
   })).filter((group) => group.items.length > 0)
   const title = getLocalizedText(item.title, locale)
+  const descriptionMarkdown = getLocalizedText(item.content, locale).trim()
   const category = item.categories[0]
   const specifications = getProductSpecificationRows(item, variant, locale)
   const productJsonLd = buildProductJsonLd(item, variant, locale, { shipping })
@@ -164,7 +166,9 @@ export function ProductPage({
 
         <section id="shop-description" className="mt-10 scroll-mt-24">
           <h2 className="text-xl font-semibold">{copy.details}</h2>
-          <p className="mt-4 max-w-3xl text-sm leading-7 text-gray-600">{getLocalizedText(item.content, locale)}</p>
+          {descriptionMarkdown ? (
+            <ShopMarkdown className="mt-4 max-w-3xl text-sm leading-7 text-gray-600">{descriptionMarkdown}</ShopMarkdown>
+          ) : null}
         </section>
 
         <section id="shop-specifications" className="mt-10 scroll-mt-24">
