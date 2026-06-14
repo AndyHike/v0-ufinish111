@@ -667,6 +667,26 @@ export interface ShopCreatedClaim {
   createdAt: string
 }
 
+export interface ShopClaimOrderLine {
+  orderLineId: string
+  title: string
+  quantity: number
+  unitPrice: number | null
+}
+
+export interface ShopClaimLookup {
+  order: { orderNumber: string; lines: ShopClaimOrderLine[] }
+  returnAddress: { companyName: string | null; address: string | null }
+}
+
+/** Verify order number + email and fetch the order's lines + return address. */
+export async function lookupShopClaim(orderNumber: string, email: string, locale: ShopLocale): Promise<ShopClaimLookup> {
+  return shopApiFetch<ShopClaimLookup>("claims/lookup", {
+    method: "POST",
+    body: { orderNumber, email, locale },
+  })
+}
+
 /** Submit a guest claim; throws ShopApiError (404 when order/email mismatch). */
 export async function submitShopGuestClaim(input: ShopGuestClaimInput): Promise<ShopCreatedClaim> {
   const data = await shopApiFetch<{ claim: ShopCreatedClaim }>("claims", {
