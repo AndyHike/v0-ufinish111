@@ -70,6 +70,8 @@ test("allows localized shop catalog paths", () => {
   assert.equal(isAllowedShopPath("/cs/cart"), true)
   assert.equal(isAllowedShopPath("/cs/checkout"), true)
   assert.equal(isAllowedShopPath("/cs/checkout/success"), true)
+  assert.equal(isAllowedShopPath("/cs/legal/reklamacni-rad"), true)
+  assert.equal(isAllowedShopPath("/uk/legal/privacy-policy"), true)
 })
 
 test("allows locale-less catalog paths so they canonicalize on the shop host", () => {
@@ -97,6 +99,7 @@ test("rewrites localized shop paths to internal app/shop routes", () => {
     getShopRewritePath("shop.localhost:3000", "/en/product/protective-glass/protective-glass-iphone-11"),
     "/shop/en/product/protective-glass/protective-glass-iphone-11",
   )
+  assert.equal(getShopRewritePath("shop.devicehelp.cz", "/cs/legal/reklamacni-rad"), "/shop/cs/legal/reklamacni-rad")
 })
 
 test("does not rewrite main-domain, unlocalized root, or disallowed shop paths", () => {

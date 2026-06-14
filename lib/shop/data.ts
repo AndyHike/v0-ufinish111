@@ -10,7 +10,7 @@ import {
   mapApiFilterAttribute,
   mapApiItem,
 } from "./api/mappers"
-import { availabilityTag, collectionTag, filtersTag, listViewTag, siteTag, viewHomeTag, viewTag } from "./api/tags"
+import { availabilityTag, collectionTag, filtersTag, listViewTag, settingsTag, siteTag, viewHomeTag, viewTag } from "./api/tags"
 import {
   applyShopCategoryFilters,
   buildShopCategoryTree,
@@ -599,5 +599,66 @@ export async function getShopProductSlugParams(): Promise<{ locale: ShopLocale; 
     )
   } catch {
     return []
+  }
+}
+
+// ---- Legal / info pages -----------------------------------------------------
+// Mirrors GET /api/public/v1/legal and /legal/[slug] (admin "Legal pages"):
+// store-defined multilingual pages (privacy, terms, reklamační řád, GDPR, …).
+
+interface ApiLegalPageSummary {
+  slug: string
+  title: ShopLocalizedText | null
+}
+
+interface ApiLegalPageDetail {
+  slug: string
+  title: ShopLocalizedText | null
+  content: ShopLocalizedText | null
+}
+
+export interface ShopLegalPageSummary {
+  slug: string
+  title: string
+}
+
+export interface ShopLegalPageContent {
+  slug: string
+  title: string
+  content: string
+}
+
+/** Active legal pages for footer/menu links, localized to the given locale. */
+export async function getShopLegalPages(locale: ShopLocale): Promise<ShopLegalPageSummary[]> {
+  if (!isShopApiEnabled()) return []
+  try {
+    const data = await shopApiFetch<{ pages: ApiLegalPageSummary[] }>("legal", {
+      tags: tagsFor((id) => [siteTag(id), settingsTag(id)]),
+    })
+    return data.pages.map((page) => ({
+      slug: page.slug,
+      title: getLocalizedText(page.title ?? {}, locale),
+    }))
+  } catch (error) {
+    if (isNotFound(error)) return []
+    throw error
+  }
+}
+
+/** Full content of one active legal page by slug, or null when not found. */
+export async function getShopLegalPage(slug: string, locale: ShopLocale): Promise<ShopLegalPageContent | null> {
+  if (!isShopApiEnabled()) return null
+  try {
+    const data = await shopApiFetch<{ page: ApiLegalPageDetail }>(`legal/${encodeURIComponent(slug)}`, {
+      tags: tagsFor((id) => [siteTag(id), settingsTag(id)]),
+    })
+    return {
+      slug: data.page.slug,
+      title: getLocalizedText(data.page.title ?? {}, locale),
+      content: getLocalizedText(data.page.content ?? {}, locale),
+    }
+  } catch (error) {
+    if (isNotFound(error)) return null
+    throw error
   }
 }

@@ -6,7 +6,9 @@ import { useTranslations } from "next-intl"
 
 import { b2bSiteUrl, mainSiteUrl } from "@/lib/site-config"
 
-export function ShopFooter({ locale }: { locale: string }) {
+type LegalPageLink = { slug: string; title: string }
+
+export function ShopFooter({ locale, legalPages = [] }: { locale: string; legalPages?: LegalPageLink[] }) {
   const t = useTranslations("Shop.footer")
 
   return (
@@ -41,16 +43,14 @@ export function ShopFooter({ locale }: { locale: string }) {
         <div>
           <h3 className="text-sm font-semibold text-gray-950">{t("support")}</h3>
           <ul className="mt-3 space-y-2 text-sm text-gray-600">
-            <li>
-              <a href={`${mainSiteUrl}/${locale}/terms`} className="hover:text-gray-950">
-                {t("terms")}
-              </a>
-            </li>
-            <li>
-              <a href={`${mainSiteUrl}/${locale}/privacy`} className="hover:text-gray-950">
-                {t("privacy")}
-              </a>
-            </li>
+            {/* Store-managed legal pages (admin → Legal pages), shop-local URLs. */}
+            {legalPages.map((page) => (
+              <li key={page.slug}>
+                <Link href={`/${locale}/legal/${page.slug}`} className="hover:text-gray-950">
+                  {page.title}
+                </Link>
+              </li>
+            ))}
             <li>
               <a href={`${mainSiteUrl}/${locale}/contact`} className="hover:text-gray-950">
                 {t("contact")}
