@@ -14,8 +14,20 @@ test("Google reviews use Google Business Profile OAuth with a persistent server 
   assert.match(source, /GOOGLE_BUSINESS_PROFILE_REFRESH_TOKEN/)
   assert.doesNotMatch(source, /from "react"/)
   assert.doesNotMatch(source, /key=\$\{apiKey\}/)
-  assert.doesNotMatch(source, /GOOGLE_PLACES/)
+  // The new Places API origin requires its own enablement; we use the legacy Place Details endpoint.
   assert.doesNotMatch(source, /places\.googleapis\.com/)
+})
+
+test("Google reviews fall back to the Place Details API until Business Profile access is approved", async () => {
+  const source = await readFile(new URL("../lib/data/google-reviews.ts", import.meta.url), "utf8")
+
+  assert.match(source, /GOOGLE_PLACES_API_KEY/)
+  assert.match(source, /GOOGLE_PLACES_ID/)
+  assert.match(source, /maps\.googleapis\.com\/maps\/api\/place\/details\/json/)
+  // Business Profile stays primary; Places is only the fallback.
+  assert.match(source, /fetchGoogleReviewsFromApi\(\)[\s\S]*fetchGoogleReviewsFromPlaces\(\)/)
+  // The cached fetcher wraps the combined source, not the Business-Profile-only path.
+  assert.match(source, /unstable_cache\(fetchGoogleReviews,/)
 })
 
 test("Google Business Profile API errors are cacheable instead of thrown on every request", async () => {

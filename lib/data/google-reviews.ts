@@ -5,6 +5,10 @@ const GOOGLE_BUSINESS_PROFILE_TOKEN_URL = "https://oauth2.googleapis.com/token"
 const GOOGLE_BUSINESS_PROFILE_API_ORIGIN = "https://mybusiness.googleapis.com"
 const GOOGLE_BUSINESS_PROFILE_REVIEWS_PAGE_SIZE = "50"
 
+// Fallback used until the Business Profile API access request is approved.
+// Legacy Place Details returns up to 5 newest reviews + rating without special approval.
+const GOOGLE_PLACES_DETAILS_URL = "https://maps.googleapis.com/maps/api/place/details/json"
+
 export interface GoogleReview {
   author_name: string
   rating: number
@@ -200,7 +204,109 @@ async function fetchGoogleReviewsFromApi(): Promise<GoogleReviewsData | null> {
   return result
 }
 
-const getCachedGoogleReviews = unstable_cache(fetchGoogleReviewsFromApi, ["google-reviews"], {
+interface GooglePlacesConfig {
+  apiKey: string
+  placeId: string
+}
+
+function getGooglePlacesConfig(): GooglePlacesConfig | null {
+  const apiKey = process.env.GOOGLE_PLACES_API_KEY?.trim()
+  const placeId = process.env.GOOGLE_PLACES_ID?.trim()
+
+  if (!apiKey || !placeId) {
+    return null
+  }
+
+  return { apiKey, placeId }
+}
+
+function mapGooglePlacesReview(review: any): GoogleReview {
+  return {
+    author_name: typeof review.author_name === "string" ? review.author_name : "Anonymous",
+    rating: googleBusinessProfileRatingToNumber(review.rating),
+    text: typeof review.text === "string" ? review.text : "",
+    time: Number(review.time) || 0,
+    profile_photo_url: typeof review.profile_photo_url === "string" ? review.profile_photo_url : undefined,
+  }
+}
+
+async function fetchGoogleReviewsFromPlaces(): Promise<GoogleReviewsData | null> {
+  const config = getGooglePlacesConfig()
+
+  if (!config) {
+    return null
+  }
+
+  const url = new URL(GOOGLE_PLACES_DETAILS_URL)
+  url.searchParams.set("place_id", config.placeId)
+  url.searchParams.set("fields", "name,rating,user_ratings_total,reviews")
+  url.searchParams.set("reviews_sort", "newest")
+  url.searchParams.set("key", config.apiKey)
+
+  let data: any
+
+  try {
+    console.log("[v0] Fetching reviews from Google Places API (fallback)...")
+    const response = await fetch(url, { cache: "no-store" })
+
+    if (!response.ok) {
+      if (process.env.DEBUG_GOOGLE_REVIEWS === "true") {
+        console.warn("[v0] Google Places reviews error status:", response.status)
+      }
+      return null
+    }
+
+    data = await response.json()
+  } catch (error) {
+    console.error("[v0] Google Places reviews request failed:", error)
+    return null
+  }
+
+  if (!data || data.status !== "OK" || !data.result) {
+    if (process.env.DEBUG_GOOGLE_REVIEWS === "true") {
+      console.warn("[v0] Google Places reviews status:", data?.status, data?.error_message)
+    }
+    return null
+  }
+
+  const result = data.result
+
+  const reviews = (result.reviews || [])
+    .map(mapGooglePlacesReview)
+    .filter((review: GoogleReview) => review.text.trim().length > 0)
+    .sort((a: GoogleReview, b: GoogleReview) => b.time - a.time)
+
+  if (reviews.length > 0) {
+    console.log(`[v0] Loaded ${reviews.length} Google Places reviews (fallback), sorted by newest`)
+  }
+
+  return {
+    reviews,
+    rating: Number(result.rating) || 0,
+    totalReviews: Number(result.user_ratings_total) || 0,
+    businessName: typeof result.name === "string" ? result.name : undefined,
+  }
+}
+
+// Primary source is the Business Profile API (full review list once Google approves
+// access). Until then, fall back to Place Details so the widget shows real reviews.
+async function fetchGoogleReviews(): Promise<GoogleReviewsData | null> {
+  const fromBusinessProfile = await fetchGoogleReviewsFromApi()
+
+  if (fromBusinessProfile && fromBusinessProfile.reviews.length > 0) {
+    return fromBusinessProfile
+  }
+
+  const fromPlaces = await fetchGoogleReviewsFromPlaces()
+
+  if (fromPlaces) {
+    return fromPlaces
+  }
+
+  return fromBusinessProfile
+}
+
+const getCachedGoogleReviews = unstable_cache(fetchGoogleReviews, ["google-reviews"], {
   revalidate: 3600,
   tags: ["google-reviews"],
 })

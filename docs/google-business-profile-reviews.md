@@ -69,7 +69,19 @@ Optional debugging:
 DEBUG_GOOGLE_REVIEWS=true
 ```
 
-After this is deployed and verified, `GOOGLE_PLACES_API_KEY` and `GOOGLE_PLACES_ID` are no longer needed for reviews. The current homepage reviews code does not read the Places API variables.
+## Places API fallback
+
+Until the Business Profile API access request is approved, the homepage widget falls back to the legacy Place Details API so it can still show real reviews (rating, count, and up to 5 newest reviews). The fallback is automatic:
+
+- If `GOOGLE_BUSINESS_PROFILE_*` are set and return reviews, those are used (full list).
+- Otherwise the widget reads `GOOGLE_PLACES_API_KEY` + `GOOGLE_PLACES_ID` and calls `https://maps.googleapis.com/maps/api/place/details/json`.
+
+```text
+GOOGLE_PLACES_API_KEY=
+GOOGLE_PLACES_ID=
+```
+
+Place Details requires no special Google approval, but it is capped at 5 reviews with no pagination. Once Business Profile access is granted, populate the `GOOGLE_BUSINESS_PROFILE_*` variables and the widget switches to the full review list automatically — no code change needed.
 
 If the app is deployed with `docker-compose.yml`, keep the `GOOGLE_BUSINESS_PROFILE_*` variables listed in the `nextjs.environment` block so they are available at runtime inside the container.
 
