@@ -83,6 +83,12 @@ GOOGLE_PLACES_ID=
 
 Place Details requires no special Google approval, but it is capped at 5 reviews with no pagination. Once Business Profile access is granted, populate the `GOOGLE_BUSINESS_PROFILE_*` variables and the widget switches to the full review list automatically — no code change needed.
 
+### Caching, translation, and curation
+
+- **Cache:** reviews are cached for 24 hours (`revalidate: 86400`) and keyed per locale. `revalidate: false` is intentionally not used — nothing pushes on-demand revalidation for the `google-reviews` tag, so it would freeze the data until the next deploy.
+- **Translation:** the Places fallback passes `language=<locale>`, so review text is returned translated into the visitor's language (cs/uk/en) where Google has a translation. The Business Profile v4 reviews API does not translate, so once it is the active source reviews appear in their original language.
+- **Curation (`curateReviews`):** 1-star reviews are dropped and the rest are ordered 5-star first, then newest. Places only returns up to 5 reviews chosen by Google, so this curates that set; for the full Business Profile list it is a true rating sort across every review.
+
 If the app is deployed with `docker-compose.yml`, keep the `GOOGLE_BUSINESS_PROFILE_*` variables listed in the `nextjs.environment` block so they are available at runtime inside the container.
 
 ## Search result stars

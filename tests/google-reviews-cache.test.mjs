@@ -6,7 +6,7 @@ test("Google reviews use Google Business Profile OAuth with a persistent server 
   const source = await readFile(new URL("../lib/data/google-reviews.ts", import.meta.url), "utf8")
 
   assert.match(source, /unstable_cache/)
-  assert.match(source, /revalidate:\s*3600/)
+  assert.match(source, /revalidate:\s*86400/)
   assert.match(source, /https:\/\/www\.googleapis\.com\/auth\/business\.manage/)
   assert.match(source, /https:\/\/oauth2\.googleapis\.com\/token/)
   assert.match(source, /GOOGLE_BUSINESS_PROFILE_API_ORIGIN = "https:\/\/mybusiness\.googleapis\.com"/)
@@ -25,9 +25,25 @@ test("Google reviews fall back to the Place Details API until Business Profile a
   assert.match(source, /GOOGLE_PLACES_ID/)
   assert.match(source, /maps\.googleapis\.com\/maps\/api\/place\/details\/json/)
   // Business Profile stays primary; Places is only the fallback.
-  assert.match(source, /fetchGoogleReviewsFromApi\(\)[\s\S]*fetchGoogleReviewsFromPlaces\(\)/)
+  assert.match(source, /fetchGoogleReviewsFromApi\(\)[\s\S]*fetchGoogleReviewsFromPlaces\(locale\)/)
   // The cached fetcher wraps the combined source, not the Business-Profile-only path.
   assert.match(source, /unstable_cache\(fetchGoogleReviews,/)
+})
+
+test("Google reviews are curated (1-star dropped, 5-star first) and translated per locale", async () => {
+  const source = await readFile(new URL("../lib/data/google-reviews.ts", import.meta.url), "utf8")
+
+  // Drop 1-star reviews.
+  assert.match(source, /review\.rating >= 2/)
+  // 5-star first, newest within a rating.
+  assert.match(source, /b\.rating - a\.rating \|\| b\.time - a\.time/)
+  // Curation is shared by both the Business Profile and Places paths.
+  assert.match(source, /curateReviews\(\(data\.reviews/)
+  assert.match(source, /curateReviews\(\(result\.reviews/)
+  // Places asks Google to translate into the visitor locale.
+  assert.match(source, /url\.searchParams\.set\("language", locale\)/)
+  // Cache is keyed per locale.
+  assert.match(source, /getCachedGoogleReviews\(locale\)/)
 })
 
 test("Google Business Profile API errors are cacheable instead of thrown on every request", async () => {

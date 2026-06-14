@@ -138,6 +138,16 @@ function mapGoogleBusinessProfileReview(review: any): GoogleReview {
   }
 }
 
+// Drop 1-star reviews and surface 5-star ones first (then newest within a rating).
+// Places only returns up to 5 reviews picked by Google, so this curates that set;
+// for the full Business Profile list it is a true rating sort across all reviews.
+function curateReviews(reviews: GoogleReview[]): GoogleReview[] {
+  return reviews
+    .filter((review) => review.text.trim().length > 0)
+    .filter((review) => review.rating >= 2)
+    .sort((a, b) => b.rating - a.rating || b.time - a.time)
+}
+
 async function fetchGoogleReviewsFromApi(): Promise<GoogleReviewsData | null> {
   const config = getGoogleBusinessProfileConfig()
 
@@ -186,10 +196,7 @@ async function fetchGoogleReviewsFromApi(): Promise<GoogleReviewsData | null> {
     return null
   }
 
-  const reviews = (data.reviews || [])
-    .map(mapGoogleBusinessProfileReview)
-    .filter((review: GoogleReview) => review.text.trim().length > 0)
-    .sort((a: GoogleReview, b: GoogleReview) => b.time - a.time)
+  const reviews = curateReviews((data.reviews || []).map(mapGoogleBusinessProfileReview))
 
   const result = {
     reviews,
@@ -230,7 +237,7 @@ function mapGooglePlacesReview(review: any): GoogleReview {
   }
 }
 
-async function fetchGoogleReviewsFromPlaces(): Promise<GoogleReviewsData | null> {
+async function fetchGoogleReviewsFromPlaces(locale: string): Promise<GoogleReviewsData | null> {
   const config = getGooglePlacesConfig()
 
   if (!config) {
@@ -241,6 +248,8 @@ async function fetchGoogleReviewsFromPlaces(): Promise<GoogleReviewsData | null>
   url.searchParams.set("place_id", config.placeId)
   url.searchParams.set("fields", "name,rating,user_ratings_total,reviews")
   url.searchParams.set("reviews_sort", "newest")
+  // Ask Google to translate review text into the visitor's locale where available.
+  url.searchParams.set("language", locale)
   url.searchParams.set("key", config.apiKey)
 
   let data: any
@@ -271,10 +280,7 @@ async function fetchGoogleReviewsFromPlaces(): Promise<GoogleReviewsData | null>
 
   const result = data.result
 
-  const reviews = (result.reviews || [])
-    .map(mapGooglePlacesReview)
-    .filter((review: GoogleReview) => review.text.trim().length > 0)
-    .sort((a: GoogleReview, b: GoogleReview) => b.time - a.time)
+  const reviews = curateReviews((result.reviews || []).map(mapGooglePlacesReview))
 
   if (reviews.length > 0) {
     console.log(`[v0] Loaded ${reviews.length} Google Places reviews (fallback), sorted by newest`)
@@ -290,14 +296,14 @@ async function fetchGoogleReviewsFromPlaces(): Promise<GoogleReviewsData | null>
 
 // Primary source is the Business Profile API (full review list once Google approves
 // access). Until then, fall back to Place Details so the widget shows real reviews.
-async function fetchGoogleReviews(): Promise<GoogleReviewsData | null> {
+async function fetchGoogleReviews(locale: string): Promise<GoogleReviewsData | null> {
   const fromBusinessProfile = await fetchGoogleReviewsFromApi()
 
   if (fromBusinessProfile && fromBusinessProfile.reviews.length > 0) {
     return fromBusinessProfile
   }
 
-  const fromPlaces = await fetchGoogleReviewsFromPlaces()
+  const fromPlaces = await fetchGoogleReviewsFromPlaces(locale)
 
   if (fromPlaces) {
     return fromPlaces
@@ -306,14 +312,16 @@ async function fetchGoogleReviews(): Promise<GoogleReviewsData | null> {
   return fromBusinessProfile
 }
 
+// Cached per locale (locale is part of the unstable_cache key) so each language gets
+// its own translated copy. Reviews change rarely, so refresh once a day.
 const getCachedGoogleReviews = unstable_cache(fetchGoogleReviews, ["google-reviews"], {
-  revalidate: 3600,
+  revalidate: 86400,
   tags: ["google-reviews"],
 })
 
-export async function getGoogleReviews(): Promise<GoogleReviewsData | null> {
+export async function getGoogleReviews(locale = "cs"): Promise<GoogleReviewsData | null> {
   try {
-    return await getCachedGoogleReviews()
+    return await getCachedGoogleReviews(locale)
   } catch (error) {
     console.error("[v0] Error fetching reviews:", error)
     return null

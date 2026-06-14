@@ -89,7 +89,7 @@ export default async function HomePage({
 }) {
   const { locale } = await params
   const brandsPromise = getBrands()
-  const googleReviewsPromise = getGoogleReviews()
+  const googleReviewsPromise = getGoogleReviews(locale)
   const websiteSchema = generateWebsiteSchema(locale)
   const priorityNavigationSchema = generatePriorityNavigationSchema(locale)
 
