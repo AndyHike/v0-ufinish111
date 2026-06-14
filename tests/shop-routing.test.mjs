@@ -72,6 +72,7 @@ test("allows localized shop catalog paths", () => {
   assert.equal(isAllowedShopPath("/cs/checkout/success"), true)
   assert.equal(isAllowedShopPath("/cs/legal/reklamacni-rad"), true)
   assert.equal(isAllowedShopPath("/uk/legal/privacy-policy"), true)
+  assert.equal(isAllowedShopPath("/cs/claims"), true)
 })
 
 test("allows locale-less catalog paths so they canonicalize on the shop host", () => {

@@ -645,6 +645,37 @@ export async function getShopLegalPages(locale: ShopLocale): Promise<ShopLegalPa
   }
 }
 
+// ---- Claims (reklamace / odstoupení) ---------------------------------------
+// Mirrors POST /api/public/v1/claims (guest: order number + email). The browser
+// posts to the same-origin /api/shop/claims proxy, which keeps the secret key
+// server-side and forwards here.
+
+export interface ShopGuestClaimInput {
+  orderNumber: string
+  email: string
+  kind: "COMPLAINT" | "WITHDRAWAL"
+  description?: string
+  desiredResolution?: "UNSPECIFIED" | "REPAIR" | "REPLACEMENT" | "REFUND" | "DISCOUNT"
+  contact?: { name?: string; phone?: string }
+}
+
+export interface ShopCreatedClaim {
+  claimNumber: string
+  kind: string
+  status: string
+  deadlineAt: string | null
+  createdAt: string
+}
+
+/** Submit a guest claim; throws ShopApiError (404 when order/email mismatch). */
+export async function submitShopGuestClaim(input: ShopGuestClaimInput): Promise<ShopCreatedClaim> {
+  const data = await shopApiFetch<{ claim: ShopCreatedClaim }>("claims", {
+    method: "POST",
+    body: input,
+  })
+  return data.claim
+}
+
 /** Full content of one active legal page by slug, or null when not found. */
 export async function getShopLegalPage(slug: string, locale: ShopLocale): Promise<ShopLegalPageContent | null> {
   if (!isShopApiEnabled()) return null

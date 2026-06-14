@@ -13,6 +13,7 @@ const SHOP_ROUTE_PATTERNS = [
   /^\/checkout$/,
   /^\/checkout\/success$/,
   /^\/legal\/[^/]+$/,
+  /^\/claims$/,
 ] as const
 
 export function stripHostPort(host: string): string {

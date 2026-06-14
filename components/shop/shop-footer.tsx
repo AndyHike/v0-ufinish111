@@ -8,6 +8,12 @@ import { b2bSiteUrl, mainSiteUrl } from "@/lib/site-config"
 
 type LegalPageLink = { slug: string; title: string }
 
+const CLAIMS_LABEL: Record<string, string> = {
+  cs: "Reklamace a odstoupení",
+  uk: "Рекламація та відмова",
+  en: "Complaint & withdrawal",
+}
+
 export function ShopFooter({ locale, legalPages = [] }: { locale: string; legalPages?: LegalPageLink[] }) {
   const t = useTranslations("Shop.footer")
 
@@ -51,6 +57,11 @@ export function ShopFooter({ locale, legalPages = [] }: { locale: string; legalP
                 </Link>
               </li>
             ))}
+            <li>
+              <Link href={`/${locale}/claims`} className="hover:text-gray-950">
+                {CLAIMS_LABEL[locale] ?? CLAIMS_LABEL.cs}
+              </Link>
+            </li>
             <li>
               <a href={`${mainSiteUrl}/${locale}/contact`} className="hover:text-gray-950">
                 {t("contact")}
