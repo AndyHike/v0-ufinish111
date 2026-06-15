@@ -109,7 +109,7 @@ export function Header({ variant = "default", mainDomainBaseUrl = mainSiteUrl, l
   const desktopMenuTriggerClassName = isB2BVariant ? "xl:hidden" : "md:hidden"
   const desktopSearchClassName = isB2BVariant ? "hidden" : "hidden md:flex flex-1 max-w-md mx-6"
   const desktopNavClassName = isB2BVariant
-    ? "hidden min-w-0 items-center gap-3 xl:flex xl:gap-4"
+    ? "hidden min-w-0 items-center gap-4 xl:flex"
     : "hidden md:flex md:gap-6"
   const mobileAccountHref = isB2BVariant ? `${mainDomain}/${locale}/auth/register?b2b=1` : `/${locale}/auth/signin`
   const mobileAccountLabel = isB2BVariant ? t("registerBusinessAccount") : t("login")
@@ -391,7 +391,7 @@ export function Header({ variant = "default", mainDomainBaseUrl = mainSiteUrl, l
               )}
               <span className="font-semibold md:truncate-none truncate">DeviceHelp</span>
               {isB2BVariant && (
-                <span className="rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                <span className="rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary xl:hidden">
                   {t("businessAccount")}
                 </span>
               )}
