@@ -297,6 +297,21 @@ export default async function ModelPage({ params }: Props) {
       services: filteredServices as any,
     }
 
+    // Build a real AggregateOffer from this model's service prices (varies per model → unique signal)
+    const servicePrices = (filteredServices as any[])
+      .map((s) => s?.price)
+      .filter((p) => typeof p === "number" && !Number.isNaN(p) && p > 0)
+    const aggregateOffer = servicePrices.length > 0
+      ? {
+          "@type": "AggregateOffer",
+          priceCurrency: "CZK",
+          lowPrice: Math.min(...servicePrices),
+          highPrice: Math.max(...servicePrices),
+          offerCount: servicePrices.length,
+          availability: "https://schema.org/InStock",
+        }
+      : null
+
     const structuredData = {
       "@context": "https://schema.org",
       "@type": "Service",
@@ -329,10 +344,7 @@ export default async function ModelPage({ params }: Props) {
         areaServed: ["Praha 6", "Břevnov", "Dejvice", "Vokovice", "Bělohorská", "Praha6"],
       },
       areaServed: "Praha 6",
-      offers: {
-        "@type": "Offer",
-        priceCurrency: "CZK",
-      },
+      ...(aggregateOffer ? { offers: aggregateOffer } : {}),
     }
 
     const breadcrumbItems = [

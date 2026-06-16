@@ -5,6 +5,15 @@ import { createServerClient } from "@/utils/supabase/server"
 const locales = ["uk", "cs", "en"] as const
 const defaultLocale = "cs"
 
+// Bump this whenever the service / service+model page templates or structured data change.
+// It lifts the stale `created_at` lastmod of catalog pages so search engines re-crawl them.
+const CONTENT_REVISION = new Date("2026-06-16")
+
+function mostRecentDate(...dates: Array<Date | null | undefined>): Date {
+  const valid = dates.filter((d): d is Date => d instanceof Date && !Number.isNaN(d.getTime()))
+  return valid.length ? new Date(Math.max(...valid.map((d) => d.getTime()))) : new Date()
+}
+
 export async function getMainSitemapEntries(): Promise<SitemapEntry[]> {
   const baseUrl = mainSiteUrl
   const supabase = await createServerClient()
@@ -94,7 +103,7 @@ export async function getMainSitemapEntries(): Promise<SitemapEntry[]> {
         if (service.slug) {
           addMultilingualEntries(
             `/services/${service.slug}`,
-            service.created_at ? new Date(service.created_at) : new Date(),
+            mostRecentDate(service.created_at ? new Date(service.created_at) : null, CONTENT_REVISION),
           )
         }
       })
@@ -115,7 +124,7 @@ export async function getMainSitemapEntries(): Promise<SitemapEntry[]> {
           if (model?.slug && service?.slug) {
             addMultilingualEntries(
               `/services/${service.slug}/${model.slug}`,
-              service.created_at ? new Date(service.created_at) : new Date(),
+              mostRecentDate(service.created_at ? new Date(service.created_at) : null, CONTENT_REVISION),
             )
           }
         })

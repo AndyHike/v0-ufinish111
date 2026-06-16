@@ -447,7 +447,7 @@ function ServicePageClientContent({ serviceData, locale }: Props) {
             <div>
               <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">{pageTitle}</h1>
               <p className="text-gray-600 leading-relaxed">
-                {translation.detailed_description || translation.description}
+                {replaceFaqPlaceholders(translation.detailed_description || translation.description || "", placeholderValues)}
               </p>
             </div>
 
@@ -547,7 +547,7 @@ function ServicePageClientContent({ serviceData, locale }: Props) {
                   {whatIncludedList.map((item, index) => (
                     <div key={index} className="flex items-start gap-2">
                       <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-                      <span className="text-gray-700 text-sm">{item}</span>
+                      <span className="text-gray-700 text-sm">{replaceFaqPlaceholders(item, placeholderValues)}</span>
                     </div>
                   ))}
                 </div>
@@ -558,6 +558,26 @@ function ServicePageClientContent({ serviceData, locale }: Props) {
 
         {/* Компактні повноширинні секції */}
         <div className="space-y-8">
+          {/* FAQPage structured data — uses the same placeholder-resolved Q&A as the visible FAQ */}
+          {processedFaqs.length > 0 && (
+            <script
+              type="application/ld+json"
+              dangerouslySetInnerHTML={{
+                __html: JSON.stringify({
+                  "@context": "https://schema.org",
+                  "@type": "FAQPage",
+                  mainEntity: processedFaqs.map((faq) => ({
+                    "@type": "Question",
+                    name: faq.translation.question,
+                    acceptedAnswer: {
+                      "@type": "Answer",
+                      text: faq.translation.answer,
+                    },
+                  })),
+                }),
+              }}
+            />
+          )}
           {/* FAQ Section */}
           {faqs.length > 0 && (
             <section className="bg-gray-50 rounded-xl p-6 lg:p-8">
