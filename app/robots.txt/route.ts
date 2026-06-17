@@ -11,6 +11,11 @@ export async function GET() {
   const isShop = isShopHost(host)
   const baseUrl = isShop ? shopSiteUrl : isB2B ? b2bSiteUrl : mainSiteUrl
 
+  // TEMP: shop subdomain is still in development. We do NOT block crawling here
+  // on purpose — the X-Robots-Tag: noindex header (set in middleware.ts) needs
+  // Googlebot to fetch each page to see the tag and drop already-indexed pages
+  // from search. A `Disallow: /` would prevent that and keep stale results live.
+  // Once the shop goes live, just remove the X-Robots-Tag header in middleware.
   const body = [
     "User-agent: *",
     "Allow: /",

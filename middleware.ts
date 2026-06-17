@@ -106,7 +106,12 @@ export async function middleware(request: NextRequest) {
     if (rewriteUrl.hostname === "localhost" || rewriteUrl.hostname === "127.0.0.1") {
       rewriteUrl.protocol = "http:"
     }
-    return NextResponse.rewrite(rewriteUrl)
+    const response = NextResponse.rewrite(rewriteUrl)
+    // TEMP: shop subdomain is still in development — keep every storefront page
+    // out of search indexes. Remove this header (and the Disallow in
+    // app/robots.txt/route.ts) when the shop goes live.
+    response.headers.set("X-Robots-Tag", "noindex, nofollow")
+    return response
   }
 
   // Handle 301 redirects for old URL formats with query parameters.
