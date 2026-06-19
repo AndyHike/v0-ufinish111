@@ -37,11 +37,12 @@ export async function POST(request: NextRequest) {
         if (createMissing) {
           // Create brand if missing
           if (!brandId && row.brandName) {
-            const { data: existingBrand } = await supabase
+            // Шукаємо існуючий бренд незалежно від регістру
+            const { data: brandMatches } = await supabase
               .from("brands")
               .select("id")
-              .eq("name", row.brandName)
-              .maybeSingle()
+              .ilike("name", row.brandName)
+            const existingBrand = brandMatches?.[0]
 
             if (existingBrand) {
               brandId = existingBrand.id
@@ -64,12 +65,13 @@ export async function POST(request: NextRequest) {
 
           // Create series if missing
           if (!seriesId && row.seriesName && brandId) {
-            const { data: existingSeries } = await supabase
+            // Шукаємо існуючу серію в межах бренду незалежно від регістру
+            const { data: seriesMatches } = await supabase
               .from("series")
               .select("id")
-              .eq("name", row.seriesName)
               .eq("brand_id", brandId)
-              .maybeSingle()
+              .ilike("name", row.seriesName)
+            const existingSeries = seriesMatches?.[0]
 
             if (existingSeries) {
               seriesId = existingSeries.id
@@ -93,12 +95,13 @@ export async function POST(request: NextRequest) {
 
           // Create model if missing
           if (!modelId && row.modelName && brandId && seriesId) {
-            const { data: existingModel } = await supabase
+            // Шукаємо існуючу модель у межах серії незалежно від регістру
+            const { data: modelMatches } = await supabase
               .from("models")
               .select("id")
-              .eq("name", row.modelName)
               .eq("series_id", seriesId)
-              .maybeSingle()
+              .ilike("name", row.modelName)
+            const existingModel = modelMatches?.[0]
 
             if (existingModel) {
               modelId = existingModel.id

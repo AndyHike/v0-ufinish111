@@ -337,7 +337,17 @@ export function ImportExport() {
         (m) => (!brand || m.brand_id === brand.id) && (!series || m.series_id === series.id),
       )
       const model = findMatch(modelName, filteredModels)
-      const service = referenceData.services.find((s) => s.slug === serviceSlug)
+      // Базову послугу шукаємо незалежно від регістру: спершу за slug із опису,
+      // потім (як запасний варіант) за точною назвою послуги
+      const normalizedSlug = serviceSlug.toLowerCase().trim()
+      const normalizedServiceName = serviceName.toLowerCase().trim()
+      const service =
+        (normalizedSlug
+          ? referenceData.services.find((s) => (s.slug || "").toLowerCase().trim() === normalizedSlug)
+          : undefined) ||
+        (normalizedServiceName
+          ? referenceData.services.find((s) => s.name.toLowerCase().trim() === normalizedServiceName)
+          : undefined)
 
       const errors: string[] = []
       const warnings: string[] = []
@@ -345,11 +355,12 @@ export function ImportExport() {
 
       if (!serviceName) errors.push("Відсутнє найменування")
       if (!category) errors.push("Відсутня категорія")
-      if (!description) errors.push("Відсутній опис")
-      if (!serviceSlug) errors.push("Відсутній slug послуги в описі (формат: [slug])")
-
-      if (!service && serviceSlug) {
-        errors.push(`Послуга з slug "${serviceSlug}" не знайдена`)
+      if (!service) {
+        errors.push(
+          serviceSlug
+            ? `Базову послугу зі slug "${serviceSlug}" не знайдено`
+            : "Базову послугу не знайдено — додайте [slug] у колонку «Опис» або точну назву послуги",
+        )
       }
 
       if (!brand && brandName) {
@@ -894,7 +905,7 @@ export function ImportExport() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-12">Статус</TableHead>
+                    <TableHead className="w-56">Статус / Проблеми</TableHead>
                     <TableHead>Бренд</TableHead>
                     <TableHead>Серія</TableHead>
                     <TableHead>Модель</TableHead>
@@ -941,10 +952,24 @@ export function ImportExport() {
                     // Services view with editable fields
                     return (
                       <TableRow key={row.id}>
-                        <TableCell>
-                          {row.status === "valid" && <CheckCircle className="h-4 w-4 text-green-600" />}
-                          {row.status === "warning" && <AlertTriangle className="h-4 w-4 text-yellow-600" />}
-                          {row.status === "error" && <X className="h-4 w-4 text-red-600" />}
+                        <TableCell className="align-top">
+                          <div className="flex flex-col gap-1">
+                            <div>
+                              {row.status === "valid" && <CheckCircle className="h-4 w-4 text-green-600" />}
+                              {row.status === "warning" && <AlertTriangle className="h-4 w-4 text-yellow-600" />}
+                              {row.status === "error" && <X className="h-4 w-4 text-red-600" />}
+                            </div>
+                            {row.errors.map((err, i) => (
+                              <div key={`e-${i}`} className="text-red-600 text-xs leading-tight">
+                                {err}
+                              </div>
+                            ))}
+                            {row.warnings.map((warn, i) => (
+                              <div key={`w-${i}`} className="text-yellow-700 text-xs leading-tight">
+                                {warn}
+                              </div>
+                            ))}
+                          </div>
                         </TableCell>
                         <TableCell>
                           {editingRowId === row.id ? (
@@ -1127,14 +1152,29 @@ export function ImportExport() {
               </Table>
             </ScrollArea>
 
-            <div className="flex gap-3">
-              <Button onClick={() => handleImport(false)} disabled={importing || validCount === 0} variant="default">
-                Імпортувати тільки готові ({validCount})
-              </Button>
-              {warningCount > 0 && (
-                <Button onClick={() => handleImport(true)} disabled={importing} variant="secondary">
-                  Імпортувати з автостворенням ({validCount + warningCount})
+            <div className="space-y-2">
+              <div className="flex flex-wrap gap-3">
+                <Button onClick={() => handleImport(false)} disabled={importing || validCount === 0} variant="outline">
+                  Імпортувати тільки готові ({validCount})
                 </Button>
+                {warningCount > 0 && (
+                  <Button
+                    onClick={() => handleImport(true)}
+                    disabled={importing}
+                    className="bg-green-600 text-white hover:bg-green-700"
+                  >
+                    {importing
+                      ? "Збереження..."
+                      : `Створити відсутні та зберегти (${validCount + warningCount})`}
+                  </Button>
+                )}
+              </div>
+              {warningCount > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  «Створити відсутні та зберегти» створить відсутні бренди/серії/моделі (наявні підставляються
+                  автоматично, незалежно від регістру) і збереже всі {validCount + warningCount} рядків. Рядки з
+                  червоними помилками (напр. не знайдено базову послугу) не імпортуються.
+                </p>
               )}
             </div>
           </CardContent>
