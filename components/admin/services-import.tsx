@@ -504,19 +504,25 @@ export function ServicesImport() {
     )
   }
 
-  const handleImport = async () => {
+  const handleImport = async (forceCreateMissing = false) => {
     // Фільтруємо рядки для імпорту:
     // 1. Валідні рядки (status: "valid")
     // 2. Рядки з попередженнями, але з createMissing: true
-    const rowsToImport = data.filter((row) => {
-      if (row.status === "error") return false // Помилки - виключаємо
-      if (row.status === "valid") return true // Валідні - включаємо
-      if (row.status === "warning") {
-        // Для попередження - включаємо тільки якщо користувач вибрав створення
-        return row.createMissing === true
-      }
-      return false
-    })
+    //    (або forceCreateMissing — коли натиснута кнопка "Створити та зберегти")
+    const rowsToImport = data
+      .filter((row) => {
+        if (row.status === "error") return false // Помилки - виключаємо
+        if (row.status === "valid") return true // Валідні - включаємо
+        if (row.status === "warning") {
+          // Для попередження - включаємо якщо користувач вибрав створення
+          // або якщо примусово створюємо відсутні елементи
+          return forceCreateMissing || row.createMissing === true
+        }
+        return false
+      })
+      // При примусовому створенні позначаємо всі рядки з попередженнями як createMissing,
+      // щоб бекенд створив відсутні бренди/серії/моделі (з case-insensitive матчингом)
+      .map((row) => (forceCreateMissing && row.status === "warning" ? { ...row, createMissing: true } : row))
 
     if (rowsToImport.length === 0) {
       alert("Немає записів для імпорту. Будь ласка, виправте помилки або дозвольте створення відсутніх елементів.")
@@ -605,6 +611,20 @@ export function ServicesImport() {
   const warningCount = data.filter((row) => row.status === "warning").length
   const errorCount = data.filter((row) => row.status === "error").length
 
+  // Рядки, які реально будуть імпортовані звичайною кнопкою:
+  // валідні + попередження з увімкненим createMissing
+  const importableCount = data.filter((row) => {
+    if (row.status === "error") return false
+    if (row.status === "valid") return true
+    if (row.status === "warning") return row.createMissing === true
+    return false
+  }).length
+
+  // Рядки з відсутніми брендами/серіями/моделями, які можна створити
+  const creatableCount = data.filter(
+    (row) => row.status === "warning" && (row.missingBrand || row.missingSeries || row.missingModel),
+  ).length
+
   return (
     <div className="space-y-6">
       <Card className="border-0 shadow-lg">
@@ -665,11 +685,11 @@ export function ServicesImport() {
                     Експорт Excel
                   </Button>
                   <Button
-                    onClick={handleImport}
-                    disabled={validCount === 0 || importing}
+                    onClick={() => handleImport(false)}
+                    disabled={importableCount === 0 || importing}
                     className="bg-green-600 hover:bg-green-700 shadow-md"
                   >
-                    {importing ? "Імпортування..." : `Імпортувати (${validCount})`}
+                    {importing ? "Імпортування..." : `Імпортувати (${importableCount})`}
                   </Button>
                 </div>
               </div>
@@ -972,6 +992,27 @@ export function ServicesImport() {
                   </div>
                 </CardContent>
               </Card>
+
+              {creatableCount > 0 && (
+                <Alert className="border-blue-200 bg-blue-50">
+                  <AlertCircle className="h-4 w-4 text-blue-600" />
+                  <AlertDescription className="flex flex-col gap-3 text-blue-800 sm:flex-row sm:items-center sm:justify-between">
+                    <span>
+                      Знайдено {creatableCount}{" "}
+                      {creatableCount === 1 ? "рядок" : creatableCount < 5 ? "рядки" : "рядків"} з новими
+                      брендами/серіями/моделями. Існуючі співпадіння (незалежно від регістру) підставляються
+                      автоматично, а відсутні елементи будуть створені.
+                    </span>
+                    <Button
+                      onClick={() => handleImport(true)}
+                      disabled={importing}
+                      className="shrink-0 bg-blue-600 shadow-md hover:bg-blue-700"
+                    >
+                      {importing ? "Збереження..." : `Створити та зберегти (${creatableCount})`}
+                    </Button>
+                  </AlertDescription>
+                </Alert>
+              )}
             </div>
           )}
         </CardContent>
