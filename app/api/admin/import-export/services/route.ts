@@ -1,12 +1,44 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 
+// Транслітерація кирилиці (укр/рос), щоб slug не схлопувався у порожній/однаковий
+const TRANSLIT: Record<string, string> = {
+  а: "a", б: "b", в: "v", г: "h", ґ: "g", д: "d", е: "e", є: "ie", ж: "zh", з: "z",
+  и: "y", і: "i", ї: "i", й: "i", к: "k", л: "l", м: "m", н: "n", о: "o", п: "p",
+  р: "r", с: "s", т: "t", у: "u", ф: "f", х: "kh", ц: "ts", ч: "ch", ш: "sh", щ: "shch",
+  ь: "", ю: "iu", я: "ia", ъ: "", ы: "y", э: "e", ё: "e",
+}
+
 function createSlug(text: string): string {
-  return text
+  const transliterated = (text || "")
     .toLowerCase()
-    .replace(/[^\w\s-]/g, "")
+    .split("")
+    .map((ch) => (ch in TRANSLIT ? TRANSLIT[ch] : ch))
+    .join("")
+  return transliterated
+    .replace(/[^a-z0-9\s-]/g, "")
     .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "")
     .trim()
+}
+
+// Генерує глобально унікальний slug для таблиці (slug-індекси унікальні по всій таблиці).
+// Якщо базовий slug зайнятий — додає суфікс -2, -3, ...
+async function generateUniqueSlug(supabase: any, table: string, name: string): Promise<string> {
+  const base = createSlug(name) || table.replace(/s$/, "")
+  let slug = base
+  let n = 2
+  // У межах одного імпорту виклики послідовні, тож гонок немає
+  // (а навіть якщо slug проскочить — БД відхилить дубль, але це малоймовірно)
+  for (let guard = 0; guard < 1000; guard++) {
+    const { data } = await supabase.from(table).select("id").eq("slug", slug).limit(1)
+    if (!data || data.length === 0) return slug
+    slug = `${base}-${n}`
+    n++
+  }
+  // запобіжник: додаємо випадковий суфікс
+  return `${base}-${Date.now()}`
 }
 
 export async function POST(request: NextRequest) {
@@ -51,7 +83,7 @@ export async function POST(request: NextRequest) {
                 .from("brands")
                 .insert({
                   name: row.brandName,
-                  slug: createSlug(row.brandName),
+                  slug: await generateUniqueSlug(supabase, "brands", row.brandName),
                 })
                 .select("id")
                 .single()
@@ -80,7 +112,7 @@ export async function POST(request: NextRequest) {
                 .from("series")
                 .insert({
                   name: row.seriesName,
-                  slug: createSlug(row.seriesName),
+                  slug: await generateUniqueSlug(supabase, "series", row.seriesName),
                   brand_id: brandId,
                 })
                 .select("id")
@@ -110,7 +142,7 @@ export async function POST(request: NextRequest) {
                 .from("models")
                 .insert({
                   name: row.modelName,
-                  slug: createSlug(row.modelName),
+                  slug: await generateUniqueSlug(supabase, "models", row.modelName),
                   brand_id: brandId,
                   series_id: seriesId,
                 })
