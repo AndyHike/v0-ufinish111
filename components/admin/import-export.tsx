@@ -353,7 +353,6 @@ export function ImportExport() {
       const warnings: string[] = []
       const suggestedActions: any[] = []
 
-      if (!serviceName) errors.push("Відсутнє найменування")
       if (!category) errors.push("Відсутня категорія")
       if (!service) {
         errors.push(
@@ -399,7 +398,8 @@ export function ImportExport() {
         warnings,
         suggestedActions,
         data: {
-          serviceName,
+          // «Найменування» не обов'язкове — якщо порожнє, використовуємо назву знайденої послуги
+          serviceName: serviceName || service?.name || "",
           description,
           unit,
           category,
