@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { revalidateCatalog } from "@/lib/revalidate-catalog"
 
 function createSlug(text: string): string {
   return text
@@ -64,6 +65,7 @@ export async function POST(request: NextRequest) {
     let updated = 0
     let errors = 0
     const errorMessages: string[] = []
+    const touchedModelIds = new Set<string>()
 
     for (let i = 0; i < data.length; i++) {
       const row = data[i]
@@ -110,24 +112,39 @@ export async function POST(request: NextRequest) {
             errorMessages.push(`Рядок ${i + 1}: ${error.message}`)
           } else {
             updated++
+            touchedModelIds.add(row.existingId)
           }
         } else {
-          const { error } = await supabase.from("models").insert({
-            ...modelData,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          })
+          const { data: inserted, error } = await supabase
+            .from("models")
+            .insert({
+              ...modelData,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            })
+            .select("id")
+            .single()
 
           if (error) {
             errors++
             errorMessages.push(`Рядок ${i + 1}: ${error.message}`)
           } else {
             created++
+            if (inserted?.id) touchedModelIds.add(inserted.id)
           }
         }
       } catch (error) {
         errors++
         errorMessages.push(`Рядок ${i + 1}: ${(error as Error).message}`)
+      }
+    }
+
+    if (touchedModelIds.size > 0) {
+      try {
+        // modelDetail: true — змінились самі дані моделі (назва/slug/позиція)
+        await revalidateCatalog(supabase, { modelIds: touchedModelIds, modelDetail: true })
+      } catch (revalidateError) {
+        console.error("[import-export/models] revalidate error:", revalidateError)
       }
     }
 

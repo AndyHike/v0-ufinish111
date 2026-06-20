@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { revalidateCatalog } from "@/lib/revalidate-catalog"
 
 // Транслітерація кирилиці (укр/рос), щоб slug не схлопувався у порожній/однаковий
 const TRANSLIT: Record<string, string> = {
@@ -47,6 +48,8 @@ export async function POST(request: NextRequest) {
   let updated = 0
   let errors = 0
   const errorMessages: string[] = []
+  const touchedModelIds = new Set<string>()
+  const touchedServiceIds = new Set<string>()
 
   try {
     const { data, createMissing } = await request.json()
@@ -232,6 +235,8 @@ export async function POST(request: NextRequest) {
             )
           } else {
             updated++
+            touchedModelIds.add(modelId)
+            if (row.serviceId) touchedServiceIds.add(row.serviceId)
           }
         } else {
           const { error: insertError } = await supabase
@@ -248,6 +253,8 @@ export async function POST(request: NextRequest) {
             )
           } else {
             created++
+            touchedModelIds.add(modelId)
+            if (row.serviceId) touchedServiceIds.add(row.serviceId)
           }
         }
       } catch (error) {
@@ -255,6 +262,19 @@ export async function POST(request: NextRequest) {
         const errorMessage =
           error instanceof Error ? error.message : String(error)
         errorMessages.push(`Рядок ${i + 1}: ${errorMessage}`)
+      }
+    }
+
+    // Скидаємо кеш відповідних сторінок (сторінка моделі + сторінка кінцевої послуги через теги,
+    // списки/бренди/серії/послуги через шляхи). Не зриваємо імпорт при помилці.
+    if (touchedModelIds.size > 0 || touchedServiceIds.size > 0) {
+      try {
+        await revalidateCatalog(supabase, {
+          modelIds: touchedModelIds,
+          serviceIds: touchedServiceIds,
+        })
+      } catch (revalidateError) {
+        console.error("[import-export/services] revalidate error:", revalidateError)
       }
     }
 

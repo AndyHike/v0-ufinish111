@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { revalidateCatalog } from "@/lib/revalidate-catalog"
 
 function createSlug(text: string): string {
   return text
@@ -38,6 +39,7 @@ export async function POST(request: NextRequest) {
     let updated = 0
     let errors = 0
     const errorMessages: string[] = []
+    const touchedSeriesIds = new Set<string>()
 
     for (let i = 0; i < data.length; i++) {
       const row = data[i]
@@ -76,24 +78,38 @@ export async function POST(request: NextRequest) {
             errorMessages.push(`Рядок ${i + 1}: ${error.message}`)
           } else {
             updated++
+            touchedSeriesIds.add(row.existingId)
           }
         } else {
-          const { error } = await supabase.from("series").insert({
-            ...seriesData,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          })
+          const { data: inserted, error } = await supabase
+            .from("series")
+            .insert({
+              ...seriesData,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            })
+            .select("id")
+            .single()
 
           if (error) {
             errors++
             errorMessages.push(`Рядок ${i + 1}: ${error.message}`)
           } else {
             created++
+            if (inserted?.id) touchedSeriesIds.add(inserted.id)
           }
         }
       } catch (error) {
         errors++
         errorMessages.push(`Рядок ${i + 1}: ${(error as Error).message}`)
+      }
+    }
+
+    if (touchedSeriesIds.size > 0) {
+      try {
+        await revalidateCatalog(supabase, { seriesIds: touchedSeriesIds })
+      } catch (revalidateError) {
+        console.error("[import-export/series] revalidate error:", revalidateError)
       }
     }
 
