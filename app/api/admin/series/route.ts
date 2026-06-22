@@ -76,6 +76,7 @@ export async function POST(request: Request) {
           name: body.name,
           slug: slug,
           brand_id: body.brand_id,
+          image_url: body.image_url || null,
           position: body.position || nextPosition,
         },
       ])

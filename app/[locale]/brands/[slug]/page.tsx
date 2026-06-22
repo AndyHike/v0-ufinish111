@@ -175,6 +175,25 @@ export default async function BrandPage({ params }: Props) {
     })
   }
 
+  // Series photos live in the `image_url` column added by
+  // scripts/add_image_url_to_series.sql. Fetch them in a separate, tolerant
+  // query so the brand page keeps rendering even before that migration runs
+  // (a missing column just yields no data → series render without a photo).
+  if (brand?.series?.length) {
+    const { data: seriesImages } = await supabase
+      .from("series")
+      .select("id, image_url")
+      .eq("brand_id", brand.id)
+
+    if (seriesImages) {
+      const imageById = new Map(seriesImages.map((s: any) => [s.id, s.image_url]))
+      brand.series = (brand.series as any[]).map((s) => ({
+        ...s,
+        image_url: imageById.get(s.id) ?? null,
+      }))
+    }
+  }
+
   // Оновимо запит до бази даних, щоб отримати моделі без серії
   const { data: modelsWithoutSeries, error: modelsError } = await supabase
     .from("models")

@@ -29,6 +29,9 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         name: body.name,
         brand_id: body.brand_id,
         position: body.position,
+        // Only overwrite the image when the client sends the field, so other
+        // edits (rename, reorder) never accidentally clear an existing photo.
+        ...(body.image_url !== undefined ? { image_url: body.image_url || null } : {}),
         updated_at: new Date().toISOString(),
       })
       .eq("id", (await params).id)

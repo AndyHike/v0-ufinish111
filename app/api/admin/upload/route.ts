@@ -29,8 +29,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 })
     }
 
-    // Handle article and model image uploads with S3
-    if (uploadType === "article" || uploadType === "model") {
+    // Handle article, model and series image uploads with S3
+    if (uploadType === "article" || uploadType === "model" || uploadType === "series") {
       try {
         console.log(`[v0] Processing ${uploadType} image for S3`)
 
@@ -41,9 +41,9 @@ export async function POST(request: Request) {
         // Process image (resize, compress, convert to WebP)
         const { buffer, mimeType, filename: processedFilename } = await processImage(file)
 
-        // For models, we prefer to use the slug for the filename if available
+        // For models/series, we prefer to use the slug for the filename if available
         let finalFilename = processedFilename
-        if (uploadType === "model" && slug) {
+        if ((uploadType === "model" || uploadType === "series") && slug) {
           finalFilename = `${slug}.webp`
         }
 
@@ -54,7 +54,8 @@ export async function POST(request: Request) {
           throw new Error("CLOUDFLARE_BUCKET_NAME is not set")
         }
 
-        const s3Key = uploadType === "article" ? `articles/${finalFilename}` : `models/${finalFilename}`
+        const s3Folder = uploadType === "article" ? "articles" : uploadType === "series" ? "series" : "models"
+        const s3Key = `${s3Folder}/${finalFilename}`
         console.log('[v0] Uploading to S3 with key:', s3Key)
 
         const putCommand = new PutObjectCommand({

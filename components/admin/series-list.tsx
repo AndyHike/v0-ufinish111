@@ -28,6 +28,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/components/ui/use-toast"
 import { Plus, Pencil, Trash, MoveVertical, MoreHorizontal, ArrowUp, ArrowDown } from "lucide-react"
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd"
+import { ImageUpload } from "./image-upload"
 
 type Brand = {
   id: string
@@ -37,7 +38,9 @@ type Brand = {
 type Series = {
   id: string
   name: string
+  slug?: string
   brand_id: string
+  image_url?: string | null
   position: number
   created_at: string
   brands: {
@@ -56,7 +59,11 @@ export function SeriesList({ brandId }: SeriesListProps) {
   const [series, setSeries] = useState<Series[]>([])
   const [brands, setBrands] = useState<Brand[]>([])
   const [loading, setLoading] = useState(true)
-  const [newSeries, setNewSeries] = useState({ name: "", brand_id: brandId || "" })
+  const [newSeries, setNewSeries] = useState<{ name: string; brand_id: string; image_url: string }>({
+    name: "",
+    brand_id: brandId || "",
+    image_url: "",
+  })
   const [editSeries, setEditSeries] = useState<Series | null>(null)
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
@@ -148,6 +155,7 @@ export function SeriesList({ brandId }: SeriesListProps) {
         body: JSON.stringify({
           name: newSeries.name,
           brand_id: newSeries.brand_id,
+          image_url: newSeries.image_url || null,
         }),
       })
 
@@ -156,7 +164,7 @@ export function SeriesList({ brandId }: SeriesListProps) {
       }
 
       await fetchSeries()
-      setNewSeries({ name: "", brand_id: selectedBrandFilter || "" })
+      setNewSeries({ name: "", brand_id: selectedBrandFilter || "", image_url: "" })
 
       // Close the dialog first, then show toast
       setIsAddDialogOpen(false)
@@ -221,6 +229,7 @@ export function SeriesList({ brandId }: SeriesListProps) {
           name: editSeries.name,
           brand_id: editSeries.brand_id,
           position: editSeries.position,
+          image_url: editSeries.image_url ?? null,
           userId: session?.user?.id,
         }),
       })
@@ -649,6 +658,17 @@ export function SeriesList({ brandId }: SeriesListProps) {
                 </SelectContent>
               </Select>
             </div>
+            <div className="grid gap-2">
+              <Label>{t("seriesImage") || "Фото лінійки"}</Label>
+              <ImageUpload
+                uploadType="series"
+                currentImageUrl={newSeries.image_url}
+                onImageUploaded={(url) => setNewSeries({ ...newSeries, image_url: url })}
+                maxWidth={800}
+                maxHeight={800}
+                quality={0.75}
+              />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAddDialogOpen(false)} disabled={isAddSeriesSubmitting}>
@@ -715,6 +735,18 @@ export function SeriesList({ brandId }: SeriesListProps) {
                   placeholder={t("enterPosition") || "Enter position"}
                 />
                 <p className="text-xs text-muted-foreground">{t("positionInfo") || `1-${series.length}`}</p>
+              </div>
+              <div className="grid gap-2">
+                <Label>{t("seriesImage") || "Фото лінійки"}</Label>
+                <ImageUpload
+                  uploadType="series"
+                  slug={editSeries.slug}
+                  currentImageUrl={editSeries.image_url}
+                  onImageUploaded={(url) => setEditSeries({ ...editSeries, image_url: url })}
+                  maxWidth={800}
+                  maxHeight={800}
+                  quality={0.75}
+                />
               </div>
             </div>
           )}

@@ -95,8 +95,20 @@ export default function BrandPageClient({ initialData, locale, slug }: Props) {
                 >
                   <div className="absolute bottom-0 left-0 top-0 w-1 bg-primary"></div>
 
-                  <div className="flex items-center justify-between">
-                    <div>
+                  <div className="flex items-center gap-4">
+                    {series.image_url && (
+                      <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg sm:h-20 sm:w-20">
+                        <img
+                          src={formatImageUrl(series.image_url)}
+                          alt={series.name}
+                          width={80}
+                          height={80}
+                          className="h-full w-full object-contain"
+                          style={{ display: "block" }}
+                        />
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
                       <h3 className="text-xl font-medium text-slate-800 group-hover:text-primary">
                         {series.name}
                       </h3>
@@ -104,7 +116,7 @@ export default function BrandPageClient({ initialData, locale, slug }: Props) {
                         {t("viewAllModels") || "Переглянути всі моделі"}
                       </p>
                     </div>
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-400 group-hover:bg-primary/10 group-hover:text-primary">
+                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-400 group-hover:bg-primary/10 group-hover:text-primary">
                       <ChevronRight className="h-5 w-5" />
                     </div>
                   </div>

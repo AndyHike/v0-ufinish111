@@ -16,14 +16,20 @@ interface ImageUploadProps {
   maxWidth?: number
   maxHeight?: number
   quality?: number
+  /** Upload bucket/folder on the server (model | series | article). Defaults to "model". */
+  uploadType?: string
+  /** Optional slug used as the stored filename (e.g. galaxy-a.webp). */
+  slug?: string
 }
 
-export function ImageUpload({ 
-  onImageUploaded, 
+export function ImageUpload({
+  onImageUploaded,
   currentImageUrl,
   maxWidth = 1920,
   maxHeight = 1920,
-  quality = 0.8
+  quality = 0.8,
+  uploadType,
+  slug,
 }: ImageUploadProps) {
   const t = useTranslations("Admin")
   const { toast } = useToast()
@@ -95,6 +101,8 @@ export function ImageUpload({
       // Upload compressed image
       const formData = new FormData()
       formData.append("file", compressedFile)
+      if (uploadType) formData.append("type", uploadType)
+      if (slug) formData.append("slug", slug)
 
       const response = await fetch("/api/admin/upload", {
         method: "POST",
