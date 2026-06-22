@@ -19,9 +19,10 @@ const cspDirectives = [
   // 'unsafe-eval' is required by React Fast Refresh in dev only.
   `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''} https://www.googletagmanager.com https://js.stripe.com https://widget.packeta.com https://pay.google.com`,
   "style-src 'self' 'unsafe-inline'",
-  // Direct <img> to Supabase Storage (articles, brands); R2 goes through the
-  // same-origin /_next/image proxy; blob:/data: for admin upload previews.
-  "img-src 'self' data: blob: https://*.supabase.co https://www.googletagmanager.com https://*.google-analytics.com https://*.stripe.com https://stats.g.doubleclick.net",
+  // Direct <img> to Supabase Storage (articles, brands) and the R2 custom
+  // domain (model detail page uses a plain <img>); other R2 images go through
+  // the same-origin /_next/image proxy; blob:/data: for admin upload previews.
+  "img-src 'self' data: blob: https://*.supabase.co https://dns.devicehelp.cz https://www.googletagmanager.com https://*.google-analytics.com https://*.stripe.com https://stats.g.doubleclick.net",
   "font-src 'self' data:",
   "connect-src 'self' https://api.stripe.com https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://stats.g.doubleclick.net https://widget.packeta.com",
   // Google Maps embed (contact page), Stripe Elements/3DS, Google Pay, Packeta picker.
@@ -79,6 +80,13 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: '**.r2.cloudflarestorage.com',
+        port: '',
+      },
+      // Cloudflare R2 custom public domain (CLOUDFLARE_PUBLIC_URL) used by the
+      // main-site admin for brand/series/model images uploaded via /api/admin/upload.
+      {
+        protocol: 'https',
+        hostname: 'dns.devicehelp.cz',
         port: '',
       },
     ],
