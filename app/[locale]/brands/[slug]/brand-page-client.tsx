@@ -130,7 +130,11 @@ export default function BrandPageClient({ initialData, locale, slug }: Props) {
                   key={model.id}
                   className="group flex flex-col items-center rounded-lg bg-white p-4 shadow-sm hover:shadow"
                 >
-                  <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-lg bg-slate-50 p-2 sm:h-24 sm:w-24">
+                  <div
+                    className={`mb-4 flex h-20 w-20 items-center justify-center rounded-lg sm:h-24 sm:w-24 ${
+                      model.image_url ? "" : "bg-slate-50 p-2"
+                    }`}
+                  >
                     {model.image_url ? (
                       <img
                         src={formatImageUrl(model.image_url) || "/placeholder.svg"}

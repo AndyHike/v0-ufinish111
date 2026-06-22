@@ -102,7 +102,11 @@ export default function SeriesPageClient({ initialData, locale, slug }: Props) {
                   href={`/${locale}/models/${model.slug || model.id}`}
                   className="group flex flex-col items-center rounded-lg bg-white p-4 shadow-sm hover:shadow"
                 >
-                  <div className="mb-4 relative h-24 w-24 flex-shrink-0 rounded-lg bg-slate-50 p-2 sm:h-28 sm:w-28 overflow-hidden flex items-center justify-center">
+                  <div
+                    className={`mb-4 relative h-24 w-24 flex-shrink-0 rounded-lg sm:h-28 sm:w-28 overflow-hidden flex items-center justify-center ${
+                      model.image_url ? "" : "bg-slate-50 p-2"
+                    }`}
+                  >
                     {model.image_url ? (
                       <Image
                         src={model.image_url}
