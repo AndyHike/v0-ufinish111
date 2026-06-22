@@ -1,5 +1,7 @@
 import "server-only"
 
+import { SHOP_ENABLED } from "@/lib/shop-routing"
+
 /**
  * Admin Public API configuration. Two auth styles are supported automatically
  * based on the key prefix:
@@ -38,5 +40,7 @@ export function usesPublicApiKeyHeader(): boolean {
 const shopForceMock = process.env.SHOP_FORCE_MOCK === "1" || process.env.SHOP_FORCE_MOCK === "true"
 
 export function isShopApiEnabled(): boolean {
-  return !shopForceMock && shopAdminApiUrl.length > 0 && shopAdminApiKey.length > 0
+  // The kill switch wins: with the storefront off, the data layer makes no
+  // admin-API calls at all, so the build can never fail on `store_suspended`.
+  return SHOP_ENABLED && !shopForceMock && shopAdminApiUrl.length > 0 && shopAdminApiKey.length > 0
 }

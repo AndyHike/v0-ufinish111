@@ -1,5 +1,5 @@
 import { getB2BRedirectTarget, getB2BRewritePath } from "@/lib/b2b-routing"
-import { getShopRedirectTarget, getShopRewritePath, isShopHost } from "@/lib/shop-routing"
+import { getShopRedirectTarget, getShopRewritePath, isShopHost, SHOP_ENABLED } from "@/lib/shop-routing"
 import { siteUrl } from "@/lib/site-config"
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
@@ -56,6 +56,14 @@ export async function middleware(request: NextRequest) {
     /\.(jpg|jpeg|png|gif|svg|ico|css|js|woff|woff2|ttf|eot|webp)$/.test(pathname)
   ) {
     return NextResponse.next()
+  }
+
+  // Shop storefront kill switch: while the subdomain is turned off, nothing on
+  // the shop host is served by the storefront (pages or APIs) — send it all to
+  // the main site so the decommissioned subdomain stays dark. Flip
+  // NEXT_PUBLIC_SHOP_ENABLED=true to bring it back.
+  if (isShopHost(hostname) && !SHOP_ENABLED) {
+    return NextResponse.redirect(new URL("/", siteUrl), { status: 307 })
   }
 
   // Shop subdomain API routes (e.g. /api/shop/search) are served directly at

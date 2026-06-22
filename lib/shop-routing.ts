@@ -4,6 +4,14 @@ export type SupportedShopLocale = (typeof SUPPORTED_SHOP_LOCALES)[number]
 export const DEFAULT_SHOP_LOCALE: SupportedShopLocale = "cs"
 export const SHOP_SUBDOMAIN = "shop"
 
+// Storefront kill switch. The external shop admin was decommissioned, so the
+// shop subdomain is turned off site-wide: middleware sends every shop-host
+// request to the main site, the data layer makes no admin-API calls (so the
+// build no longer fails on `store_suspended`), and shop pages render 404.
+// No shop data or code is removed — set NEXT_PUBLIC_SHOP_ENABLED=true (and
+// redeploy) to bring the storefront back online.
+export const SHOP_ENABLED = process.env.NEXT_PUBLIC_SHOP_ENABLED === "true"
+
 const SHOP_ROUTE_PATTERNS = [
   /^$/,
   /^\/category\/[^/]+$/,
