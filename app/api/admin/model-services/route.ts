@@ -148,6 +148,24 @@ export async function GET(request: NextRequest) {
       })
     })
 
+    // Per-locale, model-scope text overrides (cs/en/uk) used by the public read path.
+    const { data: scopeRowsData } = await supabase
+      .from("service_scope_translations")
+      .select("service_id, locale, detailed_description, what_included, benefits")
+      .eq("scope_type", "model")
+      .eq("scope_id", finalModelId)
+
+    const scopeByService = new Map<string, Record<string, { detailed_description: string; what_included: string; benefits: string }>>()
+    ;(scopeRowsData || []).forEach((r: any) => {
+      const sid = String(r.service_id)
+      if (!scopeByService.has(sid)) scopeByService.set(sid, {})
+      scopeByService.get(sid)![String(r.locale)] = {
+        detailed_description: r.detailed_description ? String(r.detailed_description) : "",
+        what_included: r.what_included ? String(r.what_included) : "",
+        benefits: r.benefits ? String(r.benefits) : "",
+      }
+    })
+
     const transformedData = modelServicesData
       .map((modelService) => {
         const serviceInfo = servicesMap.get(String(modelService.service_id))
@@ -170,6 +188,7 @@ export async function GET(request: NextRequest) {
           what_included: modelService.what_included ? String(modelService.what_included) : null,
           benefits: modelService.benefits ? String(modelService.benefits) : null,
           part_type: modelService.part_type ? String(modelService.part_type) : null,
+          scope_translations: scopeByService.get(String(modelService.service_id)) || {},
           services: {
             id: String(serviceInfo.id),
             slug: String(serviceInfo.slug),
@@ -226,14 +245,13 @@ export async function POST(request: Request) {
       )
     }
 
+    // Text fields (detailed_description/what_included/benefits) now live per-locale
+    // in service_scope_translations (handled below), not on model_services.
     const serviceData = {
       price: body.price,
       warranty_months: body.warranty_months,
       duration_hours: body.duration_hours,
       warranty_period: body.warranty_period || "months",
-      detailed_description: body.detailed_description,
-      what_included: body.what_included,
-      benefits: body.benefits,
       part_type: body.part_type,
     }
 
@@ -274,6 +292,48 @@ export async function POST(request: Request) {
 
       console.log("[POST] /api/admin/model-services - Successfully created model service:", data)
       result = data
+    }
+
+    // Persist per-locale, model-scope text overrides. The public read path resolves
+    // model > series > brand > base service (see lib/catalog/scope-text.ts).
+    if (body.scope_translations && typeof body.scope_translations === "object") {
+      for (const loc of ["cs", "en", "uk"]) {
+        const t = body.scope_translations[loc] || {}
+        const dd = (t.detailed_description || "").trim()
+        const wi = (t.what_included || "").trim()
+        const bf = (t.benefits || "").trim()
+
+        if (!dd && !wi && !bf) {
+          // cleared in this locale -> remove any existing override row
+          const { error: delError } = await supabase
+            .from("service_scope_translations")
+            .delete()
+            .eq("service_id", body.serviceId)
+            .eq("scope_type", "model")
+            .eq("scope_id", body.modelId)
+            .eq("locale", loc)
+          if (delError) {
+            console.error(`[POST] /api/admin/model-services - scope delete error (${loc}):`, delError)
+          }
+        } else {
+          const { error: upsertError } = await supabase.from("service_scope_translations").upsert(
+            {
+              service_id: body.serviceId,
+              scope_type: "model",
+              scope_id: body.modelId,
+              locale: loc,
+              detailed_description: dd || null,
+              what_included: wi || null,
+              benefits: bf || null,
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: "service_id,scope_type,scope_id,locale" },
+          )
+          if (upsertError) {
+            console.error(`[POST] /api/admin/model-services - scope upsert error (${loc}):`, upsertError)
+          }
+        }
+      }
     }
 
     // Revalidate model page and service/model page after save

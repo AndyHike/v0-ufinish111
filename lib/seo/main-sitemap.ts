@@ -111,14 +111,19 @@ export async function getMainSitemapEntries(): Promise<SitemapEntry[]> {
       const serviceIds = services.map((service) => service.id)
       const { data: allModelServices, error: modelServicesError } = await supabase
         .from("model_services")
-        .select("service_id, models(slug), services(slug, created_at)")
+        .select("service_id, models(slug, brands(slug)), services(slug, created_at)")
         .in("service_id", serviceIds)
         .not("models.slug", "is", null)
 
       if (!modelServicesError && allModelServices) {
         console.log(`[SITEMAP] Found ${allModelServices.length} service+model combinations`)
+        // Unique (service slug | lowercased brand slug) pairs -> brand×service hub pages.
+        const brandHubPairs = new Set<string>()
+
         allModelServices.forEach((modelService) => {
-          const model = modelService.models as unknown as { slug: string } | null
+          const model = modelService.models as unknown as
+            | { slug: string; brands?: { slug: string } | { slug: string }[] | null }
+            | null
           const service = modelService.services as unknown as { slug: string; created_at: string } | null
 
           if (model?.slug && service?.slug) {
@@ -126,8 +131,19 @@ export async function getMainSitemapEntries(): Promise<SitemapEntry[]> {
               `/services/${service.slug}/${model.slug}`,
               mostRecentDate(service.created_at ? new Date(service.created_at) : null, CONTENT_REVISION),
             )
+
+            const brand = Array.isArray(model.brands) ? model.brands[0] : model.brands
+            if (brand?.slug) {
+              brandHubPairs.add(`${service.slug}|${brand.slug.toLowerCase()}`)
+            }
           }
         })
+
+        brandHubPairs.forEach((pair) => {
+          const [serviceSlug, brandSlug] = pair.split("|")
+          addMultilingualEntries(`/services/${serviceSlug}/brand/${brandSlug}`, CONTENT_REVISION)
+        })
+        console.log(`[SITEMAP] Added ${brandHubPairs.size} brand×service hub pages`)
       } else if (modelServicesError) {
         console.warn("[SITEMAP] Error fetching model services:", modelServicesError.message)
       }

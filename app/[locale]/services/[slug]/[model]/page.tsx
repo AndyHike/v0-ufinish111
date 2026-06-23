@@ -10,6 +10,7 @@ import { siteUrl } from "@/lib/site-config"
 import { formatBrandModelName } from "@/lib/seo/page-utils"
 import { generateBreadcrumbListSchema } from "@/lib/structured-data"
 import { PrevNextNav } from "@/components/prev-next-nav"
+import { resolveScopedField, type ScopeRow, type BaseTranslation } from "@/lib/catalog/scope-text"
 
 // ISR Configuration
 export const revalidate = 3600 // Regenerate every 1 hour
@@ -433,6 +434,28 @@ export default async function ServicePageWithModel({ params }: Props) {
       }
     }
 
+    // Scope- and language-aware description overrides (model > series > brand > base service).
+    // Language stays primary; falls back CS -> EN -> UK. See lib/catalog/scope-text.ts.
+    const scopeIds = {
+      modelId: sourceModel?.id ?? null,
+      seriesId: sourceModel?.series?.id ?? null,
+      brandId: sourceModel?.brands?.id ?? null,
+    }
+    const scopeLookupIds = [scopeIds.modelId, scopeIds.seriesId, scopeIds.brandId].filter(Boolean) as string[]
+    let scopeRows: ScopeRow[] = []
+    if (scopeLookupIds.length > 0) {
+      const { data: scopeData } = await supabase
+        .from("service_scope_translations")
+        .select("service_id, scope_type, scope_id, locale, detailed_description, what_included, benefits")
+        .eq("service_id", service.id)
+        .in("scope_id", scopeLookupIds)
+      scopeRows = (scopeData || []) as ScopeRow[]
+    }
+    const baseTranslations = (service.services_translations || []) as BaseTranslation[]
+    const resolvedDetailed = resolveScopedField("detailed_description", service.id, locale, scopeRows, baseTranslations, scopeIds)
+    const resolvedIncluded = resolveScopedField("what_included", service.id, locale, scopeRows, baseTranslations, scopeIds)
+    const resolvedBenefits = resolveScopedField("benefits", service.id, locale, scopeRows, baseTranslations, scopeIds)
+
     const serviceData = {
       id: service.id,
       position: service.position || 0,
@@ -448,9 +471,9 @@ export default async function ServicePageWithModel({ params }: Props) {
       translation: {
         name: translation?.name || "",
         description: translation?.description || "",
-        detailed_description: translation?.detailed_description || "",
-        what_included: translation?.what_included || "",
-        benefits: translation?.benefits || null,
+        detailed_description: resolvedDetailed || "",
+        what_included: resolvedIncluded || "",
+        benefits: resolvedBenefits || null,
       },
       faqs: faqsWithTranslations.map((faq: any) => ({
         id: faq.id || "",
@@ -604,6 +627,20 @@ export default async function ServicePageWithModel({ params }: Props) {
         />
         <ServicePageClient serviceData={serviceData} locale={locale} />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {sourceModel?.brands?.slug && (
+            <div className="mt-8 text-center">
+              <a
+                href={`/${locale}/services/${slug}/brand/${String(sourceModel.brands.slug).toLowerCase()}`}
+                className="text-primary hover:underline"
+              >
+                {locale === "en"
+                  ? `All ${sourceModel.brands.name} models — ${translation.name}`
+                  : locale === "uk"
+                    ? `Усі моделі ${sourceModel.brands.name} — ${translation.name}`
+                    : `Všechny modely ${sourceModel.brands.name} — ${translation.name}`}
+              </a>
+            </div>
+          )}
           <RelatedArticlesList locale={locale} />
           <PrevNextNav
             prev={prevServiceNav ? { name: prevServiceNav.name, href: `/${locale}/services/${prevServiceNav.slug}/${modelSlug}` } : null}

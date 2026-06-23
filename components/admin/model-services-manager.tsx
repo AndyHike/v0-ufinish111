@@ -16,9 +16,21 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/components/ui/use-toast"
 import { Pencil, Plus, Trash2, AlertCircle, RefreshCw } from "lucide-react"
 import { formatCurrency } from "@/lib/format-currency"
+
+const LOCALES = ["cs", "en", "uk"] as const
+type Loc = (typeof LOCALES)[number]
+const LOCALE_LABELS: Record<Loc, string> = { cs: "🇨🇿 CS", en: "🇬🇧 EN", uk: "🇺🇦 UK" }
+type LocaleText = { detailed_description: string; what_included: string; benefits: string }
+type ScopeText = Record<Loc, LocaleText>
+const emptyScopeText = (): ScopeText => ({
+  cs: { detailed_description: "", what_included: "", benefits: "" },
+  en: { detailed_description: "", what_included: "", benefits: "" },
+  uk: { detailed_description: "", what_included: "", benefits: "" },
+})
 
 type Service = {
   id: string
@@ -43,6 +55,7 @@ type ModelService = {
   what_included: string | null
   benefits: string | null
   part_type: string | null
+  scope_translations?: Partial<Record<string, Partial<LocaleText>>>
   services: Service
 }
 
@@ -65,11 +78,11 @@ export function ModelServicesManager({ modelId, locale }: ModelServicesManagerPr
     warranty_months: "",
     duration_hours: "",
     warranty_period: "months",
-    detailed_description: "",
-    what_included: "",
-    benefits: "",
     part_type: "",
   })
+  // Per-locale page texts live in service_scope_translations (model scope).
+  const [scopeText, setScopeText] = useState<ScopeText>(emptyScopeText())
+  const [activeLocale, setActiveLocale] = useState<Loc>("cs")
   const [editingServiceId, setEditingServiceId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -168,11 +181,10 @@ export function ModelServicesManager({ modelId, locale }: ModelServicesManagerPr
       warranty_months: "",
       duration_hours: "",
       warranty_period: "months",
-      detailed_description: "",
-      what_included: "",
-      benefits: "",
       part_type: "",
     })
+    setScopeText(emptyScopeText())
+    setActiveLocale("cs")
   }
 
   const handleAddService = async () => {
@@ -201,10 +213,8 @@ export function ModelServicesManager({ modelId, locale }: ModelServicesManagerPr
           ? selectedServiceData?.default_duration_hours
           : Number.parseFloat(formData.duration_hours),
       warranty_period: formData.warranty_period,
-      detailed_description: formData.detailed_description.trim() || null,
-      what_included: formData.what_included.trim() || null,
-      benefits: formData.benefits.trim() || null,
       part_type: formData.part_type.trim() || null,
+      scope_translations: scopeText,
     }
 
     // Validate price if provided
@@ -283,10 +293,8 @@ export function ModelServicesManager({ modelId, locale }: ModelServicesManagerPr
       warranty_months: formData.warranty_months.trim() === "" ? null : Number.parseInt(formData.warranty_months),
       duration_hours: formData.duration_hours.trim() === "" ? null : Number.parseFloat(formData.duration_hours),
       warranty_period: formData.warranty_period,
-      detailed_description: formData.detailed_description.trim() || null,
-      what_included: formData.what_included.trim() || null,
-      benefits: formData.benefits.trim() || null,
       part_type: formData.part_type.trim() || null,
+      scope_translations: scopeText,
     }
 
     // Validate price if provided
@@ -398,11 +406,21 @@ export function ModelServicesManager({ modelId, locale }: ModelServicesManagerPr
       warranty_months: modelService.warranty_months !== null ? modelService.warranty_months.toString() : "",
       duration_hours: modelService.duration_hours !== null ? modelService.duration_hours.toString() : "",
       warranty_period: modelService.warranty_period || "months",
-      detailed_description: modelService.detailed_description || "",
-      what_included: modelService.what_included || "",
-      benefits: modelService.benefits || "",
       part_type: modelService.part_type || "",
     })
+    const st = emptyScopeText()
+    for (const loc of LOCALES) {
+      const src = modelService.scope_translations?.[loc]
+      if (src) {
+        st[loc] = {
+          detailed_description: src.detailed_description || "",
+          what_included: src.what_included || "",
+          benefits: src.benefits || "",
+        }
+      }
+    }
+    setScopeText(st)
+    setActiveLocale("cs")
     setIsDialogOpen(true)
   }
 
@@ -623,36 +641,60 @@ export function ModelServicesManager({ modelId, locale }: ModelServicesManagerPr
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="detailed_description">Детальний опис</Label>
-              <Textarea
-                id="detailed_description"
-                value={formData.detailed_description}
-                onChange={(e) => setFormData((prev) => ({ ...prev, detailed_description: e.target.value }))}
-                placeholder="Детальний опис послуги для цієї моделі"
-                rows={3}
-              />
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="what_included">Що включено</Label>
-              <Textarea
-                id="what_included"
-                value={formData.what_included}
-                onChange={(e) => setFormData((prev) => ({ ...prev, what_included: e.target.value }))}
-                placeholder="Що включено в послугу (по одному пункту на рядок)"
-                rows={3}
-              />
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="benefits">Переваги</Label>
-              <Textarea
-                id="benefits"
-                value={formData.benefits}
-                onChange={(e) => setFormData((prev) => ({ ...prev, benefits: e.target.value }))}
-                placeholder="Переваги послуги (по одному пункту на рядок)"
-                rows={3}
-              />
+              <Label>Тексти сторінки (унікальні для цієї моделі, по мовах)</Label>
+              <p className="text-xs text-muted-foreground">
+                Залиш порожнім — на сторінці покажеться спільний базовий текст послуги. Заповни лише там, де
+                потрібен унікальний опис (модель потрапляє у топ за конкретним запитом).
+              </p>
+              <Tabs value={activeLocale} onValueChange={(v) => setActiveLocale(v as Loc)} className="mt-1">
+                <TabsList>
+                  {LOCALES.map((loc) => (
+                    <TabsTrigger key={loc} value={loc}>
+                      {LOCALE_LABELS[loc]}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+                {LOCALES.map((loc) => (
+                  <TabsContent key={loc} value={loc} className="space-y-4 pt-2">
+                    <div className="grid gap-2">
+                      <Label htmlFor={`detailed_description_${loc}`}>Детальний опис ({loc.toUpperCase()})</Label>
+                      <Textarea
+                        id={`detailed_description_${loc}`}
+                        value={scopeText[loc].detailed_description}
+                        onChange={(e) =>
+                          setScopeText((prev) => ({ ...prev, [loc]: { ...prev[loc], detailed_description: e.target.value } }))
+                        }
+                        placeholder="Детальний опис послуги для цієї моделі"
+                        rows={3}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor={`what_included_${loc}`}>Що включено ({loc.toUpperCase()})</Label>
+                      <Textarea
+                        id={`what_included_${loc}`}
+                        value={scopeText[loc].what_included}
+                        onChange={(e) =>
+                          setScopeText((prev) => ({ ...prev, [loc]: { ...prev[loc], what_included: e.target.value } }))
+                        }
+                        placeholder="Що включено в послугу (по одному пункту на рядок)"
+                        rows={3}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor={`benefits_${loc}`}>Переваги ({loc.toUpperCase()})</Label>
+                      <Textarea
+                        id={`benefits_${loc}`}
+                        value={scopeText[loc].benefits}
+                        onChange={(e) =>
+                          setScopeText((prev) => ({ ...prev, [loc]: { ...prev[loc], benefits: e.target.value } }))
+                        }
+                        placeholder="Переваги послуги (по одному пункту на рядок)"
+                        rows={3}
+                      />
+                    </div>
+                  </TabsContent>
+                ))}
+              </Tabs>
             </div>
 
             <div className="grid gap-2">
