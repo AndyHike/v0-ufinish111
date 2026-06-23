@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/components/ui/use-toast"
-import { Download, Upload, Loader2 } from "lucide-react"
+import { Download, Upload, Loader2, FileText } from "lucide-react"
 
 // Bulk fill of scope-level FAQs (per model / per series, per service) with the
 // model → series → base-service cascade. One CSV row = one FAQ.
@@ -60,6 +60,12 @@ export function ScopeFaqsPanel() {
             <a href="/api/admin/scope-faqs/export">
               <Download className="mr-2 h-4 w-4" />
               Експорт наявних FAQ (CSV)
+            </a>
+          </Button>
+          <Button asChild variant="secondary">
+            <a href="/api/admin/scope-faqs/export?example=1">
+              <FileText className="mr-2 h-4 w-4" />
+              Завантажити приклад
             </a>
           </Button>
         </div>

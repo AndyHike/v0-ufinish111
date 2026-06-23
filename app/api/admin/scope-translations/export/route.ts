@@ -4,6 +4,49 @@ import Papa from "papaparse"
 
 const LOCALES = ["cs", "en", "uk"] as const
 
+// Stable column order — also guarantees a header row when there are no data rows.
+const COLUMNS = [
+  "service_slug",
+  "scope_type",
+  "scope_slug",
+  "brand",
+  "model",
+  "series",
+  "detailed_description_cs",
+  "what_included_cs",
+  "benefits_cs",
+  "detailed_description_en",
+  "what_included_en",
+  "benefits_en",
+  "detailed_description_uk",
+  "what_included_uk",
+  "benefits_uk",
+]
+
+// Fully-filled illustrative row for the "Download example" button.
+const EXAMPLE_ROWS: Record<string, string>[] = [
+  {
+    service_slug: "screen-replacement",
+    scope_type: "model",
+    scope_slug: "samsung-s24",
+    brand: "Samsung",
+    model: "Samsung S24",
+    series: "ПРИКЛАД — видаліть цей рядок перед імпортом",
+    detailed_description_cs:
+      "Výměna displeje Samsung Galaxy S24 v Praze 6 na Břevnově. Používáme originální i kvalitní kompatibilní displeje, opravu zvládneme obvykle do 2–3 hodin.",
+    what_included_cs: "Nový displej, práce technika, otestování funkcí, záruka 6 měsíců.",
+    benefits_cs: "Oprava do 2–3 hodin · Záruka 6 měsíců · Diagnostika zdarma",
+    detailed_description_en:
+      "Samsung Galaxy S24 screen replacement in Prague 6. We use both original and high-quality compatible displays and usually finish within 2–3 hours.",
+    what_included_en: "New display, technician labour, function testing, 6-month warranty.",
+    benefits_en: "Done in 2–3 hours · 6-month warranty · Free diagnostics",
+    detailed_description_uk:
+      "Заміна дисплея Samsung Galaxy S24 у Празі 6 на Бржевнові. Використовуємо оригінальні та якісні сумісні дисплеї, ремонт зазвичай за 2–3 години.",
+    what_included_uk: "Новий дисплей, робота майстра, тестування функцій, гарантія 6 місяців.",
+    benefits_uk: "Ремонт за 2–3 години · Гарантія 6 місяців · Діагностика безкоштовно",
+  },
+]
+
 // Exports a fillable CSV template of model×service combinations with any existing
 // per-locale overrides pre-filled. Columns:
 //   service_slug, scope_type, scope_slug, brand, model (readable),
@@ -17,6 +60,10 @@ export async function GET(request: NextRequest) {
     const seriesId = sp.get("seriesId")
     const modelId = sp.get("modelId")
 
+    if (sp.get("example") === "1") {
+      return csv("﻿" + Papa.unparse({ fields: COLUMNS, data: EXAMPLE_ROWS }))
+    }
+
     let modelIds: string[] | null = null
     if (seriesId) {
       const { data } = await supabase.from("models").select("id").eq("series_id", seriesId)
@@ -29,7 +76,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (modelIds && modelIds.length === 0) {
-      return csv("﻿" + Papa.unparse([]))
+      return csv("﻿" + Papa.unparse({ fields: COLUMNS, data: [] }))
     }
 
     let query = supabase.from("model_services").select(`
@@ -76,7 +123,7 @@ export async function GET(request: NextRequest) {
       return out
     })
 
-    return csv("﻿" + Papa.unparse(csvRows))
+    return csv("﻿" + Papa.unparse({ fields: COLUMNS, data: csvRows }))
   } catch (error) {
     console.error("[scope-translations/export] error:", error)
     return NextResponse.json(

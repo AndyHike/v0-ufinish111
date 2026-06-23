@@ -4,6 +4,52 @@ import Papa from "papaparse"
 
 const LOCALES = ["cs", "en", "uk"] as const
 
+// Stable column order — also guarantees a header row when there are no data rows
+// (an empty table must still export a usable, fillable template, not a 0-byte file).
+const COLUMNS = [
+  "service_slug",
+  "scope_type",
+  "scope_slug",
+  "name",
+  "position",
+  "question_cs",
+  "answer_cs",
+  "question_en",
+  "answer_en",
+  "question_uk",
+  "answer_uk",
+]
+
+// A couple of fully-filled illustrative rows for the "Download example" button.
+const EXAMPLE_ROWS: Record<string, string>[] = [
+  {
+    service_slug: "screen-replacement",
+    scope_type: "model",
+    scope_slug: "samsung-s24",
+    name: "ПРИКЛАД — видаліть цей рядок перед імпортом",
+    position: "0",
+    question_cs: "Jak dlouho trvá výměna displeje Samsung Galaxy S24?",
+    answer_cs: "Standardně 2–3 hodiny. Na výměnu dáváme záruku 6 měsíců.",
+    question_en: "How long does a Samsung Galaxy S24 screen replacement take?",
+    answer_en: "Usually 2–3 hours. The replacement comes with a 6-month warranty.",
+    question_uk: "Скільки триває заміна дисплея Samsung Galaxy S24?",
+    answer_uk: "Зазвичай 2–3 години. На заміну даємо гарантію 6 місяців.",
+  },
+  {
+    service_slug: "screen-replacement",
+    scope_type: "model",
+    scope_slug: "samsung-s24",
+    name: "ПРИКЛАД — видаліть цей рядок перед імпортом",
+    position: "1",
+    question_cs: "Používáte originální displeje?",
+    answer_cs: "Nabízíme originální i kvalitní kompatibilní displeje – cenu i rozdíly vždy vysvětlíme předem.",
+    question_en: "Do you use original displays?",
+    answer_en: "We offer both original and high-quality compatible displays – we always explain the price and the differences first.",
+    question_uk: "Чи використовуєте оригінальні дисплеї?",
+    answer_uk: "Пропонуємо як оригінальні, так і якісні сумісні дисплеї – ціну та різницю завжди пояснюємо заздалегідь.",
+  },
+]
+
 // Exports a fillable CSV template for scope FAQs (model/series). One row = one FAQ.
 // Columns: service_slug, scope_type, scope_slug, name (readable), position,
 //          question_{cs,en,uk}, answer_{cs,en,uk}
@@ -18,6 +64,10 @@ export async function GET(request: NextRequest) {
     const brandId = sp.get("brandId")
     const seriesId = sp.get("seriesId")
     const modelId = sp.get("modelId")
+
+    if (sp.get("example") === "1") {
+      return csv("﻿" + Papa.unparse({ fields: COLUMNS, data: EXAMPLE_ROWS }))
+    }
 
     const csvRows: Record<string, string>[] = []
 
@@ -94,7 +144,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    return csv("﻿" + Papa.unparse(csvRows))
+    return csv("﻿" + Papa.unparse({ fields: COLUMNS, data: csvRows }))
   } catch (error) {
     console.error("[scope-faqs/export] error:", error)
     return NextResponse.json(

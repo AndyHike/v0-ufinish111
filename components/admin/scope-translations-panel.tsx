@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/components/ui/use-toast"
-import { Download, Upload, Loader2 } from "lucide-react"
+import { Download, Upload, Loader2, FileText } from "lucide-react"
 
 // Bulk fill of unique per-locale page texts (detailed_description / what_included /
 // benefits) into service_scope_translations. Isolated from the legacy multi-entity
@@ -58,6 +58,12 @@ export function ScopeTranslationsPanel() {
             <a href="/api/admin/scope-translations/export">
               <Download className="mr-2 h-4 w-4" />
               Експорт шаблону (CSV)
+            </a>
+          </Button>
+          <Button asChild variant="secondary">
+            <a href="/api/admin/scope-translations/export?example=1">
+              <FileText className="mr-2 h-4 w-4" />
+              Завантажити приклад
             </a>
           </Button>
         </div>
