@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
+import { fetchAllRows } from "@/lib/admin/fetch-all-rows"
 import Papa from "papaparse"
 
 const LOCALES = ["cs", "en", "uk"] as const
@@ -71,15 +72,19 @@ export async function GET(request: NextRequest) {
 
     const csvRows: Record<string, string>[] = []
 
-    // 1) Existing scope FAQs, fully pre-filled.
-    const { data: existing } = await supabase
-      .from("service_scope_faqs")
-      .select(
-        `position, scope_type, scope_id,
+    // 1) Existing scope FAQs, fully pre-filled (paged — grows past 1000 once filled).
+    const existing = await fetchAllRows((from, to) =>
+      supabase
+        .from("service_scope_faqs")
+        .select(
+          `position, scope_type, scope_id,
          services!inner(slug),
          service_scope_faq_translations(locale, question, answer)`,
-      )
-      .order("position")
+        )
+        .order("scope_id")
+        .order("position")
+        .range(from, to),
+    )
 
     // Resolve readable slug/name for each scope_id we encounter.
     const scopeMeta = new Map<string, { slug: string; name: string }>()

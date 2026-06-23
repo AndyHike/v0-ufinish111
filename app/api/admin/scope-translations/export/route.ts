@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
+import { fetchAllRows } from "@/lib/admin/fetch-all-rows"
 import Papa from "papaparse"
 
 const LOCALES = ["cs", "en", "uk"] as const
@@ -79,23 +80,35 @@ export async function GET(request: NextRequest) {
       return csv("﻿" + Papa.unparse({ fields: COLUMNS, data: [] }))
     }
 
-    let query = supabase.from("model_services").select(`
-      service_id,
-      services!inner(slug),
-      models!inner(id, name, slug, brands!inner(name), series(name))
-    `)
-    if (modelIds) {
-      query = query.in("model_id", modelIds)
-    }
-
-    const { data: rows, error } = await query
-    if (error) throw error
+    // Page through model_services — the table has thousands of rows and an unbounded
+    // .select() truncates at ~1000, dropping most models from the template.
+    const rows = await fetchAllRows((from, to) => {
+      let query = supabase
+        .from("model_services")
+        .select(`
+          service_id,
+          services!inner(slug),
+          models!inner(id, name, slug, brands!inner(name), series(name))
+        `)
+        .order("model_id")
+        .order("service_id")
+        .range(from, to)
+      if (modelIds) {
+        query = query.in("model_id", modelIds)
+      }
+      return query
+    })
 
     // Existing model-scope overrides, keyed service_id|scope_id|locale.
-    const { data: overrides } = await supabase
-      .from("service_scope_translations")
-      .select("service_id, scope_id, locale, detailed_description, what_included, benefits")
-      .eq("scope_type", "model")
+    const overrides = await fetchAllRows((from, to) =>
+      supabase
+        .from("service_scope_translations")
+        .select("service_id, scope_id, locale, detailed_description, what_included, benefits")
+        .eq("scope_type", "model")
+        .order("scope_id")
+        .order("locale")
+        .range(from, to),
+    )
 
     const ov = new Map<string, any>()
     ;(overrides || []).forEach((o: any) => ov.set(`${o.service_id}|${o.scope_id}|${o.locale}`, o))

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
+import { fetchAllRows } from "@/lib/admin/fetch-all-rows"
 import Papa from "papaparse"
 
 const LOCALES = ["cs", "en", "uk"] as const
@@ -76,9 +77,14 @@ export async function GET(request: NextRequest) {
     }
 
     // Existing overrides, keyed scope_type|scope_id|locale.
-    const { data: overrides } = await supabase
-      .from("catalog_descriptions")
-      .select("scope_type, scope_id, locale, description, body")
+    const overrides = await fetchAllRows((from, to) =>
+      supabase
+        .from("catalog_descriptions")
+        .select("scope_type, scope_id, locale, description, body")
+        .order("scope_id")
+        .order("locale")
+        .range(from, to),
+    )
     const ov = new Map<string, any>()
     ;(overrides || []).forEach((o: any) => ov.set(`${o.scope_type}|${o.scope_id}|${o.locale}`, o))
 
@@ -113,11 +119,18 @@ export async function GET(request: NextRequest) {
         pushRow("series", s.id, s.slug, s.name, brand?.name || "")
       })
     } else {
-      let q = supabase.from("models").select("id, name, slug, brands(name), series(name)").not("slug", "is", null)
-      if (modelId) q = q.eq("id", modelId)
-      else if (seriesId) q = q.eq("series_id", seriesId)
-      else if (brandId) q = q.eq("brand_id", brandId)
-      const { data: models } = await q
+      const models = await fetchAllRows((from, to) => {
+        let q = supabase
+          .from("models")
+          .select("id, name, slug, brands(name), series(name)")
+          .not("slug", "is", null)
+          .order("id")
+          .range(from, to)
+        if (modelId) q = q.eq("id", modelId)
+        else if (seriesId) q = q.eq("series_id", seriesId)
+        else if (brandId) q = q.eq("brand_id", brandId)
+        return q
+      })
       ;(models || []).forEach((m: any) => {
         const brand = Array.isArray(m.brands) ? m.brands[0] : m.brands
         const series = Array.isArray(m.series) ? m.series[0] : m.series
