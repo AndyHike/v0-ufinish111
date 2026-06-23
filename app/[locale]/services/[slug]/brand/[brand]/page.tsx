@@ -1,8 +1,6 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
-import Link from "next/link"
 import Image from "next/image"
-import { Smartphone } from "lucide-react"
 import { createClient } from "@/utils/supabase/client"
 import { Breadcrumb } from "@/components/breadcrumb"
 import { ContactCTABanner } from "@/components/contact-cta-banner"
@@ -12,6 +10,7 @@ import { formatCurrency } from "@/lib/format-currency"
 import { generateBreadcrumbListSchema } from "@/lib/structured-data"
 import { resolveScopedField, type ScopeRow } from "@/lib/catalog/scope-text"
 import { replaceFaqPlaceholders } from "@/lib/faq-placeholder-replacer"
+import { BrandHubModels, type HubGroup } from "./brand-hub-models"
 
 export const revalidate = 3600
 export const dynamicParams = true
@@ -43,7 +42,7 @@ async function load(slug: string, brandSlug: string, locale: string) {
 
   const { data: rows } = await supabase
     .from("model_services")
-    .select(`price, models!inner(id, name, slug, image_url, position, brand_id, series(id, name))`)
+    .select(`price, models!inner(id, name, slug, image_url, position, brand_id, series(id, name, slug))`)
     .eq("service_id", service.id)
     .eq("models.brand_id", brand.id)
 
@@ -60,7 +59,7 @@ async function load(slug: string, brandSlug: string, locale: string) {
         image_url: m.image_url,
         position: m.position,
         price: r.price,
-        series: series ? { id: series.id, name: series.name } : null,
+        series: series ? { id: series.id, name: series.name, slug: series.slug ?? null } : null,
       }
     })
     .filter((m: any) => m && m.slug)
@@ -164,22 +163,49 @@ export default async function ServiceBrandHubPage({ params }: Props) {
 
   const labels =
     locale === "en"
-      ? { allBrands: "All brands", chooseModel: "Choose your model", from: "from", otherModels: "Other models" }
+      ? {
+          allBrands: "All brands",
+          chooseModel: "Choose your model",
+          from: "from",
+          otherModels: "Other models",
+          allSeries: "All series",
+          searchPlaceholder: "Search model…",
+          noResults: "No models found",
+        }
       : locale === "uk"
-        ? { allBrands: "Всі бренди", chooseModel: "Оберіть свою модель", from: "від", otherModels: "Інші моделі" }
-        : { allBrands: "Všechny značky", chooseModel: "Vyberte svůj model", from: "od", otherModels: "Ostatní modely" }
+        ? {
+            allBrands: "Всі бренди",
+            chooseModel: "Оберіть свою модель",
+            from: "від",
+            otherModels: "Інші моделі",
+            allSeries: "Усі серії",
+            searchPlaceholder: "Пошук моделі…",
+            noResults: "Моделі не знайдено",
+          }
+        : {
+            allBrands: "Všechny značky",
+            chooseModel: "Vyberte svůj model",
+            from: "od",
+            otherModels: "Ostatní modely",
+            allSeries: "Všechny série",
+            searchPlaceholder: "Hledat model…",
+            noResults: "Žádné modely nenalezeny",
+          }
 
   // Group models by series so the grid isn't a jumble; order series by the
   // position of their earliest model, models within a series by position.
-  const groupsMap = new Map<string, { name: string | null; minPos: number; models: any[] }>()
+  const groupsMap = new Map<string, { name: string | null; slug: string | null; minPos: number; models: any[] }>()
   for (const m of models as any[]) {
     const key = m.series?.id || "__none__"
-    if (!groupsMap.has(key)) groupsMap.set(key, { name: m.series?.name ?? null, minPos: m.position ?? 999, models: [] })
+    if (!groupsMap.has(key))
+      groupsMap.set(key, { name: m.series?.name ?? null, slug: m.series?.slug ?? null, minPos: m.position ?? 999, models: [] })
     const g = groupsMap.get(key)!
     g.models.push(m)
     g.minPos = Math.min(g.minPos, m.position ?? 999)
   }
-  const modelGroups = Array.from(groupsMap.values()).sort((a, b) => a.minPos - b.minPos)
+  const modelGroups: HubGroup[] = Array.from(groupsMap.values())
+    .sort((a, b) => a.minPos - b.minPos)
+    .map((g) => ({ name: g.name, slug: g.slug, models: g.models }))
 
   const breadcrumbItems = [
     { name: "DeviceHelp", url: `${siteUrl}/${locale}` },
@@ -271,54 +297,8 @@ export default async function ServiceBrandHubPage({ params }: Props) {
             </div>
           </div>
 
-          {/* Models, grouped by series for a less-jumbled layout */}
-          <div>
-            <h2 className="mb-8 border-b pb-2 text-2xl font-bold">{labels.chooseModel}</h2>
-            <div className="space-y-10">
-              {modelGroups.map((group, gi) => (
-                <div key={gi}>
-                  <h3 className="mb-4 text-lg font-semibold text-muted-foreground">{group.name || labels.otherModels}</h3>
-                  <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-                    {group.models.map((model: any) => (
-                      <Link
-                        key={model.id}
-                        href={`/${locale}/services/${slug}/${model.slug}`}
-                        className="group flex flex-col items-center rounded-lg bg-white p-4 shadow-sm hover:shadow"
-                      >
-                        <div
-                          className={`relative mb-4 flex h-24 w-24 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg sm:h-28 sm:w-28 ${
-                            model.image_url ? "" : "bg-slate-50 p-2"
-                          }`}
-                        >
-                          {model.image_url ? (
-                            <Image
-                              src={model.image_url}
-                              alt={model.name}
-                              width={112}
-                              height={112}
-                              className="h-full w-full object-contain"
-                              quality={75}
-                              sizes="(max-width: 640px) 96px, 112px"
-                            />
-                          ) : (
-                            <Smartphone className="h-8 w-8 text-slate-400" />
-                          )}
-                        </div>
-                        <h4 className="text-center text-base font-medium group-hover:text-primary sm:text-lg">
-                          {model.name}
-                        </h4>
-                        {model.price != null && model.price > 0 && (
-                          <span className="mt-1 text-sm text-muted-foreground">
-                            {labels.from} {formatCurrency(model.price)}
-                          </span>
-                        )}
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          {/* Models, grouped by series, with quick search + series filter */}
+          <BrandHubModels groups={modelGroups} locale={locale} slug={slug} labels={labels} />
 
           <div className="mt-16">
             <ContactCTABanner locale={locale} />

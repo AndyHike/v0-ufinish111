@@ -55,9 +55,11 @@ export interface ModelData {
 interface Props {
   modelData: ModelData
   locale: string
+  description?: string | null
+  body?: string | null
 }
 
-export default function ModelPageClient({ modelData, locale }: Props) {
+export default function ModelPageClient({ modelData, locale, description, body }: Props) {
   const t = useTranslations("Models")
   const commonT = useTranslations("Common")
   const brandsT = useTranslations("Brands")
@@ -309,10 +311,17 @@ export default function ModelPageClient({ modelData, locale }: Props) {
                 <span className="text-gray-600 font-medium">{currentModelData.brands?.name}</span>
               </div>
               <h1 className="text-2xl font-bold text-gray-900 mb-1">{repairTitle}</h1>
-              <p className="text-gray-600">{t("professionalRepair")}</p>
+              <p className="text-gray-600">{description || t("professionalRepair")}</p>
             </div>
           </div>
         </div>
+
+        {/* Optional longer unique content block (SEO) */}
+        {body && (
+          <div className="mb-8 rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+            <div className="prose prose-slate max-w-none whitespace-pre-line text-gray-600">{body}</div>
+          </div>
+        )}
 
         {/* Services Grid */}
         <div>

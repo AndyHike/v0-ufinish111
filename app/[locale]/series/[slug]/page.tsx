@@ -12,6 +12,7 @@ import SeriesPageClient from "./series-page-client"
 import { siteUrl } from "@/lib/site-config"
 import { PrevNextNav } from "@/components/prev-next-nav"
 import { BrandSeoSections } from "@/components/brand-seo-sections"
+import { resolveCatalogField, type CatalogDescriptionRow } from "@/lib/catalog/catalog-text"
 
 // ISR Configuration
 export const revalidate = 3600 // Regenerate every 1 hour
@@ -160,6 +161,65 @@ export default async function SeriesPage({ params }: Props) {
     models: models || [],
   }
 
+  // Services available for this line, with the cheapest price across its models.
+  // Powers the "service cards" grid + deep-links into the brand×service hub.
+  const brandObj = Array.isArray(series.brands) ? (series.brands as any[])[0] : (series.brands as any)
+  const brandSlug = brandObj?.slug ? String(brandObj.slug).toLowerCase() : null
+
+  const modelIds = (models || []).map((m: any) => m.id)
+  let seriesServices: { id: string; slug: string; name: string; minPrice: number | null }[] = []
+  if (modelIds.length > 0) {
+    const { data: msRows } = await supabase
+      .from("model_services")
+      .select("price, services(id, slug, position, services_translations(name, locale))")
+      .in("model_id", modelIds)
+
+    const svcMap = new Map<string, { id: string; slug: string; name: string; position: number; minPrice: number | null }>()
+    for (const row of (msRows || []) as any[]) {
+      const svc = Array.isArray(row.services) ? row.services[0] : row.services
+      if (!svc?.id || !svc?.slug) continue
+      const tr =
+        (svc.services_translations as any[])?.find((t: any) => t.locale === locale) ?? svc.services_translations?.[0]
+      const entry =
+        svcMap.get(svc.id) ?? {
+          id: svc.id,
+          slug: svc.slug,
+          name: tr?.name ?? svc.slug,
+          position: svc.position ?? 999,
+          minPrice: null,
+        }
+      if (row.price != null && row.price > 0) {
+        entry.minPrice = entry.minPrice == null ? row.price : Math.min(entry.minPrice, row.price)
+      }
+      svcMap.set(svc.id, entry)
+    }
+    seriesServices = Array.from(svcMap.values())
+      .sort((a, b) => a.position - b.position)
+      .map(({ id, slug, name, minPrice }) => ({ id, slug, name, minPrice }))
+  }
+
+  // Unique page description (series-scope, falling back to brand-scope, then the
+  // generic templated line). Table is empty until the owner adds content → no regression.
+  const descBrandId = brandObj?.id ?? null
+  const descScopeIds = [series.id, descBrandId].filter(Boolean) as string[]
+  let seriesDescription: string | null = null
+  let seriesBody: string | null = null
+  if (descScopeIds.length > 0) {
+    const { data: descRows } = await supabase
+      .from("catalog_descriptions")
+      .select("scope_type, scope_id, locale, description, body")
+      .in("scope_type", ["series", "brand"])
+      .in("scope_id", descScopeIds)
+
+    const rows = (descRows || []) as CatalogDescriptionRow[]
+    const order = [
+      { type: "series" as const, id: series.id },
+      { type: "brand" as const, id: descBrandId },
+    ]
+    seriesDescription = resolveCatalogField("description", locale, rows, order)
+    seriesBody = resolveCatalogField("body", locale, rows, order)
+  }
+
   // Fetch prev/next series in same brand for navigation
   const brandId = Array.isArray(series.brands) ? (series.brands as any[])[0]?.id : (series.brands as any)?.id
   const { data: siblingSeries } = brandId
@@ -197,7 +257,15 @@ export default async function SeriesPage({ params }: Props) {
   return (
     <div className="flex flex-col min-h-screen">
       <div className="order-1">
-        <SeriesPageClient initialData={initialData} locale={locale} slug={slug} />
+        <SeriesPageClient
+          initialData={initialData}
+          locale={locale}
+          slug={slug}
+          services={seriesServices}
+          brandSlug={brandSlug}
+          description={seriesDescription}
+          body={seriesBody}
+        />
       </div>
 
       <div className="order-2 w-full">

@@ -10,6 +10,7 @@ import { formatBrandModelName } from "@/lib/seo/page-utils"
 import { generateBreadcrumbListSchema } from "@/lib/structured-data"
 import { PrevNextNav } from "@/components/prev-next-nav"
 import { RelatedArticlesList } from "@/components/articles/related-articles-list"
+import { resolveCatalogField, type CatalogDescriptionRow } from "@/lib/catalog/catalog-text"
 
 // ISR Configuration
 export const revalidate = 3600 // Regenerate every 1 hour
@@ -297,6 +298,28 @@ export default async function ModelPage({ params }: Props) {
       services: filteredServices as any,
     }
 
+    // Unique page description (model-scope → series → brand cascade, language-primary).
+    // Empty table until the owner adds content → falls back to the generic subtitle.
+    const descScopeIds = [model.id, seriesObj?.id, brandObj?.id].filter(Boolean) as string[]
+    let modelDescription: string | null = null
+    let modelBody: string | null = null
+    if (descScopeIds.length > 0) {
+      const { data: descRows } = await supabase
+        .from("catalog_descriptions")
+        .select("scope_type, scope_id, locale, description, body")
+        .in("scope_type", ["model", "series", "brand"])
+        .in("scope_id", descScopeIds)
+
+      const rows = (descRows || []) as CatalogDescriptionRow[]
+      const order = [
+        { type: "model" as const, id: model.id },
+        { type: "series" as const, id: seriesObj?.id },
+        { type: "brand" as const, id: brandObj?.id },
+      ]
+      modelDescription = resolveCatalogField("description", locale, rows, order)
+      modelBody = resolveCatalogField("body", locale, rows, order)
+    }
+
     // Build a real AggregateOffer from this model's service prices (varies per model → unique signal)
     const servicePrices = (filteredServices as any[])
       .map((s) => s?.price)
@@ -381,7 +404,7 @@ export default async function ModelPage({ params }: Props) {
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
         />
-        <ModelPageClient modelData={modelData} locale={locale} />
+        <ModelPageClient modelData={modelData} locale={locale} description={modelDescription} body={modelBody} />
         <div className="container mx-auto px-4 py-8">
           <RelatedArticlesList locale={locale} />
           <PrevNextNav

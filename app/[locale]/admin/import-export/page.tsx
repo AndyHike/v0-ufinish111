@@ -1,6 +1,8 @@
 import type { Metadata } from "next"
 import { ImportExport } from "@/components/admin/import-export"
 import { ScopeTranslationsPanel } from "@/components/admin/scope-translations-panel"
+import { CatalogDescriptionsPanel } from "@/components/admin/catalog-descriptions-panel"
+import { ScopeFaqsPanel } from "@/components/admin/scope-faqs-panel"
 
 export const metadata: Metadata = {
   title: "Імпорт/Експорт",
@@ -15,6 +17,8 @@ export default function ImportExportPage() {
         <p className="text-muted-foreground mt-2">Масовий імпорт та експорт даних: бренди, серії, моделі, послуги</p>
       </div>
       <ScopeTranslationsPanel />
+      <CatalogDescriptionsPanel />
+      <ScopeFaqsPanel />
       <ImportExport />
     </div>
   )

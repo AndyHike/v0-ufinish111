@@ -11,6 +11,7 @@ import { formatBrandModelName } from "@/lib/seo/page-utils"
 import { generateBreadcrumbListSchema } from "@/lib/structured-data"
 import { PrevNextNav } from "@/components/prev-next-nav"
 import { resolveScopedField, type ScopeRow, type BaseTranslation } from "@/lib/catalog/scope-text"
+import { resolveScopedFaqs, type ScopeFaqEntry } from "@/lib/catalog/scope-faqs"
 
 // ISR Configuration
 export const revalidate = 3600 // Regenerate every 1 hour
@@ -311,18 +312,6 @@ export default async function ServicePageWithModel({ params }: Props) {
       .eq("service_id", service.id)
       .order("position")
 
-    const faqsWithTranslations =
-      faqs
-        ?.map((faq: any) => ({
-          id: faq.id,
-          position: faq.position,
-          translation: {
-            question: faq.service_faq_translations?.find((t: any) => t.locale === locale)?.question || "",
-            answer: faq.service_faq_translations?.find((t: any) => t.locale === locale)?.answer || "",
-          },
-        }))
-        .filter((faq: any) => faq.translation.question && faq.translation.answer) || []
-
     // Get source model if specified
     let sourceModel = null
     let modelServicePrice = null
@@ -456,6 +445,29 @@ export default async function ServicePageWithModel({ params }: Props) {
     const resolvedIncluded = resolveScopedField("what_included", service.id, locale, scopeRows, baseTranslations, scopeIds)
     const resolvedBenefits = resolveScopedField("benefits", service.id, locale, scopeRows, baseTranslations, scopeIds)
 
+    // Scope-aware FAQ cascade: the most specific scope that has FAQs wins as a
+    // whole list — model FAQs > series FAQs > base service_faqs. See lib/catalog/scope-faqs.ts.
+    const modelFaqEntries: ScopeFaqEntry[] = []
+    const seriesFaqEntries: ScopeFaqEntry[] = []
+    const faqScopeIds = [scopeIds.modelId, scopeIds.seriesId].filter(Boolean) as string[]
+    if (faqScopeIds.length > 0) {
+      const { data: scopeFaqRows } = await supabase
+        .from("service_scope_faqs")
+        .select("scope_type, scope_id, position, service_scope_faq_translations(locale, question, answer)")
+        .eq("service_id", service.id)
+        .in("scope_id", faqScopeIds)
+      for (const f of (scopeFaqRows || []) as any[]) {
+        const entry: ScopeFaqEntry = { position: f.position, translations: f.service_scope_faq_translations || [] }
+        if (f.scope_type === "model" && f.scope_id === scopeIds.modelId) modelFaqEntries.push(entry)
+        else if (f.scope_type === "series" && f.scope_id === scopeIds.seriesId) seriesFaqEntries.push(entry)
+      }
+    }
+    const baseFaqEntries: ScopeFaqEntry[] = (faqs || []).map((f: any) => ({
+      position: f.position,
+      translations: f.service_faq_translations || [],
+    }))
+    const resolvedFaqs = resolveScopedFaqs(locale, [modelFaqEntries, seriesFaqEntries, baseFaqEntries])
+
     const serviceData = {
       id: service.id,
       position: service.position || 0,
@@ -475,12 +487,12 @@ export default async function ServicePageWithModel({ params }: Props) {
         what_included: resolvedIncluded || "",
         benefits: resolvedBenefits || null,
       },
-      faqs: faqsWithTranslations.map((faq: any) => ({
-        id: faq.id || "",
-        position: faq.position || 0,
+      faqs: resolvedFaqs.map((faq, i) => ({
+        id: `faq-${i}`,
+        position: i,
         translation: {
-          question: faq.translation?.question || "",
-          answer: faq.translation?.answer || "",
+          question: faq.question,
+          answer: faq.answer,
         },
       })),
       sourceModel: sourceModel ? {
