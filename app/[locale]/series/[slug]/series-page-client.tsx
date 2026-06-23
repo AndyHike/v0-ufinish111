@@ -150,7 +150,7 @@ export default function SeriesPageClient({
               <Wrench className="h-3.5 w-3.5" />
               {copy.services}
             </h2>
-            <div className="flex flex-wrap gap-2">
+            <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0 [&::-webkit-scrollbar]:hidden">
               {services.map((svc) => {
                 const href = brandSlug
                   ? `/${locale}/services/${svc.slug}/brand/${brandSlug}#series-${series.slug}`
@@ -159,7 +159,7 @@ export default function SeriesPageClient({
                   <Link
                     key={svc.id}
                     href={href}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm text-gray-700 transition-colors hover:border-blue-300 hover:text-blue-600"
+                    className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm text-gray-700 transition-colors hover:border-blue-300 hover:text-blue-600"
                   >
                     <span>{svc.name}</span>
                     {svc.minPrice != null && (

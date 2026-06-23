@@ -49,7 +49,11 @@ export function BrandHubModels({
     const match = window.location.hash.match(/^#series-(.+)$/)
     if (!match) return
     const target = decodeURIComponent(match[1])
-    if (groups.some((g) => (g.slug || "") === target)) setActiveSeries(target)
+    if (!groups.some((g) => (g.slug || "") === target)) return
+    setActiveSeries(target)
+    // Undo any browser anchor-jump (older builds set a matching element id) so
+    // the user lands at the top of the hub — hero + filtered list — not mid-page.
+    window.scrollTo(0, 0)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -114,7 +118,11 @@ export function BrandHubModels({
       {filteredGroups.length > 0 ? (
         <div className="space-y-10">
           {filteredGroups.map((group, gi) => (
-            <div key={gi} id={group.slug ? `series-${group.slug}` : undefined}>
+            // No element `id` here on purpose: the series-page links carry a
+            // `#series-<slug>` hash that we read in JS to preselect the filter.
+            // If we also set a matching id, the browser would jump-scroll to it
+            // on load (past the hero). Reading the hash in the effect is enough.
+            <div key={gi}>
               {/* Show the series sub-header only in the "all" view; redundant when filtered to one. */}
               {activeSeries === null && (
                 <h3 className="mb-4 text-lg font-semibold text-muted-foreground">
