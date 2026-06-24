@@ -1,3 +1,4 @@
+import { fetchAllRows } from "@/lib/admin/fetch-all-rows"
 import type { SitemapEntry } from "@/lib/seo/sitemap-xml"
 import { mainSiteUrl } from "@/lib/site-config"
 import { createServerClient } from "@/utils/supabase/server"
@@ -7,7 +8,7 @@ const defaultLocale = "cs"
 
 // Bump this whenever the service / service+model page templates or structured data change.
 // It lifts the stale `created_at` lastmod of catalog pages so search engines re-crawl them.
-const CONTENT_REVISION = new Date("2026-06-16")
+const CONTENT_REVISION = new Date("2026-06-24")
 
 function mostRecentDate(...dates: Array<Date | null | undefined>): Date {
   const valid = dates.filter((d): d is Date => d instanceof Date && !Number.isNaN(d.getTime()))
@@ -109,13 +110,24 @@ export async function getMainSitemapEntries(): Promise<SitemapEntry[]> {
       })
 
       const serviceIds = services.map((service) => service.id)
-      const { data: allModelServices, error: modelServicesError } = await supabase
-        .from("model_services")
-        .select("service_id, models(slug, brands(slug)), services(slug, created_at)")
-        .in("service_id", serviceIds)
-        .not("models.slug", "is", null)
+      // Page through model_services — the table has thousands of rows and an unbounded
+      // .select() truncates at ~1000, dropping most service+model pages (and the hub
+      // pages derived from them) out of the sitemap.
+      const allModelServices = await fetchAllRows<any>((from, to) =>
+        supabase
+          .from("model_services")
+          .select("service_id, models(slug, brands(slug)), services(slug, created_at)")
+          .in("service_id", serviceIds)
+          .not("models.slug", "is", null)
+          .order("model_id")
+          .order("service_id")
+          .range(from, to),
+      ).catch((e: unknown) => {
+        console.warn("[SITEMAP] Error fetching model services:", e instanceof Error ? e.message : String(e))
+        return [] as any[]
+      })
 
-      if (!modelServicesError && allModelServices) {
+      if (allModelServices.length) {
         console.log(`[SITEMAP] Found ${allModelServices.length} service+model combinations`)
         // Unique (service slug | lowercased brand slug) pairs -> brand×service hub pages.
         const brandHubPairs = new Set<string>()
@@ -144,8 +156,6 @@ export async function getMainSitemapEntries(): Promise<SitemapEntry[]> {
           addMultilingualEntries(`/services/${serviceSlug}/brand/${brandSlug}`, CONTENT_REVISION)
         })
         console.log(`[SITEMAP] Added ${brandHubPairs.size} brand×service hub pages`)
-      } else if (modelServicesError) {
-        console.warn("[SITEMAP] Error fetching model services:", modelServicesError.message)
       }
     } else if (servicesError) {
       console.warn("[SITEMAP] Error fetching services:", servicesError.message)
