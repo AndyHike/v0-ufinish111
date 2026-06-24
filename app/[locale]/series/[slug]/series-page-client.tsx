@@ -26,7 +26,9 @@ type Props = {
   slug: string
   services?: SeriesService[]
   brandSlug?: string | null
+  heading?: string | null
   description?: string | null
+  introFallback?: string | null
   body?: string | null
 }
 
@@ -57,7 +59,9 @@ export default function SeriesPageClient({
   slug,
   services = [],
   brandSlug,
+  heading,
   description,
+  introFallback,
   body,
 }: Props) {
   const t = useTranslations("Series")
@@ -130,10 +134,12 @@ export default function SeriesPageClient({
             )}
             <div>
               <h1 className="text-center text-3xl font-bold tracking-tight md:text-left md:text-4xl">
-                {series.name}
+                {heading || series.name}
               </h1>
               <p className="mt-3 max-w-[900px] text-center text-muted-foreground md:text-left">
-                {description || t("seriesPageDescription", { series: series.name, brand: series.brands?.name })}
+                {description ||
+                  introFallback ||
+                  t("seriesPageDescription", { series: series.name, brand: series.brands?.name })}
               </p>
             </div>
           </div>
@@ -155,8 +161,10 @@ export default function SeriesPageClient({
             </h2>
             <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0 [&::-webkit-scrollbar]:hidden">
               {services.map((svc) => {
-                const href = brandSlug
-                  ? `/${locale}/services/${svc.slug}/brand/${brandSlug}#series-${series.slug}`
+                // Deep-link to the dedicated lineup×service hub (a real indexed
+                // page, e.g. "Výměna baterie iPhone Praha 6"), not the brand hub.
+                const href = series.slug
+                  ? `/${locale}/services/${svc.slug}/series/${series.slug}`
                   : `/${locale}/services/${svc.slug}`
                 return (
                   <Link

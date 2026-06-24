@@ -116,7 +116,7 @@ export async function getMainSitemapEntries(): Promise<SitemapEntry[]> {
       const allModelServices = await fetchAllRows<any>((from, to) =>
         supabase
           .from("model_services")
-          .select("service_id, models(slug, brands(slug)), services(slug, created_at)")
+          .select("service_id, models(slug, brands(slug), series(slug)), services(slug, created_at)")
           .in("service_id", serviceIds)
           .not("models.slug", "is", null)
           .order("model_id")
@@ -131,10 +131,17 @@ export async function getMainSitemapEntries(): Promise<SitemapEntry[]> {
         console.log(`[SITEMAP] Found ${allModelServices.length} service+model combinations`)
         // Unique (service slug | lowercased brand slug) pairs -> brand×service hub pages.
         const brandHubPairs = new Set<string>()
+        // Unique (service slug | lowercased series slug) pairs -> lineup×service hub pages
+        // (e.g. "Výměna baterie iPhone Praha 6") — the high-value Apple/Galaxy queries.
+        const seriesHubPairs = new Set<string>()
 
         allModelServices.forEach((modelService) => {
           const model = modelService.models as unknown as
-            | { slug: string; brands?: { slug: string } | { slug: string }[] | null }
+            | {
+                slug: string
+                brands?: { slug: string } | { slug: string }[] | null
+                series?: { slug: string } | { slug: string }[] | null
+              }
             | null
           const service = modelService.services as unknown as { slug: string; created_at: string } | null
 
@@ -148,6 +155,11 @@ export async function getMainSitemapEntries(): Promise<SitemapEntry[]> {
             if (brand?.slug) {
               brandHubPairs.add(`${service.slug}|${brand.slug.toLowerCase()}`)
             }
+
+            const series = Array.isArray(model.series) ? model.series[0] : model.series
+            if (series?.slug) {
+              seriesHubPairs.add(`${service.slug}|${series.slug.toLowerCase()}`)
+            }
           }
         })
 
@@ -156,6 +168,12 @@ export async function getMainSitemapEntries(): Promise<SitemapEntry[]> {
           addMultilingualEntries(`/services/${serviceSlug}/brand/${brandSlug}`, CONTENT_REVISION)
         })
         console.log(`[SITEMAP] Added ${brandHubPairs.size} brand×service hub pages`)
+
+        seriesHubPairs.forEach((pair) => {
+          const [serviceSlug, seriesSlug] = pair.split("|")
+          addMultilingualEntries(`/services/${serviceSlug}/series/${seriesSlug}`, CONTENT_REVISION)
+        })
+        console.log(`[SITEMAP] Added ${seriesHubPairs.size} lineup×service hub pages`)
       }
     } else if (servicesError) {
       console.warn("[SITEMAP] Error fetching services:", servicesError.message)

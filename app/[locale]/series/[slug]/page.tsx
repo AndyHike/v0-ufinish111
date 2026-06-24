@@ -12,6 +12,7 @@ import { siteUrl } from "@/lib/site-config"
 import { PrevNextNav } from "@/components/prev-next-nav"
 import { BrandSeoSections } from "@/components/brand-seo-sections"
 import { resolveCatalogField, type CatalogDescriptionRow } from "@/lib/catalog/catalog-text"
+import { lineupLabel } from "@/lib/seo/page-utils"
 
 // ISR Configuration
 export const revalidate = 3600 // Regenerate every 1 hour
@@ -87,16 +88,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     }
   }
 
+  // Lineup name as people actually search it: "iPhone" / "iPad" (no "Apple"),
+  // but "Samsung Galaxy S" / "Xiaomi Redmi Note" for the others.
+  const lineup = lineupLabel(series.name, series.brands?.name)
+
   const titlePatterns = {
-    cs: `Oprava zařízení ${series.name} ${series.brands?.name} | DeviceHelp`,
-    en: `Repair of ${series.name} ${series.brands?.name} devices | DeviceHelp`,
-    uk: `Ремонт пристроїв ${series.name} ${series.brands?.name} | DeviceHelp`,
+    cs: `Oprava a servis ${lineup} Praha 6 | DeviceHelp`,
+    en: `${lineup} Repair & Service Prague 6 | DeviceHelp`,
+    uk: `Ремонт і сервіс ${lineup} Прага 6 | DeviceHelp`,
   }
 
   const descriptionPatterns = {
-    cs: `Profesionální oprava všech modelů ${series.name} od ${series.brands?.name}. Rychlé a kvalitní služby s garancí.`,
-    en: `Professional repair of all ${series.name} models from ${series.brands?.name}. Fast and quality services with warranty.`,
-    uk: `Професійний ремонт усіх моделей ${series.name} від ${series.brands?.name}. Швидкі та якісні послуги з гарантією.`,
+    cs: `Profesionální oprava a servis ${lineup} v Praze 6 na Břevnově. Výměna displeje, baterie a další opravy všech modelů ${lineup}. Záruka 6 měsíců. ☎ +420 775 848 259`,
+    en: `Professional ${lineup} repair and service in Prague 6 Břevnov. Screen, battery and more repairs for all ${lineup} models. 6-month warranty. ☎ +420 775 848 259`,
+    uk: `Професійний ремонт і сервіс ${lineup} у Празі 6 Бржевнов. Заміна екрана, батареї та інші ремонти всіх моделей ${lineup}. Гарантія 6 місяців. ☎ +420 775 848 259`,
   }
 
   return {
@@ -253,6 +258,22 @@ export default async function SeriesPage({ params }: Props) {
     }
   })
 
+  // Query-optimized H1 + intro fallback so the page targets "oprava/servis iPhone"
+  // even before the owner adds unique catalog_descriptions content.
+  const lineup = lineupLabel(series.name, brandObj?.name)
+  const heading =
+    locale === "en"
+      ? `${lineup} Repair & Service Prague 6`
+      : locale === "uk"
+        ? `Ремонт і сервіс ${lineup} Прага 6`
+        : `Oprava a servis ${lineup} Praha 6`
+  const introFallback =
+    locale === "en"
+      ? `Professional ${lineup} repair and service in Prague 6 Břevnov — screen and battery replacement, connector and camera repair for all ${lineup} models. 6-month warranty.`
+      : locale === "uk"
+        ? `Професійний ремонт і сервіс ${lineup} у Празі 6 Бржевнов — заміна екрана та батареї, ремонт роз'єму й камери для всіх моделей ${lineup}. Гарантія 6 місяців.`
+        : `Profesionální oprava a servis ${lineup} v Praze 6 na Břevnově — výměna displeje a baterie, oprava konektoru i fotoaparátu pro všechny modely ${lineup}. Záruka 6 měsíců.`
+
   return (
     <div className="flex flex-col min-h-screen">
       <div className="order-1">
@@ -262,7 +283,9 @@ export default async function SeriesPage({ params }: Props) {
           slug={slug}
           services={seriesServices}
           brandSlug={brandSlug}
+          heading={heading}
           description={seriesDescription}
+          introFallback={introFallback}
           body={seriesBody}
         />
       </div>

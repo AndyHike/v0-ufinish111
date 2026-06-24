@@ -38,16 +38,19 @@ export async function generateMetadata({
 
   const seoData = {
     cs: {
-      title: "DeviceHelp - Profesionální oprava mobilních telefonů v Praze",
-      description: "Rychlá a kvalitní oprava mobilních telefonů v Praze. Záruka na všechny opravy.",
+      title: "Oprava a servis mobilů a telefonů Praha 6 | DeviceHelp",
+      description:
+        "Profesionální oprava a servis mobilních telefonů a smartphonů v Praze 6 na Břevnově – iPhone, Samsung, Xiaomi. Výměna displeje a baterie. Záruka 6 měsíců. ☎ +420 775 848 259",
     },
     en: {
-      title: "DeviceHelp - Professional Mobile Phone Repair in Prague",
-      description: "Fast and quality mobile phone repair in Prague. Warranty on all repairs.",
+      title: "Mobile Phone Repair & Service Prague 6 | DeviceHelp",
+      description:
+        "Professional mobile phone & smartphone repair and service in Prague 6 Břevnov – iPhone, Samsung, Xiaomi. Screen & battery replacement. 6-month warranty. ☎ +420 775 848 259",
     },
     uk: {
-      title: "DeviceHelp - Професійний ремонт мобільних телефонів у Празі",
-      description: "Швидкий та якісний ремонт мобільних телефонів у Празі. Гарантія на всі ремонти.",
+      title: "Ремонт і сервіс мобільних телефонів Прага 6 | DeviceHelp",
+      description:
+        "Професійний ремонт і сервіс мобільних телефонів та смартфонів у Празі 6 Бржевнов – iPhone, Samsung, Xiaomi. Заміна екрана й батареї. Гарантія 6 місяців. ☎ +420 775 848 259",
     },
   }
 

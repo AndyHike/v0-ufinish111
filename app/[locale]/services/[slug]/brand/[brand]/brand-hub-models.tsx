@@ -122,8 +122,9 @@ export function BrandHubModels({
             // If we also set a matching id, the browser would jump-scroll to it
             // on load (past the hero). Reading the hash in the effect is enough.
             <div key={gi}>
-              {/* Show the series sub-header only in the "all" view; redundant when filtered to one. */}
-              {activeSeries === null && (
+              {/* Show the series sub-header only in the multi-series "all" view;
+                  redundant when filtered to one, or on a single-series hub. */}
+              {activeSeries === null && groups.length > 1 && (
                 <h3 className="mb-4 text-lg font-semibold text-muted-foreground">
                   {group.name || labels.otherModels}
                 </h3>

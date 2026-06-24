@@ -434,6 +434,24 @@ export default function ModelPageClient({ modelData, locale, description, body }
             </div>
           )}
         </div>
+
+        {/* Up-link to the series hub: pass link equity from the ~2400 model
+            pages up to their lineup hub (model → series → service hubs → home). */}
+        {currentModelData.series?.slug && (
+          <div className="mt-10 text-center">
+            <Link
+              href={`/${locale}/series/${currentModelData.series.slug}`}
+              className="inline-flex items-center gap-1.5 text-blue-600 font-medium hover:underline"
+            >
+              {locale === "en"
+                ? `All ${currentModelData.series.name} models & repairs`
+                : locale === "uk"
+                  ? `Усі моделі та ремонт лінійки ${currentModelData.series.name}`
+                  : `Všechny modely a opravy řady ${currentModelData.series.name}`}
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   )

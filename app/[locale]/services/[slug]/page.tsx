@@ -140,18 +140,18 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
     metadata = {
       cs: {
         title: `${serviceName} Praha 6 Břevnov | Záruka 6 měsíců | DeviceHelp`,
-        description: `${serviceName} mobilních telefonů v Praze 6 na Břevnově. Záruka 6 měsíců, oprava 2-3 hodiny. iPhone, Samsung, Xiaomi. Bělohorská 209/133. ☎ +420 775 848 259`,
-        keywords: `${serviceName} Praha 6, ${serviceName} Břevnov, ${serviceName} mobil, oprava telefonu Bělohorská, servis Praha6`,
+        description: `${serviceName} – oprava a servis mobilních telefonů a smartphonů v Praze 6 na Břevnově. iPhone, Samsung, Xiaomi. Záruka 6 měsíců, oprava 2-3 hodiny. Bělohorská 209/133. ☎ +420 775 848 259`,
+        keywords: `${serviceName} Praha 6, ${serviceName} Břevnov, ${serviceName} mobil, oprava a servis telefonu Bělohorská, servis mobilu Praha 6`,
       },
       en: {
         title: `${serviceName} Prague 6 Břevnov | 6 Month Warranty | DeviceHelp`,
-        description: `${serviceName} for mobile phones in Prague 6 Břevnov. 6 month warranty, 2-3 hours service. iPhone, Samsung, Xiaomi. Bělohorská 209/133. ☎ +420 775 848 259`,
-        keywords: `${serviceName} Prague 6, ${serviceName} Břevnov, mobile ${serviceName}, phone repair Bělohorská`,
+        description: `${serviceName} – mobile phone & smartphone repair and service in Prague 6 Břevnov. iPhone, Samsung, Xiaomi. 6 month warranty, 2-3 hours service. Bělohorská 209/133. ☎ +420 775 848 259`,
+        keywords: `${serviceName} Prague 6, ${serviceName} Břevnov, mobile ${serviceName}, phone repair & service Bělohorská`,
       },
       uk: {
         title: `${serviceName} Прага 6 Бржевнов | Гарантія 6 місяців | DeviceHelp`,
-        description: `${serviceName} мобільних телефонів в Празі 6 Бржевнов. Гарантія 6 місяців, ремонт 2-3 години. iPhone, Samsung, Xiaomi. Bělohorská 209/133. ☎ +420 775 848 259`,
-        keywords: `${serviceName} Прага 6, ${serviceName} Бржевнов, ${serviceName} мобільний, ремонт телефону Белогорська`,
+        description: `${serviceName} – ремонт і сервіс мобільних телефонів та смартфонів у Празі 6 Бржевнов. iPhone, Samsung, Xiaomi. Гарантія 6 місяців, ремонт 2-3 години. Bělohorská 209/133. ☎ +420 775 848 259`,
+        keywords: `${serviceName} Прага 6, ${serviceName} Бржевнов, ${serviceName} мобільний, ремонт і сервіс телефону Белогорська`,
       },
     }
   }

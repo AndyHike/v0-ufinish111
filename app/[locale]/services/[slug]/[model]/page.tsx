@@ -639,8 +639,31 @@ export default async function ServicePageWithModel({ params }: Props) {
         />
         <ServicePageClient serviceData={serviceData} locale={locale} />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {sourceModel?.brands?.slug && (
-            <div className="mt-8 text-center">
+          {/* Up-links: pass equity to the lineup hub, the brand×service hub and
+              the generic service hub (money page → series → hubs → service → home). */}
+          <div className="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-2 text-center">
+            {sourceModel?.series?.slug && (
+              <a
+                href={`/${locale}/services/${slug}/series/${String(sourceModel.series.slug).toLowerCase()}`}
+                className="font-medium text-primary hover:underline"
+              >
+                {locale === "en"
+                  ? `${translation.name} — all ${sourceModel.series.name} models`
+                  : locale === "uk"
+                    ? `${translation.name} — усі моделі ${sourceModel.series.name}`
+                    : `${translation.name} — všechny modely ${sourceModel.series.name}`}
+              </a>
+            )}
+            {sourceModel?.series?.slug && (
+              <a href={`/${locale}/series/${sourceModel.series.slug}`} className="text-primary hover:underline">
+                {locale === "en"
+                  ? `All ${sourceModel.series.name} models`
+                  : locale === "uk"
+                    ? `Усі моделі ${sourceModel.series.name}`
+                    : `Všechny modely ${sourceModel.series.name}`}
+              </a>
+            )}
+            {sourceModel?.brands?.slug && (
               <a
                 href={`/${locale}/services/${slug}/brand/${String(sourceModel.brands.slug).toLowerCase()}`}
                 className="text-primary hover:underline"
@@ -651,8 +674,15 @@ export default async function ServicePageWithModel({ params }: Props) {
                     ? `Усі моделі ${sourceModel.brands.name} — ${translation.name}`
                     : `Všechny modely ${sourceModel.brands.name} — ${translation.name}`}
               </a>
-            </div>
-          )}
+            )}
+            <a href={`/${locale}/services/${slug}`} className="text-primary hover:underline">
+              {locale === "en"
+                ? `${translation.name} — all devices`
+                : locale === "uk"
+                  ? `${translation.name} — усі пристрої`
+                  : `${translation.name} — všechna zařízení`}
+            </a>
+          </div>
           <RelatedArticlesList locale={locale} />
           <PrevNextNav
             prev={prevServiceNav ? { name: prevServiceNav.name, href: `/${locale}/services/${prevServiceNav.slug}/${modelSlug}` } : null}

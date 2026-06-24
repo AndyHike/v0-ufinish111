@@ -84,18 +84,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // Language-specific optimized metadata
   const metadata = {
     cs: {
-      title: `Oprava ${fullModelName} Praha 6 | DeviceHelp`,
-      description: `Profesionální oprava ${fullModelName} v Praze 6 na Břevnově. Výměna displeje, baterie, kamery. Záruka 6 měsíců, oprava 2-3 hodiny. Bělohorská 209/133. ☎ +420 775 848 259`,
+      title: `Oprava a servis ${fullModelName} Praha 6 | DeviceHelp`,
+      description: `Profesionální oprava a servis ${fullModelName} v Praze 6 na Břevnově. Výměna displeje, baterie, kamery. Záruka 6 měsíců, oprava 2-3 hodiny. Bělohorská 209/133. ☎ +420 775 848 259`,
       keywords: `oprava ${fullModelName} Praha 6, servis ${brandName} Břevnov, výměna displeje ${modelName}, oprava telefonu Bělohorská, servis mobilu Praha6`,
     },
     en: {
       title: `${fullModelName} Repair Prague 6 | DeviceHelp`,
-      description: `Professional ${fullModelName} repair in Prague 6 Břevnov. Screen replacement, battery, camera repair. 6 month warranty, 2-3 hours service. Bělohorská 209/133. ☎ +420 775 848 259`,
+      description: `Professional ${fullModelName} repair and service in Prague 6 Břevnov. Screen replacement, battery, camera repair. 6 month warranty, 2-3 hours service. Bělohorská 209/133. ☎ +420 775 848 259`,
       keywords: `${fullModelName} repair Prague 6, mobile service Břevnov, screen replacement ${modelName}, phone repair Bělohorská`,
     },
     uk: {
-      title: `Ремонт ${fullModelName} | Прага 6 | Гарантія 6 місяців`,
-      description: `Професійний ремонт ${fullModelName} в Празі 6 Бржевнов. Заміна екрану, батареї, камери. Гарантія 6 місяців, ремонт 2-3 години. Bělohorská 209/133. ☎ +420 775 848 259`,
+      title: `Ремонт і сервіс ${fullModelName} | Прага 6 | Гарантія 6 місяців`,
+      description: `Професійний ремонт і сервіс ${fullModelName} в Празі 6 Бржевнов. Заміна екрану, батареї, камери. Гарантія 6 місяців, ремонт 2-3 години. Bělohorská 209/133. ☎ +420 775 848 259`,
       keywords: `ремонт ${fullModelName} Прага 6, сервіс мобільних Бржевнов, заміна екрану ${modelName}, ремонт телефону Белогорська`,
     },
   }
