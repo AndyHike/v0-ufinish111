@@ -1,6 +1,5 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
-import Image from "next/image"
 import { createClient } from "@/utils/supabase/client"
 import { Breadcrumb } from "@/components/breadcrumb"
 import { ContactCTABanner } from "@/components/contact-cta-banner"
@@ -272,14 +271,16 @@ export default async function ServiceBrandHubPage({ params }: Props) {
             <div className="flex flex-col items-center gap-6 md:flex-row">
               {brand.logo_url && (
                 <div className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-lg bg-slate-50 p-3">
-                  <Image
+                  {/* Already a small CDN webp — load directly, skip /_next/image. */}
+                  <img
                     src={brand.logo_url}
                     alt={brand.name}
                     width={96}
                     height={96}
                     className="h-full w-full object-contain"
-                    quality={80}
-                    priority
+                    loading="eager"
+                    fetchPriority="high"
+                    decoding="async"
                   />
                 </div>
               )}

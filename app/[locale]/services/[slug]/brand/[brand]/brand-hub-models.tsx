@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
-import Image from "next/image"
 import { Search, Smartphone } from "lucide-react"
 import { formatCurrency } from "@/lib/format-currency"
 
@@ -142,14 +141,17 @@ export function BrandHubModels({
                       }`}
                     >
                       {model.image_url ? (
-                        <Image
+                        // Source images are already small CDN webp; skip the
+                        // /_next/image optimizer and load directly (instant, no
+                        // re-encode) — matches the service/model-detail pages.
+                        <img
                           src={model.image_url}
                           alt={model.name}
                           width={112}
                           height={112}
                           className="h-full w-full object-contain"
-                          quality={75}
-                          sizes="(max-width: 640px) 96px, 112px"
+                          loading="lazy"
+                          decoding="async"
                         />
                       ) : (
                         <Smartphone className="h-8 w-8 text-slate-400" />

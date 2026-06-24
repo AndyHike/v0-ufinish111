@@ -1,7 +1,6 @@
 "use client"
 
 import Link from "next/link"
-import Image from "next/image"
 import { useTranslations } from "next-intl"
 import { Search, Smartphone, Wrench } from "lucide-react"
 import { Breadcrumb } from "@/components/breadcrumb"
@@ -114,14 +113,18 @@ export default function SeriesPageClient({
           <div className="flex flex-col items-center gap-6 md:flex-row">
             {series.brands?.logo_url && (
               <div className="relative h-24 w-24 overflow-hidden rounded-lg bg-slate-50 p-3 flex-shrink-0">
-                <Image
+                {/* Source images are already small CDN webp; the /_next/image
+                    optimizer is pure overhead (and re-encodes to slow AVIF), so
+                    load them directly like the service/model-detail pages do. */}
+                <img
                   src={series.brands.logo_url}
                   alt={series.brands?.name || "Brand"}
                   width={96}
                   height={96}
                   className="h-full w-full object-contain"
-                  quality={80}
-                  priority={true}
+                  loading="eager"
+                  fetchPriority="high"
+                  decoding="async"
                 />
               </div>
             )}
@@ -207,15 +210,14 @@ export default function SeriesPageClient({
                     }`}
                   >
                     {model.image_url ? (
-                      <Image
+                      <img
                         src={model.image_url}
                         alt={model.name}
                         width={112}
                         height={112}
                         className="h-full w-full object-contain"
-                        quality={75}
-                        priority={false}
-                        sizes="(max-width: 640px) 96px, 112px"
+                        loading="lazy"
+                        decoding="async"
                       />
                     ) : (
                       <Smartphone className="h-8 w-8 text-slate-400" />

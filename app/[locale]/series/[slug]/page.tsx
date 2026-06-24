@@ -1,7 +1,6 @@
 import type { Metadata } from "next"
 import { getTranslations } from "next-intl/server"
 import Link from "next/link"
-import Image from "next/image"
 import { notFound } from "next/navigation"
 // import { createServerClient } removed
 import { createClient } from "@/utils/supabase/client"
