@@ -22,9 +22,12 @@ export default function ContactPageClient() {
     setIsSubmitting(true)
     setIsSuccess(false)
 
+    // Зберігаємо посилання на форму до await — після await e.currentTarget стає null
+    const form = e.currentTarget
+
     try {
       // Отримуємо дані форми
-      const formData = new FormData(e.currentTarget)
+      const formData = new FormData(form)
       const formValues = {
         name: formData.get("name") as string,
         email: formData.get("email") as string,
@@ -72,7 +75,7 @@ export default function ContactPageClient() {
       }
 
       // Очищаємо форму
-      e.currentTarget.reset()
+      form.reset()
     } catch (error) {
       console.error("Contact form error:", error)
       toast({
