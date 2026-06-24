@@ -1,6 +1,6 @@
 export const dynamic = "force-dynamic"
 
-import { createClient } from "@/utils/supabase/server"
+import { createClient } from "@/lib/supabase"
 import { type NextRequest, NextResponse } from "next/server"
 import { sendEmail } from "@/lib/email/send-email"
 import { sendTelegramNotification } from "@/lib/telegram/send-telegram"
@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { name, email, phone, device, service, message, promotion, locale } = body
 
-    const supabase = await createClient()
+    const supabase = createClient()
 
     // Save to database
     const { error: dbError } = await supabase.from("contact_messages").insert([

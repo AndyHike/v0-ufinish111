@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient } from '@/lib/supabase'
 import { NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { activeSessions } from '@/lib/analytics/active-sessions'
@@ -52,7 +52,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ skipped: true, reason: 'Admin page' })
     }
 
-    const supabase = await createClient()
+    const supabase = createClient()
 
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0] ||
       request.headers.get('x-real-ip') ||

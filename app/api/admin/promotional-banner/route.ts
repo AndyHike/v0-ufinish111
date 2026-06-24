@@ -1,6 +1,6 @@
 export const dynamic = "force-dynamic"
 
-import { createClient } from "@/utils/supabase/server"
+import { createClient } from "@/lib/supabase"
 import { NextResponse } from "next/server"
 
 export async function GET() {

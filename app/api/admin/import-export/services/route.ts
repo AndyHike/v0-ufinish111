@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { createClient } from "@/lib/supabase"
 import { revalidateCatalog } from "@/lib/revalidate-catalog"
 
 // Транслітерація кирилиці (укр/рос), щоб slug не схлопувався у порожній/однаковий

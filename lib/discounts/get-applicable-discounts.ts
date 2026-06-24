@@ -1,4 +1,4 @@
-import { createClient } from "@/utils/supabase/client"
+import { createClient } from "@/lib/supabase"
 import type { Discount } from "./types"
 import { calculateDiscount, isDiscountActive } from "./utils"
 

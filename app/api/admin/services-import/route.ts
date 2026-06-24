@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { createClient } from "@/lib/supabase"
 
 function createSlug(text: string): string {
   if (!text || typeof text !== "string") return ""

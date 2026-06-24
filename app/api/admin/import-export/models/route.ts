@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { createClient } from "@/lib/supabase"
 import { revalidateCatalog } from "@/lib/revalidate-catalog"
 
 function createSlug(text: string): string {

@@ -1,6 +1,5 @@
 import { createClient } from "@/lib/supabase"
 import { cookies } from "next/headers"
-import { createServerClient } from "@/utils/supabase/server"
 
 type ActivityType = "create" | "update" | "delete" | "view"
 type EntityType = "brand" | "series" | "model" | "repair" | "user" | "discount" | "role"
@@ -63,7 +62,7 @@ export async function logAdminActivity({ entityId, actionType, entityType, actio
       return false
     }
 
-    const supabase = await createServerClient()
+    const supabase = createClient()
 
     // Get current admin user if userId is not provided
     let adminId = userId

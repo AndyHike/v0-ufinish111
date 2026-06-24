@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server"
+import { createClient } from "@/lib/supabase"
 import type { Discount, ApplicableDiscount } from "./types"
 
 function mapDiscountRow(row: any): Discount {

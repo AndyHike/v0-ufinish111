@@ -1,4 +1,4 @@
-import { createServerClient } from "@/utils/supabase/server"
+import { createClient as createServiceClient } from "@/lib/supabase"
 import { createClient } from "@/utils/supabase/client"
 
 export async function getAppSetting(key: string): Promise<string | null> {
@@ -36,7 +36,7 @@ export async function isRegistrationEnabled(): Promise<boolean> {
 
 export async function updateAppSetting(key: string, value: string): Promise<boolean> {
   try {
-    const supabase = await createServerClient()
+    const supabase = createServiceClient()
     const { error } = await supabase.from("app_settings").upsert({ key, value, updated_at: new Date().toISOString() })
 
     if (error) {

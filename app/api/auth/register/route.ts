@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { createClient } from "@/utils/supabase/server"
+import { createClient } from "@/lib/supabase"
 import { hashPassword } from "@/lib/auth/utils"
 import { generateEmailVerificationToken } from "@/lib/auth/token"
 import { sendVerificationEmail } from "@/lib/email/send-email"
@@ -18,7 +18,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, message: "Missing required fields" }, { status: 400 })
     }
 
-    const supabase = await createClient()
+    const supabase = createClient()
 
     // Check if user already exists
     const { data: existingUser } = await supabase.from("users").select("id").eq("email", email.toLowerCase()).single()
