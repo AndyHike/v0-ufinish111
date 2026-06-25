@@ -17,19 +17,20 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const cspDirectives = [
   "default-src 'self'",
   // 'unsafe-eval' is required by React Fast Refresh in dev only.
-  `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''} https://www.googletagmanager.com https://js.stripe.com https://widget.packeta.com https://pay.google.com`,
+  `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''} https://www.googletagmanager.com https://js.stripe.com https://widget.packeta.com https://pay.google.com https://connect.facebook.net https://googleads.g.doubleclick.net https://www.googleadservices.com`,
   "style-src 'self' 'unsafe-inline'",
   // Direct <img> to Supabase Storage (articles, brands) and the R2 custom
   // domain (model detail page uses a plain <img>); other R2 images go through
   // the same-origin /_next/image proxy; blob:/data: for admin upload previews.
-  "img-src 'self' data: blob: https://*.supabase.co https://dns.devicehelp.cz https://www.googletagmanager.com https://*.google-analytics.com https://*.stripe.com https://stats.g.doubleclick.net",
+  "img-src 'self' data: blob: https://*.supabase.co https://dns.devicehelp.cz https://www.googletagmanager.com https://*.google-analytics.com https://*.stripe.com https://stats.g.doubleclick.net https://www.facebook.com https://googleads.g.doubleclick.net https://www.google.com https://www.googleadservices.com",
   "font-src 'self' data:",
-  "connect-src 'self' https://api.stripe.com https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://stats.g.doubleclick.net https://widget.packeta.com",
+  "connect-src 'self' https://api.stripe.com https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://stats.g.doubleclick.net https://widget.packeta.com https://connect.facebook.net https://www.facebook.com https://googleads.g.doubleclick.net https://www.google.com https://www.googleadservices.com",
   // Google Maps embed (contact page), Stripe Elements/3DS, Google Pay, Packeta picker.
-  "frame-src https://www.google.com https://js.stripe.com https://hooks.stripe.com https://pay.google.com https://widget.packeta.com",
+  "frame-src https://www.google.com https://js.stripe.com https://hooks.stripe.com https://pay.google.com https://widget.packeta.com https://www.facebook.com",
   "object-src 'none'",
   "base-uri 'self'",
-  "form-action 'self'",
+  // Meta Pixel submits a tracking form to facebook.com/tr/.
+  "form-action 'self' https://www.facebook.com",
   "frame-ancestors 'self'",
   'report-uri /api/csp-report',
 ].join('; ')
