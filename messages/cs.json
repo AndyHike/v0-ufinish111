@@ -344,7 +344,7 @@
     "hour": "hodina",
     "warranty": "Záruka",
     "professionalRepair": "Profesionální oprava telefonů",
-    "repairTitle": "Oprava {model}",
+    "repairTitle": "Oprava a servis {model}",
     "warrantyMonths": "{count} měsíců",
     "warrantyDays": "{count} dní",
     "contactForWarranty": "kontaktujte pro záruku",

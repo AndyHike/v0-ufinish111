@@ -30,7 +30,9 @@ export function lineupLabel(seriesName?: string | null, brandName?: string | nul
 
   const normalizedBrand = brand.toLocaleLowerCase()
   const normalizedSeries = series.toLocaleLowerCase()
-  if (normalizedSeries === normalizedBrand || normalizedSeries.startsWith(`${normalizedBrand} `)) {
+  // Don't double up when the series already leads with the brand word, whatever
+  // follows it — handles "Xiaomi" and "Xiaomi (Mi)" alike.
+  if (normalizedSeries === normalizedBrand || normalizedSeries.startsWith(normalizedBrand)) {
     return series
   }
 

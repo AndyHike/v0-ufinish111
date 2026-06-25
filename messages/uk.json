@@ -365,7 +365,7 @@
     "hour": "година",
     "warranty": "Гарантія",
     "professionalRepair": "Професійний ремонт телефонів",
-    "repairTitle": "Ремонт {model}",
+    "repairTitle": "Ремонт і сервіс {model}",
     "warrantyMonths": "{count} місяців",
     "warrantyDays": "{count} днів",
     "contactForWarranty": "уточнюйте гарантію",
