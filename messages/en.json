@@ -14,6 +14,7 @@
     "businessAccount": "Business account",
     "registerBusinessAccount": "Register a business account",
     "openMenu": "Open menu",
+    "switchLanguage": "Switch language",
     "search": "Search...",
     "profile": "Profile",
     "admin": "Admin",
@@ -182,7 +183,8 @@
       "description": "We use cookies to ensure basic website functionality and to improve your experience. You can choose which categories you want to allow.",
       "acceptAll": "Accept All",
       "acceptNecessary": "Necessary Only",
-      "customize": "Customize"
+      "customize": "Customize",
+      "close": "Close"
     },
     "settings": {
       "title": "Cookie Settings",

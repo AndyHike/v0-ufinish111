@@ -45,8 +45,15 @@ export function CookieBanner() {
                   {t("banner.acceptAll")}
                 </Button>
 
-                <Button variant="ghost" size="sm" onClick={() => setShowBanner(false)} className="p-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowBanner(false)}
+                  className="p-2"
+                  aria-label={t("banner.close")}
+                >
                   <X className="h-4 w-4" />
+                  <span className="sr-only">{t("banner.close")}</span>
                 </Button>
               </div>
             </div>

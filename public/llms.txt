@@ -1,44 +1,29 @@
-# llms.txt - DeviceHelp
+# DeviceHelp
 
-## About DeviceHelp
-DeviceHelp je profesionální servis opravy mobilních telefonů v Praze 6 Břevnov.
+> Profesionální servis opravy mobilních telefonů v Praze 6-Břevnově. Opravy iPhone, Samsung a Xiaomi — výměna displeje, baterie, nabíjecího konektoru a další. Záruka 6 měsíců na všechny opravy.
 
-## Services
-- iPhone repair
-- Samsung repair
-- Xiaomi repair
-- Screen replacement
-- Battery replacement
-- Charging port repair
-- Microphone repair
-- Speaker repair
+DeviceHelp je servis se sídlem na adrese Bělohorská 209/133, Praha 6-Břevnov. Otevřeno denně 09:00–19:00. Telefon: +420 775 848 259, e-mail: info@devicehelp.cz.
 
-## Location
-Bělohorská 209/133, Praha 6-Břevnov, Czech Republic
-Latitude: 50.0982
-Longitude: 14.3917
+## Hlavní stránky
 
-## Contact
-Phone: +420 775 848 259
-Email: info@devicehelp.cz
+- [Domovská stránka](https://devicehelp.cz/cs): přehled servisu, služeb a cen
+- [Vybrat značku a model](https://devicehelp.cz/cs/brands): ceník oprav podle značky a modelu telefonu
+- [Články](https://devicehelp.cz/cs/articles): rady a návody k péči o mobilní telefon
+- [Kontakt](https://devicehelp.cz/cs/contact): adresa, otevírací doba a kontaktní údaje
+- [Časté dotazy](https://devicehelp.cz/cs/faq): odpovědi na nejčastější otázky
 
-## Hours
-Monday-Sunday: 09:00-19:00
+## Opravy podle značky
 
-## Website
-https://devicehelp.cz
+- [Opravy Apple iPhone](https://devicehelp.cz/cs/brands/apple): výměna displeje, baterie a další opravy iPhone
+- [Opravy Samsung](https://devicehelp.cz/cs/brands/samsung): opravy telefonů Samsung Galaxy
+- [Opravy Xiaomi](https://devicehelp.cz/cs/brands/xiaomi): opravy telefonů Xiaomi a Redmi
 
-## Service Area
-- Praha 6 (Břevnov)
-- Dejvice
-- Vokovice
+## Informace
 
-## Payment Methods
-- Cash
-- Credit Card
+- [Ochrana osobních údajů](https://devicehelp.cz/cs/privacy): zásady zpracování osobních údajů
+- [Obchodní podmínky](https://devicehelp.cz/cs/terms): smluvní podmínky servisu
 
-## Warranty
-6 months on all repairs
-
-## Price Range
-1500-5000 CZK
+Adresa: Bělohorská 209/133, Praha 6-Břevnov, Česká republika (50.0982, 14.3917).
+Otevírací doba: pondělí–neděle 09:00–19:00.
+Záruka: 6 měsíců na všechny opravy. Platba: hotově i kartou. Cenové rozpětí: 1500–5000 Kč.
+Servisní oblast: Praha 6 (Břevnov), Dejvice, Vokovice.

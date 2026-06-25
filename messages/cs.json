@@ -14,6 +14,7 @@
     "businessAccount": "Firemní účet",
     "registerBusinessAccount": "Registrovat firemní účet",
     "openMenu": "Otevřít menu",
+    "switchLanguage": "Změnit jazyk",
     "search": "Hledat...",
     "profile": "Profil",
     "admin": "Admin",
@@ -132,7 +133,8 @@
       "description": "Používáme cookies k zajištění základních funkcí webu a ke zlepšení vašeho zážitku. Můžete si vybrat, které kategorie chcete povolit.",
       "acceptAll": "Přijmout vše",
       "acceptNecessary": "Pouze nezbytné",
-      "customize": "Nastavit"
+      "customize": "Nastavit",
+      "close": "Zavřít"
     },
     "settings": {
       "title": "Nastavení cookies",

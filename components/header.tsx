@@ -487,8 +487,9 @@ export function Header({ variant = "default", mainDomainBaseUrl = mainSiteUrl, l
           <div className="flex items-center gap-2 flex-shrink-0">
             <Suspense
               fallback={
-                <Button variant="ghost" size="icon" className="flex">
+                <Button variant="ghost" size="icon" className="flex" aria-label={t("switchLanguage")}>
                   <Globe className="h-5 w-5" />
+                  <span className="sr-only">{t("switchLanguage")}</span>
                 </Button>
               }
             >
