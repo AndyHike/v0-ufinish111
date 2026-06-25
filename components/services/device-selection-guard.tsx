@@ -34,11 +34,12 @@ interface Model {
 interface DeviceSelectionGuardProps {
   serviceSlug: string
   locale: string
+  initialBrands?: Brand[]
 }
 
 type SelectionStep = 1 | 2 | 3
 
-export function DeviceSelectionGuard({ serviceSlug, locale }: DeviceSelectionGuardProps) {
+export function DeviceSelectionGuard({ serviceSlug, locale, initialBrands = [] }: DeviceSelectionGuardProps) {
   const t = useTranslations("Services")
   const brandsT = useTranslations("Brands")
   const router = useRouter()
@@ -49,7 +50,7 @@ export function DeviceSelectionGuard({ serviceSlug, locale }: DeviceSelectionGua
   const [selectedSeriesId, setSelectedSeriesId] = useState<string | null>(null)
   const [selectedModelSlug, setSelectedModelSlug] = useState<string | null>(null)
 
-  const [brands, setBrands] = useState<Brand[]>([])
+  const [brands, setBrands] = useState<Brand[]>(initialBrands)
   const [series, setSeries] = useState<Series[]>([])
   const [models, setModels] = useState<Model[]>([])
 
@@ -57,12 +58,15 @@ export function DeviceSelectionGuard({ serviceSlug, locale }: DeviceSelectionGua
   const [seriesSearch, setSeriesSearch] = useState("")
   const [modelsSearch, setModelsSearch] = useState("")
 
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(initialBrands.length === 0)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Load brands on mount
+  // Load brands on mount only if the server didn't already provide them
+  // (server-provided brands render in the static HTML and avoid layout shift)
   useEffect(() => {
+    if (initialBrands.length > 0) return
+
     let isMounted = true
 
     const loadBrands = async () => {

@@ -201,6 +201,14 @@ export default async function ServicePage({ params, searchParams }: Props) {
   const brandsT = await getTranslations({ locale, namespace: "Brands" })
   const supabase = createClient()
 
+  // Fetch brands server-side so the device-selection grid renders in the
+  // static HTML (no client spinner→grid swap, which caused layout shift).
+  const { data: brandsData } = await supabase
+    .from("brands")
+    .select("id, name, slug, logo_url")
+    .order("position")
+    .order("name")
+
   const { data: service } = await supabase
     .from("services")
     .select("services_translations(name, locale)")
@@ -255,7 +263,7 @@ export default async function ServicePage({ params, searchParams }: Props) {
 
         {/* Device Selection Guard Section */}
         <div className="mt-8">
-          <DeviceSelectionWrapper serviceSlug={slug} locale={locale} />
+          <DeviceSelectionWrapper serviceSlug={slug} locale={locale} initialBrands={brandsData || []} />
         </div>
       </div>
 
