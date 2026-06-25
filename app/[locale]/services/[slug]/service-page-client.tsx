@@ -16,6 +16,7 @@ import { PartTypeBadges } from "@/components/part-type-badges"
 import { getDiscountsBatch } from "@/app/actions/discounts-api"
 import { discountCache } from "@/lib/discounts/client-cache"
 import { formatBrandModelName, stripBrandFromModelName } from "@/lib/seo/page-utils"
+import { AddToReservationButton } from "@/components/booking/add-to-reservation-button"
 
 interface ServiceData {
   id: string
@@ -522,6 +523,26 @@ export default function ServicePageClient({ serviceData, locale }: Props) {
                 </Link>
               </Button>
             </div>
+
+            {/* Add to reservation — only when a concrete model + price is known,
+                so the line carries everything the discount engine needs. */}
+            {sourceModel && modelServicePrice !== null && modelServicePrice !== undefined && (
+              <AddToReservationButton
+                locale={locale}
+                line={{
+                  serviceId: serviceData.id,
+                  modelId: sourceModel.id,
+                  serviceName: translation.name,
+                  serviceSlug: serviceData.slug || "",
+                  brandName: brandName,
+                  modelName: modelNameWithoutBrand || sourceModel.name,
+                  modelSlug: sourceModel.slug || "",
+                  originalPrice: modelServicePrice,
+                  warrantyMonths: serviceData.warranty_months,
+                  durationHours: serviceData.duration_hours,
+                }}
+              />
+            )}
 
             {/* Що входить у послугу */}
             {whatIncludedList.length > 0 && (

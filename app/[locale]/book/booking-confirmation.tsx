@@ -9,6 +9,7 @@ import { ArrowLeft, ArrowRight, Loader2, Calendar, Clock, X, Clock3, Shield, Bad
 import { formatCurrency } from "@/lib/format-currency"
 import BookingSuccess from "./booking-success"
 import { getBookingDiscountPreview } from "@/app/actions/booking-discounts"
+import { AddToReservationButton } from "@/components/booking/add-to-reservation-button"
 import type {
   BookingDiscountChoice,
   BookingDiscountErrorContext,
@@ -442,6 +443,7 @@ export default function BookingConfirmation({
   const warrantyText = localizedService?.warranty_months ? `${localizedService.warranty_months} ${t("months")}` : localizedService?.warranty_period || ""
   const durationText = localizedService?.duration_hours ? `${localizedService.duration_hours}h` : ""
   const originalServicePrice = localizedService?.originalPrice ?? localizedService?.price ?? null
+  const reservationServiceId = localizedService?.serviceId || localizedService?.service_id || localizedService?.id
   const finalServicePrice = discountPreview?.finalPrice ?? localizedService?.price ?? null
   const hasBookingDiscount =
     originalServicePrice !== null && finalServicePrice !== null && finalServicePrice < originalServicePrice
@@ -878,6 +880,25 @@ export default function BookingConfirmation({
               t("submitBooking") || "Confirm Booking"
             )}
           </Button>
+
+          {/* Reserve several services from different models in one visit. */}
+          {reservationServiceId && model.id && originalServicePrice !== null && (
+            <AddToReservationButton
+              locale={locale}
+              line={{
+                serviceId: reservationServiceId,
+                modelId: model.id,
+                serviceName: localizedService?.name || service.name,
+                serviceSlug: localizedService?.slug || service.slug,
+                brandName: brand.name,
+                modelName: model.name,
+                modelSlug: model.slug,
+                originalPrice: originalServicePrice,
+                warrantyMonths: localizedService?.warranty_months ?? null,
+                durationHours: localizedService?.duration_hours ?? null,
+              }}
+            />
+          )}
         </form>
       </div>
     </div>

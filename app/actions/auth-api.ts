@@ -7,7 +7,8 @@ import {
   saveVerificationCode,
   verifyCode as verifyCodeLib,
 } from "@/lib/auth/verification-code"
-import { sendVerificationCode as sendVerificationCodeEmail } from "@/lib/email/send-email"
+import { sendVerificationCode as sendVerificationCodeEmail, sendEmail } from "@/lib/email/send-email"
+import { sendTelegramNotification } from "@/lib/telegram/send-telegram"
 import { syncUserToRemonline } from "@/lib/services/remonline-sync"
 import { hash } from "@/lib/auth/utils"
 import { revalidatePath } from "next/cache"
@@ -370,6 +371,72 @@ export async function verifyCode(
   }
 }
 
+// Notify the admin (email + Telegram) about a new registration.
+// Two distinct types so the owner can react fast:
+//   - "new"     → account is active immediately (auto-approved)
+//   - "pending" → account waits for manual approval
+async function notifyAdminOfRegistration(info: {
+  type: "new" | "pending"
+  name: string
+  email: string
+  phone?: string | null
+  isB2B: boolean
+  companyName?: string | null
+  ico?: string | null
+  role: string
+  locale: string
+}) {
+  const isPending = info.type === "pending"
+  const accountKind = info.isB2B ? "B2B / firemní" : "Soukromý"
+  const companyLine = info.isB2B
+    ? [info.companyName ? `Компанія: ${info.companyName}` : null, info.ico ? `IČO: ${info.ico}` : null]
+        .filter(Boolean)
+        .join("\n")
+    : ""
+
+  // Telegram (HTML)
+  const telegramMessage = [
+    isPending ? `⏳ <b>Реєстрація очікує схвалення</b>` : `🆕 <b>Нова реєстрація</b>`,
+    ``,
+    `<b>Тип акаунта:</b> ${accountKind} (${info.role})`,
+    `<b>Ім'я:</b> ${info.name}`,
+    `<b>Email:</b> ${info.email}`,
+    info.phone ? `<b>Телефон:</b> ${info.phone}` : null,
+    info.isB2B && info.companyName ? `<b>Компанія:</b> ${info.companyName}` : null,
+    info.isB2B && info.ico ? `<b>IČO:</b> ${info.ico}` : null,
+    isPending ? `\n⚠️ <b>Потрібно схвалити акаунт в адмінці.</b>` : null,
+  ]
+    .filter(Boolean)
+    .join("\n")
+
+  // Email (HTML)
+  const heading = isPending ? "Реєстрація очікує схвалення" : "Нова реєстрація"
+  const emailHtml = `
+    <h2>${isPending ? "⏳" : "🆕"} ${heading}</h2>
+    <p><strong>Тип акаунта:</strong> ${accountKind} (${info.role})</p>
+    <p><strong>Ім'я:</strong> ${info.name}</p>
+    <p><strong>Email:</strong> ${info.email}</p>
+    ${info.phone ? `<p><strong>Телефон:</strong> ${info.phone}</p>` : ""}
+    ${companyLine ? `<p>${companyLine.replace(/\n/g, "<br/>")}</p>` : ""}
+    ${isPending ? `<p style="color:#b45309;"><strong>⚠️ Потрібно схвалити акаунт в адмінці.</strong></p>` : ""}
+  `
+
+  const notificationEmail = process.env.NOTIFICATION_EMAIL || process.env.EMAIL_FROM?.trim() || "info@devicehelp.cz"
+  const subject = isPending
+    ? `Реєстрація очікує схвалення - ${info.name}`
+    : `Нова реєстрація - ${info.name}`
+
+  // Fire both; never let a notification failure break registration.
+  const [emailSent, telegramSent] = await Promise.all([
+    sendEmail(notificationEmail, subject, emailHtml, info.email).catch(() => false),
+    sendTelegramNotification(telegramMessage).catch(() => false),
+  ])
+
+  if (process.env.NODE_ENV === "development") {
+    console.log(`[registration] admin notified (type=${info.type}) email=${emailSent} telegram=${telegramSent}`)
+  }
+}
+
 // Create user in our database and sync with RemOnline in the background
 export async function createUser(userData: {
   first_name: string
@@ -535,6 +602,19 @@ export async function createUser(userData: {
         message: "Failed to create user profile",
       }
     }
+
+    // Notify the admin about the new registration (non-blocking, never throws).
+    await notifyAdminOfRegistration({
+      type: isApproved ? "new" : "pending",
+      name: `${userData.first_name} ${userData.last_name}`.trim(),
+      email: userData.email.toLowerCase(),
+      phone: userData.phone[0] || null,
+      isB2B: userData.is_b2b || false,
+      companyName: userData.companyName || null,
+      ico: userData.ico || null,
+      role: roleSlug,
+      locale: userLocale,
+    })
 
     syncUserToRemonline(newUser.id).catch((error) => {
       if (process.env.NODE_ENV === "development") {

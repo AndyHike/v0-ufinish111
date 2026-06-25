@@ -11,6 +11,8 @@ import { Footer } from "@/components/footer"
 import { Header } from "@/components/header"
 import { PromotionalBanner } from "@/components/promotional-banner"
 import { SessionProvider } from "@/components/providers/session-provider"
+import { ReservationCartFab } from "@/components/booking/reservation-cart-fab"
+import { ReservationCartProvider } from "@/components/booking/reservation-cart-provider"
 import { ShopCartProvider } from "@/components/shop/shop-cart-provider"
 import { ShopFooter } from "@/components/shop/shop-footer"
 import { ShopHeader } from "@/components/shop/shop-header"
@@ -153,11 +155,12 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
                         <ShopFooter locale={locale as ShopLocale} legalPages={shopLegalPages} />
                       </ShopCartProvider>
                     ) : (
-                      <>
+                      <ReservationCartProvider>
                         <Header variant={variant} mainDomainBaseUrl={mainSiteUrl} localeOverride={locale} />
                         <main className="flex-1">{children}</main>
                         <Footer />
-                      </>
+                        {variant === "default" && <ReservationCartFab locale={locale} />}
+                      </ReservationCartProvider>
                     )}
                     {/* Cookie consent is managed only on the main domain; the
                         shop/b2b subdomains are separate origins and link their
