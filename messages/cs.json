@@ -455,6 +455,8 @@
   },
   "Auth": {
     "createAccount": "Vytvořit účet",
+    "consentPrefix": "Souhlasím s dokumentem",
+    "consentRequired": "Pro registraci je nutný souhlas s povinnými dokumenty.",
     "alreadyHaveAccount": "Již máte účet?",
     "signIn": "Přihlásit se",
     "signInToAccount": "Přihlásit se ke svému účtu",

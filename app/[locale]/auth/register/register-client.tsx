@@ -78,7 +78,13 @@ const verificationSchema = z.object({
   code: z.string().length(6),
 })
 
-export default function RegisterClient() {
+type RequiredDocument = { slug: string; title: string; href: string }
+
+export default function RegisterClient({
+  requiredDocuments = [],
+}: {
+  requiredDocuments?: RequiredDocument[]
+}) {
   const t = useTranslations("Auth")
   const router = useRouter()
   const params = useParams()
@@ -105,6 +111,9 @@ export default function RegisterClient() {
   const [isLoading, setIsLoading] = useState(false)
   const [isAresLoading, setIsAresLoading] = useState(false)
   const [aresMessage, setAresMessage] = useState<string | null>(null)
+  const [consents, setConsents] = useState<Record<string, boolean>>({})
+  const [consentError, setConsentError] = useState(false)
+  const allConsented = requiredDocuments.every((doc) => consents[doc.slug])
 
   const initialForm = useForm({
     resolver: zodResolver(initialSchema),
@@ -196,6 +205,12 @@ export default function RegisterClient() {
 
   const handleInitialSubmit = async (data: InitialFormValues) => {
     setError(null)
+
+    if (!allConsented) {
+      setConsentError(true)
+      return
+    }
+    setConsentError(false)
     setIsLoading(true)
 
     try {
@@ -648,6 +663,41 @@ export default function RegisterClient() {
               </div>
               <input type="hidden" autoComplete="country" {...initialForm.register("billingCountry")} />
             </div>
+            )}
+
+            {requiredDocuments.length > 0 && (
+              <div className="space-y-2 lg:col-span-2">
+                {requiredDocuments.map((doc) => (
+                  <div key={doc.slug} className="flex items-start gap-3">
+                    <Checkbox
+                      id={`consent-${doc.slug}`}
+                      checked={Boolean(consents[doc.slug])}
+                      onCheckedChange={(value) => {
+                        setConsents((prev) => ({ ...prev, [doc.slug]: Boolean(value) }))
+                        if (value) setConsentError(false)
+                      }}
+                      disabled={isLoading}
+                      className="mt-0.5"
+                    />
+                    <Label
+                      htmlFor={`consent-${doc.slug}`}
+                      className="cursor-pointer text-sm font-normal leading-relaxed text-gray-700"
+                    >
+                      {t("consentPrefix")}{" "}
+                      <Link
+                        href={doc.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-green-600 hover:text-green-700 hover:underline"
+                      >
+                        {doc.title}
+                      </Link>
+                      {" *"}
+                    </Label>
+                  </div>
+                ))}
+                {consentError && <p className="text-sm text-red-600">{t("consentRequired")}</p>}
+              </div>
             )}
 
             <Button

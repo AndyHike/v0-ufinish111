@@ -2,6 +2,11 @@ import { Suspense } from "react"
 import { getTranslations } from "next-intl/server"
 import RegisterClient from "./register-client"
 import { isRegistrationEnabled } from "@/lib/app-settings"
+import {
+  getRequiredRegistrationDocuments,
+  legalDocumentPath,
+  localizedTitle,
+} from "@/lib/legal-documents"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { AlertCircle } from "lucide-react"
 import Link from "next/link"
@@ -11,6 +16,11 @@ export default async function RegisterPage({ params }: { params: Promise<{ local
   const { locale } = await params
   const t = await getTranslations({ locale, namespace: "Auth" })
   const registrationEnabled = await isRegistrationEnabled()
+  const requiredDocuments = (await getRequiredRegistrationDocuments()).map((doc) => ({
+    slug: doc.slug,
+    title: localizedTitle(doc, locale),
+    href: legalDocumentPath(locale, doc.slug),
+  }))
 
   if (!registrationEnabled) {
     return (
@@ -42,7 +52,7 @@ export default async function RegisterPage({ params }: { params: Promise<{ local
     <div className="container flex min-h-screen w-full flex-col items-center justify-center py-8">
       <div className="mx-auto flex w-full max-w-5xl flex-col justify-center space-y-6">
         <Suspense fallback={<div>Loading...</div>}>
-          <RegisterClient />
+          <RegisterClient requiredDocuments={requiredDocuments} />
         </Suspense>
       </div>
     </div>

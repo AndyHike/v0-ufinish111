@@ -408,6 +408,8 @@
   },
   "Auth": {
     "createAccount": "Create Account",
+    "consentPrefix": "I agree to the",
+    "consentRequired": "You must accept the required documents to register.",
     "alreadyHaveAccount": "Already have an account?",
     "signIn": "Sign In",
     "signInToAccount": "Sign in to your account",

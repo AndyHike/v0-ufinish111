@@ -6,7 +6,13 @@ import { Mail, Phone, MapPin, Settings } from "lucide-react"
 import { useSiteSettings } from "@/hooks/use-site-settings"
 import { useCookieConsentContext } from "@/contexts/cookie-consent-context"
 
-export function Footer() {
+export type FooterLegalLink = {
+  slug: string
+  title: string
+  href: string
+}
+
+export function Footer({ legalLinks = [] }: { legalLinks?: FooterLegalLink[] }) {
   const t = useTranslations("Footer")
   const params = useParams()
   const locale = params.locale as string
@@ -72,16 +78,13 @@ export function Footer() {
                   {t("contact")}
                 </Link>
               </li>
-              <li>
-                <Link href={`/${locale}/terms`} className="text-sm text-gray-500 hover:text-gray-900">
-                  {t("terms")}
-                </Link>
-              </li>
-              <li>
-                <Link href={`/${locale}/privacy`} className="text-sm text-gray-500 hover:text-gray-900">
-                  {t("privacy")}
-                </Link>
-              </li>
+              {legalLinks.map((doc) => (
+                <li key={doc.slug}>
+                  <Link href={doc.href} className="text-sm text-gray-500 hover:text-gray-900">
+                    {doc.title}
+                  </Link>
+                </li>
+              ))}
               <li>
                 <button
                   onClick={handleCookieSettings}

@@ -17,6 +17,7 @@ import { ShopCartProvider } from "@/components/shop/shop-cart-provider"
 import { ShopFooter } from "@/components/shop/shop-footer"
 import { ShopHeader } from "@/components/shop/shop-header"
 import { getShopCategoryTree, getShopLegalPages } from "@/lib/shop/data"
+import { getActiveLegalDocuments, legalDocumentPath, localizedTitle } from "@/lib/legal-documents"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
 import { CookieConsentProvider } from "@/contexts/cookie-consent-context"
@@ -68,6 +69,17 @@ export async function SiteLocaleLayout({
     variant === "shop"
       ? await Promise.all([getShopCategoryTree(), getShopLegalPages(locale as ShopLocale)])
       : [[], []]
+  // Admin-managed legal documents render in the main/b2b footer. Resolve the
+  // localized title + href here (server) so the client Footer stays dumb and
+  // doesn't import the server-only data module.
+  const legalLinks =
+    variant === "shop"
+      ? []
+      : (await getActiveLegalDocuments()).map((doc) => ({
+          slug: doc.slug,
+          title: localizedTitle(doc, locale),
+          href: legalDocumentPath(locale, doc.slug),
+        }))
 
   return (
     <html lang={locale} className={inter.variable} suppressHydrationWarning>
@@ -158,7 +170,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
                       <ReservationCartProvider>
                         <Header variant={variant} mainDomainBaseUrl={mainSiteUrl} localeOverride={locale} />
                         <main className="flex-1">{children}</main>
-                        <Footer />
+                        <Footer legalLinks={legalLinks} />
                         {variant === "default" && <ReservationCartFab locale={locale} />}
                       </ReservationCartProvider>
                     )}

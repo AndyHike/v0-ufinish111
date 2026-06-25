@@ -8,8 +8,7 @@ import { CookieSettingsManager } from "@/components/admin/cookie-settings-manage
 import { FacebookPixelTest } from "@/components/admin/facebook-pixel-test"
 import { RemOnlineTest } from "@/components/admin/remonline-test"
 import { MaintenanceModeToggle } from "@/components/admin/maintenance-mode-toggle"
-import { PrivacyPolicyManager } from "@/components/admin/privacy-policy-manager"
-import { TermsOfServiceManager } from "@/components/admin/terms-of-service-manager"
+import { LegalDocumentsManager } from "@/components/admin/legal-documents-manager"
 import { RegistrationToggle } from "@/components/admin/registration-toggle"
 import { LogoUpload } from "@/components/admin/logo-upload"
 import { FaviconUpload } from "@/components/admin/favicon-upload"
@@ -90,14 +89,9 @@ export default async function AdminSettingsPage() {
         </TabsContent>
 
         <TabsContent value="legal" className="space-y-6">
-          <div className="grid gap-6">
-            <Suspense fallback={<Skeleton className="h-48" />}>
-              <PrivacyPolicyManager />
-            </Suspense>
-            <Suspense fallback={<Skeleton className="h-48" />}>
-              <TermsOfServiceManager />
-            </Suspense>
-          </div>
+          <Suspense fallback={<Skeleton className="h-48" />}>
+            <LegalDocumentsManager />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="maintenance" className="space-y-6">
