@@ -73,6 +73,26 @@ test("maps B2B account to RO App organization with email phone address ICO and D
   })
 })
 
+test("parses a JSON-encoded array phone string before sending to RO App", () => {
+  const payload = buildRemonlineContactPayload({
+    email: "trasuk25@example.com",
+    is_b2b: true,
+    company_name: "Yevhenii Palapa",
+    ico: "21725209",
+    phone: '["420775848259"]',
+  })
+
+  assert.deepEqual(payload.body.phones, [
+    {
+      title: "Primary",
+      phone: "420775848259",
+      notify: true,
+      has_viber: false,
+      has_whatsapp: false,
+    },
+  ])
+})
+
 test("uses address fallback when structured billing fields are absent", () => {
   const payload = buildRemonlineContactPayload({
     email: "office@example.cz",

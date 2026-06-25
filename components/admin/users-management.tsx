@@ -251,10 +251,18 @@ export function UsersManagement() {
     setIsSubmitting(true)
     try {
       const response = await fetch(`/api/admin/users/${userId}/remonline-sync`, { method: "POST" })
-      const data = await response.json()
+      const rawBody = await response.text()
+      let data: any = {}
+      try {
+        data = rawBody ? JSON.parse(rawBody) : {}
+      } catch {
+        // Server returned a non-JSON body (e.g. an HTML 500/504 error page).
+        const snippet = rawBody.replace(/\s+/g, " ").trim().slice(0, 120)
+        throw new Error(`RemOnline sync failed (HTTP ${response.status})${snippet ? `: ${snippet}` : ""}`)
+      }
 
       if (!response.ok || !data.success) {
-        throw new Error(data.message || data.error || "RemOnline sync failed")
+        throw new Error(data.message || data.error || `RemOnline sync failed (HTTP ${response.status})`)
       }
 
       toast({
@@ -748,7 +756,9 @@ export function UsersManagement() {
                                     Заблокувати доступ
                                   </DropdownMenuItem>
                                 )}
-                                {(user.remonline_sync_status === "error" || !user.remonline_id) && (
+                                {(user.remonline_sync_status === "error" ||
+                                  user.remonline_sync_status === "pending" ||
+                                  !user.remonline_id) && (
                                   <DropdownMenuItem
                                     onClick={() => handleSyncRemonline(user.id)}
                                     disabled={isSubmitting}

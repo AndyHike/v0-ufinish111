@@ -2,6 +2,21 @@ import { hash } from "@/lib/auth/utils"
 import remonline from "@/lib/api/remonline"
 import { clearUserSessionsByUserId } from "@/app/actions/session"
 
+// RemOnline returns client.phone as an array of strings. The profiles.phone
+// column is plain text, so store the first number rather than the raw array
+// (otherwise it gets serialized as '["420…"]' and later breaks RO App sync).
+function normalizeClientPhone(value: unknown): string | null {
+  const candidate = Array.isArray(value) ? value[0] : value
+  if (typeof candidate === "string") {
+    const trimmed = candidate.trim()
+    return trimmed || null
+  }
+  if (typeof candidate === "number" && Number.isFinite(candidate)) {
+    return String(candidate)
+  }
+  return null
+}
+
 export class ClientService {
   constructor(private supabase: any) {}
 
@@ -139,7 +154,7 @@ export class ClientService {
       const email = clientData.email?.toLowerCase()
       const firstName = clientData.first_name || ""
       const lastName = clientData.last_name || ""
-      const phone = clientData.phone || null
+      const phone = normalizeClientPhone(clientData.phone)
       const address = clientData.address || null
 
       console.log(`👤 Creating new user:`)
@@ -209,7 +224,7 @@ export class ClientService {
       const email = clientData.email?.toLowerCase()
       const firstName = clientData.first_name || ""
       const lastName = clientData.last_name || ""
-      const phone = clientData.phone || null
+      const phone = normalizeClientPhone(clientData.phone)
       const address = clientData.address || ""
 
       console.log(`👤 Updating existing user ${userId}:`)
