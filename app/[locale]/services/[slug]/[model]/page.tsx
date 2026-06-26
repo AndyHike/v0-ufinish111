@@ -7,7 +7,9 @@ import { getPriceWithDiscount } from "@/lib/discounts/get-applicable-discounts"
 import { RelatedArticlesList } from "@/components/articles/related-articles-list"
 import { toOGLocale } from "@/lib/og-locale"
 import { siteUrl } from "@/lib/site-config"
-import { formatBrandModelName } from "@/lib/seo/page-utils"
+import { formatBrandModelName, seoModelName } from "@/lib/seo/page-utils"
+import { asSeoLocale, buildAlsoSearched, buildSynonymFaqs } from "@/lib/seo/service-synonyms"
+import { formatCurrency } from "@/lib/format-currency"
 import { generateBreadcrumbListSchema } from "@/lib/structured-data"
 import { PrevNextNav } from "@/components/prev-next-nav"
 import { resolveScopedField, type ScopeRow, type BaseTranslation } from "@/lib/catalog/scope-text"
@@ -468,6 +470,16 @@ export default async function ServicePageWithModel({ params }: Props) {
     }))
     const resolvedFaqs = resolveScopedFaqs(locale, [modelFaqEntries, seriesFaqEntries, baseFaqEntries])
 
+    // Long-tail SEO: clean model name, a crawlable "people also search" line and a
+    // price/duration FAQ injected so the page ranks beyond the literal service name
+    // (oprava/výměna, obrazovka/LCD/sklo, cena/kolik stojí, symptom queries) in cs/uk/en.
+    const seoLoc = asSeoLocale(locale)
+    const seoModel = seoModelName(sourceModel?.brands?.name, sourceModel?.name)
+    const priceForSeo = modelServicePrice ?? minPrice
+    const priceLabel = priceForSeo != null ? formatCurrency(Number(priceForSeo)) : null
+    const alsoSearched = buildAlsoSearched(slug, seoLoc, seoModel)
+    const synonymFaqs = buildSynonymFaqs(seoLoc, translation.name || "", seoModel, priceLabel)
+
     const serviceData = {
       id: service.id,
       position: service.position || 0,
@@ -487,14 +499,19 @@ export default async function ServicePageWithModel({ params }: Props) {
         what_included: resolvedIncluded || "",
         benefits: resolvedBenefits || null,
       },
-      faqs: resolvedFaqs.map((faq, i) => ({
-        id: `faq-${i}`,
-        position: i,
-        translation: {
-          question: faq.question,
-          answer: faq.answer,
-        },
-      })),
+      faqs: [
+        ...resolvedFaqs.map((faq, i) => ({
+          id: `faq-${i}`,
+          position: i,
+          translation: { question: faq.question, answer: faq.answer },
+        })),
+        // Appended price/duration FAQ — adds "cena/kolik stojí" + "jak dlouho" intent.
+        ...synonymFaqs.map((faq, i) => ({
+          id: `faq-syn-${i}`,
+          position: resolvedFaqs.length + i,
+          translation: { question: faq.question, answer: faq.answer },
+        })),
+      ],
       sourceModel: sourceModel ? {
         id: sourceModel.id || "",
         name: sourceModel.name || "",
@@ -683,6 +700,9 @@ export default async function ServicePageWithModel({ params }: Props) {
                   : `${translation.name} — všechna zařízení`}
             </a>
           </div>
+          {alsoSearched && (
+            <p className="mt-8 text-center text-sm text-muted-foreground">{alsoSearched}</p>
+          )}
           <RelatedArticlesList locale={locale} />
           <PrevNextNav
             prev={prevServiceNav ? { name: prevServiceNav.name, href: `/${locale}/services/${prevServiceNav.slug}/${modelSlug}` } : null}
