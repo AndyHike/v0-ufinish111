@@ -123,13 +123,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
           : ` od ${formatCurrency(data.minPrice)}.`
       : ""
 
-  const title = `${serviceName} ${brandName} ${city} | DeviceHelp`
+  // Pull "oprava/servis" intent into the title+description so the hub also ranks
+  // for "oprava <brand>" / "servis <brand>", not just the literal service name.
+  const repairWord = locale === "en" ? "repair & service" : locale === "uk" ? "ремонт і сервіс" : "oprava a servis"
+  const title = `${serviceName} ${brandName} – ${repairWord} ${city} | DeviceHelp`
   const description =
     locale === "en"
-      ? `${serviceName} for all ${brandName} models in ${city} Břevnov.${from} 6 month warranty, 2-3 hours. Bělohorská 209/133.`
+      ? `Professional ${serviceName.toLowerCase()}, repair & service for all ${brandName} models in ${city} Břevnov.${from} 6 month warranty, 2-3 hours. Bělohorská 209/133.`
       : locale === "uk"
-        ? `${serviceName} для всіх моделей ${brandName} у ${city}, Бржевнов.${from} Гарантія 6 місяців, 2-3 години. Bělohorská 209/133.`
-        : `${serviceName} pro všechny modely ${brandName} v ${city} na Břevnově.${from} Záruka 6 měsíců, oprava 2-3 hodiny. Bělohorská 209/133.`
+        ? `${serviceName} ${brandName} — ремонт і сервіс усіх моделей у Празі 6, Бржевнов.${from} Гарантія 6 місяців, 2-3 години. Bělohorská 209/133.`
+        : `Profesionální ${serviceName.toLowerCase()}, oprava a servis všech modelů ${brandName} v Praze 6 na Břevnově.${from} Záruka 6 měsíců, 2-3 hodiny. Bělohorská 209/133.`
 
   const bs = brandSlug.toLowerCase()
   const url = `${siteUrl}/${locale}/services/${slug}/brand/${bs}`
