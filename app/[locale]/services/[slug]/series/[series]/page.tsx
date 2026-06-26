@@ -10,7 +10,7 @@ import { formatCurrency } from "@/lib/format-currency"
 import { generateBreadcrumbListSchema } from "@/lib/structured-data"
 import { resolveScopedField, type ScopeRow } from "@/lib/catalog/scope-text"
 import { replaceFaqPlaceholders } from "@/lib/faq-placeholder-replacer"
-import { lineupLabel } from "@/lib/seo/page-utils"
+import { lineupLabel, lowerFirst } from "@/lib/seo/page-utils"
 import { BrandHubModels, type HubGroup } from "../../brand/[brand]/brand-hub-models"
 
 export const revalidate = 3600
@@ -131,10 +131,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const title = `${serviceName} ${lineup} – ${repairWord} ${city} | DeviceHelp`
   const description =
     locale === "en"
-      ? `Professional ${serviceName.toLowerCase()}, repair & service for all ${lineup} models in ${city} Břevnov.${from} 6 month warranty, 2-3 hours. Bělohorská 209/133.`
+      ? `Professional ${lowerFirst(serviceName)}, repair & service for all ${lineup} models in ${city} Břevnov.${from} 6 month warranty, 2-3 hours. Bělohorská 209/133.`
       : locale === "uk"
         ? `${serviceName} ${lineup} — ремонт і сервіс усіх моделей у Празі 6, Бржевнов.${from} Гарантія 6 місяців, 2-3 години. Bělohorská 209/133.`
-        : `Profesionální ${serviceName.toLowerCase()}, oprava a servis všech modelů ${lineup} v Praze 6 na Břevnově.${from} Záruka 6 měsíců, 2-3 hodiny. Bělohorská 209/133.`
+        : `Profesionální ${lowerFirst(serviceName)}, oprava a servis všech modelů ${lineup} v Praze 6 na Břevnově.${from} Záruka 6 měsíců, 2-3 hodiny. Bělohorská 209/133.`
 
   const ss = seriesSlug.toLowerCase()
   const url = `${siteUrl}/${locale}/services/${slug}/series/${ss}`

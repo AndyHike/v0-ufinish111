@@ -6,7 +6,7 @@ import ModelPageClient, { ModelData } from "./model-page-client"
 import { getPriceWithDiscount } from "@/lib/discounts/get-applicable-discounts"
 import { toOGLocale } from "@/lib/og-locale"
 import { siteUrl } from "@/lib/site-config"
-import { formatBrandModelName } from "@/lib/seo/page-utils"
+import { formatBrandModelName, seoModelName, shortModelTitle } from "@/lib/seo/page-utils"
 import { generateBreadcrumbListSchema } from "@/lib/structured-data"
 import { PrevNextNav } from "@/components/prev-next-nav"
 import { RelatedArticlesList } from "@/components/articles/related-articles-list"
@@ -79,22 +79,25 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const brandObj = Array.isArray(model.brands) ? model.brands[0] : model.brands
   const brandName = brandObj?.name || "Device"
   const modelName = model.name
-  const fullModelName = formatBrandModelName(brandName, modelName)
+  // Search-friendly name (drops redundant "Apple"); title also trims long
+  // generation parentheticals so it doesn't get clipped in the SERP.
+  const fullModelName = seoModelName(brandName, modelName)
+  const titleName = shortModelTitle(fullModelName)
 
   // Language-specific optimized metadata
   const metadata = {
     cs: {
-      title: `Oprava a servis ${fullModelName} Praha 6 | DeviceHelp`,
+      title: `Oprava a servis ${titleName} Praha 6 | DeviceHelp`,
       description: `Profesionální oprava a servis ${fullModelName} v Praze 6 na Břevnově. Výměna displeje, baterie, kamery. Záruka 6 měsíců, oprava 2-3 hodiny. Bělohorská 209/133. ☎ +420 775 848 259`,
       keywords: `oprava ${fullModelName} Praha 6, servis ${brandName} Břevnov, výměna displeje ${modelName}, oprava telefonu Bělohorská, servis mobilu Praha6`,
     },
     en: {
-      title: `${fullModelName} Repair Prague 6 | DeviceHelp`,
+      title: `${titleName} Repair Prague 6 | DeviceHelp`,
       description: `Professional ${fullModelName} repair and service in Prague 6 Břevnov. Screen replacement, battery, camera repair. 6 month warranty, 2-3 hours service. Bělohorská 209/133. ☎ +420 775 848 259`,
       keywords: `${fullModelName} repair Prague 6, mobile service Břevnov, screen replacement ${modelName}, phone repair Bělohorská`,
     },
     uk: {
-      title: `Ремонт і сервіс ${fullModelName} | Прага 6 | Гарантія 6 місяців`,
+      title: `Ремонт і сервіс ${titleName} | Прага 6 | Гарантія 6 місяців`,
       description: `Професійний ремонт і сервіс ${fullModelName} в Празі 6 Бржевнов. Заміна екрану, батареї, камери. Гарантія 6 місяців, ремонт 2-3 години. Bělohorská 209/133. ☎ +420 775 848 259`,
       keywords: `ремонт ${fullModelName} Прага 6, сервіс мобільних Бржевнов, заміна екрану ${modelName}, ремонт телефону Белогорська`,
     },
