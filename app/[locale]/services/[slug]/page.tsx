@@ -211,12 +211,74 @@ export default async function ServicePage({ params, searchParams }: Props) {
 
   const { data: service } = await supabase
     .from("services")
-    .select("services_translations(name, locale)")
+    .select("id, services_translations(name, locale)")
     .eq("slug", slug)
     .single()
 
   const translation = service?.services_translations?.find((t: any) => t.locale === locale) || service?.services_translations?.[0]
   const serviceName = translation?.name || slug
+
+  // Crawlable catalog links under the interactive picker. The picker itself is
+  // buttons + router.push (invisible to crawlers), so this grid is the only
+  // path that passes link equity from this hub down to the brand/series hubs
+  // and the top money pages.
+  type CatalogModel = {
+    id: string
+    name: string
+    slug: string
+    position: number | null
+    brand_id: string | null
+    series_id: string | null
+    price: number | null
+  }
+  const byCatalogPos = (a: { position?: number | null; name?: string }, b: { position?: number | null; name?: string }) =>
+    (a.position ?? 999) - (b.position ?? 999) || String(a.name || "").localeCompare(String(b.name || ""))
+
+  let hubBrands: { name: string; slug: string }[] = []
+  let hubSeries: { name: string; slug: string }[] = []
+  let topModels: CatalogModel[] = []
+  if (service?.id) {
+    const { data: svcRows } = await supabase
+      .from("model_services")
+      .select("price, models!inner(id, name, slug, position, brand_id, series_id)")
+      .eq("service_id", service.id)
+
+    const svcModels = (svcRows || [])
+      .map((r: any) => {
+        const m = Array.isArray(r.models) ? r.models[0] : r.models
+        return m && m.slug ? ({ ...m, price: r.price } as CatalogModel) : null
+      })
+      .filter((m): m is CatalogModel => !!m)
+      .sort(byCatalogPos)
+
+    topModels = svcModels.slice(0, 12)
+
+    const brandIds = new Set(svcModels.map((m) => m.brand_id).filter(Boolean))
+    hubBrands = (brandsData || [])
+      .filter((b: any) => b.slug && brandIds.has(b.id))
+      .map((b: any) => ({ name: b.name, slug: String(b.slug).toLowerCase() }))
+
+    const seriesIds = [...new Set(svcModels.map((m) => m.series_id).filter(Boolean))] as string[]
+    if (seriesIds.length > 0) {
+      const { data: seriesRows } = await supabase
+        .from("series")
+        .select("id, name, slug, position")
+        .in("id", seriesIds)
+      hubSeries = (seriesRows || [])
+        .filter((s: any) => s.slug)
+        .sort(byCatalogPos)
+        .map((s: any) => ({ name: s.name, slug: String(s.slug).toLowerCase() }))
+    }
+  }
+
+  const catalogCopy =
+    locale === "en"
+      ? { byBrand: "By brand", bySeries: "By series", topModels: "Most requested models", from: "from" }
+      : locale === "uk"
+        ? { byBrand: "За брендом", bySeries: "За лінійкою", topModels: "Найзатребуваніші моделі", from: "від" }
+        : { byBrand: "Podle značky", bySeries: "Podle řady", topModels: "Nejžádanější modely", from: "od" }
+  const catalogChipClass =
+    "inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm text-gray-700 transition-colors hover:border-blue-300 hover:text-blue-600"
 
   // Fetch popular services for BrandSeoSections
   const { data: topServices } = await supabase
@@ -265,6 +327,62 @@ export default async function ServicePage({ params, searchParams }: Props) {
         <div className="mt-8">
           <DeviceSelectionWrapper serviceSlug={slug} locale={locale} initialBrands={brandsData || []} />
         </div>
+
+        {/* Crawlable catalog: hubs by brand/series + top models (SSR <a> links,
+            unlike the interactive picker above) */}
+        {(hubBrands.length > 0 || hubSeries.length > 0 || topModels.length > 0) && (
+          <div className="mt-12 space-y-8">
+            {hubBrands.length > 0 && (
+              <div>
+                <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                  {catalogCopy.byBrand}
+                </h2>
+                <div className="flex flex-wrap gap-2">
+                  {hubBrands.map((b) => (
+                    <Link key={b.slug} href={`/${locale}/services/${slug}/brand/${b.slug}`} className={catalogChipClass}>
+                      {serviceName} {b.name}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {hubSeries.length > 0 && (
+              <div>
+                <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                  {catalogCopy.bySeries}
+                </h2>
+                <div className="flex flex-wrap gap-2">
+                  {hubSeries.map((s) => (
+                    <Link key={s.slug} href={`/${locale}/services/${slug}/series/${s.slug}`} className={catalogChipClass}>
+                      {serviceName} {s.name}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {topModels.length > 0 && (
+              <div>
+                <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                  {catalogCopy.topModels}
+                </h2>
+                <div className="flex flex-wrap gap-2">
+                  {topModels.map((m) => (
+                    <Link key={m.id} href={`/${locale}/services/${slug}/${m.slug}`} className={catalogChipClass}>
+                      <span>{m.name}</span>
+                      {m.price != null && m.price > 0 && (
+                        <span className="text-xs text-muted-foreground">
+                          {catalogCopy.from} {m.price} Kč
+                        </span>
+                      )}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="order-2 w-full">

@@ -14,6 +14,7 @@ import { generateBreadcrumbListSchema } from "@/lib/structured-data"
 import { PrevNextNav } from "@/components/prev-next-nav"
 import { BrandSeoSections } from "@/components/brand-seo-sections"
 import { ContactCTABanner } from "@/components/contact-cta-banner"
+import { fetchAllRows } from "@/lib/admin/fetch-all-rows"
 
 
 // ISR Configuration
@@ -210,6 +211,42 @@ export default async function BrandPage({ params }: Props) {
     modelsWithoutSeries: modelsWithoutSeries || [],
   }
 
+  // Services available for this brand with the cheapest price across its
+  // models. Powers the service chips that deep-link into the brand×service
+  // hubs (mirrors the series page's chips into series hubs). Paged: a big
+  // brand can have >1000 model_services rows and an unbounded select truncates.
+  const brandSvcRows = await fetchAllRows<any>((from, to) =>
+    supabase
+      .from("model_services")
+      .select("price, services(id, slug, position, services_translations(name, locale)), models!inner(brand_id)")
+      .eq("models.brand_id", brand.id)
+      .order("model_id")
+      .order("service_id")
+      .range(from, to),
+  ).catch(() => [] as any[])
+
+  const brandSvcMap = new Map<string, { id: string; slug: string; name: string; position: number; minPrice: number | null }>()
+  for (const row of brandSvcRows) {
+    const svc = Array.isArray(row.services) ? row.services[0] : row.services
+    if (!svc?.id || !svc?.slug) continue
+    const tr = (svc.services_translations as any[])?.find((t: any) => t.locale === locale) ?? svc.services_translations?.[0]
+    const entry =
+      brandSvcMap.get(svc.id) ?? {
+        id: svc.id,
+        slug: svc.slug,
+        name: tr?.name ?? svc.slug,
+        position: svc.position ?? 999,
+        minPrice: null,
+      }
+    if (row.price != null && row.price > 0) {
+      entry.minPrice = entry.minPrice == null ? row.price : Math.min(entry.minPrice, row.price)
+    }
+    brandSvcMap.set(svc.id, entry)
+  }
+  const brandServices = Array.from(brandSvcMap.values())
+    .sort((a, b) => a.position - b.position)
+    .map(({ id, slug, name, minPrice }) => ({ id, slug, name, minPrice }))
+
   // Fetch all brands for prev/next navigation
   const { data: allBrands } = await supabase
     .from("brands")
@@ -251,7 +288,7 @@ export default async function BrandPage({ params }: Props) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
       <div className="order-1">
-        <BrandPageClient initialData={initialData} locale={locale} slug={slug} />
+        <BrandPageClient initialData={initialData} locale={locale} slug={slug} services={brandServices} brandSlug={canonicalSlug} />
       </div>
 
       <div className="order-2 w-full">

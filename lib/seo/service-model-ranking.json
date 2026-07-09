@@ -1,0 +1,8008 @@
+{
+ "generatedAt": "2026-07-09T08:47:08.394Z",
+ "rulesRevision": "2026-07-09c",
+ "locale": "cs",
+ "note": "Top service-model pages by internal PageRank. Regenerate with: node scripts/link-graph/analyze.mjs --emit-ranking lib/seo/service-model-ranking.json",
+ "pairs": [
+  {
+   "s": "screen-replacement",
+   "m": "iphone-16-pro"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "iphone-16-pro"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "iphone-16-pro-max"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "iphone-16-pro-max"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "iphone-15-pro"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "iphone-15-pro"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "iphone-15-pro-max"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "iphone-15-pro-max"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "iphone-16"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "iphone-16"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "iphone-16-plus"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "iphone-16-plus"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "iphone-se-2022"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "iphone-se-2022"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "iphone-14"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "iphone-14"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "iphone-14-plus"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "iphone-14-plus"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "iphone-14-pro"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "iphone-14-pro"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "iphone-14-pro-max"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "iphone-14-pro-max"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "iphone-15"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "iphone-15"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "iphone-15-plus"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "iphone-15-plus"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "ipad-air-5"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "ipad-air-5"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "ipad-pro-9-7-2016"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "ipad-pro-9-7-2016"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "iphone-12-mini"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "ipad-pro-10-5-2017"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "ipad-air-3"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "iphone-12-mini"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "ipad-pro-10-5-2017"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "ipad-air-3"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "iphone-se-2020"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "ipad-pro-11-1st-gen-2018"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "iphone-se-2020"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "ipad-pro-11-1st-gen-2018"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "iphone-11-pro-max"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "ipad-pro-11-2nd-gen-2020"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "iphone-11-pro-max"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "ipad-10"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "ipad-pro-12-9-5th-gen-2021"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "ipad-pro-11-2nd-gen-2020"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "ipad-pro-12-9-5th-gen-2021"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "ipad-10"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "iphone-11-pro"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "ipad-9"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "iphone-13-pro-max"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "ipad-pro-11-3rd-gen-2021"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "iphone-11-pro"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "iphone-13-pro"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "ipad-pro-129-6-generace-2022"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "ipad-pro-11-3rd-gen-2021"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "ipad-pro-129-6-generace-2022"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "iphone-13-pro-max"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "iphone-13"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "ipad-9"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "iphone-13-pro"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "iphone-13-mini"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "iphone-11"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "iphone-13"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "ipad-8"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "ipad-air-4"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "iphone-12-pro-max"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "iphone-13-mini"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "ipad-pro-11-4th-gen-2022"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "iphone-11"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "ipad-air-4"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "ipad-pro-11-4th-gen-2022"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "iphone-12-pro-max"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "iphone-12-pro"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "ipad-8"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "iphone-12-pro"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "iphone-xs-max"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "iphone-12"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "iphone-xs-max"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "ipad-pro-12-9-1st-gen-2015"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "ipad-7"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "iphone-12"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "ipad-pro-12-9-1st-gen-2015"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "ipad-7"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "iphone-xs"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "iphone-xs"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "ipad-6"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "ipad-pro-12-9-2nd-gen-2017"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "ipad-pro-12-9-2nd-gen-2017"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "ipad-6"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "iphone-xr"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "iphone-xr"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "ipad-5"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "ipad-pro-12-9-3rd-gen-2018"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "ipad-pro-12-9-3rd-gen-2018"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "ipad-5"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "iphone-x"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "iphone-x"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "ipad-pro-12-9-4th-gen-2020"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "ipad-pro-12-9-4th-gen-2020"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "ipad-mini-6"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "ipad-mini-6"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "iphone-8-plus"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "iphone-8-plus"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "ipad-mini-5"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "ipad-mini-5"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "iphone-8"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "iphone-8"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "ipad-mini-4"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "ipad-mini-4"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "iphone-7-plus"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "iphone-7-plus"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-s23-fe"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "ipad-mini-3"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "ipad-mini-3"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a52s-5g"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-s23-fe"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-s22-2"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a52s-5g"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-s22-2"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "iphone-7"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "iphone-7"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "xiaomi-13t-pro"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "xiaomi-13t"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a73-5g"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-s26-ultra"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a10s"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-s24"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-s26-ultra"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a73-5g"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "xiaomi-13t-pro"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "xiaomi-13t"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a52"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-9t"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-9c"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-10a"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "mi-9t-pro"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "mi-10-lite"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "mi-10"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a10s"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-s24"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-s22"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "ipad-mini-2"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "ipad-mini-2"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a52"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-9t"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-9c"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-10a"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "mi-9t-pro"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "mi-10-lite"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "mi-10"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-s22"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-s24-2"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a52-5g"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-s24-2"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a52-5g"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-s21-fe"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "ipad-mini-1"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "ipad-mini-1"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-s21-fe"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a8"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-s24-ultra"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a53-5g"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a8"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "mi-11"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-15"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "mi-11"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-15"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-s24-ultra"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a53-5g"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-s21-ultra"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-s21-ultra"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-s24-fe"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a15"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "mi-11-ultra"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-15c"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a54-5g"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a16-5g"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "mi-11-ultra"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-15c"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a16"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a15-5g"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-s24-fe"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a15"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a54-5g"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a16-5g"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a16"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a15-5g"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "xiaomi-17t-pro"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-s21-2"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-note-15-pro-5g-2"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "xiaomi-17t-pro"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-note-15-pro-5g-2"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-s21-2"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a6"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a14"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a6"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a14-5g"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-s25-edge"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a20s"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a55-5g"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-note-13-pro-4g"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a14"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-s25-edge"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a14-5g"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a55-5g"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a20s"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-s23-2"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-s23"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-s23-ultra"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-s22-ultra"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-note-13-pro-4g"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-s21"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-note-10t-5g"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-s23-2"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-s23"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-s23-ultra"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-s22-ultra"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-s21"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a5-2017"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a51-5g"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-note-10t-5g"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a51"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a50"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a50s"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a5-2017"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a13-5g"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-note-13-pro-5g"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a51-5g"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a51"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-s25"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a42-5g"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a56-5g"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a50"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a20"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a21s"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a50s"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a22"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a13-5g"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a41"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a22-5g"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-s25"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-note-13-pro-5g"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a42-5g"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a56-5g"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a23"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a20"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a21s"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "xiaomi-14"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a40"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a23-5g"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a36-5g"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a35-5g"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a24"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a34-5g"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a22"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a41"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a25-5g"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a33-5g"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a26-5g"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a32-5g"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a30s"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a30"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a32"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a31"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-note-10-5g"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a22-5g"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-s20-fe"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a23"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a40"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a23-5g"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a36-5g"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a35-5g"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a24"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a34-5g"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "xiaomi-14"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a25-5g"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a33-5g"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a26-5g"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a32-5g"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a30s"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a30"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a32"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a31"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-s20-fe"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-note-10-5g"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "xiaomi-13-pro"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a06"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-10"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "mi-10-pro"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-note-13-pro-5g-2"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a06"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "xiaomi-13-pro"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a13"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-10"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "mi-10-pro"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a12"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a11"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-note-13-pro-5g-2"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a13"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-s25-2"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a70"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a12"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "xiaomi-14-pro"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a11"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-note-10"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-s25-2"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a70"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "xiaomi-14-pro"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "mi-9t"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-9"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-note-10"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-s20-ultra"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "xiaomi-13"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-10-5g"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "mi-10t-lite"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "mi-9t"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-9"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-s20-ultra"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-note-14s"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a05"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a05s"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "xiaomi-13"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-10-5g"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "mi-10t-lite"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a05"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a05s"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-note-14s"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a10"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "xiaomi-14-ultra"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-note-10s"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a10"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-s25-fe"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a70s"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "xiaomi-14-ultra"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-note-10s"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-9a"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "mi-9"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-s25-fe"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a70s"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "xiaomi-13-lite"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-9a"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "mi-9"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-10c"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "mi-10t"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-note-14-4g"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-s20-2"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "xiaomi-13-lite"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-10c"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "mi-10t"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-s20-2"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-note-14-4g"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a04"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a04s"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a03"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a04"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a04s"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a03"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-note-9-pro"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "xiaomi-14t"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-note-9-pro"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "xiaomi-14t"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-8"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "mi-9-lite"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-s25-ultra"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a71"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-s25-ultra"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "xiaomi-12t-pro"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a71"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-note-14-5g"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-8"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "mi-9-lite"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-12"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "mi-10t-pro"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "xiaomi-12t-pro"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-note-14-5g"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-12"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "mi-10t-pro"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-s20"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-s20"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a03s"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-note-9t"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a03s"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "xiaomi-14t-pro"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-note-9t"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-note-13-5g"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-note-13-4g"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "xiaomi-14t-pro"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-note-10-pro"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-note-12-pro-5g-2"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-note-11"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-note-11s"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-8a"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "mi-9-se"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-note-12-pro-5g"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-note-13-5g"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-note-11s-5g"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-note-13-4g"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-note-14-pro-4g"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-note-12-pro-4g"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-note-10-pro"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-note-12-pro-5g-2"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-note-11"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-note-11-pro"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-s26"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a71-5g"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-note-11s"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-8a"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "mi-9-se"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "xiaomi-12t"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-note-12-pro-5g"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-s26"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-note-12-5g"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-note-11s-5g"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a71-5g"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-note-11-pro-5g"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-note-14-pro-4g"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-note-12-pro-4g"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-note-11-pro"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "xiaomi-12t"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-note-12-4g"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-note-12s"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-12c"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "mi-note-10-lite"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-note-12-5g"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-note-11-pro-5g"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-note-12-4g"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-note-12s"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-12c"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "mi-note-10-lite"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-note-9"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-s10-2"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-s10-2"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a02s"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a02"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a02s"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a02"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-note-9"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "xiaomi-15"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "xiaomi-15"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-note-14-pro-5g"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-7"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "mi-8"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-s26-2"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-a72"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-s26-2"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-a72"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-note-14-pro-5g"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-7"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "mi-8"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "xiaomi-12-pro"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "xiaomi-12-pro"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-13"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "mi-note-10"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-note-9s"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-s10"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-13"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "mi-note-10"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-s10"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-note-9s"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "xiaomi-15-ultra"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-note-14-pro-5g-2"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "xiaomi-15-ultra"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-note-14-pro-5g-2"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-7a"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "mi-8-lite"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-7a"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "mi-8-lite"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "xiaomi-12x"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "xiaomi-12x"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-note-8-pro"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "samsung-s10e"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "samsung-s10e"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-note-8-pro"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-13c"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "mi-note-10-pro"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-13c"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "mi-note-10-pro"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "xiaomi-15t"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "xiaomi-15t"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-note-15-4g"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-note-15-4g"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-a5"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "mi-a3"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "xiaomi-12"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-a5"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "mi-a3"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "xiaomi-12"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-note-8t"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-note-8t"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-14c"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "mi-11-lite"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-14c"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "mi-11-lite"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "xiaomi-15t-pro"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "xiaomi-15t-pro"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-note-15-pro-4g"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-note-15-pro-4g"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-a3"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "mi-a2"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-a3"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "mi-a2"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "xiaomi-12-lite"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "xiaomi-12-lite"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-note-8"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-note-8"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "xiaomi-17"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "xiaomi-17"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-note-15-pro-5g"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-note-15-pro-5g"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-a2"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "mi-a2-lite"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-a2"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "mi-a2-lite"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "xiaomi-11t-pro"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "xiaomi-11t-pro"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-note-7-pro"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-note-7-pro"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-a1"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "mi-a1"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-a1"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "mi-a1"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "xiaomi-11t"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "xiaomi-11t"
+  },
+  {
+   "s": "battery-replacement",
+   "m": "redmi-note-7"
+  },
+  {
+   "s": "screen-replacement",
+   "m": "redmi-note-7"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "iphone-16-pro"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "iphone-16-pro-max"
+  },
+  {
+   "s": "screen-glass-replacement",
+   "m": "ipad-9"
+  },
+  {
+   "s": "screen-glass-replacement",
+   "m": "ipad-8"
+  },
+  {
+   "s": "screen-glass-replacement",
+   "m": "ipad-7"
+  },
+  {
+   "s": "screen-glass-replacement",
+   "m": "ipad-6"
+  },
+  {
+   "s": "screen-glass-replacement",
+   "m": "ipad-5"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "iphone-16-pro"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "iphone-16-pro-max"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "iphone-15-pro"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "iphone-15-pro-max"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "ipad-pro-12-9-5th-gen-2021"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "iphone-16"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "ipad-pro-129-6-generace-2022"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "iphone-se-2022"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "iphone-16-plus"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "iphone-14"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "mi-11"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-15"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "iphone-14-plus"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "mi-11-ultra"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-15c"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-s26-ultra"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a73-5g"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "iphone-14-pro"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "ipad-pro-12-9-5th-gen-2021"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "xiaomi-17t-pro"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-note-15-pro-5g-2"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "ipad-air-5"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "ipad-pro-129-6-generace-2022"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "iphone-14-pro-max"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "mi-11"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-15"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "ipad-pro-9-7-2016"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "iphone-15"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "mi-11-ultra"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-15c"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "ipad-pro-10-5-2017"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-s26-ultra"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "iphone-15-plus"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "xiaomi-17t-pro"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-note-15-pro-5g-2"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a73-5g"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "iphone-16-pro"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "ipad-air-3"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "iphone-12-mini"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "ipad-pro-11-1st-gen-2018"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "iphone-16-pro-max"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "xiaomi-13t-pro"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "xiaomi-13t"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-9t"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-9c"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-10a"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "mi-9t-pro"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "iphone-se-2020"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "mi-10-lite"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "mi-10"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "ipad-pro-11-2nd-gen-2020"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "samsung-s26-2"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "samsung-s26-ultra"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "mi-11"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "redmi-15"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "iphone-se-2022"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "iphone-11-pro-max"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "ipad-10"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "xiaomi-17"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "iphone-15-pro"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "mi-11-ultra"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "ipad-pro-11-3rd-gen-2021"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "redmi-15c"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "xiaomi-17t-pro"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "redmi-note-15-pro-5g"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "redmi-note-15-pro-5g-2"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "iphone-14"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "iphone-11-pro"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "iphone-15-pro-max"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "ipad-pro-11-4th-gen-2022"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "ipad-9"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "ipad-air-5"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "iphone-14-plus"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-s23-fe"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "ipad-air-4"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "iphone-13-pro-max"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "iphone-13-pro"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "iphone-13"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "iphone-11"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "ipad-pro-9-7-2016"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "iphone-16"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a52s-5g"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "iphone-13-mini"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "iphone-14-pro"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-s22-2"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "ipad-pro-12-9-1st-gen-2015"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "iphone-12-pro-max"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "ipad-8"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-s24"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "iphone-12-pro"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "xiaomi-13t-pro"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "xiaomi-13t"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "ipad-pro-10-5-2017"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-9t"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-9c"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-10a"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "mi-9t-pro"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "mi-10-lite"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "mi-10"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a52"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "iphone-xs-max"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "iphone-12"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "iphone-14-pro-max"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "iphone-16-plus"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a10s"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-note-13-pro-4g"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-s22"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "ipad-pro-12-9-2nd-gen-2017"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-s24-2"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "ipad-air-3"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "ipad-7"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "ipad-pro-11-1st-gen-2018"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "iphone-12-mini"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a52-5g"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-note-10t-5g"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "iphone-15"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-note-13-pro-5g"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "iphone-xs"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "xiaomi-14"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-10"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "mi-10-pro"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-s21-fe"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-s24-ultra"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "ipad-pro-11-2nd-gen-2020"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "iphone-se-2020"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "xiaomi-13-pro"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-note-10-5g"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a53-5g"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "ipad-pro-12-9-3rd-gen-2018"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "ipad-6"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "iphone-15-plus"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-note-13-pro-5g-2"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a8"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "xiaomi-14-pro"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-10-5g"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "mi-10t-lite"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-s21-ultra"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "iphone-xr"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-s24-fe"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "mi-9t"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-9"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "ipad-pro-11-3rd-gen-2021"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "ipad-10"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "iphone-11-pro-max"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-note-10"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "xiaomi-13"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a54-5g"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-note-14s"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-s23-fe"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "xiaomi-14-ultra"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a15"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a16-5g"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-10c"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "ipad-5"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "mi-10t"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a16"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "ipad-pro-12-9-4th-gen-2020"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a15-5g"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-s21-2"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "xiaomi-13t-pro"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "xiaomi-13t"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-s25-edge"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-9a"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "mi-9"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a52s-5g"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-s22-2"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "iphone-11-pro"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-note-10s"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "iphone-x"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "ipad-pro-11-4th-gen-2022"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a55-5g"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "ipad-9"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "xiaomi-13-lite"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-note-14-4g"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-s24"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a6"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a14"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-s23-2"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-s23"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-note-13-pro-4g"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-s23-ultra"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a14-5g"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a20s"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-s22-ultra"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "xiaomi-14t"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "redmi-9t"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "redmi-9c"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "redmi-10a"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "mi-9t-pro"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "mi-10-lite"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "mi-10"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-12"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "mi-10t-pro"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "ipad-air-4"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-s21"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "ipad-mini-6"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a52"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-s25"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a10s"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-s22"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-8"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "mi-9-lite"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "iphone-11"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-note-9-pro"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "iphone-se-2022"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a51-5g"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "ipad-pro-12-9-1st-gen-2015"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a56-5g"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-note-14-5g"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a51"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-s24-2"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "iphone-13-pro-max"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "iphone-13-pro"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-note-10t-5g"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "xiaomi-12t-pro"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a50"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-note-13-pro-5g"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a5-2017"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "iphone-13"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "ipad-8"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "xiaomi-14"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a50s"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "iphone-8-plus"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-10"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "mi-10-pro"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a13-5g"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "iphone-13-mini"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a42-5g"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a20"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a21s"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "xiaomi-14t-pro"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "iphone-12-pro-max"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a41"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a22"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a52-5g"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a22-5g"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "samsung-s23-fe"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-s20-fe"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a23"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a40"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "iphone-12-pro"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a23-5g"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a36-5g"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a35-5g"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-12c"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "mi-note-10-lite"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a24"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a34-5g"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a25-5g"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a33-5g"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "iphone-14"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a26-5g"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a32-5g"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a30s"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a30"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a32"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a31"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "iphone-xs-max"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-s21-fe"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-note-9t"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "ipad-mini-5"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "xiaomi-13-pro"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-s24-ultra"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-note-10-5g"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-8a"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "mi-9-se"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-note-13-pro-5g-2"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "xiaomi-13t-pro"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "xiaomi-13t"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "iphone-12"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-s25-2"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-note-13-5g"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-note-14-pro-4g"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "xiaomi-13t-pro"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "xiaomi-13t"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-note-13-4g"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "xiaomi-13t-pro"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "xiaomi-13t"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "xiaomi-14-pro"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "xiaomi-13t-pro"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "xiaomi-13t"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "xiaomi-13t-pro"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "xiaomi-13t"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a06"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-note-12-pro-5g-2"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-10-5g"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "mi-10t-lite"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-note-10-pro"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "ipad-pro-12-9-2nd-gen-2017"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-note-11"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-note-12-pro-5g"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "xiaomi-12t"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-note-11s"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a70"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-note-11s-5g"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-note-12-pro-4g"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a13"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "ipad-7"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a12"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a53-5g"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-note-11-pro"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a11"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "samsung-s24"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-note-12-5g"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-note-11-pro-5g"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "iphone-8"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "redmi-9t"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "redmi-9c"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "redmi-10a"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "mi-9t-pro"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "mi-10-lite"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "mi-10"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "iphone-14-plus"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "mi-9t"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-9"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "redmi-9t"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "redmi-9c"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "redmi-10a"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "mi-9t-pro"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "mi-10-lite"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "mi-10"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a8"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-note-12-4g"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "redmi-9t"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "redmi-9c"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "redmi-10a"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "mi-9t-pro"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "redmi-9t"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "redmi-9c"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "redmi-10a"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "mi-10-lite"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "mi-10"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "mi-9t-pro"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-note-12s"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "mi-10-lite"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "mi-10"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "redmi-9t"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "redmi-9c"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "redmi-10a"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "mi-9t-pro"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "mi-10-lite"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "mi-10"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "iphone-12-mini"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "xiaomi-15"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-s21-ultra"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "xiaomi-13"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-note-10"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-s20-ultra"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-note-14s"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-s24-fe"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "xiaomi-13t-pro"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "xiaomi-13t"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "samsung-s22-2"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "iphone-xs"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-note-9"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "ipad-air-5"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "xiaomi-14-ultra"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-13"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "mi-note-10"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-10c"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "mi-10t"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "ipad-mini-4"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-note-14-pro-5g"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-s25-fe"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a54-5g"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-7"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "mi-8"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "ipad-air-5"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "ipad-air-5"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a05"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a05s"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "ipad-air-5"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "samsung-s24-2"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "iphone-14-pro"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "ipad-pro-12-9-3rd-gen-2018"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "ipad-6"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "redmi-9t"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "redmi-9c"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "redmi-10a"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "mi-9t-pro"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "mi-10-lite"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "mi-10"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a70s"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "iphone-se-2020"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a10"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-9a"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "mi-9"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "iphone-se-2022"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "xiaomi-12-pro"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a15"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "redmi-note-13-pro-4g"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "ipad-pro-9-7-2016"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a16-5g"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-note-10s"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-s21-2"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a16"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-note-14-4g"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a15-5g"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "xiaomi-13-lite"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "samsung-s22"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-s25-edge"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "iphone-7-plus"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "xiaomi-14t"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "samsung-s23-fe"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "iphone-xr"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-12"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "mi-10t-pro"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-s20-2"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "ipad-pro-9-7-2016"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "ipad-pro-9-7-2016"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-note-9s"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "iphone-12-mini"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "ipad-pro-9-7-2016"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "xiaomi-15-ultra"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "ipad-air-5"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "samsung-s23-fe"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "samsung-s24-ultra"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "samsung-s23-fe"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "samsung-s23-fe"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a55-5g"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "iphone-14-pro-max"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "iphone-se-2022"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "samsung-s22-2"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "samsung-s22-2"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "samsung-s22-2"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "samsung-s22-2"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "iphone-14"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "iphone-se-2022"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "iphone-se-2022"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "iphone-11-pro-max"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "iphone-se-2022"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a6"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-13c"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "mi-note-10-pro"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-s23-2"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "ipad-mini-3"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-note-14-pro-5g-2"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "ipad-air-3"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-s23"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "redmi-note-13-pro-5g"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-s23-ultra"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-s25-ultra"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "xiaomi-14"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a14"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "ipad-pro-10-5-2017"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-s22-ultra"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a04"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a04s"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a03"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-8"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "mi-9-lite"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a14-5g"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "ipad-pro-12-9-4th-gen-2020"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a20s"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "ipad-5"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-note-9-pro"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-note-14-5g"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-7a"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "mi-8-lite"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a71"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-s21"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "ipad-air-3"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "ipad-air-3"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "ipad-air-3"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-s25"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "samsung-s21-fe"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "xiaomi-12t-pro"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "iphone-12-mini"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "ipad-pro-10-5-2017"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "iphone-12-mini"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "ipad-pro-9-7-2016"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "ipad-pro-10-5-2017"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "iphone-12-mini"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "ipad-pro-10-5-2017"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "iphone-12-mini"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "iphone-se-2020"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "samsung-s24"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "samsung-s23-fe"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "xiaomi-12x"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "xiaomi-14t-pro"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "samsung-s24-fe"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "iphone-14"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "samsung-s24"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "iphone-15"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "samsung-s22-2"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "samsung-s24"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "samsung-s24"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "redmi-note-10t-5g"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "iphone-7"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "samsung-s22"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "iphone-14"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "iphone-14"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a56-5g"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "iphone-14-plus"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "iphone-se-2022"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "samsung-s22"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "iphone-14"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "redmi-10"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "mi-10-pro"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a51-5g"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "iphone-x"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "redmi-note-13-pro-5g-2"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "samsung-s22"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "samsung-s22"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "iphone-11-pro"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a51"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-12c"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "mi-note-10-lite"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-note-8-pro"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-s20"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "xiaomi-14-pro"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a5-2017"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "xiaomi-15t"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a50"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "ipad-pro-11-1st-gen-2018"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "samsung-s23-fe"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a50s"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a13-5g"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "ipad-air-3"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "samsung-s22-2"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a42-5g"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-note-9t"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a20"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-note-14-pro-4g"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-8a"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "mi-9-se"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-note-15-4g"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a21s"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-14c"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "mi-11-lite"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "iphone-se-2020"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "samsung-s21-ultra"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "ipad-pro-10-5-2017"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-s20-fe"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a03s"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "ipad-mini-2"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a41"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "redmi-note-13-pro-4g"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-s26"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "iphone-se-2020"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a22"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "iphone-se-2020"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "iphone-12-mini"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "ipad-pro-11-1st-gen-2018"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "ipad-pro-11-1st-gen-2018"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "iphone-se-2020"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "ipad-pro-11-1st-gen-2018"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-note-13-5g"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "redmi-note-13-pro-4g"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "iphone-11-pro-max"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "xiaomi-13-pro"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a22-5g"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-note-13-4g"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "redmi-note-13-pro-4g"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "redmi-note-13-pro-4g"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "redmi-note-13-pro-4g"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "ipad-mini-6"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a23"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-note-12-pro-5g-2"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "samsung-s24"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a40"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "iphone-14-plus"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "samsung-s24-2"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a23-5g"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "xiaomi-12t"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-note-10-pro"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a36-5g"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a35-5g"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-note-11"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a24"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "samsung-s25-edge"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a34-5g"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a71-5g"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-note-12-pro-5g"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-s25-2"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a25-5g"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a33-5g"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "redmi-note-10-5g"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a26-5g"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a32-5g"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a30s"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-note-11s"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a32"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a30"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a31"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "iphone-15-plus"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "samsung-s24-2"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "samsung-s22"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "iphone-14-plus"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "iphone-14"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "iphone-14-plus"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-note-11s-5g"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "iphone-14-plus"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-note-12-pro-4g"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "iphone-14-pro"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "samsung-s24-2"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "samsung-s24-2"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "redmi-note-10t-5g"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "redmi-note-14s"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "redmi-10-5g"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "mi-10t-lite"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "redmi-note-10t-5g"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "redmi-note-10t-5g"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "redmi-note-10t-5g"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "redmi-note-10t-5g"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-note-11-pro"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "samsung-s21-fe"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-a5"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "mi-a3"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "iphone-11"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "samsung-s21-fe"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-note-12-5g"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "samsung-s21-fe"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "samsung-s21-fe"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "xiaomi-12"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "xiaomi-14-ultra"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-note-11-pro-5g"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "samsung-a52s-5g"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "ipad-pro-11-2nd-gen-2020"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "ipad-10"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a06"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "xiaomi-15"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "samsung-s24"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a70"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-note-12-4g"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-note-12s"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "iphone-15-pro"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "iphone-8-plus"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "samsung-s22"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "iphone-11-pro-max"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "redmi-note-13-pro-5g"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-note-8t"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a13"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "ipad-pro-11-1st-gen-2018"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-13"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "mi-note-10"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "iphone-se-2020"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "ipad-10"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a12"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "ipad-10"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "samsung-s21-2"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "mi-9t"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "redmi-9"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "iphone-11-pro-max"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "ipad-10"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "iphone-11-pro-max"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "redmi-note-13-pro-5g"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-note-9"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-s10-2"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "iphone-11-pro-max"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "xiaomi-15t-pro"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a11"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "redmi-note-13-pro-4g"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "ipad-pro-11-2nd-gen-2020"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "redmi-note-13-pro-5g"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "redmi-note-13-pro-5g"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "ipad-pro-11-2nd-gen-2020"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "redmi-note-13-pro-5g"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "ipad-pro-11-2nd-gen-2020"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "iphone-11-pro"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "xiaomi-13"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "iphone-14-pro"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "samsung-s24-ultra"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-note-14-pro-5g"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "redmi-note-10"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "samsung-s24-2"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "samsung-s25"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "samsung-a10s"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-s20-ultra"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "iphone-14-plus"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "iphone-14-pro"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-note-15-pro-4g"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a02s"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "samsung-s24-ultra"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "iphone-14-pro"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a02"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "redmi-note-10-5g"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "iphone-13"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "xiaomi-14"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "redmi-note-10-5g"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "iphone-14-pro"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-7"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "redmi-note-10t-5g"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "iphone-13-pro"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "mi-8"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "redmi-note-10-5g"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "samsung-s24-ultra"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "redmi-note-10-5g"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "redmi-note-10-5g"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "redmi-note-14-4g"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "samsung-s24-ultra"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "iphone-13-mini"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "iphone-14-pro-max"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-s26-2"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "iphone-13-pro-max"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "xiaomi-14"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "samsung-s21-fe"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "redmi-10c"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "mi-10t"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "samsung-s21-ultra"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "ipad-mini-1"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "iphone-12-pro-max"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "ipad-mini-5"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "xiaomi-14"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "xiaomi-14"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "xiaomi-14"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "samsung-s21-ultra"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "samsung-a52"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "iphone-xs-max"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "samsung-s21-ultra"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "samsung-s21-ultra"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "xiaomi-13-pro"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-s25-fe"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "xiaomi-13-pro"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "iphone-12-pro"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "xiaomi-14t"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "xiaomi-13-pro"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "xiaomi-13-pro"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "xiaomi-13-pro"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "xiaomi-12-pro"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-a72"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "samsung-s23-2"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "ipad-pro-11-3rd-gen-2021"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "samsung-s23-ultra"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "samsung-s23"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "ipad-9"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "samsung-s24-2"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "iphone-12"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "samsung-s22-ultra"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "redmi-note-13-pro-5g-2"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "ipad-10"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "iphone-11-pro"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-a3"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "mi-a2"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "redmi-note-13-pro-5g-2"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "iphone-11-pro-max"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a05"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a05s"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "samsung-s21-fe"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "redmi-note-13-pro-5g"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "iphone-11-pro"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "iphone-11-pro"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "ipad-pro-11-2nd-gen-2020"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "redmi-note-13-pro-5g-2"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "redmi-note-13-pro-5g-2"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "iphone-11-pro"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "redmi-note-13-pro-5g-2"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "xiaomi-12-lite"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "samsung-s21"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "redmi-9a"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "mi-9"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a70s"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "iphone-15-pro-max"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "ipad-9"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "ipad-9"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "iphone-11"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "ipad-9"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "ipad-pro-11-3rd-gen-2021"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "ipad-pro-11-3rd-gen-2021"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "ipad-pro-11-3rd-gen-2021"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "redmi-10"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "mi-10-pro"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "xiaomi-15-ultra"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "xiaomi-13-lite"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "redmi-10"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "iphone-14-pro-max"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "mi-10-pro"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "samsung-s24-fe"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "redmi-note-10s"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "iphone-8"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a10"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "redmi-10"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "redmi-10"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "mi-10-pro"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "mi-10-pro"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "redmi-10"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "mi-10-pro"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "samsung-s24-ultra"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-note-9s"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "iphone-14-pro"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "redmi-note-10"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "redmi-note-10-5g"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "redmi-note-10"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "iphone-14-pro-max"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "redmi-note-10"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "iphone-14-pro-max"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "xiaomi-14-pro"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "redmi-note-10"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "redmi-note-10"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "samsung-s24-fe"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-note-8"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "iphone-14-pro-max"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "redmi-note-14-5g"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "samsung-s24-fe"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "samsung-s24-fe"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "xiaomi-14"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "iphone-15"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "xiaomi-17"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "xiaomi-14-pro"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-s10"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-13c"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "samsung-s21-ultra"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "mi-note-10-pro"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "samsung-s21-2"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "xiaomi-14-pro"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "xiaomi-14-pro"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "xiaomi-14-pro"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "ipad-air-4"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "samsung-a52-5g"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "mi-9t"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "redmi-9"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "samsung-s25-2"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "mi-9t"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "redmi-9"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "samsung-s21-2"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-note-14-pro-5g-2"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "redmi-12"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "mi-10t-pro"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "mi-9t"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "redmi-9"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "mi-9t"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "redmi-9"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "mi-9t"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "redmi-9"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "xiaomi-13-pro"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "xiaomi-13"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "samsung-s21-2"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "samsung-s21-2"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "xiaomi-13"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "iphone-xs"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "xiaomi-13"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "xiaomi-13"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "xiaomi-13"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-s20-2"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-note-15-pro-5g"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "xiaomi-14t-pro"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "samsung-s24-ultra"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "ipad-pro-11-4th-gen-2022"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "ipad-air-4"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "ipad-air-4"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "redmi-note-14s"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "ipad-air-4"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "ipad-mini-4"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-7a"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "mi-8-lite"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "redmi-note-14s"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "ipad-8"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "redmi-note-13-pro-5g-2"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "iphone-11"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "iphone-11-pro"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-s25-ultra"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "samsung-s21-ultra"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "redmi-note-14s"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "redmi-note-14s"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "redmi-note-14s"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "iphone-11"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "iphone-11"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "ipad-9"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "iphone-11"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "ipad-pro-11-3rd-gen-2021"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "iphone-16-pro"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "samsung-s20-fe"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "iphone-13-mini"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "iphone-xs-max"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "iphone-13"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "redmi-10-5g"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "redmi-8"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "mi-10t-lite"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "mi-9-lite"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "iphone-12-pro-max"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "iphone-13-pro"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "redmi-10"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "mi-10-pro"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "redmi-10-5g"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "mi-10t-lite"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "xiaomi-12x"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "iphone-15"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "redmi-note-9-pro"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "ipad-8"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "ipad-8"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "samsung-s25-edge"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "ipad-pro-11-4th-gen-2022"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "ipad-8"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "ipad-pro-11-4th-gen-2022"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "samsung-a8"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "iphone-12-pro"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a04"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a04s"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a03"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "ipad-pro-11-4th-gen-2022"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "redmi-10-5g"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "redmi-10-5g"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "mi-10t-lite"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "mi-10t-lite"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "redmi-note-10"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "redmi-10-5g"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "mi-10t-lite"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "iphone-13-pro-max"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "redmi-note-10s"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "samsung-s24-fe"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "iphone-16"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "redmi-note-10s"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "iphone-14-pro-max"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "xiaomi-12t-pro"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "redmi-note-10s"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "redmi-note-10s"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "redmi-note-10s"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "iphone-15"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-a2"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "mi-a2-lite"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "iphone-15"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a71"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "xiaomi-14-ultra"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "samsung-s23-2"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "samsung-s25-edge"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "samsung-s23"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "iphone-15"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "iphone-12"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "redmi-note-14-pro-4g"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "xiaomi-14-pro"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "samsung-s23-ultra"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "samsung-s25-edge"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "samsung-s25-edge"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "samsung-s22-ultra"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "samsung-s23-2"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "samsung-s23"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "xiaomi-11t-pro"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "samsung-s21-2"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "iphone-15-plus"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "samsung-a53-5g"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "xiaomi-14-ultra"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "xiaomi-15t"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "mi-9t"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "redmi-9"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "samsung-s23-ultra"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "samsung-s23-2"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "samsung-s23-2"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "samsung-s23"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "samsung-s22-ultra"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "samsung-s23"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "redmi-9a"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "xiaomi-14-ultra"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "mi-9"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "xiaomi-14-ultra"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "samsung-s21"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "xiaomi-14-ultra"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "redmi-9a"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "mi-9"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "samsung-s23-ultra"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "samsung-s23-ultra"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "samsung-s22-ultra"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "samsung-s21"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "xiaomi-13"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "samsung-s22-ultra"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "redmi-9a"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "mi-9"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "redmi-9a"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "mi-9"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "redmi-9a"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "mi-9"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-note-8-pro"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "xiaomi-13-lite"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "samsung-s21"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "samsung-s21"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "iphone-7-plus"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "xiaomi-13-lite"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "xiaomi-13-lite"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "xiaomi-13-lite"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "xiaomi-13-lite"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "samsung-s25-fe"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "samsung-s24-fe"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "ipad-air-4"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-note-7-pro"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-14c"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "mi-11-lite"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "redmi-12c"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "redmi-note-14-4g"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "mi-note-10-lite"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-note-15-4g"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "iphone-xr"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "iphone-16-pro"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "redmi-note-14s"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "redmi-note-14-4g"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "samsung-s10e"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "ipad-pro-12-9-1st-gen-2015"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "iphone-11"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "iphone-13-mini"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "iphone-13"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "redmi-note-14-4g"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "redmi-note-14-4g"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "iphone-xs-max"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "redmi-note-14-4g"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "samsung-s21-2"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-s20"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "iphone-12-pro-max"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "iphone-13-pro"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "iphone-13-mini"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "iphone-xs-max"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "iphone-13-mini"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "iphone-xs-max"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "iphone-13"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "iphone-13"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "iphone-13-mini"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "iphone-xs-max"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "iphone-13"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "iphone-12-pro-max"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "iphone-12-pro-max"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "xiaomi-15"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "iphone-13-pro"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "iphone-13-pro"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "iphone-12-pro-max"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "iphone-12-pro"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "iphone-13-pro"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "iphone-13-pro-max"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "iphone-15-pro"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "iphone-16-pro-max"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "ipad-7"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "iphone-12-pro"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "iphone-xs"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "iphone-12-pro"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "ipad-8"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "ipad-pro-11-4th-gen-2022"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "redmi-10c"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "mi-10t"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "iphone-12-pro"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "redmi-10-5g"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "iphone-13-pro-max"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "mi-10t-lite"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "iphone-13-pro-max"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "ipad-mini-3"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "iphone-13-pro-max"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "redmi-10c"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "redmi-note-10s"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "mi-10t"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "iphone-12"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "redmi-note-9t"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "iphone-15-plus"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-s26"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "redmi-note-9-pro"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "ipad-pro-12-9-5th-gen-2021"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "redmi-8a"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "mi-9-se"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "redmi-note-9-pro"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "samsung-s25"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "ipad-pro-12-9-1st-gen-2015"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "ipad-pro-12-9-1st-gen-2015"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "iphone-12"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "redmi-10c"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "redmi-note-9-pro"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "ipad-pro-12-9-1st-gen-2015"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "redmi-10c"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "iphone-12"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "mi-10t"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "mi-10t"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "redmi-10c"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "samsung-s25-edge"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "redmi-note-9-pro"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "redmi-note-13-5g"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "samsung-s20-ultra"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "redmi-note-9-pro"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "mi-10t"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "iphone-15"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "iphone-12"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "samsung-s23-2"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "samsung-s23"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "redmi-note-13-4g"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "iphone-15-plus"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "iphone-15-plus"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "samsung-s23-ultra"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-a5"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "samsung-a15"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "mi-a3"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "iphone-15-plus"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "samsung-s25"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "xiaomi-14-ultra"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "samsung-s22-ultra"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "ipad-7"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "ipad-7"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "xiaomi-14t"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "ipad-7"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "samsung-a54-5g"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "redmi-note-12-pro-5g-2"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "samsung-s25"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "xiaomi-12t"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "samsung-s25"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "samsung-a16-5g"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "redmi-9a"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "samsung-s21"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "mi-9"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a03s"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "samsung-a16"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "iphone-16-plus"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "xiaomi-12"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "iphone-16-pro"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "xiaomi-14t"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "iphone-16-pro"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "samsung-a15-5g"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "samsung-s20-fe"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "redmi-8"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "mi-9-lite"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "redmi-note-12-pro-5g"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "xiaomi-14t"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "xiaomi-14t"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "iphone-16-pro"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "xiaomi-14t"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "xiaomi-13-lite"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "redmi-8"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "mi-9-lite"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "redmi-note-14-pro-5g"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "redmi-note-10-pro"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "samsung-s20-fe"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "redmi-8"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "redmi-note-11"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "mi-9-lite"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "redmi-8"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "mi-9-lite"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "redmi-8"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "mi-9-lite"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "samsung-s20-fe"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "samsung-s20-fe"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "redmi-note-11s"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "xiaomi-12t-pro"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a71-5g"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "redmi-note-12-pro-4g"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "xiaomi-12t-pro"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "redmi-note-11s-5g"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "xiaomi-12t-pro"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "xiaomi-12t-pro"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "xiaomi-12t-pro"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "samsung-s25-edge"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-a1"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "mi-a1"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "xiaomi-15t-pro"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "redmi-note-11-pro"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "redmi-note-14-5g"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "samsung-s23-2"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "redmi-note-12-5g"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "redmi-note-14-4g"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "samsung-s23"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "xiaomi-11t"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "iphone-15-pro"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "redmi-note-14-5g"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-note-8t"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "samsung-s23-ultra"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "samsung-s22-ultra"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "redmi-note-11-pro-5g"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-s26-2"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "iphone-16-pro-max"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "redmi-note-14-5g"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "redmi-note-14-5g"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "redmi-note-14-5g"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "iphone-13-mini"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "samsung-s25-ultra"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "iphone-xs-max"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "iphone-13"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "samsung-s21"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "iphone-xs"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "iphone-7"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "iphone-12-pro-max"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "iphone-13-pro"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "iphone-15-pro"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "iphone-15-pro"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "redmi-note-12-4g"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "iphone-xs"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "redmi-note-12s"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "iphone-xs"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "iphone-15-pro"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "iphone-x"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "iphone-xs"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "iphone-12-pro"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "iphone-13-pro-max"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "ipad-pro-12-9-2nd-gen-2017"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-note-15-pro-4g"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "redmi-13"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "mi-note-10"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "ipad-pro-12-9-5th-gen-2021"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "samsung-a6"
+  },
+  {
+   "s": "screen-replacement-premium",
+   "m": "redmi-note-7"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "ipad-pro-12-9-5th-gen-2021"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "ipad-pro-12-9-5th-gen-2021"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "ipad-pro-12-9-1st-gen-2015"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "redmi-10c"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "redmi-note-9-pro"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "mi-10t"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "ipad-6"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "iphone-12"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "redmi-12"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "mi-10t-pro"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "redmi-note-9t"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "redmi-note-9"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "redmi-note-9t"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-s10-2"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "redmi-note-9t"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "iphone-15-pro-max"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "redmi-note-9t"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "redmi-12"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "redmi-note-9t"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "mi-10t-pro"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "samsung-a14"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "iphone-15-plus"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "samsung-s25"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "iphone-xr"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "ipad-7"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "redmi-12"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "redmi-12"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "mi-10t-pro"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "mi-10t-pro"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "redmi-12"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "mi-10t-pro"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "ipad-pro-129-6-generace-2022"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "samsung-a14-5g"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "xiaomi-15-ultra"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "samsung-a20s"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "samsung-a55-5g"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "xiaomi-17"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "samsung-s25-2"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "xiaomi-14t"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "iphone-16-pro"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "mi-11"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "redmi-15"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "ipad-6"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "ipad-pro-12-9-2nd-gen-2017"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "ipad-6"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "samsung-s26-ultra"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "samsung-s20-2"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "ipad-pro-12-9-2nd-gen-2017"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "ipad-6"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "ipad-mini-2"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "samsung-s20-fe"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "ipad-pro-12-9-2nd-gen-2017"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "redmi-8"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "mi-9-lite"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "xiaomi-14t-pro"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "redmi-note-13-5g"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "redmi-note-13-5g"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "redmi-note-13-4g"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "iphone-16-pro-max"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "mi-11"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "redmi-15"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "redmi-note-13-5g"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "redmi-7"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "mi-8"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "redmi-note-13-5g"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "iphone-16-pro-max"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "redmi-note-13-4g"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "redmi-note-13-5g"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "samsung-s25-2"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "redmi-note-10-pro"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "redmi-note-13-4g"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "xiaomi-14t-pro"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "redmi-note-12-pro-5g-2"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "redmi-note-13-4g"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "redmi-note-13-4g"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "iphone-16-pro-max"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "redmi-note-10-pro"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "redmi-note-11"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "xiaomi-12t-pro"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "redmi-8a"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "mi-9-se"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "redmi-note-10-pro"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "redmi-note-12-pro-5g-2"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "redmi-note-11"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "samsung-s25-2"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "redmi-note-10-pro"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "redmi-note-10-pro"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "samsung-s25-2"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "xiaomi-14t-pro"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "xiaomi-14t-pro"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "redmi-note-11"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "redmi-8a"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "redmi-note-12-pro-5g-2"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "mi-9-se"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "xiaomi-14t-pro"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "redmi-note-11"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "redmi-note-12-pro-5g-2"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "redmi-note-11"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "redmi-note-12-pro-5g-2"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "redmi-note-11s"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "redmi-note-11s"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "redmi-8a"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "mi-9-se"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "redmi-note-12-pro-5g"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "redmi-8a"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "redmi-8a"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "mi-9-se"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "mi-9-se"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a02s"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "redmi-note-11s"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-a3"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "redmi-note-11s"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "redmi-note-11s"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a02"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "redmi-note-12-pro-5g"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "mi-a2"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-note-15-pro-5g"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "samsung-s20-ultra"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "redmi-note-12-pro-5g"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "redmi-note-11s-5g"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "redmi-note-12-pro-5g"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "redmi-note-12-pro-5g"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "redmi-note-11s-5g"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "redmi-note-14-pro-5g-2"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "redmi-note-11s-5g"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "redmi-note-15-pro-5g"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "redmi-note-11s-5g"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "samsung-s25"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "samsung-s20-ultra"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "redmi-note-11s-5g"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "xiaomi-12t"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "redmi-note-12-pro-4g"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "xiaomi-12-pro"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "xiaomi-12t"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "xiaomi-12-lite"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "redmi-note-12-pro-4g"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "redmi-note-14-pro-4g"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "redmi-note-11-pro"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "samsung-s20-ultra"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "redmi-note-12-pro-4g"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "samsung-s20-ultra"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "redmi-note-14-5g"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "xiaomi-12t"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "redmi-note-12-pro-4g"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "redmi-note-12-pro-4g"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "xiaomi-12t"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "redmi-note-11-pro"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-a72"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "xiaomi-12t"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "redmi-note-11-pro"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "redmi-note-11-pro"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "redmi-note-11-pro"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "redmi-note-14-pro-4g"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "redmi-note-15-pro-5g"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "redmi-note-12-5g"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "redmi-note-11-pro-5g"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "redmi-note-12-5g"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "redmi-note-14-pro-4g"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "redmi-note-14-pro-4g"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "redmi-note-14-pro-4g"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "redmi-note-11-pro-5g"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "iphone-15-pro"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "redmi-note-12-5g"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "redmi-note-12-5g"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "redmi-note-12-5g"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "redmi-note-11-pro-5g"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "iphone-xs"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "redmi-note-11-pro-5g"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "redmi-note-11-pro-5g"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "samsung-s20-fe"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "iphone-15-pro-max"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "redmi-note-12-4g"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "redmi-note-12s"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "ipad-pro-12-9-5th-gen-2021"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "redmi-note-12-4g"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "redmi-note-12s"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "redmi-note-12-4g"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "redmi-note-12s"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "redmi-note-12-4g"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "redmi-note-12-4g"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "redmi-note-12s"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "redmi-note-12s"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "samsung-a5-2017"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "samsung-s26"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "samsung-a51-5g"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "iphone-xr"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "samsung-s26-ultra"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "redmi-note-8"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "samsung-a51"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "samsung-s26-ultra"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "iphone-15-pro-max"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "redmi-note-9t"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "iphone-15-pro-max"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "samsung-s26-ultra"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "iphone-15-pro-max"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "iphone-xr"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "iphone-xr"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "mi-11"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "redmi-15"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "samsung-a50"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "iphone-xr"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "mi-11"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "redmi-15"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "ipad-pro-129-6-generace-2022"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "mi-11"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "redmi-15"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "iphone-8-plus"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "redmi-12"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "redmi-note-9"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "mi-10t-pro"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "ipad-pro-129-6-generace-2022"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "ipad-pro-129-6-generace-2022"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "redmi-note-9"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "redmi-note-9"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "redmi-note-9"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "redmi-note-9"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "samsung-a50s"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "samsung-a13-5g"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "ipad-pro-12-9-3rd-gen-2018"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "ipad-6"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "ipad-pro-12-9-2nd-gen-2017"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "ipad-5"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "samsung-a42-5g"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "redmi-note-9s"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "samsung-a56-5g"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "samsung-a20"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "iphone-16"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "redmi-13c"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "mi-note-10-pro"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "redmi-note-13-5g"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "samsung-a21s"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "redmi-12c"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "mi-note-10-lite"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "samsung-s25-2"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "redmi-note-15-pro-5g"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "redmi-note-13-4g"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "iphone-x"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "mi-11-ultra"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "redmi-note-15-pro-5g"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "redmi-15c"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "redmi-note-15-pro-5g"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "iphone-16-pro-max"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "redmi-note-10-pro"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "samsung-a22"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "redmi-12c"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "mi-note-10-lite"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "samsung-a41"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "redmi-note-11"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "xiaomi-14t-pro"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "redmi-note-12-pro-5g-2"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "samsung-a72"
+  },
+  {
+   "s": "charging-port-repair",
+   "m": "samsung-s10"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "xiaomi-15t"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "redmi-8a"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "mi-9-se"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "samsung-a22-5g"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "redmi-note-11s"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "redmi-12c"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "redmi-12c"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "mi-note-10-lite"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "mi-note-10-lite"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "redmi-12c"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "mi-note-10-lite"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "mi-11-ultra"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "redmi-15c"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "redmi-note-12-pro-5g"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "samsung-s26-ultra"
+  },
+  {
+   "s": "rear-camera-repair",
+   "m": "samsung-s25-fe"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "samsung-a23"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "redmi-note-11s-5g"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "ipad-5"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "ipad-5"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "redmi-note-15-pro-5g-2"
+  },
+  {
+   "s": "back-cover-replacement",
+   "m": "samsung-s20"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "samsung-s20-ultra"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "ipad-5"
+  },
+  {
+   "s": "front-camera-repair",
+   "m": "ipad-pro-12-9-3rd-gen-2018"
+  },
+  {
+   "s": "speaker-repair",
+   "m": "ipad-pro-12-9-3rd-gen-2018"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "samsung-a40"
+  },
+  {
+   "s": "ear-speaker-repair",
+   "m": "ipad-pro-12-9-3rd-gen-2018"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "samsung-a23-5g"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "redmi-note-12-pro-4g"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "samsung-a36-5g"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "samsung-a73-5g"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "xiaomi-12t"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "xiaomi-17t-pro"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "samsung-a35-5g"
+  },
+  {
+   "s": "camera-glass-replacement",
+   "m": "samsung-a24"
+  },
+  {
+   "s": "microphone-repair",
+   "m": "redmi-note-11-pro"
+  }
+ ]
+}

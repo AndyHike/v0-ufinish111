@@ -14,6 +14,7 @@ import { generateBreadcrumbListSchema } from "@/lib/structured-data"
 import { PrevNextNav } from "@/components/prev-next-nav"
 import { resolveScopedField, type ScopeRow, type BaseTranslation } from "@/lib/catalog/scope-text"
 import { resolveScopedFaqs, type ScopeFaqEntry } from "@/lib/catalog/scope-faqs"
+import { NearbyModelLinks } from "./nearby-models"
 
 // ISR Configuration
 export const revalidate = 3600 // Regenerate every 1 hour
@@ -331,6 +332,7 @@ export default async function ServicePageWithModel({ params }: Props) {
           name,
           slug,
           image_url,
+          position,
           brands(
             id,
             name,
@@ -356,6 +358,7 @@ export default async function ServicePageWithModel({ params }: Props) {
           name: model.name,
           slug: model.slug,
           image_url: model.image_url,
+          position: model.position ?? null,
           brands: brandObj ? {
             id: brandObj.id,
             name: brandObj.name,
@@ -703,7 +706,21 @@ export default async function ServicePageWithModel({ params }: Props) {
           {alsoSearched && (
             <p className="mt-8 text-center text-sm text-muted-foreground">{alsoSearched}</p>
           )}
-          <RelatedArticlesList locale={locale} />
+          {/* Sideways cluster: the same service on neighboring models */}
+          {sourceModel && (
+            <NearbyModelLinks
+              serviceId={service.id}
+              serviceSlug={slug}
+              serviceName={translation.name}
+              locale={locale}
+              modelId={sourceModel.id}
+              modelPosition={(sourceModel as any).position ?? null}
+              seriesId={sourceModel.series?.id ?? null}
+              brandId={sourceModel.brands?.id ?? null}
+              scopeName={sourceModel.series?.name || sourceModel.brands?.name || ""}
+            />
+          )}
+          <RelatedArticlesList locale={locale} serviceId={service.id} />
           <PrevNextNav
             prev={prevServiceNav ? { name: prevServiceNav.name, href: `/${locale}/services/${prevServiceNav.slug}/${modelSlug}` } : null}
             next={nextServiceNav ? { name: nextServiceNav.name, href: `/${locale}/services/${nextServiceNav.slug}/${modelSlug}` } : null}

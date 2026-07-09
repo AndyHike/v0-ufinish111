@@ -2,26 +2,43 @@
 
 import Link from "next/link"
 import { useTranslations } from "next-intl"
-import { ChevronRight, Smartphone } from "lucide-react"
+import { ChevronRight, Smartphone, Wrench } from "lucide-react"
 import { formatImageUrl } from "@/utils/image-url"
 import { Breadcrumb } from "@/components/breadcrumb"
 import { useGlobalData } from "@/hooks/use-global-data"
 import { useEffect, useState } from "react"
+import { formatCurrency } from "@/lib/format-currency"
 
 type BrandData = {
   brand: any
   modelsWithoutSeries: any[]
 }
 
+type BrandService = {
+  id: string
+  slug: string
+  name: string
+  minPrice: number | null
+}
+
 type Props = {
   initialData: BrandData
   locale: string
   slug: string
+  services?: BrandService[]
+  brandSlug?: string | null
 }
 
-export default function BrandPageClient({ initialData, locale, slug }: Props) {
+const SERVICES_COPY = {
+  cs: { services: "Opravy pro tuto značku", from: "od" },
+  uk: { services: "Ремонт для цього бренду", from: "від" },
+  en: { services: "Repairs for this brand", from: "from" },
+} as const
+
+export default function BrandPageClient({ initialData, locale, slug, services = [], brandSlug }: Props) {
   const t = useTranslations("Brands")
   const { setCachedBrand } = useGlobalData()
+  const servicesCopy = SERVICES_COPY[locale as keyof typeof SERVICES_COPY] || SERVICES_COPY.cs
 
   // Use initialData directly - no need for SWR fetch on client
   // Data is already rendered on server via ISR, no need for additional fetch
@@ -78,6 +95,33 @@ export default function BrandPageClient({ initialData, locale, slug }: Props) {
             </p>
           </div>
         </div>
+
+        {/* Компактні міні-чіпи послуг для цього бренду → хаби бренд×послуга
+            (дзеркало блоку на сторінці серії; годує хаби вагою з рівня 1) */}
+        {services.length > 0 && brandSlug && (
+          <div className="mb-8">
+            <h2 className="mb-3 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              <Wrench className="h-3.5 w-3.5" />
+              {servicesCopy.services}
+            </h2>
+            <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0 [&::-webkit-scrollbar]:hidden">
+              {services.map((svc) => (
+                <Link
+                  key={svc.id}
+                  href={`/${locale}/services/${svc.slug}/brand/${brandSlug}`}
+                  className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm text-gray-700 transition-colors hover:border-blue-300 hover:text-blue-600"
+                >
+                  <span>{svc.name}</span>
+                  {svc.minPrice != null && (
+                    <span className="text-xs text-muted-foreground">
+                      {servicesCopy.from} {formatCurrency(svc.minPrice)}
+                    </span>
+                  )}
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Розділ серій */}
         {brand.series && brand.series.length > 0 && (

@@ -52,6 +52,7 @@ export async function middleware(request: NextRequest) {
     pathname.includes("/webhooks/") ||
     pathname === "/robots.txt" ||
     pathname === "/sitemap.xml" ||
+    pathname.startsWith("/sitemaps/") ||
     pathname === "/llms.txt" ||
     /\.(jpg|jpeg|png|gif|svg|ico|css|js|woff|woff2|ttf|eot|webp)$/.test(pathname)
   ) {
@@ -234,6 +235,6 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     // Match all paths including root
-    "/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|llms.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff|woff2|ttf|eot)).*)",
+    "/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|sitemaps/|llms.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff|woff2|ttf|eot)).*)",
   ],
 }

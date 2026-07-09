@@ -18,6 +18,7 @@ import { ShopFooter } from "@/components/shop/shop-footer"
 import { ShopHeader } from "@/components/shop/shop-header"
 import { getShopCategoryTree, getShopLegalPages } from "@/lib/shop/data"
 import { getActiveLegalDocuments, legalDocumentPath, localizedTitle } from "@/lib/legal-documents"
+import { getFooterHubLinks } from "@/lib/seo/featured-repairs"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
 import { CookieConsentProvider } from "@/contexts/cookie-consent-context"
@@ -80,6 +81,9 @@ export async function SiteLocaleLayout({
           title: localizedTitle(doc, locale),
           href: legalDocumentPath(locale, doc.slug),
         }))
+  // Sitewide footer links into the top brand×service hubs (main site only —
+  // the hrefs are main-site paths, and the b2b footer keeps its brand links).
+  const repairHubLinks = variant === "default" ? await getFooterHubLinks(locale) : []
 
   return (
     <html lang={locale} className={inter.variable} suppressHydrationWarning>
@@ -170,7 +174,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
                       <ReservationCartProvider>
                         <Header variant={variant} mainDomainBaseUrl={mainSiteUrl} localeOverride={locale} />
                         <main className="flex-1">{children}</main>
-                        <Footer legalLinks={legalLinks} />
+                        <Footer legalLinks={legalLinks} repairHubLinks={repairHubLinks} />
                         {variant === "default" && <ReservationCartFab locale={locale} />}
                       </ReservationCartProvider>
                     )}

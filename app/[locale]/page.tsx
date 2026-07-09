@@ -6,6 +6,7 @@ import { GoogleReviewsCarousel } from "@/components/google-reviews-carousel"
 import { HeroSection } from "@/components/hero-section"
 import { LazyContactSection } from "@/components/lazy-contact-section"
 import { PersonalOfferToastLoader } from "@/components/profile/personal-offer-toast-loader"
+import { PopularRepairs } from "@/components/popular-repairs"
 import { getBrands } from "@/lib/data/brands"
 import { getGoogleReviews } from "@/lib/data/google-reviews"
 import type { GoogleReviewsData } from "@/lib/data/google-reviews"
@@ -115,6 +116,9 @@ export default async function HomePage({
       </Suspense>
       <Suspense fallback={null}>
         <BrandsSectionAsync promise={brandsPromise} />
+      </Suspense>
+      <Suspense fallback={null}>
+        <PopularRepairs locale={locale} />
       </Suspense>
       <Suspense fallback={null}>
         <LazyContactSection />

@@ -27,9 +27,19 @@ test("sitemap is served by a host-aware route handler", async () => {
 
   assert.match(source, /isB2BHost/)
   assert.match(source, /getB2BSitemapEntries/)
-  assert.match(source, /getMainSitemapEntries/)
+  // Main host serves a sitemap INDEX of segmented files; b2b/shop keep
+  // single-file sitemaps rendered with createSitemapXml.
+  assert.match(source, /getMainSitemapIndexEntries/)
+  assert.match(source, /createSitemapIndexXml/)
   assert.match(source, /createSitemapXml/)
   assert.match(source, /application\/xml/)
+
+  // The segments themselves are served by a host-aware dynamic route.
+  assert.equal(await pathExists("../app/sitemaps/[segment]/route.ts"), true)
+  const segmentSource = await readSource("../app/sitemaps/[segment]/route.ts")
+  assert.match(segmentSource, /isB2BHost/)
+  assert.match(segmentSource, /isShopHost/)
+  assert.match(segmentSource, /getMainSitemapSegmentEntries/)
 })
 
 test("B2B sitemap exposes only localized home and FAQ pages", async () => {

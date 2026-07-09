@@ -13,6 +13,23 @@ function escapeXml(value: string): string {
     .replace(/'/g, "&apos;")
 }
 
+export interface SitemapIndexEntry {
+  url: string
+  lastModified?: Date
+}
+
+/** Sitemap index (<sitemapindex>) pointing at segmented sitemap files. */
+export function createSitemapIndexXml(files: SitemapIndexEntry[]): string {
+  const items = files
+    .map((file) => {
+      const lastModified = file.lastModified ? `<lastmod>${file.lastModified.toISOString()}</lastmod>` : ""
+      return `<sitemap><loc>${escapeXml(file.url)}</loc>${lastModified}</sitemap>`
+    })
+    .join("")
+
+  return `<?xml version="1.0" encoding="UTF-8"?><sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${items}</sitemapindex>`
+}
+
 export function createSitemapXml(entries: SitemapEntry[]): string {
   const urls = entries
     .map((entry) => {

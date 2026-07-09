@@ -12,7 +12,24 @@ export type FooterLegalLink = {
   href: string
 }
 
-export function Footer({ legalLinks = [] }: { legalLinks?: FooterLegalLink[] }) {
+export type FooterRepairHubLink = {
+  href: string
+  label: string
+}
+
+const REPAIRS_HEADING = {
+  cs: "Populární opravy",
+  uk: "Популярні ремонти",
+  en: "Popular repairs",
+} as const
+
+export function Footer({
+  legalLinks = [],
+  repairHubLinks = [],
+}: {
+  legalLinks?: FooterLegalLink[]
+  repairHubLinks?: FooterRepairHubLink[]
+}) {
   const t = useTranslations("Footer")
   const params = useParams()
   const locale = params.locale as string
@@ -33,11 +50,24 @@ export function Footer({ legalLinks = [] }: { legalLinks?: FooterLegalLink[] }) 
     }
   }
 
-  const popularBrandLinks = [
-    { label: t("appleRepair"), href: `/${locale}/brands/apple` },
-    { label: t("samsungRepair"), href: `/${locale}/brands/samsung` },
-    { label: t("xiaomiRepair"), href: `/${locale}/brands/xiaomi` },
-  ]
+  // Sitewide links go to the commercial brand×service hubs when the layout
+  // provides them (brands are already depth 1 via the home page, so the old
+  // hardcoded brand links were redundant). Fallback keeps the brand links if
+  // the hub data is unavailable.
+  const popularColumn: { heading: string; links: { label: string; href: string }[] } =
+    repairHubLinks.length > 0
+      ? {
+          heading: REPAIRS_HEADING[locale as keyof typeof REPAIRS_HEADING] || REPAIRS_HEADING.cs,
+          links: repairHubLinks.map((l) => ({ label: l.label, href: l.href })),
+        }
+      : {
+          heading: t("popularBrands"),
+          links: [
+            { label: t("appleRepair"), href: `/${locale}/brands/apple` },
+            { label: t("samsungRepair"), href: `/${locale}/brands/samsung` },
+            { label: t("xiaomiRepair"), href: `/${locale}/brands/xiaomi` },
+          ],
+        }
 
   return (
     <footer className="bg-gray-50 border-t border-gray-200 mt-12">
@@ -97,9 +127,9 @@ export function Footer({ legalLinks = [] }: { legalLinks?: FooterLegalLink[] }) 
             </ul>
           </div>
           <div>
-            <h3 className="font-medium mb-3">{t("popularBrands")}</h3>
+            <h3 className="font-medium mb-3">{popularColumn.heading}</h3>
             <ul className="space-y-2">
-              {popularBrandLinks.map((item) => (
+              {popularColumn.links.map((item) => (
                 <li key={item.href}>
                   <Link href={item.href} className="text-sm text-gray-500 hover:text-gray-900">
                     {item.label}
