@@ -23,18 +23,29 @@ const SERVICE_MODEL_SITEMAP_LIMIT = 1200
 export const MAIN_SITEMAP_SEGMENTS = ["core", "hubs", "services", "articles"] as const
 export type MainSitemapSegment = (typeof MAIN_SITEMAP_SEGMENTS)[number]
 
+export const MAIN_SITEMAP_LOCALES = locales
+export type MainSitemapLocale = (typeof locales)[number]
+
 export function isMainSitemapSegment(value: string): value is MainSitemapSegment {
   return (MAIN_SITEMAP_SEGMENTS as readonly string[]).includes(value)
 }
 
+export function isMainSitemapLocale(value: string): value is MainSitemapLocale {
+  return (locales as readonly string[]).includes(value)
+}
+
 /**
  * The /sitemap.xml on the main host is an index of segmented files, one per
- * page type. GSC then reports index coverage per segment (hubs vs money pages
- * vs catalog), which is exactly the monitoring we need for internal-linking
- * changes. No lastmod here — computing it would mean building every segment.
+ * page type × locale. GSC then reports index coverage per segment AND per
+ * locale (e.g. services-cs vs services-uk), which is exactly the monitoring
+ * we need for internal-linking changes and for spotting locales Google
+ * under-indexes. No lastmod here — computing it would mean building every
+ * segment.
  */
 export function getMainSitemapIndexEntries(): { url: string }[] {
-  return MAIN_SITEMAP_SEGMENTS.map((segment) => ({ url: `${mainSiteUrl}/sitemaps/${segment}.xml` }))
+  return MAIN_SITEMAP_SEGMENTS.flatMap((segment) =>
+    locales.map((locale) => ({ url: `${mainSiteUrl}/sitemaps/${segment}-${locale}.xml` })),
+  )
 }
 
 function mostRecentDate(...dates: Array<Date | null | undefined>): Date {
@@ -311,18 +322,31 @@ async function getArticleEntries(): Promise<SitemapEntry[]> {
   return entries
 }
 
-export async function getMainSitemapSegmentEntries(segment: MainSitemapSegment): Promise<SitemapEntry[]> {
+export async function getMainSitemapSegmentEntries(
+  segment: MainSitemapSegment,
+  locale?: MainSitemapLocale,
+): Promise<SitemapEntry[]> {
   try {
+    let entries: SitemapEntry[]
     switch (segment) {
       case "core":
-        return await getCoreEntries()
+        entries = await getCoreEntries()
+        break
       case "hubs":
-        return await getHubEntries()
+        entries = await getHubEntries()
+        break
       case "services":
-        return await getServiceModelEntries()
+        entries = await getServiceModelEntries()
+        break
       case "articles":
-        return await getArticleEntries()
+        entries = await getArticleEntries()
+        break
     }
+    if (!locale) return entries
+    // Per-locale sitemap file: keep only this locale's URLs. Entries keep the
+    // full hreflang alternate set — cross-file alternates are valid.
+    const base = `${mainSiteUrl}/${locale}`
+    return entries.filter((entry) => entry.url === base || entry.url.startsWith(`${base}/`))
   } catch (error) {
     console.error(`[SITEMAP] Error generating '${segment}' segment:`, error)
     return []
