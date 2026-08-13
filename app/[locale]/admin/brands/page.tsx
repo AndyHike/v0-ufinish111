@@ -371,6 +371,7 @@ export default function BrandsPage() {
       // Create a form data object
       const formData = new FormData()
       formData.append("file", file)
+      formData.append("type", "brand")
 
       // Upload the file
       const response = await fetch("/api/admin/upload", {
