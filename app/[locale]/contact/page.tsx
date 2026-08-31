@@ -16,9 +16,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   const descriptionPatterns = {
-    cs: "Oprava mobilů Břevnov, Praha 6. Servis iPhone, Samsung, Xiaomi. Bělohorská 209/133. Telefon: +420 775 848 259. Rychlá oprava, garance 6 měsíců. Dostupné denně 09:00-19:00 (Pondělí-Neděle). Dejvice, Vokovice, Praha 6.",
-    en: "Mobile phone repair in Břevnov, Prague 6. iPhone, Samsung, Xiaomi service. Bělohorská 209/133. Phone: +420 775 848 259. Fast repair, 6-month warranty. Available daily 09:00-19:00 (Monday-Sunday). Dejvice, Vokovice, Prague 6.",
-    uk: "Ремонт мобільних в Бржевнові, Прага 6. Сервіс iPhone, Samsung, Xiaomi. Bělohorská 209/133. Телефон: +420 775 848 259. Швидкий ремонт, гарантія 6 місяців. Щодня 09:00-19:00 (Понеділок-Неділя). Dejvice, Vokovice, Прага 6.",
+    cs: "Oprava mobilů Břevnov, Praha 6. Servis iPhone, Samsung, Xiaomi. Bělohorská 209/133. Telefon: +420 775 848 259. Rychlá oprava, garance 6 měsíců. Otevřeno pondělí-pátek 11:00-17:00, o víkendu zavřeno. Dejvice, Vokovice, Praha 6.",
+    en: "Mobile phone repair in Břevnov, Prague 6. iPhone, Samsung, Xiaomi service. Bělohorská 209/133. Phone: +420 775 848 259. Fast repair, 6-month warranty. Open Monday-Friday 11:00-17:00, closed on weekends. Dejvice, Vokovice, Prague 6.",
+    uk: "Ремонт мобільних в Бржевнові, Прага 6. Сервіс iPhone, Samsung, Xiaomi. Bělohorská 209/133. Телефон: +420 775 848 259. Швидкий ремонт, гарантія 6 місяців. Працюємо понеділок-п'ятниця 11:00-17:00, на вихідних зачинено. Dejvice, Vokovice, Прага 6.",
   }
 
   const keywordPatterns = {
@@ -105,9 +105,9 @@ export default function ContactPage() {
             openingHoursSpecification: [
               {
                 "@type": "OpeningHoursSpecification",
-                dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
-                opens: "09:00",
-                closes: "19:00",
+                dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+                opens: "11:00",
+                closes: "17:00",
               },
             ],
           }),

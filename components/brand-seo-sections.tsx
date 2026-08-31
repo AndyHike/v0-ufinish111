@@ -20,17 +20,17 @@ const advantagesData = {
     cs: [
         { icon: Shield, title: "Záruka 6 měsíců", text: "... na veškerou práci od našich certifikovaných techniků." },
         { icon: Zap, title: "Superrychlost!", text: "Telefon z ruky na pár chvil. Některé opravy zvládneme již do 30 minut." },
-        { icon: Clock, title: "Každý den otevřeno", text: "Otevřeno 7 dní v týdnu od 9:00 do 19:00." },
+        { icon: Clock, title: "Otevřeno v pracovní dny", text: "Otevřeno od pondělí do pátku od 11:00 do 17:00." },
     ],
     en: [
         { icon: Shield, title: "6-Month Warranty", text: "... on all work done by our certified technicians." },
         { icon: Zap, title: "Super fast!", text: "Phone in and out in minutes. Some repairs done in under 30 minutes." },
-        { icon: Clock, title: "Open every day", text: "Open 7 days a week from 9:00 to 19:00." },
+        { icon: Clock, title: "Open on weekdays", text: "Open Monday through Friday from 11:00 to 17:00." },
     ],
     uk: [
         { icon: Shield, title: "Гарантія 6 місяців", text: "... на всі роботи наших сертифікованих техніків." },
         { icon: Zap, title: "Супершвидко!", text: "Телефон із рук на лічені хвилини. Деякі ремонти — до 30 хвилин." },
-        { icon: Clock, title: "Відкрито щодня", text: "Працюємо 7 днів на тиждень з 9:00 до 19:00." },
+        { icon: Clock, title: "Відкрито у будні", text: "Працюємо з понеділка до п'ятниці з 11:00 до 17:00." },
     ],
 }
 
