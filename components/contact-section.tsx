@@ -230,7 +230,9 @@ export function ContactSection() {
                     <Clock className="h-4 w-4 text-primary" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium">11:00 - 17:00</p>
+                    <p className="text-sm font-medium">{t("workingHoursWeekdays")}</p>
+                    <p className="text-xs text-gray-500">{t("workingHoursSaturday")}</p>
+                    <p className="text-xs text-gray-500">{t("workingHoursSunday")}</p>
                   </div>
                 </div>
               </div>
@@ -428,7 +430,9 @@ export function ContactSection() {
                   </div>
                   <div>
                     <h3 className="font-medium text-gray-900 text-sm md:text-base">{t("workingHours")}</h3>
-                    <p className="text-gray-600 text-sm md:text-base">11:00 - 17:00</p>
+                    <p className="text-gray-600 text-sm md:text-base">{t("workingHoursWeekdays")}</p>
+                    <p className="text-gray-600 text-sm md:text-base">{t("workingHoursSaturday")}</p>
+                    <p className="text-gray-600 text-sm md:text-base">{t("workingHoursSunday")}</p>
                   </div>
                 </div>
               </div>

@@ -262,8 +262,9 @@ export default function BookingConfirmation({
   }
 
   // Generate time slots
-  const timeSlots: TimeSlot[] = Array.from({ length: 11 }, (_, i) => ({
-    hour: 9 + i,
+  // Opening hours: Monday-Friday 11:00-17:00
+  const timeSlots: TimeSlot[] = Array.from({ length: 7 }, (_, i) => ({
+    hour: 11 + i,
     available: true,
   }))
 
@@ -276,8 +277,9 @@ export default function BookingConfirmation({
       const date = new Date(today)
       date.setDate(date.getDate() + i)
 
-      // Skip Sundays
-      if (date.getDay() !== 0) {
+      // Skip weekends (closed Saturday and Sunday)
+      const day = date.getDay()
+      if (day !== 0 && day !== 6) {
         dates.push(date)
       }
     }
