@@ -273,7 +273,21 @@
       "warranty": "1 місяць"
     },
     "relatedArticles": "Також може бути цікаво",
-    "relatedArticlesDescription": "Читайте наші останні поради, інструкції та цікаві факти зі світу ремонту електроніки."
+    "relatedArticlesDescription": "Читайте наші останні поради, інструкції та цікаві факти зі світу ремонту електроніки.",
+    "allBrands": "Всі бренди",
+    "avgPrice": "Середня ціна",
+    "brandsAvailable": "Доступні бренди",
+    "contactUsForService": "Звʼяжіться з нами, і ми домовимося про ремонт.",
+    "filterByBrand": "Фільтрувати за брендом",
+    "modelsAvailable": "Доступні моделі",
+    "needThisService": "Потрібна ця послуга?",
+    "noModelsFound": "Моделей не знайдено",
+    "priceRange": "Діапазон цін",
+    "professionalService": "Професійний сервіс",
+    "repairService": "Послуга ремонту",
+    "serviceType": "Тип послуги",
+    "supportedBrands": "Підтримувані бренди",
+    "supportedModels": "Підтримувані моделі"
   },
   "ServicesSection": {
     "title": "Наші послуги",
@@ -303,6 +317,23 @@
     "waterDamage": {
       "title": "Ремонт після води",
       "description": "Порятунок пристроїв після контакту з рідиною"
+    },
+    "learnMore": "Дізнатися більше",
+    "service1": {
+      "title": "Заміна екрану",
+      "description": "Швидка та якісна заміна екрану для всіх моделей"
+    },
+    "service2": {
+      "title": "Заміна батареї",
+      "description": "Відновіть тривалість роботи вашого пристрою"
+    },
+    "service3": {
+      "title": "Ремонт плати",
+      "description": "Вирішення проблем з підключенням та живленням"
+    },
+    "service4": {
+      "title": "Захист екрану",
+      "description": "Професійне встановлення захисного скла"
     }
   },
   "BrandsSection": {
@@ -405,7 +436,8 @@
     "step3Desc": "Наші техніки проведуть професійний ремонт з максимальною ретельністю.",
     "step4Title": "Тест та видача",
     "step4Desc": "Ми протестуємо пристрій і передамо його вам разом з гарантійним талоном.",
-    "locationTitle": "Де нас знайти?"
+    "locationTitle": "Де нас знайти?",
+    "relatedArticles": "Також може бути цікаво"
   },
   "Testimonials": {
     "title": "Відгуки клієнтів",
@@ -562,7 +594,17 @@
     "businessClient": "Акаунт для компанії / підприємця",
     "registrationPendingTitle": "Реєстрацію надіслано",
     "registrationPendingDescription": "Вашу реєстрацію акаунта для компанії надіслано. Ваш акаунт буде активовано після підтвердження адміністратором. Про активацію ви будете повідомлені електронною поштою.",
-    "accountPendingApproval": "Ваш акаунт очікує на підтвердження адміністратором"
+    "accountPendingApproval": "Ваш акаунт очікує на підтвердження адміністратором",
+    "checkEmailForResetLink": "Перевірте пошту, ми надіслали вам посилання для відновлення пароля.",
+    "checkYourInbox": "Перевірте свою поштову скриньку",
+    "didntReceiveEmail": "Лист не надійшов?",
+    "emailSent": "Лист надіслано",
+    "invalidRequest": "Некоректний запит",
+    "missingUserId": "Відсутній ідентифікатор користувача",
+    "newPasswordPlaceholder": "Введіть новий пароль",
+    "resendVerificationEmail": "Надіслати лист підтвердження ще раз",
+    "verificationRequired": "Потрібне підтвердження пошти",
+    "verifyYourEmail": "Підтвердіть свою пошту"
   },
   "Admin": {
     "adminPanel": "Панель адміністратора",
@@ -594,7 +636,7 @@
     "imageUrl": "URL зображення",
     "imageUrlPlaceholder": "Введіть URL зображення (необов'язково)",
     "brandsTitle": "Бренди",
-    "brandsDescription": "Список усіх брендів телффонів у вашій системі.",
+    "brandsDescription": "Список усіх брендів телефонів у вашій системі.",
     "name": "Назва",
     "logo": "Логотип",
     "createdAt": "Створено",
@@ -610,7 +652,7 @@
     "brandName": "Назва бренду",
     "brandNamePlaceholder": "Введіть назву бренду",
     "logoUrl": "URL логотипу",
-    "logoUrlPlaceholder": "Введіть URL логоипу (необов'язково)",
+    "logoUrlPlaceholder": "Введіть URL логотипу (необов'язково)",
     "cancel": "Скасувати",
     "add": "Додати",
     "editBrand": "Редагувати бренд",
@@ -641,7 +683,7 @@
     "modelDeletedError": "Не вдалося видалити модель",
     "loading": "Завантаження...",
     "user": "Користувач",
-    "email": "лектронна пошта",
+    "email": "Електронна пошта",
     "phone": "Телефон",
     "role": "Роль",
     "registrationDate": "Дата реєстрації",
@@ -932,7 +974,22 @@
       "ignoreFailed": "Не вдалося проігнорувати проблему",
       "notAvailable": "Немає даних",
       "error": "Помилка"
-    }
+    },
+    "backToBrands": "Назад до брендів",
+    "brandFetchError": "Не вдалося отримати бренд",
+    "enterPosition": "Введіть порядковий номер",
+    "errorFetchingSeries": "Помилка при отриманні серій",
+    "failedToAddStatus": "Не вдалося додати статус",
+    "failedToDeleteStatus": "Не вдалося видалити статус",
+    "failedToUpdateStatus": "Не вдалося оновити статус",
+    "manageBrandSeries": "Керуйте серіями цього бренду",
+    "newStatusPlaceholderCs": "Напр. В роботі",
+    "newStatusPlaceholderEn": "Напр. In progress",
+    "newStatusPlaceholderUk": "Напр. В роботі",
+    "position": "Порядок",
+    "positionInfo": "Порядковий номер визначає, де елемент зʼявиться у списку.",
+    "seriesImage": "Зображення серії",
+    "status": "Статус"
   },
   "About": {
     "about": "Про нас",
@@ -990,7 +1047,9 @@
     "reset": "Скинути",
     "cantFindWhatYouLooking": "Не знайшли те, що шукали?",
     "contactUsWellHelp": "Зв'яжіться з нами, і ми допоможемо",
-    "contactUsDescription": "Наша команда готова відповісти на всі ваші запитання та допомогти з вибором потрібної послуги"
+    "contactUsDescription": "Наша команда готова відповісти на всі ваші запитання та допомогти з вибором потрібної послуги",
+    "browseServices": "Переглянути послуги",
+    "order": "Замовити"
   },
   "cookies": {
     "banner": {
@@ -1096,7 +1155,14 @@
     "useOffer": "Скористатися",
     "viewServices": "Переглянути послуги",
     "offerToastTitle": "У вас є персональна пропозиція",
-    "offerToastAction": "Переглянути"
+    "offerToastAction": "Переглянути",
+    "address": "Адреса",
+    "device": "Пристрій",
+    "email": "Електронна пошта",
+    "notSpecified": "Не вказано",
+    "phone": "Телефон",
+    "registrationDate": "Дата реєстрації",
+    "service": "Послуга"
   },
   "Navigation": {
     "home": "Головна",
@@ -1250,7 +1316,8 @@
     "phoneLabel": "Телефон",
     "phoneValue": "+420775848259",
     "emailLabel": "Email",
-    "emailValue": "info@devicehelp.cz"
+    "emailValue": "info@devicehelp.cz",
+    "goToHomePage": "Перейти на головну сторінку"
   },
   "GoogleReviews": {
     "title": "Google Відгуки",
@@ -1455,5 +1522,34 @@
       "b2b": "Сервіс для компаній",
       "cookieSettings": "Налаштування cookies"
     }
+  },
+  "admin": {
+    "cookieSettings": {
+      "description": "Керуйте налаштуваннями cookies, аналітичних і маркетингових сервісів.",
+      "title": "Налаштування cookies та аналітики"
+    }
+  },
+  "Login": {
+    "title": "Вхід",
+    "subtitle": "Увійдіть до свого облікового запису",
+    "userTab": "Клієнт",
+    "adminTab": "Адміністратор",
+    "userLoginTitle": "Вхід для клієнта",
+    "userLoginDescription": "Введіть пошту та пароль свого облікового запису.",
+    "adminLoginTitle": "Вхід для адміністратора",
+    "adminLoginDescription": "Введіть дані адміністратора.",
+    "emailLabel": "Електронна пошта",
+    "emailPlaceholder": "you@example.com",
+    "passwordLabel": "Пароль",
+    "passwordPlaceholder": "Введіть пароль",
+    "forgotPassword": "Забули пароль?",
+    "showPassword": "Показати пароль",
+    "hidePassword": "Приховати пароль",
+    "login": "Увійти",
+    "loggingIn": "Вхід...",
+    "loginFailed": "Не вдалося увійти",
+    "somethingWentWrong": "Щось пішло не так. Спробуйте ще раз.",
+    "noAccount": "Немає облікового запису?",
+    "register": "Зареєструватися"
   }
 }
