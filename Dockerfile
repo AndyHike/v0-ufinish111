@@ -10,11 +10,13 @@ RUN apk add --no-cache libc6-compat
 # Етап встановлення залежностей
 FROM base AS deps
 
-# Копіюємо файли package.json та package-lock.json
-COPY package.json package-lock.json* ./
+# Копіюємо маніфест і lock-файл. Обидва файли обовʼязкові: npm ci падає без
+# lock-файла, і це навмисно — так образ збирається з тих самих версій, що й
+# локально, а не з того, що npm віддасть у день збірки.
+COPY package.json package-lock.json ./
 
-# Встановлюємо залежності
-RUN npm install
+# npm ci ставить рівно те, що записано в lock-файлі, і не змінює його
+RUN npm ci
 
 # Етап збірки
 FROM base AS builder
@@ -50,6 +52,9 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV SUPABASE_SERVICE_ROLE_KEY=placeholder_build_only
 ENV NEXTAUTH_SECRET=placeholder_build_only
 
+# Обмежуємо heap на час збірки, щоб збірка не з'їла всю память контейнера
+ENV NODE_OPTIONS=--max-old-space-size=2048
+
 # Запускаємо збірку
 RUN npm run build
 
@@ -80,6 +85,16 @@ EXPOSE 3000
 
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
+
+# Обмежуємо heap Node. Без цього V8 орієнтується на памʼять усього хоста,
+# доходить до ліміту контейнера й процес отримує OOM-kill (код 137), після
+# чого Coolify перезапускає контейнер по колу. Значення має бути меншим за
+# ліміт памʼяті контейнера — підніміть його, якщо ліміт більший.
+ENV NODE_OPTIONS=--max-old-space-size=1536
+
+# Healthcheck. В node:20-alpine немає curl, тому перевіряємо самим Node.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
+  CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||3000)+'/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
 # Запускаємо додаток
 CMD ["node", "server.js"]

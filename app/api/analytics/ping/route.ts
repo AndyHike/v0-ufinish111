@@ -16,11 +16,19 @@ function generateVisitorHash(maskedIP: string, userAgent: string, date: string, 
   return crypto.createHash('sha256').update(data).digest('hex')
 }
 
-// Cleanup old sessions every 30 seconds
+// Cleanup old sessions every 30 seconds.
 const CLEANUP_INTERVAL = 30 * 1000 // 30 seconds
 const SESSION_TTL = 2 * 60 * 1000 // 2 minutes
 
-setInterval(() => {
+// The timer used to be started at module scope. That ran the moment the route
+// module was loaded, held a strong reference on the event loop for the life of
+// the process, and kept the server from shutting down cleanly on SIGTERM —
+// Docker then had to SIGKILL it, which reads as an unclean exit and feeds
+// Coolify's restart counter. It is now started on first request and unref'd,
+// so it never by itself keeps the process alive.
+let cleanupTimer: ReturnType<typeof setInterval> | null = null
+
+function pruneExpiredSessions() {
   const now = Date.now()
   let removed = 0
 
@@ -34,9 +42,19 @@ setInterval(() => {
   if (removed > 0) {
     console.log(`[v0] Cleanup: Removed ${removed} expired sessions. Active: ${activeSessions.size}`)
   }
-}, CLEANUP_INTERVAL)
+}
+
+function ensureCleanupTimer() {
+  if (cleanupTimer) return
+  cleanupTimer = setInterval(pruneExpiredSessions, CLEANUP_INTERVAL)
+  // unref() only exists on the Node timer, not on the DOM one the lib types
+  // also declare, so reach for it structurally.
+  ;(cleanupTimer as unknown as { unref?: () => void }).unref?.()
+}
 
 export async function POST(request: Request) {
+  ensureCleanupTimer()
+
   try {
     const body = await request.json()
     const { page } = body

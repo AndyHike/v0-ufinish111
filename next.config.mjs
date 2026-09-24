@@ -52,7 +52,12 @@ const nextConfig = {
 
   // Налаштування картинок
   images: {
-    formats: ['image/webp', 'image/avif'],
+    // WebP only. AVIF encoding in sharp costs several times the CPU and peak
+    // memory of WebP, and the optimizer cache lives in the container
+    // filesystem, so it is thrown away on every restart and redeploy. On a
+    // memory-capped container that turned each restart into a re-encode storm
+    // that pushed the process back into an OOM kill.
+    formats: ['image/webp'],
     qualities: [75, 80, 85],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
@@ -105,7 +110,12 @@ const nextConfig = {
   htmlLimitedBots: /.*/,
 
   compiler: {
-    removeConsole: process.env.NODE_ENV === 'production',
+    // Keep console.error/console.warn in production. Stripping every console
+    // call left the container with no diagnostics at all, so a crash-restart
+    // loop under Coolify showed up as an empty log. Only the chatty
+    // console.log/info/debug calls are removed.
+    removeConsole:
+      process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,
   },
 
   experimental: {
