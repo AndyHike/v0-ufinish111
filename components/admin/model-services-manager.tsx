@@ -552,14 +552,15 @@ export function ModelServicesManager({ modelId, locale }: ModelServicesManagerPr
       )}
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        {/* Header and footer stay pinned; only the form body scrolls, so Save is always reachable. */}
+        <DialogContent className="flex max-h-[90dvh] max-w-2xl flex-col">
           <DialogHeader>
             <DialogTitle>{editingServiceId ? "Редагувати послугу" : "Додати послугу до моделі"}</DialogTitle>
             <DialogDescription>
               {editingServiceId ? "Змініть параметри для цієї послуги" : "Оберіть послугу та встановіть параметри"}
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
+          <div className="-mx-6 grid min-h-0 flex-1 gap-4 overflow-y-auto px-6 py-4">
             {!editingServiceId && (
               <div className="grid gap-2">
                 <Label htmlFor="service">Послуга</Label>
@@ -587,7 +588,7 @@ export function ModelServicesManager({ modelId, locale }: ModelServicesManagerPr
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="grid gap-2">
                 <Label htmlFor="price">Ціна (грн)</Label>
                 <Input
