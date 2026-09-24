@@ -33,8 +33,14 @@ export async function middleware(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const hostname = request.headers.get("host") || ""
 
-  // Force HTTPS redirect for HTTP requests
-  if (request.headers.get("x-forwarded-proto") !== "https" && process.env.NODE_ENV === "production") {
+  // Force HTTPS redirect for HTTP requests. The container healthcheck probes
+  // http://127.0.0.1/api/health directly, bypassing the proxy that sets
+  // x-forwarded-proto, so it must be exempt or every probe fails on the redirect.
+  if (
+    request.headers.get("x-forwarded-proto") !== "https" &&
+    process.env.NODE_ENV === "production" &&
+    pathname !== "/api/health"
+  ) {
     return NextResponse.redirect(
       `https://${request.headers.get("host")}${pathname}${request.nextUrl.search}`,
       { status: 301 }
