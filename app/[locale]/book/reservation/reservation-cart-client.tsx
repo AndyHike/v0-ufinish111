@@ -106,12 +106,15 @@ export default function ReservationCartClient({ locale }: { locale: string }) {
     for (let i = 1; i <= 30; i++) {
       const date = new Date(today)
       date.setDate(date.getDate() + i)
-      if (date.getDay() !== 0) dates.push(date)
+      const day = date.getDay()
+      // Skip weekends (closed Saturday and Sunday)
+      if (day !== 0 && day !== 6) dates.push(date)
     }
     return dates
   }, [])
 
-  const timeSlots = Array.from({ length: 11 }, (_, i) => 9 + i)
+  // Opening hours: Monday-Friday 11:00-17:00
+  const timeSlots = Array.from({ length: 7 }, (_, i) => 11 + i)
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
