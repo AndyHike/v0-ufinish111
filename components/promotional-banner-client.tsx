@@ -28,9 +28,13 @@ export function PromotionalBannerClient({ data, locale }: PromotionalBannerClien
         return null
     }
 
-    // Use the appropriate translation
-    const text = locale === "en" ? data.text_en : locale === "uk" ? data.text_uk : data.text_cs
-    const buttonText = locale === "en" ? data.button_text_en : locale === "uk" ? data.button_text_uk : data.button_text_cs
+    // Use the appropriate translation, falling back to other locales
+    // so the banner/button still renders if a translation is missing
+    const pickTranslation = (cs: string, en: string, uk: string) =>
+        (locale === "en" ? en : locale === "uk" ? uk : cs) || cs || en || uk
+
+    const text = pickTranslation(data.text_cs, data.text_en, data.text_uk)
+    const buttonText = pickTranslation(data.button_text_cs, data.button_text_en, data.button_text_uk)
 
     if (!text) return null
 
